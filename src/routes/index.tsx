@@ -56,16 +56,6 @@ const traditions = [
   },
 ];
 
-const dimensions = [
-  "Character",
-  "Vocation",
-  "Wealth",
-  "Love",
-  "Family",
-  "Health",
-  "Life Mission",
-  "Cycles",
-];
 
 // Focus comparison — how each tradition approaches the same life dimension.
 type FocusRow = {
