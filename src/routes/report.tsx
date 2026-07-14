@@ -716,8 +716,10 @@ function PlanetReadingPanel({
   }
 
   const signs = computePlanetSigns(seed);
+  const ascSign = signs[PLANETS.findIndex((p) => p.key === "asc")] ?? 0;
   const p = PLANETS[planetIdx];
   const s = ZODIAC_SIGNS[signs[planetIdx]];
+  const house = houseForSign(signs[planetIdx], ascSign);
 
   const aspects = PLANETS.map((op, j) => {
     if (j === planetIdx) return null;
