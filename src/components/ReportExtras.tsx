@@ -1410,42 +1410,61 @@ function AIFollowupModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[60] flex items-end justify-center bg-obsidian/70 backdrop-blur-md md:items-center"
-          onClick={onClose}
+          className="fixed inset-0 z-[9999] flex flex-col bg-obsidian"
+          role="dialog"
+          aria-modal="true"
         >
-          <motion.div
-            initial={{ opacity: 0, y: 40, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 40, scale: 0.98 }}
-            transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1] }}
-            className="glass-card relative m-0 flex max-h-[92dvh] w-full max-w-2xl flex-col rounded-t-3xl p-5 pt-16 sm:m-4 sm:max-h-[90vh] sm:rounded-3xl sm:p-6 md:p-8 md:pt-14"
-            onClick={(e) => e.stopPropagation()}
-          >
+          {/* Ambient library backdrop */}
+          <div
+            className="pointer-events-none absolute inset-0 opacity-40"
+            style={{
+              backgroundImage:
+                "radial-gradient(circle at 20% 30%, hsl(45 70% 60% / 0.10), transparent 50%), radial-gradient(circle at 80% 70%, hsl(280 40% 50% / 0.10), transparent 50%)",
+            }}
+          />
+
+          {/* Header bar — always visible, close never blocked */}
+          <div className="relative z-10 flex items-center justify-between gap-3 border-b border-white/10 bg-obsidian/95 px-4 py-3 backdrop-blur sm:px-6 sm:py-4">
+            <div className="min-w-0">
+              <p className="text-[9px] uppercase tracking-[0.32em] text-gold-dust/70 sm:text-[10px]">
+                {t.mem_ai_followup}
+              </p>
+              <p className="truncate font-serif text-base italic text-stone-warm sm:text-lg">
+                {lang === "zh" ? "与图书馆的长者对话" : "In conversation with the Elder of the Library"}
+              </p>
+            </div>
             <button
               type="button"
               onClick={onClose}
               aria-label={lang === "zh" ? "关闭" : "Close"}
-              className="absolute right-3 top-3 z-10 flex h-9 items-center gap-1.5 rounded-full border border-white/15 bg-obsidian/80 px-3 text-[10px] uppercase tracking-[0.28em] text-stone-warm/70 backdrop-blur transition-colors hover:border-gold-dust/50 hover:text-gold-dust sm:right-4 sm:top-4"
+              className="flex h-10 shrink-0 items-center gap-2 rounded-full border border-gold-dust/40 bg-obsidian/80 px-4 text-[10px] uppercase tracking-[0.28em] text-gold-dust transition-colors hover:bg-gold-dust/10"
             >
-              <span aria-hidden>×</span>
+              <span aria-hidden className="text-base leading-none">×</span>
               <span>{t.mem_close}</span>
             </button>
-            <p className="mb-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
-              {t.mem_ai_followup}
-            </p>
-            <h3 className="mb-4 pr-16 font-serif text-xl italic text-stone-warm sm:text-2xl">
-              {lang === "zh" ? "开启一场私密对话" : "Open a private conversation"}
-            </h3>
+          </div>
 
-            <div className="mb-4 flex-1 space-y-3 overflow-y-auto pr-1">
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-stone-warm/70">
-                {lang === "zh"
-                  ? "「你的太阳落火象、日主为阳火 —— 想追问哪一维度？」"
-                  : "\u201CYour Sun sits in Fire and your Day Master is Yang Fire — which dimension would you like to explore?\u201D"}
+          {/* Body — scrollable, above header via layout */}
+          <div className="relative z-10 flex-1 overflow-y-auto px-4 pb-6 pt-6 sm:px-8 md:px-12">
+            <div className="mx-auto max-w-2xl space-y-4">
+              {/* Elder greeting */}
+              <div className="flex items-start gap-3">
+                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-gold-dust/40 bg-gold-dust/10 font-serif text-lg italic text-gold-light">
+                  ✦
+                </div>
+                <div className="flex-1 rounded-2xl rounded-tl-sm border border-white/10 bg-white/[0.03] p-4 text-sm leading-relaxed text-stone-warm/80">
+                  <p className="mb-1 text-[9px] uppercase tracking-[0.32em] text-gold-dust/60">
+                    {lang === "zh" ? "图书馆的长者" : "The Elder"}
+                  </p>
+                  {lang === "zh"
+                    ? "「坐下吧。你的太阳落在火象，日主为阳火 —— 图书馆的哪一卷，你想让我为你翻开？」"
+                    : "\u201CSit down. Your Sun sits in Fire, your Day Master is Yang Fire — which volume of the library would you like me to open for you?\u201D"}
+                </div>
               </div>
 
+              {/* Suggested prompts */}
               {thread.length === 0 && (
-                <div className="rounded-2xl border border-gold-dust/20 bg-gold-dust/[0.04] p-4">
+                <div className="rounded-2xl border border-gold-dust/20 bg-gold-dust/[0.04] p-4 sm:p-5">
                   <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/80">
                     {lang === "zh" ? "参考提问 · 可点击直接发送" : "Suggested prompts · tap to send"}
                   </p>
@@ -1465,33 +1484,65 @@ function AIFollowupModal({
                 </div>
               )}
 
+              {/* Thread */}
               {thread.map((m, i) => (
                 <div
                   key={i}
-                  className={`rounded-2xl border p-4 text-sm leading-relaxed ${
-                    m.role === "user"
-                      ? "ml-8 border-gold-dust/30 bg-gold-dust/[0.08] text-stone-warm/90"
-                      : "mr-8 border-white/10 bg-white/[0.03] text-stone-warm/80"
-                  }`}
+                  className={`flex items-start gap-3 ${m.role === "user" ? "flex-row-reverse" : ""}`}
                 >
-                  <p className="mb-1 text-[9px] uppercase tracking-[0.32em] text-gold-dust/70">
-                    {m.role === "user"
-                      ? lang === "zh" ? "你" : "You"
-                      : lang === "zh" ? "神谕图书馆" : "The Library"}
-                  </p>
-                  <p className="whitespace-pre-line">{m.text}</p>
+                  <div
+                    className={`grid h-10 w-10 shrink-0 place-items-center rounded-full font-serif text-sm italic ${
+                      m.role === "user"
+                        ? "border border-gold-dust/40 bg-gold-dust/15 text-gold-light"
+                        : "border border-white/15 bg-white/[0.04] text-gold-light"
+                    }`}
+                  >
+                    {m.role === "user" ? (lang === "zh" ? "你" : "You") : "✦"}
+                  </div>
+                  <div
+                    className={`max-w-[85%] rounded-2xl border p-4 text-sm leading-relaxed ${
+                      m.role === "user"
+                        ? "rounded-tr-sm border-gold-dust/30 bg-gold-dust/[0.08] text-stone-warm/90"
+                        : "rounded-tl-sm border-white/10 bg-white/[0.03] text-stone-warm/80"
+                    }`}
+                  >
+                    <p className="mb-1 text-[9px] uppercase tracking-[0.32em] text-gold-dust/60">
+                      {m.role === "user"
+                        ? lang === "zh" ? "你" : "You"
+                        : lang === "zh" ? "图书馆的长者" : "The Elder"}
+                    </p>
+                    <p className="whitespace-pre-line">{m.text}</p>
+                  </div>
                 </div>
               ))}
               {thinking && (
-                <p className="text-[11px] uppercase tracking-[0.32em] text-gold-dust/60">
-                  {lang === "zh" ? "图书馆正在翻页…" : "The library is turning pages…"}
+                <p className="pl-13 text-[11px] uppercase tracking-[0.32em] text-gold-dust/60">
+                  {lang === "zh" ? "长者正在翻页…" : "The Elder is turning pages…"}
                 </p>
               )}
-            </div>
 
+              {!isOracle && (
+                <div className="rounded-2xl border border-gold-dust/30 bg-gold-dust/[0.06] p-5">
+                  <p className="mb-4 font-serif text-base italic leading-relaxed text-stone-warm/85">
+                    {t.mem_ai_upsell}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={onUpgrade}
+                    className="w-full rounded-full bg-gold-dust px-6 py-3 text-[10px] uppercase tracking-[0.32em] text-obsidian transition-colors hover:bg-gold-light"
+                  >
+                    {t.mem_upgrade} → {t.mem_oracle}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Input dock — sticks to bottom on both mobile & desktop */}
+          <div className="relative z-10 border-t border-white/10 bg-obsidian/95 px-4 py-3 backdrop-blur sm:px-6 sm:py-4">
             <form
               onSubmit={(e) => { e.preventDefault(); if (isOracle) send(input); }}
-              className="mb-3 flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.02] px-4 py-2"
+              className="mx-auto flex max-w-2xl items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 py-2"
             >
               <input
                 value={input}
@@ -1508,27 +1559,13 @@ function AIFollowupModal({
                 {t.mem_ai_send}
               </button>
             </form>
-
-            {!isOracle && (
-              <div className="rounded-2xl border border-gold-dust/30 bg-gold-dust/[0.06] p-5">
-                <p className="mb-4 font-serif text-base italic leading-relaxed text-stone-warm/85">
-                  {t.mem_ai_upsell}
-                </p>
-                <button
-                  type="button"
-                  onClick={onUpgrade}
-                  className="w-full rounded-full bg-gold-dust px-6 py-3 text-[10px] uppercase tracking-[0.32em] text-obsidian transition-colors hover:bg-gold-light"
-                >
-                  {t.mem_upgrade} → {t.mem_oracle}
-                </button>
-              </div>
-            )}
-          </motion.div>
+          </div>
         </motion.div>
       )}
     </AnimatePresence>
   );
 }
+
 
 
 /* ═══════════════════════════════════════════
