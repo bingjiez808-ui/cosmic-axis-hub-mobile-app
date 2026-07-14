@@ -6,7 +6,9 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
  * is deliberately small so it maps cleanly.
  */
 
-export type Account = { name: string; email: string };
+export type Plan = "free" | "sage" | "oracle";
+
+export type Account = { name: string; email: string; plan?: Plan };
 
 export type SavedReading = {
   id: string;
@@ -22,6 +24,7 @@ type Ctx = {
   account: Account | null;
   signIn: (a: Account) => void;
   signOut: () => void;
+  setPlan: (p: Plan) => void;
   saved: SavedReading[];
   saveReading: (r: Omit<SavedReading, "id" | "createdAt">) => void;
   removeReading: (id: string) => void;
