@@ -169,10 +169,18 @@ function RitualPage() {
                     type={currentQ!.input}
                     placeholder={currentQ!.placeholder}
                     className="ritual-input mx-auto max-w-md"
+                    min={currentQ!.input === "date" ? "1900-01-01" : undefined}
+                    max={currentQ!.input === "date" ? "2099-12-31" : undefined}
                     value={values[currentQ!.key]}
-                    onChange={(e) =>
-                      setValues((v) => ({ ...v, [currentQ!.key]: e.target.value }))
-                    }
+                    onChange={(e) => {
+                      let val = e.target.value;
+                      if (currentQ!.input === "date") {
+                        // Clamp year to 4 digits (native date input can accept 5+).
+                        const m = val.match(/^(\d+)(-\d{2}-\d{2})?$/);
+                        if (m && m[1].length > 4) val = m[1].slice(0, 4) + (m[2] || "");
+                      }
+                      setValues((v) => ({ ...v, [currentQ!.key]: val }));
+                    }}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") advance();
                     }}

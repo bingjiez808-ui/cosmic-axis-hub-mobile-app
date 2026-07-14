@@ -12,9 +12,7 @@ import {
   KeyEventsVerification,
   LifeTimeline,
   MembershipSection,
-  RecentWindows,
   SaveReadingBar,
-  SynastryPreview,
   TarotDraw,
 } from "@/components/ReportExtras";
 import { AccountModal } from "@/components/AccountModal";
@@ -529,9 +527,10 @@ function ReportPage() {
 
       {/* Future watchlist — Oracle members */}
       <FutureWatchlist />
-      {/* Oracle-only: synastry + near-term windows */}
-      <SynastryPreview />
-      <RecentWindows birthISO={search.date} />
+
+      {/* Membership tiers — Oracle unlocks detailed Synastry + Near-term windows */}
+      <MembershipSection birthISO={search.date} />
+
 
 
 
