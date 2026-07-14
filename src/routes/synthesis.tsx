@@ -9,6 +9,7 @@ type SearchParams = {
   date?: string;
   time?: string;
   place?: string;
+  lang?: "en" | "zh";
 };
 
 export const Route = createFileRoute("/synthesis")({
@@ -28,6 +29,7 @@ export const Route = createFileRoute("/synthesis")({
     date: typeof s.date === "string" ? s.date : undefined,
     time: typeof s.time === "string" ? s.time : undefined,
     place: typeof s.place === "string" ? s.place : undefined,
+    lang: s.lang === "zh" ? "zh" : s.lang === "en" ? "en" : undefined,
   }),
   component: SynthesisPage,
 });
