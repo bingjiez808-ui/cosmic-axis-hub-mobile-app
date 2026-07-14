@@ -745,10 +745,10 @@ export function SaveReadingBar({
 
 type Plan = "free" | "sage" | "oracle";
 
-export function MembershipSection() {
+export function MembershipSection({ birthISO }: { birthISO?: string } = {}) {
   const { lang, t } = useLang();
   const li = lang === "zh" ? 1 : 0;
-  const [plan] = useState<Plan>("free");
+  const [plan, setPlan] = useState<Plan>("free");
   const [chatOpen, setChatOpen] = useState(false);
 
   const plans = useMemo(
