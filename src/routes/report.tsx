@@ -13,7 +13,6 @@ import {
   houseForSign,
 } from "@/components/charts/DestinyCharts";
 import {
-  FutureWatchlist,
   KeyEventsVerification,
   LifeTimeline,
   MembershipSection,
