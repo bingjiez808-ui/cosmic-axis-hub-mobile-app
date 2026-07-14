@@ -541,7 +541,28 @@ export function AccountModal({ open, onClose }: { open: boolean; onClose: () => 
             ) : (
               <div className="space-y-6">
                 <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
-                  <p className="text-sm text-stone-warm/70">{account.email}</p>
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <p className="text-sm text-stone-warm/70">{account.email}</p>
+                    {(() => {
+                      const p = account.plan ?? "free";
+                      const label = p === "oracle"
+                        ? (lang === "zh" ? "神谕者" : "Oracle")
+                        : p === "sage"
+                          ? (lang === "zh" ? "贤者" : "Sage")
+                          : (lang === "zh" ? "寻道者 · 免费" : "Seeker · Free");
+                      const cls = p === "free"
+                        ? "border-white/15 text-stone-warm/60"
+                        : "border-gold-dust/50 bg-gold-dust/[0.08] text-gold-light";
+                      return (
+                        <span className={`rounded-full border px-3 py-1 text-[9px] uppercase tracking-[0.28em] ${cls}`}>
+                          {p !== "free" && "✦ "}{label}
+                        </span>
+                      );
+                    })()}
+                  </div>
+                  <p className="text-[10px] uppercase tracking-[0.28em] text-stone-warm/40">
+                    {lang === "zh" ? "当前会员等级" : "Current membership"}
+                  </p>
                 </div>
 
                 <div>
