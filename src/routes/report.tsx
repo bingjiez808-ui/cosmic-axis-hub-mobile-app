@@ -48,6 +48,8 @@ export const Route = createFileRoute("/report")({
   component: ReportPage,
 });
 
+type DetailBlock = { label: [string, string]; items: [string, string][] };
+
 type Dimension = {
   key: string;
   title: [string, string];
@@ -59,6 +61,7 @@ type Dimension = {
   plain: [string, string];
   viz: "zodiac" | "elements" | "radar";
   elementStrengths?: [number, number, number, number, number]; // wood, fire, earth, metal, water
+  details?: DetailBlock[];
 };
 
 const dimensions: Dimension[] = [
