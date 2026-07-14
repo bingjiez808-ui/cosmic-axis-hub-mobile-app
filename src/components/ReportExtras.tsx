@@ -1685,7 +1685,7 @@ function AIFollowupModal({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 24 }}
             transition={{ duration: 0.55, ease: [0.32, 0.72, 0, 1] }}
-            className="relative z-10 mx-auto flex h-full w-full max-w-3xl flex-col px-4 pb-4 pt-3 sm:px-6 sm:pt-6"
+            className="relative z-10 mx-auto flex h-full max-h-[100dvh] w-full max-w-3xl flex-col px-3 pb-[env(safe-area-inset-bottom)] pt-[max(env(safe-area-inset-top),0.75rem)] sm:px-6 sm:pt-6"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header with elder + close */}
