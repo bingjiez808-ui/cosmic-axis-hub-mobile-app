@@ -74,6 +74,8 @@ type Dict = {
   focus_dim_love: string;
   focus_dim_health: string;
   focus_dim_mission: string;
+  focus_dim_family: string;
+  nav_community: string;
   // report
   report_kicker: string;
   report_read_across: string;
@@ -230,6 +232,8 @@ const en: Dict = {
   focus_dim_love: "Love",
   focus_dim_health: "Health",
   focus_dim_mission: "Life Mission",
+  focus_dim_family: "Family",
+  nav_community: "Guild",
   report_kicker: "The unified reading",
   report_read_across: "read across four traditions",
   in_plain_words: "In plain words",
@@ -378,6 +382,8 @@ const zh: Dict = {
   focus_dim_love: "情感",
   focus_dim_health: "健康",
   focus_dim_mission: "使命",
+  focus_dim_family: "家庭",
+  nav_community: "同门",
   report_kicker: "综合解读",
   report_read_across: "· 四大体系的合鸣",
   in_plain_words: "通俗解读",

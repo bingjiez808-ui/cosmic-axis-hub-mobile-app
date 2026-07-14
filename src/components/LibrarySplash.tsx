@@ -12,9 +12,16 @@ import { useLang } from "@/lib/i18n";
 const SPLASH_KEY = "lod.splash.seen.v1";
 
 export function LibrarySplash() {
+  // Splash intro disabled by user preference — return nothing.
+  return null;
+}
+
+// Retain the rest of the module for potential future re-enable.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function _LibrarySplashArchived() {
   const { lang } = useLang();
   const [visible, setVisible] = useState(false);
-  const [phase, setPhase] = useState(0); // 0 doors closed → 1 dust → 2 past-self → 3 exit
+  const [phase, setPhase] = useState(0);
 
   useEffect(() => {
     let seen = false;

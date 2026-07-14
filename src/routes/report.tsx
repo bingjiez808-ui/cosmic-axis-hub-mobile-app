@@ -12,6 +12,7 @@ import {
   computePlanetSigns,
   houseForSign,
 } from "@/components/charts/DestinyCharts";
+import { planetPlacementReading as placementReading, aspectReading } from "@/lib/planet-reading";
 import {
   KeyEventsVerification,
   LifeTimeline,
@@ -853,17 +854,19 @@ function PlanetReadingPanel({
   const s = ZODIAC_SIGNS[signs[planetIdx]];
   const house = houseForSign(signs[planetIdx], ascSign);
 
+  const ASPECT_KEY: Record<number, string> = { 0: "conj", 2: "sext", 3: "squ", 4: "tri", 6: "opp" };
   const aspects = PLANETS.map((op, j) => {
     if (j === planetIdx) return null;
     const diff = Math.abs(signs[planetIdx] - signs[j]);
     const d = Math.min(diff, 12 - diff);
     const label = ASPECT_LABELS[d];
     if (!label) return null;
-    return { other: op, otherSign: ZODIAC_SIGNS[signs[j]], label };
+    return { other: op, otherSign: ZODIAC_SIGNS[signs[j]], label, aKey: ASPECT_KEY[d] };
   }).filter(Boolean) as {
     other: (typeof PLANETS)[number];
     otherSign: (typeof ZODIAC_SIGNS)[number];
     label: (typeof ASPECT_LABELS)[number];
+    aKey: string;
   }[];
 
   return (
@@ -894,6 +897,12 @@ function PlanetReadingPanel({
           <p className="mt-2 text-xs leading-relaxed text-stone-warm/60">
             {p.meaning[lang === "zh" ? 1 : 0]}
           </p>
+          <p className="mt-3 rounded-xl border border-gold-dust/20 bg-obsidian/40 p-3 text-[12px] leading-relaxed text-stone-warm/80">
+            <span className="mr-2 text-[9px] uppercase tracking-[0.32em] text-gold-dust/70">
+              {lang === "zh" ? "落位解读" : "Placement reading"}
+            </span>
+            <span className="block pt-1">{placementReading(planetIdx, signs[planetIdx], house, lang)}</span>
+          </p>
         </div>
         <button
           onClick={onClear}
@@ -916,22 +925,27 @@ function PlanetReadingPanel({
             {aspects.map((a, i) => (
               <li
                 key={i}
-                className="flex items-center justify-between gap-3 rounded-xl border border-white/5 bg-white/[0.02] px-3 py-2 text-[11px]"
+                className="rounded-xl border border-white/5 bg-white/[0.02] px-3 py-2 text-[11px]"
               >
-                <span className="text-stone-warm/70">
-                  <span className="mr-1 text-gold-light">{a.other.glyph}</span>
-                  {a.other.name[lang === "zh" ? 1 : 0]}
-                  <span className="mx-1 text-stone-warm/40">
-                    {lang === "zh" ? "在" : "in"}
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-stone-warm/70">
+                    <span className="mr-1 text-gold-light">{a.other.glyph}</span>
+                    {a.other.name[lang === "zh" ? 1 : 0]}
+                    <span className="mx-1 text-stone-warm/40">
+                      {lang === "zh" ? "在" : "in"}
+                    </span>
+                    {lang === "zh" ? a.otherSign.zh : a.otherSign.en}
                   </span>
-                  {lang === "zh" ? a.otherSign.zh : a.otherSign.en}
-                </span>
-                <span className="text-right text-gold-dust/80">
-                  {lang === "zh" ? a.label.zh : a.label.en}
-                  <span className="ml-2 text-stone-warm/40">
-                    {lang === "zh" ? a.label.toneZh : a.label.tone}
+                  <span className="text-right text-gold-dust/80">
+                    {lang === "zh" ? a.label.zh : a.label.en}
+                    <span className="ml-2 text-stone-warm/40">
+                      {lang === "zh" ? a.label.toneZh : a.label.tone}
+                    </span>
                   </span>
-                </span>
+                </div>
+                <p className="mt-1 text-[11px] leading-relaxed text-stone-warm/55">
+                  {aspectReading(a.aKey, lang)}
+                </p>
               </li>
             ))}
           </ul>

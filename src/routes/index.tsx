@@ -60,7 +60,7 @@ const traditions = [
 
 // Focus comparison — how each tradition approaches the same life dimension.
 type FocusRow = {
-  key: "character" | "vocation" | "wealth" | "love" | "health" | "mission";
+  key: "character" | "vocation" | "wealth" | "love" | "health" | "family" | "mission";
   focus: {
     astrology: [string, string];
     jyotish: [string, string];
@@ -176,6 +176,27 @@ const focusData: FocusRow[] = [
     },
   },
   {
+    key: "family",
+    focus: {
+      astrology: [
+        "The 4th house and Moon read your roots — the family climate that shaped you.",
+        "第四宫与月亮 —— 读你的根系，塑造你的家庭气候。",
+      ],
+      jyotish: [
+        "Chandra (Moon), Matru-karaka and the 4th bhava layer mother, home and inner soil.",
+        "月亮、母亲卡拉卡与第四宫，层层叠出母亲、家园与内在土壤。",
+      ],
+      bazi: [
+        "The year and month pillars record ancestry; 印星 (Resource stars) show how parents nourish or press.",
+        "年柱与月柱记录祖脉；印星揭示父母如何滋养或压制你。",
+      ],
+      ziwei: [
+        "The 父母宫 and 田宅宫 draw parents, home and the shape of family destiny.",
+        "父母宫与田宅宫 —— 描绘父母、家庭与家宅的命运轮廓。",
+      ],
+    },
+  },
+  {
     key: "mission",
     focus: {
       astrology: [
@@ -246,6 +267,7 @@ function FocusComparison() {
     wealth: t.focus_dim_wealth,
     love: t.focus_dim_love,
     health: t.focus_dim_health,
+    family: t.focus_dim_family,
     mission: t.focus_dim_mission,
   };
 

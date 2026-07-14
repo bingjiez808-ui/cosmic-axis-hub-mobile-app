@@ -14,6 +14,7 @@ import { Route as SynthesisRouteImport } from './routes/synthesis'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as RitualRouteImport } from './routes/ritual'
 import { Route as ReportRouteImport } from './routes/report'
+import { Route as CommunityRouteImport } from './routes/community'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 
@@ -42,6 +43,11 @@ const ReportRoute = ReportRouteImport.update({
   path: '/report',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CommunityRoute = CommunityRouteImport.update({
+  id: '/community',
+  path: '/community',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
   path: '/about',
@@ -56,6 +62,7 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/community': typeof CommunityRoute
   '/report': typeof ReportRoute
   '/ritual': typeof RitualRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -65,6 +72,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/community': typeof CommunityRoute
   '/report': typeof ReportRoute
   '/ritual': typeof RitualRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -75,6 +83,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/community': typeof CommunityRoute
   '/report': typeof ReportRoute
   '/ritual': typeof RitualRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -86,6 +95,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/about'
+    | '/community'
     | '/report'
     | '/ritual'
     | '/sitemap.xml'
@@ -95,6 +105,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/about'
+    | '/community'
     | '/report'
     | '/ritual'
     | '/sitemap.xml'
@@ -104,6 +115,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/about'
+    | '/community'
     | '/report'
     | '/ritual'
     | '/sitemap.xml'
@@ -114,6 +126,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  CommunityRoute: typeof CommunityRoute
   ReportRoute: typeof ReportRoute
   RitualRoute: typeof RitualRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
@@ -158,6 +171,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReportRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/community': {
+      id: '/community'
+      path: '/community'
+      fullPath: '/community'
+      preLoaderRoute: typeof CommunityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/about': {
       id: '/about'
       path: '/about'
@@ -178,6 +198,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  CommunityRoute: CommunityRoute,
   ReportRoute: ReportRoute,
   RitualRoute: RitualRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
