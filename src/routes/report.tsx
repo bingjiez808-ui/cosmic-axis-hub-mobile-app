@@ -147,6 +147,8 @@ const dimensions: Dimension[] = [
       },
     ],
   },
+  {
+    key: "wealth",
     title: ["Wealth", "财富格局"],
     headline: [
       "Built over cycles, not seasons",
