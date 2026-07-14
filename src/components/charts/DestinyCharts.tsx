@@ -764,13 +764,13 @@ export function NatalWheel({
       </svg>
 
       {/* center label */}
-      <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
+      <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-4 text-center">
         <motion.div
           key={`${activePlanet}-${activeSign}`}
           initial={{ opacity: 0, y: 4 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35 }}
-          className="max-w-[70%]"
+          className="max-w-[58%]"
         >
           {centerContent}
         </motion.div>
