@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useState, type ReactElement } from "react";
+
 
 /* ─────────────────────────────────────────────────────────────
  * ZodiacWheel — interactive 12-sign wheel with rotating rings.
