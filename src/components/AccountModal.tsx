@@ -55,6 +55,16 @@ export function AccountModal({ open, onClose }: { open: boolean; onClose: () => 
 
             {!account ? (
               <form onSubmit={submit} className="space-y-3">
+                <div className="mb-2 rounded-2xl border border-gold-dust/30 bg-gold-dust/[0.05] p-3">
+                  <p className="text-[10px] uppercase tracking-[0.32em] text-gold-light">
+                    {lang === "zh" ? "首次到来？" : "First time here?"}
+                  </p>
+                  <p className="mt-1 text-xs italic text-stone-warm/70">
+                    {lang === "zh"
+                      ? "输入姓名与邮箱即刻创建账号 —— 你的解读将被安全保存，可随时回来续读。"
+                      : "Enter your name and email to create an account — your readings will be saved so you can return anytime."}
+                  </p>
+                </div>
                 <input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -73,7 +83,7 @@ export function AccountModal({ open, onClose }: { open: boolean; onClose: () => 
                   type="submit"
                   className="w-full rounded-full bg-gold-dust px-6 py-3 text-[10px] uppercase tracking-[0.32em] text-obsidian transition-colors hover:bg-gold-light"
                 >
-                  {t.acc_sign_in}
+                  {lang === "zh" ? "登录 / 创建账号" : "Sign in / Create account"}
                 </button>
                 <p className="text-[10px] uppercase tracking-[0.24em] text-stone-warm/30">
                   {t.acc_privacy}
