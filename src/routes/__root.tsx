@@ -198,6 +198,17 @@ function SiteNav() {
   useEffect(() => {
     let lastY = window.scrollY;
     let hoverTop = false;
+    let idleTimer: ReturnType<typeof setTimeout> | null = null;
+    const IDLE_MS = 3000;
+
+    const resetIdle = () => {
+      if (idleTimer) clearTimeout(idleTimer);
+      idleTimer = setTimeout(() => {
+        // Only hide if we are not near the top and mouse is not near top.
+        if (window.scrollY > 40 && !hoverTop) setVisible(false);
+      }, IDLE_MS);
+    };
+
     const update = () => {
       const y = window.scrollY;
       if (y < 40 || hoverTop) {
@@ -208,6 +219,7 @@ function SiteNav() {
         setVisible(true);
       }
       lastY = y;
+      resetIdle();
     };
     const onMove = (e: MouseEvent) => {
       const nearTop = e.clientY < 80;
@@ -215,12 +227,21 @@ function SiteNav() {
         hoverTop = nearTop;
         if (nearTop) setVisible(true);
       }
+      resetIdle();
     };
+    const onKey = () => resetIdle();
+    const onTouch = () => resetIdle();
     window.addEventListener("scroll", update, { passive: true });
     window.addEventListener("mousemove", onMove);
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("touchstart", onTouch, { passive: true });
+    resetIdle();
     return () => {
       window.removeEventListener("scroll", update);
       window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("touchstart", onTouch);
+      if (idleTimer) clearTimeout(idleTimer);
     };
   }, []);
 
@@ -244,6 +265,9 @@ function SiteNav() {
           </Link>
           <Link to="/about" className="text-stone-warm/70 transition-colors hover:text-gold-dust">
             {t.nav_about}
+          </Link>
+          <Link to="/community" className="text-stone-warm/70 transition-colors hover:text-gold-dust">
+            {t.nav_community}
           </Link>
         </div>
         <button

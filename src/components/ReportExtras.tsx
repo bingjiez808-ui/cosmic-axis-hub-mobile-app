@@ -1494,34 +1494,93 @@ function AIFollowupModal({
   onUpgrade: () => void;
 }) {
   const { t } = useLang();
+  const { account, saved } = useAccount();
   const isOracle = plan === "oracle";
   const [input, setInput] = useState("");
   const [thread, setThread] = useState<{ role: "user" | "oracle"; text: string }[]>([]);
   const [thinking, setThinking] = useState(false);
 
-  const prompts: [string, string][] = [
+  // Enlarged prompt pool — random subset with a "refresh" button.
+  const PROMPT_POOL: [string, string][] = [
     ["我这两年适合创业还是继续在大公司积累？请结合我的命盘。", "Should I start something of my own in the next two years, or keep compounding inside a large company — based on my chart?"],
     ["我的感情模式里最需要注意的盲区是什么？如何避免重复？", "What is the biggest blind spot in my relationship pattern, and how do I stop it from repeating?"],
     ["未来12个月里最值得抓住的时间窗口具体是哪些？", "Which specific time windows in the next 12 months are worth prioritizing?"],
     ["我的财富最容易积累的方式是被动收入还是主动收入？", "Given my chart, is my wealth more likely to compound through active or passive income?"],
-    ["我和父母 / 伴侣的关系里，命盘想让我先修复什么？", "In my relationship with my parents / partner, what does the chart want me to repair first?"],
-    ["如果我现在感觉停滞，应该向内修 (身体/心理) 还是向外动 (事业/关系)？", "If I feel stuck right now, should I turn inward (body/mind) or outward (career/relationships)?"],
+    ["我和父母的关系里，命盘想让我先修复什么？", "In my relationship with my parents, what does the chart want me to repair first?"],
+    ["如果我现在感觉停滞，应该向内修还是向外动？", "If I feel stuck right now, should I turn inward or outward?"],
+    ["我此生的核心使命方向是什么？如何在下一步落地？", "What is the core mission of this life — and how do I take the next step?"],
+    ["我最适合的合作者是什么样的性格与命盘组合？", "What kind of temperament and chart makes the best collaborator for me?"],
+    ["我的健康在未来两年最需要照看的是哪一部分？", "Which part of my health most needs care over the next two years?"],
+    ["我天生最容易低估自己的哪一项天赋？", "Which of my innate gifts am I most likely to underestimate?"],
+    ["婚姻或长期关系最可能在哪个年龄段稳定下来？", "Around which age is a long-term partnership most likely to settle?"],
+    ["有没有一个我一直在回避、但命盘反复提醒的功课？", "Is there a lesson I keep avoiding that the chart keeps circling back to?"],
+    ["我做重大决定时，应该更信任直觉还是分析？", "When making big decisions, should I trust intuition or analysis more?"],
+    ["我的原生家庭对成年后的哪一部分影响最深？", "Which part of my adult life is most shaped by my family of origin?"],
+    ["未来三年最不该错过的一个「转弯」是哪个？", "Which single pivot in the next three years should I not miss?"],
   ];
   const li = lang === "zh" ? 0 : 1;
 
-  const send = (text: string) => {
+  // Refreshable random 4-prompt sample.
+  const [promptSeed, setPromptSeed] = useState(0);
+  const prompts = useMemo(() => {
+    const arr = [...PROMPT_POOL];
+    // Fisher–Yates with a lightweight seed so "refresh" gives a new set.
+    let s = (Date.now() + promptSeed * 9301) >>> 0;
+    const rnd = () => {
+      s = (s * 1664525 + 1013904223) >>> 0;
+      return s / 0x100000000;
+    };
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(rnd() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr.slice(0, 4);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [promptSeed, open]);
+
+  // Reset conversation when re-opened.
+  useEffect(() => {
+    if (open) {
+      setThread([]);
+      setInput("");
+    }
+  }, [open]);
+
+  const reading = saved[0];
+  const buildChartSnapshot = () => {
+    if (!reading) return {};
+    const seed = `${reading.name || ""}|${reading.date || ""}|${reading.time || ""}|${reading.place || ""}`;
+    return {
+      name: reading.name || account?.name,
+      astrology: `Birth ${reading.date ?? "?"} ${reading.time ?? ""} @ ${reading.place ?? "?"}. Seed=${seed}`,
+      jyotish: "Sidereal Moon-anchored — Vimśottarī Dashā keyed to Moon's Nakshatra.",
+      bazi: `Four pillars derived from ${reading.date ?? "?"} ${reading.time ?? ""}; year pillar per 立春.`,
+      ziwei: "Palace of Self derived from lunar month + hour branch (approximation).",
+    };
+  };
+
+  const send = async (text: string) => {
     const q = text.trim();
     if (!q || thinking) return;
     setThread((tr) => [...tr, { role: "user", text: q }]);
     setInput("");
     setThinking(true);
-    setTimeout(() => {
-      const reply = lang === "zh"
-        ? `图书馆收到你的问题：「${q}」\n\n根据你的命盘：太阳落火象、日主为阳火、大运正在转 —— 关于此题的核心线索有三：\n1) 你的动机是「被看到」，不是「被安置」，因此稳定路径会让你隐性抑郁；\n2) 未来 12 个月木星过境提供一次「被认真提议」的机会，但需要你先说清「不做什么」；\n3) 八字财星虽动，宜以正财为主、偏财为辅 —— 一件长期作品胜过三次短跑。\n\n下一步建议：写下三条你不愿妥协的边界，再回来追问。`
-        : `The library has received your question: "${q}".\n\nReading from your chart — Sun in Fire, Yang-Fire Day Master, current 大运 turning — three core threads:\n1) Your engine is being *seen*, not being *placed*; stable roles quietly depress you.\n2) In the next 12 months a Jupiter transit offers one "serious invitation" — but only if you can articulate what you will *not* do.\n3) Your BaZi wealth stars are active; favor 正财 with a touch of 偏财 — one long work beats three sprints.\n\nNext step: write down three boundaries you will not compromise, then come back and ask again.`;
-      setThread((tr) => [...tr, { role: "oracle", text: reply }]);
+    try {
+      const { askOracle } = await import("@/lib/oracle.functions");
+      const res = await askOracle({
+        data: { question: q, lang, chart: buildChartSnapshot() },
+      });
+      setThread((tr) => [...tr, { role: "oracle", text: res.text || "…" }]);
+    } catch (err) {
+      console.error("Oracle call failed", err);
+      const fallback =
+        lang === "zh"
+          ? `图书馆的信号今晚不太稳定 —— 请稍后再问。\n\n（若持续发生，可能是本次配额已用尽或网络中断。）`
+          : `The library's signal is unsteady tonight — please try again in a moment.\n\n(If this persists, the quota may be exhausted or the network broken.)`;
+      setThread((tr) => [...tr, { role: "oracle", text: fallback }]);
+    } finally {
       setThinking(false);
-    }, 900);
+    }
   };
 
   // Typewriter reveal for oracle messages so the reply feels like handwriting.
@@ -1535,10 +1594,10 @@ function AIFollowupModal({
     let i = reveal[idx] ?? 0;
     const total = m.text.length;
     const id = setInterval(() => {
-      i = Math.min(total, i + 3);
+      i = Math.min(total, i + 4);
       setReveal((r) => ({ ...r, [idx]: i }));
       if (i >= total) clearInterval(id);
-    }, 22);
+    }, 20);
     return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [thread.length]);
@@ -1697,9 +1756,18 @@ function AIFollowupModal({
                   transition={{ delay: 0.5 }}
                   className="rounded-2xl border border-white/10 bg-white/[0.02] p-4"
                 >
-                  <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
-                    {lang === "zh" ? "从卷轴中挑一题 · 点击即问" : "Pick a scroll · tap to ask"}
-                  </p>
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+                      {lang === "zh" ? "从卷轴中挑一题 · 点击即问" : "Pick a scroll · tap to ask"}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setPromptSeed((s) => s + 1)}
+                      className="rounded-full border border-gold-dust/30 px-3 py-1 text-[10px] uppercase tracking-[0.28em] text-gold-dust/80 transition hover:border-gold-dust hover:bg-gold-dust/10"
+                    >
+                      {lang === "zh" ? "换一批 ↻" : "Refresh ↻"}
+                    </button>
+                  </div>
                   <div className="flex flex-col gap-2">
                     {prompts.map((p, i) => (
                       <motion.button
