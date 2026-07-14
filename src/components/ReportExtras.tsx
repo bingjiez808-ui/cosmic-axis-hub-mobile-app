@@ -744,12 +744,18 @@ export function SaveReadingBar({
 ═══════════════════════════════════════════ */
 
 type Plan = "free" | "sage" | "oracle";
+type PayMethod = "wechat" | "alipay" | "visa";
 
 export function MembershipSection({ birthISO }: { birthISO?: string } = {}) {
   const { lang, t } = useLang();
   const li = lang === "zh" ? 1 : 0;
+  const { account } = useAccount();
   const [plan, setPlan] = useState<Plan>("free");
   const [chatOpen, setChatOpen] = useState(false);
+  const [upgradeTarget, setUpgradeTarget] = useState<Plan | null>(null);
+  const [signInPrompt, setSignInPrompt] = useState(false);
+  // Treat the current session as "new" until the user upgrades once — grants the first-time discount.
+  const [firstTime, setFirstTime] = useState(true);
 
   const plans = useMemo(
     () => [
@@ -763,23 +769,41 @@ export function MembershipSection({ birthISO }: { birthISO?: string } = {}) {
       {
         id: "sage" as const,
         name: t.mem_sage,
-        desc: t.mem_sage_desc,
+        desc:
+          lang === "zh"
+            ? "完整 PDF 报告 · 生命时间轴精解 · 合盘关系分析（贤者专属）。"
+            : "Full PDF · life-timeline analysis · Synastry relationship reading (Sage exclusive).",
         price: [`$9 / mo`, `¥68 / 月`][li],
         highlight: true,
       },
       {
         id: "oracle" as const,
         name: t.mem_oracle,
-        desc: t.mem_oracle_desc,
+        desc:
+          lang === "zh"
+            ? "包含贤者所有权益 · 无限 AI 追问 · 近 90 天状态与时间节点分析（神谕者专属）。"
+            : "Everything in Sage · unlimited AI follow-up · 90-day state & window analysis (Oracle exclusive).",
         price: [`$24 / mo`, `¥168 / 月`][li],
         highlight: false,
       },
     ],
-    [t, li],
+    [t, li, lang],
   );
 
   const exportPdf = () => {
     if (typeof window !== "undefined") window.print();
+  };
+
+  const handleUpgradeClick = (target: Plan) => {
+    if (!account) {
+      setSignInPrompt(true);
+      return;
+    }
+    if (target === "free") {
+      setPlan("free");
+      return;
+    }
+    setUpgradeTarget(target);
   };
 
   return (
@@ -788,9 +812,45 @@ export function MembershipSection({ birthISO }: { birthISO?: string } = {}) {
         <p className="mb-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
           {t.mem_kicker}
         </p>
-        <h2 className="mb-10 font-serif text-2xl italic text-stone-warm md:text-3xl">
+        <h2 className="mb-6 font-serif text-2xl italic text-stone-warm md:text-3xl">
           {t.mem_title}
         </h2>
+
+        {/* Login gate */}
+        {!account && (
+          <div className="mb-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-gold-dust/40 bg-gold-dust/[0.06] p-5">
+            <div>
+              <p className="mb-1 text-[10px] uppercase tracking-[0.32em] text-gold-light">
+                {lang === "zh" ? "请先登录以升级" : "Sign in to upgrade"}
+              </p>
+              <p className="text-sm text-stone-warm/70">
+                {lang === "zh"
+                  ? "会员权益需要账户来承载 —— 登录或创建账号后即可选择支付方式。首次升级享专属优惠。"
+                  : "Membership requires an account. Sign in or create one to pick a payment method — first-time upgrades get an exclusive discount."}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSignInPrompt(true)}
+              className="rounded-full bg-gold-dust px-5 py-2.5 text-[10px] uppercase tracking-[0.32em] text-obsidian hover:bg-gold-light"
+            >
+              {lang === "zh" ? "登录 / 创建账号" : "Sign in / Create"}
+            </button>
+          </div>
+        )}
+
+        {account && firstTime && (
+          <div className="mb-8 flex flex-wrap items-center gap-3 rounded-2xl border border-nebula-purple/40 bg-nebula-purple/[0.10] px-5 py-3">
+            <span className="rounded-full bg-nebula-purple/40 px-3 py-0.5 text-[9px] uppercase tracking-[0.32em] text-stone-warm">
+              {lang === "zh" ? "首次优惠" : "First-time offer"}
+            </span>
+            <p className="text-sm text-stone-warm/80">
+              {lang === "zh"
+                ? "新账户首次升级享 -30% 折扣 —— 结算时自动应用。"
+                : "New accounts get 30% off their first upgrade — applied automatically at checkout."}
+            </p>
+          </div>
+        )}
 
         <div className="mb-10 grid grid-cols-1 gap-4 md:grid-cols-3">
           {plans.map((p) => {
@@ -818,7 +878,7 @@ export function MembershipSection({ birthISO }: { birthISO?: string } = {}) {
                 </p>
                 <button
                   type="button"
-                  onClick={() => setPlan(p.id)}
+                  onClick={() => handleUpgradeClick(p.id)}
                   disabled={isCurrent}
                   className={`rounded-full px-5 py-2.5 text-[10px] uppercase tracking-[0.28em] transition-colors ${
                     isCurrent
@@ -835,10 +895,8 @@ export function MembershipSection({ birthISO }: { birthISO?: string } = {}) {
           })}
         </div>
 
-        {/* Oracle-exclusive teaser (visible on free / sage) or full detail (oracle) */}
-        {plan !== "oracle" ? (
-          <OracleTeaser lang={lang} li={li} onUpgrade={() => setPlan("oracle")} />
-        ) : null}
+        {/* Teaser cards — hidden fully unlocked tier features under blur for lower tiers */}
+        <TierTeasers lang={lang} li={li} plan={plan} onUpgrade={handleUpgradeClick} />
 
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -881,23 +939,360 @@ export function MembershipSection({ birthISO }: { birthISO?: string } = {}) {
         </div>
       </div>
 
-      {/* Oracle-exclusive detailed analyses — only for the top tier */}
-      {plan === "oracle" && (
-        <div className="mt-10 space-y-0">
+      {/* Sage-exclusive: Synastry relationship reading */}
+      {(plan === "sage" || plan === "oracle") && (
+        <div className="mt-10">
           <div className="mx-auto mb-6 flex max-w-5xl items-center gap-3 px-6 md:px-12">
             <span className="h-px flex-1 bg-gold-dust/30" />
             <p className="text-[10px] uppercase tracking-[0.42em] text-gold-dust">
-              {lang === "zh" ? "神谕者专属 · 详细分析" : "Oracle exclusive · Detailed analysis"}
+              {lang === "zh" ? "贤者专属 · 合盘分析" : "Sage exclusive · Synastry"}
             </p>
             <span className="h-px flex-1 bg-gold-dust/30" />
           </div>
           <SynastryPreview />
+        </div>
+      )}
+
+      {/* Oracle-exclusive: 90-day windows */}
+      {plan === "oracle" && (
+        <div className="mt-4">
+          <div className="mx-auto mb-6 flex max-w-5xl items-center gap-3 px-6 md:px-12">
+            <span className="h-px flex-1 bg-gold-dust/30" />
+            <p className="text-[10px] uppercase tracking-[0.42em] text-gold-dust">
+              {lang === "zh" ? "神谕者专属 · 近 90 天状态分析" : "Oracle exclusive · 90-day analysis"}
+            </p>
+            <span className="h-px flex-1 bg-gold-dust/30" />
+          </div>
           <RecentWindows birthISO={birthISO} />
         </div>
       )}
 
       <AIFollowupModal open={chatOpen} onClose={() => setChatOpen(false)} lang={lang} />
+      <SignInPromptModal
+        open={signInPrompt}
+        onClose={() => setSignInPrompt(false)}
+        lang={lang}
+      />
+      <UpgradeCheckoutModal
+        target={upgradeTarget}
+        firstTime={firstTime}
+        lang={lang}
+        onClose={() => setUpgradeTarget(null)}
+        onConfirm={() => {
+          if (upgradeTarget) {
+            setPlan(upgradeTarget);
+            setFirstTime(false);
+          }
+          setUpgradeTarget(null);
+        }}
+      />
     </section>
+  );
+}
+
+/* Tier teasers — blurred previews of locked perks */
+function TierTeasers({
+  lang,
+  li,
+  plan,
+  onUpgrade,
+}: {
+  lang: Lang;
+  li: 0 | 1;
+  plan: Plan;
+  onUpgrade: (target: Plan) => void;
+}) {
+  const items: {
+    target: Plan;
+    unlocked: boolean;
+    kicker: [string, string];
+    title: [string, string];
+    bullets: [string, string][];
+  }[] = [
+    {
+      target: "sage",
+      unlocked: plan === "sage" || plan === "oracle",
+      kicker: ["Sage Synastry · Relationship", "贤者合盘 · 关系分析"],
+      title: ["Two charts, one honest reading", "两张命盘的诚实对话"],
+      bullets: [
+        ["Five axes of resonance — scored, not romanticized.", "五维契合度 —— 有分数，不美化。"],
+        ["Where you harmonize; where you generate noise.", "何处和声，何处噪音。"],
+        ["A verdict the chart is willing to defend.", "一个命盘愿意为之背书的结论。"],
+      ],
+    },
+    {
+      target: "oracle",
+      unlocked: plan === "oracle",
+      kicker: ["Oracle Now · 90-day windows", "神谕者近况 · 90 天窗口"],
+      title: ["The next 90 days, in four windows", "接下来 90 天，四个窗口"],
+      bullets: [
+        ["A signal week is opening.", "一个「信号周」正在打开。"],
+        ["A wealth channel wants a message you've been avoiding.", "一条财路，在等你迟迟未发的消息。"],
+        ["A postponed conversation becomes unavoidable.", "一段被拖延的对话，将无法回避。"],
+      ],
+    },
+  ];
+
+  return (
+    <div className="mb-10 grid grid-cols-1 gap-4 md:grid-cols-2">
+      {items.map((it) => (
+        <div
+          key={it.kicker[0]}
+          className="relative overflow-hidden rounded-2xl border border-gold-dust/20 bg-gradient-to-b from-white/[0.04] to-white/[0.01] p-6"
+        >
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+              {it.kicker[li]}
+            </p>
+            <span className="rounded-full border border-gold-dust/40 px-2 py-0.5 text-[9px] uppercase tracking-[0.28em] text-gold-light">
+              {it.target === "sage" ? (lang === "zh" ? "贤者" : "Sage") : lang === "zh" ? "神谕者" : "Oracle"}
+            </span>
+          </div>
+          <p className="mb-4 font-serif text-lg italic text-stone-warm">{it.title[li]}</p>
+          <ul className="mb-5 space-y-2 text-sm text-stone-warm/70">
+            {it.bullets.map((b) => (
+              <li key={b[0]} className="flex gap-2">
+                <span className="mt-1 size-1.5 shrink-0 rounded-full bg-gold-dust/70" />
+                <span className="italic">{b[li]}</span>
+              </li>
+            ))}
+          </ul>
+          {!it.unlocked && (
+            <>
+              <div className="relative mb-4 h-16 overflow-hidden rounded-xl border border-white/5 bg-white/[0.02]">
+                <div className="absolute inset-0 space-y-2 p-3 blur-[6px] select-none">
+                  <div className="h-1.5 w-3/4 rounded-full bg-gradient-to-r from-gold-dust to-nebula-purple" />
+                  <div className="h-1.5 w-2/3 rounded-full bg-gradient-to-r from-gold-dust to-nebula-purple" />
+                  <div className="h-1.5 w-4/5 rounded-full bg-gradient-to-r from-gold-dust to-nebula-purple" />
+                  <div className="h-1.5 w-1/2 rounded-full bg-gradient-to-r from-gold-dust to-nebula-purple" />
+                </div>
+                <div className="absolute inset-0 grid place-items-center bg-obsidian/40">
+                  <span className="text-[10px] uppercase tracking-[0.32em] text-gold-light">
+                    {lang === "zh"
+                      ? `⌛ ${it.target === "sage" ? "贤者" : "神谕者"}可见细节`
+                      : `⌛ Details on ${it.target === "sage" ? "Sage" : "Oracle"}`}
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => onUpgrade(it.target)}
+                className="w-full rounded-full border border-gold-dust/40 px-5 py-2.5 text-[10px] uppercase tracking-[0.32em] text-gold-dust transition-colors hover:bg-gold-dust hover:text-obsidian"
+              >
+                {lang === "zh"
+                  ? `升级至${it.target === "sage" ? "贤者" : "神谕者"}，查看详细分析`
+                  : `Upgrade to ${it.target === "sage" ? "Sage" : "Oracle"} for the full reading`}
+              </button>
+            </>
+          )}
+          {it.unlocked && (
+            <p className="text-[10px] uppercase tracking-[0.32em] text-gold-light">
+              {lang === "zh" ? "✓ 已解锁 —— 详见下方" : "✓ Unlocked — see below"}
+            </p>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* Sign-in prompt (shown when a not-logged-in user clicks Upgrade) */
+function SignInPromptModal({
+  open,
+  onClose,
+  lang,
+}: {
+  open: boolean;
+  onClose: () => void;
+  lang: Lang;
+}) {
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-obsidian/70 backdrop-blur-md p-4"
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 30, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 30, scale: 0.98 }}
+            transition={{ duration: 0.35 }}
+            className="glass-card w-full max-w-md rounded-3xl p-8 text-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="mb-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust">
+              {lang === "zh" ? "需要登录" : "Sign in required"}
+            </p>
+            <h3 className="mb-3 font-serif text-2xl italic text-stone-warm">
+              {lang === "zh" ? "登录后即可升级" : "Sign in to upgrade"}
+            </h3>
+            <p className="mb-6 text-sm text-stone-warm/60">
+              {lang === "zh"
+                ? "请先关闭此窗口并点击右上角「登录 / 创建账号」。首次升级享 -30% 优惠。"
+                : "Close this and use the Sign in / Create button at the top-right. First-time upgrades get 30% off."}
+            </p>
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-full bg-gold-dust px-6 py-3 text-[10px] uppercase tracking-[0.32em] text-obsidian hover:bg-gold-light"
+            >
+              {lang === "zh" ? "知道了" : "Got it"}
+            </button>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+/* Upgrade checkout — pick a payment method, show first-time discount */
+function UpgradeCheckoutModal({
+  target,
+  firstTime,
+  lang,
+  onClose,
+  onConfirm,
+}: {
+  target: Plan | null;
+  firstTime: boolean;
+  lang: Lang;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  const [method, setMethod] = useState<PayMethod>("wechat");
+  const li = lang === "zh" ? 1 : 0;
+
+  const methods: { id: PayMethod; label: [string, string]; hint: [string, string]; emoji: string }[] = [
+    {
+      id: "wechat",
+      label: ["WeChat Pay", "微信支付"],
+      hint: ["扫码支付 / Scan & pay", "扫码支付"],
+      emoji: "💬",
+    },
+    {
+      id: "alipay",
+      label: ["Alipay", "支付宝支付"],
+      hint: ["Alipay balance / 花呗", "余额 / 花呗"],
+      emoji: "🅰",
+    },
+    {
+      id: "visa",
+      label: ["Visa / Mastercard", "Visa 信用卡"],
+      hint: ["International card", "国际信用卡"],
+      emoji: "💳",
+    },
+  ];
+
+  if (!target) return null;
+
+  const basePrice = target === "sage" ? 68 : 168;
+  const discounted = firstTime ? Math.round(basePrice * 0.7) : basePrice;
+
+  return (
+    <AnimatePresence>
+      {target && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-obsidian/70 backdrop-blur-md p-4"
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 30, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 30, scale: 0.98 }}
+            transition={{ duration: 0.35 }}
+            className="glass-card relative w-full max-w-lg rounded-3xl p-8"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={onClose}
+              className="absolute right-4 top-4 text-[10px] uppercase tracking-[0.28em] text-stone-warm/50 hover:text-gold-dust"
+            >
+              {lang === "zh" ? "关闭" : "Close"}
+            </button>
+
+            <p className="mb-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust">
+              {lang === "zh" ? "升级至" : "Upgrade to"} {target === "sage" ? (lang === "zh" ? "贤者" : "Sage") : (lang === "zh" ? "神谕者" : "Oracle")}
+            </p>
+            <h3 className="mb-6 font-serif text-2xl italic text-stone-warm">
+              {lang === "zh" ? "选择支付方式" : "Choose a payment method"}
+            </h3>
+
+            <div className="mb-6 flex items-baseline gap-3">
+              <span className="font-serif text-4xl italic text-gold-light">
+                ¥{discounted}
+              </span>
+              {firstTime && (
+                <>
+                  <span className="text-sm text-stone-warm/40 line-through">¥{basePrice}</span>
+                  <span className="rounded-full bg-nebula-purple/40 px-2 py-0.5 text-[9px] uppercase tracking-[0.28em] text-stone-warm">
+                    {lang === "zh" ? "首次 -30%" : "-30% first-time"}
+                  </span>
+                </>
+              )}
+              <span className="text-xs text-stone-warm/50">/ {lang === "zh" ? "月" : "mo"}</span>
+            </div>
+
+            <div className="mb-6 space-y-2">
+              {methods.map((m) => {
+                const active = method === m.id;
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => setMethod(m.id)}
+                    className={`flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition-colors ${
+                      active
+                        ? "border-gold-dust/60 bg-gold-dust/10"
+                        : "border-white/10 bg-white/[0.02] hover:border-gold-dust/30"
+                    }`}
+                  >
+                    <span className="grid size-10 place-items-center rounded-full border border-white/10 bg-white/[0.03] text-lg">
+                      {m.emoji}
+                    </span>
+                    <div className="flex-1">
+                      <p className="font-serif text-base text-stone-warm">{m.label[li]}</p>
+                      <p className="text-[11px] uppercase tracking-[0.24em] text-stone-warm/50">
+                        {m.hint[li]}
+                      </p>
+                    </div>
+                    <span
+                      className={`grid size-6 place-items-center rounded-full border transition-colors ${
+                        active
+                          ? "border-gold-dust bg-gold-dust text-obsidian"
+                          : "border-white/20 text-transparent"
+                      }`}
+                    >
+                      ✓
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <button
+              type="button"
+              onClick={onConfirm}
+              className="w-full rounded-full bg-gold-dust px-6 py-3 text-[10px] uppercase tracking-[0.32em] text-obsidian hover:bg-gold-light"
+            >
+              {lang === "zh" ? `确认支付 · ¥${discounted}` : `Confirm · ¥${discounted}`}
+            </button>
+            <p className="mt-3 text-center text-[10px] uppercase tracking-[0.24em] text-stone-warm/30">
+              {lang === "zh"
+                ? "这是演示结算 —— 真实支付网关将在正式版接入。"
+                : "Demo checkout — real payment gateway to be wired in production."}
+            </p>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 
