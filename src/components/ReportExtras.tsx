@@ -1362,12 +1362,46 @@ function AIFollowupModal({
   open,
   onClose,
   lang,
+  plan,
+  onUpgrade,
 }: {
   open: boolean;
   onClose: () => void;
   lang: Lang;
+  plan: "free" | "sage" | "oracle";
+  onUpgrade: () => void;
 }) {
   const { t } = useLang();
+  const isOracle = plan === "oracle";
+  const [input, setInput] = useState("");
+  const [thread, setThread] = useState<{ role: "user" | "oracle"; text: string }[]>([]);
+  const [thinking, setThinking] = useState(false);
+
+  const prompts: [string, string][] = [
+    ["我这两年适合创业还是继续在大公司积累？请结合我的命盘。", "Should I start something of my own in the next two years, or keep compounding inside a large company — based on my chart?"],
+    ["我的感情模式里最需要注意的盲区是什么？如何避免重复？", "What is the biggest blind spot in my relationship pattern, and how do I stop it from repeating?"],
+    ["未来12个月里最值得抓住的时间窗口具体是哪些？", "Which specific time windows in the next 12 months are worth prioritizing?"],
+    ["我的财富最容易积累的方式是被动收入还是主动收入？", "Given my chart, is my wealth more likely to compound through active or passive income?"],
+    ["我和父母 / 伴侣的关系里，命盘想让我先修复什么？", "In my relationship with my parents / partner, what does the chart want me to repair first?"],
+    ["如果我现在感觉停滞，应该向内修 (身体/心理) 还是向外动 (事业/关系)？", "If I feel stuck right now, should I turn inward (body/mind) or outward (career/relationships)?"],
+  ];
+  const li = lang === "zh" ? 0 : 1;
+
+  const send = (text: string) => {
+    const q = text.trim();
+    if (!q || thinking) return;
+    setThread((tr) => [...tr, { role: "user", text: q }]);
+    setInput("");
+    setThinking(true);
+    setTimeout(() => {
+      const reply = lang === "zh"
+        ? `图书馆收到你的问题：「${q}」\n\n根据你的命盘：太阳落火象、日主为阳火、大运正在转 —— 关于此题的核心线索有三：\n1) 你的动机是「被看到」，不是「被安置」，因此稳定路径会让你隐性抑郁；\n2) 未来 12 个月木星过境提供一次「被认真提议」的机会，但需要你先说清「不做什么」；\n3) 八字财星虽动，宜以正财为主、偏财为辅 —— 一件长期作品胜过三次短跑。\n\n下一步建议：写下三条你不愿妥协的边界，再回来追问。`
+        : `The library has received your question: "${q}".\n\nReading from your chart — Sun in Fire, Yang-Fire Day Master, current 大运 turning — three core threads:\n1) Your engine is being *seen*, not being *placed*; stable roles quietly depress you.\n2) In the next 12 months a Jupiter transit offers one "serious invitation" — but only if you can articulate what you will *not* do.\n3) Your BaZi wealth stars are active; favor 正财 with a touch of 偏财 — one long work beats three sprints.\n\nNext step: write down three boundaries you will not compromise, then come back and ask again.`;
+      setThread((tr) => [...tr, { role: "oracle", text: reply }]);
+      setThinking(false);
+    }, 900);
+  };
+
   return (
     <AnimatePresence>
       {open && (
@@ -1383,7 +1417,7 @@ function AIFollowupModal({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 40, scale: 0.98 }}
             transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1] }}
-            className="glass-card relative m-4 w-full max-w-lg rounded-3xl p-8"
+            className="glass-card relative m-4 flex max-h-[90vh] w-full max-w-2xl flex-col rounded-3xl p-6 md:p-8"
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -1396,49 +1430,103 @@ function AIFollowupModal({
             <p className="mb-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
               {t.mem_ai_followup}
             </p>
-            <h3 className="mb-6 font-serif text-2xl italic text-stone-warm">
+            <h3 className="mb-4 font-serif text-2xl italic text-stone-warm">
               {lang === "zh" ? "开启一场私密对话" : "Open a private conversation"}
             </h3>
 
-            <div className="mb-6 space-y-3">
+            <div className="mb-4 flex-1 space-y-3 overflow-y-auto pr-1">
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-stone-warm/70">
                 {lang === "zh"
                   ? "「你的太阳落火象、日主为阳火 —— 想追问哪一维度？」"
-                  : "“Your Sun sits in Fire and your Day Master is Yang Fire — which dimension would you like to explore?”"}
+                  : "\u201CYour Sun sits in Fire and your Day Master is Yang Fire — which dimension would you like to explore?\u201D"}
               </div>
+
+              {thread.length === 0 && (
+                <div className="rounded-2xl border border-gold-dust/20 bg-gold-dust/[0.04] p-4">
+                  <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/80">
+                    {lang === "zh" ? "参考提问 · 可点击直接发送" : "Suggested prompts · tap to send"}
+                  </p>
+                  <div className="flex flex-col gap-2">
+                    {prompts.map((p) => (
+                      <button
+                        key={p[0]}
+                        type="button"
+                        disabled={!isOracle}
+                        onClick={() => send(p[li])}
+                        className="rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2 text-left text-sm text-stone-warm/80 transition hover:border-gold-dust/40 hover:bg-gold-dust/[0.06] disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {p[li]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {thread.map((m, i) => (
+                <div
+                  key={i}
+                  className={`rounded-2xl border p-4 text-sm leading-relaxed ${
+                    m.role === "user"
+                      ? "ml-8 border-gold-dust/30 bg-gold-dust/[0.08] text-stone-warm/90"
+                      : "mr-8 border-white/10 bg-white/[0.03] text-stone-warm/80"
+                  }`}
+                >
+                  <p className="mb-1 text-[9px] uppercase tracking-[0.32em] text-gold-dust/70">
+                    {m.role === "user"
+                      ? lang === "zh" ? "你" : "You"
+                      : lang === "zh" ? "神谕图书馆" : "The Library"}
+                  </p>
+                  <p className="whitespace-pre-line">{m.text}</p>
+                </div>
+              ))}
+              {thinking && (
+                <p className="text-[11px] uppercase tracking-[0.32em] text-gold-dust/60">
+                  {lang === "zh" ? "图书馆正在翻页…" : "The library is turning pages…"}
+                </p>
+              )}
             </div>
 
-            <div className="mb-6 flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.02] px-4 py-2">
+            <form
+              onSubmit={(e) => { e.preventDefault(); if (isOracle) send(input); }}
+              className="mb-3 flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.02] px-4 py-2"
+            >
               <input
-                disabled
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                disabled={!isOracle}
                 placeholder={t.mem_ai_placeholder}
-                className="flex-1 bg-transparent text-sm text-stone-warm/70 outline-none placeholder:text-stone-warm/30"
+                className="flex-1 bg-transparent text-sm text-stone-warm outline-none placeholder:text-stone-warm/30 disabled:cursor-not-allowed"
               />
               <button
-                disabled
-                className="rounded-full bg-gold-dust/40 px-4 py-1.5 text-[10px] uppercase tracking-[0.28em] text-obsidian/50"
+                type="submit"
+                disabled={!isOracle || !input.trim() || thinking}
+                className="rounded-full bg-gold-dust px-4 py-1.5 text-[10px] uppercase tracking-[0.28em] text-obsidian transition-colors hover:bg-gold-light disabled:bg-gold-dust/40 disabled:text-obsidian/50"
               >
                 {t.mem_ai_send}
               </button>
-            </div>
+            </form>
 
-            <div className="rounded-2xl border border-gold-dust/30 bg-gold-dust/[0.06] p-5">
-              <p className="mb-4 font-serif text-base italic leading-relaxed text-stone-warm/85">
-                {t.mem_ai_upsell}
-              </p>
-              <button
-                type="button"
-                className="w-full rounded-full bg-gold-dust px-6 py-3 text-[10px] uppercase tracking-[0.32em] text-obsidian transition-colors hover:bg-gold-light"
-              >
-                {t.mem_upgrade} → {t.mem_oracle}
-              </button>
-            </div>
+            {!isOracle && (
+              <div className="rounded-2xl border border-gold-dust/30 bg-gold-dust/[0.06] p-5">
+                <p className="mb-4 font-serif text-base italic leading-relaxed text-stone-warm/85">
+                  {t.mem_ai_upsell}
+                </p>
+                <button
+                  type="button"
+                  onClick={onUpgrade}
+                  className="w-full rounded-full bg-gold-dust px-6 py-3 text-[10px] uppercase tracking-[0.32em] text-obsidian transition-colors hover:bg-gold-light"
+                >
+                  {t.mem_upgrade} → {t.mem_oracle}
+                </button>
+              </div>
+            )}
           </motion.div>
         </motion.div>
       )}
     </AnimatePresence>
   );
 }
+
 
 /* ═══════════════════════════════════════════
    Synastry preview — 合盘 (Oracle member perk)
