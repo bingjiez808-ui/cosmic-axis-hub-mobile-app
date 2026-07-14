@@ -538,6 +538,8 @@ function LandingPage() {
           </span>
         </Link>
       </section>
+
+      <TraditionModal id={openTradition} onClose={() => setOpenTradition(null)} />
     </>
   );
 }
