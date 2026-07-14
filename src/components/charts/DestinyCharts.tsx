@@ -419,10 +419,14 @@ export function NatalWheel({
   lang = "en",
   seed = "",
   size = 420,
+  selectedPlanet = null,
+  onSelectPlanet,
 }: {
   lang?: "en" | "zh";
   seed?: string;
   size?: number;
+  selectedPlanet?: number | null;
+  onSelectPlanet?: (idx: number | null) => void;
 }) {
   const [hoverSign, setHoverSign] = useState<number | null>(null);
   const [hoverPlanet, setHoverPlanet] = useState<number | null>(null);
@@ -443,7 +447,7 @@ export function NatalWheel({
     bySign[s].push(i);
   });
 
-  const activePlanet = hoverPlanet;
+  const activePlanet = hoverPlanet ?? selectedPlanet;
   const activeSign =
     hoverSign ?? (activePlanet != null ? signs[activePlanet] : null);
 
