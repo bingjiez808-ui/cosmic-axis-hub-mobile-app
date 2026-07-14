@@ -95,7 +95,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   const removeReading = (id: string) => persist(saved.filter((s) => s.id !== id));
 
   return (
-    <AccountCtx.Provider value={{ account, signIn, signOut, saved, saveReading, removeReading }}>
+    <AccountCtx.Provider value={{ account, signIn, signOut, setPlan, saved, saveReading, removeReading }}>
       {children}
     </AccountCtx.Provider>
   );
