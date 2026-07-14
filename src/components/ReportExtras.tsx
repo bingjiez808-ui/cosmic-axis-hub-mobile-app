@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLang, type Lang } from "@/lib/i18n";
+import { useAccount } from "@/lib/account";
 
 /* ═══════════════════════════════════════════
    Life Timeline — 大运 / Dashā decades
@@ -14,78 +15,38 @@ type Decade = {
 };
 
 const DECADES: Decade[] = [
-  {
-    from: 0,
-    to: 10,
-    theme: ["Root", "扎根"],
-    detail: [
-      "Family shapes the temperament — the chart lays its foundation quietly.",
-      "家庭塑造性情 —— 命盘在此静静打地基。",
-    ],
-  },
-  {
-    from: 10,
-    to: 20,
-    theme: ["Sprout", "萌发"],
-    detail: [
-      "Mind opens, first attractions and ambitions surface.",
-      "心智开启，第一批渴望与野心浮现。",
-    ],
-  },
-  {
-    from: 20,
-    to: 30,
-    theme: ["Search", "求索"],
-    detail: [
-      "Career takes its first real shape; relationships teach more than they last.",
-      "事业初具雏形；感情多在教你，而非陪你走远。",
-    ],
-  },
-  {
-    from: 30,
-    to: 40,
-    theme: ["Forge", "锻造"],
-    detail: [
-      "The chart's Officer/Wealth cycle turns — the years you build who you are.",
-      "官运财运齐动的十年 —— 你在此炼成真正的自己。",
-    ],
-  },
-  {
-    from: 40,
-    to: 50,
-    theme: ["Bloom", "盛放"],
-    detail: [
-      "Peak of vocation and public influence. The library reads this decade brightest.",
-      "事业与影响力的顶峰。此十年最为明亮。",
-    ],
-  },
-  {
-    from: 50,
-    to: 60,
-    theme: ["Harvest", "收获"],
-    detail: [
-      "Wealth compounds, teaching begins. Time to translate — not to prove.",
-      "财富开始复利，教学之时。宜翻译传承，不再证明。",
-    ],
-  },
-  {
-    from: 60,
-    to: 70,
-    theme: ["Return", "回归"],
-    detail: [
-      "Inward turn. Relationships and meaning outweigh position and title.",
-      "向内回转。关系与意义，重于位置与头衔。",
-    ],
-  },
-  {
-    from: 70,
-    to: 80,
-    theme: ["Distill", "凝定"],
-    detail: [
-      "The chart's quiet chapter — health and legacy come into focus.",
-      "命盘中安静的一章 —— 健康与传承，成为主线。",
-    ],
-  },
+  { from: 0, to: 10, theme: ["Root", "扎根"], detail: [
+    "Family shapes the temperament — the chart lays its foundation quietly.",
+    "家庭塑造性情 —— 命盘在此静静打地基。",
+  ] },
+  { from: 10, to: 20, theme: ["Sprout", "萌发"], detail: [
+    "Mind opens, first attractions and ambitions surface.",
+    "心智开启，第一批渴望与野心浮现。",
+  ] },
+  { from: 20, to: 30, theme: ["Search", "求索"], detail: [
+    "Career takes its first real shape; relationships teach more than they last.",
+    "事业初具雏形；感情多在教你，而非陪你走远。",
+  ] },
+  { from: 30, to: 40, theme: ["Forge", "锻造"], detail: [
+    "The chart's Officer/Wealth cycle turns — the years you build who you are.",
+    "官运财运齐动的十年 —— 你在此炼成真正的自己。",
+  ] },
+  { from: 40, to: 50, theme: ["Bloom", "盛放"], detail: [
+    "Peak of vocation and public influence. The library reads this decade brightest.",
+    "事业与影响力的顶峰。此十年最为明亮。",
+  ] },
+  { from: 50, to: 60, theme: ["Harvest", "收获"], detail: [
+    "Wealth compounds, teaching begins. Time to translate — not to prove.",
+    "财富开始复利，教学之时。宜翻译传承，不再证明。",
+  ] },
+  { from: 60, to: 70, theme: ["Return", "回归"], detail: [
+    "Inward turn. Relationships and meaning outweigh position and title.",
+    "向内回转。关系与意义，重于位置与头衔。",
+  ] },
+  { from: 70, to: 80, theme: ["Distill", "凝定"], detail: [
+    "The chart's quiet chapter — health and legacy come into focus.",
+    "命盘中安静的一章 —— 健康与传承，成为主线。",
+  ] },
 ];
 
 function computeCurrentAge(birthISO?: string): number | null {
@@ -132,7 +93,6 @@ export function LifeTimeline({ birthISO }: { birthISO?: string }) {
 
         <p className="mb-8 max-w-3xl text-sm text-stone-warm/60">{t.tl_hint}</p>
 
-        {/* Track */}
         <div className="relative mb-10">
           <div className="absolute left-0 right-0 top-1/2 h-px -translate-y-1/2 bg-gradient-to-r from-transparent via-gold-dust/40 to-transparent" />
           {nowPct != null && (
@@ -182,7 +142,6 @@ export function LifeTimeline({ birthISO }: { birthISO?: string }) {
           </div>
         </div>
 
-        {/* Detail */}
         <AnimatePresence mode="wait">
           <motion.div
             key={active}
@@ -209,23 +168,70 @@ export function LifeTimeline({ birthISO }: { birthISO?: string }) {
 }
 
 /* ═══════════════════════════════════════════
-   Key Events verification
+   Key Events verification — yes/no with story fallback
 ═══════════════════════════════════════════ */
 
-type EventRow = { id: number; year: string; text: string; verified: boolean };
+type Prompt = {
+  age: [number, number]; // age window
+  theme: [string, string];
+  guess: [string, string];
+};
+
+const PROMPTS: Prompt[] = [
+  {
+    age: [16, 19],
+    theme: ["A first opening", "第一次开门"],
+    guess: [
+      "Around ages 16–19, the chart shows a first real departure — a school, a city, or a person that pulled you out of your childhood shape.",
+      "16–19 岁前后，命盘出现第一次真正的离开 —— 一所学校、一座城市，或一个人，把你从童年的形状里拉了出来。",
+    ],
+  },
+  {
+    age: [22, 26],
+    theme: ["The first identity shock", "第一次身份撞击"],
+    guess: [
+      "Between 22 and 26, the reading senses a bruise: a rejection, a heartbreak, or a career door that closed — and quietly redirected you.",
+      "22–26 岁之间，命盘感知到一次「淤青」：拒绝、心碎、或职业上的关门 —— 它悄悄地把你重新导向了。",
+    ],
+  },
+  {
+    age: [28, 32],
+    theme: ["Saturn's first return", "土星第一次回归"],
+    guess: [
+      "Around 28–32, a major re-choice: you either left something (job, city, relationship) or entered the one that lasts.",
+      "28–32 岁前后，一次重大的重选：你要么离开了什么（工作、城市、关系），要么走进了那个真正留下的。",
+    ],
+  },
+  {
+    age: [33, 38],
+    theme: ["A wealth or vocation turn", "财官转向"],
+    guess: [
+      "Between 33 and 38, the BaZi 大运 shifts to a Wealth/Officer cycle — a promotion, a business, or a first real accumulation of money.",
+      "33–38 岁之间，八字大运进入财官之运 —— 升迁、创业，或第一次真正的财富积累。",
+    ],
+  },
+  {
+    age: [40, 45],
+    theme: ["The bloom", "盛放之年"],
+    guess: [
+      "Around 40–45, public visibility peaks. A recognition, a book, a promotion, a stage — the chart wanted the world to see this you.",
+      "40–45 岁前后，公众能见度达到高峰。一次被看见、一本书、一次升迁、一个舞台 —— 命盘要世界看到这样的你。",
+    ],
+  },
+];
+
+type Answer = { status: "unset" | "yes" | "no"; story: string; saved: boolean };
 
 export function KeyEventsVerification() {
-  const { t } = useLang();
-  const [rows, setRows] = useState<EventRow[]>([
-    { id: 1, year: "", text: "", verified: false },
-    { id: 2, year: "", text: "", verified: false },
-  ]);
+  const { t, lang } = useLang();
+  const li = lang === "zh" ? 1 : 0;
+  const [answers, setAnswers] = useState<Record<number, Answer>>({});
 
-  const update = (id: number, patch: Partial<EventRow>) =>
-    setRows((r) => r.map((x) => (x.id === id ? { ...x, ...patch } : x)));
-
-  const verify = () =>
-    setRows((r) => r.map((x) => (x.year && x.text ? { ...x, verified: true } : x)));
+  const set = (i: number, patch: Partial<Answer>) =>
+    setAnswers((a) => ({
+      ...a,
+      [i]: { status: "unset", story: "", saved: false, ...a[i], ...patch },
+    }));
 
   return (
     <section className="mx-auto max-w-5xl px-6 pb-24 md:px-12">
@@ -238,63 +244,77 @@ export function KeyEventsVerification() {
         </h2>
         <p className="mb-8 max-w-3xl text-sm text-stone-warm/60">{t.ke_hint}</p>
 
-        <div className="space-y-3">
-          {rows.map((r) => (
-            <div
-              key={r.id}
-              className="grid grid-cols-1 gap-3 rounded-2xl border border-white/10 bg-white/[0.02] p-4 md:grid-cols-[120px_1fr_auto] md:items-center"
-            >
-              <input
-                type="text"
-                inputMode="numeric"
-                placeholder={t.ke_year}
-                value={r.year}
-                onChange={(e) => update(r.id, { year: e.target.value, verified: false })}
-                className="ritual-input !py-2 !text-base"
-                style={{ colorScheme: "dark" }}
-              />
-              <input
-                type="text"
-                placeholder={t.ke_event_ph}
-                value={r.text}
-                onChange={(e) => update(r.id, { text: e.target.value, verified: false })}
-                className="ritual-input !py-2 !text-base"
-                style={{ colorScheme: "dark" }}
-              />
-              <AnimatePresence>
-                {r.verified && (
-                  <motion.span
-                    initial={{ opacity: 0, x: -6 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0 }}
-                    className="flex items-center gap-2 text-[11px] uppercase tracking-[0.24em] text-gold-light"
-                  >
+        <div className="space-y-4">
+          {PROMPTS.map((p, i) => {
+            const a = answers[i] ?? { status: "unset", story: "", saved: false };
+            return (
+              <div
+                key={i}
+                className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 md:p-6"
+              >
+                <p className="mb-1 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+                  {t.ke_prompt} · {p.theme[li]} · {lang === "zh" ? "岁" : "Age"} {p.age[0]}–{p.age[1]}
+                </p>
+                <p className="mb-4 font-serif text-base leading-relaxed text-stone-warm/85 md:text-lg">
+                  {p.guess[li]}
+                </p>
+
+                {a.status === "unset" && (
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => set(i, { status: "yes" })}
+                      className="rounded-full bg-gold-dust px-5 py-2 text-[10px] uppercase tracking-[0.28em] text-obsidian hover:bg-gold-light"
+                    >
+                      {t.ke_yes}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => set(i, { status: "no" })}
+                      className="rounded-full border border-gold-dust/40 px-5 py-2 text-[10px] uppercase tracking-[0.28em] text-gold-dust hover:bg-gold-dust/10"
+                    >
+                      {t.ke_no}
+                    </button>
+                  </div>
+                )}
+
+                {a.status === "yes" && (
+                  <p className="flex items-center gap-2 text-[11px] uppercase tracking-[0.24em] text-gold-light">
                     <span className="size-1.5 rounded-full bg-gold-dust" />
                     {t.ke_verified}
-                  </motion.span>
+                  </p>
                 )}
-              </AnimatePresence>
-            </div>
-          ))}
-        </div>
 
-        <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
-          <button
-            type="button"
-            onClick={() =>
-              setRows((r) => [...r, { id: Date.now(), year: "", text: "", verified: false }])
-            }
-            className="text-[10px] uppercase tracking-[0.32em] text-stone-warm/60 transition-colors hover:text-gold-dust"
-          >
-            {t.ke_add}
-          </button>
-          <button
-            type="button"
-            onClick={verify}
-            className="rounded-full bg-gold-dust px-8 py-3 text-[10px] uppercase tracking-[0.32em] text-obsidian transition-colors hover:bg-gold-light"
-          >
-            {t.ke_verify}
-          </button>
+                {a.status === "no" && (
+                  <div className="mt-2 space-y-3">
+                    <p className="text-sm text-stone-warm/70">{t.ke_story_prompt}</p>
+                    <textarea
+                      value={a.story}
+                      onChange={(e) => set(i, { story: e.target.value, saved: false })}
+                      placeholder={t.ke_story_ph}
+                      rows={3}
+                      className="ritual-input !py-3 !text-base w-full"
+                    />
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        disabled={!a.story.trim()}
+                        onClick={() => set(i, { saved: true })}
+                        className="rounded-full bg-gold-dust px-5 py-2 text-[10px] uppercase tracking-[0.28em] text-obsidian disabled:opacity-40 hover:bg-gold-light"
+                      >
+                        {t.ke_save_story}
+                      </button>
+                      {a.saved && (
+                        <span className="text-[10px] uppercase tracking-[0.24em] text-gold-light">
+                          {t.ke_saved}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
 
         <p className="mt-6 text-[10px] uppercase tracking-[0.24em] text-stone-warm/30">
@@ -302,6 +322,267 @@ export function KeyEventsVerification() {
         </p>
       </div>
     </section>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   Tarot — three cards
+═══════════════════════════════════════════ */
+
+const TAROT: {
+  name: [string, string];
+  glyph: string;
+  read: [string, string];
+}[] = [
+  { name: ["The Fool", "愚者"], glyph: "0", read: ["A new beginning without a map.", "无地图的启程。"] },
+  { name: ["The Magician", "魔术师"], glyph: "I", read: ["The tools are already in your hands.", "工具早已在你手中。"] },
+  { name: ["The High Priestess", "女祭司"], glyph: "II", read: ["Listen to what you already know.", "倾听你已经知道的。"] },
+  { name: ["The Empress", "女皇"], glyph: "III", read: ["Abundance ripens where you nourish.", "你滋养之处，丰盈自会生长。"] },
+  { name: ["The Lovers", "恋人"], glyph: "VI", read: ["A choice about values, not just love.", "关于价值观的抉择，不仅是感情。"] },
+  { name: ["The Chariot", "战车"], glyph: "VII", read: ["Willpower steers two opposing forces.", "意志驾驭两股相反之力。"] },
+  { name: ["Strength", "力量"], glyph: "VIII", read: ["Gentleness is your real strength.", "温柔才是你真正的力量。"] },
+  { name: ["The Hermit", "隐者"], glyph: "IX", read: ["Withdraw to see clearly.", "退一步，才看得清。"] },
+  { name: ["Wheel of Fortune", "命运之轮"], glyph: "X", read: ["A cycle turns beyond your control.", "一轮周期，超出你的控制。"] },
+  { name: ["The Star", "星星"], glyph: "XVII", read: ["Quiet hope after difficulty.", "低谷之后，安静的希望。"] },
+  { name: ["The Moon", "月亮"], glyph: "XVIII", read: ["Not everything visible is real.", "所见并非皆真。"] },
+  { name: ["The Sun", "太阳"], glyph: "XIX", read: ["Clarity, warmth, arrival.", "澄澈、温暖、抵达。"] },
+];
+
+export function TarotDraw() {
+  const { t, lang } = useLang();
+  const li = lang === "zh" ? 1 : 0;
+  const [deck] = useState(() => TAROT.slice());
+  const [picks, setPicks] = useState<number[]>([]);
+  const positions = [t.tarot_pos_past, t.tarot_pos_present, t.tarot_pos_future];
+
+  const pick = (idx: number) => {
+    if (picks.includes(idx) || picks.length >= 3) return;
+    setPicks((p) => [...p, idx]);
+  };
+  const reset = () => setPicks([]);
+
+  return (
+    <section className="mx-auto max-w-5xl px-6 pb-24 md:px-12 print:hidden">
+      <div className="glass-card rounded-3xl p-8 md:p-12">
+        <p className="mb-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+          {t.tarot_kicker}
+        </p>
+        <h2 className="mb-3 font-serif text-2xl italic text-stone-warm md:text-3xl">
+          {t.tarot_title}
+        </h2>
+        <p className="mb-8 max-w-3xl text-sm text-stone-warm/60">{t.tarot_hint}</p>
+
+        {/* Deck */}
+        <div className="mb-8 grid grid-cols-4 gap-3 md:grid-cols-6">
+          {deck.map((_, idx) => {
+            const chosen = picks.includes(idx);
+            const disabled = chosen || picks.length >= 3;
+            return (
+              <motion.button
+                key={idx}
+                type="button"
+                onClick={() => pick(idx)}
+                disabled={disabled}
+                whileHover={disabled ? undefined : { y: -6, rotate: -1 }}
+                animate={chosen ? { opacity: 0.15, y: 0 } : { opacity: 1 }}
+                className="relative aspect-[2/3] rounded-xl border border-gold-dust/30 bg-gradient-to-br from-nebula-purple/30 via-void-blue to-obsidian shadow-[0_0_20px_rgba(0,0,0,0.4)] disabled:cursor-default"
+              >
+                <span className="absolute inset-2 rounded-lg border border-gold-dust/20" />
+                <span className="absolute inset-0 grid place-items-center font-serif text-2xl italic text-gold-dust/60">
+                  ✦
+                </span>
+              </motion.button>
+            );
+          })}
+        </div>
+
+        {/* Revealed cards */}
+        {picks.length > 0 && (
+          <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+            {picks.map((cardIdx, pos) => {
+              const c = deck[cardIdx];
+              return (
+                <motion.div
+                  key={cardIdx}
+                  initial={{ rotateY: 180, opacity: 0 }}
+                  animate={{ rotateY: 0, opacity: 1 }}
+                  transition={{ duration: 0.8, ease: [0.32, 0.72, 0, 1] }}
+                  className="rounded-2xl border border-gold-dust/30 bg-gold-dust/[0.06] p-6 text-center"
+                >
+                  <p className="mb-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust">
+                    {positions[pos]}
+                  </p>
+                  <p className="mb-2 font-serif text-4xl italic text-gold-light">{c.glyph}</p>
+                  <p className="mb-3 font-serif text-lg text-stone-warm">{c.name[li]}</p>
+                  <p className="text-sm leading-relaxed text-stone-warm/70">{c.read[li]}</p>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
+
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <p className="text-[10px] uppercase tracking-[0.28em] text-stone-warm/50">
+            {picks.length} / 3 — {picks.length < 3 ? t.tarot_pick : t.tarot_read}
+          </p>
+          {picks.length > 0 && (
+            <button
+              type="button"
+              onClick={reset}
+              className="rounded-full border border-gold-dust/40 px-5 py-2 text-[10px] uppercase tracking-[0.28em] text-gold-dust hover:bg-gold-dust/10"
+            >
+              {t.tarot_reset}
+            </button>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   Future Watchlist — Oracle members
+═══════════════════════════════════════════ */
+
+const WATCHLIST: {
+  year: string;
+  theme: [string, string];
+  note: [string, string];
+  locked?: boolean;
+}[] = [
+  {
+    year: "2026 · Q3",
+    theme: ["Career door opens", "事业开门"],
+    note: [
+      "A recognizable inflection — say yes carefully; the shape of the yes matters more than the yes itself.",
+      "一个可识别的转折 —— 谨慎地说「好」；「好」的形状比「好」本身更重要。",
+    ],
+  },
+  {
+    year: "2027 · spring",
+    theme: ["Health reset window", "健康重置窗口"],
+    note: [
+      "The chart flags a two-month window to rebuild sleep, breath and cardio — small habits with 10-year returns.",
+      "命盘标出约两个月的窗口：重建睡眠、呼吸与有氧 —— 小习惯，十年回报。",
+    ],
+  },
+  {
+    year: "2028",
+    theme: ["Meaningful encounter", "重要相遇"],
+    locked: true,
+    note: [
+      "The synastry indicates a partnership-shape year. Details on Oracle.",
+      "合盘指向一个「关系形状」的年份。神谕者可见细节。",
+    ],
+  },
+  {
+    year: "2029–2030",
+    theme: ["Wealth compounding phase", "财富复利期"],
+    locked: true,
+    note: [
+      "Two BaZi wealth stars form a bridge. Details on Oracle.",
+      "两颗财星形成桥梁。神谕者可见细节。",
+    ],
+  },
+  {
+    year: "2031",
+    theme: ["A quieter chapter", "转入静章"],
+    locked: true,
+    note: [
+      "Deliberate slowing. Details on Oracle.",
+      "有意识的放慢。神谕者可见细节。",
+    ],
+  },
+];
+
+export function FutureWatchlist() {
+  const { t, lang } = useLang();
+  const li = lang === "zh" ? 1 : 0;
+  return (
+    <section className="mx-auto max-w-5xl px-6 pb-24 md:px-12">
+      <div className="glass-card rounded-3xl p-8 md:p-12">
+        <p className="mb-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+          {t.fw_kicker}
+        </p>
+        <h2 className="mb-3 font-serif text-2xl italic text-stone-warm md:text-3xl">
+          {t.fw_title}
+        </h2>
+        <p className="mb-8 max-w-3xl text-sm text-stone-warm/60">{t.fw_hint}</p>
+
+        <ol className="relative space-y-4 border-l border-gold-dust/30 pl-6">
+          {WATCHLIST.map((w) => (
+            <li key={w.year} className="relative">
+              <span className="absolute -left-[29px] top-2 size-2.5 rounded-full bg-gold-dust shadow-[0_0_12px_hsl(45_70%_60%/0.6)]" />
+              <div className={`rounded-2xl border p-5 ${w.locked ? "border-white/10 bg-white/[0.02]" : "border-gold-dust/30 bg-gold-dust/[0.06]"}`}>
+                <p className="mb-1 text-[10px] uppercase tracking-[0.32em] text-gold-dust">
+                  {w.year}
+                </p>
+                <p className="mb-2 font-serif text-lg italic text-stone-warm">
+                  {w.theme[li]}
+                </p>
+                {w.locked ? (
+                  <p className="flex items-center gap-2 text-sm text-stone-warm/50">
+                    <span>🔒</span> {t.fw_locked}
+                  </p>
+                ) : (
+                  <p className="text-sm leading-relaxed text-stone-warm/70">{w.note[li]}</p>
+                )}
+              </div>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   Save-this-reading (uses local account)
+═══════════════════════════════════════════ */
+
+export function SaveReadingBar({
+  reading,
+  onOpenAccount,
+}: {
+  reading: { name?: string; date?: string; time?: string; place?: string; lang?: "en" | "zh" };
+  onOpenAccount: () => void;
+}) {
+  const { t } = useLang();
+  const { account, saveReading, saved } = useAccount();
+  const [justSaved, setJustSaved] = useState(false);
+
+  const alreadySaved = saved.some(
+    (s) => s.name === (reading.name ?? "") && s.date === reading.date && s.place === reading.place,
+  );
+
+  const handleSave = () => {
+    if (!account) return onOpenAccount();
+    saveReading({
+      name: reading.name ?? "Anonymous",
+      date: reading.date,
+      time: reading.time,
+      place: reading.place,
+      lang: reading.lang,
+    });
+    setJustSaved(true);
+    setTimeout(() => setJustSaved(false), 2400);
+  };
+
+  return (
+    <div className="mx-auto mb-10 max-w-5xl px-6 print:hidden md:px-12">
+      <div className="glass-card flex flex-wrap items-center justify-between gap-4 rounded-full px-6 py-3">
+        <p className="text-[10px] uppercase tracking-[0.28em] text-stone-warm/60">
+          {account ? `${t.acc_signed_as} · ${account.name}` : t.acc_desc}
+        </p>
+        <button
+          type="button"
+          onClick={handleSave}
+          className="rounded-full bg-gold-dust px-5 py-2 text-[10px] uppercase tracking-[0.28em] text-obsidian hover:bg-gold-light"
+        >
+          {justSaved || alreadySaved ? t.acc_reading_saved : t.acc_save_reading}
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -400,7 +681,6 @@ export function MembershipSection() {
           })}
         </div>
 
-        {/* Actions */}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <button
             type="button"
