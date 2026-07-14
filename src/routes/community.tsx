@@ -510,6 +510,8 @@ function CommunityPage() {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           {QUESTS.map((q, i) => {
             const done = completedQuests[q.id];
+            const reflection = aiReflect[q.id];
+            const isBusy = aiReflectBusy === q.id;
             return (
               <motion.div
                 key={q.id}
@@ -517,15 +519,38 @@ function CommunityPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: i * 0.08 }}
-                className={`glass-card flex flex-col rounded-2xl p-6 ${done ? "border-gold-dust/60" : ""}`}
+                className={`glass-card flex flex-col rounded-2xl p-5 sm:p-6 ${done ? "border-gold-dust/60" : ""}`}
               >
                 <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
                   {lang === "zh" ? `第 ${i + 1} 关` : `Quest ${i + 1}`}
                 </p>
-                <p className="mb-6 font-serif text-lg leading-relaxed text-stone-warm/85">
+                <p className="mb-4 font-serif text-base leading-relaxed text-stone-warm/85 sm:text-lg">
                   {q.label[li]}
                 </p>
-                <div className="mt-auto flex items-center justify-between">
+                <textarea
+                  value={aiQuestInput[q.id] ?? ""}
+                  onChange={(e) =>
+                    setAiQuestInput((s) => ({ ...s, [q.id]: e.target.value.slice(0, 400) }))
+                  }
+                  rows={3}
+                  placeholder={
+                    lang === "zh"
+                      ? "写下你的回答，AI 长者会为你点评…"
+                      : "Write your answer — the elder will reflect back…"
+                  }
+                  className="w-full resize-none rounded-xl border border-white/10 bg-obsidian/40 p-3 text-sm text-stone-warm placeholder:text-stone-warm/30 focus:border-gold-dust/40 focus:outline-none"
+                />
+                {reflection && (
+                  <div className="mt-3 rounded-xl border border-gold-dust/25 bg-gold-dust/[0.05] p-3">
+                    <p className="mb-1 text-[9px] uppercase tracking-[0.32em] text-gold-dust/70">
+                      {lang === "zh" ? "长者回音" : "The elder replies"}
+                    </p>
+                    <p className="whitespace-pre-line font-serif text-sm italic leading-relaxed text-stone-warm/85">
+                      {reflection}
+                    </p>
+                  </div>
+                )}
+                <div className="mt-4 flex items-center justify-between gap-3">
                   <span
                     className={`text-[10px] uppercase tracking-[0.28em] ${
                       done ? "text-gold-light" : "text-stone-warm/40"
@@ -535,15 +560,15 @@ function CommunityPage() {
                   </span>
                   <button
                     type="button"
-                    onClick={() => claimQuest(q.id)}
-                    disabled={done}
-                    className={`rounded-full border px-4 py-1.5 text-[10px] uppercase tracking-[0.28em] transition-colors ${
-                      done
-                        ? "cursor-default border-gold-dust/40 text-gold-light"
-                        : "border-gold-dust/30 text-gold-dust hover:bg-gold-dust/10"
-                    }`}
+                    onClick={() => askQuestOracle(q.id, q.label[li])}
+                    disabled={isBusy || !(aiQuestInput[q.id] || "").trim()}
+                    className="rounded-full border border-gold-dust/40 px-4 py-1.5 text-[10px] uppercase tracking-[0.28em] text-gold-dust transition-colors hover:bg-gold-dust/10 disabled:opacity-40"
                   >
-                    {done ? (lang === "zh" ? "已过关" : "Cleared") : (lang === "zh" ? "接受" : "Accept")}
+                    {isBusy
+                      ? lang === "zh" ? "长者沉思…" : "Reflecting…"
+                      : done
+                        ? lang === "zh" ? "再问一次" : "Ask again"
+                        : lang === "zh" ? "呈上答卷" : "Submit"}
                   </button>
                 </div>
               </motion.div>
