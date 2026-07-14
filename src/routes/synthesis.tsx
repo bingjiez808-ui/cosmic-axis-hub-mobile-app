@@ -36,7 +36,7 @@ export const Route = createFileRoute("/synthesis")({
   component: SynthesisPage,
 });
 
-const phases = [
+const PHASES_EN = [
   { label: "Casting the Western wheel", detail: "Sun · Moon · Ascendant · Ten planets" },
   { label: "Drawing the Nakshatra mandala", detail: "27 lunar mansions · Dasha timing" },
   { label: "Assembling the four pillars", detail: "Ten stems · Twelve branches · Five elements" },
@@ -44,6 +44,25 @@ const phases = [
   { label: "Cross-tradition pattern search", detail: "Clustering agreements · Marking conflicts" },
   { label: "Composing the unified reading", detail: "One life, four languages" },
 ];
+
+const PHASES_ZH = [
+  { label: "起西方本命盘", detail: "太阳 · 月亮 · 上升 · 十颗行星" },
+  { label: "绘制二十七宿曼陀罗", detail: "27 星宿 · 大运周期" },
+  { label: "排列四柱八字", detail: "十天干 · 十二地支 · 五行" },
+  { label: "填布紫微十二宫", detail: "十四主星 · 四化" },
+  { label: "跨传统模式搜索", detail: "汇合共识 · 标出冲突" },
+  { label: "谱写统一解读", detail: "一段人生 · 四种语言" },
+];
+
+const HEADLINE = {
+  en: "The library is speaking to itself…",
+  zh: "图书馆正在自言自语……",
+};
+const KICKER = {
+  en: (name?: string) => (name ? `Reading of ${name}` : "The reading"),
+  zh: (name?: string) => (name ? `${name} 的解读` : "命盘解读"),
+};
+const PASSAGES = { en: "passages", zh: "段" };
 
 function SynthesisPage() {
   const search = Route.useSearch();
