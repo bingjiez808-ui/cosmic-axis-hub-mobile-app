@@ -431,25 +431,64 @@ function CommunityPage() {
             background: `linear-gradient(140deg, ${house.tone[0]}22, transparent 55%), var(--tw-gradient-from, rgba(255,255,255,0.02))`,
           }}
         >
-          <div className="flex flex-col items-center gap-8 md:flex-row md:items-start">
-            <AvatarGlyph hue={identity.hue} glyph={house.glyph} size={112} />
+          <div className="flex flex-col items-center gap-6 md:flex-row md:items-start md:gap-8">
+            <div className="flex flex-col items-center gap-3">
+              <AvatarGlyph
+                hue={identity.hue}
+                glyph={house.glyph}
+                size={112}
+                imageUrl={account?.avatar}
+              />
+              <div className="flex flex-wrap justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={generateAvatar}
+                  disabled={avatarBusy}
+                  className="rounded-full border border-gold-dust/40 px-3 py-1 text-[9px] uppercase tracking-[0.28em] text-gold-dust transition-colors hover:bg-gold-dust/10 disabled:opacity-50"
+                >
+                  {avatarBusy
+                    ? lang === "zh"
+                      ? "绘制中…"
+                      : "Painting…"
+                    : account?.avatar
+                      ? lang === "zh"
+                        ? "重新生成"
+                        : "Regenerate"
+                      : lang === "zh"
+                        ? "AI 绘制我的画像"
+                        : "Paint my portrait"}
+                </button>
+                {account?.avatar && (
+                  <button
+                    type="button"
+                    onClick={() => setAvatar("")}
+                    className="rounded-full border border-white/10 px-3 py-1 text-[9px] uppercase tracking-[0.28em] text-stone-warm/60 transition-colors hover:border-gold-dust/30 hover:text-gold-dust"
+                  >
+                    {lang === "zh" ? "还原符号" : "Reset glyph"}
+                  </button>
+                )}
+              </div>
+              {avatarError && (
+                <p className="text-[10px] text-red-300/80">{avatarError}</p>
+              )}
+            </div>
             <div className="flex-1 text-center md:text-left">
               <p className="mb-2 text-[10px] uppercase tracking-[0.42em] text-gold-dust/80">
                 {lang === "zh" ? "你的旅者身份" : "Your traveler identity"}
               </p>
-              <h2 className="mb-1 font-serif text-3xl italic text-stone-warm md:text-4xl">
+              <h2 className="mb-1 font-serif text-2xl italic text-stone-warm sm:text-3xl md:text-4xl">
                 {travelerTitle} <span className="text-gold-light">{travelerId}</span>
               </h2>
-              <p className="mb-4 text-sm uppercase tracking-[0.32em] text-gold-dust/70">
+              <p className="mb-4 text-xs uppercase tracking-[0.28em] text-gold-dust/70 sm:text-sm sm:tracking-[0.32em]">
                 {house.name[li]} · {house.element[li]} {house.glyph}
               </p>
-              <p className="font-serif text-lg italic text-stone-warm/75">
+              <p className="font-serif text-base italic text-stone-warm/75 sm:text-lg">
                 「{house.motto[li]}」
               </p>
-              <p className="mt-3 text-[11px] uppercase tracking-[0.28em] text-stone-warm/40">
+              <p className="mt-3 text-[10px] uppercase tracking-[0.24em] text-stone-warm/40 sm:tracking-[0.28em]">
                 {lang === "zh"
-                  ? "该身份根据你的注册信息独一无二生成 —— 与他人不会重复。"
-                  : "Uniquely generated from your account signature — no two travelers share it."}
+                  ? "该身份根据你的注册信息独一无二生成 —— 与他人不会重复。画像由 AI 依据学院属性绘制，可随时重生。"
+                  : "Uniquely generated from your account signature. Portrait is painted by AI from your house attributes — regenerate anytime."}
               </p>
             </div>
           </div>
