@@ -178,13 +178,36 @@ function RitualPage() {
       </div>
 
       <div className="relative z-10 w-full max-w-2xl text-center">
-        {/* Progress */}
-        <div className="mb-14 flex items-center justify-center gap-2">
-          {Array.from({ length: totalSteps }).map((_, i) => (
+        {/* Progress — language dot · single quiz bar (5 segs) · intake dots */}
+        <div className="mb-14 flex items-center justify-center gap-3">
+          {/* language */}
+          <div
+            className={`h-px transition-all duration-700 ${
+              step >= 0 ? "w-10 bg-gold-dust" : "w-6 bg-white/15"
+            }`}
+          />
+          <span className="text-[8px] uppercase tracking-[0.32em] text-stone-warm/30">·</span>
+          {/* single 5-segment quiz bar */}
+          <div className="flex overflow-hidden rounded-full border border-white/10">
+            {Array.from({ length: QUIZ.length }).map((_, i) => {
+              const reached = step >= 1 + i;
+              return (
+                <div
+                  key={i}
+                  className={`h-1.5 w-6 border-r border-white/10 last:border-r-0 transition-all duration-500 ${
+                    reached ? "bg-gold-dust" : "bg-white/[0.04]"
+                  }`}
+                />
+              );
+            })}
+          </div>
+          <span className="text-[8px] uppercase tracking-[0.32em] text-stone-warm/30">·</span>
+          {/* intake dots */}
+          {Array.from({ length: 4 }).map((_, i) => (
             <div
               key={i}
               className={`h-px transition-all duration-700 ${
-                i <= step ? "w-10 bg-gold-dust" : "w-6 bg-white/15"
+                step >= 1 + QUIZ.length + i ? "w-10 bg-gold-dust" : "w-6 bg-white/15"
               }`}
             />
           ))}
