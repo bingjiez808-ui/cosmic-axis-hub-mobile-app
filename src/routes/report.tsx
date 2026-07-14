@@ -405,6 +405,18 @@ function ReportPage() {
             {[search.date, search.time, search.place].filter(Boolean).join(" · ")}
           </p>
         )}
+        {search.quiz && search.quiz.length >= 5 && (
+          <div className="mx-auto mt-10 max-w-2xl rounded-2xl border border-gold-dust/25 bg-gold-dust/[0.05] px-6 py-4">
+            <p className="mb-1 text-[10px] uppercase tracking-[0.32em] text-gold-light">
+              {lang === "zh" ? "偏差校准 · 已应用" : "Bias calibration · applied"}
+            </p>
+            <p className="text-xs leading-relaxed text-stone-warm/70">
+              {lang === "zh"
+                ? `你在开始前回答的五道题（${search.quiz.slice(0, 5).split("").join(" · ")}）已用于对四大体系的合成结果做个人化微调 —— 性格、学习、事业、情感、健康五个维度都各自被再校准了一次。`
+                : `The five questions you answered before the reading (${search.quiz.slice(0, 5).split("").join(" · ")}) have been used to personally re-tune the synthesis across character, learning, vocation, love and health.`}
+            </p>
+          </div>
+        )}
       </header>
 
       {/* Save-this-reading bar */}
