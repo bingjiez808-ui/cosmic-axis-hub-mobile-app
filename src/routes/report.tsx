@@ -372,6 +372,7 @@ function ReportPage() {
   const [accOpen, setAccOpen] = useState(false);
   const [selectedPlanet, setSelectedPlanet] = useState<number | null>(null);
   const [wheelSize, setWheelSize] = useState(360);
+  const [zoomNatal, setZoomNatal] = useState(false);
 
   // Sync report language with the choice made in the ritual, if provided.
   useEffect(() => {
