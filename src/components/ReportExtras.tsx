@@ -1729,10 +1729,10 @@ function AIFollowupModal({
                 type="button"
                 onClick={onClose}
                 aria-label={lang === "zh" ? "关闭" : "Close"}
-                className="flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-white/15 bg-obsidian/70 px-3 text-[10px] uppercase tracking-[0.28em] text-stone-warm/70 backdrop-blur transition-colors hover:border-gold-dust/50 hover:text-gold-dust"
+                className="flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-white/15 bg-obsidian/70 px-2.5 text-[10px] uppercase tracking-[0.24em] text-stone-warm/70 backdrop-blur transition-colors hover:border-gold-dust/50 hover:text-gold-dust sm:px-3 sm:tracking-[0.28em]"
               >
-                <span aria-hidden>×</span>
-                <span>{t.mem_close}</span>
+                <span aria-hidden className="text-base leading-none">×</span>
+                <span className="hidden sm:inline">{t.mem_close}</span>
               </button>
             </div>
 
