@@ -65,10 +65,6 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       return next;
     });
   };
-    try {
-      localStorage.setItem(ACC_KEY, JSON.stringify(a));
-    } catch {}
-  };
   const signOut = () => {
     setAccount(null);
     try {
