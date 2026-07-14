@@ -250,7 +250,13 @@ function AvatarGlyph({
 function CommunityPage() {
   const { lang } = useLang();
   const li = lang === "zh" ? 1 : 0;
-  const { account } = useAccount();
+  const { account, setAvatar } = useAccount();
+  const [avatarBusy, setAvatarBusy] = useState(false);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+  // AI quest reflection (challenge companion)
+  const [aiReflect, setAiReflect] = useState<Record<string, string>>({});
+  const [aiReflectBusy, setAiReflectBusy] = useState<string | null>(null);
+  const [aiQuestInput, setAiQuestInput] = useState<Record<string, string>>({});
 
   // Identity — persisted so the same person always gets the same house/id.
   const identity = useMemo(() => {
