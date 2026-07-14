@@ -378,31 +378,40 @@ function ReportPage() {
       />
       <AccountModal open={accOpen} onClose={() => setAccOpen(false)} />
 
-      {/* Interactive natal wheel */}
-      <section className="mx-auto mb-24 max-w-5xl px-6">
+      <section className="mx-auto mb-24 max-w-6xl px-6">
         <div className="glass-card rounded-3xl p-8 md:p-12">
-          <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2">
+          <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-[1fr_1.1fr]">
             <div>
               <p className="mb-3 text-[10px] uppercase tracking-[0.4em] text-gold-dust">
-                {lang === "zh" ? "你的十二宫图" : "Your zodiac wheel"}
+                {lang === "zh" ? "你的命盘" : "Your natal chart"}
               </p>
               <h2 className="mb-4 font-serif text-3xl italic text-stone-warm md:text-4xl">
                 {lang === "zh"
-                  ? "悬停一个星座 · 让盘活起来"
-                  : "Hover a sign · let the wheel breathe"}
+                  ? "九颗行星 · 落在你专属的十二宫"
+                  : "Nine planets · falling in your own twelve houses"}
               </h2>
-              <p className="text-sm leading-relaxed text-stone-warm/60">
+              <p className="mb-6 text-sm leading-relaxed text-stone-warm/60">
                 {lang === "zh"
-                  ? "外环是天空的刻度，中环是十二星座，内核是发光的命宫。命盘不是判决书，而是一台你可以查阅的仪器。"
-                  : "The outer ring marks the sky, the middle ring holds the twelve signs, the inner core glows with your ascendant. The chart is not a verdict — it is an instrument you can consult."}
+                  ? "这不是一张通用的星盘 —— 每颗行星都由你的出生时刻定位在真正属于你的星座里。悬停一颗行星，看看它落在哪个宫；悬停一个星座，看看它承接了哪几颗行星。"
+                  : "This is not a generic wheel — each planet is placed in the sign your birth actually assigns it. Hover a planet to see the sign it sits in; hover a sign to see which planets it holds."}
               </p>
+              <div className="flex flex-wrap gap-2 text-[10px] uppercase tracking-[0.28em] text-stone-warm/50">
+                <span className="rounded-full border border-white/10 px-3 py-1">☉ ☽ ☿ ♀ ♂ ♃ ♄</span>
+                <span className="rounded-full border border-white/10 px-3 py-1">Ⓐ {lang === "zh" ? "上升" : "Asc"}</span>
+                <span className="rounded-full border border-white/10 px-3 py-1">Ⓜ {lang === "zh" ? "天顶" : "MC"}</span>
+              </div>
             </div>
             <div className="text-stone-warm/40">
-              <ZodiacWheel lang={lang} size={360} />
+              <NatalWheel
+                lang={lang}
+                seed={`${search.name ?? ""}|${search.date ?? ""}|${search.time ?? ""}|${search.place ?? ""}`}
+                size={440}
+              />
             </div>
           </div>
         </div>
       </section>
+
 
       {/* Dimensions */}
       <section className="mx-auto max-w-5xl space-y-10 px-6 md:px-12">
