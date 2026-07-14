@@ -743,7 +743,8 @@ function ReportPage() {
                 </div>
 
                 {d.details && d.details.length > 0 && (
-                  <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div className={`mt-6 grid grid-cols-1 gap-4 ${d.details.length === 3 ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
+
                     {d.details.map((block) => (
                       <div
                         key={block.label[0]}
