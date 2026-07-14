@@ -178,6 +178,11 @@ function SiteNav() {
   const { t } = useLang();
   const { account } = useAccount();
   const [accOpen, setAccOpen] = useState(false);
+  useEffect(() => {
+    const handler = () => setAccOpen(true);
+    window.addEventListener("lod:open-account", handler);
+    return () => window.removeEventListener("lod:open-account", handler);
+  }, []);
   return (
     <nav className="fixed top-0 left-1/2 z-50 -translate-x-1/2 p-6">
       <div className="glass-card flex items-center gap-4 rounded-full px-4 py-2 text-[11px] font-light uppercase tracking-[0.28em] md:gap-8 md:px-6 md:py-2.5">
