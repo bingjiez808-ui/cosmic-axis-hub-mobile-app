@@ -26,7 +26,7 @@ export function AccountModal({ open, onClose }: { open: boolean; onClose: () => 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[70] flex items-end justify-center bg-obsidian/70 backdrop-blur-md md:items-center"
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-obsidian/70 backdrop-blur-md p-4"
           onClick={onClose}
         >
           <motion.div
