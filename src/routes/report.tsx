@@ -504,8 +504,8 @@ function ReportPage() {
               </h2>
               <p className="mb-6 text-sm leading-relaxed text-stone-warm/60">
                 {lang === "zh"
-                  ? "这不是一张通用的星盘 —— 每颗行星都由你的出生时刻定位在真正属于你的星座里。悬停一颗行星，看看它落在哪个宫；悬停一个星座，看看它承接了哪几颗行星。"
-                  : "This is not a generic wheel — each planet is placed in the sign your birth actually assigns it. Hover a planet to see the sign it sits in; hover a sign to see which planets it holds."}
+                  ? "这是一张真实推算的西方回归黄道盘（Tropical Zodiac）—— 以 J2000.0 为基准，按平均黄经公式将七颗行星与上升 / 天顶落入你出生时刻真正对应的星座；相位则按行星间黄经差自动识别合、六分、四分、三分与对分。点击行星查看落位与主要相位；点击星座查看它承接的行星。"
+                  : "A real tropical-zodiac natal wheel: seven planets plus Ascendant / Midheaven are placed by mean-longitude formulas referenced to J2000.0, using the exact moment you were born. Aspects (conjunction, sextile, square, trine, opposition) are detected automatically from the longitude differences. Tap a planet to reveal its sign and major aspects; tap a sign to see which planets it holds."}
               </p>
               <div className="flex flex-wrap gap-2 text-[10px] uppercase tracking-[0.28em] text-stone-warm/50">
                 <span className="rounded-full border border-white/10 px-3 py-1">☉ ☽ ☿ ♀ ♂ ♃ ♄</span>
@@ -520,11 +520,11 @@ function ReportPage() {
                 onClear={() => setSelectedPlanet(null)}
               />
             </div>
-            <div className="text-stone-warm/40">
+            <div className="flex justify-center text-stone-warm/40">
               <NatalWheel
                 lang={lang}
                 seed={`${search.name ?? ""}|${search.date ?? ""}|${search.time ?? ""}|${search.place ?? ""}`}
-                size={440}
+                size={wheelSize}
                 selectedPlanet={selectedPlanet}
                 onSelectPlanet={setSelectedPlanet}
               />
