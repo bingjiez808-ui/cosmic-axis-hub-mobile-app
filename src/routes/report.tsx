@@ -1,6 +1,6 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useServerFn } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   ChartZoomModal,
@@ -22,6 +22,7 @@ import {
 } from "@/components/ReportExtras";
 import { AccountModal } from "@/components/AccountModal";
 import { useLang } from "@/lib/i18n";
+import { generateReport, type ReportAI } from "@/lib/report.functions";
 
 type SearchParams = {
   name?: string;
