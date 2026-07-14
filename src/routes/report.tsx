@@ -3,12 +3,14 @@ import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 
 import {
+  ChartZoomModal,
   FiveElements,
   NatalWheel,
   PLANETS,
   StrengthRadar,
   ZODIAC_SIGNS,
   computePlanetSigns,
+  houseForSign,
 } from "@/components/charts/DestinyCharts";
 import {
   FutureWatchlist,
@@ -370,6 +372,7 @@ function ReportPage() {
   const [accOpen, setAccOpen] = useState(false);
   const [selectedPlanet, setSelectedPlanet] = useState<number | null>(null);
   const [wheelSize, setWheelSize] = useState(360);
+  const [zoomNatal, setZoomNatal] = useState(false);
 
   // Sync report language with the choice made in the ritual, if provided.
   useEffect(() => {
@@ -520,7 +523,7 @@ function ReportPage() {
                 onClear={() => setSelectedPlanet(null)}
               />
             </div>
-            <div className="flex justify-center text-stone-warm/40">
+            <div className="relative flex justify-center text-stone-warm/40">
               <NatalWheel
                 lang={lang}
                 seed={`${search.name ?? ""}|${search.date ?? ""}|${search.time ?? ""}|${search.place ?? ""}`}
@@ -528,10 +531,44 @@ function ReportPage() {
                 selectedPlanet={selectedPlanet}
                 onSelectPlanet={setSelectedPlanet}
               />
+              <button
+                onClick={() => setZoomNatal(true)}
+                className="absolute right-0 top-0 rounded-full border border-gold-dust/30 bg-obsidian/60 px-3 py-1.5 text-[10px] uppercase tracking-[0.28em] text-gold-dust/80 backdrop-blur transition-colors hover:border-gold-light hover:text-gold-light"
+                aria-label={lang === "zh" ? "放大查看星盘" : "Enlarge chart"}
+              >
+                {lang === "zh" ? "⤢ 放大" : "⤢ Enlarge"}
+              </button>
             </div>
           </div>
         </div>
+
+        <ChartZoomModal
+          open={zoomNatal}
+          onClose={() => setZoomNatal(false)}
+          title={lang === "zh" ? "本命盘 · 大图查询" : "Natal chart · full view"}
+          subtitle={
+            lang === "zh"
+              ? "十三星体 · 十二宫 · 主要相位"
+              : "13 bodies · 12 houses · major aspects"
+          }
+        >
+          <div className="flex flex-col items-center gap-4">
+            <NatalWheel
+              lang={lang}
+              seed={`${search.name ?? ""}|${search.date ?? ""}|${search.time ?? ""}|${search.place ?? ""}`}
+              size={Math.min(640, typeof window !== "undefined" ? window.innerWidth - 96 : 640)}
+              selectedPlanet={selectedPlanet}
+              onSelectPlanet={setSelectedPlanet}
+            />
+            <p className="max-w-2xl text-center text-xs leading-relaxed text-stone-warm/60">
+              {lang === "zh"
+                ? "点击行星查看落位与相位；四个尖轴宫（1/4/7/10）以金色标示。上升与天顶因不含出生地经度，属近似值。"
+                : "Tap a planet for placement & aspects. The four angular houses (1/4/7/10) are highlighted in gold. Ascendant / MC are approximate — birth-place longitude is not provided in the seed."}
+            </p>
+          </div>
+        </ChartZoomModal>
       </section>
+
 
 
       {/* Dimensions */}
@@ -715,8 +752,10 @@ function PlanetReadingPanel({
   }
 
   const signs = computePlanetSigns(seed);
+  const ascSign = signs[PLANETS.findIndex((p) => p.key === "asc")] ?? 0;
   const p = PLANETS[planetIdx];
   const s = ZODIAC_SIGNS[signs[planetIdx]];
+  const house = houseForSign(signs[planetIdx], ascSign);
 
   const aspects = PLANETS.map((op, j) => {
     if (j === planetIdx) return null;
@@ -752,6 +791,9 @@ function PlanetReadingPanel({
             </span>
             <span className="text-gold-light">{s.g}</span>{" "}
             {lang === "zh" ? s.zh : s.en}
+          </p>
+          <p className="mt-1 text-[10px] uppercase tracking-[0.28em] text-gold-dust/70">
+            {lang === "zh" ? `第 ${house} 宫` : `House ${house}`}
           </p>
           <p className="mt-2 text-xs leading-relaxed text-stone-warm/60">
             {p.meaning[lang === "zh" ? 1 : 0]}

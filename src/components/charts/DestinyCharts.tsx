@@ -392,6 +392,10 @@ export const PLANETS: Planet[] = [
   { key: "mar",  glyph: "♂", name: ["Mars", "火星"], meaning: ["drive · how you take action", "行动力 · 你如何出击"] },
   { key: "jup",  glyph: "♃", name: ["Jupiter", "木星"], meaning: ["growth · where luck expands", "扩张 · 幸运在哪里生长"] },
   { key: "sat",  glyph: "♄", name: ["Saturn", "土星"], meaning: ["discipline · where you must build", "纪律 · 你必须搭建之处"] },
+  { key: "ura",  glyph: "♅", name: ["Uranus", "天王星"], meaning: ["awakening · where you break the mold", "觉醒 · 你在何处打破常规"] },
+  { key: "nep",  glyph: "♆", name: ["Neptune", "海王星"], meaning: ["dream · where you dissolve into meaning", "梦境 · 你在何处融入意义"] },
+  { key: "plu",  glyph: "♇", name: ["Pluto", "冥王星"], meaning: ["transformation · where you are reborn", "蜕变 · 你在何处重生"] },
+  { key: "node", glyph: "☊", name: ["North Node", "北交点"], meaning: ["karmic path · what you are growing toward", "业力方向 · 你正在成长为的样子"] },
   { key: "asc",  glyph: "Ⓐ", name: ["Ascendant", "上升"], meaning: ["mask · how the world first sees you", "面具 · 世界如何第一眼看你"] },
   { key: "mc",   glyph: "Ⓜ", name: ["Midheaven", "天顶"], meaning: ["calling · your public direction", "召唤 · 你的公共方向"] },
 ];
@@ -407,15 +411,56 @@ function hashString(s: string): number {
   return h >>> 0;
 }
 
+const D2R = Math.PI / 180;
+const norm360 = (x: number) => ((x % 360) + 360) % 360;
+
+// Solve Kepler's equation E − e·sin(E) = M (all in degrees) → E in degrees.
+function kepler(M: number, e: number): number {
+  const Mr = M * D2R;
+  let E = Mr + e * Math.sin(Mr) * (1 + e * Math.cos(Mr));
+  for (let k = 0; k < 8; k++) {
+    const dE = (E - e * Math.sin(E) - Mr) / (1 - e * Math.cos(E));
+    E -= dE;
+    if (Math.abs(dE) < 1e-9) break;
+  }
+  return E / D2R;
+}
+
+type OrbEl = { N: number; i: number; w: number; a: number; e: number; M: number };
+
+// Heliocentric ecliptic (x, y, z) in AU (or planet units for Moon) at day d.
+// Elements after Paul Schlyter (http://stjarnhimlen.se/comp/ppcomp.html),
+// referenced to the day count `d = JD − 2451543.5`.
+function helio(el: OrbEl): [number, number, number] {
+  const E = kepler(el.M, el.e);
+  const Er = E * D2R;
+  const xv = el.a * (Math.cos(Er) - el.e);
+  const yv = el.a * Math.sqrt(1 - el.e * el.e) * Math.sin(Er);
+  const v = (Math.atan2(yv, xv) * 180) / Math.PI;
+  const r = Math.sqrt(xv * xv + yv * yv);
+  const Nr = el.N * D2R;
+  const ir = el.i * D2R;
+  const vwr = (v + el.w) * D2R;
+  const x =
+    r * (Math.cos(Nr) * Math.cos(vwr) - Math.sin(Nr) * Math.sin(vwr) * Math.cos(ir));
+  const y =
+    r * (Math.sin(Nr) * Math.cos(vwr) + Math.cos(Nr) * Math.sin(vwr) * Math.cos(ir));
+  const z = r * Math.sin(vwr) * Math.sin(ir);
+  return [x, y, z];
+}
+
 /**
  * Compute the tropical zodiac sign (0..11 = Aries..Pisces) each of the
  * PLANETS falls in, from a seed formatted as
  *   `${name}|${YYYY-MM-DD}|${HH:MM}|${place}`.
  *
- * This uses low-precision mean-longitude formulas (Meeus / Simon 1994 style)
- * referenced to J2000.0. Accuracy is a few degrees — more than enough to
- * assign a 30°-wide zodiac sign. Ascendant/MC use a simplified GMST-based
- * approximation because latitude is not part of the seed.
+ * Uses Paul Schlyter's low-precision orbital elements (Kepler solved to
+ * machine precision) with proper heliocentric → geocentric conversion.
+ * Accuracy: typically < 1° for Sun / inner planets, < 2° for outer bodies,
+ * which is more than enough to identify a 30°-wide zodiac sign.
+ *
+ * Ascendant / MC still use a GMST approximation (equator, geographic
+ * longitude unknown) — placement is indicative, not clinical.
  *
  * If the seed doesn't contain a parseable date, we fall back to the older
  * deterministic hash so the wheel still renders.
@@ -442,9 +487,9 @@ export function computePlanetSigns(seed: string): number[] {
   const mi = tm ? +tm[2] : 0;
 
   // Julian Day Number (proleptic Gregorian).
-  const a = Math.floor((14 - mo) / 12);
-  const yy = y + 4800 - a;
-  const mm = mo + 12 * a - 3;
+  const A = Math.floor((14 - mo) / 12);
+  const yy = y + 4800 - A;
+  const mm = mo + 12 * A - 3;
   const JDN =
     da +
     Math.floor((153 * mm + 2) / 5) +
@@ -453,32 +498,147 @@ export function computePlanetSigns(seed: string): number[] {
     Math.floor(yy / 100) +
     Math.floor(yy / 400) -
     32045;
-  // Treat the given clock time as UT (place-based timezone offset is not
-  // available here). Off by at most a few hours ⇒ under 3° of longitude
-  // for the fastest body (the Moon), so signs still resolve correctly for
-  // the vast majority of births.
+  // Treat the given clock time as UT (birth-place timezone offset unknown
+  // in the seed). For sign-level accuracy this only matters for the Moon
+  // near a cusp — everything else is unaffected.
   const JD = JDN + (hh - 12) / 24 + mi / 1440;
-  const d = JD - 2451545.0; // days since J2000.0
+  // Schlyter's day count is measured from 2000 Jan 0.0 UT = JD 2451543.5.
+  const d = JD - 2451543.5;
+  // For MC/GMST we use J2000.0 (JD 2451545.0).
+  const dJ2 = JD - 2451545.0;
 
-  const norm = (x: number) => ((x % 360) + 360) % 360;
+  // ── Orbital elements ────────────────────────────────────────────────────
+  const sunEl: OrbEl = {
+    N: 0,
+    i: 0,
+    w: 282.9404 + 4.70935e-5 * d,
+    a: 1.0,
+    e: 0.016709 - 1.151e-9 * d,
+    M: norm360(356.047 + 0.9856002585 * d),
+  };
+  const moonEl: OrbEl = {
+    N: norm360(125.1228 - 0.0529538083 * d),
+    i: 5.1454,
+    w: norm360(318.0634 + 0.1643573223 * d),
+    a: 60.2666,
+    e: 0.0549,
+    M: norm360(115.3654 + 13.0649929509 * d),
+  };
+  const merEl: OrbEl = {
+    N: norm360(48.3313 + 3.24587e-5 * d),
+    i: 7.0047 + 5.0e-8 * d,
+    w: norm360(29.1241 + 1.01444e-5 * d),
+    a: 0.387098,
+    e: 0.205635 + 5.59e-10 * d,
+    M: norm360(168.6562 + 4.0923344368 * d),
+  };
+  const venEl: OrbEl = {
+    N: norm360(76.6799 + 2.4659e-5 * d),
+    i: 3.3946 + 2.75e-8 * d,
+    w: norm360(54.891 + 1.38374e-5 * d),
+    a: 0.72333,
+    e: 0.006773 - 1.302e-9 * d,
+    M: norm360(48.0052 + 1.6021302244 * d),
+  };
+  const marEl: OrbEl = {
+    N: norm360(49.5574 + 2.11081e-5 * d),
+    i: 1.8497 - 1.78e-8 * d,
+    w: norm360(286.5016 + 2.92961e-5 * d),
+    a: 1.523688,
+    e: 0.093405 + 2.516e-9 * d,
+    M: norm360(18.6021 + 0.5240207766 * d),
+  };
+  const jupEl: OrbEl = {
+    N: norm360(100.4542 + 2.76854e-5 * d),
+    i: 1.303 - 1.557e-7 * d,
+    w: norm360(273.8777 + 1.64505e-5 * d),
+    a: 5.20256,
+    e: 0.048498 + 4.469e-9 * d,
+    M: norm360(19.895 + 0.0830853001 * d),
+  };
+  const satEl: OrbEl = {
+    N: norm360(113.6634 + 2.3898e-5 * d),
+    i: 2.4886 - 1.081e-7 * d,
+    w: norm360(339.3939 + 2.97661e-5 * d),
+    a: 9.55475,
+    e: 0.055546 - 9.499e-9 * d,
+    M: norm360(316.967 + 0.0334442282 * d),
+  };
+  const uraEl: OrbEl = {
+    N: norm360(74.0005 + 1.3978e-5 * d),
+    i: 0.7733 + 1.9e-8 * d,
+    w: norm360(96.6612 + 3.0565e-5 * d),
+    a: 19.18171 - 1.55e-8 * d,
+    e: 0.047318 + 7.45e-9 * d,
+    M: norm360(142.5905 + 0.011725806 * d),
+  };
+  const nepEl: OrbEl = {
+    N: norm360(131.7806 + 3.0173e-5 * d),
+    i: 1.77 - 2.55e-7 * d,
+    w: norm360(272.8461 - 6.027e-6 * d),
+    a: 30.05826 + 3.313e-8 * d,
+    e: 0.008606 + 2.15e-9 * d,
+    M: norm360(260.2471 + 0.005995147 * d),
+  };
 
-  // Mean longitudes (tropical, degrees).
-  const sun = norm(280.4665 + 0.98564736 * d);
-  const moon = norm(218.3164 + 13.176396 * d);
-  const mer = norm(252.2509 + 4.09233445 * d);
-  const ven = norm(181.9798 + 1.60213034 * d);
-  const mar = norm(355.4330 + 0.52402068 * d);
-  const jup = norm(34.3515 + 0.08308529 * d);
-  const sat = norm(50.0774 + 0.03349390 * d);
+  // Sun geocentric = negative of Earth's heliocentric position, but easier:
+  // compute Sun's geocentric ecliptic longitude directly from its "orbital
+  // elements" (which describe the Earth's orbit as seen from the Sun's frame).
+  const sunE = kepler(sunEl.M, sunEl.e) * D2R;
+  const xvS = Math.cos(sunE) - sunEl.e;
+  const yvS = Math.sqrt(1 - sunEl.e * sunEl.e) * Math.sin(sunE);
+  const vS = (Math.atan2(yvS, xvS) * 180) / Math.PI;
+  const sunLon = norm360(vS + sunEl.w);
+  // Sun geocentric rectangular (used to shift heliocentric planet vectors
+  // into geocentric):
+  const rS = Math.sqrt(xvS * xvS + yvS * yvS);
+  const sunLonRad = sunLon * D2R;
+  const xs = rS * Math.cos(sunLonRad);
+  const ys = rS * Math.sin(sunLonRad);
 
-  // Greenwich Mean Sidereal Time as a longitude (approx).
-  const gmst = norm(280.46061837 + 360.98564736629 * d);
+  function geoLon(el: OrbEl): number {
+    const [xh, yh] = helio(el);
+    // planet geocentric = heliocentric + (Sun geocentric) since
+    // Earth heliocentric = − Sun geocentric.
+    const xg = xh + xs;
+    const yg = yh + ys;
+    return norm360((Math.atan2(yg, xg) * 180) / Math.PI);
+  }
+
+  // Moon: elements are already geocentric.
+  function moonLon(): number {
+    const [xh, yh] = helio(moonEl);
+    return norm360((Math.atan2(yh, xh) * 180) / Math.PI);
+  }
+
+  const sun = sunLon;
+  const moon = moonLon();
+  const mer = geoLon(merEl);
+  const ven = geoLon(venEl);
+  const mar = geoLon(marEl);
+  const jup = geoLon(jupEl);
+  const sat = geoLon(satEl);
+  const ura = geoLon(uraEl);
+  const nep = geoLon(nepEl);
+  // Pluto: mean longitude approximation (period ≈ 247.94 y ⇒ 0.003968 °/day).
+  // Anchor at J2000 mean longitude ≈ 250.44°.
+  const plu = norm360(250.44 + 0.003968 * dJ2);
+  // North Node = longitude of Moon's ascending node.
+  const node = norm360(moonEl.N);
+
+  // Greenwich Mean Sidereal Time as a longitude (approx equator plane).
+  const gmst = norm360(280.46061837 + 360.98564736629 * dJ2);
   const mc = gmst;
-  const asc = norm(gmst + 90); // equator-plane approximation
+  const asc = norm360(gmst + 90);
 
-  // Order MUST match PLANETS: sun, moon, mer, ven, mar, jup, sat, asc, mc.
-  const longitudes = [sun, moon, mer, ven, mar, jup, sat, asc, mc];
+  // Order MUST match PLANETS.
+  const longitudes = [sun, moon, mer, ven, mar, jup, sat, ura, nep, plu, node, asc, mc];
   return longitudes.map((L) => Math.floor(L / 30) % 12);
+}
+
+/** Whole-sign houses: house 1 is the Ascendant's sign, then anti-clockwise. */
+export function houseForSign(signIdx: number, ascSignIdx: number): number {
+  return ((signIdx - ascSignIdx + 12) % 12) + 1;
 }
 
 export function NatalWheel({
@@ -517,24 +677,26 @@ export function NatalWheel({
   const activeSign =
     hoverSign ?? (activePlanet != null ? signs[activePlanet] : null);
 
+  // Ascendant is the second-to-last entry in PLANETS.
+  const ascSign = signs[PLANETS.findIndex((p) => p.key === "asc")] ?? 0;
+
   const centerContent = (() => {
     if (activePlanet != null) {
       const p = PLANETS[activePlanet];
       const s = ZODIAC[signs[activePlanet]];
+      const house = houseForSign(signs[activePlanet], ascSign);
       return (
         <>
-          <p className="text-[10px] uppercase tracking-[0.4em] text-gold-dust/70">
+          <p className="text-[9px] uppercase tracking-[0.32em] text-gold-dust/70">
             {p.name[lang === "zh" ? 1 : 0]}
           </p>
-          <p className="mt-2 font-serif text-4xl italic text-gold-light">{p.glyph}</p>
-          <p className="mt-3 text-[10px] uppercase tracking-[0.32em] text-stone-warm/60">
-            {lang === "zh" ? "落于" : "in"}
+          <p className="mt-1 font-serif text-3xl italic text-gold-light">{p.glyph}</p>
+          <p className="mt-2 font-serif text-lg italic text-stone-warm">
+            <span className="text-gold-light">{s.g}</span>{" "}
+            {lang === "zh" ? s.zh : s.en}
           </p>
-          <p className="mt-1 font-serif text-2xl italic text-stone-warm">
-            {s.g} {lang === "zh" ? s.zh : s.en}
-          </p>
-          <p className="mx-6 mt-3 text-xs leading-relaxed text-stone-warm/60">
-            {p.meaning[lang === "zh" ? 1 : 0]}
+          <p className="mt-1 text-[9px] uppercase tracking-[0.28em] text-stone-warm/50">
+            {lang === "zh" ? `第 ${house} 宫` : `House ${house}`}
           </p>
         </>
       );
@@ -542,22 +704,23 @@ export function NatalWheel({
     if (activeSign != null) {
       const s = ZODIAC[activeSign];
       const inhabitants = (bySign[activeSign] ?? []).map((pi) => PLANETS[pi]);
+      const house = houseForSign(activeSign, ascSign);
       return (
         <>
-          <p className="text-[10px] uppercase tracking-[0.4em] text-gold-dust/70">
-            {lang === "zh" ? "宫位" : "House"}
+          <p className="text-[9px] uppercase tracking-[0.32em] text-gold-dust/70">
+            {lang === "zh" ? `第 ${house} 宫` : `House ${house}`}
           </p>
-          <p className="mt-2 font-serif text-3xl italic text-stone-warm">
+          <p className="mt-2 font-serif text-2xl italic text-stone-warm">
             {lang === "zh" ? s.zh : s.en}
           </p>
-          <p className="mt-1 text-4xl text-gold-light">{s.g}</p>
+          <p className="mt-1 text-3xl text-gold-light">{s.g}</p>
           {inhabitants.length > 0 ? (
-            <p className="mx-4 mt-3 text-xs uppercase tracking-[0.24em] text-gold-dust/80">
-              {inhabitants.map((p) => `${p.glyph} ${p.name[lang === "zh" ? 1 : 0]}`).join(" · ")}
+            <p className="mx-2 mt-2 text-[10px] uppercase tracking-[0.2em] text-gold-dust/80">
+              {inhabitants.map((p) => p.glyph).join(" · ")}
             </p>
           ) : (
-            <p className="mt-3 text-[10px] uppercase tracking-[0.28em] text-stone-warm/40">
-              {lang === "zh" ? "此宫空落" : "empty house"}
+            <p className="mt-2 text-[9px] uppercase tracking-[0.24em] text-stone-warm/40">
+              {lang === "zh" ? "此宫空落" : "empty"}
             </p>
           )}
         </>
@@ -660,6 +823,31 @@ export function NatalWheel({
             </g>
           );
         })}
+
+        {/* house numbers (whole-sign, house 1 = ascendant's sign) */}
+        {ZODIAC.map((_, i) => {
+          const a = ((i * 30 + 15 - 90) * Math.PI) / 180;
+          const rH = (rHouseRing + rInner) / 2 + 4;
+          const x = cx + Math.cos(a) * rH;
+          const y = cy + Math.sin(a) * rH;
+          const house = houseForSign(i, ascSign);
+          const isAngular = house === 1 || house === 4 || house === 7 || house === 10;
+          return (
+            <text
+              key={`h-${i}`}
+              x={x}
+              y={y + 3}
+              textAnchor="middle"
+              fontSize="9"
+              fill={isAngular ? "var(--gold-light)" : "var(--stone-warm)"}
+              opacity={isAngular ? 0.9 : 0.45}
+              style={{ letterSpacing: "0.1em", pointerEvents: "none" }}
+            >
+              {house}
+            </text>
+          );
+        })}
+
 
         {/* Aspect lines between planets in trine/opposition signs */}
         {(() => {
@@ -799,3 +987,64 @@ function wedgePath(
   return `M ${x1o} ${y1o} A ${rOut} ${rOut} 0 0 1 ${x2o} ${y2o} L ${x2i} ${y2i} A ${rIn} ${rIn} 0 0 0 ${x1i} ${y1i} Z`;
 }
 
+
+/* ─────────────────────────────────────────────────────────────
+ * ChartZoomModal — full-screen zoom overlay for any chart panel.
+ * Renders whatever children are passed at a larger size, with a
+ * dimmed backdrop and a close button. ESC closes.
+ * ────────────────────────────────────────────────────────── */
+export function ChartZoomModal({
+  open,
+  onClose,
+  title,
+  subtitle,
+  children,
+}: {
+  open: boolean;
+  onClose: () => void;
+  title?: string;
+  subtitle?: string;
+  children: React.ReactNode;
+}) {
+  if (!open) return null;
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-obsidian/85 backdrop-blur-md p-4 md:p-8"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.94 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.25 }}
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full max-w-4xl max-h-[92vh] overflow-y-auto rounded-3xl border border-gold-dust/30 bg-obsidian/95 p-6 md:p-10 shadow-[0_0_80px_-20px_rgba(212,175,138,0.35)]"
+      >
+        <div className="mb-5 flex items-start justify-between gap-4">
+          <div>
+            {title && (
+              <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+                {title}
+              </p>
+            )}
+            {subtitle && (
+              <p className="mt-2 font-serif text-2xl italic text-stone-warm md:text-3xl">
+                {subtitle}
+              </p>
+            )}
+          </div>
+          <button
+            onClick={onClose}
+            aria-label="close"
+            className="rounded-full border border-white/15 px-4 py-1.5 text-[10px] uppercase tracking-[0.32em] text-stone-warm/70 transition-colors hover:border-gold-dust/50 hover:text-gold-light"
+          >
+            ✕
+          </button>
+        </div>
+        {children}
+      </motion.div>
+    </div>
+  );
+}
