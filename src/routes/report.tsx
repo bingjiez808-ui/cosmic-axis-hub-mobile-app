@@ -322,6 +322,7 @@ function ReportPage() {
   const search = Route.useSearch();
   const { lang, setLang, t } = useLang();
   const li = lang === "zh" ? 1 : 0;
+  const [accOpen, setAccOpen] = useState(false);
 
   // Sync report language with the choice made in the ritual, if provided.
   useEffect(() => {
