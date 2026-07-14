@@ -773,7 +773,7 @@ export function MembershipSection({ birthISO }: { birthISO?: string } = {}) {
           lang === "zh"
             ? "完整 PDF 报告 · 生命时间轴精解 · 合盘关系分析（贤者专属）。"
             : "Full PDF · life-timeline analysis · Synastry relationship reading (Sage exclusive).",
-        price: [`$9 / mo`, `¥68 / 月`][li],
+        price: [`$2.99 / mo`, `¥19.9 / 月`][li],
         highlight: true,
       },
       {
