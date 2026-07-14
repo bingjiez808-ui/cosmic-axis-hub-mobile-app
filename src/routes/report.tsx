@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { motion } from "framer-motion";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   ChartZoomModal,
@@ -506,12 +506,10 @@ function ReportPage() {
   const [ai, setAi] = useState<ReportAI | null>(null);
   const [aiState, setAiState] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [aiError, setAiError] = useState<string | null>(null);
+  const latestReqRef = useRef(0);
 
   useEffect(() => {
-    // Only fetch when we actually have a birth date — otherwise the model
-    // has nothing personal to anchor in and the fallback text is fine.
     if (!search.date) return;
-    // Cache per seed+lang for the session so the reading is stable.
     const cacheKey = `oracle-report::${lang}::${seed}`;
     try {
       const cached = typeof sessionStorage !== "undefined" ? sessionStorage.getItem(cacheKey) : null;
@@ -524,7 +522,7 @@ function ReportPage() {
       /* ignore */
     }
 
-    let cancelled = false;
+    const reqId = ++latestReqRef.current;
     setAiState("loading");
     setAiError(null);
     const signs = computePlanetSigns(seed);
@@ -549,7 +547,10 @@ function ReportPage() {
       },
     })
       .then((res) => {
-        if (cancelled) return;
+        // Only apply if this is still the most recent request — protects against
+        // fast lang/seed switches without cancelling successful writes (React
+        // strict mode used to drop the resolved value here).
+        if (reqId !== latestReqRef.current) return;
         setAi(res);
         setAiState("ready");
         try {
@@ -559,13 +560,10 @@ function ReportPage() {
         }
       })
       .catch((err: unknown) => {
-        if (cancelled) return;
+        if (reqId !== latestReqRef.current) return;
         setAiError(err instanceof Error ? err.message : String(err));
         setAiState("error");
       });
-    return () => {
-      cancelled = true;
-    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seed, lang]);
 
