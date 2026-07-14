@@ -326,6 +326,8 @@ export function TraditionModal({
   if (!id) return null;
   const p = PRIMERS[id];
   const personal = account && seed ? personalFor(id, seed, lang) : null;
+  const analysis = account && seed ? personalAnalysis(id, seed, lang) : null;
+
   const sections: Section[] = [
     {
       label: [`How to read`, `如何解读`],
