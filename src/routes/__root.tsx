@@ -14,19 +14,19 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 
 function NotFoundComponent() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <div className="flex min-h-screen items-center justify-center bg-obsidian px-4">
       <div className="max-w-md text-center">
-        <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          The page you're looking for doesn't exist or has been moved.
+        <p className="font-mono text-[10px] tracking-[0.4em] uppercase text-gold-dust mb-4">Lost in the stars</p>
+        <h1 className="font-serif text-7xl text-stone-warm">404</h1>
+        <p className="mt-4 text-sm text-muted-foreground">
+          The constellation you seek is not written here.
         </p>
-        <div className="mt-6">
+        <div className="mt-8">
           <Link
             to="/"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className="inline-flex items-center justify-center rounded-full border border-gold-dust/30 px-6 py-3 text-xs uppercase tracking-widest text-gold-dust transition-colors hover:border-gold-dust hover:bg-gold-dust/10"
           >
-            Go home
+            Return to the Library
           </Link>
         </div>
       </div>
@@ -42,29 +42,27 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   }, [error]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <div className="flex min-h-screen items-center justify-center bg-obsidian px-4">
       <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          This page didn't load
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Something went wrong on our end. You can try refreshing or head back home.
+        <h1 className="font-serif text-2xl text-stone-warm">The ritual was interrupted.</h1>
+        <p className="mt-3 text-sm text-muted-foreground">
+          A disturbance in the reading. You may try again.
         </p>
-        <div className="mt-6 flex flex-wrap justify-center gap-2">
+        <div className="mt-8 flex flex-wrap justify-center gap-3">
           <button
             onClick={() => {
               router.invalidate();
               reset();
             }}
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className="rounded-full bg-gold-dust px-6 py-3 text-xs uppercase tracking-widest text-obsidian transition-colors hover:bg-gold-light"
           >
             Try again
           </button>
           <a
             href="/"
-            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+            className="rounded-full border border-gold-dust/30 px-6 py-3 text-xs uppercase tracking-widest text-gold-dust transition-colors hover:border-gold-dust"
           >
-            Go home
+            Return home
           </a>
         </div>
       </div>
@@ -77,21 +75,30 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "Library of Destiny — AI synthesis of four ancient traditions" },
+      {
+        name: "description",
+        content:
+          "An immersive AI platform that weaves Western Astrology, Vedic Jyotish, Chinese BaZi and Zi Wei Dou Shu into a single reading of who you are.",
+      },
+      { name: "author", content: "Library of Destiny" },
+      { property: "og:title", content: "Library of Destiny" },
+      {
+        property: "og:description",
+        content: "Four civilizations. One question. Who are you?",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: appCss,
+        href: "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600&display=swap",
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
     ],
   }),
   shellComponent: RootShell,
@@ -119,8 +126,71 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <div className="relative min-h-screen bg-obsidian text-stone-warm">
+        {/* Living cosmic background — fixed behind every route */}
+        <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+          <div className="star-bg absolute inset-0 opacity-30" />
+          <div className="absolute -top-[20%] -left-[10%] h-[60%] w-[60%] rounded-full bg-nebula-purple/15 blur-[140px] animate-pulse-gold" />
+          <div className="absolute -bottom-[10%] -right-[5%] h-[45%] w-[45%] rounded-full bg-gold-dust/8 blur-[120px] animate-pulse-gold [animation-delay:2s]" />
+        </div>
+
+        <SiteNav />
+
+        <main className="relative z-10">
+          <Outlet />
+        </main>
+
+        <SiteFooter />
+      </div>
     </QueryClientProvider>
+  );
+}
+
+function SiteNav() {
+  return (
+    <nav className="fixed top-0 left-1/2 z-50 -translate-x-1/2 p-6">
+      <div className="glass-card flex items-center gap-6 rounded-full px-6 py-2.5 text-[11px] font-light uppercase tracking-[0.28em] md:gap-10 md:px-8 md:py-3">
+        <Link to="/" className="font-serif text-sm normal-case tracking-normal text-stone-warm">
+          Destiny<span className="text-gold-dust">·</span>Library
+        </Link>
+        <div className="hidden items-center gap-8 md:flex">
+          <Link to="/traditions" className="text-stone-warm/70 transition-colors hover:text-gold-dust">
+            Four Pillars
+          </Link>
+          <Link to="/ritual" className="text-stone-warm/70 transition-colors hover:text-gold-dust">
+            The Ritual
+          </Link>
+          <Link to="/about" className="text-stone-warm/70 transition-colors hover:text-gold-dust">
+            About
+          </Link>
+        </div>
+      </div>
+    </nav>
+  );
+}
+
+function SiteFooter() {
+  return (
+    <footer className="relative z-10 border-t border-white/5 px-6 py-16 md:px-12">
+      <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-8 md:flex-row">
+        <div className="font-serif text-xl text-stone-warm">
+          Destiny<span className="text-gold-dust">Library</span>
+        </div>
+        <div className="flex gap-10 text-[10px] font-medium uppercase tracking-[0.28em] text-stone-warm/50">
+          <Link to="/traditions" className="transition-colors hover:text-gold-dust">
+            Traditions
+          </Link>
+          <Link to="/about" className="transition-colors hover:text-gold-dust">
+            Ethics
+          </Link>
+          <Link to="/about" className="transition-colors hover:text-gold-dust">
+            Privacy
+          </Link>
+        </div>
+        <div className="text-[10px] uppercase tracking-[0.28em] italic text-stone-warm/40">
+          © MMXXVI · Four civilizations, one question
+        </div>
+      </div>
+    </footer>
   );
 }
