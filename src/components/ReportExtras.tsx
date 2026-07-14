@@ -1023,8 +1023,15 @@ export function SynastryPreview() {
           <input
             className="ritual-input !text-base"
             type="date"
+            min="1900-01-01"
+            max="2099-12-31"
             value={partner.date}
-            onChange={(e) => setPartner((p) => ({ ...p, date: e.target.value }))}
+            onChange={(e) => {
+              let val = e.target.value;
+              const m = val.match(/^(\d+)(-\d{2}-\d{2})?$/);
+              if (m && m[1].length > 4) val = m[1].slice(0, 4) + (m[2] || "");
+              setPartner((p) => ({ ...p, date: val }));
+            }}
             style={{ colorScheme: "dark" }}
           />
           <input
