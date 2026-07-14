@@ -500,12 +500,21 @@ function ReportPage() {
                 <span className="rounded-full border border-white/10 px-3 py-1">Ⓐ {lang === "zh" ? "上升" : "Asc"}</span>
                 <span className="rounded-full border border-white/10 px-3 py-1">Ⓜ {lang === "zh" ? "天顶" : "MC"}</span>
               </div>
+
+              <PlanetReadingPanel
+                lang={lang}
+                seed={`${search.name ?? ""}|${search.date ?? ""}|${search.time ?? ""}|${search.place ?? ""}`}
+                planetIdx={selectedPlanet}
+                onClear={() => setSelectedPlanet(null)}
+              />
             </div>
             <div className="text-stone-warm/40">
               <NatalWheel
                 lang={lang}
                 seed={`${search.name ?? ""}|${search.date ?? ""}|${search.time ?? ""}|${search.place ?? ""}`}
                 size={440}
+                selectedPlanet={selectedPlanet}
+                onSelectPlanet={setSelectedPlanet}
               />
             </div>
           </div>
