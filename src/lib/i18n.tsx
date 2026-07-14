@@ -256,9 +256,6 @@ const zh: Dict = {
   mem_close: "关闭",
 };
 
-// zh has an extra scratch key from a copy — strip so type matches.
-delete (zh as unknown as Record<string, unknown>).focus_title_em_ignore;
-
 const DICTS: Record<Lang, Dict> = { en, zh };
 
 type Ctx = { lang: Lang; setLang: (l: Lang) => void; t: Dict };
