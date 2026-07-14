@@ -261,6 +261,26 @@ const dimensions: Dimension[] = [
     ],
     viz: "elements",
     elementStrengths: [0.5, 0.9, 0.55, 0.6, 0.3],
+    details: [
+      {
+        label: ["Watch these systems", "值得留意的系统"],
+        items: [
+          ["Cardiovascular · blood pressure", "心血管 · 血压"],
+          ["Liver detox · alcohol tolerance", "肝脏解毒 · 酒精耐受"],
+          ["Sleep architecture · REM debt", "睡眠结构 · 深睡不足"],
+          ["Eyes and neck (screen strain)", "眼睛与颈椎（屏幕过载）"],
+        ],
+      },
+      {
+        label: ["Cooling habits that pay off", "对你有效的降温习惯"],
+        items: [
+          ["Cold shower · long exhale breathing", "冷水澡 · 长呼气式呼吸"],
+          ["No screens 60 min before sleep", "睡前 60 分钟远离屏幕"],
+          ["Water-rich foods, less spice, less alcohol", "多水食物，少辣少酒"],
+          ["Two full rest days a week", "每周两个完整的休息日"],
+        ],
+      },
+    ],
   },
   {
     key: "mission",
