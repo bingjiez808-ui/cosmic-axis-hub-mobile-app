@@ -386,8 +386,17 @@ export function TraditionModal({
                 </div>
               ))}
             </dl>
+            {analysis && (
+              <div className="mt-5 rounded-xl border border-white/10 bg-obsidian/40 p-4">
+                <p className="mb-2 text-[9px] uppercase tracking-[0.32em] text-gold-dust/70">
+                  {lang === "zh" ? "简短分析" : "Short analysis"}
+                </p>
+                <p className="text-sm leading-relaxed text-stone-warm/85">{analysis}</p>
+              </div>
+            )}
           </div>
         )}
+
 
         {!account && (
           <div className="mb-8 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-nebula-purple/35 bg-nebula-purple/[0.08] px-5 py-3 text-sm text-stone-warm/75">
