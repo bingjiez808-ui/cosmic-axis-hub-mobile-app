@@ -1,0 +1,211 @@
+import { createServerFn } from "@tanstack/react-start";
+import { generateText } from "ai";
+import { z } from "zod";
+
+import { createLovableAiGatewayProvider } from "./ai-gateway.server";
+
+const DIM_KEYS = [
+  "character",
+  "vocation",
+  "wealth",
+  "love",
+  "health",
+  "parents",
+  "children",
+  "mission",
+] as const;
+
+const DIM_TITLES_EN: Record<string, string> = {
+  character: "Character",
+  vocation: "Vocation",
+  wealth: "Wealth",
+  love: "Love & Marriage",
+  health: "Health & Vitality",
+  parents: "Parents & Family",
+  children: "Children & Legacy",
+  mission: "Life Mission",
+};
+const DIM_TITLES_ZH: Record<string, string> = {
+  character: "性格特质",
+  vocation: "事业方向",
+  wealth: "财富格局",
+  love: "情感与婚姻",
+  health: "健康与活力",
+  parents: "父母与原生家庭",
+  children: "子女与传承",
+  mission: "人生使命",
+};
+
+const Input = z.object({
+  name: z.string().optional(),
+  date: z.string().optional(),
+  time: z.string().optional(),
+  place: z.string().optional(),
+  lang: z.enum(["en", "zh"]).default("en"),
+  quiz: z.string().optional(),
+  // Structured astrology facts computed on the client so the model
+  // grounds every dimension in the visitor's real chart.
+  planets: z
+    .array(
+      z.object({
+        name: z.string(),
+        sign: z.string(),
+        house: z.number().optional(),
+      }),
+    )
+    .default([]),
+  bazi: z.string().optional(),
+  zodiac: z.string().optional(),
+  lunar: z.string().optional(),
+});
+
+export type ReportDimensionAI = {
+  key: string;
+  headline: string;
+  evidence: { tradition: string; note: string }[];
+  synthesis: string;
+  plain: string;
+  details: { label: string; items: string[] }[];
+};
+
+export type ReportAI = {
+  summary: string;
+  dimensions: ReportDimensionAI[];
+};
+
+export const generateReport = createServerFn({ method: "POST" })
+  .inputValidator((data: unknown) => Input.parse(data))
+  .handler(async ({ data }): Promise<ReportAI> => {
+    const key = process.env.LOVABLE_API_KEY;
+    if (!key) throw new Error("Missing LOVABLE_API_KEY");
+    const gateway = createLovableAiGatewayProvider(key);
+
+    const isZh = data.lang === "zh";
+
+    const planetLines = data.planets
+      .map((p) => `${p.name} in ${p.sign}${p.house ? ` (house ${p.house})` : ""}`)
+      .join("; ");
+
+    const chartFacts = [
+      data.name && `Name: ${data.name}`,
+      data.date && `Birth date (solar): ${data.date}`,
+      data.time && `Birth time: ${data.time}`,
+      data.place && `Birth place: ${data.place}`,
+      data.lunar && `Lunar date: ${data.lunar}`,
+      data.zodiac && `Chinese zodiac: ${data.zodiac}`,
+      data.bazi && `BaZi four pillars: ${data.bazi}`,
+      planetLines && `Western planet placements: ${planetLines}`,
+      data.quiz && `Self-report calibration answers (A/B/C/D per question): ${data.quiz}`,
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    const titles = isZh ? DIM_TITLES_ZH : DIM_TITLES_EN;
+    const dimList = DIM_KEYS.map((k) => `- ${k}: ${titles[k]}`).join("\n");
+
+    const system = isZh
+      ? `你是"命运图书馆"里精通西方占星、印度占星（Jyotish）、八字与紫微斗数的老者。你只输出严格合法的 JSON —— 不能有前后缀、不能有注释、不能有 Markdown 代码块。
+所有文字必须紧扣来访者的真实命盘事实（阳历/农历日期、干支、生肖、行星落位与宫位）。绝不能给出任何两个人都一样的通用文字 —— 每一段都必须至少引用一条上面列出的具体事实（例如"太阳落狮子"、"甲子日主"、"农历七月"）。
+语气：温暖、诗意、克制，像深夜烛下低声耳语。使命放在最后并总结前七维度。`
+      : `You are an elder of the Library of Destiny, fluent in Western astrology, Vedic Jyotish, Chinese BaZi and Zi Wei Dou Shu. You output STRICT JSON only — no prose before/after, no comments, no Markdown fences.
+Every paragraph MUST anchor in the visitor's real chart facts listed below (solar / lunar date, four-pillar stems & branches, Chinese zodiac, planet placements & houses). Never produce anything two different people would receive verbatim — reference at least one concrete fact per paragraph (e.g. "Sun in Leo", "Wood Rat day master", "seventh lunar month").
+Tone: warm, poetic, restrained — a candle-lit whisper. Place "mission" last and let it synthesise the previous seven dimensions.`;
+
+    const schema = isZh
+      ? `{
+  "summary": "一段两三句、能被单独引用的诗意概括，必须直接呼应来访者具体的日/时/干支/主要行星落位",
+  "dimensions": [
+    {
+      "key": "character | vocation | wealth | love | health | parents | children | mission",
+      "headline": "8-18 字的诗意小标题",
+      "evidence": [
+        {"tradition": "西方占星", "note": "一句具体落位，例如：太阳落狮子第 5 宫 · 月亮合金星"},
+        {"tradition": "印度占星", "note": "结合上面日期与行星，给出具体 Nakshatra / Bhava 表述"},
+        {"tradition": "八字",   "note": "结合上面干支，指出日主与十神"},
+        {"tradition": "紫微",   "note": "结合出生年月，落到具体宫位与主星"}
+      ],
+      "synthesis": "3-4 句跨体系合鸣，必须点出至少一条上面列出的事实",
+      "plain": "3-4 句「说人话」——直接给来访者的行动建议，带一句他此刻的处境感",
+      "details": [
+        {"label": "优势 / 通道 / 缘份形状 等", "items": ["点 1", "点 2", "点 3", "点 4"]},
+        {"label": "警惕 / 窗口 / 需修的功课 等", "items": ["点 1", "点 2", "点 3", "点 4"]}
+      ]
+    }
+    // …按照下方八个 key 顺序，各一个对象，共 8 个
+  ]
+}`
+      : `{
+  "summary": "2-3 sentence poetic epigraph that directly echoes the visitor's specific date/time/pillars/main placements",
+  "dimensions": [
+    {
+      "key": "character | vocation | wealth | love | health | parents | children | mission",
+      "headline": "6-14 word poetic sub-title",
+      "evidence": [
+        {"tradition": "Astrology", "note": "one concrete placement, e.g. Sun in Leo in 5th · Moon conjunct Venus"},
+        {"tradition": "Jyotish",   "note": "specific Nakshatra / Bhava derived from the date + planets above"},
+        {"tradition": "BaZi",      "note": "based on the pillars above, name the day-master & a Ten God"},
+        {"tradition": "Zi Wei",    "note": "specific palace + main star for this year/month of birth"}
+      ],
+      "synthesis": "3-4 sentences of cross-tradition convergence, citing at least one concrete fact listed above",
+      "plain": "3-4 sentences in everyday words — a concrete next move plus one line about where they stand right now",
+      "details": [
+        {"label": "Strengths / channels / shape of the bond etc.", "items": ["point 1", "point 2", "point 3", "point 4"]},
+        {"label": "Watch-outs / windows / lessons etc.", "items": ["point 1", "point 2", "point 3", "point 4"]}
+      ]
+    }
+    // …one object per dim key below, in the given order — 8 total
+  ]
+}`;
+
+    const prompt = `${isZh ? "来访者命盘事实" : "Visitor chart facts"}:
+${chartFacts || (isZh ? "（未提供）" : "(not provided)")}
+
+${isZh ? "需要生成的维度（严格按此顺序，8 个）" : "Required dimensions (STRICT order, 8 total)"}:
+${dimList}
+
+${isZh ? "严格按下面的 JSON schema 输出（只输出 JSON）" : "Output strictly matches this JSON schema (JSON only)"}:
+${schema}`;
+
+    const { text } = await generateText({
+      model: gateway("google/gemini-2.5-flash"),
+      system,
+      prompt,
+    });
+
+    // Robust JSON extraction — strip fences and trailing prose.
+    const cleaned = text
+      .trim()
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/\s*```\s*$/i, "");
+    const firstBrace = cleaned.indexOf("{");
+    const lastBrace = cleaned.lastIndexOf("}");
+    const jsonStr =
+      firstBrace >= 0 && lastBrace > firstBrace
+        ? cleaned.slice(firstBrace, lastBrace + 1)
+        : cleaned;
+
+    let parsed: ReportAI;
+    try {
+      parsed = JSON.parse(jsonStr) as ReportAI;
+    } catch (err) {
+      throw new Error(
+        `Report JSON parse failed: ${(err as Error).message}. Raw head: ${jsonStr.slice(0, 240)}`,
+      );
+    }
+
+    // Basic normalisation — guarantee 8 dimensions in the expected order.
+    const byKey = new Map(parsed.dimensions?.map((d) => [d.key, d]) ?? []);
+    const ordered = DIM_KEYS.map(
+      (k): ReportDimensionAI =>
+        byKey.get(k) ?? {
+          key: k,
+          headline: titles[k],
+          evidence: [],
+          synthesis: "",
+          plain: "",
+          details: [],
+        },
+    );
+
+    return { summary: parsed.summary ?? "", dimensions: ordered };
+  });
