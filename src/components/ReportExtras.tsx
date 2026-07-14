@@ -1568,21 +1568,7 @@ export function SynastryPreview() {
                     },
                   ];
                   return traditions.map((tr) => (
-                    <div
-                      key={tr.tag[0]}
-                      className="rounded-2xl border border-white/10 bg-white/[0.02] p-4"
-                    >
-                      <div className="mb-2 flex items-center justify-between gap-2">
-                        <p className="text-[9px] uppercase tracking-[0.28em] text-gold-dust/70">
-                          {tr.tag[li]}
-                        </p>
-                        <span className="rounded-full border border-gold-dust/30 px-2 py-0.5 text-[9px] text-gold-light">
-                          {tr.score}
-                        </span>
-                      </div>
-                      <p className="mb-1 font-serif text-sm italic text-stone-warm">{tr.title[li]}</p>
-                      <p className="text-[12px] leading-relaxed text-stone-warm/65">{tr.body[li]}</p>
-                    </div>
+                    <TraditionCard key={tr.tag[0]} tr={tr} li={li} lang={lang} />
                   ));
                 })()}
               </div>
