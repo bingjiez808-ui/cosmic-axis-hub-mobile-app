@@ -126,6 +126,12 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const [accOpen, setAccOpen] = useState(false);
+  useEffect(() => {
+    const handler = () => setAccOpen(true);
+    window.addEventListener("lod:open-account", handler);
+    return () => window.removeEventListener("lod:open-account", handler);
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -146,11 +152,13 @@ function RootComponent() {
 
             <SiteFooter />
           </div>
+          <AccountModal open={accOpen} onClose={() => setAccOpen(false)} />
         </AccountProvider>
       </LanguageProvider>
     </QueryClientProvider>
   );
 }
+
 
 function LanguageToggle() {
   const { lang, setLang } = useLang();
