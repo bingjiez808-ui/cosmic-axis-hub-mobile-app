@@ -384,7 +384,7 @@ type Planet = {
   meaning: [string, string];
 };
 
-const PLANETS: Planet[] = [
+export const PLANETS: Planet[] = [
   { key: "sun",  glyph: "☉", name: ["Sun", "太阳"], meaning: ["core identity · what you shine as", "核心自我 · 你所闪耀的形状"] },
   { key: "moon", glyph: "☽", name: ["Moon", "月亮"], meaning: ["inner needs · how you feel safe", "内在需要 · 你如何感到安全"] },
   { key: "mer",  glyph: "☿", name: ["Mercury", "水星"], meaning: ["mind · how you think and speak", "心智 · 你如何思考与表达"] },
@@ -395,6 +395,8 @@ const PLANETS: Planet[] = [
   { key: "asc",  glyph: "Ⓐ", name: ["Ascendant", "上升"], meaning: ["mask · how the world first sees you", "面具 · 世界如何第一眼看你"] },
   { key: "mc",   glyph: "Ⓜ", name: ["Midheaven", "天顶"], meaning: ["calling · your public direction", "召唤 · 你的公共方向"] },
 ];
+
+export const ZODIAC_SIGNS = ZODIAC;
 
 function hashString(s: string): number {
   let h = 2166136261 >>> 0;
