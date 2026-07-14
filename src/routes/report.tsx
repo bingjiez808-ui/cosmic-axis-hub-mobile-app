@@ -7,6 +7,11 @@ import {
   StrengthRadar,
   ZodiacWheel,
 } from "@/components/charts/DestinyCharts";
+import {
+  KeyEventsVerification,
+  LifeTimeline,
+  MembershipSection,
+} from "@/components/ReportExtras";
 import { useLang } from "@/lib/i18n";
 
 type SearchParams = {
