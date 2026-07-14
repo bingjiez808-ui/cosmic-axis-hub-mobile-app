@@ -12,7 +12,9 @@ import {
   KeyEventsVerification,
   LifeTimeline,
   MembershipSection,
+  RecentWindows,
   SaveReadingBar,
+  SynastryPreview,
   TarotDraw,
 } from "@/components/ReportExtras";
 import { AccountModal } from "@/components/AccountModal";
