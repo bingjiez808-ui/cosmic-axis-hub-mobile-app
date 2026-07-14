@@ -32,7 +32,12 @@ type SearchParams = {
   place?: string;
   lang?: "en" | "zh";
   quiz?: string;
+  bazi?: string;
+  zodiac?: string;
+  lunar?: string;
 };
+
+const pickStr = (v: unknown) => (typeof v === "string" ? v : undefined);
 
 export const Route = createFileRoute("/report")({
   head: () => ({
@@ -47,12 +52,15 @@ export const Route = createFileRoute("/report")({
     ],
   }),
   validateSearch: (s: Record<string, unknown>): SearchParams => ({
-    name: typeof s.name === "string" ? s.name : undefined,
-    date: typeof s.date === "string" ? s.date : undefined,
-    time: typeof s.time === "string" ? s.time : undefined,
-    place: typeof s.place === "string" ? s.place : undefined,
+    name: pickStr(s.name),
+    date: pickStr(s.date),
+    time: pickStr(s.time),
+    place: pickStr(s.place),
     lang: s.lang === "zh" ? "zh" : s.lang === "en" ? "en" : undefined,
-    quiz: typeof s.quiz === "string" ? s.quiz : undefined,
+    quiz: pickStr(s.quiz),
+    bazi: pickStr(s.bazi),
+    zodiac: pickStr(s.zodiac),
+    lunar: pickStr(s.lunar),
   }),
   component: ReportPage,
 });
