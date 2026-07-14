@@ -36,7 +36,7 @@ export const Route = createFileRoute("/synthesis")({
   component: SynthesisPage,
 });
 
-const phases = [
+const PHASES_EN = [
   { label: "Casting the Western wheel", detail: "Sun · Moon · Ascendant · Ten planets" },
   { label: "Drawing the Nakshatra mandala", detail: "27 lunar mansions · Dasha timing" },
   { label: "Assembling the four pillars", detail: "Ten stems · Twelve branches · Five elements" },
@@ -45,10 +45,31 @@ const phases = [
   { label: "Composing the unified reading", detail: "One life, four languages" },
 ];
 
+const PHASES_ZH = [
+  { label: "起西方本命盘", detail: "太阳 · 月亮 · 上升 · 十颗行星" },
+  { label: "绘制二十七宿曼陀罗", detail: "27 星宿 · 大运周期" },
+  { label: "排列四柱八字", detail: "十天干 · 十二地支 · 五行" },
+  { label: "填布紫微十二宫", detail: "十四主星 · 四化" },
+  { label: "跨传统模式搜索", detail: "汇合共识 · 标出冲突" },
+  { label: "谱写统一解读", detail: "一段人生 · 四种语言" },
+];
+
+const HEADLINE = {
+  en: "The library is speaking to itself…",
+  zh: "图书馆正在自言自语……",
+};
+const KICKER = {
+  en: (name?: string) => (name ? `Reading of ${name}` : "The reading"),
+  zh: (name?: string) => (name ? `${name} 的解读` : "命盘解读"),
+};
+const PASSAGES = { en: "passages", zh: "段" };
+
 function SynthesisPage() {
   const search = Route.useSearch();
   const navigate = useNavigate();
   const [phase, setPhase] = useState(0);
+  const lang: "en" | "zh" = search.lang === "zh" ? "zh" : "en";
+  const phases = lang === "zh" ? PHASES_ZH : PHASES_EN;
 
   useEffect(() => {
     const total = phases.length;
@@ -69,7 +90,7 @@ function SynthesisPage() {
       });
     }, perPhase);
     return () => clearInterval(interval);
-  }, [navigate, search]);
+  }, [navigate, search, phases.length]);
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-6 pt-32 pb-24 text-center">
@@ -101,10 +122,10 @@ function SynthesisPage() {
 
       <div className="relative z-10 max-w-xl">
         <p className="mb-4 text-[10px] uppercase tracking-[0.42em] text-gold-dust">
-          {search.name ? `Reading of ${search.name}` : "The reading"}
+          {KICKER[lang](search.name)}
         </p>
         <h1 className="mb-14 font-serif text-3xl italic leading-tight text-stone-warm md:text-4xl">
-          The library is speaking to itself…
+          {HEADLINE[lang]}
         </h1>
 
         <div className="mb-10 h-16">
@@ -136,9 +157,10 @@ function SynthesisPage() {
           />
         </div>
         <p className="mt-4 text-[10px] uppercase tracking-[0.32em] text-stone-warm/40">
-          {phase + 1} / {phases.length} passages
+          {phase + 1} / {phases.length} {PASSAGES[lang]}
         </p>
       </div>
     </div>
   );
 }
+

@@ -1013,7 +1013,7 @@ export function MembershipSection({ birthISO }: { birthISO?: string } = {}) {
         </div>
       )}
 
-      {/* Oracle-exclusive: 90-day windows */}
+      {/* Oracle-exclusive: 90-day windows + future watchlist */}
       {plan === "oracle" && (
         <div className="mt-4">
           <div className="mx-auto mb-6 flex max-w-5xl items-center gap-3 px-6 md:px-12">
@@ -1024,6 +1024,7 @@ export function MembershipSection({ birthISO }: { birthISO?: string } = {}) {
             <span className="h-px flex-1 bg-gold-dust/30" />
           </div>
           <RecentWindows birthISO={birthISO} />
+          <FutureWatchlist />
         </div>
       )}
 
@@ -1417,20 +1418,22 @@ function AIFollowupModal({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 40, scale: 0.98 }}
             transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1] }}
-            className="glass-card relative m-4 flex max-h-[90vh] w-full max-w-2xl flex-col rounded-3xl p-6 md:p-8"
+            className="glass-card relative m-0 flex max-h-[92dvh] w-full max-w-2xl flex-col rounded-t-3xl p-5 pt-16 sm:m-4 sm:max-h-[90vh] sm:rounded-3xl sm:p-6 md:p-8 md:pt-14"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               type="button"
               onClick={onClose}
-              className="absolute right-4 top-4 text-[10px] uppercase tracking-[0.28em] text-stone-warm/50 hover:text-gold-dust"
+              aria-label={lang === "zh" ? "关闭" : "Close"}
+              className="absolute right-3 top-3 z-10 flex h-9 items-center gap-1.5 rounded-full border border-white/15 bg-obsidian/80 px-3 text-[10px] uppercase tracking-[0.28em] text-stone-warm/70 backdrop-blur transition-colors hover:border-gold-dust/50 hover:text-gold-dust sm:right-4 sm:top-4"
             >
-              {t.mem_close}
+              <span aria-hidden>×</span>
+              <span>{t.mem_close}</span>
             </button>
             <p className="mb-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
               {t.mem_ai_followup}
             </p>
-            <h3 className="mb-4 font-serif text-2xl italic text-stone-warm">
+            <h3 className="mb-4 pr-16 font-serif text-xl italic text-stone-warm sm:text-2xl">
               {lang === "zh" ? "开启一场私密对话" : "Open a private conversation"}
             </h3>
 
