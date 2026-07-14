@@ -502,7 +502,7 @@ function ReportPage() {
 
   // Personalised AI report — grounded in this specific chart.
   const seed = `${search.name ?? ""}|${search.date ?? ""}|${search.time ?? ""}|${search.place ?? ""}`;
-  const invokeReport = useServerFn(generateReport);
+  const invokeReport = generateReport;
   const [ai, setAi] = useState<ReportAI | null>(null);
   const [aiState, setAiState] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [aiError, setAiError] = useState<string | null>(null);
