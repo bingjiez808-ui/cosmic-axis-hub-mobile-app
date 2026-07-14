@@ -789,7 +789,27 @@ function ReportPage() {
 
       {/* Dimensions */}
       <section className="mx-auto max-w-5xl space-y-10 px-6 md:px-12">
-        {dimensions.map((d, idx) => (
+        {search.date && (aiState === "loading" || aiState === "error") && (
+          <div
+            className={`glass-card flex items-center justify-between gap-4 rounded-2xl px-5 py-3 text-[11px] uppercase tracking-[0.28em] ${
+              aiState === "error" ? "text-red-300/80" : "text-gold-dust/80"
+            }`}
+          >
+            <span>
+              {aiState === "loading"
+                ? lang === "zh"
+                  ? "长者正在为你的命盘逐维度重写解读……"
+                  : "The elder is rewriting each dimension for your chart…"
+                : lang === "zh"
+                  ? `个性化解读暂时无法生成（${aiError ?? "unknown"}）—— 先显示通用模板。`
+                  : `Personalised reading unavailable (${aiError ?? "unknown"}) — showing template.`}
+            </span>
+            {aiState === "loading" && (
+              <span className="size-2 animate-pulse rounded-full bg-gold-dust" />
+            )}
+          </div>
+        )}
+        {displayed.map((d, idx) => (
           <motion.article
             key={d.key}
             initial={{ opacity: 0, y: 30 }}
