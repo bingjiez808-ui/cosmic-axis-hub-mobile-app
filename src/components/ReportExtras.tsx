@@ -1831,7 +1831,7 @@ function AIFollowupModal({
 
             <form
               onSubmit={(e) => { e.preventDefault(); if (isOracle) send(input); }}
-              className="mt-4 flex items-center gap-2 rounded-full border border-gold-dust/20 bg-obsidian/70 px-4 py-2 backdrop-blur"
+              className="mt-3 flex items-center gap-2 rounded-full border border-gold-dust/20 bg-obsidian/80 px-3 py-2 backdrop-blur sm:mt-4 sm:px-4"
             >
               <span aria-hidden className="text-gold-dust/60">✒</span>
               <input
@@ -1839,12 +1839,12 @@ function AIFollowupModal({
                 onChange={(e) => setInput(e.target.value)}
                 disabled={!isOracle}
                 placeholder={isOracle ? t.mem_ai_placeholder : (lang === "zh" ? "升级神谕者后可提问…" : "Upgrade to Oracle to ask…")}
-                className="flex-1 bg-transparent text-sm text-stone-warm outline-none placeholder:text-stone-warm/30 disabled:cursor-not-allowed"
+                className="min-w-0 flex-1 bg-transparent text-[13px] text-stone-warm outline-none placeholder:text-stone-warm/30 disabled:cursor-not-allowed sm:text-sm"
               />
               <button
                 type="submit"
                 disabled={!isOracle || !input.trim() || thinking}
-                className="rounded-full bg-gold-dust px-4 py-1.5 text-[10px] uppercase tracking-[0.28em] text-obsidian transition-colors hover:bg-gold-light disabled:bg-gold-dust/40 disabled:text-obsidian/50"
+                className="shrink-0 rounded-full bg-gold-dust px-3 py-1.5 text-[10px] uppercase tracking-[0.24em] text-obsidian transition-colors hover:bg-gold-light disabled:bg-gold-dust/40 disabled:text-obsidian/50 sm:px-4 sm:tracking-[0.28em]"
               >
                 {t.mem_ai_send}
               </button>
