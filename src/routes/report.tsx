@@ -782,10 +782,7 @@ function ReportPage() {
       {/* Tarot — three cards as a second witness */}
       <TarotDraw />
 
-      {/* Future watchlist — Oracle members */}
-      <FutureWatchlist />
-
-      {/* Membership tiers — Oracle unlocks detailed Synastry + Near-term windows */}
+      {/* Membership tiers — Oracle unlocks Synastry + 90-day windows + Future watchlist */}
       <MembershipSection birthISO={search.date} />
 
 
