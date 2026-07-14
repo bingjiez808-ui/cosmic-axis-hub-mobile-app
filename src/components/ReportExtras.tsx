@@ -749,8 +749,9 @@ type PayMethod = "wechat" | "alipay" | "visa";
 export function MembershipSection({ birthISO }: { birthISO?: string } = {}) {
   const { lang, t } = useLang();
   const li = lang === "zh" ? 1 : 0;
-  const { account } = useAccount();
-  const [plan, setPlan] = useState<Plan>("free");
+  const { account, setPlan: persistPlan } = useAccount();
+  const plan: Plan = (account?.plan ?? "free") as Plan;
+  const setPlan = (p: Plan) => persistPlan(p);
   const [chatOpen, setChatOpen] = useState(false);
   const [upgradeTarget, setUpgradeTarget] = useState<Plan | null>(null);
   const [signInPrompt, setSignInPrompt] = useState(false);
