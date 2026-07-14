@@ -368,6 +368,7 @@ function ReportPage() {
   const { lang, setLang, t } = useLang();
   const li = lang === "zh" ? 1 : 0;
   const [accOpen, setAccOpen] = useState(false);
+  const [selectedPlanet, setSelectedPlanet] = useState<number | null>(null);
 
   // Sync report language with the choice made in the ritual, if provided.
   useEffect(() => {
