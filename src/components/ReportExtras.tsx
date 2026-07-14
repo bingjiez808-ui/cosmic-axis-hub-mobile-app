@@ -858,19 +858,38 @@ export function MembershipSection({ birthISO }: { birthISO?: string } = {}) {
 
         <div className="mb-10 grid grid-cols-1 gap-4 md:grid-cols-3">
           {plans.map((p) => {
+            const rank = (x: Plan) => (x === "oracle" ? 2 : x === "sage" ? 1 : 0);
+            const userRank = rank(plan);
+            const tierRank = rank(p.id);
             const isCurrent = p.id === plan;
+            const isIncluded = !isCurrent && tierRank < userRank;
+            const disabled = isCurrent || isIncluded;
+            const label = isCurrent
+              ? t.mem_current
+              : isIncluded
+                ? lang === "zh" ? "已包含" : "Included"
+                : t.mem_upgrade;
             return (
               <div
                 key={p.id}
                 className={`relative flex flex-col rounded-2xl border p-6 transition-colors ${
-                  p.highlight
-                    ? "border-gold-dust/50 bg-gold-dust/[0.06]"
-                    : "border-white/10 bg-white/[0.02]"
+                  isCurrent
+                    ? "border-gold-dust/70 bg-gold-dust/[0.10]"
+                    : isIncluded
+                      ? "border-gold-dust/25 bg-gold-dust/[0.03]"
+                      : p.highlight
+                        ? "border-gold-dust/50 bg-gold-dust/[0.06]"
+                        : "border-white/10 bg-white/[0.02]"
                 }`}
               >
-                {p.highlight && (
+                {p.highlight && !isIncluded && (
                   <span className="absolute -top-3 left-6 rounded-full bg-gold-dust px-3 py-0.5 text-[9px] uppercase tracking-[0.32em] text-obsidian">
                     ★
+                  </span>
+                )}
+                {isIncluded && (
+                  <span className="absolute -top-3 left-6 rounded-full border border-gold-dust/40 bg-obsidian px-3 py-0.5 text-[9px] uppercase tracking-[0.32em] text-gold-dust">
+                    {lang === "zh" ? "已包含" : "Included"}
                   </span>
                 )}
                 <p className="mb-1 font-serif text-xl text-stone-warm">{p.name}</p>
@@ -883,16 +902,16 @@ export function MembershipSection({ birthISO }: { birthISO?: string } = {}) {
                 <button
                   type="button"
                   onClick={() => handleUpgradeClick(p.id)}
-                  disabled={isCurrent}
+                  disabled={disabled}
                   className={`rounded-full px-5 py-2.5 text-[10px] uppercase tracking-[0.28em] transition-colors ${
-                    isCurrent
+                    disabled
                       ? "cursor-default border border-white/10 text-stone-warm/40"
                       : p.highlight
                         ? "bg-gold-dust text-obsidian hover:bg-gold-light"
                         : "border border-gold-dust/40 text-gold-dust hover:bg-gold-dust/10"
                   }`}
                 >
-                  {isCurrent ? t.mem_current : t.mem_upgrade}
+                  {label}
                 </button>
               </div>
             );
