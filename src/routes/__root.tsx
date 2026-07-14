@@ -158,7 +158,9 @@ function RootComponent() {
             <SiteFooter />
           </div>
           <AccountModal open={accOpen} onClose={() => setAccOpen(false)} />
+          <LibrarySplash />
         </AccountProvider>
+
       </LanguageProvider>
     </QueryClientProvider>
   );
