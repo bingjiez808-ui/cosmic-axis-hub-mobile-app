@@ -349,28 +349,57 @@ function RitualPage() {
                     onCommit={advance}
                   />
                 ) : (
-                  <input
-                    key={currentQ.key}
-                    autoFocus
-                    type={currentQ.input}
-                    placeholder={currentQ.placeholder}
-                    className="ritual-input mx-auto max-w-md"
-                    min={currentQ.input === "date" ? "1900-01-01" : undefined}
-                    max={currentQ.input === "date" ? "2099-12-31" : undefined}
-                    value={values[currentQ.key]}
-                    onChange={(e) => {
-                      let val = e.target.value;
-                      if (currentQ.input === "date") {
-                        const m = val.match(/^(\d+)(-\d{2}-\d{2})?$/);
-                        if (m && m[1].length > 4) val = m[1].slice(0, 4) + (m[2] || "");
+                  <div className="mx-auto max-w-md">
+                    <input
+                      key={currentQ.key}
+                      autoFocus
+                      type={currentQ.input}
+                      placeholder={currentQ.placeholder}
+                      className="ritual-input w-full"
+                      min={currentQ.input === "date" ? "1900-01-01" : undefined}
+                      max={currentQ.input === "date" ? "2099-12-31" : undefined}
+                      value={values[currentQ.key]}
+                      onChange={(e) => {
+                        let val = e.target.value;
+                        if (currentQ.input === "date") {
+                          const m = val.match(/^(\d+)(-\d{2}-\d{2})?$/);
+                          if (m && m[1].length > 4) val = m[1].slice(0, 4) + (m[2] || "");
+                        }
+                        setValues((v) => ({ ...v, [currentQ.key]: val }));
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") advance();
+                      }}
+                      style={{ colorScheme: "dark" }}
+                    />
+                    {currentQ.input === "date" && (() => {
+                      const info = solarToLunarInfo(values.date, values.time);
+                      if (!info) {
+                        return (
+                          <p className="mt-3 text-[10px] uppercase tracking-[0.32em] text-stone-warm/40">
+                            {lang === "zh" ? "默认为阳历 · 输入后自动换算农历" : "Solar (Gregorian) by default · lunar auto-derived"}
+                          </p>
+                        );
                       }
-                      setValues((v) => ({ ...v, [currentQ.key]: val }));
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") advance();
-                    }}
-                    style={{ colorScheme: "dark" }}
-                  />
+                      return (
+                        <div className="mt-4 rounded-2xl border border-gold-dust/25 bg-gold-dust/[0.05] p-3 text-left">
+                          <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust/80">
+                            {lang === "zh" ? "农历自动换算" : "Lunar (auto-converted)"}
+                          </p>
+                          <p className="mt-1 font-serif text-sm italic text-stone-warm/90">
+                            {lang === "zh" ? info.lunarZh : info.lunarEn}
+                          </p>
+                          <p className="mt-1 text-[11px] tracking-[0.14em] text-stone-warm/60">
+                            {lang === "zh" ? "生肖" : "Zodiac"} · {info.zodiac} / {info.zodiacEn}
+                          </p>
+                          <p className="mt-1 text-[11px] tracking-[0.14em] text-stone-warm/60">
+                            {lang === "zh" ? "八字（干支）" : "BaZi pillars"} · {info.bazi}
+                            {!info.ganzhiHour && (lang === "zh" ? "（时柱需出生时刻）" : " (hour pillar needs birth time)")}
+                          </p>
+                        </div>
+                      );
+                    })()}
+                  </div>
                 )}
               </>
             )}
