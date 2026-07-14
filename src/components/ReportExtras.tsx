@@ -222,10 +222,21 @@ const PROMPTS: Prompt[] = [
 
 type Answer = { status: "unset" | "yes" | "no"; story: string; saved: boolean };
 
-export function KeyEventsVerification() {
+export function KeyEventsVerification({ birthISO }: { birthISO?: string }) {
   const { t, lang } = useLang();
   const li = lang === "zh" ? 1 : 0;
   const [answers, setAnswers] = useState<Record<number, Answer>>({});
+
+  const age = computeCurrentAge(birthISO);
+
+  // Only ask about windows the user has already lived through.
+  // If age can't be computed, fall back to the first three prompts.
+  const visiblePrompts = useMemo(() => {
+    if (age == null) return PROMPTS.slice(0, 3).map((p, i) => ({ p, i }));
+    return PROMPTS
+      .map((p, i) => ({ p, i }))
+      .filter(({ p }) => age >= p.age[0]);
+  }, [age]);
 
   const set = (i: number, patch: Partial<Answer>) =>
     setAnswers((a) => {
@@ -242,7 +253,23 @@ export function KeyEventsVerification() {
         <h2 className="mb-3 font-serif text-2xl italic text-stone-warm md:text-3xl">
           {t.ke_title}
         </h2>
-        <p className="mb-8 max-w-3xl text-sm text-stone-warm/60">{t.ke_hint}</p>
+        <p className="mb-3 max-w-3xl text-sm text-stone-warm/60">{t.ke_hint}</p>
+        {age != null && (
+          <p className="mb-6 inline-flex items-center gap-2 rounded-full border border-gold-dust/30 px-4 py-1.5 text-[10px] uppercase tracking-[0.28em] text-gold-light">
+            <span className="size-1.5 rounded-full bg-gold-dust" />
+            {lang === "zh"
+              ? `你的当前年龄 · ${age} 岁 — 只回顾你已经走过的年份`
+              : `Your current age · ${age} — only reviewing the years you've already lived`}
+          </p>
+        )}
+        {visiblePrompts.length === 0 && (
+          <p className="mb-6 rounded-2xl border border-white/10 bg-white/[0.02] p-5 text-sm text-stone-warm/60">
+            {lang === "zh"
+              ? "你还很年轻 —— 命盘的第一批可验证节点尚未到来。请先阅读上方的大运轴，静待第一次开门。"
+              : "You're still early — the chart's first verifiable milestones haven't arrived yet. Read the timeline above and wait for the first door to open."}
+          </p>
+        )}
+
 
         <div className="space-y-4">
           {PROMPTS.map((p, i) => {
