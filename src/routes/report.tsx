@@ -354,6 +354,96 @@ const dimensions: Dimension[] = [
       },
     ],
   },
+  {
+    key: "parents",
+    title: ["Parents & Family", "父母与原生家庭"],
+    headline: [
+      "Rooted, but built to leave the roof",
+      "根扎得深 —— 却生来要走出屋檐",
+    ],
+    stars: 4,
+    strengths: [0.75, 0.85, 0.8, 0.8],
+    evidence: [
+      { tradition: ["Astrology", "西方占星"], note: ["Moon in the 4th · Saturn aspecting IC", "月亮居第四宫 · 土星照 IC"] },
+      { tradition: ["Jyotish", "印度占星"], note: ["4th lord well-placed · Guru's grace on mother-karma", "四宫主得地 · 母亲之业受木星恩泽"] },
+      { tradition: ["BaZi", "八字"], note: ["Year-pillar 印 (Resource) strong; slight 冲 with day pillar", "年柱印星有力；与日柱轻冲"] },
+      { tradition: ["Zi Wei", "紫微"], note: ["父母宫 has 天梁 · 化科 present", "父母宫见天梁 · 化科入宫"] },
+    ],
+    synthesis: [
+      "All four systems draw the same picture: a formative home that gave you standards and a work ethic, and a chart that then insists you leave those standards behind long enough to build your own.",
+      "四大体系描出同一画面：原生家庭给你标准与勤勉，但命盘同时坚持 —— 你要暂时离开那套标准，长到能建立自己的一套。",
+    ],
+    plain: [
+      "In everyday words: your parents gave you more good tools than you usually admit — and one or two beliefs you'll spend a decade unlearning. Distance is not disloyalty; the chart actually treats a stretch of independence as the way you honour them, not the way you betray them.",
+      "说人话：父母给你的好东西比你平时承认的多，但也塞进了一两个让你花十年才卸下的信念。距离不是背叛 —— 命盘把「一段独立的时光」看作你回报他们的方式，而不是伤害他们的方式。",
+    ],
+    viz: "radar",
+    details: [
+      {
+        label: ["What the family bond gives you", "原生家庭带给你的"],
+        items: [
+          ["A quiet, above-average sense of responsibility", "一份安静而高于常人的责任感"],
+          ["Craft standards absorbed before you knew you had them", "尚未察觉时已内化的手艺标准"],
+          ["A parent (often mother) who reads you accurately", "一位（多半是母亲）能读懂你的家人"],
+          ["Financial or moral safety net most peers don't have", "同龄人少有的经济或道德底盘"],
+        ],
+      },
+      {
+        label: ["Watch-outs to guard", "需要注意的地方"],
+        items: [
+          ["Approval-seeking that outlives its usefulness", "早已失效、却仍在寻求父母认可的模式"],
+          ["Confusing loyalty with living the same life", "把「忠诚」误当作「过一样的人生」"],
+          ["Financial help with unspoken emotional strings attached", "带着未言明情感条件的经济支持"],
+          ["Ages 27–34: the classic separation-and-return arc", "27–34 岁：典型的「离开—回来」弧线"],
+        ],
+      },
+    ],
+  },
+  {
+    key: "children",
+    title: ["Children & Legacy", "子女与传承"],
+    headline: [
+      "Few in number, deep in influence",
+      "数不多 —— 但份量都很重",
+    ],
+    stars: 3,
+    strengths: [0.7, 0.75, 0.7, 0.8],
+    evidence: [
+      { tradition: ["Astrology", "西方占星"], note: ["5th house lord aspecting Jupiter · one strong node", "第五宫主与木星有相 · 一个强节点"] },
+      { tradition: ["Jyotish", "印度占星"], note: ["5th Bhava clean; Putra karaka Jupiter dignified", "五宫清朗 · Putra Kāraka（木星）得地"] },
+      { tradition: ["BaZi", "八字"], note: ["Output star 食神 leaning bright; hour pillar carries the child signal", "食神偏亮 · 时柱承接子女信号"] },
+      { tradition: ["Zi Wei", "紫微"], note: ["子女宫 with 天同 / 天喜 · 化禄 in tow", "子女宫见天同/天喜 · 化禄相随"] },
+    ],
+    synthesis: [
+      "The four systems agree on shape more than on count: a small circle of children — biological, adopted, mentored, or created — that carries an unusually direct imprint of your temperament. Quality of transmission, not quantity of offspring.",
+      "四大体系在「形状」上一致，而非「数量」：一小圈子女 —— 生的、养的、教的、创造的 —— 承接你温度的印记异常直接。重传承的质，不重生育的量。",
+    ],
+    plain: [
+      "In everyday words: if you have kids, you'll probably have fewer than you imagined and love them more fiercely than you planned. If you don't, the same energy will pour into students, protégés, or a body of work — the chart barely distinguishes between them. Whatever you raise carries your fingerprint on purpose.",
+      "说人话：如果你有孩子，可能比你原先设想的少，但爱得比你计划的更凶。如果没有，同一份能量会流向学生、后辈、或一件作品 —— 命盘几乎不分辨这些。你养大的东西，都带着你有意留下的指纹。",
+    ],
+    viz: "zodiac",
+    details: [
+      {
+        label: ["Likely shape of the bond", "子女缘的可能形状"],
+        items: [
+          ["1–2 biological or fully-committed children (rather than many)", "1–2 个亲生或全心投入的孩子（而非多数）"],
+          ["First-born tends to mirror your early-life temperament", "长子/女多半映照你早年的性情"],
+          ["A late-arriving child or protégé who changes the chart", "较晚出现、却改写命盘的一个孩子或后辈"],
+          ["Teaching, mentoring, or authorship as parallel legacy", "教学 · 带徒 · 著述，作为并行的传承"],
+        ],
+      },
+      {
+        label: ["Watch-outs to guard", "需要注意的地方"],
+        items: [
+          ["Repeating your parents' silences with your own kids", "把父母对你的沉默，重复给自己的孩子"],
+          ["Pushing children onto your unlived vocation", "把自己未走过的路，塞进孩子的人生"],
+          ["Over-protection that starves their independence", "过度保护，反而饿死了他们的独立"],
+          ["Delaying decisions about family past a workable window", "把是否要孩子的决定，拖过了可行的窗口"],
+        ],
+      },
+    ],
+  },
 ];
 
 function Stars({ n }: { n: number }) {
