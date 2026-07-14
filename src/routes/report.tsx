@@ -500,10 +500,117 @@ function ReportPage() {
     return () => window.removeEventListener("resize", update);
   }, []);
 
-  const summary =
-    lang === "zh"
+  // Personalised AI report — grounded in this specific chart.
+  const seed = `${search.name ?? ""}|${search.date ?? ""}|${search.time ?? ""}|${search.place ?? ""}`;
+  const invokeReport = useServerFn(generateReport);
+  const [ai, setAi] = useState<ReportAI | null>(null);
+  const [aiState, setAiState] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [aiError, setAiError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Only fetch when we actually have a birth date — otherwise the model
+    // has nothing personal to anchor in and the fallback text is fine.
+    if (!search.date) return;
+    // Cache per seed+lang for the session so the reading is stable.
+    const cacheKey = `oracle-report::${lang}::${seed}`;
+    try {
+      const cached = typeof sessionStorage !== "undefined" ? sessionStorage.getItem(cacheKey) : null;
+      if (cached) {
+        setAi(JSON.parse(cached) as ReportAI);
+        setAiState("ready");
+        return;
+      }
+    } catch {
+      /* ignore */
+    }
+
+    let cancelled = false;
+    setAiState("loading");
+    setAiError(null);
+    const signs = computePlanetSigns(seed);
+    const ascSign = signs[PLANETS.findIndex((p) => p.key === "asc")] ?? 0;
+    const planets = PLANETS.map((p, i) => ({
+      name: p.name[0],
+      sign: ZODIAC_SIGNS[signs[i]].en,
+      house: houseForSign(signs[i], ascSign),
+    }));
+    invokeReport({
+      data: {
+        name: search.name,
+        date: search.date,
+        time: search.time,
+        place: search.place,
+        lang,
+        quiz: search.quiz,
+        planets,
+        bazi: search.bazi,
+        zodiac: search.zodiac,
+        lunar: search.lunar,
+      },
+    })
+      .then((res) => {
+        if (cancelled) return;
+        setAi(res);
+        setAiState("ready");
+        try {
+          sessionStorage.setItem(cacheKey, JSON.stringify(res));
+        } catch {
+          /* ignore quota */
+        }
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setAiError(err instanceof Error ? err.message : String(err));
+        setAiState("error");
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seed, lang]);
+
+  const summary = ai?.summary
+    ? ai.summary
+    : lang === "zh"
       ? "你的人生更像探险者的图谱，而非追随者的轨迹 —— 一张反复回到「志业、意义与再次选择的勇气」的星图。"
       : "Your life is written more as an explorer's than a follower's — a chart that repeatedly returns to the questions of vocation, meaning and the courage to choose again.";
+
+  // Merge AI content into the base dimensions (viz / stars / strengths keep
+  // their fallback shape; text is overridden per-visitor).
+  const aiByKey = useMemo(() => {
+    const m = new Map<string, ReportAI["dimensions"][number]>();
+    ai?.dimensions.forEach((d) => m.set(d.key, d));
+    return m;
+  }, [ai]);
+  const displayed = useMemo(
+    () =>
+      dimensions.map((d) => {
+        const p = aiByKey.get(d.key);
+        if (!p) return d;
+        return {
+          ...d,
+          headline: [p.headline, p.headline] as [string, string],
+          synthesis: [p.synthesis, p.synthesis] as [string, string],
+          plain: [p.plain, p.plain] as [string, string],
+          evidence:
+            p.evidence.length >= 4
+              ? p.evidence.slice(0, 4).map((e) => ({
+                  tradition: [e.tradition, e.tradition] as [string, string],
+                  note: [e.note, e.note] as [string, string],
+                }))
+              : d.evidence,
+          details:
+            p.details.length > 0
+              ? p.details.map((b) => ({
+                  label: [b.label, b.label] as [string, string],
+                  items: b.items.map((it) => [it, it] as [string, string]),
+                }))
+              : d.details,
+        };
+      }),
+    [aiByKey],
+  );
+
 
   return (
     <div className="pt-32 pb-32">
