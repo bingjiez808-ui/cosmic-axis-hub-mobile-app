@@ -308,11 +308,23 @@ export function KeyEventsVerification({ birthISO }: { birthISO?: string }) {
                 key={i}
                 className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 md:p-6"
               >
-                <p className="mb-1 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
-                  {t.ke_prompt} · {p.theme[li]} · {lang === "zh" ? "岁" : "Age"} {p.age[0]}–{p.age[1]}
-                </p>
-                <p className="mb-4 font-serif text-base leading-relaxed text-stone-warm/85 md:text-lg">
+                <div className="mb-3 flex flex-wrap items-center gap-2">
+                  <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+                    {t.ke_prompt} · {p.theme[li]} ·{" "}
+                    {lang === "zh"
+                      ? `${p.age[0]}–${p.age[1]} 岁`
+                      : `Age ${p.age[0]}–${p.age[1]}`}
+                  </p>
+                  <ConfidenceBadge level={p.confidence} lang={lang} />
+                </div>
+                <p className="mb-3 font-serif text-base leading-relaxed text-stone-warm/85 md:text-lg">
                   {p.guess[li]}
+                </p>
+                <p className="mb-4 rounded-xl border border-white/5 bg-white/[0.02] p-3 text-[11px] leading-relaxed text-stone-warm/55">
+                  <span className="mr-2 text-[9px] uppercase tracking-[0.32em] text-gold-dust/60">
+                    {lang === "zh" ? "判定依据" : "Why flagged"}
+                  </span>
+                  {p.basis[li]}
                 </p>
 
                 {a.status === "unset" && (
