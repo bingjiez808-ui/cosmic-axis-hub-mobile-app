@@ -310,51 +310,6 @@ const dimensions: Dimension[] = [
     ],
   },
   {
-    key: "mission",
-    title: ["Life Mission", "人生使命"],
-    headline: [
-      "To translate — between worlds, between people",
-      "翻译者 — 在世界之间、在人与人之间",
-    ],
-    stars: 5,
-    strengths: [0.95, 0.9, 0.85, 0.9],
-    evidence: [
-      { tradition: ["Astrology", "西方占星"], note: ["North Node in the 9th house", "北交点入第九宫"] },
-      { tradition: ["Jyotish", "印度占星"], note: ["Rahu in the 9th Bhava · dharma", "Rahu 入第九宫 · 主 dharma"] },
-      { tradition: ["BaZi", "八字"], note: ["Output star 伤官/食神 favoured", "食伤为喜"] },
-      { tradition: ["Zi Wei", "紫微"], note: ["迁移宫 activated", "迁移宫动"] },
-    ],
-    synthesis: [
-      "Four systems name the same shape: your life reads as a bridge — translation, teaching, publishing, or institutions that carry meaning across contexts.",
-      "四体系描出的是同一形状：你这一生是桥 —— 翻译、教学、出版，或搭建把意义送过界的机构。",
-    ],
-    plain: [
-      "In everyday words: your job — whatever its title — will always secretly be to explain one world to another. East to West, expert to beginner, old to new. The moments you feel most alive are usually the moments you're translating something for someone.",
-      "说人话：无论职位叫什么，你真正在做的一直是把一个世界解释给另一个世界听 —— 中西之间、专家与小白之间、旧与新之间。你最有生命力的时刻，通常都是在为某人翻译某件事。",
-    ],
-    viz: "zodiac",
-    details: [
-      {
-        label: ["Will unfold — nearly certain", "一定会发生的事"],
-        items: [
-          ["A public-facing role that requires you to explain", "一份让你面向公众解释事物的角色"],
-          ["Living or working across at least two cultures", "至少一次跨越两种文化的生活或工作"],
-          ["An audience that gathers around your voice", "会有一群人，围绕你的声音聚集起来"],
-          ["A late-career reinvention around meaning", "职业中后期，围绕「意义」的一次重塑"],
-        ],
-      },
-      {
-        label: ["Potential crises to prepare for", "潜在的危机"],
-        items: [
-          ["Burnout from over-explaining yourself to skeptics", "把自己反复解释给不理解的人 —— 累到耗尽"],
-          ["Identity drift when the audience grows faster than you do", "受众成长快过自我，容易身份漂移"],
-          ["A midlife crossroads: prestige vs. mission — choose mission", "中年岔口：名声与使命之间 —— 选使命"],
-          ["Isolation in the year you break through — build a small trusted circle early", "突破的那一年容易孤立 —— 提早养一个小而可信的圈子"],
-        ],
-      },
-    ],
-  },
-  {
     key: "parents",
     title: ["Parents & Family", "父母与原生家庭"],
     headline: [
@@ -440,6 +395,60 @@ const dimensions: Dimension[] = [
           ["Pushing children onto your unlived vocation", "把自己未走过的路，塞进孩子的人生"],
           ["Over-protection that starves their independence", "过度保护，反而饿死了他们的独立"],
           ["Delaying decisions about family past a workable window", "把是否要孩子的决定，拖过了可行的窗口"],
+        ],
+      },
+    ],
+  },
+  {
+    key: "mission",
+    title: ["Life Mission · Synthesis of all above", "人生使命 · 前文总结"],
+    headline: [
+      "To translate — between worlds, between people",
+      "翻译者 — 在世界之间、在人与人之间",
+    ],
+    stars: 5,
+    strengths: [0.95, 0.9, 0.85, 0.9],
+    evidence: [
+      { tradition: ["Astrology", "西方占星"], note: ["North Node in the 9th house", "北交点入第九宫"] },
+      { tradition: ["Jyotish", "印度占星"], note: ["Rahu in the 9th Bhava · dharma", "Rahu 入第九宫 · 主 dharma"] },
+      { tradition: ["BaZi", "八字"], note: ["Output star 伤官/食神 favoured", "食伤为喜"] },
+      { tradition: ["Zi Wei", "紫微"], note: ["迁移宫 activated", "迁移宫动"] },
+    ],
+    synthesis: [
+      "Placed at the end because it is the sum of everything above — character (warm outside, exacting inside), vocation (built to lead, not repeat), wealth (compounded, not sudden), love (depth over urgency), health (fire tempered by water), parents (rooted, then departing), children (few, deeply imprinted). Four traditions converge on one shape: your life reads as a bridge — translation, teaching, publishing, or institutions that carry meaning across contexts. Mission is not a seventh dimension — it is the seam that stitches the other seven together.",
+      "放在最后，是因为它其实是前面所有模块的合鸣 —— 性格（外热内冷）、事业（为领导而生）、财富（复利型积累）、感情（深度胜过急促）、健康（火盛需水）、父母（扎根之后离开）、子女（少而深）。四大体系描出同一形状：你这一生是「桥」—— 翻译、教学、出版，或搭建把意义送过界的机构。使命不是第七个维度，而是把前面七个维度缝在一起的那道线。",
+    ],
+    plain: [
+      "In everyday words: your job — whatever its title — will always secretly be to explain one world to another. East to West, expert to beginner, old to new. Read the previous sections together and you'll notice each of them (character, vocation, wealth, love, health, parents, children) is a different angle on the same act: carrying meaning across a gap. The moments you feel most alive are usually the moments you're translating something for someone.",
+      "说人话：无论职位叫什么，你真正在做的一直是把一个世界解释给另一个世界听 —— 中西之间、专家与小白之间、旧与新之间。把前面几个板块（性格、事业、财富、感情、健康、父母、子女）串起来看，你会发现它们其实都是同一件事的不同侧面：把意义送过一道缝隙。你最有生命力的时刻，通常都是在为某人翻译某件事。",
+    ],
+    viz: "zodiac",
+    details: [
+      {
+        label: ["Synthesis of the previous modules", "前文模块的合并总结"],
+        items: [
+          ["Character × Vocation → you lead by translating, not by commanding.", "性格 × 事业 → 你靠「翻译」领导，而非「命令」。"],
+          ["Wealth × Health → compounding money and compounding sleep obey the same law.", "财富 × 健康 → 复利的钱与复利的睡眠，遵循同一条法则。"],
+          ["Love × Parents × Children → the same lesson replays across three generations.", "感情 × 父母 × 子女 → 同一堂课，在三代人之间重播。"],
+          ["All seven → each one is a bridge; the mission is being the bridge-builder.", "七者合并 → 每个都是一座桥；使命就是「造桥的人」本身。"],
+        ],
+      },
+      {
+        label: ["Will unfold — nearly certain", "一定会发生的事"],
+        items: [
+          ["A public-facing role that requires you to explain", "一份让你面向公众解释事物的角色"],
+          ["Living or working across at least two cultures", "至少一次跨越两种文化的生活或工作"],
+          ["An audience that gathers around your voice", "会有一群人，围绕你的声音聚集起来"],
+          ["A late-career reinvention around meaning", "职业中后期，围绕「意义」的一次重塑"],
+        ],
+      },
+      {
+        label: ["Potential crises to prepare for", "潜在的危机"],
+        items: [
+          ["Burnout from over-explaining yourself to skeptics", "把自己反复解释给不理解的人 —— 累到耗尽"],
+          ["Identity drift when the audience grows faster than you do", "受众成长快过自我，容易身份漂移"],
+          ["A midlife crossroads: prestige vs. mission — choose mission", "中年岔口：名声与使命之间 —— 选使命"],
+          ["Isolation in the year you break through — build a small trusted circle early", "突破的那一年容易孤立 —— 提早养一个小而可信的圈子"],
         ],
       },
     ],
