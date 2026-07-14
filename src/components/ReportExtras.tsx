@@ -167,6 +167,31 @@ export function LifeTimeline({ birthISO }: { birthISO?: string }) {
   );
 }
 
+function ConfidenceBadge({ level, lang }: { level: "high" | "mid" | "low"; lang: Lang }) {
+  const meta = {
+    high: {
+      label: [lang === "zh" ? "高置信" : "High confidence", "★★★"],
+      cls: "border-gold-dust/60 bg-gold-dust/15 text-gold-light",
+    },
+    mid: {
+      label: [lang === "zh" ? "中置信" : "Medium confidence", "★★"],
+      cls: "border-nebula-purple/50 bg-nebula-purple/10 text-stone-warm",
+    },
+    low: {
+      label: [lang === "zh" ? "低置信" : "Low confidence", "★"],
+      cls: "border-white/15 bg-white/[0.03] text-stone-warm/70",
+    },
+  }[level];
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[9px] uppercase tracking-[0.28em] ${meta.cls}`}
+    >
+      <span>{meta.label[1]}</span>
+      <span>{meta.label[0]}</span>
+    </span>
+  );
+}
+
 /* ═══════════════════════════════════════════
    Key Events verification — yes/no with story fallback
 ═══════════════════════════════════════════ */
