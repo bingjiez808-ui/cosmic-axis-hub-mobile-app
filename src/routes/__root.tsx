@@ -185,12 +185,7 @@ function LanguageToggle() {
 function SiteNav() {
   const { t } = useLang();
   const { account } = useAccount();
-  const [accOpen, setAccOpen] = useState(false);
-  useEffect(() => {
-    const handler = () => setAccOpen(true);
-    window.addEventListener("lod:open-account", handler);
-    return () => window.removeEventListener("lod:open-account", handler);
-  }, []);
+  const openAcc = () => window.dispatchEvent(new Event("lod:open-account"));
   return (
     <nav className="fixed top-0 left-1/2 z-50 -translate-x-1/2 p-6">
       <div className="glass-card flex items-center gap-4 rounded-full px-4 py-2 text-[11px] font-light uppercase tracking-[0.28em] md:gap-8 md:px-6 md:py-2.5">
@@ -210,14 +205,13 @@ function SiteNav() {
         </div>
         <button
           type="button"
-          onClick={() => setAccOpen(true)}
+          onClick={openAcc}
           className="rounded-full border border-gold-dust/40 px-3 py-1 text-[10px] tracking-[0.28em] text-gold-dust transition-colors hover:bg-gold-dust/10"
         >
           {account ? `${t.nav_account} · ${account.name.slice(0, 8)}` : t.nav_sign_in}
         </button>
         <LanguageToggle />
       </div>
-      <AccountModal open={accOpen} onClose={() => setAccOpen(false)} />
     </nav>
   );
 }
