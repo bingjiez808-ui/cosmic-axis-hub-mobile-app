@@ -24,6 +24,7 @@ type SearchParams = {
   time?: string;
   place?: string;
   lang?: "en" | "zh";
+  quiz?: string;
 };
 
 export const Route = createFileRoute("/report")({
@@ -44,6 +45,7 @@ export const Route = createFileRoute("/report")({
     time: typeof s.time === "string" ? s.time : undefined,
     place: typeof s.place === "string" ? s.place : undefined,
     lang: s.lang === "zh" ? "zh" : s.lang === "en" ? "en" : undefined,
+    quiz: typeof s.quiz === "string" ? s.quiz : undefined,
   }),
   component: ReportPage,
 });
