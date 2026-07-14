@@ -818,6 +818,7 @@ export function MembershipSection({ birthISO }: { birthISO?: string } = {}) {
                 </p>
                 <button
                   type="button"
+                  onClick={() => setPlan(p.id)}
                   disabled={isCurrent}
                   className={`rounded-full px-5 py-2.5 text-[10px] uppercase tracking-[0.28em] transition-colors ${
                     isCurrent
@@ -833,6 +834,12 @@ export function MembershipSection({ birthISO }: { birthISO?: string } = {}) {
             );
           })}
         </div>
+
+        {/* Oracle-exclusive teaser (visible on free / sage) or full detail (oracle) */}
+        {plan !== "oracle" ? (
+          <OracleTeaser lang={lang} li={li} onUpgrade={() => setPlan("oracle")} />
+        ) : null}
+
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <button
