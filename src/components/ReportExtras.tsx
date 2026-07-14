@@ -228,10 +228,10 @@ export function KeyEventsVerification() {
   const [answers, setAnswers] = useState<Record<number, Answer>>({});
 
   const set = (i: number, patch: Partial<Answer>) =>
-    setAnswers((a) => ({
-      ...a,
-      [i]: { status: "unset", story: "", saved: false, ...a[i], ...patch },
-    }));
+    setAnswers((a) => {
+      const prev: Answer = a[i] ?? { status: "unset", story: "", saved: false };
+      return { ...a, [i]: { ...prev, ...patch } };
+    });
 
   return (
     <section className="mx-auto max-w-5xl px-6 pb-24 md:px-12">
