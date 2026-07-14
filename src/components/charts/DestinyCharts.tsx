@@ -824,6 +824,31 @@ export function NatalWheel({
           );
         })}
 
+        {/* house numbers (whole-sign, house 1 = ascendant's sign) */}
+        {ZODIAC.map((_, i) => {
+          const a = ((i * 30 + 15 - 90) * Math.PI) / 180;
+          const rH = (rHouseRing + rInner) / 2 + 4;
+          const x = cx + Math.cos(a) * rH;
+          const y = cy + Math.sin(a) * rH;
+          const house = houseForSign(i, ascSign);
+          const isAngular = house === 1 || house === 4 || house === 7 || house === 10;
+          return (
+            <text
+              key={`h-${i}`}
+              x={x}
+              y={y + 3}
+              textAnchor="middle"
+              fontSize="9"
+              fill={isAngular ? "var(--gold-light)" : "var(--stone-warm)"}
+              opacity={isAngular ? 0.9 : 0.45}
+              style={{ letterSpacing: "0.1em", pointerEvents: "none" }}
+            >
+              {house}
+            </text>
+          );
+        })}
+
+
         {/* Aspect lines between planets in trine/opposition signs */}
         {(() => {
           const lines: ReactElement[] = [];
