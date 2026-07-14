@@ -1027,7 +1027,7 @@ export function MembershipSection({ birthISO }: { birthISO?: string } = {}) {
         </div>
       )}
 
-      <AIFollowupModal open={chatOpen} onClose={() => setChatOpen(false)} lang={lang} />
+      <AIFollowupModal open={chatOpen} onClose={() => setChatOpen(false)} lang={lang} plan={plan} onUpgrade={() => { setChatOpen(false); setUpgradeTarget("oracle"); }} />
       <SignInPromptModal
         open={signInPrompt}
         onClose={() => setSignInPrompt(false)}
