@@ -506,12 +506,10 @@ function ReportPage() {
   const [ai, setAi] = useState<ReportAI | null>(null);
   const [aiState, setAiState] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [aiError, setAiError] = useState<string | null>(null);
+  const latestReqRef = useRef(0);
 
   useEffect(() => {
-    // Only fetch when we actually have a birth date — otherwise the model
-    // has nothing personal to anchor in and the fallback text is fine.
     if (!search.date) return;
-    // Cache per seed+lang for the session so the reading is stable.
     const cacheKey = `oracle-report::${lang}::${seed}`;
     try {
       const cached = typeof sessionStorage !== "undefined" ? sessionStorage.getItem(cacheKey) : null;
@@ -524,6 +522,7 @@ function ReportPage() {
       /* ignore */
     }
 
+    const reqId = ++latestReqRef.current;
     setAiState("loading");
     setAiError(null);
     const signs = computePlanetSigns(seed);
@@ -548,11 +547,10 @@ function ReportPage() {
       },
     })
       .then((res) => {
-        // Guard: only apply if this response still matches the current seed+lang.
-        const stillCurrent =
-          typeof window === "undefined" ||
-          sessionStorage.getItem("oracle-report::latest-seed") ===
-            `${lang}::${seed}`;
+        // Only apply if this is still the most recent request — protects against
+        // fast lang/seed switches without cancelling successful writes (React
+        // strict mode used to drop the resolved value here).
+        if (reqId !== latestReqRef.current) return;
         setAi(res);
         setAiState("ready");
         try {
@@ -560,17 +558,12 @@ function ReportPage() {
         } catch {
           /* ignore quota */
         }
-        void stillCurrent;
       })
       .catch((err: unknown) => {
+        if (reqId !== latestReqRef.current) return;
         setAiError(err instanceof Error ? err.message : String(err));
         setAiState("error");
       });
-    try {
-      sessionStorage.setItem("oracle-report::latest-seed", `${lang}::${seed}`);
-    } catch {
-      /* ignore */
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seed, lang]);
 
