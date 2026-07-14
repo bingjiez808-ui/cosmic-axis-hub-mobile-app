@@ -330,6 +330,65 @@ function CommunityPage() {
     setCompletedQuests((c) => ({ ...c, [id]: true }));
   };
 
+  const generateAvatar = async () => {
+    setAvatarBusy(true);
+    setAvatarError(null);
+    try {
+      const r = await fetch("/api/generate-avatar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          house: house.name[0],
+          element: house.element[0],
+          zodiac: "",
+          title: TITLES_EN[identity.titleIdx],
+          lang,
+        }),
+      });
+      if (!r.ok) throw new Error(await r.text());
+      const { dataUrl } = (await r.json()) as { dataUrl: string };
+      setAvatar(dataUrl);
+    } catch (e) {
+      console.error(e);
+      setAvatarError(
+        lang === "zh" ? "画像生成暂时失败，请稍后再试。" : "Portrait generation failed — try again shortly.",
+      );
+    } finally {
+      setAvatarBusy(false);
+    }
+  };
+
+  const askQuestOracle = async (questId: string, questPrompt: string) => {
+    const answer = (aiQuestInput[questId] || "").trim();
+    if (!answer) return;
+    setAiReflectBusy(questId);
+    try {
+      const { askOracle } = await import("@/lib/oracle.functions");
+      const res = await askOracle({
+        data: {
+          question:
+            (lang === "zh"
+              ? `我正在参加「同门闯关」，题目是：${questPrompt}\n我的回答是：${answer}\n请以图书馆长者的口吻，给我一段 120-180 字的、结合我所在的「${house.name[1]}」学院（${house.element[1]}元素）的温柔点评，指出我可以更深地看到自己哪一部分。`
+              : `I'm doing a Guild-of-Souls quest. Prompt: ${questPrompt}\nMy answer: ${answer}\nAs the library elder, please give me a 120-180 word warm reflection tuned to my "${house.name[0]}" House (${house.element[0]} element). Point out one deeper thing I can now see about myself.`),
+          lang,
+        },
+      });
+      setAiReflect((s) => ({ ...s, [questId]: res.text || "" }));
+      setCompletedQuests((c) => ({ ...c, [questId]: true }));
+    } catch (e) {
+      console.error(e);
+      setAiReflect((s) => ({
+        ...s,
+        [questId]:
+          lang === "zh"
+            ? "图书馆此刻信号不稳，稍后再试。"
+            : "The library signal is unsteady — please try again soon.",
+      }));
+    } finally {
+      setAiReflectBusy(null);
+    }
+  };
+
   const facetLabel = (k: string) => FACETS.find((f) => f.key === k)?.label[li] ?? k;
   const houseByKey = (k: string) => HOUSES.find((h) => h.key === k) ?? HOUSES[0];
   const timeAgo = (ts: number) => {
