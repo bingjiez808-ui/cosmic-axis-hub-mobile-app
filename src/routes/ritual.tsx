@@ -271,43 +271,28 @@ function RitualPage() {
               </>
             )}
 
-            {isQuizIntro && (
-              <>
-                <p className="mb-4 text-[10px] uppercase tracking-[0.42em] text-gold-dust">
-                  {lang === "zh" ? "校准 · 五题" : "Calibration · five questions"}
-                </p>
-                <h1 className="mx-auto mb-6 max-w-xl font-serif text-3xl italic leading-tight text-stone-warm md:text-5xl">
-                  {lang === "zh"
-                    ? "在读你的命盘之前，先读一读你自己。"
-                    : "Before we read your chart, let it read you."}
-                </h1>
-                <p className="mx-auto mb-4 max-w-lg text-sm leading-relaxed text-stone-warm/70">
-                  {lang === "zh"
-                    ? "接下来五题不是测验，也没有对错。它们的用意，是让 AI 在综合四大体系解读之后，能对你个人的偏差做一次微调 —— 你回答得越诚实，最终的解读就越贴近真正的你。"
-                    : "The next five questions are not a test, and there are no right answers. Their only purpose is to let the AI fine-tune the reading against your personal deviations after synthesizing the four traditions — the more honestly you answer, the closer the final reading lands to who you actually are."}
-                </p>
-                <p className="mx-auto mb-8 max-w-lg text-xs italic text-stone-warm/40">
-                  {lang === "zh"
-                    ? "问题借鉴心理学的角度设计，看起来平常，实际上在观察你处理压力、亲密与不确定性的默认方式。"
-                    : "The questions are borrowed from psychology — they look ordinary, but they quietly reveal how you handle pressure, intimacy, and uncertainty by default."}
-                </p>
-              </>
-            )}
-
             {isQuizStep && (() => {
               const q = QUIZ[quizIdx];
+              const isFirstQuiz = quizIdx === 0;
               return (
                 <>
                   <p className="mb-4 text-[10px] uppercase tracking-[0.42em] text-gold-dust">
                     {q.kicker[li]}
                   </p>
+                  {isFirstQuiz && (
+                    <p className="mx-auto mb-6 max-w-lg text-xs leading-relaxed italic text-stone-warm/60">
+                      {lang === "zh"
+                        ? "接下来五题不是测验，也没有对错 —— 只用于让 AI 在合成四大体系之后，对你个人的偏差做一次微调。"
+                        : "The next five questions aren't a test — they're used to fine-tune the AI's synthesis against your personal deviations."}
+                    </p>
+                  )}
                   <h1 className="mx-auto mb-4 max-w-xl font-serif text-2xl italic leading-tight text-stone-warm md:text-4xl">
                     {q.prompt[li]}
                   </h1>
                   <p className="mx-auto mb-10 max-w-md text-xs italic text-stone-warm/40">
                     {lang === "zh"
-                      ? "凭第一直觉选一个 —— 用于稍后对解读做偏差修正。"
-                      : "Pick the one that feels truest — used later to bias-correct your reading."}
+                      ? `${quizIdx + 1} / ${QUIZ.length} · 凭第一直觉选一个 —— 用于稍后对解读做偏差修正。`
+                      : `${quizIdx + 1} / ${QUIZ.length} · Pick what feels truest — used later to bias-correct your reading.`}
                   </p>
                   <div className="mx-auto flex max-w-lg flex-col gap-3 text-left">
                     {q.options.map((opt) => {
