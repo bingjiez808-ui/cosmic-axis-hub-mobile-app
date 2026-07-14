@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLang, type Lang } from "@/lib/i18n";
 import { useAccount } from "@/lib/account";
+import { ChartZoomModal } from "@/components/charts/DestinyCharts";
 
 /* ═══════════════════════════════════════════
    Life Timeline — 大运 / Dashā decades
