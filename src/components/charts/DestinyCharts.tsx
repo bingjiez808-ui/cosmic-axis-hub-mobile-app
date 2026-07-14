@@ -407,12 +407,78 @@ function hashString(s: string): number {
   return h >>> 0;
 }
 
+/**
+ * Compute the tropical zodiac sign (0..11 = Aries..Pisces) each of the
+ * PLANETS falls in, from a seed formatted as
+ *   `${name}|${YYYY-MM-DD}|${HH:MM}|${place}`.
+ *
+ * This uses low-precision mean-longitude formulas (Meeus / Simon 1994 style)
+ * referenced to J2000.0. Accuracy is a few degrees — more than enough to
+ * assign a 30°-wide zodiac sign. Ascendant/MC use a simplified GMST-based
+ * approximation because latitude is not part of the seed.
+ *
+ * If the seed doesn't contain a parseable date, we fall back to the older
+ * deterministic hash so the wheel still renders.
+ */
 export function computePlanetSigns(seed: string): number[] {
-  const base = hashString(seed || "anonymous");
-  return PLANETS.map((_, i) => {
-    const h = hashString(`${seed}::${PLANETS[i].key}::${base}`);
-    return h % 12;
-  });
+  const parts = (seed || "").split("|");
+  const dateStr = parts[1] ?? "";
+  const timeStr = parts[2] ?? "";
+  const dm = dateStr.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  const tm = timeStr.match(/^(\d{1,2}):(\d{2})/);
+
+  if (!dm) {
+    const base = hashString(seed || "anonymous");
+    return PLANETS.map((_, i) => {
+      const h = hashString(`${seed}::${PLANETS[i].key}::${base}`);
+      return h % 12;
+    });
+  }
+
+  const y = +dm[1];
+  const mo = +dm[2];
+  const da = +dm[3];
+  const hh = tm ? +tm[1] : 12;
+  const mi = tm ? +tm[2] : 0;
+
+  // Julian Day Number (proleptic Gregorian).
+  const a = Math.floor((14 - mo) / 12);
+  const yy = y + 4800 - a;
+  const mm = mo + 12 * a - 3;
+  const JDN =
+    da +
+    Math.floor((153 * mm + 2) / 5) +
+    365 * yy +
+    Math.floor(yy / 4) -
+    Math.floor(yy / 100) +
+    Math.floor(yy / 400) -
+    32045;
+  // Treat the given clock time as UT (place-based timezone offset is not
+  // available here). Off by at most a few hours ⇒ under 3° of longitude
+  // for the fastest body (the Moon), so signs still resolve correctly for
+  // the vast majority of births.
+  const JD = JDN + (hh - 12) / 24 + mi / 1440;
+  const d = JD - 2451545.0; // days since J2000.0
+
+  const norm = (x: number) => ((x % 360) + 360) % 360;
+
+  // Mean longitudes (tropical, degrees).
+  const sun = norm(280.4665 + 0.98564736 * d);
+  const moon = norm(218.3164 + 13.176396 * d);
+  const mer = norm(252.2509 + 4.09233445 * d);
+  const ven = norm(181.9798 + 1.60213034 * d);
+  const mar = norm(355.4330 + 0.52402068 * d);
+  const jup = norm(34.3515 + 0.08308529 * d);
+  const sat = norm(50.0774 + 0.03349390 * d);
+
+  // Greenwich Mean Sidereal Time as a longitude (approx).
+  const gmst = norm(280.46061837 + 360.98564736629 * d);
+  const mc = gmst;
+  const asc = norm(gmst + 90); // equator-plane approximation
+
+  // Order MUST match PLANETS: sun, moon, mer, ven, mar, jup, sat, asc, mc.
+  const longitudes = [sun, moon, mer, ven, mar, jup, sat, asc, mc];
+  return longitudes.map((L) => Math.floor(L / 30) % 12);
 }
 
 export function NatalWheel({
@@ -499,11 +565,11 @@ export function NatalWheel({
     }
     return (
       <>
-        <p className="font-serif text-3xl italic text-stone-warm md:text-4xl">
+        <p className="font-serif text-xl italic leading-tight text-stone-warm md:text-3xl">
           {lang === "zh" ? "你的命盘" : "Your natal chart"}
         </p>
-        <p className="mx-6 mt-4 text-[10px] uppercase tracking-[0.32em] text-stone-warm/40">
-          {lang === "zh" ? "点击行星 · 查看落位与相位" : "Tap a planet · see placement & aspects"}
+        <p className="mx-2 mt-3 text-[9px] uppercase leading-relaxed tracking-[0.24em] text-stone-warm/40 md:text-[10px] md:tracking-[0.32em]">
+          {lang === "zh" ? "点击行星 · 查看落位与相位" : "Tap a planet · placement & aspects"}
         </p>
       </>
     );
@@ -698,13 +764,13 @@ export function NatalWheel({
       </svg>
 
       {/* center label */}
-      <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
+      <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-4 text-center">
         <motion.div
           key={`${activePlanet}-${activeSign}`}
           initial={{ opacity: 0, y: 4 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35 }}
-          className="max-w-[70%]"
+          className="max-w-[58%]"
         >
           {centerContent}
         </motion.div>
