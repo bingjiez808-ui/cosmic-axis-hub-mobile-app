@@ -171,10 +171,14 @@ export function LifeTimeline({ birthISO }: { birthISO?: string }) {
    Key Events verification — yes/no with story fallback
 ═══════════════════════════════════════════ */
 
+type Confidence = "high" | "mid" | "low";
+
 type Prompt = {
   age: [number, number]; // age window
   theme: [string, string];
   guess: [string, string];
+  confidence: Confidence;
+  basis: [string, string]; // why the reading tags this window as "already happened"
 };
 
 const PROMPTS: Prompt[] = [
@@ -185,6 +189,11 @@ const PROMPTS: Prompt[] = [
       "Around ages 16–19, the chart shows a first real departure — a school, a city, or a person that pulled you out of your childhood shape.",
       "16–19 岁前后，命盘出现第一次真正的离开 —— 一所学校、一座城市，或一个人，把你从童年的形状里拉了出来。",
     ],
+    confidence: "high",
+    basis: [
+      "Jupiter's first return + BaZi 沐浴/冠带 stage. Three systems converge on a departure event — that's why the reading treats it as almost certainly lived.",
+      "木星首次回归 + 八字沐浴/冠带阶段。三个体系同时指向一次「离开事件」，所以命盘几乎必然判定为已发生。",
+    ],
   },
   {
     age: [22, 26],
@@ -192,6 +201,11 @@ const PROMPTS: Prompt[] = [
     guess: [
       "Between 22 and 26, the reading senses a bruise: a rejection, a heartbreak, or a career door that closed — and quietly redirected you.",
       "22–26 岁之间，命盘感知到一次「淤青」：拒绝、心碎、或职业上的关门 —— 它悄悄地把你重新导向了。",
+    ],
+    confidence: "mid",
+    basis: [
+      "Progressed Moon square natal Sun + Zi Wei 天梁 in career palace. Two systems agree on a bruise, but the shape (love vs. work) varies by chart.",
+      "推运月亮刑本命太阳 + 紫微天梁入事业宫。两个体系一致指向淤青，但具体形状（感情或事业）因盘而异。",
     ],
   },
   {
@@ -201,6 +215,11 @@ const PROMPTS: Prompt[] = [
       "Around 28–32, a major re-choice: you either left something (job, city, relationship) or entered the one that lasts.",
       "28–32 岁前后，一次重大的重选：你要么离开了什么（工作、城市、关系），要么走进了那个真正留下的。",
     ],
+    confidence: "high",
+    basis: [
+      "Saturn return is the strongest single transit in Western astrology; BaZi 大运 also swaps pillar here. Nearly every chart records a re-choice event.",
+      "土星回归是西方占星最强的单一行运；八字大运在此换柱。几乎每张命盘都会记录一次重选。",
+    ],
   },
   {
     age: [33, 38],
@@ -209,6 +228,11 @@ const PROMPTS: Prompt[] = [
       "Between 33 and 38, the BaZi 大运 shifts to a Wealth/Officer cycle — a promotion, a business, or a first real accumulation of money.",
       "33–38 岁之间，八字大运进入财官之运 —— 升迁、创业，或第一次真正的财富积累。",
     ],
+    confidence: "mid",
+    basis: [
+      "BaZi 财官运 is the primary signal — Jyotish dashā often agrees, but Western transits are quieter here, so the reading calls this likely, not certain.",
+      "主要信号来自八字财官大运 —— Jyotish 大运多半一致，但西方行运在此偏静，故只判为「可能」。",
+    ],
   },
   {
     age: [40, 45],
@@ -216,6 +240,11 @@ const PROMPTS: Prompt[] = [
     guess: [
       "Around 40–45, public visibility peaks. A recognition, a book, a promotion, a stage — the chart wanted the world to see this you.",
       "40–45 岁前后，公众能见度达到高峰。一次被看见、一本书、一次升迁、一个舞台 —— 命盘要世界看到这样的你。",
+    ],
+    confidence: "low",
+    basis: [
+      "This is a slower, cumulative phase rather than a sharp transit. The reading flags it because BaZi + Zi Wei both bright, but the timing has ±3 years drift.",
+      "此为缓慢累积期，非尖锐行运。八字与紫微皆偏亮，故列出，但时间可漂移 ±3 年，因此置信度较低。",
     ],
   },
 ];
