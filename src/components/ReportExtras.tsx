@@ -1388,6 +1388,191 @@ function AIFollowupModal({
    Synastry preview — 合盘 (Oracle member perk)
 ═══════════════════════════════════════════ */
 
+type Tradition = {
+  tag: [string, string];
+  title: [string, string];
+  body: [string, string];
+  score: number;
+};
+
+function TraditionDiagram({ tag }: { tag: string }) {
+  // Lightweight, stylised diagrams so each tradition has a recognisable
+  // "big picture" when the user zooms in. All decorative — real engines
+  // would replace these with authentic charts.
+  const size = 320;
+  const c = size / 2;
+  if (tag.startsWith("Western")) {
+    // Circular zodiac with 12 divisions
+    return (
+      <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size}>
+        <circle cx={c} cy={c} r={c - 8} fill="none" stroke="var(--gold-dust)" strokeOpacity={0.35} />
+        <circle cx={c} cy={c} r={c - 46} fill="none" stroke="var(--gold-dust)" strokeOpacity={0.2} />
+        {Array.from({ length: 12 }).map((_, i) => {
+          const a = ((i * 30 - 90) * Math.PI) / 180;
+          const x1 = c + Math.cos(a) * (c - 46);
+          const y1 = c + Math.sin(a) * (c - 46);
+          const x2 = c + Math.cos(a) * (c - 8);
+          const y2 = c + Math.sin(a) * (c - 8);
+          return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--gold-dust)" strokeOpacity={0.25} />;
+        })}
+        {["♈","♉","♊","♋","♌","♍","♎","♏","♐","♑","♒","♓"].map((g, i) => {
+          const a = ((i * 30 + 15 - 90) * Math.PI) / 180;
+          const r = c - 26;
+          return (
+            <text key={g} x={c + Math.cos(a) * r} y={c + Math.sin(a) * r + 6}
+              textAnchor="middle" fontSize="18" fill="var(--gold-light)">{g}</text>
+          );
+        })}
+        {[0, 3, 5, 8].map((i, k) => {
+          const a = ((i * 30 + 15 - 90) * Math.PI) / 180;
+          const x = c + Math.cos(a) * (c - 70);
+          const y = c + Math.sin(a) * (c - 70);
+          return <circle key={k} cx={x} cy={y} r={5} fill="var(--gold-light)" />;
+        })}
+      </svg>
+    );
+  }
+  if (tag.startsWith("Vedic")) {
+    // North-Indian diamond kundali
+    const s = size;
+    return (
+      <svg viewBox={`0 0 ${s} ${s}`} width={s} height={s}>
+        <rect x={12} y={12} width={s - 24} height={s - 24} fill="none" stroke="var(--gold-dust)" strokeOpacity={0.5} />
+        <line x1={12} y1={12} x2={s - 12} y2={s - 12} stroke="var(--gold-dust)" strokeOpacity={0.4} />
+        <line x1={s - 12} y1={12} x2={12} y2={s - 12} stroke="var(--gold-dust)" strokeOpacity={0.4} />
+        <line x1={c} y1={12} x2={s - 12} y2={c} stroke="var(--gold-dust)" strokeOpacity={0.4} />
+        <line x1={s - 12} y1={c} x2={c} y2={s - 12} stroke="var(--gold-dust)" strokeOpacity={0.4} />
+        <line x1={c} y1={s - 12} x2={12} y2={c} stroke="var(--gold-dust)" strokeOpacity={0.4} />
+        <line x1={12} y1={c} x2={c} y2={12} stroke="var(--gold-dust)" strokeOpacity={0.4} />
+        {["1","2","3","4","5","6","7","8","9","10","11","12"].map((n, i) => {
+          const positions = [
+            [c, 40],[s - 60, 40],[s - 40, c],[s - 60, s - 40],
+            [c, s - 40],[60, s - 40],[40, c],[60, 40],
+            [c - 60, c - 40],[c + 60, c - 40],[c + 60, c + 40],[c - 60, c + 40],
+          ][i];
+          return (
+            <text key={n} x={positions[0]} y={positions[1]} textAnchor="middle"
+              fontSize="14" fill="var(--gold-light)" opacity={0.75}>{n}</text>
+          );
+        })}
+      </svg>
+    );
+  }
+  if (tag.startsWith("BaZi")) {
+    // Four Pillars grid
+    const cols = ["年","月","日","时"];
+    const rows = ["天干","地支","藏干","十神"];
+    const cw = (size - 20) / 4;
+    const rh = (size - 40) / 4;
+    return (
+      <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size}>
+        {cols.map((col, i) => (
+          <text key={col} x={10 + cw * (i + 0.5)} y={22} textAnchor="middle"
+            fontSize="14" fill="var(--gold-dust)">{col}</text>
+        ))}
+        {rows.map((row, r) =>
+          cols.map((_, i) => (
+            <g key={`${r}-${i}`}>
+              <rect x={10 + cw * i} y={30 + rh * r} width={cw - 4} height={rh - 4}
+                fill="none" stroke="var(--gold-dust)" strokeOpacity={0.35} />
+              <text x={10 + cw * (i + 0.5)} y={30 + rh * (r + 0.5) + 6} textAnchor="middle"
+                fontSize="13" fill="var(--stone-warm)" opacity={0.85}>
+                {["甲乙丙丁戊己庚辛壬癸"[(i * 3 + r) % 10],
+                  "子丑寅卯辰巳午未申酉戌亥"[(i * 5 + r * 2) % 12],
+                  "藏","印"][r] ?? ""}
+              </text>
+            </g>
+          )),
+        )}
+        <text x={c} y={size - 6} textAnchor="middle" fontSize="10"
+          fill="var(--stone-warm)" opacity={0.5}>示意 · 非真实排盘</text>
+      </svg>
+    );
+  }
+  // Ziwei 12-palace square
+  const palaces = ["命宫","兄弟","夫妻","子女","财帛","疾厄","迁移","奴仆","官禄","田宅","福德","父母"];
+  const cw = (size - 20) / 4;
+  const rh = (size - 20) / 4;
+  const layout = [
+    [3, 0],[3, 1],[3, 2],[3, 3],
+    [2, 3],[1, 3],[0, 3],
+    [0, 2],[0, 1],[0, 0],
+    [1, 0],[2, 0],
+  ];
+  return (
+    <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size}>
+      {layout.map(([col, row], i) => (
+        <g key={palaces[i]}>
+          <rect x={10 + cw * col} y={10 + rh * row} width={cw - 4} height={rh - 4}
+            fill="none" stroke="var(--gold-dust)" strokeOpacity={0.35} />
+          <text x={10 + cw * (col + 0.5)} y={10 + rh * (row + 0.5) + 6} textAnchor="middle"
+            fontSize="13" fill="var(--gold-light)">{palaces[i]}</text>
+        </g>
+      ))}
+      <text x={c} y={c} textAnchor="middle" fontSize="12" fill="var(--stone-warm)" opacity={0.55}>紫微斗数 · 十二宫</text>
+    </svg>
+  );
+}
+
+function TraditionCard({
+  tr,
+  li,
+  lang,
+}: {
+  tr: Tradition;
+  li: 0 | 1;
+  lang: Lang;
+}) {
+  const [zoom, setZoom] = useState(false);
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <p className="text-[9px] uppercase tracking-[0.28em] text-gold-dust/70">
+          {tr.tag[li]}
+        </p>
+        <div className="flex items-center gap-2">
+          <span className="rounded-full border border-gold-dust/30 px-2 py-0.5 text-[9px] text-gold-light">
+            {tr.score}
+          </span>
+          <button
+            onClick={() => setZoom(true)}
+            className="rounded-full border border-white/15 px-2 py-0.5 text-[9px] uppercase tracking-[0.2em] text-stone-warm/60 transition-colors hover:border-gold-dust/50 hover:text-gold-light"
+            aria-label={lang === "zh" ? "放大查看" : "Enlarge"}
+          >
+            {lang === "zh" ? "⤢ 放大" : "⤢ Enlarge"}
+          </button>
+        </div>
+      </div>
+      <p className="mb-1 font-serif text-sm italic text-stone-warm">{tr.title[li]}</p>
+      <p className="text-[12px] leading-relaxed text-stone-warm/65">{tr.body[li]}</p>
+
+      <ChartZoomModal
+        open={zoom}
+        onClose={() => setZoom(false)}
+        title={tr.tag[li]}
+        subtitle={tr.title[li]}
+      >
+        <div className="grid grid-cols-1 items-center gap-6 md:grid-cols-[auto_1fr]">
+          <div className="flex justify-center text-stone-warm/50">
+            <TraditionDiagram tag={tr.tag[0]} />
+          </div>
+          <div>
+            <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+              {lang === "zh" ? "契合度" : "Compatibility"} · {tr.score}
+            </p>
+            <p className="mb-4 text-sm leading-relaxed text-stone-warm/85">{tr.body[li]}</p>
+            <p className="text-[10px] uppercase tracking-[0.24em] text-stone-warm/40">
+              {lang === "zh"
+                ? "图示为示意版式，仅供理解体系结构 · 精算需接入专业排盘引擎"
+                : "Diagram is stylised — for structural understanding only. Precise readings require a professional engine."}
+            </p>
+          </div>
+        </div>
+      </ChartZoomModal>
+    </div>
+  );
+}
+
 export function SynastryPreview() {
   const { lang } = useLang();
   const li = lang === "zh" ? 1 : 0;
