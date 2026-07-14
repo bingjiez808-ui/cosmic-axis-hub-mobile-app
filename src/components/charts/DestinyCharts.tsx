@@ -987,3 +987,64 @@ function wedgePath(
   return `M ${x1o} ${y1o} A ${rOut} ${rOut} 0 0 1 ${x2o} ${y2o} L ${x2i} ${y2i} A ${rIn} ${rIn} 0 0 0 ${x1i} ${y1i} Z`;
 }
 
+
+/* ─────────────────────────────────────────────────────────────
+ * ChartZoomModal — full-screen zoom overlay for any chart panel.
+ * Renders whatever children are passed at a larger size, with a
+ * dimmed backdrop and a close button. ESC closes.
+ * ────────────────────────────────────────────────────────── */
+export function ChartZoomModal({
+  open,
+  onClose,
+  title,
+  subtitle,
+  children,
+}: {
+  open: boolean;
+  onClose: () => void;
+  title?: string;
+  subtitle?: string;
+  children: React.ReactNode;
+}) {
+  if (!open) return null;
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-obsidian/85 backdrop-blur-md p-4 md:p-8"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.94 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.25 }}
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full max-w-4xl max-h-[92vh] overflow-y-auto rounded-3xl border border-gold-dust/30 bg-obsidian/95 p-6 md:p-10 shadow-[0_0_80px_-20px_rgba(212,175,138,0.35)]"
+      >
+        <div className="mb-5 flex items-start justify-between gap-4">
+          <div>
+            {title && (
+              <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+                {title}
+              </p>
+            )}
+            {subtitle && (
+              <p className="mt-2 font-serif text-2xl italic text-stone-warm md:text-3xl">
+                {subtitle}
+              </p>
+            )}
+          </div>
+          <button
+            onClick={onClose}
+            aria-label="close"
+            className="rounded-full border border-white/15 px-4 py-1.5 text-[10px] uppercase tracking-[0.32em] text-stone-warm/70 transition-colors hover:border-gold-dust/50 hover:text-gold-light"
+          >
+            ✕
+          </button>
+        </div>
+        {children}
+      </motion.div>
+    </div>
+  );
+}
