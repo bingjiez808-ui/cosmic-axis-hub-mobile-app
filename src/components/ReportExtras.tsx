@@ -881,10 +881,108 @@ export function MembershipSection({ birthISO }: { birthISO?: string } = {}) {
         </div>
       </div>
 
+      {/* Oracle-exclusive detailed analyses — only for the top tier */}
+      {plan === "oracle" && (
+        <div className="mt-10 space-y-0">
+          <div className="mx-auto mb-6 flex max-w-5xl items-center gap-3 px-6 md:px-12">
+            <span className="h-px flex-1 bg-gold-dust/30" />
+            <p className="text-[10px] uppercase tracking-[0.42em] text-gold-dust">
+              {lang === "zh" ? "神谕者专属 · 详细分析" : "Oracle exclusive · Detailed analysis"}
+            </p>
+            <span className="h-px flex-1 bg-gold-dust/30" />
+          </div>
+          <SynastryPreview />
+          <RecentWindows birthISO={birthISO} />
+        </div>
+      )}
+
       <AIFollowupModal open={chatOpen} onClose={() => setChatOpen(false)} lang={lang} />
     </section>
   );
 }
+
+/* Oracle preview teaser — shown to free/sage members, deliberately non-specific */
+function OracleTeaser({
+  lang,
+  li,
+  onUpgrade,
+}: {
+  lang: Lang;
+  li: 0 | 1;
+  onUpgrade: () => void;
+}) {
+  const items = [
+    {
+      kicker: ["Oracle Now · Near-term windows", "会员近况 · 近期窗口"] as [string, string],
+      title: ["The next 90 days, in four windows", "接下来 90 天，四个窗口"] as [string, string],
+      bullets: [
+        ["A signal week is opening.", "一个「信号周」正在打开。"],
+        ["A wealth channel wants a message you've been avoiding.", "一条财路，在等你迟迟未发的消息。"],
+        ["A postponed conversation becomes unavoidable.", "一段被拖延的对话，将无法回避。"],
+      ] as [string, string][],
+    },
+    {
+      kicker: ["Oracle Synastry · Relationship", "会员合盘 · 关系分析"] as [string, string],
+      title: ["Two charts, one honest reading", "两张命盘的诚实对话"] as [string, string],
+      bullets: [
+        ["Five axes of resonance — scored, not romanticized.", "五维契合度 —— 有分数，不美化。"],
+        ["Where you harmonize; where you generate noise.", "何处和声，何处噪音。"],
+        ["A verdict the chart is willing to defend.", "一个命盘愿意为之背书的结论。"],
+      ] as [string, string][],
+    },
+  ];
+
+  return (
+    <div className="mb-10 grid grid-cols-1 gap-4 md:grid-cols-2">
+      {items.map((it) => (
+        <div
+          key={it.kicker[0]}
+          className="relative overflow-hidden rounded-2xl border border-gold-dust/20 bg-gradient-to-b from-white/[0.04] to-white/[0.01] p-6"
+        >
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+              {it.kicker[li]}
+            </p>
+            <span className="rounded-full border border-gold-dust/40 px-2 py-0.5 text-[9px] uppercase tracking-[0.28em] text-gold-light">
+              {lang === "zh" ? "神谕者" : "Oracle"}
+            </span>
+          </div>
+          <p className="mb-4 font-serif text-lg italic text-stone-warm">{it.title[li]}</p>
+          <ul className="mb-5 space-y-2 text-sm text-stone-warm/70">
+            {it.bullets.map((b) => (
+              <li key={b[0]} className="flex gap-2">
+                <span className="mt-1 size-1.5 shrink-0 rounded-full bg-gold-dust/70" />
+                <span className="italic">{b[li]}</span>
+              </li>
+            ))}
+          </ul>
+          {/* Blurred teaser strip — a hint of the underlying data without the specifics */}
+          <div className="relative mb-4 h-16 overflow-hidden rounded-xl border border-white/5 bg-white/[0.02]">
+            <div className="absolute inset-0 space-y-2 p-3 blur-[6px] select-none">
+              <div className="h-1.5 w-3/4 rounded-full bg-gradient-to-r from-gold-dust to-nebula-purple" />
+              <div className="h-1.5 w-2/3 rounded-full bg-gradient-to-r from-gold-dust to-nebula-purple" />
+              <div className="h-1.5 w-4/5 rounded-full bg-gradient-to-r from-gold-dust to-nebula-purple" />
+              <div className="h-1.5 w-1/2 rounded-full bg-gradient-to-r from-gold-dust to-nebula-purple" />
+            </div>
+            <div className="absolute inset-0 grid place-items-center bg-obsidian/40">
+              <span className="text-[10px] uppercase tracking-[0.32em] text-gold-light">
+                {lang === "zh" ? "⌛ 神谕者可见细节" : "⌛ Details on Oracle"}
+              </span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onUpgrade}
+            className="w-full rounded-full border border-gold-dust/40 px-5 py-2.5 text-[10px] uppercase tracking-[0.32em] text-gold-dust transition-colors hover:bg-gold-dust hover:text-obsidian"
+          >
+            {lang === "zh" ? "升级至神谕者，查看详细分析" : "Upgrade to Oracle for the full reading"}
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 
 function AIFollowupModal({
   open,
