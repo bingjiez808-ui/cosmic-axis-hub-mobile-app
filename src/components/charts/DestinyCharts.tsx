@@ -499,14 +499,11 @@ export function NatalWheel({
     }
     return (
       <>
-        <p className="text-[10px] uppercase tracking-[0.4em] text-gold-dust/70">
+        <p className="font-serif text-3xl italic text-stone-warm md:text-4xl">
           {lang === "zh" ? "你的命盘" : "Your natal chart"}
         </p>
-        <p className="mt-3 font-serif text-2xl italic text-stone-warm/70">
-          {lang === "zh" ? "悬停行星或星座" : "Hover a planet or sign"}
-        </p>
-        <p className="mx-6 mt-3 text-[10px] uppercase tracking-[0.28em] text-stone-warm/40">
-          {lang === "zh" ? "九星 · 十二宫" : "9 planets · 12 signs"}
+        <p className="mx-6 mt-4 text-[10px] uppercase tracking-[0.32em] text-stone-warm/40">
+          {lang === "zh" ? "点击行星 · 查看落位与相位" : "Tap a planet · see placement & aspects"}
         </p>
       </>
     );
