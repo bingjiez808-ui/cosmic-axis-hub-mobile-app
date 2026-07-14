@@ -273,9 +273,16 @@ function SiteNav() {
         <button
           type="button"
           onClick={openAcc}
-          className="rounded-full border border-gold-dust/40 px-3 py-1 text-[10px] tracking-[0.28em] text-gold-dust transition-colors hover:bg-gold-dust/10"
+          className="flex items-center gap-2 rounded-full border border-gold-dust/40 px-3 py-1 text-[10px] tracking-[0.28em] text-gold-dust transition-colors hover:bg-gold-dust/10"
         >
-          {account ? `${t.nav_account} · ${account.name.slice(0, 8)}` : t.nav_sign_in}
+          {account?.avatar && (
+            <img
+              src={account.avatar}
+              alt=""
+              className="h-5 w-5 rounded-full border border-gold-dust/40 object-cover"
+            />
+          )}
+          <span>{account ? `${t.nav_account} · ${account.name.slice(0, 8)}` : t.nav_sign_in}</span>
         </button>
         <LanguageToggle />
       </div>
