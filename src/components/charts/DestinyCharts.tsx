@@ -594,7 +594,7 @@ export function NatalWheel({
 
         {/* Aspect lines between planets in trine/opposition signs */}
         {(() => {
-          const lines: React.ReactElement[] = [];
+          const lines: ReactElement[] = [];
           for (let i = 0; i < PLANETS.length; i++) {
             for (let j = i + 1; j < PLANETS.length; j++) {
               const diff = Math.abs(signs[i] - signs[j]);
