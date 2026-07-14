@@ -197,24 +197,45 @@ const SEED_POSTS: Post[] = [
 
 // ─────────────────────────────────────────────────────────────
 
-function AvatarGlyph({ hue, glyph, size = 96 }: { hue: number; glyph: string; size?: number }) {
+function AvatarGlyph({
+  hue,
+  glyph,
+  size = 96,
+  imageUrl,
+}: {
+  hue: number;
+  glyph: string;
+  size?: number;
+  imageUrl?: string;
+}) {
   const bg1 = `hsl(${hue} 45% 22%)`;
   const bg2 = `hsl(${(hue + 40) % 360} 55% 44%)`;
   return (
     <div
-      className="relative grid place-items-center overflow-hidden rounded-full border border-gold-dust/40"
+      className="relative grid shrink-0 place-items-center overflow-hidden rounded-full border border-gold-dust/40"
       style={{
         width: size,
         height: size,
-        background: `radial-gradient(circle at 30% 30%, ${bg2}, ${bg1} 65%, #05060a 100%)`,
+        background: imageUrl
+          ? undefined
+          : `radial-gradient(circle at 30% 30%, ${bg2}, ${bg1} 65%, #05060a 100%)`,
       }}
     >
-      <span
-        className="font-serif italic text-gold-light"
-        style={{ fontSize: size * 0.5, textShadow: "0 0 12px rgba(212,175,110,0.6)" }}
-      >
-        {glyph}
-      </span>
+      {imageUrl ? (
+        <img
+          src={imageUrl}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover"
+          draggable={false}
+        />
+      ) : (
+        <span
+          className="font-serif italic text-gold-light"
+          style={{ fontSize: size * 0.5, textShadow: "0 0 12px rgba(212,175,110,0.6)" }}
+        >
+          {glyph}
+        </span>
+      )}
       <span
         className="pointer-events-none absolute inset-0 rounded-full"
         style={{
