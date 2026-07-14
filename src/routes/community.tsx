@@ -326,9 +326,7 @@ function CommunityPage() {
     });
   };
 
-  const claimQuest = (id: string) => {
-    setCompletedQuests((c) => ({ ...c, [id]: true }));
-  };
+  // (Legacy manual "accept" is replaced by the AI reflection flow below.)
 
   const generateAvatar = async () => {
     setAvatarBusy(true);
