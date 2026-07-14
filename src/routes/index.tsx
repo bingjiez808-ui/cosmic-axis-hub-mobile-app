@@ -315,6 +315,7 @@ function FocusComparison() {
 
 function LandingPage() {
   const { t } = useLang();
+  const [openTradition, setOpenTradition] = useState<TraditionId | null>(null);
   return (
     <>
       {/* ─────────── HERO ─────────── */}
