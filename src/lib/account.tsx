@@ -8,7 +8,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 
 export type Plan = "free" | "sage" | "oracle";
 
-export type Account = { name: string; email: string; plan?: Plan };
+export type Account = { name: string; email: string; plan?: Plan; avatar?: string };
 
 export type SavedReading = {
   id: string;
@@ -25,6 +25,7 @@ type Ctx = {
   signIn: (a: Account) => void;
   signOut: () => void;
   setPlan: (p: Plan) => void;
+  setAvatar: (dataUrl: string) => void;
   saved: SavedReading[];
   saveReading: (r: Omit<SavedReading, "id" | "createdAt">) => void;
   removeReading: (id: string) => void;
@@ -65,6 +66,17 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       return next;
     });
   };
+  const setAvatar = (dataUrl: string) => {
+    setAccount((prev) => {
+      const next: Account = prev
+        ? { ...prev, avatar: dataUrl }
+        : { name: "Traveler", email: "", plan: "free", avatar: dataUrl };
+      try {
+        localStorage.setItem(ACC_KEY, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  };
   const signOut = () => {
     setAccount(null);
     try {
@@ -95,7 +107,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   const removeReading = (id: string) => persist(saved.filter((s) => s.id !== id));
 
   return (
-    <AccountCtx.Provider value={{ account, signIn, signOut, setPlan, saved, saveReading, removeReading }}>
+    <AccountCtx.Provider value={{ account, signIn, signOut, setPlan, setAvatar, saved, saveReading, removeReading }}>
       {children}
     </AccountCtx.Provider>
   );

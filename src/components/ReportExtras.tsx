@@ -1685,7 +1685,7 @@ function AIFollowupModal({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 24 }}
             transition={{ duration: 0.55, ease: [0.32, 0.72, 0, 1] }}
-            className="relative z-10 mx-auto flex h-full w-full max-w-3xl flex-col px-4 pb-4 pt-3 sm:px-6 sm:pt-6"
+            className="relative z-10 mx-auto flex h-full max-h-[100dvh] w-full max-w-3xl flex-col px-3 pb-[env(safe-area-inset-bottom)] pt-[max(env(safe-area-inset-top),0.75rem)] sm:px-6 sm:pt-6"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header with elder + close */}
@@ -1729,15 +1729,15 @@ function AIFollowupModal({
                 type="button"
                 onClick={onClose}
                 aria-label={lang === "zh" ? "关闭" : "Close"}
-                className="flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-white/15 bg-obsidian/70 px-3 text-[10px] uppercase tracking-[0.28em] text-stone-warm/70 backdrop-blur transition-colors hover:border-gold-dust/50 hover:text-gold-dust"
+                className="flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-white/15 bg-obsidian/70 px-2.5 text-[10px] uppercase tracking-[0.24em] text-stone-warm/70 backdrop-blur transition-colors hover:border-gold-dust/50 hover:text-gold-dust sm:px-3 sm:tracking-[0.28em]"
               >
-                <span aria-hidden>×</span>
-                <span>{t.mem_close}</span>
+                <span aria-hidden className="text-base leading-none">×</span>
+                <span className="hidden sm:inline">{t.mem_close}</span>
               </button>
             </div>
 
             {/* Conversation scroll */}
-            <div className="mt-4 flex-1 space-y-3 overflow-y-auto pr-1">
+            <div className="mt-3 flex-1 space-y-3 overflow-y-auto overscroll-contain pr-1 sm:mt-4">
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -1831,7 +1831,7 @@ function AIFollowupModal({
 
             <form
               onSubmit={(e) => { e.preventDefault(); if (isOracle) send(input); }}
-              className="mt-4 flex items-center gap-2 rounded-full border border-gold-dust/20 bg-obsidian/70 px-4 py-2 backdrop-blur"
+              className="mt-3 flex items-center gap-2 rounded-full border border-gold-dust/20 bg-obsidian/80 px-3 py-2 backdrop-blur sm:mt-4 sm:px-4"
             >
               <span aria-hidden className="text-gold-dust/60">✒</span>
               <input
@@ -1839,12 +1839,12 @@ function AIFollowupModal({
                 onChange={(e) => setInput(e.target.value)}
                 disabled={!isOracle}
                 placeholder={isOracle ? t.mem_ai_placeholder : (lang === "zh" ? "升级神谕者后可提问…" : "Upgrade to Oracle to ask…")}
-                className="flex-1 bg-transparent text-sm text-stone-warm outline-none placeholder:text-stone-warm/30 disabled:cursor-not-allowed"
+                className="min-w-0 flex-1 bg-transparent text-[13px] text-stone-warm outline-none placeholder:text-stone-warm/30 disabled:cursor-not-allowed sm:text-sm"
               />
               <button
                 type="submit"
                 disabled={!isOracle || !input.trim() || thinking}
-                className="rounded-full bg-gold-dust px-4 py-1.5 text-[10px] uppercase tracking-[0.28em] text-obsidian transition-colors hover:bg-gold-light disabled:bg-gold-dust/40 disabled:text-obsidian/50"
+                className="shrink-0 rounded-full bg-gold-dust px-3 py-1.5 text-[10px] uppercase tracking-[0.24em] text-obsidian transition-colors hover:bg-gold-light disabled:bg-gold-dust/40 disabled:text-obsidian/50 sm:px-4 sm:tracking-[0.28em]"
               >
                 {t.mem_ai_send}
               </button>

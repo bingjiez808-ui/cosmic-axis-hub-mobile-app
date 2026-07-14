@@ -197,24 +197,45 @@ const SEED_POSTS: Post[] = [
 
 // ─────────────────────────────────────────────────────────────
 
-function AvatarGlyph({ hue, glyph, size = 96 }: { hue: number; glyph: string; size?: number }) {
+function AvatarGlyph({
+  hue,
+  glyph,
+  size = 96,
+  imageUrl,
+}: {
+  hue: number;
+  glyph: string;
+  size?: number;
+  imageUrl?: string;
+}) {
   const bg1 = `hsl(${hue} 45% 22%)`;
   const bg2 = `hsl(${(hue + 40) % 360} 55% 44%)`;
   return (
     <div
-      className="relative grid place-items-center overflow-hidden rounded-full border border-gold-dust/40"
+      className="relative grid shrink-0 place-items-center overflow-hidden rounded-full border border-gold-dust/40"
       style={{
         width: size,
         height: size,
-        background: `radial-gradient(circle at 30% 30%, ${bg2}, ${bg1} 65%, #05060a 100%)`,
+        background: imageUrl
+          ? undefined
+          : `radial-gradient(circle at 30% 30%, ${bg2}, ${bg1} 65%, #05060a 100%)`,
       }}
     >
-      <span
-        className="font-serif italic text-gold-light"
-        style={{ fontSize: size * 0.5, textShadow: "0 0 12px rgba(212,175,110,0.6)" }}
-      >
-        {glyph}
-      </span>
+      {imageUrl ? (
+        <img
+          src={imageUrl}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover"
+          draggable={false}
+        />
+      ) : (
+        <span
+          className="font-serif italic text-gold-light"
+          style={{ fontSize: size * 0.5, textShadow: "0 0 12px rgba(212,175,110,0.6)" }}
+        >
+          {glyph}
+        </span>
+      )}
       <span
         className="pointer-events-none absolute inset-0 rounded-full"
         style={{
@@ -229,7 +250,13 @@ function AvatarGlyph({ hue, glyph, size = 96 }: { hue: number; glyph: string; si
 function CommunityPage() {
   const { lang } = useLang();
   const li = lang === "zh" ? 1 : 0;
-  const { account } = useAccount();
+  const { account, setAvatar } = useAccount();
+  const [avatarBusy, setAvatarBusy] = useState(false);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+  // AI quest reflection (challenge companion)
+  const [aiReflect, setAiReflect] = useState<Record<string, string>>({});
+  const [aiReflectBusy, setAiReflectBusy] = useState<string | null>(null);
+  const [aiQuestInput, setAiQuestInput] = useState<Record<string, string>>({});
 
   // Identity — persisted so the same person always gets the same house/id.
   const identity = useMemo(() => {
@@ -299,8 +326,65 @@ function CommunityPage() {
     });
   };
 
-  const claimQuest = (id: string) => {
-    setCompletedQuests((c) => ({ ...c, [id]: true }));
+  // (Legacy manual "accept" is replaced by the AI reflection flow below.)
+
+  const generateAvatar = async () => {
+    setAvatarBusy(true);
+    setAvatarError(null);
+    try {
+      const r = await fetch("/api/generate-avatar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          house: house.name[0],
+          element: house.element[0],
+          zodiac: "",
+          title: TITLES_EN[identity.titleIdx],
+          lang,
+        }),
+      });
+      if (!r.ok) throw new Error(await r.text());
+      const { dataUrl } = (await r.json()) as { dataUrl: string };
+      setAvatar(dataUrl);
+    } catch (e) {
+      console.error(e);
+      setAvatarError(
+        lang === "zh" ? "画像生成暂时失败，请稍后再试。" : "Portrait generation failed — try again shortly.",
+      );
+    } finally {
+      setAvatarBusy(false);
+    }
+  };
+
+  const askQuestOracle = async (questId: string, questPrompt: string) => {
+    const answer = (aiQuestInput[questId] || "").trim();
+    if (!answer) return;
+    setAiReflectBusy(questId);
+    try {
+      const { askOracle } = await import("@/lib/oracle.functions");
+      const res = await askOracle({
+        data: {
+          question:
+            (lang === "zh"
+              ? `我正在参加「同门闯关」，题目是：${questPrompt}\n我的回答是：${answer}\n请以图书馆长者的口吻，给我一段 120-180 字的、结合我所在的「${house.name[1]}」学院（${house.element[1]}元素）的温柔点评，指出我可以更深地看到自己哪一部分。`
+              : `I'm doing a Guild-of-Souls quest. Prompt: ${questPrompt}\nMy answer: ${answer}\nAs the library elder, please give me a 120-180 word warm reflection tuned to my "${house.name[0]}" House (${house.element[0]} element). Point out one deeper thing I can now see about myself.`),
+          lang,
+        },
+      });
+      setAiReflect((s) => ({ ...s, [questId]: res.text || "" }));
+      setCompletedQuests((c) => ({ ...c, [questId]: true }));
+    } catch (e) {
+      console.error(e);
+      setAiReflect((s) => ({
+        ...s,
+        [questId]:
+          lang === "zh"
+            ? "图书馆此刻信号不稳，稍后再试。"
+            : "The library signal is unsteady — please try again soon.",
+      }));
+    } finally {
+      setAiReflectBusy(null);
+    }
   };
 
   const facetLabel = (k: string) => FACETS.find((f) => f.key === k)?.label[li] ?? k;
@@ -345,25 +429,64 @@ function CommunityPage() {
             background: `linear-gradient(140deg, ${house.tone[0]}22, transparent 55%), var(--tw-gradient-from, rgba(255,255,255,0.02))`,
           }}
         >
-          <div className="flex flex-col items-center gap-8 md:flex-row md:items-start">
-            <AvatarGlyph hue={identity.hue} glyph={house.glyph} size={112} />
+          <div className="flex flex-col items-center gap-6 md:flex-row md:items-start md:gap-8">
+            <div className="flex flex-col items-center gap-3">
+              <AvatarGlyph
+                hue={identity.hue}
+                glyph={house.glyph}
+                size={112}
+                imageUrl={account?.avatar}
+              />
+              <div className="flex flex-wrap justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={generateAvatar}
+                  disabled={avatarBusy}
+                  className="rounded-full border border-gold-dust/40 px-3 py-1 text-[9px] uppercase tracking-[0.28em] text-gold-dust transition-colors hover:bg-gold-dust/10 disabled:opacity-50"
+                >
+                  {avatarBusy
+                    ? lang === "zh"
+                      ? "绘制中…"
+                      : "Painting…"
+                    : account?.avatar
+                      ? lang === "zh"
+                        ? "重新生成"
+                        : "Regenerate"
+                      : lang === "zh"
+                        ? "AI 绘制我的画像"
+                        : "Paint my portrait"}
+                </button>
+                {account?.avatar && (
+                  <button
+                    type="button"
+                    onClick={() => setAvatar("")}
+                    className="rounded-full border border-white/10 px-3 py-1 text-[9px] uppercase tracking-[0.28em] text-stone-warm/60 transition-colors hover:border-gold-dust/30 hover:text-gold-dust"
+                  >
+                    {lang === "zh" ? "还原符号" : "Reset glyph"}
+                  </button>
+                )}
+              </div>
+              {avatarError && (
+                <p className="text-[10px] text-red-300/80">{avatarError}</p>
+              )}
+            </div>
             <div className="flex-1 text-center md:text-left">
               <p className="mb-2 text-[10px] uppercase tracking-[0.42em] text-gold-dust/80">
                 {lang === "zh" ? "你的旅者身份" : "Your traveler identity"}
               </p>
-              <h2 className="mb-1 font-serif text-3xl italic text-stone-warm md:text-4xl">
+              <h2 className="mb-1 font-serif text-2xl italic text-stone-warm sm:text-3xl md:text-4xl">
                 {travelerTitle} <span className="text-gold-light">{travelerId}</span>
               </h2>
-              <p className="mb-4 text-sm uppercase tracking-[0.32em] text-gold-dust/70">
+              <p className="mb-4 text-xs uppercase tracking-[0.28em] text-gold-dust/70 sm:text-sm sm:tracking-[0.32em]">
                 {house.name[li]} · {house.element[li]} {house.glyph}
               </p>
-              <p className="font-serif text-lg italic text-stone-warm/75">
+              <p className="font-serif text-base italic text-stone-warm/75 sm:text-lg">
                 「{house.motto[li]}」
               </p>
-              <p className="mt-3 text-[11px] uppercase tracking-[0.28em] text-stone-warm/40">
+              <p className="mt-3 text-[10px] uppercase tracking-[0.24em] text-stone-warm/40 sm:tracking-[0.28em]">
                 {lang === "zh"
-                  ? "该身份根据你的注册信息独一无二生成 —— 与他人不会重复。"
-                  : "Uniquely generated from your account signature — no two travelers share it."}
+                  ? "该身份根据你的注册信息独一无二生成 —— 与他人不会重复。画像由 AI 依据学院属性绘制，可随时重生。"
+                  : "Uniquely generated from your account signature. Portrait is painted by AI from your house attributes — regenerate anytime."}
               </p>
             </div>
           </div>
@@ -385,6 +508,8 @@ function CommunityPage() {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           {QUESTS.map((q, i) => {
             const done = completedQuests[q.id];
+            const reflection = aiReflect[q.id];
+            const isBusy = aiReflectBusy === q.id;
             return (
               <motion.div
                 key={q.id}
@@ -392,15 +517,38 @@ function CommunityPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: i * 0.08 }}
-                className={`glass-card flex flex-col rounded-2xl p-6 ${done ? "border-gold-dust/60" : ""}`}
+                className={`glass-card flex flex-col rounded-2xl p-5 sm:p-6 ${done ? "border-gold-dust/60" : ""}`}
               >
                 <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
                   {lang === "zh" ? `第 ${i + 1} 关` : `Quest ${i + 1}`}
                 </p>
-                <p className="mb-6 font-serif text-lg leading-relaxed text-stone-warm/85">
+                <p className="mb-4 font-serif text-base leading-relaxed text-stone-warm/85 sm:text-lg">
                   {q.label[li]}
                 </p>
-                <div className="mt-auto flex items-center justify-between">
+                <textarea
+                  value={aiQuestInput[q.id] ?? ""}
+                  onChange={(e) =>
+                    setAiQuestInput((s) => ({ ...s, [q.id]: e.target.value.slice(0, 400) }))
+                  }
+                  rows={3}
+                  placeholder={
+                    lang === "zh"
+                      ? "写下你的回答，AI 长者会为你点评…"
+                      : "Write your answer — the elder will reflect back…"
+                  }
+                  className="w-full resize-none rounded-xl border border-white/10 bg-obsidian/40 p-3 text-sm text-stone-warm placeholder:text-stone-warm/30 focus:border-gold-dust/40 focus:outline-none"
+                />
+                {reflection && (
+                  <div className="mt-3 rounded-xl border border-gold-dust/25 bg-gold-dust/[0.05] p-3">
+                    <p className="mb-1 text-[9px] uppercase tracking-[0.32em] text-gold-dust/70">
+                      {lang === "zh" ? "长者回音" : "The elder replies"}
+                    </p>
+                    <p className="whitespace-pre-line font-serif text-sm italic leading-relaxed text-stone-warm/85">
+                      {reflection}
+                    </p>
+                  </div>
+                )}
+                <div className="mt-4 flex items-center justify-between gap-3">
                   <span
                     className={`text-[10px] uppercase tracking-[0.28em] ${
                       done ? "text-gold-light" : "text-stone-warm/40"
@@ -410,15 +558,15 @@ function CommunityPage() {
                   </span>
                   <button
                     type="button"
-                    onClick={() => claimQuest(q.id)}
-                    disabled={done}
-                    className={`rounded-full border px-4 py-1.5 text-[10px] uppercase tracking-[0.28em] transition-colors ${
-                      done
-                        ? "cursor-default border-gold-dust/40 text-gold-light"
-                        : "border-gold-dust/30 text-gold-dust hover:bg-gold-dust/10"
-                    }`}
+                    onClick={() => askQuestOracle(q.id, q.label[li])}
+                    disabled={isBusy || !(aiQuestInput[q.id] || "").trim()}
+                    className="rounded-full border border-gold-dust/40 px-4 py-1.5 text-[10px] uppercase tracking-[0.28em] text-gold-dust transition-colors hover:bg-gold-dust/10 disabled:opacity-40"
                   >
-                    {done ? (lang === "zh" ? "已过关" : "Cleared") : (lang === "zh" ? "接受" : "Accept")}
+                    {isBusy
+                      ? lang === "zh" ? "长者沉思…" : "Reflecting…"
+                      : done
+                        ? lang === "zh" ? "再问一次" : "Ask again"
+                        : lang === "zh" ? "呈上答卷" : "Submit"}
                   </button>
                 </div>
               </motion.div>
