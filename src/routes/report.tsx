@@ -513,8 +513,16 @@ function ReportPage() {
       {/* Key life events verification */}
       <KeyEventsVerification />
 
+      {/* Tarot — three cards as a second witness */}
+      <TarotDraw />
+
+      {/* Future watchlist — Oracle members */}
+      <FutureWatchlist />
+
       {/* Membership / PDF / AI follow-up */}
       <MembershipSection />
+
+
 
       {/* Outro */}
       <div className="mx-auto mt-16 max-w-3xl px-6 text-center print:hidden">
