@@ -14,6 +14,8 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { LanguageProvider, useLang } from "../lib/i18n";
 import { AccountProvider, useAccount } from "../lib/account";
 import { AccountModal } from "../components/AccountModal";
+import { LibrarySplash } from "../components/LibrarySplash";
+
 
 function NotFoundComponent() {
   return (
