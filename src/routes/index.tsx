@@ -56,16 +56,6 @@ const traditions = [
   },
 ];
 
-const dimensions = [
-  "Character",
-  "Vocation",
-  "Wealth",
-  "Love",
-  "Family",
-  "Health",
-  "Life Mission",
-  "Cycles",
-];
 
 // Focus comparison — how each tradition approaches the same life dimension.
 type FocusRow = {
@@ -323,6 +313,7 @@ function FocusComparison() {
 }
 
 function LandingPage() {
+  const { t } = useLang();
   return (
     <>
       {/* ─────────── HERO ─────────── */}
@@ -339,7 +330,7 @@ function LandingPage() {
           transition={{ duration: 1, ease: [0.32, 0.72, 0, 1] }}
           className="relative z-10 mb-8 text-[11px] font-light uppercase tracking-[0.42em] text-gold-dust"
         >
-          An AI synthesis of human destiny
+          {t.hero_kicker}
         </motion.p>
 
         <motion.h1
@@ -348,9 +339,9 @@ function LandingPage() {
           transition={{ duration: 1.2, delay: 0.2, ease: [0.32, 0.72, 0, 1] }}
           className="relative z-10 max-w-5xl font-serif text-5xl leading-[1.05] text-stone-warm md:text-7xl lg:text-[5.5rem]"
         >
-          Every civilization has tried to
+          {t.hero_h1_a}
           <br />
-          <span className="italic gold-gradient-text">answer the same question.</span>
+          <span className="italic gold-gradient-text">{t.hero_h1_b}</span>
         </motion.h1>
 
         <motion.p
@@ -359,7 +350,7 @@ function LandingPage() {
           transition={{ duration: 1.4, delay: 0.9 }}
           className="relative z-10 mt-10 font-serif text-xl italic text-stone-warm/60 md:text-2xl"
         >
-          “Who are you?”
+          {t.hero_quote}
         </motion.p>
 
         <motion.div
@@ -373,7 +364,7 @@ function LandingPage() {
             className="group relative inline-flex overflow-hidden rounded-full border border-gold-dust/30 px-12 py-5 transition-colors hover:border-gold-dust"
           >
             <span className="relative z-10 text-xs font-medium uppercase tracking-[0.32em] text-gold-dust">
-              Enter the Library
+              {t.hero_cta}
             </span>
             <span className="absolute inset-0 translate-y-full bg-gold-dust/10 transition-transform duration-500 group-hover:translate-y-0" />
           </Link>
@@ -382,7 +373,7 @@ function LandingPage() {
         <div className="absolute bottom-10 flex flex-col items-center">
           <div className="h-16 w-px bg-gradient-to-b from-transparent to-gold-dust/50" />
           <span className="mt-3 text-[10px] uppercase tracking-[0.32em] text-stone-warm/40">
-            Scroll to explore
+            {t.hero_scroll}
           </span>
         </div>
       </section>
@@ -390,9 +381,7 @@ function LandingPage() {
       {/* ─────────── PHILOSOPHY BRIDGE ─────────── */}
       <section className="relative z-10 mx-auto max-w-4xl px-6 py-32 text-center">
         <p className="font-serif text-2xl leading-relaxed text-stone-warm/70 md:text-3xl">
-          Four civilizations — separated by oceans and centuries — each built a language for
-          the same silence inside a human being. <span className="italic text-gold-light">This
-          library reads all four at once.</span>
+          {t.philosophy_a} <span className="italic text-gold-light">{t.philosophy_em}</span>
         </p>
       </section>
 
@@ -401,24 +390,24 @@ function LandingPage() {
         <div className="mb-16 flex items-end justify-between">
           <div>
             <p className="mb-3 text-[10px] uppercase tracking-[0.4em] text-gold-dust">
-              I — IV
+              {t.pillars_kicker}
             </p>
             <h2 className="max-w-2xl font-serif text-4xl leading-tight text-stone-warm md:text-5xl">
-              The four pillars of the <span className="italic">reading</span>
+              {t.pillars_title_a}<span className="italic">{t.pillars_title_em}</span>
             </h2>
           </div>
           <Link
             to="/traditions"
             className="hidden text-[10px] uppercase tracking-[0.32em] text-stone-warm/60 transition-colors hover:text-gold-dust md:block"
           >
-            Read the archive →
+            {t.pillars_archive}
           </Link>
         </div>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {traditions.map((t, i) => (
+          {traditions.map((tr, i) => (
             <motion.div
-              key={t.id}
+              key={tr.id}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-80px" }}
@@ -427,8 +416,8 @@ function LandingPage() {
             >
               <div className="mb-6 aspect-square overflow-hidden rounded-2xl bg-white/5">
                 <img
-                  src={t.image}
-                  alt={`${t.title} diagram`}
+                  src={tr.image}
+                  alt={`${tr.title} diagram`}
                   loading="lazy"
                   width={1024}
                   height={1024}
@@ -436,13 +425,13 @@ function LandingPage() {
                 />
               </div>
               <p className="mb-2 text-[10px] uppercase tracking-[0.3em] text-gold-dust/80">
-                {t.subtitle}
+                {tr.subtitle}
               </p>
-              <h3 className="mb-3 font-serif text-2xl text-stone-warm">{t.title}</h3>
-              <p className="text-sm font-light leading-relaxed text-stone-warm/60">{t.blurb}</p>
+              <h3 className="mb-3 font-serif text-2xl text-stone-warm">{tr.title}</h3>
+              <p className="text-sm font-light leading-relaxed text-stone-warm/60">{tr.blurb}</p>
               <div className="mt-auto flex items-center justify-between pt-6">
                 <span className="text-[10px] uppercase tracking-[0.28em] text-gold-dust/50">
-                  {t.citation}
+                  {tr.citation}
                 </span>
                 <div className="grid size-8 place-items-center rounded-full border border-white/10 text-stone-warm/60 transition-colors group-hover:border-gold-dust group-hover:text-gold-dust">
                   →
@@ -462,23 +451,16 @@ function LandingPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2">
             <div className="p-10 md:p-16">
               <p className="mb-6 text-[10px] font-medium uppercase tracking-[0.42em] text-gold-dust">
-                The Integrated Report
+                {t.show_kicker}
               </p>
               <h3 className="mb-8 font-serif text-4xl italic leading-tight text-stone-warm md:text-5xl">
-                A singular lens for a complex soul.
+                {t.show_title}
               </h3>
               <p className="mb-10 text-base font-light leading-relaxed text-stone-warm/60 md:text-lg">
-                Our AI does not paste four reports together. It reads each chart, clusters
-                agreements, surfaces contradictions, and reasons across four civilizations to
-                find the pattern of a single life.
+                {t.show_body}
               </p>
               <ul className="space-y-4 text-sm text-stone-warm/80">
-                {[
-                  "Cross-tradition pattern recognition",
-                  "Confidence rating on every conclusion",
-                  "Conflicts surfaced, not hidden",
-                  "Fifty-year cyclical timeline",
-                ].map((line) => (
+                {[t.show_b1, t.show_b2, t.show_b3, t.show_b4].map((line) => (
                   <li key={line} className="flex items-center gap-4">
                     <span className="size-1.5 rounded-full bg-gold-dust" />
                     {line}
@@ -489,7 +471,7 @@ function LandingPage() {
                 to="/ritual"
                 className="mt-12 inline-flex rounded-full bg-gold-dust px-8 py-3 text-xs font-medium uppercase tracking-[0.32em] text-obsidian transition-colors hover:bg-gold-light"
               >
-                Begin the ritual
+                {t.show_cta}
               </Link>
             </div>
             <div className="relative border-l border-white/5 bg-void-blue/40">
@@ -504,7 +486,7 @@ function LandingPage() {
               <div className="absolute inset-0 bg-gradient-to-t from-obsidian via-transparent to-transparent" />
               <div className="absolute bottom-8 left-8 right-8 text-center">
                 <p className="text-[10px] uppercase tracking-[0.4em] text-gold-dust/70">
-                  The Tree of Destiny
+                  {t.show_tree}
                 </p>
               </div>
             </div>
@@ -516,14 +498,14 @@ function LandingPage() {
       <section className="relative z-10 mx-auto max-w-6xl px-6 py-24 md:px-12">
         <div className="mb-12 text-center">
           <p className="mb-3 text-[10px] uppercase tracking-[0.4em] text-gold-dust">
-            The dimensions of a life
+            {t.dims_kicker}
           </p>
           <h3 className="font-serif text-3xl italic text-stone-warm md:text-4xl">
-            Eight facets, read across four traditions
+            {t.dims_title}
           </h3>
         </div>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          {dimensions.map((d) => (
+          {t.dims_list.map((d) => (
             <div
               key={d}
               className="glass-card group flex h-24 items-center justify-center rounded-2xl px-4 text-center text-sm uppercase tracking-[0.28em] text-stone-warm/70 transition-colors hover:border-gold-dust/40 hover:text-gold-dust"
@@ -537,21 +519,21 @@ function LandingPage() {
       {/* ─────────── CTA ─────────── */}
       <section className="relative z-10 mx-auto max-w-3xl px-6 py-32 text-center">
         <h2 className="mb-8 font-serif text-4xl italic leading-tight text-stone-warm md:text-6xl">
-          Your reading is written<br />in a language older than <span className="gold-gradient-text">language.</span>
+          {t.cta_a}<br /><span className="gold-gradient-text">{t.cta_em}</span>
         </h2>
         <p className="mx-auto mb-12 max-w-xl font-light text-stone-warm/60">
-          Four minutes of information. A lifetime of pattern. The library is patient — and it
-          is waiting.
+          {t.cta_body}
         </p>
         <Link
           to="/ritual"
           className="group inline-flex overflow-hidden rounded-full border border-gold-dust/30 px-12 py-5 transition-colors hover:border-gold-dust"
         >
           <span className="relative z-10 text-xs font-medium uppercase tracking-[0.32em] text-gold-dust">
-            Begin the reading
+            {t.cta_btn}
           </span>
         </Link>
       </section>
     </>
   );
 }
+

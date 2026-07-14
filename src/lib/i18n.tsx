@@ -3,11 +3,11 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 export type Lang = "en" | "zh";
 
 type Dict = {
-  // nav
   nav_traditions: string;
   nav_ritual: string;
   nav_about: string;
-  // ritual
+  nav_sign_in: string;
+  nav_account: string;
   ritual_pick_language: string;
   ritual_pick_language_hint: string;
   step_of: (i: number, n: number) => string;
@@ -25,12 +25,45 @@ type Dict = {
   q_place: string;
   q_place_hint: string;
   q_place_ph: string;
-  // landing hero language chooser
   hero_lang_kicker: string;
   hero_lang_prompt: string;
   hero_lang_en: string;
   hero_lang_zh: string;
-  // focus comparison
+  // hero
+  hero_kicker: string;
+  hero_h1_a: string;
+  hero_h1_b: string;
+  hero_quote: string;
+  hero_cta: string;
+  hero_scroll: string;
+  // philosophy
+  philosophy_a: string;
+  philosophy_em: string;
+  // pillars
+  pillars_kicker: string;
+  pillars_title_a: string;
+  pillars_title_em: string;
+  pillars_archive: string;
+  // showcase
+  show_kicker: string;
+  show_title: string;
+  show_body: string;
+  show_b1: string;
+  show_b2: string;
+  show_b3: string;
+  show_b4: string;
+  show_cta: string;
+  show_tree: string;
+  // dims preview
+  dims_kicker: string;
+  dims_title: string;
+  dims_list: readonly string[];
+  // final CTA
+  cta_a: string;
+  cta_em: string;
+  cta_body: string;
+  cta_btn: string;
+  // focus
   focus_kicker: string;
   focus_title: string;
   focus_title_em: string;
@@ -54,22 +87,48 @@ type Dict = {
   note_body_1: string;
   note_body_2: string;
   four_traditions: readonly [string, string, string, string];
+  // per-dimension details
+  detail_industries: string;
+  detail_roles: string;
+  detail_health_focus: string;
+  detail_love_portrait: string;
+  detail_marriage_window: string;
+  detail_wealth_channels: string;
   // timeline
   tl_kicker: string;
   tl_title: string;
   tl_hint: string;
   tl_now: string;
   tl_age: string;
-  // key events
+  // key events (new yes/no flow)
   ke_kicker: string;
   ke_title: string;
   ke_hint: string;
-  ke_year: string;
-  ke_event_ph: string;
-  ke_add: string;
-  ke_verify: string;
+  ke_prompt: string;
+  ke_yes: string;
+  ke_no: string;
+  ke_story_prompt: string;
+  ke_story_ph: string;
+  ke_save_story: string;
+  ke_saved: string;
   ke_verified: string;
   ke_note: string;
+  // tarot
+  tarot_kicker: string;
+  tarot_title: string;
+  tarot_hint: string;
+  tarot_shuffle: string;
+  tarot_pick: string;
+  tarot_reset: string;
+  tarot_pos_past: string;
+  tarot_pos_present: string;
+  tarot_pos_future: string;
+  tarot_read: string;
+  // future watchlist
+  fw_kicker: string;
+  fw_title: string;
+  fw_hint: string;
+  fw_locked: string;
   // membership
   mem_kicker: string;
   mem_title: string;
@@ -90,12 +149,28 @@ type Dict = {
   mem_ai_send: string;
   mem_ai_upsell: string;
   mem_close: string;
+  // account
+  acc_title: string;
+  acc_desc: string;
+  acc_name: string;
+  acc_email: string;
+  acc_sign_in: string;
+  acc_sign_out: string;
+  acc_signed_as: string;
+  acc_save_reading: string;
+  acc_reading_saved: string;
+  acc_view_saved: string;
+  acc_no_saved: string;
+  acc_open_reading: string;
+  acc_privacy: string;
 };
 
 const en: Dict = {
   nav_traditions: "Four Pillars",
   nav_ritual: "The Ritual",
   nav_about: "About",
+  nav_sign_in: "Sign in",
+  nav_account: "Account",
   ritual_pick_language: "In which tongue shall the library speak to you?",
   ritual_pick_language_hint: "Your reading will be composed in the language you choose.",
   step_of: (i, n) => `Step ${String(i).padStart(2, "0")} / ${String(n).padStart(2, "0")}`,
@@ -117,6 +192,34 @@ const en: Dict = {
   hero_lang_prompt: "The library will speak to you in —",
   hero_lang_en: "English",
   hero_lang_zh: "中文",
+  hero_kicker: "An AI synthesis of human destiny",
+  hero_h1_a: "Every civilization has tried to",
+  hero_h1_b: "answer the same question.",
+  hero_quote: "“Who are you?”",
+  hero_cta: "Enter the Library",
+  hero_scroll: "Scroll to explore",
+  philosophy_a: "Four civilizations — separated by oceans and centuries — each built a language for the same silence inside a human being.",
+  philosophy_em: "This library reads all four at once.",
+  pillars_kicker: "I — IV",
+  pillars_title_a: "The four pillars of the ",
+  pillars_title_em: "reading",
+  pillars_archive: "Read the archive →",
+  show_kicker: "The Integrated Report",
+  show_title: "A singular lens for a complex soul.",
+  show_body: "Our AI does not paste four reports together. It reads each chart, clusters agreements, surfaces contradictions, and reasons across four civilizations to find the pattern of a single life.",
+  show_b1: "Cross-tradition pattern recognition",
+  show_b2: "Confidence rating on every conclusion",
+  show_b3: "Conflicts surfaced, not hidden",
+  show_b4: "Fifty-year cyclical timeline",
+  show_cta: "Begin the ritual",
+  show_tree: "The Tree of Destiny",
+  dims_kicker: "The dimensions of a life",
+  dims_title: "Eight facets, read across four traditions",
+  dims_list: ["Character", "Vocation", "Wealth", "Love", "Family", "Health", "Life Mission", "Cycles"],
+  cta_a: "Your reading is written",
+  cta_em: "in a language older than language.",
+  cta_body: "Four minutes of information. A lifetime of pattern. The library is patient — and it is waiting.",
+  cta_btn: "Begin the reading",
   focus_kicker: "How the four traditions differ",
   focus_title: "Same question,",
   focus_title_em: "four instruments.",
@@ -139,20 +242,43 @@ const en: Dict = {
   note_body_1: "These are tendencies, not sentences.",
   note_body_2: "The library reads the pattern — the choices remain yours.",
   four_traditions: ["Astrology", "Jyotish", "BaZi", "Zi Wei"],
+  detail_industries: "Suitable industries",
+  detail_roles: "Roles that fit",
+  detail_health_focus: "Watch these systems",
+  detail_love_portrait: "Portrait of a true partner",
+  detail_marriage_window: "Likely marriage window",
+  detail_wealth_channels: "Channels that flow",
   tl_kicker: "Life Timeline · 大运",
   tl_title: "The decades of your unfolding",
   tl_hint: "Hover a decade. Each ten-year cycle carries its own theme, drawn from the BaZi 大运 and the Jyotish Dashā.",
   tl_now: "You are here",
   tl_age: "Age",
-  ke_kicker: "Key life events",
-  ke_title: "Cross-check the reading against your life",
-  ke_hint: "Enter two or three real turning points. The library will note how the chart already carried them.",
-  ke_year: "Year",
-  ke_event_ph: "e.g. Left home country, changed career, met partner…",
-  ke_add: "+ Add another",
-  ke_verify: "Verify against my chart",
-  ke_verified: "The chart's cycles align with this event.",
-  ke_note: "This is a private cross-check. Nothing is sent until you invoke it.",
+  ke_kicker: "Key life events · verification",
+  ke_title: "Does the chart's memory match yours?",
+  ke_hint: "The library proposes moments it senses on your chart. Confirm or correct — this teaches the AI who you actually are.",
+  ke_prompt: "The chart senses:",
+  ke_yes: "Yes, this happened",
+  ke_no: "No — here is what actually happened",
+  ke_story_prompt: "Tell the library what really unfolded that year:",
+  ke_story_ph: "e.g. That year I actually moved abroad and started over…",
+  ke_save_story: "Save my version",
+  ke_saved: "Thank you — the reading will re-tune to this.",
+  ke_verified: "Confirmed · the chart carried this.",
+  ke_note: "Stored privately on this device.",
+  tarot_kicker: "Tarot · a second witness",
+  tarot_title: "Draw three cards for a specific question",
+  tarot_hint: "The chart reads the pattern of a lifetime; the tarot reads the pattern of a moment. Choose any three cards below.",
+  tarot_shuffle: "Shuffle the deck",
+  tarot_pick: "Pick a card",
+  tarot_reset: "Draw again",
+  tarot_pos_past: "Past",
+  tarot_pos_present: "Present",
+  tarot_pos_future: "Emerging",
+  tarot_read: "The reading",
+  fw_kicker: "Future watchlist · Oracle members",
+  fw_title: "Windows to watch in the next five years",
+  fw_hint: "Concrete moments the chart wants you to be awake for — flagged from the great cycles.",
+  fw_locked: "Upgrade to see the full watchlist",
   mem_kicker: "Deepen the reading",
   mem_title: "Membership",
   mem_free: "Seeker",
@@ -160,7 +286,7 @@ const en: Dict = {
   mem_sage: "Sage",
   mem_sage_desc: "Full PDF export · life-timeline analysis · 12-month forecast.",
   mem_oracle: "Oracle",
-  mem_oracle_desc: "Everything in Sage · unlimited AI follow-up conversation · priority calculations.",
+  mem_oracle_desc: "Everything in Sage · unlimited AI follow-up · future watchlist · priority calculations.",
   mem_current: "Current plan",
   mem_upgrade: "Upgrade",
   mem_export_pdf: "Export PDF report",
@@ -172,12 +298,27 @@ const en: Dict = {
   mem_ai_send: "Send",
   mem_ai_upsell: "AI follow-up is part of the Oracle plan. Upgrade to continue the conversation with the library.",
   mem_close: "Close",
+  acc_title: "Your account",
+  acc_desc: "Sign in to save your readings and return to them from any device.",
+  acc_name: "Your name",
+  acc_email: "Email",
+  acc_sign_in: "Sign in / Register",
+  acc_sign_out: "Sign out",
+  acc_signed_as: "Signed in as",
+  acc_save_reading: "Save this reading",
+  acc_reading_saved: "Saved to your account.",
+  acc_view_saved: "Saved readings",
+  acc_no_saved: "No readings saved yet.",
+  acc_open_reading: "Open",
+  acc_privacy: "Stored privately in this browser. Cloud sync arrives with the Sage plan.",
 };
 
 const zh: Dict = {
   nav_traditions: "四大体系",
   nav_ritual: "开启仪式",
   nav_about: "关于",
+  nav_sign_in: "登录",
+  nav_account: "我的",
   ritual_pick_language: "图书馆应以何种语言与你对话？",
   ritual_pick_language_hint: "你的解读将以所选语言书写。",
   step_of: (i, n) => `第 ${String(i).padStart(2, "0")} 步 / 共 ${String(n).padStart(2, "0")} 步`,
@@ -199,6 +340,34 @@ const zh: Dict = {
   hero_lang_prompt: "图书馆将以此语言与你对话 —",
   hero_lang_en: "English",
   hero_lang_zh: "中文",
+  hero_kicker: "以 AI 综合阅读的命运",
+  hero_h1_a: "每一种文明，都在追问",
+  hero_h1_b: "同一个问题。",
+  hero_quote: "「你，是谁？」",
+  hero_cta: "步入图书馆",
+  hero_scroll: "向下滚动继续",
+  philosophy_a: "四种文明 —— 隔着大洋与千年 —— 各自为人内心的同一片寂静，谱写了一门语言。",
+  philosophy_em: "这座图书馆同时阅读它们四种。",
+  pillars_kicker: "壹 — 肆",
+  pillars_title_a: "支撑这次阅读的",
+  pillars_title_em: "四根梁柱",
+  pillars_archive: "查阅典籍 →",
+  show_kicker: "综合报告",
+  show_title: "为复杂的一生，打磨一枚镜片。",
+  show_body: "我们的 AI 不是把四份报告拼在一起。它会分别读盘、汇总一致、暴露冲突，并跨越四种文明，寻找同一个人真正的模式。",
+  show_b1: "跨体系的模式识别",
+  show_b2: "每条结论都附可信度",
+  show_b3: "冲突不藏，直陈眼前",
+  show_b4: "覆盖五十年的周期时间轴",
+  show_cta: "开启仪式",
+  show_tree: "命运之树",
+  dims_kicker: "生命的维度",
+  dims_title: "以四大体系读八个切面",
+  dims_list: ["性格", "事业", "财富", "情感", "家庭", "健康", "人生使命", "周期"],
+  cta_a: "你的解读，写在",
+  cta_em: "比语言更古老的语言里。",
+  cta_body: "四分钟的信息，一生的纹理。图书馆很有耐心 —— 它一直在等你。",
+  cta_btn: "开始阅读",
   focus_kicker: "四大体系的不同侧重",
   focus_title: "同一个问题，",
   focus_title_em: "四种乐器。",
@@ -221,20 +390,43 @@ const zh: Dict = {
   note_body_1: "这些是倾向，不是判决。",
   note_body_2: "图书馆读出的是纹理 —— 选择依然属于你。",
   four_traditions: ["西方占星", "印度占星", "八字", "紫微"],
+  detail_industries: "适合的行业",
+  detail_roles: "适配的岗位",
+  detail_health_focus: "值得留意的系统",
+  detail_love_portrait: "正缘的画像",
+  detail_marriage_window: "较可能的婚期",
+  detail_wealth_channels: "顺畅的进财通道",
   tl_kicker: "生命时间轴 · 大运",
   tl_title: "你人生展开的十年",
   tl_hint: "悬停任一十年段。每个大运周期都有自己的主题，源自八字大运与印度占星 Dashā。",
   tl_now: "你现在在这里",
   tl_age: "岁",
-  ke_kicker: "人生关键节点",
-  ke_title: "用你真实的人生验证命盘",
-  ke_hint: "输入两到三个真实转折点，图书馆会指出命盘早已承载它们的方式。",
-  ke_year: "年份",
-  ke_event_ph: "例：离开家乡 / 转行 / 遇见伴侣…",
-  ke_add: "+ 再加一条",
-  ke_verify: "与我的命盘核对",
-  ke_verified: "命盘的运势节奏与此事件吻合。",
-  ke_note: "这是一次私密的核对。除非你主动核对，任何内容都不会外传。",
+  ke_kicker: "关键节点 · 反向验证",
+  ke_title: "命盘的记忆，和你的一致吗？",
+  ke_hint: "图书馆先抛出它感知到的时点。你确认或纠正 —— AI 会据此重新调准你的解读。",
+  ke_prompt: "命盘感知到：",
+  ke_yes: "是，发生过",
+  ke_no: "不是 —— 我告诉你真实的",
+  ke_story_prompt: "请把那一年真正发生的写给图书馆：",
+  ke_story_ph: "例如：那一年我其实出国重新开始…",
+  ke_save_story: "保存我的版本",
+  ke_saved: "谢谢 —— 解读会据此重新调准。",
+  ke_verified: "已确认 · 命盘承载了这一节点。",
+  ke_note: "内容仅保存在此设备。",
+  tarot_kicker: "塔罗 · 第二位证人",
+  tarot_title: "为一个具体问题抽三张牌",
+  tarot_hint: "命盘读一生的模式，塔罗读此刻的模式。从下面选任意三张。",
+  tarot_shuffle: "洗牌",
+  tarot_pick: "选一张",
+  tarot_reset: "再抽一次",
+  tarot_pos_past: "过去",
+  tarot_pos_present: "此刻",
+  tarot_pos_future: "正在生成",
+  tarot_read: "解读",
+  fw_kicker: "未来观察名单 · 神谕者专属",
+  fw_title: "未来五年，命盘请你保持觉察的窗口",
+  fw_hint: "从大运里挑出的、值得你提前醒着的时刻。",
+  fw_locked: "升级后可查看完整名单",
   mem_kicker: "让解读更深一层",
   mem_title: "会员计划",
   mem_free: "求索者",
@@ -242,7 +434,7 @@ const zh: Dict = {
   mem_sage: "贤者",
   mem_sage_desc: "完整 PDF 报告 · 生命时间轴精解 · 12 个月运势推演。",
   mem_oracle: "神谕者",
-  mem_oracle_desc: "包含贤者所有权益 · 无限 AI 追问对话 · 优先计算。",
+  mem_oracle_desc: "包含贤者所有权益 · 无限 AI 追问 · 未来观察名单 · 优先计算。",
   mem_current: "当前计划",
   mem_upgrade: "升级",
   mem_export_pdf: "导出 PDF 报告",
@@ -254,6 +446,19 @@ const zh: Dict = {
   mem_ai_send: "发送",
   mem_ai_upsell: "AI 追问是「神谕者」会员的权益。升级后即可继续与图书馆对话。",
   mem_close: "关闭",
+  acc_title: "我的账户",
+  acc_desc: "登录后可保存你的解读，并在任意设备上继续查看。",
+  acc_name: "你的名字",
+  acc_email: "邮箱",
+  acc_sign_in: "登录 / 注册",
+  acc_sign_out: "退出登录",
+  acc_signed_as: "已登录为",
+  acc_save_reading: "保存这次解读",
+  acc_reading_saved: "已保存到你的账户。",
+  acc_view_saved: "已保存的解读",
+  acc_no_saved: "还没有保存任何解读。",
+  acc_open_reading: "打开",
+  acc_privacy: "当前仅保存在本浏览器；云端同步将随「贤者」计划开放。",
 };
 
 const DICTS: Record<Lang, Dict> = { en, zh };

@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import {
   FiveElements,
@@ -8,10 +8,14 @@ import {
   ZodiacWheel,
 } from "@/components/charts/DestinyCharts";
 import {
+  FutureWatchlist,
   KeyEventsVerification,
   LifeTimeline,
   MembershipSection,
+  SaveReadingBar,
+  TarotDraw,
 } from "@/components/ReportExtras";
+import { AccountModal } from "@/components/AccountModal";
 import { useLang } from "@/lib/i18n";
 
 type SearchParams = {
@@ -44,6 +48,8 @@ export const Route = createFileRoute("/report")({
   component: ReportPage,
 });
 
+type DetailBlock = { label: [string, string]; items: [string, string][] };
+
 type Dimension = {
   key: string;
   title: [string, string];
@@ -55,6 +61,7 @@ type Dimension = {
   plain: [string, string];
   viz: "zodiac" | "elements" | "radar";
   elementStrengths?: [number, number, number, number, number]; // wood, fire, earth, metal, water
+  details?: DetailBlock[];
 };
 
 const dimensions: Dimension[] = [
@@ -119,6 +126,26 @@ const dimensions: Dimension[] = [
       "说人话：脚本固定的打卡工作会磨光你的电。你更适合当规则制定者 —— 管理、创业、教学、研究。不必为讨厌纯执行的岗位而内疚，你的盘确实不契合它。",
     ],
     viz: "radar",
+    details: [
+      {
+        label: ["Suitable industries", "适合的行业"],
+        items: [
+          ["Education, publishing, media", "教育 · 出版 · 媒体"],
+          ["Technology · product · design", "科技 · 产品 · 设计"],
+          ["Consulting · research · strategy", "咨询 · 研究 · 战略"],
+          ["Culture, translation, cross-border", "文化 · 翻译 · 跨境"],
+        ],
+      },
+      {
+        label: ["Roles that fit", "适配的岗位"],
+        items: [
+          ["Founder / co-founder", "创始人 / 联合创始人"],
+          ["Head of product · head of research", "产品负责人 · 研究负责人"],
+          ["Editor-in-chief · lead teacher", "主编 · 首席讲师"],
+          ["Independent expert / advisor", "独立专家 / 顾问"],
+        ],
+      },
+    ],
   },
   {
     key: "wealth",
@@ -144,7 +171,26 @@ const dimensions: Dimension[] = [
       "说人话：别指望一夜暴富。你的财富节奏本就是「无聊而稳定」—— 持续投入、控制固定开销、长期持有。这张盘用中年之后的真正自由，回报你的耐心。",
     ],
     viz: "elements",
-    elementStrengths: [0.6, 0.8, 0.7, 0.85, 0.4], // wood fire earth metal water
+    elementStrengths: [0.6, 0.8, 0.7, 0.85, 0.4],
+    details: [
+      {
+        label: ["Channels that flow", "顺畅的进财通道"],
+        items: [
+          ["Salary + equity from a role you shape", "自己塑造过的岗位（薪 + 股）"],
+          ["Content, courses, IP that compounds", "内容 · 课程 · 可复利的 IP"],
+          ["Long-term index / real estate holdings", "长期持有的指数 · 不动产"],
+          ["Advisor / partnership share", "顾问 · 合伙份额"],
+        ],
+      },
+      {
+        label: ["Watch out for", "需要警惕"],
+        items: [
+          ["Leveraged short-term speculation", "高杠杆的短线投机"],
+          ["Lending to family without terms", "对亲友的无条款借贷"],
+          ["Impulse spending after Wealth-star years", "财运年后的冲动性消费"],
+        ],
+      },
+    ],
   },
   {
     key: "love",
@@ -170,6 +216,25 @@ const dimensions: Dimension[] = [
       "说人话：早期恋爱多半是学习，不是终点。别被时间焦虑推着走 —— 真正适合的那个人，是在你不再为被认可而表演之后出现的。选深度，不选着急。",
     ],
     viz: "radar",
+    details: [
+      {
+        label: ["Portrait of a true partner", "正缘的画像"],
+        items: [
+          ["A few years older, or 5+ years wiser", "年龄略长，或阅历比你多 5 年以上"],
+          ["Emotionally steady · low drama", "情绪稳定 · 少戏剧感"],
+          ["Their own vocation and inner life", "有自己的事业与内在世界"],
+          ["Values quality of attention over performance", "重视「被看见」，胜于「被展示」"],
+        ],
+      },
+      {
+        label: ["Likely marriage window", "较可能的婚期"],
+        items: [
+          ["Primary window · ages 29–33", "主要窗口 · 29–33 岁"],
+          ["Secondary window · ages 36–38", "次要窗口 · 36–38 岁"],
+          ["Before 27: mostly formative, not lasting", "27 岁前：多为塑造性，非长久"],
+        ],
+      },
+    ],
   },
   {
     key: "health",
@@ -196,6 +261,26 @@ const dimensions: Dimension[] = [
     ],
     viz: "elements",
     elementStrengths: [0.5, 0.9, 0.55, 0.6, 0.3],
+    details: [
+      {
+        label: ["Watch these systems", "值得留意的系统"],
+        items: [
+          ["Cardiovascular · blood pressure", "心血管 · 血压"],
+          ["Liver detox · alcohol tolerance", "肝脏解毒 · 酒精耐受"],
+          ["Sleep architecture · REM debt", "睡眠结构 · 深睡不足"],
+          ["Eyes and neck (screen strain)", "眼睛与颈椎（屏幕过载）"],
+        ],
+      },
+      {
+        label: ["Cooling habits that pay off", "对你有效的降温习惯"],
+        items: [
+          ["Cold shower · long exhale breathing", "冷水澡 · 长呼气式呼吸"],
+          ["No screens 60 min before sleep", "睡前 60 分钟远离屏幕"],
+          ["Water-rich foods, less spice, less alcohol", "多水食物，少辣少酒"],
+          ["Two full rest days a week", "每周两个完整的休息日"],
+        ],
+      },
+    ],
   },
   {
     key: "mission",
@@ -237,6 +322,7 @@ function ReportPage() {
   const search = Route.useSearch();
   const { lang, setLang, t } = useLang();
   const li = lang === "zh" ? 1 : 0;
+  const [accOpen, setAccOpen] = useState(false);
 
   // Sync report language with the choice made in the ritual, if provided.
   useEffect(() => {
@@ -278,6 +364,19 @@ function ReportPage() {
           </p>
         )}
       </header>
+
+      {/* Save-this-reading bar */}
+      <SaveReadingBar
+        reading={{
+          name: search.name,
+          date: search.date,
+          time: search.time,
+          place: search.place,
+          lang,
+        }}
+        onOpenAccount={() => setAccOpen(true)}
+      />
+      <AccountModal open={accOpen} onClose={() => setAccOpen(false)} />
 
       {/* Interactive natal wheel */}
       <section className="mx-auto mb-24 max-w-5xl px-6">
@@ -377,6 +476,29 @@ function ReportPage() {
                     {d.plain[li]}
                   </p>
                 </div>
+
+                {d.details && d.details.length > 0 && (
+                  <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+                    {d.details.map((block) => (
+                      <div
+                        key={block.label[0]}
+                        className="rounded-2xl border border-white/10 bg-white/[0.02] p-5"
+                      >
+                        <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+                          {block.label[li]}
+                        </p>
+                        <ul className="space-y-2 text-sm text-stone-warm/80">
+                          {block.items.map((it) => (
+                            <li key={it[0]} className="flex items-start gap-2">
+                              <span className="mt-2 size-1 shrink-0 rounded-full bg-gold-dust" />
+                              <span>{it[li]}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </motion.article>
@@ -391,8 +513,16 @@ function ReportPage() {
       {/* Key life events verification */}
       <KeyEventsVerification />
 
+      {/* Tarot — three cards as a second witness */}
+      <TarotDraw />
+
+      {/* Future watchlist — Oracle members */}
+      <FutureWatchlist />
+
       {/* Membership / PDF / AI follow-up */}
       <MembershipSection />
+
+
 
       {/* Outro */}
       <div className="mx-auto mt-16 max-w-3xl px-6 text-center print:hidden">

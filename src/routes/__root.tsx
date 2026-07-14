@@ -7,11 +7,13 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { LanguageProvider, useLang } from "../lib/i18n";
+import { AccountProvider, useAccount } from "../lib/account";
+import { AccountModal } from "../components/AccountModal";
 
 function NotFoundComponent() {
   return (
@@ -128,22 +130,23 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <LanguageProvider>
-        <div className="relative min-h-screen bg-obsidian text-stone-warm">
-          {/* Living cosmic background — fixed behind every route */}
-          <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-            <div className="star-bg absolute inset-0 opacity-30" />
-            <div className="absolute -top-[20%] -left-[10%] h-[60%] w-[60%] rounded-full bg-nebula-purple/15 blur-[140px] animate-pulse-gold" />
-            <div className="absolute -bottom-[10%] -right-[5%] h-[45%] w-[45%] rounded-full bg-gold-dust/8 blur-[120px] animate-pulse-gold [animation-delay:2s]" />
+        <AccountProvider>
+          <div className="relative min-h-screen bg-obsidian text-stone-warm">
+            <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+              <div className="star-bg absolute inset-0 opacity-30" />
+              <div className="absolute -top-[20%] -left-[10%] h-[60%] w-[60%] rounded-full bg-nebula-purple/15 blur-[140px] animate-pulse-gold" />
+              <div className="absolute -bottom-[10%] -right-[5%] h-[45%] w-[45%] rounded-full bg-gold-dust/8 blur-[120px] animate-pulse-gold [animation-delay:2s]" />
+            </div>
+
+            <SiteNav />
+
+            <main className="relative z-10">
+              <Outlet />
+            </main>
+
+            <SiteFooter />
           </div>
-
-          <SiteNav />
-
-          <main className="relative z-10">
-            <Outlet />
-          </main>
-
-          <SiteFooter />
-        </div>
+        </AccountProvider>
       </LanguageProvider>
     </QueryClientProvider>
   );
@@ -173,6 +176,8 @@ function LanguageToggle() {
 
 function SiteNav() {
   const { t } = useLang();
+  const { account } = useAccount();
+  const [accOpen, setAccOpen] = useState(false);
   return (
     <nav className="fixed top-0 left-1/2 z-50 -translate-x-1/2 p-6">
       <div className="glass-card flex items-center gap-4 rounded-full px-4 py-2 text-[11px] font-light uppercase tracking-[0.28em] md:gap-8 md:px-6 md:py-2.5">
@@ -190,8 +195,16 @@ function SiteNav() {
             {t.nav_about}
           </Link>
         </div>
+        <button
+          type="button"
+          onClick={() => setAccOpen(true)}
+          className="rounded-full border border-gold-dust/40 px-3 py-1 text-[10px] tracking-[0.28em] text-gold-dust transition-colors hover:bg-gold-dust/10"
+        >
+          {account ? `${t.nav_account} · ${account.name.slice(0, 8)}` : t.nav_sign_in}
+        </button>
         <LanguageToggle />
       </div>
+      <AccountModal open={accOpen} onClose={() => setAccOpen(false)} />
     </nav>
   );
 }
