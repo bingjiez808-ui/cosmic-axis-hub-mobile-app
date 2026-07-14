@@ -692,18 +692,6 @@ function ReportPage() {
               <Stars n={d.stars} />
             </div>
 
-            {/* Synthesis conclusion — full-width, prominent (like a closing verdict) */}
-            <div className="mb-8 rounded-3xl border border-gold-dust/25 bg-gradient-to-br from-gold-dust/[0.06] via-white/[0.02] to-transparent p-6 md:p-8">
-              <p className="mb-3 text-[10px] uppercase tracking-[0.42em] text-gold-dust">
-                {d.key === "mission"
-                  ? (lang === "zh" ? "综合结论" : "Synthesis")
-                  : t.synthesis}
-              </p>
-              <p className="font-serif text-lg italic leading-relaxed text-stone-warm/90 md:text-xl">
-                {d.synthesis[li]}
-              </p>
-            </div>
-
             <div className="grid grid-cols-1 gap-8 lg:grid-cols-5">
               {/* Left: evidence + viz */}
               <div className="lg:col-span-2">
@@ -735,8 +723,15 @@ function ReportPage() {
                 </div>
               </div>
 
-              {/* Right: plain-language + details */}
+              {/* Right: synthesis + plain-language */}
               <div className="lg:col-span-3">
+                <p className="mb-4 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+                  {t.synthesis}
+                </p>
+                <p className="mb-8 text-base leading-relaxed text-stone-warm/80">
+                  {d.synthesis[li]}
+                </p>
+
                 <div className="rounded-2xl border border-gold-dust/20 bg-gold-dust/[0.04] p-6">
                   <p className="mb-3 flex items-center gap-2 text-[10px] uppercase tracking-[0.32em] text-gold-light">
                     <span className="size-1.5 rounded-full bg-gold-dust" />
@@ -771,7 +766,6 @@ function ReportPage() {
                 )}
               </div>
             </div>
-
           </motion.article>
         ))}
       </section>
