@@ -773,7 +773,7 @@ export function MembershipSection({ birthISO }: { birthISO?: string } = {}) {
           lang === "zh"
             ? "完整 PDF 报告 · 生命时间轴精解 · 合盘关系分析（贤者专属）。"
             : "Full PDF · life-timeline analysis · Synastry relationship reading (Sage exclusive).",
-        price: [`$9 / mo`, `¥68 / 月`][li],
+        price: [`$2.99 / mo`, `¥19.9 / 月`][li],
         highlight: true,
       },
       {
@@ -783,7 +783,7 @@ export function MembershipSection({ birthISO }: { birthISO?: string } = {}) {
           lang === "zh"
             ? "包含贤者所有权益 · 无限 AI 追问 · 近 90 天状态与时间节点分析（神谕者专属）。"
             : "Everything in Sage · unlimited AI follow-up · 90-day state & window analysis (Oracle exclusive).",
-        price: [`$24 / mo`, `¥168 / 月`][li],
+        price: [`$5.99 / mo`, `¥39.9 / 月`][li],
         highlight: false,
       },
     ],
@@ -1191,8 +1191,8 @@ function UpgradeCheckoutModal({
 
   if (!target) return null;
 
-  const basePrice = target === "sage" ? 68 : 168;
-  const discounted = firstTime ? Math.round(basePrice * 0.7) : basePrice;
+  const basePrice = target === "sage" ? 19.9 : 39.9;
+  const discounted = firstTime ? Math.round(basePrice * 0.7 * 10) / 10 : basePrice;
 
   return (
     <AnimatePresence>
