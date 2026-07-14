@@ -1191,8 +1191,8 @@ function UpgradeCheckoutModal({
 
   if (!target) return null;
 
-  const basePrice = target === "sage" ? 68 : 168;
-  const discounted = firstTime ? Math.round(basePrice * 0.7) : basePrice;
+  const basePrice = target === "sage" ? 19.9 : 39.9;
+  const discounted = firstTime ? Math.round(basePrice * 0.7 * 10) / 10 : basePrice;
 
   return (
     <AnimatePresence>
