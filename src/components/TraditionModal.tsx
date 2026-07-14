@@ -236,6 +236,60 @@ function personalFor(id: TraditionId, seed: string, lang: Lang): [string, string
   return null;
 }
 
+// Short personalized analysis paragraph derived from placements.
+function personalAnalysis(id: TraditionId, seed: string, lang: Lang): string | null {
+  const b = parseBirth(seed);
+  if (id === "astrology") {
+    const s = computePlanetSigns(seed);
+    const elements = ["fire", "earth", "air", "water"] as const;
+    const elEn = ["fire", "earth", "air", "water"];
+    const elZh = ["火", "土", "风", "水"];
+    const sunEl = elements[s[0] % 4];
+    const moonEl = elements[s[1] % 4];
+    const ascEl = elements[s[11] % 4];
+    if (lang === "zh") {
+      return `你的太阳属${elZh[s[0] % 4]}、月亮属${elZh[s[1] % 4]}、上升属${elZh[s[11] % 4]}。这意味着你外显的行动力与内在情感来自不同元素 —— 表达时锐利，感受时却柔软。上升为${elZh[s[11] % 4]}让世界最先看到的是你的这一层「面具」，而真正驱动你的核心，仍是太阳与月亮的对话。`;
+    }
+    return `Your Sun is ${sunEl}, Moon is ${moonEl}, Ascendant is ${ascEl}. That means the way you act and the way you feel are drawn from different elements — sharper on the outside, softer within. The world first meets the ${ascEl} mask; the real engine is the dialogue between your ${sunEl} Sun and ${moonEl} Moon.`;
+  }
+  if (id === "jyotish") {
+    const s = computePlanetSigns(seed);
+    const moonSid = (s[1] - 1 + 12) % 12;
+    const nakIdx = ((moonSid * 9) / 4) | 0; // rough index 0-26
+    if (lang === "zh") {
+      return `你的月亮落在恒星黄道的第 ${moonSid + 1} 宫，对应约第 ${nakIdx + 1} 宿。此宿的能量偏向内省与深耕 —— 命盘倾向于把你的心理生活安放在「守」而非「取」的一面。Vimśottarī 大运的起点与月宿一致，因此你的运程节律，从出生那一刻就已被这颗月亮定下节拍。`;
+    }
+    return `Your Moon sits in sidereal sign #${moonSid + 1}, roughly Nakshatra #${nakIdx + 1}. That mansion leans toward inwardness and slow cultivation — the chart places your psychological life on the "holding" side rather than the "grasping" one. Because Vimśottarī Dashā keys off the Moon's Nakshatra, this single placement sets the rhythm of your entire life's timing.`;
+  }
+  if (id === "bazi") {
+    if (!b) return null;
+    let y = b.y;
+    if (b.mo === 1 || (b.mo === 2 && b.da < 4)) y -= 1;
+    const stemIdx = ((y - 4) % 10 + 10) % 10;
+    const yang = stemIdx % 2 === 0;
+    const elIdx = Math.floor(stemIdx / 2);
+    const elEn = ["Wood", "Fire", "Earth", "Metal", "Water"][elIdx];
+    const elZh = ["木", "火", "土", "金", "水"][elIdx];
+    if (lang === "zh") {
+      return `你的年干显示为${yang ? "阳" : "阴"}${elZh} —— 这是一枚倾向${yang ? "外扩、行动" : "内敛、蓄势"}的种子。${elZh}性主${elIdx === 0 ? "生长与规划" : elIdx === 1 ? "热情与表达" : elIdx === 2 ? "承载与稳定" : elIdx === 3 ? "决断与结构" : "流动与直觉"}，配合你的时支落位，大运会在青壮年段先启用${yang ? "官星与财星" : "食伤与印星"}的一面。`;
+    }
+    return `Your year stem shows ${yang ? "yang" : "yin"} ${elEn} — a seed that leans toward ${yang ? "outward action" : "inward gathering"}. ${elEn} governs ${elIdx === 0 ? "growth and planning" : elIdx === 1 ? "warmth and expression" : elIdx === 2 ? "carrying and stability" : elIdx === 3 ? "decisiveness and structure" : "flow and intuition"}. Paired with your hour branch, the great luck cycles tend to activate ${yang ? "Officer / Wealth" : "Output / Resource"} stars first through your middle years.`;
+  }
+  if (id === "ziwei") {
+    if (!b) return null;
+    const hourBranch = Math.floor(((b.hh + 1) % 24) / 2);
+    const mingIdx = ((2 - (b.mo - 1) + hourBranch) % 12 + 12) % 12;
+    const branchEn = BRANCHES_EN[mingIdx];
+    const branchZh = BRANCHES_ZH[mingIdx];
+    if (lang === "zh") {
+      return `你的命宫近似落在「${branchZh}」宫。此位偏向${mingIdx < 4 ? "稳重、根基型的自我" : mingIdx < 8 ? "外扩、社交型的自我" : "内省、修持型的自我"}。紫微斗数把「命宫」视为你人生剧本的锚点，其他十一宫都以此为坐标。大限每十年顺行一宫，故你能透过命宫主星预判每个十年的主题走向。`;
+    }
+    return `Your Palace of Self falls near the ${branchEn} branch. That position leans toward ${mingIdx < 4 ? "a rooted, grounded self" : mingIdx < 8 ? "an outward, socially engaged self" : "an inward, reflective self"}. Zi Wei treats 命宫 as the anchor of the chart — every other palace is read against it. Great Limits advance one palace per decade, so this single placement lets you preview the theme of every ten-year chapter.`;
+  }
+  return null;
+}
+
+
 // ────────────────────────────────────────────────────────────────────────
 
 export function TraditionModal({
