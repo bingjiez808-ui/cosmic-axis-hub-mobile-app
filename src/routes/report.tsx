@@ -369,12 +369,24 @@ function ReportPage() {
   const li = lang === "zh" ? 1 : 0;
   const [accOpen, setAccOpen] = useState(false);
   const [selectedPlanet, setSelectedPlanet] = useState<number | null>(null);
+  const [wheelSize, setWheelSize] = useState(360);
 
   // Sync report language with the choice made in the ritual, if provided.
   useEffect(() => {
     if (search.lang && search.lang !== lang) setLang(search.lang);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search.lang]);
+
+  // Responsive natal wheel size — keep it inside the viewport on mobile.
+  useEffect(() => {
+    const update = () => {
+      const w = typeof window !== "undefined" ? window.innerWidth : 440;
+      setWheelSize(Math.min(440, Math.max(280, w - 72)));
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
 
   const summary =
     lang === "zh"
