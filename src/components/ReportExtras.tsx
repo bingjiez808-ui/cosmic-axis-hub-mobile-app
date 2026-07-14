@@ -448,6 +448,66 @@ export function TarotDraw() {
           </div>
         )}
 
+        {/* Three-card synthesis */}
+        {picks.length === 3 && (() => {
+          const scores = [0, 2, 1, 2, 1, 1, 2, 0, 0, 2, -1, 2];
+          const total = picks.reduce((s, i) => s + scores[i], 0);
+          let tier: "great" | "good" | "mid" | "low";
+          if (total >= 4) tier = "great";
+          else if (total >= 2) tier = "good";
+          else if (total >= 0) tier = "mid";
+          else tier = "low";
+
+          const label: Record<typeof tier, [string, string]> = {
+            great: ["Upper Upper Fortune · 上上签", "上上签"],
+            good: ["Upper Fortune · 上签", "上签"],
+            mid: ["Middle Fortune · 中签", "中签"],
+            low: ["Lower Fortune · 下签", "下签"],
+          };
+          const verdict: Record<typeof tier, [string, string]> = {
+            great: [
+              "Three cards land in bright company. The past you carried gave you tools, the present is opening, and the future is warming — this is a rare aligned draw. Move on the plans you've been quietly rehearsing.",
+              "三张牌落在明亮的位置。过去给你留下了工具，此刻正在开门，未来在升温 —— 这是一次难得对齐的抽签。请把你私下反复排练的计划真正动起来。",
+            ],
+            good: [
+              "The reading tilts favorable. There's real momentum here, though something in one position asks you to be honest — usually the middle card names the truth you already know.",
+              "整体偏顺。此刻确实有真实的势能，但有一张牌要你诚实一点 —— 通常中间那张，说的是你早已知道的实话。",
+            ],
+            mid: [
+              "A balanced draw — neither push nor stop. This is a listening moment: gather more information, don't force a decision this week, and let the future card mature before naming it.",
+              "一次持平的签 —— 既非推进，也非停手。此刻是聆听时刻：多收集信息，别在这一周强行下决定，让代表未来的那张牌先熟成。",
+            ],
+            low: [
+              "The draw runs cool. It's not disaster — it's a warning to slow down, protect health and money, and delay any commitment that requires you to perform. Rest is a strategy this month.",
+              "签面偏冷。这不是灾难，而是一份「慢下来」的提醒：护住健康与金钱，推迟一切需要「表演」的承诺。这个月，休息本身就是策略。",
+            ],
+          };
+
+          return (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.4 }}
+              className="mb-6 rounded-2xl border border-gold-dust/40 bg-gradient-to-br from-gold-dust/[0.10] via-nebula-purple/[0.06] to-transparent p-6 md:p-8"
+            >
+              <p className="mb-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.32em] text-gold-light">
+                <span className="size-1.5 rounded-full bg-gold-dust" />
+                {lang === "zh" ? "三牌综述" : "Three-card synthesis"}
+              </p>
+              <p className="mb-3 font-serif text-2xl italic text-gold-light md:text-3xl">
+                {label[tier][li]}
+              </p>
+              <p className="font-serif text-base leading-relaxed text-stone-warm/85 md:text-lg">
+                {verdict[tier][li]}
+              </p>
+              <p className="mt-4 text-[10px] uppercase tracking-[0.28em] text-stone-warm/40">
+                {picks.map((i) => deck[i].name[li]).join(" · ")}
+              </p>
+            </motion.div>
+          );
+        })()}
+
+
         <div className="flex flex-wrap items-center justify-between gap-4">
           <p className="text-[10px] uppercase tracking-[0.28em] text-stone-warm/50">
             {picks.length} / 3 — {picks.length < 3 ? t.tarot_pick : t.tarot_read}
