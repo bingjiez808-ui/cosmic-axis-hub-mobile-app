@@ -272,7 +272,7 @@ export function KeyEventsVerification({ birthISO }: { birthISO?: string }) {
 
 
         <div className="space-y-4">
-          {PROMPTS.map((p, i) => {
+          {visiblePrompts.map(({ p, i }) => {
             const a = answers[i] ?? { status: "unset", story: "", saved: false };
             return (
               <div
