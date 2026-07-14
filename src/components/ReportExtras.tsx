@@ -783,7 +783,7 @@ export function MembershipSection({ birthISO }: { birthISO?: string } = {}) {
           lang === "zh"
             ? "包含贤者所有权益 · 无限 AI 追问 · 近 90 天状态与时间节点分析（神谕者专属）。"
             : "Everything in Sage · unlimited AI follow-up · 90-day state & window analysis (Oracle exclusive).",
-        price: [`$24 / mo`, `¥168 / 月`][li],
+        price: [`$5.99 / mo`, `¥39.9 / 月`][li],
         highlight: false,
       },
     ],
