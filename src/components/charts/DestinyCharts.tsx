@@ -565,11 +565,11 @@ export function NatalWheel({
     }
     return (
       <>
-        <p className="font-serif text-3xl italic text-stone-warm md:text-4xl">
+        <p className="font-serif text-xl italic leading-tight text-stone-warm md:text-3xl">
           {lang === "zh" ? "你的命盘" : "Your natal chart"}
         </p>
-        <p className="mx-6 mt-4 text-[10px] uppercase tracking-[0.32em] text-stone-warm/40">
-          {lang === "zh" ? "点击行星 · 查看落位与相位" : "Tap a planet · see placement & aspects"}
+        <p className="mx-2 mt-3 text-[9px] uppercase leading-relaxed tracking-[0.24em] text-stone-warm/40 md:text-[10px] md:tracking-[0.32em]">
+          {lang === "zh" ? "点击行星 · 查看落位与相位" : "Tap a planet · placement & aspects"}
         </p>
       </>
     );
