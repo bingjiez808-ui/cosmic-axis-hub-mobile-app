@@ -462,6 +462,29 @@ function ReportPage() {
                     {d.plain[li]}
                   </p>
                 </div>
+
+                {d.details && d.details.length > 0 && (
+                  <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+                    {d.details.map((block) => (
+                      <div
+                        key={block.label[0]}
+                        className="rounded-2xl border border-white/10 bg-white/[0.02] p-5"
+                      >
+                        <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+                          {block.label[li]}
+                        </p>
+                        <ul className="space-y-2 text-sm text-stone-warm/80">
+                          {block.items.map((it) => (
+                            <li key={it[0]} className="flex items-start gap-2">
+                              <span className="mt-2 size-1 shrink-0 rounded-full bg-gold-dust" />
+                              <span>{it[li]}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </motion.article>
