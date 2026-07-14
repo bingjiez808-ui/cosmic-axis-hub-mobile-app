@@ -1514,6 +1514,122 @@ export function SynastryPreview() {
             <p className="mt-6 font-serif text-lg italic leading-relaxed text-stone-warm/85">
               {verdict[li]}
             </p>
+
+            {/* Four-tradition breakdown */}
+            <div className="mt-8 border-t border-gold-dust/20 pt-6">
+              <p className="mb-4 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+                {lang === "zh" ? "四种传统 · 四个角度" : "Four traditions · four angles"}
+              </p>
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                {(() => {
+                  const j = (n: number) => Math.round(45 + ((score * 1000 + n * 997) % 45));
+                  const traditions: {
+                    tag: [string, string];
+                    title: [string, string];
+                    body: [string, string];
+                    score: number;
+                  }[] = [
+                    {
+                      tag: ["Western Astrology", "西方星盘"],
+                      title: ["Chart-to-chart aspects", "两盘相位对话"],
+                      body: [
+                        "Sun–Moon midpoints sit within a soft trine — the day-to-day emotional weather aligns more than it clashes; friction lives in the Mars–Venus square, mostly about pace of intimacy.",
+                        "太阳—月亮中点落于柔和三分相 —— 日常情绪同频多于对撞；摩擦来自火星—金星四分相，主要是「亲密节奏」的差异。",
+                      ],
+                      score: j(1),
+                    },
+                    {
+                      tag: ["Vedic / Jyotish", "印度占星"],
+                      title: ["Kuta compatibility · Nakshatra fit", "Kuta 契合 · 二十七宿"],
+                      body: [
+                        "Ashtakoot-style score points to strong Bhakoot and Nadi channels — the karmic thread is long, though the Gana axis warns of temperament mismatches under stress.",
+                        "八项契合（Ashtakoot）中 Bhakoot 与 Nadi 通道良好 —— 因缘线较长；但 Gana 轴提示：压力下的性情差异需要留意。",
+                      ],
+                      score: j(2),
+                    },
+                    {
+                      tag: ["BaZi 八字", "八字合婚"],
+                      title: ["Day-master resonance · Ten Gods", "日主呼应 · 十神关系"],
+                      body: [
+                        "Day-masters form a partial 合 (union) with light 冲 in the branch — the pair helps each other's Useful God, but a shared 忌神 in the month pillar flags recurring money-topic arguments.",
+                        "两方日主见「合」并微「冲」—— 彼此可扶用神；但月柱有共同忌神，暗示围绕「钱」的话题反复出现分歧。",
+                      ],
+                      score: j(3),
+                    },
+                    {
+                      tag: ["Zi Wei 紫微斗数", "紫微斗数"],
+                      title: ["Palace overlay · Star transfers", "宫位叠合 · 星曜互飞"],
+                      body: [
+                        "Your 夫妻宫 receives their 命宫 主星 — a deep pull toward long-form partnership; but 化忌 lands in 财帛宫, so joint decisions about money and property will be the recurring test.",
+                        "对方命宫主星飞入你的夫妻宫 —— 长期伴侣式的深度拉力；化忌落在财帛宫，因此关于「共同金钱与财产」的决定会是反复出现的考验。",
+                      ],
+                      score: j(4),
+                    },
+                  ];
+                  return traditions.map((tr) => (
+                    <div
+                      key={tr.tag[0]}
+                      className="rounded-2xl border border-white/10 bg-white/[0.02] p-4"
+                    >
+                      <div className="mb-2 flex items-center justify-between gap-2">
+                        <p className="text-[9px] uppercase tracking-[0.28em] text-gold-dust/70">
+                          {tr.tag[li]}
+                        </p>
+                        <span className="rounded-full border border-gold-dust/30 px-2 py-0.5 text-[9px] text-gold-light">
+                          {tr.score}
+                        </span>
+                      </div>
+                      <p className="mb-1 font-serif text-sm italic text-stone-warm">{tr.title[li]}</p>
+                      <p className="text-[12px] leading-relaxed text-stone-warm/65">{tr.body[li]}</p>
+                    </div>
+                  ));
+                })()}
+              </div>
+            </div>
+
+            {/* Recent-relationship read */}
+            <div className="mt-6 rounded-2xl border border-nebula-purple/30 bg-nebula-purple/[0.08] p-5">
+              <p className="mb-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+                {lang === "zh" ? "最近这段关系 · 现况解读" : "Recent state of the bond"}
+              </p>
+              <ul className="space-y-2 text-sm text-stone-warm/80">
+                <li>
+                  <span className="text-gold-light">
+                    {lang === "zh" ? "近 30 天基调：" : "Last 30 days · tone: "}
+                  </span>
+                  {lang === "zh"
+                    ? "沟通密度较前 90 天上升，但深度略降 —— 更多「日常报备」，更少「真心话」。"
+                    : "Contact frequency rose vs. the prior 90 days, but depth dipped — more logistics, fewer core conversations."}
+                </li>
+                <li>
+                  <span className="text-gold-light">
+                    {lang === "zh" ? "情绪流向：" : "Emotional flow: "}
+                  </span>
+                  {lang === "zh"
+                    ? "你付出较多情绪劳动，对方处于「回应模式」而非「主动模式」；不是不在意，是节奏差异。"
+                    : "You're carrying more emotional labour; they're in response-mode rather than initiator-mode — not disengagement, a rhythm gap."}
+                </li>
+                <li>
+                  <span className="text-gold-light">
+                    {lang === "zh" ? "关键节点：" : "Key inflection: "}
+                  </span>
+                  {lang === "zh"
+                    ? "未来 2–3 周会出现一次「小误会 / 小承诺」，处理得当会成为信任跃迁点。"
+                    : "A small misunderstanding or small promise will surface in the next 2–3 weeks — handled well, it becomes a trust jump."}
+                </li>
+                <li>
+                  <span className="text-gold-light">
+                    {lang === "zh" ? "建议动作：" : "Suggested move: "}
+                  </span>
+                  {lang === "zh"
+                    ? "主动发起一次不为「解决问题」的对话 —— 只交换感受，不做决策。"
+                    : "Initiate one conversation that isn't about solving anything — exchange feelings, defer decisions."}
+                </li>
+              </ul>
+              <p className="mt-3 text-[10px] uppercase tracking-[0.28em] text-stone-warm/40">
+                {lang === "zh" ? "以上仅供参考，请以真实相处为准。" : "For reference only — trust lived experience."}
+              </p>
+            </div>
           </motion.div>
         )}
       </div>
