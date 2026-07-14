@@ -171,7 +171,26 @@ const dimensions: Dimension[] = [
       "说人话：别指望一夜暴富。你的财富节奏本就是「无聊而稳定」—— 持续投入、控制固定开销、长期持有。这张盘用中年之后的真正自由，回报你的耐心。",
     ],
     viz: "elements",
-    elementStrengths: [0.6, 0.8, 0.7, 0.85, 0.4], // wood fire earth metal water
+    elementStrengths: [0.6, 0.8, 0.7, 0.85, 0.4],
+    details: [
+      {
+        label: ["Channels that flow", "顺畅的进财通道"],
+        items: [
+          ["Salary + equity from a role you shape", "自己塑造过的岗位（薪 + 股）"],
+          ["Content, courses, IP that compounds", "内容 · 课程 · 可复利的 IP"],
+          ["Long-term index / real estate holdings", "长期持有的指数 · 不动产"],
+          ["Advisor / partnership share", "顾问 · 合伙份额"],
+        ],
+      },
+      {
+        label: ["Watch out for", "需要警惕"],
+        items: [
+          ["Leveraged short-term speculation", "高杠杆的短线投机"],
+          ["Lending to family without terms", "对亲友的无条款借贷"],
+          ["Impulse spending after Wealth-star years", "财运年后的冲动性消费"],
+        ],
+      },
+    ],
   },
   {
     key: "love",
@@ -197,9 +216,26 @@ const dimensions: Dimension[] = [
       "说人话：早期恋爱多半是学习，不是终点。别被时间焦虑推着走 —— 真正适合的那个人，是在你不再为被认可而表演之后出现的。选深度，不选着急。",
     ],
     viz: "radar",
+    details: [
+      {
+        label: ["Portrait of a true partner", "正缘的画像"],
+        items: [
+          ["A few years older, or 5+ years wiser", "年龄略长，或阅历比你多 5 年以上"],
+          ["Emotionally steady · low drama", "情绪稳定 · 少戏剧感"],
+          ["Their own vocation and inner life", "有自己的事业与内在世界"],
+          ["Values quality of attention over performance", "重视「被看见」，胜于「被展示」"],
+        ],
+      },
+      {
+        label: ["Likely marriage window", "较可能的婚期"],
+        items: [
+          ["Primary window · ages 29–33", "主要窗口 · 29–33 岁"],
+          ["Secondary window · ages 36–38", "次要窗口 · 36–38 岁"],
+          ["Before 27: mostly formative, not lasting", "27 岁前：多为塑造性，非长久"],
+        ],
+      },
+    ],
   },
-  {
-    key: "health",
     title: ["Health & Vitality", "健康与活力"],
     headline: [
       "Fire tempered by water",
