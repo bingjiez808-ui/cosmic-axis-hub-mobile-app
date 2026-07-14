@@ -80,8 +80,8 @@ export function AccountModal({ open, onClose }: { open: boolean; onClose: () => 
                   </p>
                   <p className="mt-1 text-xs italic text-stone-warm/70">
                     {lang === "zh"
-                      ? "输入姓名与邮箱即刻创建账号 —— 你的解读将被安全保存，可随时回来续读。"
-                      : "Enter your name and email to create an account — your readings will be saved so you can return anytime."}
+                      ? "输入姓名、邮箱与密码即刻创建账号 —— 你的解读将被安全保存，可随时回来续读。"
+                      : "Enter your name, email and password to create an account — your readings will be saved so you can return anytime."}
                   </p>
                 </div>
                 <input
@@ -98,6 +98,27 @@ export function AccountModal({ open, onClose }: { open: boolean; onClose: () => 
                   placeholder={t.acc_email}
                   className="ritual-input !py-2 !text-base w-full"
                 />
+                <input
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value.slice(0, 9))}
+                  placeholder={lang === "zh" ? "密码（9 位，含大小写与数字）" : "Password (9 chars, Aa & 0-9)"}
+                  maxLength={9}
+                  minLength={9}
+                  autoComplete="new-password"
+                  className="ritual-input !py-2 !text-base w-full"
+                />
+                <p className="text-[10px] tracking-[0.2em] text-stone-warm/40">
+                  {lang === "zh"
+                    ? "密码需正好 9 位，且同时包含大写字母、小写字母和数字。"
+                    : "Password must be exactly 9 characters with uppercase, lowercase, and a number."}
+                </p>
+                {error && (
+                  <p className="rounded-xl border border-red-400/40 bg-red-500/10 px-3 py-2 text-xs text-red-200">
+                    {error}
+                  </p>
+                )}
                 <button
                   type="submit"
                   className="w-full rounded-full bg-gold-dust px-6 py-3 text-[10px] uppercase tracking-[0.32em] text-obsidian transition-colors hover:bg-gold-light"
