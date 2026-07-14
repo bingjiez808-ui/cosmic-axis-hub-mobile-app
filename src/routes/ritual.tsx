@@ -389,13 +389,7 @@ function RitualPage() {
                 className="group relative overflow-hidden rounded-full border border-gold-dust/40 px-10 py-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust transition-all hover:border-gold-dust disabled:cursor-not-allowed disabled:opacity-30"
               >
                 <span className="relative z-10">
-                  {isLast
-                    ? t.invoke
-                    : isQuizIntro
-                    ? lang === "zh"
-                      ? "开始五题"
-                      : "Begin the five"
-                    : t.continue}
+                  {isLast ? t.invoke : t.continue}
                 </span>
                 <span className="absolute inset-0 translate-y-full bg-gold-dust/10 transition-transform duration-500 group-hover:translate-y-0" />
               </button>
