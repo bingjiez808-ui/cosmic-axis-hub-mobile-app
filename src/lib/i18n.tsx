@@ -202,7 +202,6 @@ const zh: Dict = {
   focus_kicker: "四大体系的不同侧重",
   focus_title: "同一个问题，",
   focus_title_em: "四种乐器。",
-  focus_title_em_ignore: "",
   focus_hint: "点击一个人生维度，看四大体系各自擅长阅读什么。",
   focus_dim_character: "性格",
   focus_dim_vocation: "事业",
