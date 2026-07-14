@@ -116,10 +116,10 @@ function RitualPage() {
     place: "",
   });
   const [quiz, setQuiz] = useState<string[]>(["", "", "", "", ""]);
-  // 0 = language, 1 = quiz intro, 2..6 = quiz Q1..Q5, 7..10 = intake
+  // 0 = language, 1..5 = quiz Q1..Q5, 6..9 = intake
   const [step, setStep] = useState(0);
 
-  const totalSteps = 1 + 1 + QUIZ.length + 4; // 11
+  const totalSteps = 1 + QUIZ.length + 4; // 10
 
   const questionSteps: {
     key: FieldKey;
@@ -137,16 +137,13 @@ function RitualPage() {
   const progress = useMemo(() => (step + 1) / totalSteps, [step, totalSteps]);
   const isLast = step === totalSteps - 1;
   const isLanguageStep = step === 0;
-  const isQuizIntro = step === 1;
-  const isQuizStep = step >= 2 && step <= 1 + QUIZ.length;
-  const quizIdx = isQuizStep ? step - 2 : -1;
-  const isIntakeStep = step >= 2 + QUIZ.length;
-  const intakeIdx = isIntakeStep ? step - (2 + QUIZ.length) : -1;
+  const isQuizStep = step >= 1 && step <= QUIZ.length;
+  const quizIdx = isQuizStep ? step - 1 : -1;
+  const isIntakeStep = step >= 1 + QUIZ.length;
+  const intakeIdx = isIntakeStep ? step - (1 + QUIZ.length) : -1;
   const currentQ = isIntakeStep ? questionSteps[intakeIdx] : null;
 
   const canAdvance = isLanguageStep
-    ? true
-    : isQuizIntro
     ? true
     : isQuizStep
     ? !!quiz[quizIdx]
