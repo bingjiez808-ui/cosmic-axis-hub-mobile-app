@@ -529,9 +529,10 @@ function ReportPage() {
 
       {/* Future watchlist — Oracle members */}
       <FutureWatchlist />
+      {/* Oracle-only: synastry + near-term windows */}
+      <SynastryPreview />
+      <RecentWindows birthISO={search.date} />
 
-      {/* Membership / PDF / AI follow-up */}
-      <MembershipSection />
 
 
 
