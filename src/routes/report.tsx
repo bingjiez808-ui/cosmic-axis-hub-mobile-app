@@ -365,6 +365,19 @@ function ReportPage() {
         )}
       </header>
 
+      {/* Save-this-reading bar */}
+      <SaveReadingBar
+        reading={{
+          name: search.name,
+          date: search.date,
+          time: search.time,
+          place: search.place,
+          lang,
+        }}
+        onOpenAccount={() => setAccOpen(true)}
+      />
+      <AccountModal open={accOpen} onClose={() => setAccOpen(false)} />
+
       {/* Interactive natal wheel */}
       <section className="mx-auto mb-24 max-w-5xl px-6">
         <div className="glass-card rounded-3xl p-8 md:p-12">
