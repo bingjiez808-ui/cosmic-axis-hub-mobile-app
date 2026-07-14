@@ -14,6 +14,8 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { LanguageProvider, useLang } from "../lib/i18n";
 import { AccountProvider, useAccount } from "../lib/account";
 import { AccountModal } from "../components/AccountModal";
+import { LibrarySplash } from "../components/LibrarySplash";
+
 
 function NotFoundComponent() {
   return (
@@ -156,7 +158,9 @@ function RootComponent() {
             <SiteFooter />
           </div>
           <AccountModal open={accOpen} onClose={() => setAccOpen(false)} />
+          <LibrarySplash />
         </AccountProvider>
+
       </LanguageProvider>
     </QueryClientProvider>
   );
@@ -189,8 +193,44 @@ function SiteNav() {
   const { t } = useLang();
   const { account } = useAccount();
   const openAcc = () => window.dispatchEvent(new Event("lod:open-account"));
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    let lastY = window.scrollY;
+    let hoverTop = false;
+    const update = () => {
+      const y = window.scrollY;
+      if (y < 40 || hoverTop) {
+        setVisible(true);
+      } else if (y > lastY + 6) {
+        setVisible(false);
+      } else if (y < lastY - 6) {
+        setVisible(true);
+      }
+      lastY = y;
+    };
+    const onMove = (e: MouseEvent) => {
+      const nearTop = e.clientY < 80;
+      if (nearTop !== hoverTop) {
+        hoverTop = nearTop;
+        if (nearTop) setVisible(true);
+      }
+    };
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("mousemove", onMove);
+    return () => {
+      window.removeEventListener("scroll", update);
+      window.removeEventListener("mousemove", onMove);
+    };
+  }, []);
+
   return (
-    <nav className="fixed top-0 left-1/2 z-50 -translate-x-1/2 p-6">
+    <nav
+      className={`fixed top-0 left-1/2 z-50 -translate-x-1/2 p-6 transition-all duration-500 ${
+        visible ? "opacity-100 translate-y-0" : "-translate-y-full opacity-0 pointer-events-none"
+      }`}
+      onMouseEnter={() => setVisible(true)}
+    >
       <div className="glass-card flex items-center gap-4 rounded-full px-4 py-2 text-[11px] font-light uppercase tracking-[0.28em] md:gap-8 md:px-6 md:py-2.5">
         <Link to="/" className="font-serif text-sm normal-case tracking-normal text-stone-warm">
           Destiny<span className="text-gold-dust">·</span>Library
@@ -215,9 +255,12 @@ function SiteNav() {
         </button>
         <LanguageToggle />
       </div>
+      {/* invisible hotspot to reveal on hover near top */}
+      <div className="fixed left-0 right-0 top-0 h-6" aria-hidden />
     </nav>
   );
 }
+
 
 function SiteFooter() {
   return (

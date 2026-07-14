@@ -153,20 +153,141 @@ export function LifeTimeline({ birthISO }: { birthISO?: string }) {
             className="rounded-2xl border border-gold-dust/20 bg-gold-dust/[0.04] p-6 md:p-8"
           >
             <p className="mb-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
-              {t.tl_age} {activeDecade.from}–{activeDecade.to}
+              {lang === "zh"
+                ? `${activeDecade.from}–${activeDecade.to} 岁`
+                : `${t.tl_age} ${activeDecade.from}–${activeDecade.to}`}
             </p>
             <h3 className="mb-4 font-serif text-2xl italic text-gold-light">
               {activeDecade.theme[li]}
             </h3>
-            <p className="font-serif text-lg leading-relaxed text-stone-warm/85">
+            <p className="mb-6 font-serif text-lg leading-relaxed text-stone-warm/85">
               {activeDecade.detail[li]}
             </p>
+
+            <YearByYearChart from={activeDecade.from} to={activeDecade.to} age={age} lang={lang} />
           </motion.div>
         </AnimatePresence>
       </div>
     </section>
   );
 }
+
+// Deterministic pseudo-random from a seed integer.
+function prand(seed: number) {
+  let s = (seed * 9301 + 49297) % 233280;
+  return () => {
+    s = (s * 9301 + 49297) % 233280;
+    return s / 233280;
+  };
+}
+
+// Year-by-year visualization within a decade — energy bar + one-line theme.
+function YearByYearChart({
+  from,
+  to,
+  age,
+  lang,
+}: {
+  from: number;
+  to: number;
+  age: number | null;
+  lang: Lang;
+}) {
+  const rnd = prand(from + 1);
+  const themesEn = [
+    "seeding — a quiet beginning",
+    "opening — a first door",
+    "learning — a skill takes root",
+    "friction — a lesson through resistance",
+    "breakthrough — visibility rises",
+    "harvest — recognition and return",
+    "consolidation — you keep what works",
+    "shedding — release what no longer fits",
+    "pivot — direction quietly changes",
+    "integration — the decade completes",
+  ];
+  const themesZh = [
+    "播种 —— 安静的起点",
+    "开门 —— 第一次机会",
+    "扎根 —— 一项能力落地",
+    "磨合 —— 阻力中习得的功课",
+    "突破 —— 可见度上升",
+    "收获 —— 被看见与回响",
+    "巩固 —— 留下真正有用的",
+    "剥离 —— 放下不再合身的",
+    "转向 —— 方向悄然改变",
+    "整合 —— 十年的收束",
+  ];
+  const years = Array.from({ length: to - from }, (_, i) => {
+    const yr = from + i;
+    const intensity = 0.35 + rnd() * 0.6; // 0.35–0.95
+    return {
+      age: yr,
+      intensity,
+      theme: (lang === "zh" ? themesZh : themesEn)[i % 10],
+      isNow: age != null && age === yr,
+      isPast: age != null && age > yr,
+    };
+  });
+
+  return (
+    <div className="mt-2 rounded-xl border border-white/10 bg-obsidian/40 p-4 md:p-5">
+      <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+        {lang === "zh" ? "逐年细读 · 能量曲线" : "Year by year · energy curve"}
+      </p>
+      {/* Bars */}
+      <div className="flex items-end gap-1.5 md:gap-2">
+        {years.map((y) => (
+          <div key={y.age} className="group flex flex-1 flex-col items-center gap-1.5">
+            <div className="relative flex h-24 w-full items-end">
+              <div
+                className={`w-full rounded-t transition-all ${
+                  y.isNow
+                    ? "bg-gold-dust"
+                    : y.isPast
+                      ? "bg-gold-dust/40"
+                      : "bg-gold-dust/20 group-hover:bg-gold-dust/60"
+                }`}
+                style={{ height: `${Math.round(y.intensity * 100)}%` }}
+              />
+              {y.isNow && (
+                <span className="absolute -top-2 left-1/2 -translate-x-1/2 size-2 rounded-full bg-gold-dust shadow-[0_0_10px_hsl(45_70%_60%/0.9)]" />
+              )}
+            </div>
+            <span
+              className={`text-[9px] tabular-nums ${
+                y.isNow ? "text-gold-light" : "text-stone-warm/50"
+              }`}
+            >
+              {y.age}
+              <span className="ml-0.5 text-[8px] text-stone-warm/35">
+                {lang === "zh" ? "岁" : "y"}
+              </span>
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* Legend list */}
+      <ul className="mt-5 grid grid-cols-1 gap-1.5 text-[11px] leading-relaxed md:grid-cols-2">
+        {years.map((y) => (
+          <li
+            key={y.age}
+            className={`flex items-baseline gap-3 border-b border-white/5 py-1 ${
+              y.isNow ? "text-gold-light" : y.isPast ? "text-stone-warm/70" : "text-stone-warm/50"
+            }`}
+          >
+            <span className="w-14 shrink-0 font-serif tabular-nums">
+              {y.age} {lang === "zh" ? "岁" : ""}
+            </span>
+            <span className="flex-1">{y.theme}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 
 function ConfidenceBadge({ level, lang }: { level: "high" | "mid" | "low"; lang: Lang }) {
   const meta = {
