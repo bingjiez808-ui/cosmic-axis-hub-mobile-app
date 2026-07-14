@@ -66,6 +66,17 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       return next;
     });
   };
+  const setAvatar = (dataUrl: string) => {
+    setAccount((prev) => {
+      const next: Account = prev
+        ? { ...prev, avatar: dataUrl }
+        : { name: "Traveler", email: "", plan: "free", avatar: dataUrl };
+      try {
+        localStorage.setItem(ACC_KEY, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  };
   const signOut = () => {
     setAccount(null);
     try {
