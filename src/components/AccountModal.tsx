@@ -10,13 +10,32 @@ export function AccountModal({ open, onClose }: { open: boolean; onClose: () => 
   const { account, signIn, signOut, saved, removeReading } = useAccount();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const passwordRe = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{9,9}$/;
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return;
-    signIn({ name: name.trim() || email.split("@")[0], email: email.trim() });
+    setError(null);
+    const em = email.trim();
+    if (!emailRe.test(em)) {
+      setError(lang === "zh" ? "请输入有效的邮箱地址" : "Please enter a valid email address");
+      return;
+    }
+    if (!passwordRe.test(password)) {
+      setError(
+        lang === "zh"
+          ? "密码需为 9 位，且同时包含大写字母、小写字母和数字"
+          : "Password must be exactly 9 characters and include uppercase, lowercase, and a number",
+      );
+      return;
+    }
+    signIn({ name: name.trim() || em.split("@")[0], email: em });
     setName("");
     setEmail("");
+    setPassword("");
   };
 
   return (
