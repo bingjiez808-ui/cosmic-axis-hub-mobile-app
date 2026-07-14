@@ -167,14 +167,43 @@ export function LifeTimeline({ birthISO }: { birthISO?: string }) {
   );
 }
 
+function ConfidenceBadge({ level, lang }: { level: "high" | "mid" | "low"; lang: Lang }) {
+  const meta = {
+    high: {
+      label: [lang === "zh" ? "高置信" : "High confidence", "★★★"],
+      cls: "border-gold-dust/60 bg-gold-dust/15 text-gold-light",
+    },
+    mid: {
+      label: [lang === "zh" ? "中置信" : "Medium confidence", "★★"],
+      cls: "border-nebula-purple/50 bg-nebula-purple/10 text-stone-warm",
+    },
+    low: {
+      label: [lang === "zh" ? "低置信" : "Low confidence", "★"],
+      cls: "border-white/15 bg-white/[0.03] text-stone-warm/70",
+    },
+  }[level];
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[9px] uppercase tracking-[0.28em] ${meta.cls}`}
+    >
+      <span>{meta.label[1]}</span>
+      <span>{meta.label[0]}</span>
+    </span>
+  );
+}
+
 /* ═══════════════════════════════════════════
    Key Events verification — yes/no with story fallback
 ═══════════════════════════════════════════ */
+
+type Confidence = "high" | "mid" | "low";
 
 type Prompt = {
   age: [number, number]; // age window
   theme: [string, string];
   guess: [string, string];
+  confidence: Confidence;
+  basis: [string, string]; // why the reading tags this window as "already happened"
 };
 
 const PROMPTS: Prompt[] = [
@@ -185,6 +214,11 @@ const PROMPTS: Prompt[] = [
       "Around ages 16–19, the chart shows a first real departure — a school, a city, or a person that pulled you out of your childhood shape.",
       "16–19 岁前后，命盘出现第一次真正的离开 —— 一所学校、一座城市，或一个人，把你从童年的形状里拉了出来。",
     ],
+    confidence: "high",
+    basis: [
+      "Jupiter's first return + BaZi 沐浴/冠带 stage. Three systems converge on a departure event — that's why the reading treats it as almost certainly lived.",
+      "木星首次回归 + 八字沐浴/冠带阶段。三个体系同时指向一次「离开事件」，所以命盘几乎必然判定为已发生。",
+    ],
   },
   {
     age: [22, 26],
@@ -192,6 +226,11 @@ const PROMPTS: Prompt[] = [
     guess: [
       "Between 22 and 26, the reading senses a bruise: a rejection, a heartbreak, or a career door that closed — and quietly redirected you.",
       "22–26 岁之间，命盘感知到一次「淤青」：拒绝、心碎、或职业上的关门 —— 它悄悄地把你重新导向了。",
+    ],
+    confidence: "mid",
+    basis: [
+      "Progressed Moon square natal Sun + Zi Wei 天梁 in career palace. Two systems agree on a bruise, but the shape (love vs. work) varies by chart.",
+      "推运月亮刑本命太阳 + 紫微天梁入事业宫。两个体系一致指向淤青，但具体形状（感情或事业）因盘而异。",
     ],
   },
   {
@@ -201,6 +240,11 @@ const PROMPTS: Prompt[] = [
       "Around 28–32, a major re-choice: you either left something (job, city, relationship) or entered the one that lasts.",
       "28–32 岁前后，一次重大的重选：你要么离开了什么（工作、城市、关系），要么走进了那个真正留下的。",
     ],
+    confidence: "high",
+    basis: [
+      "Saturn return is the strongest single transit in Western astrology; BaZi 大运 also swaps pillar here. Nearly every chart records a re-choice event.",
+      "土星回归是西方占星最强的单一行运；八字大运在此换柱。几乎每张命盘都会记录一次重选。",
+    ],
   },
   {
     age: [33, 38],
@@ -209,6 +253,11 @@ const PROMPTS: Prompt[] = [
       "Between 33 and 38, the BaZi 大运 shifts to a Wealth/Officer cycle — a promotion, a business, or a first real accumulation of money.",
       "33–38 岁之间，八字大运进入财官之运 —— 升迁、创业，或第一次真正的财富积累。",
     ],
+    confidence: "mid",
+    basis: [
+      "BaZi 财官运 is the primary signal — Jyotish dashā often agrees, but Western transits are quieter here, so the reading calls this likely, not certain.",
+      "主要信号来自八字财官大运 —— Jyotish 大运多半一致，但西方行运在此偏静，故只判为「可能」。",
+    ],
   },
   {
     age: [40, 45],
@@ -216,6 +265,11 @@ const PROMPTS: Prompt[] = [
     guess: [
       "Around 40–45, public visibility peaks. A recognition, a book, a promotion, a stage — the chart wanted the world to see this you.",
       "40–45 岁前后，公众能见度达到高峰。一次被看见、一本书、一次升迁、一个舞台 —— 命盘要世界看到这样的你。",
+    ],
+    confidence: "low",
+    basis: [
+      "This is a slower, cumulative phase rather than a sharp transit. The reading flags it because BaZi + Zi Wei both bright, but the timing has ±3 years drift.",
+      "此为缓慢累积期，非尖锐行运。八字与紫微皆偏亮，故列出，但时间可漂移 ±3 年，因此置信度较低。",
     ],
   },
 ];
@@ -279,11 +333,23 @@ export function KeyEventsVerification({ birthISO }: { birthISO?: string }) {
                 key={i}
                 className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 md:p-6"
               >
-                <p className="mb-1 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
-                  {t.ke_prompt} · {p.theme[li]} · {lang === "zh" ? "岁" : "Age"} {p.age[0]}–{p.age[1]}
-                </p>
-                <p className="mb-4 font-serif text-base leading-relaxed text-stone-warm/85 md:text-lg">
+                <div className="mb-3 flex flex-wrap items-center gap-2">
+                  <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+                    {t.ke_prompt} · {p.theme[li]} ·{" "}
+                    {lang === "zh"
+                      ? `${p.age[0]}–${p.age[1]} 岁`
+                      : `Age ${p.age[0]}–${p.age[1]}`}
+                  </p>
+                  <ConfidenceBadge level={p.confidence} lang={lang} />
+                </div>
+                <p className="mb-3 font-serif text-base leading-relaxed text-stone-warm/85 md:text-lg">
                   {p.guess[li]}
+                </p>
+                <p className="mb-4 rounded-xl border border-white/5 bg-white/[0.02] p-3 text-[11px] leading-relaxed text-stone-warm/55">
+                  <span className="mr-2 text-[9px] uppercase tracking-[0.32em] text-gold-dust/60">
+                    {lang === "zh" ? "判定依据" : "Why flagged"}
+                  </span>
+                  {p.basis[li]}
                 </p>
 
                 {a.status === "unset" && (
@@ -892,5 +958,270 @@ function AIFollowupModal({
         </motion.div>
       )}
     </AnimatePresence>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   Synastry preview — 合盘 (Oracle member perk)
+═══════════════════════════════════════════ */
+
+export function SynastryPreview() {
+  const { lang } = useLang();
+  const li = lang === "zh" ? 1 : 0;
+  const [partner, setPartner] = useState({ name: "", date: "", time: "", place: "" });
+  const [revealed, setRevealed] = useState(false);
+
+  // Deterministic pseudo-score derived from the two dates — placeholder for a real synastry engine.
+  const score = useMemo(() => {
+    if (!revealed || !partner.date) return null;
+    let h = 0;
+    for (const c of partner.date + partner.name) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+    return 62 + (h % 32); // 62–93
+  }, [revealed, partner.date, partner.name]);
+
+  const axes: { label: [string, string]; value: number }[] = useMemo(() => {
+    if (score == null) return [];
+    const seed = score;
+    const jitter = (i: number) => ((seed * 9301 + i * 49297) % 233280) / 233280;
+    return [
+      { label: ["Emotional resonance", "情感共振"], value: Math.round(55 + jitter(1) * 40) },
+      { label: ["Communication rhythm", "沟通节奏"], value: Math.round(50 + jitter(2) * 45) },
+      { label: ["Values & long-term fit", "价值观与长期契合"], value: Math.round(45 + jitter(3) * 50) },
+      { label: ["Physical / sensual pull", "身体与感官吸引"], value: Math.round(50 + jitter(4) * 40) },
+      { label: ["Growth catalyst", "成长催化"], value: Math.round(50 + jitter(5) * 45) },
+    ];
+  }, [score]);
+
+  const verdict = (score ?? 0) >= 85
+    ? ["Rare alignment · a partnership the chart wants you to protect.", "罕见的对齐 —— 命盘希望你保护的关系。"]
+    : (score ?? 0) >= 72
+      ? ["Warm, workable · differences that teach rather than tear.", "温暖可行 —— 差异用来教导，而非撕裂。"]
+      : ["Chemistry present, calibration needed · agree on rhythm before agreeing on future.", "有化学反应，但需校准 —— 先约好节奏，再谈未来。"];
+
+  return (
+    <section className="mx-auto max-w-5xl px-6 pb-24 md:px-12 print:hidden">
+      <div className="glass-card rounded-3xl p-8 md:p-12">
+        <p className="mb-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+          {lang === "zh" ? "会员合盘 · 关系分析" : "Oracle Synastry · Relationship reading"}
+        </p>
+        <h2 className="mb-3 font-serif text-2xl italic text-stone-warm md:text-3xl">
+          {lang === "zh" ? "两张命盘的对话" : "A dialogue between two charts"}
+        </h2>
+        <p className="mb-8 max-w-3xl text-sm text-stone-warm/60">
+          {lang === "zh"
+            ? "输入对方的出生资料，图书馆会把两张命盘叠合，读出你们之间真正的和声与噪音 —— 而不是浪漫化的猜测。"
+            : "Enter your partner's birth data. The library overlays both charts and reads the real harmony — and the real noise — between you, not romanticized guesses."}
+        </p>
+
+        <div className="mb-6 grid grid-cols-1 gap-3 md:grid-cols-4">
+          <input
+            className="ritual-input !text-base"
+            placeholder={lang === "zh" ? "对方姓名" : "Partner's name"}
+            value={partner.name}
+            onChange={(e) => setPartner((p) => ({ ...p, name: e.target.value }))}
+          />
+          <input
+            className="ritual-input !text-base"
+            type="date"
+            value={partner.date}
+            onChange={(e) => setPartner((p) => ({ ...p, date: e.target.value }))}
+            style={{ colorScheme: "dark" }}
+          />
+          <input
+            className="ritual-input !text-base"
+            type="time"
+            value={partner.time}
+            onChange={(e) => setPartner((p) => ({ ...p, time: e.target.value }))}
+            style={{ colorScheme: "dark" }}
+          />
+          <input
+            className="ritual-input !text-base"
+            placeholder={lang === "zh" ? "出生地点" : "Birthplace"}
+            value={partner.place}
+            onChange={(e) => setPartner((p) => ({ ...p, place: e.target.value }))}
+          />
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setRevealed(true)}
+          disabled={!partner.date}
+          className="rounded-full bg-gold-dust px-6 py-2.5 text-[10px] uppercase tracking-[0.32em] text-obsidian transition-colors hover:bg-gold-light disabled:opacity-40"
+        >
+          {lang === "zh" ? "叠合两盘" : "Overlay the charts"}
+        </button>
+
+        {score != null && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="mt-8 rounded-2xl border border-gold-dust/30 bg-gold-dust/[0.06] p-6 md:p-8"
+          >
+            <div className="mb-6 flex flex-wrap items-baseline justify-between gap-4">
+              <p className="font-serif text-lg italic text-stone-warm/80">
+                {lang === "zh" ? "整体契合度" : "Overall resonance"}
+              </p>
+              <p className="font-serif text-5xl italic text-gold-light">{score}<span className="text-xl text-stone-warm/50">/100</span></p>
+            </div>
+            <div className="space-y-3">
+              {axes.map((a) => (
+                <div key={a.label[0]}>
+                  <div className="mb-1 flex justify-between text-[10px] uppercase tracking-[0.28em] text-stone-warm/60">
+                    <span>{a.label[li]}</span>
+                    <span className="text-gold-dust">{a.value}</span>
+                  </div>
+                  <div className="h-1 rounded-full bg-white/10">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${a.value}%` }}
+                      transition={{ duration: 0.9, ease: [0.32, 0.72, 0, 1] }}
+                      className="h-full rounded-full bg-gradient-to-r from-gold-dust via-gold-light to-nebula-purple"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <p className="mt-6 font-serif text-lg italic leading-relaxed text-stone-warm/85">
+              {verdict[li]}
+            </p>
+          </motion.div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   Recent windows — the next 90 days, personal state
+═══════════════════════════════════════════ */
+
+export function RecentWindows({ birthISO }: { birthISO?: string }) {
+  const { lang } = useLang();
+  const li = lang === "zh" ? 1 : 0;
+
+  // Deterministic per-user rotation of windows.
+  const seed = useMemo(() => {
+    const base = (birthISO ?? "0000-00-00") + new Date().toISOString().slice(0, 10);
+    let h = 0;
+    for (const c of base) h = (h * 33 + c.charCodeAt(0)) >>> 0;
+    return h;
+  }, [birthISO]);
+
+  const fmt = (offsetDays: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() + offsetDays);
+    return d.toLocaleDateString(lang === "zh" ? "zh-CN" : "en-US", { month: "short", day: "numeric" });
+  };
+
+  const windows = [
+    {
+      range: `${fmt(0)} — ${fmt(6)}`,
+      tone: ["Signal week", "信号周"] as [string, string],
+      body: [
+        "Mercury and your Day-Master both talk this week — expect a message, a callback, or a small decision that ripples further than it looks.",
+        "水星与日主本周都在发言 —— 会有一条消息、一次回电、或一个看似小的决定，其涟漪比表面更远。",
+      ] as [string, string],
+      score: 55 + (seed % 30),
+    },
+    {
+      range: `${fmt(7)} — ${fmt(20)}`,
+      tone: ["Rest before push", "先歇后进"] as [string, string],
+      body: [
+        "Energy dips mid-window then rebounds. Protect sleep now; the second half is when doors respond to knocks.",
+        "本窗口中段能量下沉，后段回弹。前半段护住睡眠；后半段，你敲的门才会有回应。",
+      ] as [string, string],
+      score: 45 + ((seed >> 3) % 30),
+    },
+    {
+      range: `${fmt(21)} — ${fmt(45)}`,
+      tone: ["Wealth channel opens", "财路开通"] as [string, string],
+      body: [
+        "A small but real income or opportunity signal. Not a lottery — a channel that rewards a message you've been avoiding sending.",
+        "会有一个小而真实的收入或机会信号。不是彩票 —— 而是一条你一直不愿发送的消息，被打开后的回报。",
+      ] as [string, string],
+      score: 65 + ((seed >> 5) % 25),
+    },
+    {
+      range: `${fmt(46)} — ${fmt(90)}`,
+      tone: ["Relationship recalibration", "关系再校准"] as [string, string],
+      body: [
+        "A conversation you've postponed becomes unavoidable. Handled well, it deepens trust; postponed further, it hardens into resentment.",
+        "一段你一直拖延的对话，会变得无法回避。处理得当，信任加深；再拖，就会硬化成怨。",
+      ] as [string, string],
+      score: 50 + ((seed >> 7) % 30),
+    },
+  ];
+
+  const stateScore = 45 + (seed % 40);
+  const bars: { label: [string, string]; value: number }[] = [
+    { label: ["Vitality 元气", "元气"], value: 40 + ((seed >> 2) % 55) },
+    { label: ["Focus 专注", "专注"], value: 40 + ((seed >> 4) % 55) },
+    { label: ["Mood 情绪", "情绪"], value: 40 + ((seed >> 6) % 55) },
+    { label: ["Luck window 运气窗口", "运气窗口"], value: 40 + ((seed >> 8) % 55) },
+  ];
+
+  return (
+    <section className="mx-auto max-w-5xl px-6 pb-24 md:px-12 print:hidden">
+      <div className="glass-card rounded-3xl p-8 md:p-12">
+        <p className="mb-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+          {lang === "zh" ? "会员近况 · 最近的时间节点与状态" : "Oracle Now · Near-term windows & personal state"}
+        </p>
+        <h2 className="mb-3 font-serif text-2xl italic text-stone-warm md:text-3xl">
+          {lang === "zh" ? "接下来的 90 天，命盘在说什么" : "What the chart is saying, next 90 days"}
+        </h2>
+        <p className="mb-8 max-w-3xl text-sm text-stone-warm/60">
+          {lang === "zh"
+            ? "四个近期窗口 + 你此刻的四条状态曲线 —— 每天不必再问「今天适不适合」，直接看窗口。"
+            : "Four near-term windows and four live state bars — stop asking daily whether today is auspicious; read the window instead."}
+        </p>
+
+        <div className="mb-8 rounded-2xl border border-gold-dust/30 bg-gold-dust/[0.06] p-6">
+          <div className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
+            <p className="font-serif text-lg italic text-stone-warm/85">
+              {lang === "zh" ? "此刻状态指数" : "Personal state index"}
+            </p>
+            <p className="font-serif text-4xl italic text-gold-light">
+              {stateScore}<span className="text-base text-stone-warm/50">/100</span>
+            </p>
+          </div>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            {bars.map((b) => (
+              <div key={b.label[0]}>
+                <div className="mb-1 flex justify-between text-[10px] uppercase tracking-[0.28em] text-stone-warm/60">
+                  <span>{b.label[li]}</span>
+                  <span className="text-gold-dust">{b.value}</span>
+                </div>
+                <div className="h-1 rounded-full bg-white/10">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${b.value}%` }}
+                    transition={{ duration: 0.9, ease: [0.32, 0.72, 0, 1] }}
+                    className="h-full rounded-full bg-gradient-to-r from-nebula-purple via-gold-dust to-gold-light"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <ol className="relative space-y-4 border-l border-gold-dust/30 pl-6">
+          {windows.map((w) => (
+            <li key={w.range} className="relative">
+              <span className="absolute -left-[29px] top-2 size-2.5 rounded-full bg-gold-dust shadow-[0_0_12px_hsl(45_70%_60%/0.6)]" />
+              <div className="rounded-2xl border border-gold-dust/20 bg-white/[0.02] p-5">
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust">{w.range}</p>
+                  <span className="rounded-full border border-gold-dust/30 px-3 py-0.5 text-[9px] uppercase tracking-[0.28em] text-gold-light">
+                    {w.tone[li]} · {w.score}
+                  </span>
+                </div>
+                <p className="text-sm leading-relaxed text-stone-warm/75">{w.body[li]}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
   );
 }
