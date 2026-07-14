@@ -266,6 +266,9 @@ function SiteNav() {
           <Link to="/about" className="text-stone-warm/70 transition-colors hover:text-gold-dust">
             {t.nav_about}
           </Link>
+          <Link to="/community" className="text-stone-warm/70 transition-colors hover:text-gold-dust">
+            {t.nav_community}
+          </Link>
         </div>
         <button
           type="button"
