@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 
 import {
   FiveElements,
+  NatalWheel,
   StrengthRadar,
-  ZodiacWheel,
 } from "@/components/charts/DestinyCharts";
 import {
   FutureWatchlist,
