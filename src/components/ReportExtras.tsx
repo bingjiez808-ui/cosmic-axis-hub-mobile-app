@@ -831,7 +831,9 @@ export function MembershipSection({ birthISO }: { birthISO?: string } = {}) {
             </div>
             <button
               type="button"
-              onClick={() => setSignInPrompt(true)}
+              onClick={() => {
+                if (typeof window !== "undefined") window.dispatchEvent(new Event("lod:open-account"));
+              }}
               className="rounded-full bg-gold-dust px-5 py-2.5 text-[10px] uppercase tracking-[0.32em] text-obsidian hover:bg-gold-light"
             >
               {lang === "zh" ? "登录 / 创建账号" : "Sign in / Create"}
