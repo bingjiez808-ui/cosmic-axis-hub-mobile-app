@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import {
   FiveElements,
@@ -16,7 +16,6 @@ import {
   TarotDraw,
 } from "@/components/ReportExtras";
 import { AccountModal } from "@/components/AccountModal";
-import { useState } from "react";
 import { useLang } from "@/lib/i18n";
 
 type SearchParams = {
