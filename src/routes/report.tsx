@@ -236,6 +236,8 @@ const dimensions: Dimension[] = [
       },
     ],
   },
+  {
+    key: "health",
     title: ["Health & Vitality", "健康与活力"],
     headline: [
       "Fire tempered by water",
