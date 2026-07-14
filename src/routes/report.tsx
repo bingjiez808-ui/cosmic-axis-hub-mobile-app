@@ -24,6 +24,7 @@ type SearchParams = {
   time?: string;
   place?: string;
   lang?: "en" | "zh";
+  quiz?: string;
 };
 
 export const Route = createFileRoute("/report")({
@@ -44,6 +45,7 @@ export const Route = createFileRoute("/report")({
     time: typeof s.time === "string" ? s.time : undefined,
     place: typeof s.place === "string" ? s.place : undefined,
     lang: s.lang === "zh" ? "zh" : s.lang === "en" ? "en" : undefined,
+    quiz: typeof s.quiz === "string" ? s.quiz : undefined,
   }),
   component: ReportPage,
 });
@@ -101,6 +103,26 @@ const dimensions: Dimension[] = [
       "说人话：别人愿意找你要温度和主意，但你回到房间会把每句话重放一遍。这个落差是你的燃料，不是缺陷 —— 只需要留出独处时间充电。",
     ],
     viz: "zodiac",
+    details: [
+      {
+        label: ["Character strengths", "性格优势"],
+        items: [
+          ["Natural warmth that mobilises others quickly", "自带温度，能迅速调动他人"],
+          ["High standards applied first to yourself", "对自己先严格，再对世界温柔"],
+          ["Fast pattern recognition across people and ideas", "在人与想法之间快速识别模式"],
+          ["Recovers meaning from setbacks better than most", "从挫折中重新提炼意义的能力，强于常人"],
+        ],
+      },
+      {
+        label: ["Watch-outs to guard", "需要注意的地方"],
+        items: [
+          ["Over-thinking after intense social hours", "高强度社交后，容易过度复盘"],
+          ["Confusing self-critique with self-improvement", "把自我批评误当成自我成长"],
+          ["Saying yes too fast when admired", "被欣赏时，容易过快答应"],
+          ["Neglecting rest when momentum feels good", "势头正好时，最容易忽略休息"],
+        ],
+      },
+    ],
   },
   {
     key: "vocation",
@@ -306,6 +328,26 @@ const dimensions: Dimension[] = [
       "说人话：无论职位叫什么，你真正在做的一直是把一个世界解释给另一个世界听 —— 中西之间、专家与小白之间、旧与新之间。你最有生命力的时刻，通常都是在为某人翻译某件事。",
     ],
     viz: "zodiac",
+    details: [
+      {
+        label: ["Will unfold — nearly certain", "一定会发生的事"],
+        items: [
+          ["A public-facing role that requires you to explain", "一份让你面向公众解释事物的角色"],
+          ["Living or working across at least two cultures", "至少一次跨越两种文化的生活或工作"],
+          ["An audience that gathers around your voice", "会有一群人，围绕你的声音聚集起来"],
+          ["A late-career reinvention around meaning", "职业中后期，围绕「意义」的一次重塑"],
+        ],
+      },
+      {
+        label: ["Potential crises to prepare for", "潜在的危机"],
+        items: [
+          ["Burnout from over-explaining yourself to skeptics", "把自己反复解释给不理解的人 —— 累到耗尽"],
+          ["Identity drift when the audience grows faster than you do", "受众成长快过自我，容易身份漂移"],
+          ["A midlife crossroads: prestige vs. mission — choose mission", "中年岔口：名声与使命之间 —— 选使命"],
+          ["Isolation in the year you break through — build a small trusted circle early", "突破的那一年容易孤立 —— 提早养一个小而可信的圈子"],
+        ],
+      },
+    ],
   },
 ];
 
@@ -362,6 +404,18 @@ function ReportPage() {
           <p className="mt-8 text-[10px] uppercase tracking-[0.4em] text-stone-warm/40">
             {[search.date, search.time, search.place].filter(Boolean).join(" · ")}
           </p>
+        )}
+        {search.quiz && search.quiz.length >= 5 && (
+          <div className="mx-auto mt-10 max-w-2xl rounded-2xl border border-gold-dust/25 bg-gold-dust/[0.05] px-6 py-4">
+            <p className="mb-1 text-[10px] uppercase tracking-[0.32em] text-gold-light">
+              {lang === "zh" ? "偏差校准 · 已应用" : "Bias calibration · applied"}
+            </p>
+            <p className="text-xs leading-relaxed text-stone-warm/70">
+              {lang === "zh"
+                ? `你在开始前回答的五道题（${search.quiz.slice(0, 5).split("").join(" · ")}）已用于对四大体系的合成结果做个人化微调 —— 性格、学习、事业、情感、健康五个维度都各自被再校准了一次。`
+                : `The five questions you answered before the reading (${search.quiz.slice(0, 5).split("").join(" · ")}) have been used to personally re-tune the synthesis across character, learning, vocation, love and health.`}
+            </p>
+          </div>
         )}
       </header>
 
