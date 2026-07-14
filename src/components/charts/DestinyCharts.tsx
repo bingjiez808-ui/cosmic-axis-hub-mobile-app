@@ -407,7 +407,7 @@ function hashString(s: string): number {
   return h >>> 0;
 }
 
-function computePlanetSigns(seed: string): number[] {
+export function computePlanetSigns(seed: string): number[] {
   const base = hashString(seed || "anonymous");
   return PLANETS.map((_, i) => {
     const h = hashString(`${seed}::${PLANETS[i].key}::${base}`);
