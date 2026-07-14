@@ -153,10 +153,22 @@ function RitualPage() {
   const advance = () => {
     if (!canAdvance) return;
     if (isLast) {
+      const info = solarToLunarInfo(values.date, values.time);
       const params = new URLSearchParams({
         ...values,
         lang,
         quiz: quiz.join(""),
+        ...(info
+          ? {
+              bazi: info.bazi,
+              ganzhiYear: info.ganzhiYear,
+              ganzhiMonth: info.ganzhiMonth,
+              ganzhiDay: info.ganzhiDay,
+              ganzhiHour: info.ganzhiHour ?? "",
+              zodiac: info.zodiac,
+              lunar: info.lunarZh,
+            }
+          : {}),
       });
       navigate({ to: "/synthesis", search: () => Object.fromEntries(params) as never });
     } else {
