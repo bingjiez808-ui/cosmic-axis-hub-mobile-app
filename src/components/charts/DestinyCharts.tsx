@@ -642,6 +642,7 @@ export function NatalWheel({
               key={p.key}
               onMouseEnter={() => setHoverPlanet(i)}
               onMouseLeave={() => setHoverPlanet(null)}
+              onClick={() => onSelectPlanet?.(selectedPlanet === i ? null : i)}
               style={{ cursor: "pointer" }}
             >
               {/* tick from ring to planet */}
