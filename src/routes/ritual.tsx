@@ -116,10 +116,10 @@ function RitualPage() {
     place: "",
   });
   const [quiz, setQuiz] = useState<string[]>(["", "", "", "", ""]);
-  // 0 = language, 1 = quiz intro, 2..6 = quiz Q1..Q5, 7..10 = intake
+  // 0 = language, 1..5 = quiz Q1..Q5, 6..9 = intake
   const [step, setStep] = useState(0);
 
-  const totalSteps = 1 + 1 + QUIZ.length + 4; // 11
+  const totalSteps = 1 + QUIZ.length + 4; // 10
 
   const questionSteps: {
     key: FieldKey;
@@ -137,16 +137,13 @@ function RitualPage() {
   const progress = useMemo(() => (step + 1) / totalSteps, [step, totalSteps]);
   const isLast = step === totalSteps - 1;
   const isLanguageStep = step === 0;
-  const isQuizIntro = step === 1;
-  const isQuizStep = step >= 2 && step <= 1 + QUIZ.length;
-  const quizIdx = isQuizStep ? step - 2 : -1;
-  const isIntakeStep = step >= 2 + QUIZ.length;
-  const intakeIdx = isIntakeStep ? step - (2 + QUIZ.length) : -1;
+  const isQuizStep = step >= 1 && step <= QUIZ.length;
+  const quizIdx = isQuizStep ? step - 1 : -1;
+  const isIntakeStep = step >= 1 + QUIZ.length;
+  const intakeIdx = isIntakeStep ? step - (1 + QUIZ.length) : -1;
   const currentQ = isIntakeStep ? questionSteps[intakeIdx] : null;
 
   const canAdvance = isLanguageStep
-    ? true
-    : isQuizIntro
     ? true
     : isQuizStep
     ? !!quiz[quizIdx]
@@ -181,13 +178,36 @@ function RitualPage() {
       </div>
 
       <div className="relative z-10 w-full max-w-2xl text-center">
-        {/* Progress */}
-        <div className="mb-14 flex items-center justify-center gap-2">
-          {Array.from({ length: totalSteps }).map((_, i) => (
+        {/* Progress — language dot · single quiz bar (5 segs) · intake dots */}
+        <div className="mb-14 flex items-center justify-center gap-3">
+          {/* language */}
+          <div
+            className={`h-px transition-all duration-700 ${
+              step >= 0 ? "w-10 bg-gold-dust" : "w-6 bg-white/15"
+            }`}
+          />
+          <span className="text-[8px] uppercase tracking-[0.32em] text-stone-warm/30">·</span>
+          {/* single 5-segment quiz bar */}
+          <div className="flex overflow-hidden rounded-full border border-white/10">
+            {Array.from({ length: QUIZ.length }).map((_, i) => {
+              const reached = step >= 1 + i;
+              return (
+                <div
+                  key={i}
+                  className={`h-1.5 w-6 border-r border-white/10 last:border-r-0 transition-all duration-500 ${
+                    reached ? "bg-gold-dust" : "bg-white/[0.04]"
+                  }`}
+                />
+              );
+            })}
+          </div>
+          <span className="text-[8px] uppercase tracking-[0.32em] text-stone-warm/30">·</span>
+          {/* intake dots */}
+          {Array.from({ length: 4 }).map((_, i) => (
             <div
               key={i}
               className={`h-px transition-all duration-700 ${
-                i <= step ? "w-10 bg-gold-dust" : "w-6 bg-white/15"
+                step >= 1 + QUIZ.length + i ? "w-10 bg-gold-dust" : "w-6 bg-white/15"
               }`}
             />
           ))}
@@ -251,43 +271,28 @@ function RitualPage() {
               </>
             )}
 
-            {isQuizIntro && (
-              <>
-                <p className="mb-4 text-[10px] uppercase tracking-[0.42em] text-gold-dust">
-                  {lang === "zh" ? "校准 · 五题" : "Calibration · five questions"}
-                </p>
-                <h1 className="mx-auto mb-6 max-w-xl font-serif text-3xl italic leading-tight text-stone-warm md:text-5xl">
-                  {lang === "zh"
-                    ? "在读你的命盘之前，先读一读你自己。"
-                    : "Before we read your chart, let it read you."}
-                </h1>
-                <p className="mx-auto mb-4 max-w-lg text-sm leading-relaxed text-stone-warm/70">
-                  {lang === "zh"
-                    ? "接下来五题不是测验，也没有对错。它们的用意，是让 AI 在综合四大体系解读之后，能对你个人的偏差做一次微调 —— 你回答得越诚实，最终的解读就越贴近真正的你。"
-                    : "The next five questions are not a test, and there are no right answers. Their only purpose is to let the AI fine-tune the reading against your personal deviations after synthesizing the four traditions — the more honestly you answer, the closer the final reading lands to who you actually are."}
-                </p>
-                <p className="mx-auto mb-8 max-w-lg text-xs italic text-stone-warm/40">
-                  {lang === "zh"
-                    ? "问题借鉴心理学的角度设计，看起来平常，实际上在观察你处理压力、亲密与不确定性的默认方式。"
-                    : "The questions are borrowed from psychology — they look ordinary, but they quietly reveal how you handle pressure, intimacy, and uncertainty by default."}
-                </p>
-              </>
-            )}
-
             {isQuizStep && (() => {
               const q = QUIZ[quizIdx];
+              const isFirstQuiz = quizIdx === 0;
               return (
                 <>
                   <p className="mb-4 text-[10px] uppercase tracking-[0.42em] text-gold-dust">
                     {q.kicker[li]}
                   </p>
+                  {isFirstQuiz && (
+                    <p className="mx-auto mb-6 max-w-lg text-xs leading-relaxed italic text-stone-warm/60">
+                      {lang === "zh"
+                        ? "接下来五题不是测验，也没有对错 —— 只用于让 AI 在合成四大体系之后，对你个人的偏差做一次微调。"
+                        : "The next five questions aren't a test — they're used to fine-tune the AI's synthesis against your personal deviations."}
+                    </p>
+                  )}
                   <h1 className="mx-auto mb-4 max-w-xl font-serif text-2xl italic leading-tight text-stone-warm md:text-4xl">
                     {q.prompt[li]}
                   </h1>
                   <p className="mx-auto mb-10 max-w-md text-xs italic text-stone-warm/40">
                     {lang === "zh"
-                      ? "凭第一直觉选一个 —— 用于稍后对解读做偏差修正。"
-                      : "Pick the one that feels truest — used later to bias-correct your reading."}
+                      ? `${quizIdx + 1} / ${QUIZ.length} · 凭第一直觉选一个 —— 用于稍后对解读做偏差修正。`
+                      : `${quizIdx + 1} / ${QUIZ.length} · Pick what feels truest — used later to bias-correct your reading.`}
                   </p>
                   <div className="mx-auto flex max-w-lg flex-col gap-3 text-left">
                     {q.options.map((opt) => {
@@ -384,13 +389,7 @@ function RitualPage() {
                 className="group relative overflow-hidden rounded-full border border-gold-dust/40 px-10 py-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust transition-all hover:border-gold-dust disabled:cursor-not-allowed disabled:opacity-30"
               >
                 <span className="relative z-10">
-                  {isLast
-                    ? t.invoke
-                    : isQuizIntro
-                    ? lang === "zh"
-                      ? "开始五题"
-                      : "Begin the five"
-                    : t.continue}
+                  {isLast ? t.invoke : t.continue}
                 </span>
                 <span className="absolute inset-0 translate-y-full bg-gold-dust/10 transition-transform duration-500 group-hover:translate-y-0" />
               </button>

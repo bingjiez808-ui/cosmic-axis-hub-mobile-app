@@ -406,15 +406,57 @@ function ReportPage() {
           </p>
         )}
         {search.quiz && search.quiz.length >= 5 && (
-          <div className="mx-auto mt-10 max-w-2xl rounded-2xl border border-gold-dust/25 bg-gold-dust/[0.05] px-6 py-4">
-            <p className="mb-1 text-[10px] uppercase tracking-[0.32em] text-gold-light">
-              {lang === "zh" ? "偏差校准 · 已应用" : "Bias calibration · applied"}
-            </p>
-            <p className="text-xs leading-relaxed text-stone-warm/70">
+          <div className="mx-auto mt-10 max-w-2xl rounded-2xl border border-gold-dust/25 bg-gold-dust/[0.05] px-6 py-5 text-left">
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
+              <p className="text-[10px] uppercase tracking-[0.32em] text-gold-light">
+                {lang === "zh" ? "偏差校准 · 已应用" : "Bias calibration · applied"}
+              </p>
+              <a
+                href={`/ritual`}
+                className="rounded-full border border-gold-dust/40 px-3 py-1 text-[10px] uppercase tracking-[0.28em] text-gold-dust transition-colors hover:bg-gold-dust/10"
+              >
+                {lang === "zh" ? "重新校准" : "Re-calibrate"}
+              </a>
+            </div>
+            <p className="mb-3 text-xs leading-relaxed text-stone-warm/70">
               {lang === "zh"
-                ? `你在开始前回答的五道题（${search.quiz.slice(0, 5).split("").join(" · ")}）已用于对四大体系的合成结果做个人化微调 —— 性格、学习、事业、情感、健康五个维度都各自被再校准了一次。`
-                : `The five questions you answered before the reading (${search.quiz.slice(0, 5).split("").join(" · ")}) have been used to personally re-tune the synthesis across character, learning, vocation, love and health.`}
+                ? "你在开始前回答的五道题已用于对四大体系的合成结果做个人化微调 —— 以下是每个维度的校准影响："
+                : "The five questions you answered have re-tuned the synthesis. Here is the impact per dimension:"}
             </p>
+            <ul className="grid grid-cols-1 gap-2 md:grid-cols-2">
+              {(() => {
+                const labels: [string, string][] = [
+                  ["Character 性格", "性格"],
+                  ["Learning 学习", "学习"],
+                  ["Vocation 事业", "事业"],
+                  ["Love 情感", "情感"],
+                  ["Health 健康", "健康"],
+                ];
+                const bumpMap: Record<string, [string, string]> = {
+                  A: ["+ inward · reflective bias", "内向反思偏移"],
+                  B: ["+ structure · planning bias", "结构与计划偏移"],
+                  C: ["+ social · external bias", "社会外向偏移"],
+                  D: ["+ observer · adaptive bias", "观察适应偏移"],
+                };
+                return labels.map(([en, zh], i) => {
+                  const ans = search.quiz!.charAt(i) || "—";
+                  const bump = bumpMap[ans] ?? ["— neutral", "中性"];
+                  return (
+                    <li
+                      key={en}
+                      className="flex items-center justify-between gap-2 rounded-xl border border-white/5 bg-white/[0.02] px-3 py-2 text-[11px] text-stone-warm/70"
+                    >
+                      <span className="uppercase tracking-[0.22em] text-stone-warm/50">
+                        {lang === "zh" ? zh : en.split(" ")[0]}
+                      </span>
+                      <span className="text-gold-light">
+                        {ans} · {lang === "zh" ? bump[1] : bump[0]}
+                      </span>
+                    </li>
+                  );
+                });
+              })()}
+            </ul>
           </div>
         )}
       </header>
