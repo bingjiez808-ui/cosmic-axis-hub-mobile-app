@@ -9,6 +9,7 @@ import {
   StrengthRadar,
   ZODIAC_SIGNS,
   computePlanetSigns,
+  houseForSign,
 } from "@/components/charts/DestinyCharts";
 import {
   FutureWatchlist,
