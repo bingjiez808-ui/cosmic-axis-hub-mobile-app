@@ -7,6 +7,7 @@ import jyotishImg from "@/assets/tradition-jyotish.jpg";
 import baziImg from "@/assets/tradition-bazi.jpg";
 import ziweiImg from "@/assets/tradition-ziwei.jpg";
 import treeImg from "@/assets/tree-of-destiny.jpg";
+import { TraditionModal, type TraditionId } from "@/components/TraditionModal";
 import { useLang } from "@/lib/i18n";
 
 export const Route = createFileRoute("/")({
@@ -314,6 +315,7 @@ function FocusComparison() {
 
 function LandingPage() {
   const { t } = useLang();
+  const [openTradition, setOpenTradition] = useState<TraditionId | null>(null);
   return (
     <>
       {/* ─────────── HERO ─────────── */}
@@ -406,13 +408,16 @@ function LandingPage() {
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
           {traditions.map((tr, i) => (
-            <motion.div
+            <motion.button
               key={tr.id}
+              type="button"
+              onClick={() => setOpenTradition(tr.id as TraditionId)}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-80px" }}
               transition={{ duration: 0.8, delay: i * 0.12, ease: [0.32, 0.72, 0, 1] }}
-              className={`glass-card group relative flex h-[520px] flex-col overflow-hidden rounded-3xl p-6 transition-colors duration-700 hover:border-gold-dust/40 ${i % 2 === 1 ? "lg:mt-12" : ""}`}
+              className={`glass-card group relative flex h-[520px] cursor-pointer flex-col overflow-hidden rounded-3xl p-6 text-left transition-colors duration-700 hover:border-gold-dust/40 focus:outline-none focus-visible:border-gold-dust ${i % 2 === 1 ? "lg:mt-12" : ""}`}
+              aria-label={`Open ${tr.title} details`}
             >
               <div className="mb-6 aspect-square overflow-hidden rounded-2xl bg-white/5">
                 <img
@@ -437,7 +442,7 @@ function LandingPage() {
                   →
                 </div>
               </div>
-            </motion.div>
+            </motion.button>
           ))}
         </div>
       </section>
@@ -533,6 +538,8 @@ function LandingPage() {
           </span>
         </Link>
       </section>
+
+      <TraditionModal id={openTradition} onClose={() => setOpenTradition(null)} />
     </>
   );
 }
