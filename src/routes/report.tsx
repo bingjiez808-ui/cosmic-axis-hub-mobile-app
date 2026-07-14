@@ -126,9 +126,27 @@ const dimensions: Dimension[] = [
       "说人话：脚本固定的打卡工作会磨光你的电。你更适合当规则制定者 —— 管理、创业、教学、研究。不必为讨厌纯执行的岗位而内疚，你的盘确实不契合它。",
     ],
     viz: "radar",
+    details: [
+      {
+        label: ["Suitable industries", "适合的行业"],
+        items: [
+          ["Education, publishing, media", "教育 · 出版 · 媒体"],
+          ["Technology · product · design", "科技 · 产品 · 设计"],
+          ["Consulting · research · strategy", "咨询 · 研究 · 战略"],
+          ["Culture, translation, cross-border", "文化 · 翻译 · 跨境"],
+        ],
+      },
+      {
+        label: ["Roles that fit", "适配的岗位"],
+        items: [
+          ["Founder / co-founder", "创始人 / 联合创始人"],
+          ["Head of product · head of research", "产品负责人 · 研究负责人"],
+          ["Editor-in-chief · lead teacher", "主编 · 首席讲师"],
+          ["Independent expert / advisor", "独立专家 / 顾问"],
+        ],
+      },
+    ],
   },
-  {
-    key: "wealth",
     title: ["Wealth", "财富格局"],
     headline: [
       "Built over cycles, not seasons",
