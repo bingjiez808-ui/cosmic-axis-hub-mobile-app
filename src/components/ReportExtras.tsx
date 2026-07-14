@@ -749,8 +749,9 @@ type PayMethod = "wechat" | "alipay" | "visa";
 export function MembershipSection({ birthISO }: { birthISO?: string } = {}) {
   const { lang, t } = useLang();
   const li = lang === "zh" ? 1 : 0;
-  const { account } = useAccount();
-  const [plan, setPlan] = useState<Plan>("free");
+  const { account, setPlan: persistPlan } = useAccount();
+  const plan: Plan = (account?.plan ?? "free") as Plan;
+  const setPlan = (p: Plan) => persistPlan(p);
   const [chatOpen, setChatOpen] = useState(false);
   const [upgradeTarget, setUpgradeTarget] = useState<Plan | null>(null);
   const [signInPrompt, setSignInPrompt] = useState(false);
@@ -1513,6 +1514,122 @@ export function SynastryPreview() {
             <p className="mt-6 font-serif text-lg italic leading-relaxed text-stone-warm/85">
               {verdict[li]}
             </p>
+
+            {/* Four-tradition breakdown */}
+            <div className="mt-8 border-t border-gold-dust/20 pt-6">
+              <p className="mb-4 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+                {lang === "zh" ? "四种传统 · 四个角度" : "Four traditions · four angles"}
+              </p>
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                {(() => {
+                  const j = (n: number) => Math.round(45 + ((score * 1000 + n * 997) % 45));
+                  const traditions: {
+                    tag: [string, string];
+                    title: [string, string];
+                    body: [string, string];
+                    score: number;
+                  }[] = [
+                    {
+                      tag: ["Western Astrology", "西方星盘"],
+                      title: ["Chart-to-chart aspects", "两盘相位对话"],
+                      body: [
+                        "Sun–Moon midpoints sit within a soft trine — the day-to-day emotional weather aligns more than it clashes; friction lives in the Mars–Venus square, mostly about pace of intimacy.",
+                        "太阳—月亮中点落于柔和三分相 —— 日常情绪同频多于对撞；摩擦来自火星—金星四分相，主要是「亲密节奏」的差异。",
+                      ],
+                      score: j(1),
+                    },
+                    {
+                      tag: ["Vedic / Jyotish", "印度占星"],
+                      title: ["Kuta compatibility · Nakshatra fit", "Kuta 契合 · 二十七宿"],
+                      body: [
+                        "Ashtakoot-style score points to strong Bhakoot and Nadi channels — the karmic thread is long, though the Gana axis warns of temperament mismatches under stress.",
+                        "八项契合（Ashtakoot）中 Bhakoot 与 Nadi 通道良好 —— 因缘线较长；但 Gana 轴提示：压力下的性情差异需要留意。",
+                      ],
+                      score: j(2),
+                    },
+                    {
+                      tag: ["BaZi 八字", "八字合婚"],
+                      title: ["Day-master resonance · Ten Gods", "日主呼应 · 十神关系"],
+                      body: [
+                        "Day-masters form a partial 合 (union) with light 冲 in the branch — the pair helps each other's Useful God, but a shared 忌神 in the month pillar flags recurring money-topic arguments.",
+                        "两方日主见「合」并微「冲」—— 彼此可扶用神；但月柱有共同忌神，暗示围绕「钱」的话题反复出现分歧。",
+                      ],
+                      score: j(3),
+                    },
+                    {
+                      tag: ["Zi Wei 紫微斗数", "紫微斗数"],
+                      title: ["Palace overlay · Star transfers", "宫位叠合 · 星曜互飞"],
+                      body: [
+                        "Your 夫妻宫 receives their 命宫 主星 — a deep pull toward long-form partnership; but 化忌 lands in 财帛宫, so joint decisions about money and property will be the recurring test.",
+                        "对方命宫主星飞入你的夫妻宫 —— 长期伴侣式的深度拉力；化忌落在财帛宫，因此关于「共同金钱与财产」的决定会是反复出现的考验。",
+                      ],
+                      score: j(4),
+                    },
+                  ];
+                  return traditions.map((tr) => (
+                    <div
+                      key={tr.tag[0]}
+                      className="rounded-2xl border border-white/10 bg-white/[0.02] p-4"
+                    >
+                      <div className="mb-2 flex items-center justify-between gap-2">
+                        <p className="text-[9px] uppercase tracking-[0.28em] text-gold-dust/70">
+                          {tr.tag[li]}
+                        </p>
+                        <span className="rounded-full border border-gold-dust/30 px-2 py-0.5 text-[9px] text-gold-light">
+                          {tr.score}
+                        </span>
+                      </div>
+                      <p className="mb-1 font-serif text-sm italic text-stone-warm">{tr.title[li]}</p>
+                      <p className="text-[12px] leading-relaxed text-stone-warm/65">{tr.body[li]}</p>
+                    </div>
+                  ));
+                })()}
+              </div>
+            </div>
+
+            {/* Recent-relationship read */}
+            <div className="mt-6 rounded-2xl border border-nebula-purple/30 bg-nebula-purple/[0.08] p-5">
+              <p className="mb-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+                {lang === "zh" ? "最近这段关系 · 现况解读" : "Recent state of the bond"}
+              </p>
+              <ul className="space-y-2 text-sm text-stone-warm/80">
+                <li>
+                  <span className="text-gold-light">
+                    {lang === "zh" ? "近 30 天基调：" : "Last 30 days · tone: "}
+                  </span>
+                  {lang === "zh"
+                    ? "沟通密度较前 90 天上升，但深度略降 —— 更多「日常报备」，更少「真心话」。"
+                    : "Contact frequency rose vs. the prior 90 days, but depth dipped — more logistics, fewer core conversations."}
+                </li>
+                <li>
+                  <span className="text-gold-light">
+                    {lang === "zh" ? "情绪流向：" : "Emotional flow: "}
+                  </span>
+                  {lang === "zh"
+                    ? "你付出较多情绪劳动，对方处于「回应模式」而非「主动模式」；不是不在意，是节奏差异。"
+                    : "You're carrying more emotional labour; they're in response-mode rather than initiator-mode — not disengagement, a rhythm gap."}
+                </li>
+                <li>
+                  <span className="text-gold-light">
+                    {lang === "zh" ? "关键节点：" : "Key inflection: "}
+                  </span>
+                  {lang === "zh"
+                    ? "未来 2–3 周会出现一次「小误会 / 小承诺」，处理得当会成为信任跃迁点。"
+                    : "A small misunderstanding or small promise will surface in the next 2–3 weeks — handled well, it becomes a trust jump."}
+                </li>
+                <li>
+                  <span className="text-gold-light">
+                    {lang === "zh" ? "建议动作：" : "Suggested move: "}
+                  </span>
+                  {lang === "zh"
+                    ? "主动发起一次不为「解决问题」的对话 —— 只交换感受，不做决策。"
+                    : "Initiate one conversation that isn't about solving anything — exchange feelings, defer decisions."}
+                </li>
+              </ul>
+              <p className="mt-3 text-[10px] uppercase tracking-[0.28em] text-stone-warm/40">
+                {lang === "zh" ? "以上仅供参考，请以真实相处为准。" : "For reference only — trust lived experience."}
+              </p>
+            </div>
           </motion.div>
         )}
       </div>
@@ -1649,6 +1766,140 @@ export function RecentWindows({ birthISO }: { birthISO?: string }) {
             </li>
           ))}
         </ol>
+
+        {/* Detailed four-dimension guidance */}
+        <div className="mt-10">
+          <p className="mb-4 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+            {lang === "zh" ? "四大维度 · 分点提醒" : "Four life dimensions · pointed guidance"}
+          </p>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {(() => {
+              const dims: {
+                icon: string;
+                title: [string, string];
+                points: [string, string][];
+                cautions: [string, string][];
+                mitigations: [string, string][];
+              }[] = [
+                {
+                  icon: "◈",
+                  title: ["Career 事业", "事业"],
+                  points: [
+                    ["Signal week (Days 1–6) — respond fast to inbound messages; a late reply now costs a slot later.", "信号周（第 1–6 天）—— 对主动找来的信息尽快回应；此时的迟回，往后会失去一个位子。"],
+                    ["A negotiation window opens around Day 25–35 — prepare numbers, not emotion.", "第 25–35 天出现谈判窗口 —— 准备数字，不是情绪。"],
+                    ["Public-facing move (pitch/interview/launch) best placed Day 46–65.", "对外展示（提案 / 面试 / 上线）最佳窗口在第 46–65 天。"],
+                  ],
+                  cautions: [
+                    ["Avoid signing multi-year commitments in the mid-window energy dip (Day 10–18).", "第 10–18 天能量低谷期，避免签署多年期承诺。"],
+                    ["Don't argue over Slack/WeChat; misread tone triggers a small-but-lasting rupture.", "别在即时消息中争论；此期语气容易误读，会留下小而持久的裂痕。"],
+                  ],
+                  mitigations: [
+                    ["Draft, then wait 12h before sending anything with financial stakes.", "涉及金钱的内容，写完先搁置 12 小时再发送。"],
+                    ["Book one buffer day per week — used for cleanup, not new commitments.", "每周留一天缓冲日 —— 用来收尾，不接新承诺。"],
+                  ],
+                },
+                {
+                  icon: "✎",
+                  title: ["Study 学业", "学业"],
+                  points: [
+                    ["Retention is sharper in the first 20 days — front-load memorization / core concepts here.", "前 20 天记忆更清晰 —— 把背诵与核心概念放在前段。"],
+                    ["Day 21–45 favours synthesis: essays, coding projects, revision of frameworks.", "第 21–45 天利于综合：写作、项目、框架复盘。"],
+                    ["Day 60+ is a good window to seek feedback from a mentor or peer group.", "第 60 天后适合主动寻求导师或同伴反馈。"],
+                  ],
+                  cautions: [
+                    ["Avoid switching study methods mid-window — the chart favours consistency now.", "本季不宜频繁更换学习方法 —— 命盘偏爱稳定。"],
+                    ["Late-night marathon sessions after Day 40 will silently erode focus for a week after.", "第 40 天后的熬夜冲刺，会在其后一周悄悄侵蚀专注力。"],
+                  ],
+                  mitigations: [
+                    ["Fixed 90-min blocks + 20-min walk beats variable-length sprints for this window.", "本窗口内，「90 分钟固定 + 20 分钟散步」优于「不定长冲刺」。"],
+                    ["Weekly one-page written recap; unwritten knowledge doesn't stick this season.", "每周一页手写复盘；本季未落笔的知识不易内化。"],
+                  ],
+                },
+                {
+                  icon: "❥",
+                  title: ["Love 爱情", "爱情"],
+                  points: [
+                    ["Existing bonds: a postponed conversation becomes unavoidable around Day 46–70.", "既有关系：第 46–70 天，一次拖延的对话变得不可回避。"],
+                    ["Single: a real (non-lightning) connection appears via a shared-interest context, not apps.", "单身：真正的连结（非闪电式）出现在共同兴趣场景，而非软件。"],
+                    ["Physical warmth and small rituals matter more than grand statements this season.", "本季，身体温度与小仪式，比宏大宣言更重要。"],
+                  ],
+                  cautions: [
+                    ["Don't restart with an old ex during Day 7–20 nostalgia dip — it's memory, not signal.", "第 7–20 天的怀旧低谷中，避免与旧人重启 —— 那是记忆，不是信号。"],
+                    ["Avoid confessing during the mid-window emotional trough; wait for the rebound.", "情绪中段低谷，不宜表白；等回弹再说。"],
+                  ],
+                  mitigations: [
+                    ["Name feelings without demanding decisions — one honest 5-min talk beats a 2-hour spiral.", "只命名感受，不索取决定 —— 一次 5 分钟的诚实，胜过 2 小时的绕圈。"],
+                    ["Screen new interests against 3 concrete behaviours, not vibes.", "用 3 条具体行为检验新对象，而非「感觉」。"],
+                  ],
+                },
+                {
+                  icon: "✦",
+                  title: ["Health 健康", "健康"],
+                  points: [
+                    ["Vitality peaks in the last window (Day 60+) — reserve one physical challenge for it.", "元气在最后一个窗口（第 60 天后）到达峰值 —— 把一次身体挑战留到那时。"],
+                    ["Sleep architecture matters more than sleep length this season.", "本季，睡眠结构比睡眠长度更重要。"],
+                    ["Digestive system is the weak link now — the chart flags stomach / liver signals.", "消化系统是当前的薄弱环节 —— 命盘提示肠胃 / 肝气讯号。"],
+                  ],
+                  cautions: [
+                    ["Avoid new stimulants (strong caffeine, extreme cuts) during Day 10–25.", "第 10–25 天，避免新的刺激物（浓咖啡 / 极端节食）。"],
+                    ["Ignoring a small recurring pain now compounds into a Day 60+ setback.", "现在忽视一处反复的小痛，会在第 60 天后放大成阻碍。"],
+                  ],
+                  mitigations: [
+                    ["Fixed sleep window (±30 min) protects mood, focus, and skin this season.", "固定睡眠窗口（前后 30 分钟内），本季能同时护住情绪、专注与皮肤。"],
+                    ["One warm meal per day + a 20-min walk after dinner — small, non-negotiable.", "每日一顿温热正餐 + 饭后 20 分钟步行 —— 小而不可让步。"],
+                  ],
+                },
+              ];
+              return dims.map((d) => (
+                <div
+                  key={d.title[0]}
+                  className="rounded-2xl border border-gold-dust/20 bg-white/[0.02] p-5"
+                >
+                  <div className="mb-3 flex items-center gap-2">
+                    <span className="text-lg text-gold-light">{d.icon}</span>
+                    <p className="font-serif text-lg italic text-stone-warm">{d.title[li]}</p>
+                  </div>
+                  <p className="mb-1 text-[10px] uppercase tracking-[0.28em] text-gold-dust/70">
+                    {lang === "zh" ? "关键提示" : "Key signals"}
+                  </p>
+                  <ul className="mb-3 space-y-1.5 text-[13px] leading-relaxed text-stone-warm/75">
+                    {d.points.map((p, i) => (
+                      <li key={i} className="flex gap-2">
+                        <span className="text-gold-dust/70">·</span>
+                        <span>{p[li]}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mb-1 text-[10px] uppercase tracking-[0.28em] text-nebula-purple/80">
+                    {lang === "zh" ? "注意事项" : "Cautions"}
+                  </p>
+                  <ul className="mb-3 space-y-1.5 text-[13px] leading-relaxed text-stone-warm/70">
+                    {d.cautions.map((p, i) => (
+                      <li key={i} className="flex gap-2">
+                        <span className="text-nebula-purple/80">△</span>
+                        <span>{p[li]}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mb-1 text-[10px] uppercase tracking-[0.28em] text-gold-light/80">
+                    {lang === "zh" ? "规避方式" : "Mitigations"}
+                  </p>
+                  <ul className="space-y-1.5 text-[13px] leading-relaxed text-stone-warm/70">
+                    {d.mitigations.map((p, i) => (
+                      <li key={i} className="flex gap-2">
+                        <span className="text-gold-light/80">✓</span>
+                        <span>{p[li]}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ));
+            })()}
+          </div>
+          <p className="mt-4 text-[10px] uppercase tracking-[0.28em] text-stone-warm/40">
+            {lang === "zh" ? "以上均为命盘趋势参考 · 请结合自身判断" : "Trend reference only · combine with your own judgement"}
+          </p>
+        </div>
       </div>
     </section>
   );

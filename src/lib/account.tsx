@@ -6,7 +6,9 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
  * is deliberately small so it maps cleanly.
  */
 
-export type Account = { name: string; email: string };
+export type Plan = "free" | "sage" | "oracle";
+
+export type Account = { name: string; email: string; plan?: Plan };
 
 export type SavedReading = {
   id: string;
@@ -22,6 +24,7 @@ type Ctx = {
   account: Account | null;
   signIn: (a: Account) => void;
   signOut: () => void;
+  setPlan: (p: Plan) => void;
   saved: SavedReading[];
   saveReading: (r: Omit<SavedReading, "id" | "createdAt">) => void;
   removeReading: (id: string) => void;
@@ -46,10 +49,21 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn = (a: Account) => {
-    setAccount(a);
+    const withPlan: Account = { plan: "free", ...a };
+    setAccount(withPlan);
     try {
-      localStorage.setItem(ACC_KEY, JSON.stringify(a));
+      localStorage.setItem(ACC_KEY, JSON.stringify(withPlan));
     } catch {}
+  };
+  const setPlan = (p: Plan) => {
+    setAccount((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev, plan: p };
+      try {
+        localStorage.setItem(ACC_KEY, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
   };
   const signOut = () => {
     setAccount(null);
@@ -81,7 +95,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   const removeReading = (id: string) => persist(saved.filter((s) => s.id !== id));
 
   return (
-    <AccountCtx.Provider value={{ account, signIn, signOut, saved, saveReading, removeReading }}>
+    <AccountCtx.Provider value={{ account, signIn, signOut, setPlan, saved, saveReading, removeReading }}>
       {children}
     </AccountCtx.Provider>
   );
