@@ -677,24 +677,26 @@ export function NatalWheel({
   const activeSign =
     hoverSign ?? (activePlanet != null ? signs[activePlanet] : null);
 
+  // Ascendant is the second-to-last entry in PLANETS.
+  const ascSign = signs[PLANETS.findIndex((p) => p.key === "asc")] ?? 0;
+
   const centerContent = (() => {
     if (activePlanet != null) {
       const p = PLANETS[activePlanet];
       const s = ZODIAC[signs[activePlanet]];
+      const house = houseForSign(signs[activePlanet], ascSign);
       return (
         <>
-          <p className="text-[10px] uppercase tracking-[0.4em] text-gold-dust/70">
+          <p className="text-[9px] uppercase tracking-[0.32em] text-gold-dust/70">
             {p.name[lang === "zh" ? 1 : 0]}
           </p>
-          <p className="mt-2 font-serif text-4xl italic text-gold-light">{p.glyph}</p>
-          <p className="mt-3 text-[10px] uppercase tracking-[0.32em] text-stone-warm/60">
-            {lang === "zh" ? "落于" : "in"}
+          <p className="mt-1 font-serif text-3xl italic text-gold-light">{p.glyph}</p>
+          <p className="mt-2 font-serif text-lg italic text-stone-warm">
+            <span className="text-gold-light">{s.g}</span>{" "}
+            {lang === "zh" ? s.zh : s.en}
           </p>
-          <p className="mt-1 font-serif text-2xl italic text-stone-warm">
-            {s.g} {lang === "zh" ? s.zh : s.en}
-          </p>
-          <p className="mx-6 mt-3 text-xs leading-relaxed text-stone-warm/60">
-            {p.meaning[lang === "zh" ? 1 : 0]}
+          <p className="mt-1 text-[9px] uppercase tracking-[0.28em] text-stone-warm/50">
+            {lang === "zh" ? `第 ${house} 宫` : `House ${house}`}
           </p>
         </>
       );
@@ -702,22 +704,23 @@ export function NatalWheel({
     if (activeSign != null) {
       const s = ZODIAC[activeSign];
       const inhabitants = (bySign[activeSign] ?? []).map((pi) => PLANETS[pi]);
+      const house = houseForSign(activeSign, ascSign);
       return (
         <>
-          <p className="text-[10px] uppercase tracking-[0.4em] text-gold-dust/70">
-            {lang === "zh" ? "宫位" : "House"}
+          <p className="text-[9px] uppercase tracking-[0.32em] text-gold-dust/70">
+            {lang === "zh" ? `第 ${house} 宫` : `House ${house}`}
           </p>
-          <p className="mt-2 font-serif text-3xl italic text-stone-warm">
+          <p className="mt-2 font-serif text-2xl italic text-stone-warm">
             {lang === "zh" ? s.zh : s.en}
           </p>
-          <p className="mt-1 text-4xl text-gold-light">{s.g}</p>
+          <p className="mt-1 text-3xl text-gold-light">{s.g}</p>
           {inhabitants.length > 0 ? (
-            <p className="mx-4 mt-3 text-xs uppercase tracking-[0.24em] text-gold-dust/80">
-              {inhabitants.map((p) => `${p.glyph} ${p.name[lang === "zh" ? 1 : 0]}`).join(" · ")}
+            <p className="mx-2 mt-2 text-[10px] uppercase tracking-[0.2em] text-gold-dust/80">
+              {inhabitants.map((p) => p.glyph).join(" · ")}
             </p>
           ) : (
-            <p className="mt-3 text-[10px] uppercase tracking-[0.28em] text-stone-warm/40">
-              {lang === "zh" ? "此宫空落" : "empty house"}
+            <p className="mt-2 text-[9px] uppercase tracking-[0.24em] text-stone-warm/40">
+              {lang === "zh" ? "此宫空落" : "empty"}
             </p>
           )}
         </>
