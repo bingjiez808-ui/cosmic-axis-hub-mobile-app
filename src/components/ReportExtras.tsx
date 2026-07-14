@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLang, type Lang } from "@/lib/i18n";
 import { useAccount } from "@/lib/account";
@@ -1403,6 +1403,25 @@ function AIFollowupModal({
     }, 900);
   };
 
+  // Typewriter reveal for oracle messages so the reply feels like handwriting.
+  const [reveal, setReveal] = useState<Record<number, number>>({});
+  useEffect(() => {
+    const idx = thread.length - 1;
+    if (idx < 0) return;
+    const m = thread[idx];
+    if (m.role !== "oracle") return;
+    if (reveal[idx] != null && reveal[idx] >= m.text.length) return;
+    let i = reveal[idx] ?? 0;
+    const total = m.text.length;
+    const id = setInterval(() => {
+      i = Math.min(total, i + 3);
+      setReveal((r) => ({ ...r, [idx]: i }));
+      if (i >= total) clearInterval(id);
+    }, 22);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [thread.length]);
+
   return (
     <AnimatePresence>
       {open && (
@@ -1410,94 +1429,227 @@ function AIFollowupModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[60] flex items-end justify-center bg-obsidian/70 backdrop-blur-md md:items-center"
+          transition={{ duration: 0.5 }}
+          className="fixed inset-0 z-[70] flex flex-col overflow-hidden bg-[#0a0705]"
           onClick={onClose}
         >
+          {/* Ambient library scene */}
+          <div className="pointer-events-none absolute inset-0">
+            {/* Warm candle glow behind the elder */}
+            <motion.div
+              aria-hidden
+              initial={{ opacity: 0 }}
+              animate={{ opacity: [0.55, 0.75, 0.55] }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+              className="absolute left-1/2 top-[18%] h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(212,163,72,0.35),rgba(212,163,72,0.08)_45%,transparent_70%)] blur-2xl"
+            />
+            {/* Bookshelf silhouette */}
+            <svg
+              aria-hidden
+              viewBox="0 0 1200 800"
+              preserveAspectRatio="xMidYMid slice"
+              className="absolute inset-0 h-full w-full opacity-[0.28]"
+            >
+              <defs>
+                <linearGradient id="shelf" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0" stopColor="#3a2a17" />
+                  <stop offset="1" stopColor="#0a0705" />
+                </linearGradient>
+              </defs>
+              {Array.from({ length: 6 }).map((_, row) => (
+                <g key={row} transform={`translate(0 ${80 + row * 110})`}>
+                  <rect x="0" y="70" width="1200" height="6" fill="#5b3d1e" opacity="0.6" />
+                  {Array.from({ length: 40 }).map((__, i) => {
+                    const h = 40 + ((i * 37 + row * 11) % 30);
+                    const w = 12 + ((i * 13 + row * 7) % 10);
+                    const hue = 25 + ((i + row) % 6) * 6;
+                    return (
+                      <rect
+                        key={i}
+                        x={10 + i * 30}
+                        y={70 - h}
+                        width={w}
+                        height={h}
+                        fill={`hsl(${hue} 40% ${14 + ((i + row) % 5) * 3}%)`}
+                        stroke="#000"
+                        strokeOpacity="0.4"
+                      />
+                    );
+                  })}
+                </g>
+              ))}
+            </svg>
+            {/* Floating dust motes */}
+            {Array.from({ length: 18 }).map((_, i) => (
+              <motion.span
+                key={i}
+                aria-hidden
+                initial={{ opacity: 0, y: 0 }}
+                animate={{
+                  opacity: [0, 0.7, 0],
+                  y: [0, -60 - (i % 6) * 20, -140],
+                  x: [0, (i % 2 === 0 ? 1 : -1) * (10 + (i % 5) * 4), 0],
+                }}
+                transition={{ duration: 8 + (i % 5), repeat: Infinity, delay: i * 0.4, ease: "easeInOut" }}
+                className="absolute block size-[3px] rounded-full bg-gold-light/70"
+                style={{ left: `${(i * 53) % 100}%`, top: `${30 + (i * 17) % 60}%` }}
+              />
+            ))}
+            {/* Vignette */}
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_40%,rgba(0,0,0,0.85)_100%)]" />
+          </div>
+
+          {/* Foreground panel */}
           <motion.div
-            initial={{ opacity: 0, y: 40, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 40, scale: 0.98 }}
-            transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1] }}
-            className="glass-card relative m-0 flex max-h-[92dvh] w-full max-w-2xl flex-col rounded-t-3xl p-5 pt-16 sm:m-4 sm:max-h-[90vh] sm:rounded-3xl sm:p-6 md:p-8 md:pt-14"
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 24 }}
+            transition={{ duration: 0.55, ease: [0.32, 0.72, 0, 1] }}
+            className="relative z-10 mx-auto flex h-full w-full max-w-3xl flex-col px-4 pb-4 pt-3 sm:px-6 sm:pt-6"
             onClick={(e) => e.stopPropagation()}
           >
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label={lang === "zh" ? "关闭" : "Close"}
-              className="absolute right-3 top-3 z-10 flex h-9 items-center gap-1.5 rounded-full border border-white/15 bg-obsidian/80 px-3 text-[10px] uppercase tracking-[0.28em] text-stone-warm/70 backdrop-blur transition-colors hover:border-gold-dust/50 hover:text-gold-dust sm:right-4 sm:top-4"
-            >
-              <span aria-hidden>×</span>
-              <span>{t.mem_close}</span>
-            </button>
-            <p className="mb-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
-              {t.mem_ai_followup}
-            </p>
-            <h3 className="mb-4 pr-16 font-serif text-xl italic text-stone-warm sm:text-2xl">
-              {lang === "zh" ? "开启一场私密对话" : "Open a private conversation"}
-            </h3>
-
-            <div className="mb-4 flex-1 space-y-3 overflow-y-auto pr-1">
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-stone-warm/70">
-                {lang === "zh"
-                  ? "「你的太阳落火象、日主为阳火 —— 想追问哪一维度？」"
-                  : "\u201CYour Sun sits in Fire and your Day Master is Yang Fire — which dimension would you like to explore?\u201D"}
+            {/* Header with elder + close */}
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3 sm:gap-4">
+                {/* Elder silhouette */}
+                <motion.div
+                  aria-hidden
+                  animate={{ y: [0, -2, 0] }}
+                  transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
+                  className="relative grid size-14 shrink-0 place-items-center overflow-hidden rounded-full border border-gold-dust/40 bg-gradient-to-b from-gold-dust/25 to-obsidian/60 sm:size-16"
+                >
+                  <svg viewBox="0 0 64 64" className="size-10 sm:size-12">
+                    {/* Hooded elder */}
+                    <path d="M12 60 C 14 40, 22 30, 32 30 C 42 30, 50 40, 52 60 Z" fill="#2a1a0c" stroke="#d4a348" strokeOpacity="0.6" />
+                    <ellipse cx="32" cy="26" rx="10" ry="12" fill="#e9c88a" opacity="0.85" />
+                    <path d="M22 22 C 24 12, 40 12, 42 22 L 42 28 C 40 22, 24 22, 22 28 Z" fill="#2a1a0c" />
+                    {/* Beard */}
+                    <path d="M25 32 Q 32 46 39 32 Q 36 40 32 42 Q 28 40 25 32 Z" fill="#f0e2c2" opacity="0.9" />
+                    {/* Eyes */}
+                    <circle cx="28.5" cy="27" r="0.9" fill="#0a0705" />
+                    <circle cx="35.5" cy="27" r="0.9" fill="#0a0705" />
+                  </svg>
+                  {/* Candle flicker halo */}
+                  <motion.span
+                    animate={{ opacity: [0.4, 0.9, 0.4] }}
+                    transition={{ duration: 2.5, repeat: Infinity }}
+                    className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-gold-dust/40"
+                  />
+                </motion.div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+                    {lang === "zh" ? "神谕图书馆" : "The Oracle's Library"}
+                  </p>
+                  <h3 className="font-serif text-lg italic text-stone-warm sm:text-2xl">
+                    {lang === "zh" ? "向长者提问" : "Ask the Elder"}
+                  </h3>
+                </div>
               </div>
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label={lang === "zh" ? "关闭" : "Close"}
+                className="flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-white/15 bg-obsidian/70 px-3 text-[10px] uppercase tracking-[0.28em] text-stone-warm/70 backdrop-blur transition-colors hover:border-gold-dust/50 hover:text-gold-dust"
+              >
+                <span aria-hidden>×</span>
+                <span>{t.mem_close}</span>
+              </button>
+            </div>
+
+            {/* Conversation scroll */}
+            <div className="mt-4 flex-1 space-y-3 overflow-y-auto pr-1">
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="rounded-2xl border border-gold-dust/25 bg-gold-dust/[0.05] p-4 text-sm italic text-stone-warm/85"
+              >
+                {lang === "zh"
+                  ? "「孩子，坐下。烛火还在。你的太阳落火象、日主为阳火 —— 想追问哪一维度？」"
+                  : "\u201CChild, sit. The candle still burns. Your Sun rests in Fire, your Day Master is Yang Fire — which thread shall we pull?\u201D"}
+              </motion.div>
 
               {thread.length === 0 && (
-                <div className="rounded-2xl border border-gold-dust/20 bg-gold-dust/[0.04] p-4">
-                  <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/80">
-                    {lang === "zh" ? "参考提问 · 可点击直接发送" : "Suggested prompts · tap to send"}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                  className="rounded-2xl border border-white/10 bg-white/[0.02] p-4"
+                >
+                  <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+                    {lang === "zh" ? "从卷轴中挑一题 · 点击即问" : "Pick a scroll · tap to ask"}
                   </p>
                   <div className="flex flex-col gap-2">
-                    {prompts.map((p) => (
-                      <button
+                    {prompts.map((p, i) => (
+                      <motion.button
                         key={p[0]}
                         type="button"
                         disabled={!isOracle}
                         onClick={() => send(p[li])}
+                        initial={{ opacity: 0, x: -8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.55 + i * 0.06 }}
+                        whileHover={{ x: 2 }}
                         className="rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2 text-left text-sm text-stone-warm/80 transition hover:border-gold-dust/40 hover:bg-gold-dust/[0.06] disabled:cursor-not-allowed disabled:opacity-50"
                       >
+                        <span className="mr-2 text-gold-dust/70">§</span>
                         {p[li]}
-                      </button>
+                      </motion.button>
                     ))}
                   </div>
-                </div>
+                </motion.div>
               )}
 
-              {thread.map((m, i) => (
-                <div
-                  key={i}
-                  className={`rounded-2xl border p-4 text-sm leading-relaxed ${
-                    m.role === "user"
-                      ? "ml-8 border-gold-dust/30 bg-gold-dust/[0.08] text-stone-warm/90"
-                      : "mr-8 border-white/10 bg-white/[0.03] text-stone-warm/80"
-                  }`}
-                >
-                  <p className="mb-1 text-[9px] uppercase tracking-[0.32em] text-gold-dust/70">
-                    {m.role === "user"
-                      ? lang === "zh" ? "你" : "You"
-                      : lang === "zh" ? "神谕图书馆" : "The Library"}
-                  </p>
-                  <p className="whitespace-pre-line">{m.text}</p>
-                </div>
-              ))}
+              {thread.map((m, i) => {
+                const shown =
+                  m.role === "oracle" ? m.text.slice(0, reveal[i] ?? 0) : m.text;
+                return (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4 }}
+                    className={`rounded-2xl border p-4 text-sm leading-relaxed backdrop-blur-sm ${
+                      m.role === "user"
+                        ? "ml-8 border-gold-dust/30 bg-gold-dust/[0.10] text-stone-warm/95"
+                        : "mr-8 border-gold-dust/20 bg-[#1a1108]/70 text-stone-warm/85"
+                    }`}
+                  >
+                    <p className="mb-1 text-[9px] uppercase tracking-[0.32em] text-gold-dust/70">
+                      {m.role === "user"
+                        ? lang === "zh" ? "你" : "You"
+                        : lang === "zh" ? "长者" : "The Elder"}
+                    </p>
+                    <p className={`whitespace-pre-line ${m.role === "oracle" ? "font-serif italic" : ""}`}>
+                      {shown}
+                      {m.role === "oracle" && shown.length < m.text.length && (
+                        <span className="ml-0.5 inline-block h-[1em] w-[2px] animate-pulse bg-gold-dust align-middle" />
+                      )}
+                    </p>
+                  </motion.div>
+                );
+              })}
               {thinking && (
-                <p className="text-[11px] uppercase tracking-[0.32em] text-gold-dust/60">
-                  {lang === "zh" ? "图书馆正在翻页…" : "The library is turning pages…"}
-                </p>
+                <motion.p
+                  animate={{ opacity: [0.4, 1, 0.4] }}
+                  transition={{ duration: 1.4, repeat: Infinity }}
+                  className="text-[11px] uppercase tracking-[0.32em] text-gold-dust/70"
+                >
+                  {lang === "zh" ? "长者正在翻阅古卷…" : "The elder turns an old page…"}
+                </motion.p>
               )}
             </div>
 
             <form
               onSubmit={(e) => { e.preventDefault(); if (isOracle) send(input); }}
-              className="mb-3 flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.02] px-4 py-2"
+              className="mt-4 flex items-center gap-2 rounded-full border border-gold-dust/20 bg-obsidian/70 px-4 py-2 backdrop-blur"
             >
+              <span aria-hidden className="text-gold-dust/60">✒</span>
               <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 disabled={!isOracle}
-                placeholder={t.mem_ai_placeholder}
+                placeholder={isOracle ? t.mem_ai_placeholder : (lang === "zh" ? "升级神谕者后可提问…" : "Upgrade to Oracle to ask…")}
                 className="flex-1 bg-transparent text-sm text-stone-warm outline-none placeholder:text-stone-warm/30 disabled:cursor-not-allowed"
               />
               <button
@@ -1510,14 +1662,14 @@ function AIFollowupModal({
             </form>
 
             {!isOracle && (
-              <div className="rounded-2xl border border-gold-dust/30 bg-gold-dust/[0.06] p-5">
-                <p className="mb-4 font-serif text-base italic leading-relaxed text-stone-warm/85">
+              <div className="mt-3 rounded-2xl border border-gold-dust/30 bg-gold-dust/[0.06] p-4 backdrop-blur">
+                <p className="mb-3 font-serif text-sm italic leading-relaxed text-stone-warm/85">
                   {t.mem_ai_upsell}
                 </p>
                 <button
                   type="button"
                   onClick={onUpgrade}
-                  className="w-full rounded-full bg-gold-dust px-6 py-3 text-[10px] uppercase tracking-[0.32em] text-obsidian transition-colors hover:bg-gold-light"
+                  className="w-full rounded-full bg-gold-dust px-6 py-2.5 text-[10px] uppercase tracking-[0.32em] text-obsidian transition-colors hover:bg-gold-light"
                 >
                   {t.mem_upgrade} → {t.mem_oracle}
                 </button>
@@ -1529,6 +1681,7 @@ function AIFollowupModal({
     </AnimatePresence>
   );
 }
+
 
 
 /* ═══════════════════════════════════════════
