@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 
 import { CityCombobox } from "@/components/CityCombobox";
 import { useLang, type Lang } from "@/lib/i18n";
+import { solarToLunarInfo } from "@/lib/lunar";
 
 export const Route = createFileRoute("/ritual")({
   head: () => ({
