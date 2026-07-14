@@ -366,3 +366,365 @@ export function FiveElements({
     </svg>
   );
 }
+
+/* ─────────────────────────────────────────────────────────────
+ * NatalWheel — user's personal zodiac wheel.
+ * Each planet is placed in the sign it "falls in", derived
+ * deterministically from birth date/time/place so the same
+ * user always sees the same chart. Hovering a planet reveals
+ * which sign it sits in and a short interpretation; hovering
+ * a sign highlights the sign and the planets it holds.
+ * ────────────────────────────────────────────────────────── */
+
+type Planet = {
+  key: string;
+  glyph: string;
+  name: [string, string];
+  meaning: [string, string];
+};
+
+const PLANETS: Planet[] = [
+  { key: "sun",  glyph: "☉", name: ["Sun", "太阳"], meaning: ["core identity · what you shine as", "核心自我 · 你所闪耀的形状"] },
+  { key: "moon", glyph: "☽", name: ["Moon", "月亮"], meaning: ["inner needs · how you feel safe", "内在需要 · 你如何感到安全"] },
+  { key: "mer",  glyph: "☿", name: ["Mercury", "水星"], meaning: ["mind · how you think and speak", "心智 · 你如何思考与表达"] },
+  { key: "ven",  glyph: "♀", name: ["Venus", "金星"], meaning: ["love · what you find beautiful", "爱与美 · 你被什么吸引"] },
+  { key: "mar",  glyph: "♂", name: ["Mars", "火星"], meaning: ["drive · how you take action", "行动力 · 你如何出击"] },
+  { key: "jup",  glyph: "♃", name: ["Jupiter", "木星"], meaning: ["growth · where luck expands", "扩张 · 幸运在哪里生长"] },
+  { key: "sat",  glyph: "♄", name: ["Saturn", "土星"], meaning: ["discipline · where you must build", "纪律 · 你必须搭建之处"] },
+  { key: "asc",  glyph: "Ⓐ", name: ["Ascendant", "上升"], meaning: ["mask · how the world first sees you", "面具 · 世界如何第一眼看你"] },
+  { key: "mc",   glyph: "Ⓜ", name: ["Midheaven", "天顶"], meaning: ["calling · your public direction", "召唤 · 你的公共方向"] },
+];
+
+function hashString(s: string): number {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619) >>> 0;
+  }
+  return h >>> 0;
+}
+
+function computePlanetSigns(seed: string): number[] {
+  const base = hashString(seed || "anonymous");
+  return PLANETS.map((_, i) => {
+    const h = hashString(`${seed}::${PLANETS[i].key}::${base}`);
+    return h % 12;
+  });
+}
+
+export function NatalWheel({
+  lang = "en",
+  seed = "",
+  size = 420,
+}: {
+  lang?: "en" | "zh";
+  seed?: string;
+  size?: number;
+}) {
+  const [hoverSign, setHoverSign] = useState<number | null>(null);
+  const [hoverPlanet, setHoverPlanet] = useState<number | null>(null);
+  const signs = computePlanetSigns(seed);
+
+  const cx = size / 2;
+  const cy = size / 2;
+  const rOuter = size / 2 - 6;
+  const rSignRing = size / 2 - 40;
+  const rHouseRing = size / 2 - 80;
+  const rPlanetBase = size / 2 - 118;
+  const rInner = size / 2 - 148;
+
+  // Group planets by sign for stacking
+  const bySign: Record<number, number[]> = {};
+  signs.forEach((s, i) => {
+    bySign[s] = bySign[s] || [];
+    bySign[s].push(i);
+  });
+
+  const activePlanet = hoverPlanet;
+  const activeSign =
+    hoverSign ?? (activePlanet != null ? signs[activePlanet] : null);
+
+  const centerContent = (() => {
+    if (activePlanet != null) {
+      const p = PLANETS[activePlanet];
+      const s = ZODIAC[signs[activePlanet]];
+      return (
+        <>
+          <p className="text-[10px] uppercase tracking-[0.4em] text-gold-dust/70">
+            {p.name[lang === "zh" ? 1 : 0]}
+          </p>
+          <p className="mt-2 font-serif text-4xl italic text-gold-light">{p.glyph}</p>
+          <p className="mt-3 text-[10px] uppercase tracking-[0.32em] text-stone-warm/60">
+            {lang === "zh" ? "落于" : "in"}
+          </p>
+          <p className="mt-1 font-serif text-2xl italic text-stone-warm">
+            {s.g} {lang === "zh" ? s.zh : s.en}
+          </p>
+          <p className="mx-6 mt-3 text-xs leading-relaxed text-stone-warm/60">
+            {p.meaning[lang === "zh" ? 1 : 0]}
+          </p>
+        </>
+      );
+    }
+    if (activeSign != null) {
+      const s = ZODIAC[activeSign];
+      const inhabitants = (bySign[activeSign] ?? []).map((pi) => PLANETS[pi]);
+      return (
+        <>
+          <p className="text-[10px] uppercase tracking-[0.4em] text-gold-dust/70">
+            {lang === "zh" ? "宫位" : "House"}
+          </p>
+          <p className="mt-2 font-serif text-3xl italic text-stone-warm">
+            {lang === "zh" ? s.zh : s.en}
+          </p>
+          <p className="mt-1 text-4xl text-gold-light">{s.g}</p>
+          {inhabitants.length > 0 ? (
+            <p className="mx-4 mt-3 text-xs uppercase tracking-[0.24em] text-gold-dust/80">
+              {inhabitants.map((p) => `${p.glyph} ${p.name[lang === "zh" ? 1 : 0]}`).join(" · ")}
+            </p>
+          ) : (
+            <p className="mt-3 text-[10px] uppercase tracking-[0.28em] text-stone-warm/40">
+              {lang === "zh" ? "此宫空落" : "empty house"}
+            </p>
+          )}
+        </>
+      );
+    }
+    return (
+      <>
+        <p className="text-[10px] uppercase tracking-[0.4em] text-gold-dust/70">
+          {lang === "zh" ? "你的命盘" : "Your natal chart"}
+        </p>
+        <p className="mt-3 font-serif text-2xl italic text-stone-warm/70">
+          {lang === "zh" ? "悬停行星或星座" : "Hover a planet or sign"}
+        </p>
+        <p className="mx-6 mt-3 text-[10px] uppercase tracking-[0.28em] text-stone-warm/40">
+          {lang === "zh" ? "九星 · 十二宫" : "9 planets · 12 signs"}
+        </p>
+      </>
+    );
+  })();
+
+  return (
+    <div className="relative mx-auto" style={{ width: size, height: size }}>
+      {/* rotating outer scaffold */}
+      <div className="absolute inset-0 animate-slow-rotate opacity-70">
+        <svg viewBox={`0 0 ${size} ${size}`} className="h-full w-full">
+          <circle cx={cx} cy={cy} r={rOuter} fill="none" stroke="currentColor" strokeOpacity="0.08" />
+          {Array.from({ length: 72 }).map((_, i) => {
+            const a = (i * 5 * Math.PI) / 180;
+            const long = i % 6 === 0;
+            const x1 = cx + Math.cos(a) * (rOuter - (long ? 12 : 5));
+            const y1 = cy + Math.sin(a) * (rOuter - (long ? 12 : 5));
+            const x2 = cx + Math.cos(a) * rOuter;
+            const y2 = cy + Math.sin(a) * rOuter;
+            return (
+              <line key={i} x1={x1} y1={y1} x2={x2} y2={y2}
+                stroke="currentColor" strokeOpacity={long ? 0.45 : 0.18} strokeWidth={long ? 1 : 0.5}
+              />
+            );
+          })}
+        </svg>
+      </div>
+
+      {/* Static sign ring + house dividers */}
+      <svg
+        viewBox={`0 0 ${size} ${size}`}
+        className="absolute inset-0 h-full w-full"
+      >
+        {/* rings */}
+        <circle cx={cx} cy={cy} r={rSignRing} fill="none" stroke="currentColor" strokeOpacity="0.14" />
+        <circle cx={cx} cy={cy} r={rHouseRing} fill="none" stroke="currentColor" strokeOpacity="0.10" />
+        <circle cx={cx} cy={cy} r={rInner} fill="none" stroke="currentColor" strokeOpacity="0.10" />
+
+        {/* 12 sign dividers */}
+        {ZODIAC.map((_, i) => {
+          const a = ((i * 30 - 90) * Math.PI) / 180;
+          const x1 = cx + Math.cos(a) * rInner;
+          const y1 = cy + Math.sin(a) * rInner;
+          const x2 = cx + Math.cos(a) * rSignRing;
+          const y2 = cy + Math.sin(a) * rSignRing;
+          return (
+            <line key={i} x1={x1} y1={y1} x2={x2} y2={y2}
+              stroke="currentColor" strokeOpacity={0.12} />
+          );
+        })}
+
+        {/* highlighted sign wedge */}
+        {activeSign != null && (
+          <motion.path
+            key={`wedge-${activeSign}`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.35 }}
+            d={wedgePath(cx, cy, rInner, rSignRing, activeSign)}
+            fill="var(--gold-dust)"
+            fillOpacity={0.09}
+            stroke="var(--gold-dust)"
+            strokeOpacity={0.35}
+          />
+        )}
+
+        {/* sign glyphs */}
+        {ZODIAC.map((z, i) => {
+          const a = ((i * 30 + 15 - 90) * Math.PI) / 180;
+          const x = cx + Math.cos(a) * ((rSignRing + rHouseRing) / 2);
+          const y = cy + Math.sin(a) * ((rSignRing + rHouseRing) / 2);
+          const isActive = i === activeSign;
+          const hasPlanet = (bySign[i] ?? []).length > 0;
+          return (
+            <g
+              key={z.en}
+              onMouseEnter={() => setHoverSign(i)}
+              onMouseLeave={() => setHoverSign(null)}
+              style={{ cursor: "pointer" }}
+            >
+              <circle cx={x} cy={y} r={18} fill="transparent" />
+              <text x={x} y={y + 8} textAnchor="middle" fontSize="22"
+                fill={isActive ? "var(--gold-light)" : hasPlanet ? "var(--gold-dust)" : "var(--stone-warm)"}
+                opacity={isActive ? 1 : hasPlanet ? 0.85 : 0.35}
+                style={{ transition: "all 0.3s ease" }}
+              >
+                {z.g}
+              </text>
+            </g>
+          );
+        })}
+
+        {/* Aspect lines between planets in trine/opposition signs */}
+        {(() => {
+          const lines: React.ReactElement[] = [];
+          for (let i = 0; i < PLANETS.length; i++) {
+            for (let j = i + 1; j < PLANETS.length; j++) {
+              const diff = Math.abs(signs[i] - signs[j]);
+              const d = Math.min(diff, 12 - diff);
+              if (d === 6 || d === 4) {
+                const a1 = ((signs[i] * 30 + 15 - 90) * Math.PI) / 180;
+                const a2 = ((signs[j] * 30 + 15 - 90) * Math.PI) / 180;
+                const rP = rPlanetBase;
+                const x1 = cx + Math.cos(a1) * rP;
+                const y1 = cy + Math.sin(a1) * rP;
+                const x2 = cx + Math.cos(a2) * rP;
+                const y2 = cy + Math.sin(a2) * rP;
+                lines.push(
+                  <line
+                    key={`asp-${i}-${j}`}
+                    x1={x1} y1={y1} x2={x2} y2={y2}
+                    stroke={d === 6 ? "var(--nebula-purple)" : "var(--gold-dust)"}
+                    strokeOpacity={0.22}
+                    strokeDasharray={d === 6 ? "3 4" : undefined}
+                    strokeWidth={0.8}
+                  />,
+                );
+              }
+            }
+          }
+          return lines;
+        })()}
+
+        {/* planets */}
+        {PLANETS.map((p, i) => {
+          const sign = signs[i];
+          const stackIdx = (bySign[sign] ?? []).indexOf(i);
+          const stackCount = (bySign[sign] ?? []).length;
+          // Spread multiple planets across the 30° arc of their sign
+          const spread = stackCount > 1 ? (stackIdx - (stackCount - 1) / 2) * (22 / stackCount) : 0;
+          const a = ((sign * 30 + 15 + spread - 90) * Math.PI) / 180;
+          const x = cx + Math.cos(a) * rPlanetBase;
+          const y = cy + Math.sin(a) * rPlanetBase;
+          const isActive = i === activePlanet;
+          return (
+            <g
+              key={p.key}
+              onMouseEnter={() => setHoverPlanet(i)}
+              onMouseLeave={() => setHoverPlanet(null)}
+              style={{ cursor: "pointer" }}
+            >
+              {/* tick from ring to planet */}
+              <line
+                x1={cx + Math.cos(a) * rHouseRing}
+                y1={cy + Math.sin(a) * rHouseRing}
+                x2={x}
+                y2={y}
+                stroke="var(--gold-dust)"
+                strokeOpacity={isActive ? 0.6 : 0.18}
+              />
+              <motion.circle
+                cx={x} cy={y}
+                initial={{ r: 0, opacity: 0 }}
+                animate={{
+                  r: isActive ? 18 : 13,
+                  opacity: 1,
+                }}
+                transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1], delay: i * 0.06 }}
+                fill="var(--obsidian)"
+                stroke={isActive ? "var(--gold-light)" : "var(--gold-dust)"}
+                strokeOpacity={isActive ? 1 : 0.55}
+              />
+              {isActive && (
+                <motion.circle
+                  cx={x} cy={y}
+                  initial={{ r: 12, opacity: 0.7 }}
+                  animate={{ r: 30, opacity: 0 }}
+                  transition={{ duration: 1.1, repeat: Infinity }}
+                  fill="none"
+                  stroke="var(--gold-light)"
+                  strokeOpacity={0.5}
+                />
+              )}
+              <text x={x} y={y + 5} textAnchor="middle" fontSize="14"
+                fill={isActive ? "var(--gold-light)" : "var(--gold-dust)"}
+                style={{ pointerEvents: "none", fontFamily: "var(--font-serif)" }}
+              >
+                {p.glyph}
+              </text>
+            </g>
+          );
+        })}
+
+        {/* inner core glow */}
+        <defs>
+          <radialGradient id="natal-core">
+            <stop offset="0%" stopColor="var(--gold-dust)" stopOpacity="0.35" />
+            <stop offset="100%" stopColor="var(--gold-dust)" stopOpacity="0" />
+          </radialGradient>
+        </defs>
+        <circle cx={cx} cy={cy} r={rInner - 4} fill="url(#natal-core)" />
+      </svg>
+
+      {/* center label */}
+      <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
+        <motion.div
+          key={`${activePlanet}-${activeSign}`}
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35 }}
+          className="max-w-[70%]"
+        >
+          {centerContent}
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+
+function wedgePath(
+  cx: number,
+  cy: number,
+  rIn: number,
+  rOut: number,
+  signIdx: number,
+): string {
+  const a1 = ((signIdx * 30 - 90) * Math.PI) / 180;
+  const a2 = (((signIdx + 1) * 30 - 90) * Math.PI) / 180;
+  const x1o = cx + Math.cos(a1) * rOut;
+  const y1o = cy + Math.sin(a1) * rOut;
+  const x2o = cx + Math.cos(a2) * rOut;
+  const y2o = cy + Math.sin(a2) * rOut;
+  const x1i = cx + Math.cos(a1) * rIn;
+  const y1i = cy + Math.sin(a1) * rIn;
+  const x2i = cx + Math.cos(a2) * rIn;
+  const y2i = cy + Math.sin(a2) * rIn;
+  return `M ${x1o} ${y1o} A ${rOut} ${rOut} 0 0 1 ${x2o} ${y2o} L ${x2i} ${y2i} A ${rIn} ${rIn} 0 0 0 ${x1i} ${y1i} Z`;
+}
+
