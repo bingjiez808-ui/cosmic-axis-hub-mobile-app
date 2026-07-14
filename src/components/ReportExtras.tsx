@@ -602,6 +602,7 @@ const WATCHLIST: {
   year: string;
   theme: [string, string];
   note: [string, string];
+  detail?: [string, string];
   locked?: boolean;
 }[] = [
   {
@@ -611,6 +612,10 @@ const WATCHLIST: {
       "A recognizable inflection — say yes carefully; the shape of the yes matters more than the yes itself.",
       "一个可识别的转折 —— 谨慎地说「好」；「好」的形状比「好」本身更重要。",
     ],
+    detail: [
+      "Jupiter transits your 10th house while BaZi shows a 正官 year — a promotion, an invitation to lead, or a public-facing role. Negotiate scope and title before compensation; the framing you accept now defines the next three years.",
+      "木星过境事业宫，八字流年逢正官 —— 晋升、被点名带团队或走到台前的窗口。先谈边界与头衔，再谈薪酬；此刻接受的「框」将定义未来三年的位置。",
+    ],
   },
   {
     year: "2027 · spring",
@@ -619,38 +624,54 @@ const WATCHLIST: {
       "The chart flags a two-month window to rebuild sleep, breath and cardio — small habits with 10-year returns.",
       "命盘标出约两个月的窗口：重建睡眠、呼吸与有氧 —— 小习惯，十年回报。",
     ],
+    detail: [
+      "Saturn squares your Ascendant while 大运 shifts into a 印 phase — the body asks to be re-parented. Sleep before midnight, morning sunlight, low-intensity cardio 4×/week. Avoid crash diets and stimulants; this is a rebuild, not a sprint.",
+      "土星刑上升点，大运走印 —— 身体请求被重新照料。子时前入睡、晨光、每周四次低强度有氧。切忌节食与依赖咖啡因；这是「重建」，不是「冲刺」。",
+    ],
   },
   {
     year: "2028",
     theme: ["Meaningful encounter", "重要相遇"],
-    locked: true,
     note: [
       "The synastry indicates a partnership-shape year. Details on Oracle.",
       "合盘指向一个「关系形状」的年份。神谕者可见细节。",
+    ],
+    detail: [
+      "Venus-Jupiter conjunction in your 7th, and BaZi 桃花 activates on the day pillar. A relationship (romantic or a serious business partnership) arrives with real weight. Do not confuse chemistry with alignment — check three months of behavior before committing structure.",
+      "金木合相入夫妻宫，八字日柱桃花开 —— 一段有分量的关系（感情或深度合伙）到来。不要把化学反应当作契合度 —— 观察三个月的行为再落实结构。",
     ],
   },
   {
     year: "2029–2030",
     theme: ["Wealth compounding phase", "财富复利期"],
-    locked: true,
     note: [
       "Two BaZi wealth stars form a bridge. Details on Oracle.",
       "两颗财星形成桥梁。神谕者可见细节。",
+    ],
+    detail: [
+      "偏财 and 正财 both active while Jupiter enters your 2nd house — passive income, equity, or a side business can materially compound. Move from earning to owning: index funds, equity in your own work, one long-hold asset. Avoid leverage-heavy speculation.",
+      "正财、偏财双动，木星入财帛宫 —— 被动收入、股权、副业可实质复利。从「赚薪水」转到「拥有资产」：指数、自身股权、一项长期持有。避开高杠杆投机。",
     ],
   },
   {
     year: "2031",
     theme: ["A quieter chapter", "转入静章"],
-    locked: true,
     note: [
       "Deliberate slowing. Details on Oracle.",
       "有意识的放慢。神谕者可见细节。",
+    ],
+    detail: [
+      "Saturn return-adjacent for many, and the 大运 shifts into a reflective 食伤 or 印 phase. Output slows, meaning deepens. Take the sabbatical, write the book, mentor. Public metrics dim; inner metrics brighten.",
+      "接近土星回归，大运转入食伤或印 —— 输出变慢，意义变深。请长假、写那本书、开始带人。外部指标转暗，内部指标转亮。",
     ],
   },
 ];
 
 export function FutureWatchlist() {
   const { t, lang } = useLang();
+  const { account } = useAccount();
+  const plan = (account?.plan ?? "free") as "free" | "sage" | "oracle";
+  const isOracle = plan === "oracle";
   const li = lang === "zh" ? 1 : 0;
   return (
     <section className="mx-auto max-w-5xl px-6 pb-24 md:px-12">
@@ -664,31 +685,47 @@ export function FutureWatchlist() {
         <p className="mb-8 max-w-3xl text-sm text-stone-warm/60">{t.fw_hint}</p>
 
         <ol className="relative space-y-4 border-l border-gold-dust/30 pl-6">
-          {WATCHLIST.map((w) => (
-            <li key={w.year} className="relative">
-              <span className="absolute -left-[29px] top-2 size-2.5 rounded-full bg-gold-dust shadow-[0_0_12px_hsl(45_70%_60%/0.6)]" />
-              <div className={`rounded-2xl border p-5 ${w.locked ? "border-white/10 bg-white/[0.02]" : "border-gold-dust/30 bg-gold-dust/[0.06]"}`}>
-                <p className="mb-1 text-[10px] uppercase tracking-[0.32em] text-gold-dust">
-                  {w.year}
-                </p>
-                <p className="mb-2 font-serif text-lg italic text-stone-warm">
-                  {w.theme[li]}
-                </p>
-                {w.locked ? (
-                  <p className="flex items-center gap-2 text-sm text-stone-warm/50">
-                    <span>🔒</span> {t.fw_locked}
+          {WATCHLIST.map((w) => {
+            const unlocked = isOracle || !w.locked;
+            return (
+              <li key={w.year} className="relative">
+                <span className="absolute -left-[29px] top-2 size-2.5 rounded-full bg-gold-dust shadow-[0_0_12px_hsl(45_70%_60%/0.6)]" />
+                <div className={`rounded-2xl border p-5 ${unlocked ? "border-gold-dust/30 bg-gold-dust/[0.06]" : "border-white/10 bg-white/[0.02]"}`}>
+                  <p className="mb-1 text-[10px] uppercase tracking-[0.32em] text-gold-dust">
+                    {w.year}
                   </p>
-                ) : (
-                  <p className="text-sm leading-relaxed text-stone-warm/70">{w.note[li]}</p>
-                )}
-              </div>
-            </li>
-          ))}
+                  <p className="mb-2 font-serif text-lg italic text-stone-warm">
+                    {w.theme[li]}
+                  </p>
+                  {unlocked ? (
+                    <>
+                      <p className="text-sm leading-relaxed text-stone-warm/70">{w.note[li]}</p>
+                      {isOracle && w.detail && (
+                        <div className="mt-3 rounded-xl border border-gold-dust/20 bg-obsidian/40 p-4">
+                          <p className="mb-1 text-[9px] uppercase tracking-[0.32em] text-gold-dust/80">
+                            {lang === "zh" ? "流年运势 · 详解" : "Yearly forecast · detail"}
+                          </p>
+                          <p className="text-sm leading-relaxed text-stone-warm/85">
+                            {w.detail[li]}
+                          </p>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <p className="flex items-center gap-2 text-sm text-stone-warm/50">
+                      <span>🔒</span> {t.fw_locked}
+                    </p>
+                  )}
+                </div>
+              </li>
+            );
+          })}
         </ol>
       </div>
     </section>
   );
 }
+
 
 /* ═══════════════════════════════════════════
    Save-this-reading (uses local account)
