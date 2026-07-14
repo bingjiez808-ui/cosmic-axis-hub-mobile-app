@@ -144,9 +144,15 @@ function RootComponent() {
         <AccountProvider>
           <div className="relative min-h-screen bg-obsidian text-stone-warm">
             <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-              <div className="star-bg absolute inset-0 opacity-30" />
+              {/* Ancient library — layered backdrop */}
+              <div className="library-shelves absolute inset-0 opacity-[0.28]" />
+              <div className="library-parchment absolute inset-0 opacity-60" />
+              <div className="library-candle absolute inset-0 opacity-70 animate-candle-flicker" />
+              <div className="dust-motes absolute inset-0 opacity-70" />
+              <div className="star-bg absolute inset-0 opacity-15" />
               <div className="absolute -top-[20%] -left-[10%] h-[60%] w-[60%] rounded-full bg-nebula-purple/15 blur-[140px] animate-pulse-gold" />
               <div className="absolute -bottom-[10%] -right-[5%] h-[45%] w-[45%] rounded-full bg-gold-dust/8 blur-[120px] animate-pulse-gold [animation-delay:2s]" />
+              <div className="library-vignette absolute inset-0" />
             </div>
 
             <SiteNav />

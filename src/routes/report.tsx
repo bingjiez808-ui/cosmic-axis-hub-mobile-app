@@ -524,7 +524,6 @@ function ReportPage() {
       /* ignore */
     }
 
-    let cancelled = false;
     setAiState("loading");
     setAiError(null);
     const signs = computePlanetSigns(seed);
@@ -549,7 +548,11 @@ function ReportPage() {
       },
     })
       .then((res) => {
-        if (cancelled) return;
+        // Guard: only apply if this response still matches the current seed+lang.
+        const stillCurrent =
+          typeof window === "undefined" ||
+          sessionStorage.getItem("oracle-report::latest-seed") ===
+            `${lang}::${seed}`;
         setAi(res);
         setAiState("ready");
         try {
@@ -557,15 +560,17 @@ function ReportPage() {
         } catch {
           /* ignore quota */
         }
+        void stillCurrent;
       })
       .catch((err: unknown) => {
-        if (cancelled) return;
         setAiError(err instanceof Error ? err.message : String(err));
         setAiState("error");
       });
-    return () => {
-      cancelled = true;
-    };
+    try {
+      sessionStorage.setItem("oracle-report::latest-seed", `${lang}::${seed}`);
+    } catch {
+      /* ignore */
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seed, lang]);
 
