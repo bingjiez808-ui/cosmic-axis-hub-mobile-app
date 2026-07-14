@@ -8,10 +8,15 @@ import {
   ZodiacWheel,
 } from "@/components/charts/DestinyCharts";
 import {
+  FutureWatchlist,
   KeyEventsVerification,
   LifeTimeline,
   MembershipSection,
+  SaveReadingBar,
+  TarotDraw,
 } from "@/components/ReportExtras";
+import { AccountModal } from "@/components/AccountModal";
+import { useState } from "react";
 import { useLang } from "@/lib/i18n";
 
 type SearchParams = {
