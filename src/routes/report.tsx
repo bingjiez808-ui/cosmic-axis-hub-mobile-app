@@ -587,6 +587,7 @@ function ReportPage() {
     ai?.dimensions.forEach((d) => m.set(d.key, d));
     return m;
   }, [ai]);
+  console.log("[report-ai] render", { aiState, hasAi: !!ai, dimCount: ai?.dimensions?.length });
   const displayed = useMemo(
     () =>
       dimensions.map((d) => {
