@@ -1013,7 +1013,7 @@ export function MembershipSection({ birthISO }: { birthISO?: string } = {}) {
         </div>
       )}
 
-      {/* Oracle-exclusive: 90-day windows */}
+      {/* Oracle-exclusive: 90-day windows + future watchlist */}
       {plan === "oracle" && (
         <div className="mt-4">
           <div className="mx-auto mb-6 flex max-w-5xl items-center gap-3 px-6 md:px-12">
@@ -1024,6 +1024,7 @@ export function MembershipSection({ birthISO }: { birthISO?: string } = {}) {
             <span className="h-px flex-1 bg-gold-dust/30" />
           </div>
           <RecentWindows birthISO={birthISO} />
+          <FutureWatchlist />
         </div>
       )}
 
