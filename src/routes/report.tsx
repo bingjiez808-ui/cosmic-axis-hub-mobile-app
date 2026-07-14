@@ -103,6 +103,26 @@ const dimensions: Dimension[] = [
       "说人话：别人愿意找你要温度和主意，但你回到房间会把每句话重放一遍。这个落差是你的燃料，不是缺陷 —— 只需要留出独处时间充电。",
     ],
     viz: "zodiac",
+    details: [
+      {
+        label: ["Character strengths", "性格优势"],
+        items: [
+          ["Natural warmth that mobilises others quickly", "自带温度，能迅速调动他人"],
+          ["High standards applied first to yourself", "对自己先严格，再对世界温柔"],
+          ["Fast pattern recognition across people and ideas", "在人与想法之间快速识别模式"],
+          ["Recovers meaning from setbacks better than most", "从挫折中重新提炼意义的能力，强于常人"],
+        ],
+      },
+      {
+        label: ["Watch-outs to guard", "需要注意的地方"],
+        items: [
+          ["Over-thinking after intense social hours", "高强度社交后，容易过度复盘"],
+          ["Confusing self-critique with self-improvement", "把自我批评误当成自我成长"],
+          ["Saying yes too fast when admired", "被欣赏时，容易过快答应"],
+          ["Neglecting rest when momentum feels good", "势头正好时，最容易忽略休息"],
+        ],
+      },
+    ],
   },
   {
     key: "vocation",
