@@ -796,6 +796,7 @@ export function MembershipSection({ birthISO }: { birthISO?: string } = {}) {
 
   const handleUpgradeClick = (target: Plan) => {
     if (!account) {
+      if (typeof window !== "undefined") window.dispatchEvent(new Event("lod:open-account"));
       setSignInPrompt(true);
       return;
     }
