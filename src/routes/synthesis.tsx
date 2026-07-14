@@ -68,6 +68,8 @@ function SynthesisPage() {
   const search = Route.useSearch();
   const navigate = useNavigate();
   const [phase, setPhase] = useState(0);
+  const lang: "en" | "zh" = search.lang === "zh" ? "zh" : "en";
+  const phases = lang === "zh" ? PHASES_ZH : PHASES_EN;
 
   useEffect(() => {
     const total = phases.length;
@@ -88,7 +90,7 @@ function SynthesisPage() {
       });
     }, perPhase);
     return () => clearInterval(interval);
-  }, [navigate, search]);
+  }, [navigate, search, phases.length]);
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-6 pt-32 pb-24 text-center">
@@ -120,10 +122,10 @@ function SynthesisPage() {
 
       <div className="relative z-10 max-w-xl">
         <p className="mb-4 text-[10px] uppercase tracking-[0.42em] text-gold-dust">
-          {search.name ? `Reading of ${search.name}` : "The reading"}
+          {KICKER[lang](search.name)}
         </p>
         <h1 className="mb-14 font-serif text-3xl italic leading-tight text-stone-warm md:text-4xl">
-          The library is speaking to itself…
+          {HEADLINE[lang]}
         </h1>
 
         <div className="mb-10 h-16">
@@ -155,9 +157,10 @@ function SynthesisPage() {
           />
         </div>
         <p className="mt-4 text-[10px] uppercase tracking-[0.32em] text-stone-warm/40">
-          {phase + 1} / {phases.length} passages
+          {phase + 1} / {phases.length} {PASSAGES[lang]}
         </p>
       </div>
     </div>
   );
 }
+
