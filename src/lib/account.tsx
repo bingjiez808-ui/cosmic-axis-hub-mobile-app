@@ -49,7 +49,22 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn = (a: Account) => {
-    setAccount(a);
+    const withPlan: Account = { plan: "free", ...a };
+    setAccount(withPlan);
+    try {
+      localStorage.setItem(ACC_KEY, JSON.stringify(withPlan));
+    } catch {}
+  };
+  const setPlan = (p: Plan) => {
+    setAccount((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev, plan: p };
+      try {
+        localStorage.setItem(ACC_KEY, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  };
     try {
       localStorage.setItem(ACC_KEY, JSON.stringify(a));
     } catch {}
