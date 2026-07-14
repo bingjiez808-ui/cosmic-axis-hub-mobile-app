@@ -7,6 +7,7 @@ import jyotishImg from "@/assets/tradition-jyotish.jpg";
 import baziImg from "@/assets/tradition-bazi.jpg";
 import ziweiImg from "@/assets/tradition-ziwei.jpg";
 import treeImg from "@/assets/tree-of-destiny.jpg";
+import { TraditionModal, type TraditionId } from "@/components/TraditionModal";
 import { useLang } from "@/lib/i18n";
 
 export const Route = createFileRoute("/")({
