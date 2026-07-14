@@ -7,6 +7,11 @@ import {
   StrengthRadar,
   ZodiacWheel,
 } from "@/components/charts/DestinyCharts";
+import {
+  KeyEventsVerification,
+  LifeTimeline,
+  MembershipSection,
+} from "@/components/ReportExtras";
 import { useLang } from "@/lib/i18n";
 
 type SearchParams = {
@@ -378,8 +383,20 @@ function ReportPage() {
         ))}
       </section>
 
+      {/* Life Timeline — 大运 */}
+      <div className="mt-24">
+        <LifeTimeline birthISO={search.date} />
+      </div>
+
+      {/* Key life events verification */}
+      <KeyEventsVerification />
+
+      {/* Membership / PDF / AI follow-up */}
+      <MembershipSection />
+
       {/* Outro */}
-      <div className="mx-auto mt-32 max-w-3xl px-6 text-center">
+      <div className="mx-auto mt-16 max-w-3xl px-6 text-center print:hidden">
+
         <p className="mb-6 text-[10px] uppercase tracking-[0.42em] text-gold-dust">
           {t.note_on_fate}
         </p>
