@@ -1737,7 +1737,7 @@ function AIFollowupModal({
             </div>
 
             {/* Conversation scroll */}
-            <div className="mt-4 flex-1 space-y-3 overflow-y-auto pr-1">
+            <div className="mt-3 flex-1 space-y-3 overflow-y-auto overscroll-contain pr-1 sm:mt-4">
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
