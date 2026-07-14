@@ -5,7 +5,10 @@ import { useEffect, useState } from "react";
 import {
   FiveElements,
   NatalWheel,
+  PLANETS,
   StrengthRadar,
+  ZODIAC_SIGNS,
+  computePlanetSigns,
 } from "@/components/charts/DestinyCharts";
 import {
   FutureWatchlist,
@@ -365,6 +368,7 @@ function ReportPage() {
   const { lang, setLang, t } = useLang();
   const li = lang === "zh" ? 1 : 0;
   const [accOpen, setAccOpen] = useState(false);
+  const [selectedPlanet, setSelectedPlanet] = useState<number | null>(null);
 
   // Sync report language with the choice made in the ritual, if provided.
   useEffect(() => {
@@ -496,12 +500,21 @@ function ReportPage() {
                 <span className="rounded-full border border-white/10 px-3 py-1">Ⓐ {lang === "zh" ? "上升" : "Asc"}</span>
                 <span className="rounded-full border border-white/10 px-3 py-1">Ⓜ {lang === "zh" ? "天顶" : "MC"}</span>
               </div>
+
+              <PlanetReadingPanel
+                lang={lang}
+                seed={`${search.name ?? ""}|${search.date ?? ""}|${search.time ?? ""}|${search.place ?? ""}`}
+                planetIdx={selectedPlanet}
+                onClear={() => setSelectedPlanet(null)}
+              />
             </div>
             <div className="text-stone-warm/40">
               <NatalWheel
                 lang={lang}
                 seed={`${search.name ?? ""}|${search.date ?? ""}|${search.time ?? ""}|${search.place ?? ""}`}
                 size={440}
+                selectedPlanet={selectedPlanet}
+                onSelectPlanet={setSelectedPlanet}
               />
             </div>
           </div>
@@ -657,5 +670,123 @@ function ReportPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+const ASPECT_LABELS: Record<number, { en: string; zh: string; tone: string; toneZh: string }> = {
+  0: { en: "Conjunction", zh: "合相", tone: "fused · intense focus", toneZh: "融合 · 强烈聚焦" },
+  2: { en: "Sextile", zh: "六分相", tone: "supportive · easy flow", toneZh: "支持 · 顺畅流动" },
+  3: { en: "Square", zh: "四分相", tone: "friction · growth pressure", toneZh: "摩擦 · 成长张力" },
+  4: { en: "Trine", zh: "三分相", tone: "harmonic · natural gift", toneZh: "和谐 · 天赋之流" },
+  6: { en: "Opposition", zh: "对分相", tone: "polarity · mirror tension", toneZh: "极性 · 镜像张力" },
+};
+
+function PlanetReadingPanel({
+  lang,
+  seed,
+  planetIdx,
+  onClear,
+}: {
+  lang: "en" | "zh";
+  seed: string;
+  planetIdx: number | null;
+  onClear: () => void;
+}) {
+  if (planetIdx == null) {
+    return (
+      <div className="mt-6 rounded-2xl border border-dashed border-white/10 bg-white/[0.02] px-5 py-6 text-[11px] uppercase tracking-[0.28em] text-stone-warm/40">
+        {lang === "zh"
+          ? "点击右侧任一行星 · 查看其落位与相位解读"
+          : "Tap any planet on the right · see its placement & aspects"}
+      </div>
+    );
+  }
+
+  const signs = computePlanetSigns(seed);
+  const p = PLANETS[planetIdx];
+  const s = ZODIAC_SIGNS[signs[planetIdx]];
+
+  const aspects = PLANETS.map((op, j) => {
+    if (j === planetIdx) return null;
+    const diff = Math.abs(signs[planetIdx] - signs[j]);
+    const d = Math.min(diff, 12 - diff);
+    const label = ASPECT_LABELS[d];
+    if (!label) return null;
+    return { other: op, otherSign: ZODIAC_SIGNS[signs[j]], label };
+  }).filter(Boolean) as {
+    other: (typeof PLANETS)[number];
+    otherSign: (typeof ZODIAC_SIGNS)[number];
+    label: (typeof ASPECT_LABELS)[number];
+  }[];
+
+  return (
+    <motion.div
+      key={planetIdx}
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35 }}
+      className="mt-6 rounded-2xl border border-gold-dust/25 bg-gradient-to-br from-white/[0.04] to-transparent p-5"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+            {lang === "zh" ? "行星落位" : "Planet placement"}
+          </p>
+          <p className="mt-2 font-serif text-2xl italic text-stone-warm">
+            <span className="mr-2 text-gold-light">{p.glyph}</span>
+            {p.name[lang === "zh" ? 1 : 0]}
+            <span className="mx-2 text-stone-warm/40">
+              {lang === "zh" ? "落于" : "in"}
+            </span>
+            <span className="text-gold-light">{s.g}</span>{" "}
+            {lang === "zh" ? s.zh : s.en}
+          </p>
+          <p className="mt-2 text-xs leading-relaxed text-stone-warm/60">
+            {p.meaning[lang === "zh" ? 1 : 0]}
+          </p>
+        </div>
+        <button
+          onClick={onClear}
+          className="rounded-full border border-white/10 px-3 py-1 text-[9px] uppercase tracking-[0.28em] text-stone-warm/50 transition-colors hover:border-gold-dust/40 hover:text-gold-dust"
+        >
+          {lang === "zh" ? "收起" : "close"}
+        </button>
+      </div>
+
+      <div className="mt-4 border-t border-white/5 pt-4">
+        <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+          {lang === "zh" ? "主要相位" : "Major aspects"}
+        </p>
+        {aspects.length === 0 ? (
+          <p className="text-[11px] uppercase tracking-[0.24em] text-stone-warm/40">
+            {lang === "zh" ? "此行星暂无强相位" : "no major aspects"}
+          </p>
+        ) : (
+          <ul className="space-y-2">
+            {aspects.map((a, i) => (
+              <li
+                key={i}
+                className="flex items-center justify-between gap-3 rounded-xl border border-white/5 bg-white/[0.02] px-3 py-2 text-[11px]"
+              >
+                <span className="text-stone-warm/70">
+                  <span className="mr-1 text-gold-light">{a.other.glyph}</span>
+                  {a.other.name[lang === "zh" ? 1 : 0]}
+                  <span className="mx-1 text-stone-warm/40">
+                    {lang === "zh" ? "在" : "in"}
+                  </span>
+                  {lang === "zh" ? a.otherSign.zh : a.otherSign.en}
+                </span>
+                <span className="text-right text-gold-dust/80">
+                  {lang === "zh" ? a.label.zh : a.label.en}
+                  <span className="ml-2 text-stone-warm/40">
+                    {lang === "zh" ? a.label.toneZh : a.label.tone}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </motion.div>
   );
 }

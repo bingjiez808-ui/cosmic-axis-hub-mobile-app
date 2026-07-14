@@ -384,7 +384,7 @@ type Planet = {
   meaning: [string, string];
 };
 
-const PLANETS: Planet[] = [
+export const PLANETS: Planet[] = [
   { key: "sun",  glyph: "☉", name: ["Sun", "太阳"], meaning: ["core identity · what you shine as", "核心自我 · 你所闪耀的形状"] },
   { key: "moon", glyph: "☽", name: ["Moon", "月亮"], meaning: ["inner needs · how you feel safe", "内在需要 · 你如何感到安全"] },
   { key: "mer",  glyph: "☿", name: ["Mercury", "水星"], meaning: ["mind · how you think and speak", "心智 · 你如何思考与表达"] },
@@ -396,6 +396,8 @@ const PLANETS: Planet[] = [
   { key: "mc",   glyph: "Ⓜ", name: ["Midheaven", "天顶"], meaning: ["calling · your public direction", "召唤 · 你的公共方向"] },
 ];
 
+export const ZODIAC_SIGNS = ZODIAC;
+
 function hashString(s: string): number {
   let h = 2166136261 >>> 0;
   for (let i = 0; i < s.length; i++) {
@@ -405,7 +407,7 @@ function hashString(s: string): number {
   return h >>> 0;
 }
 
-function computePlanetSigns(seed: string): number[] {
+export function computePlanetSigns(seed: string): number[] {
   const base = hashString(seed || "anonymous");
   return PLANETS.map((_, i) => {
     const h = hashString(`${seed}::${PLANETS[i].key}::${base}`);
@@ -417,10 +419,14 @@ export function NatalWheel({
   lang = "en",
   seed = "",
   size = 420,
+  selectedPlanet = null,
+  onSelectPlanet,
 }: {
   lang?: "en" | "zh";
   seed?: string;
   size?: number;
+  selectedPlanet?: number | null;
+  onSelectPlanet?: (idx: number | null) => void;
 }) {
   const [hoverSign, setHoverSign] = useState<number | null>(null);
   const [hoverPlanet, setHoverPlanet] = useState<number | null>(null);
@@ -441,7 +447,7 @@ export function NatalWheel({
     bySign[s].push(i);
   });
 
-  const activePlanet = hoverPlanet;
+  const activePlanet = hoverPlanet ?? selectedPlanet;
   const activeSign =
     hoverSign ?? (activePlanet != null ? signs[activePlanet] : null);
 
@@ -493,14 +499,11 @@ export function NatalWheel({
     }
     return (
       <>
-        <p className="text-[10px] uppercase tracking-[0.4em] text-gold-dust/70">
+        <p className="font-serif text-3xl italic text-stone-warm md:text-4xl">
           {lang === "zh" ? "你的命盘" : "Your natal chart"}
         </p>
-        <p className="mt-3 font-serif text-2xl italic text-stone-warm/70">
-          {lang === "zh" ? "悬停行星或星座" : "Hover a planet or sign"}
-        </p>
-        <p className="mx-6 mt-3 text-[10px] uppercase tracking-[0.28em] text-stone-warm/40">
-          {lang === "zh" ? "九星 · 十二宫" : "9 planets · 12 signs"}
+        <p className="mx-6 mt-4 text-[10px] uppercase tracking-[0.32em] text-stone-warm/40">
+          {lang === "zh" ? "点击行星 · 查看落位与相位" : "Tap a planet · see placement & aspects"}
         </p>
       </>
     );
@@ -639,6 +642,7 @@ export function NatalWheel({
               key={p.key}
               onMouseEnter={() => setHoverPlanet(i)}
               onMouseLeave={() => setHoverPlanet(null)}
+              onClick={() => onSelectPlanet?.(selectedPlanet === i ? null : i)}
               style={{ cursor: "pointer" }}
             >
               {/* tick from ring to planet */}
