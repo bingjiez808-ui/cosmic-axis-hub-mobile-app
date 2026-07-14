@@ -756,6 +756,9 @@ function PlanetReadingPanel({
             <span className="text-gold-light">{s.g}</span>{" "}
             {lang === "zh" ? s.zh : s.en}
           </p>
+          <p className="mt-1 text-[10px] uppercase tracking-[0.28em] text-gold-dust/70">
+            {lang === "zh" ? `第 ${house} 宫` : `House ${house}`}
+          </p>
           <p className="mt-2 text-xs leading-relaxed text-stone-warm/60">
             {p.meaning[lang === "zh" ? 1 : 0]}
           </p>
