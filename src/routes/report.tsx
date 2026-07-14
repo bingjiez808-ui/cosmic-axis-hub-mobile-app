@@ -328,6 +328,26 @@ const dimensions: Dimension[] = [
       "说人话：无论职位叫什么，你真正在做的一直是把一个世界解释给另一个世界听 —— 中西之间、专家与小白之间、旧与新之间。你最有生命力的时刻，通常都是在为某人翻译某件事。",
     ],
     viz: "zodiac",
+    details: [
+      {
+        label: ["Will unfold — nearly certain", "一定会发生的事"],
+        items: [
+          ["A public-facing role that requires you to explain", "一份让你面向公众解释事物的角色"],
+          ["Living or working across at least two cultures", "至少一次跨越两种文化的生活或工作"],
+          ["An audience that gathers around your voice", "会有一群人，围绕你的声音聚集起来"],
+          ["A late-career reinvention around meaning", "职业中后期，围绕「意义」的一次重塑"],
+        ],
+      },
+      {
+        label: ["Potential crises to prepare for", "潜在的危机"],
+        items: [
+          ["Burnout from over-explaining yourself to skeptics", "把自己反复解释给不理解的人 —— 累到耗尽"],
+          ["Identity drift when the audience grows faster than you do", "受众成长快过自我，容易身份漂移"],
+          ["A midlife crossroads: prestige vs. mission — choose mission", "中年岔口：名声与使命之间 —— 选使命"],
+          ["Isolation in the year you break through — build a small trusted circle early", "突破的那一年容易孤立 —— 提早养一个小而可信的圈子"],
+        ],
+      },
+    ],
   },
 ];
 
