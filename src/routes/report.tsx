@@ -941,7 +941,7 @@ function ReportPage() {
       </div>
 
       {/* Key life events verification */}
-      <KeyEventsVerification birthISO={search.date} />
+      <KeyEventsVerification birthISO={search.date} search={search} />
 
       {/* Tarot — three cards as a second witness */}
       <TarotDraw />
