@@ -20,13 +20,33 @@ export const TAROT_LIMITS: Record<TarotPlan, number> = {
 };
 
 const BASE_KEY = "lod:tarot-quota";
-const monthKey = () => {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-};
+
+/** Zone-aware YYYY-MM stamp. Rolls at local midnight of the caller's
+ *  timezone (defaults to the browser's `Intl` zone). Passing an explicit
+ *  IANA zone lets tests pin the boundary deterministically. */
+export function monthKey(tz?: string, at: Date = new Date()): string {
+  const zone = tz || (typeof Intl !== "undefined"
+    ? Intl.DateTimeFormat().resolvedOptions().timeZone
+    : "UTC");
+  try {
+    const fmt = new Intl.DateTimeFormat("en-CA", {
+      timeZone: zone,
+      year: "numeric",
+      month: "2-digit",
+    });
+    // en-CA month formatting emits "YYYY-MM"; guard the join for older engines.
+    const parts = fmt.formatToParts(at);
+    const y = parts.find((p) => p.type === "year")?.value ?? "0000";
+    const m = parts.find((p) => p.type === "month")?.value ?? "00";
+    return `${y}-${m}`;
+  } catch {
+    // Fallback — should never happen in a modern engine.
+    return `${at.getUTCFullYear()}-${String(at.getUTCMonth() + 1).padStart(2, "0")}`;
+  }
+}
 
 type Store = { month: string; used: number };
-type Scope = { accountKey?: string | null };
+type Scope = { accountKey?: string | null; tz?: string };
 
 function storageKey(accountKey?: string | null): string {
   const suffix = accountKey?.trim().toLowerCase() || "__anon__";
@@ -34,15 +54,16 @@ function storageKey(accountKey?: string | null): string {
 }
 
 function read(scope?: Scope): Store {
-  if (typeof window === "undefined") return { month: monthKey(), used: 0 };
+  const now = monthKey(scope?.tz);
+  if (typeof window === "undefined") return { month: now, used: 0 };
   try {
     const raw = window.localStorage.getItem(storageKey(scope?.accountKey));
-    if (!raw) return { month: monthKey(), used: 0 };
+    if (!raw) return { month: now, used: 0 };
     const s = JSON.parse(raw) as Store;
-    if (s.month !== monthKey()) return { month: monthKey(), used: 0 };
+    if (s.month !== now) return { month: now, used: 0 };
     return s;
   } catch {
-    return { month: monthKey(), used: 0 };
+    return { month: now, used: 0 };
   }
 }
 
@@ -89,7 +110,10 @@ export function tarotConsume(plan: TarotPlan, scope?: Scope): boolean {
     }
     return true;
   } finally {
-    // Release after the current microtask so a synchronous second call still races-out.
-    setTimeout(() => IN_FLIGHT.delete(key), 400);
+    // Release synchronously — the guard's real purpose is re-entrancy
+    // (StrictMode double-invoke, sync double-invocation from the same
+    // handler frame). Rapid user clicks are handled at the call site with
+    // a component-level ref while the async AI call is in flight.
+    IN_FLIGHT.delete(key);
   }
 }

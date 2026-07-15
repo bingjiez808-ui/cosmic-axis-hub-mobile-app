@@ -326,3 +326,59 @@
 .planet-panel > div::-webkit-scrollbar-track {
   background: transparent;
 }
+
+/* ─────────────────────────────────────────────
+   Typography self-adaptation — no single-char
+   orphan lines. `text-wrap: balance` distributes
+   words across lines so headings never drop one
+   character to a new row; `pretty` keeps last-line
+   orphans out of long body copy. Chinese: allow
+   line-break: anywhere with `hangul` fallback so
+   the browser prefers full-width breaks.
+   ───────────────────────────────────────────── */
+h1, h2, h3, h4 {
+  text-wrap: balance;
+  hanging-punctuation: allow-end last;
+}
+.balance {
+  text-wrap: balance;
+}
+.pretty {
+  text-wrap: pretty;
+}
+/* Long paragraphs — pretty last-line wrapping.
+   Applied via `.reading-copy` on all AI paragraphs. */
+.reading-copy {
+  text-wrap: pretty;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+/* Compact detail cards — same-size boxes at any breakpoint. */
+.detail-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 768px) {
+  .detail-grid { grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .detail-grid.detail-grid-3 { grid-template-columns: repeat(3, 1fr); }
+}
+.detail-grid > * {
+  height: 100%;
+}
+.detail-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  border-radius: 0.9rem;
+  border: 1px solid hsl(0 0% 100% / 0.08);
+  background: hsl(0 0% 100% / 0.02);
+}
+.detail-card > ul {
+  font-size: 13px;
+  line-height: 1.55;
+}
+.detail-card li {
+  text-wrap: pretty;
+}

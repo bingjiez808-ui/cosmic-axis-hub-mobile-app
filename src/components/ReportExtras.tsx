@@ -820,7 +820,13 @@ export function TarotDraw() {
   // consistent counter across devices/browsers; anonymous falls back to a
   // device-local key.
   const quotaScope = useMemo(
-    () => ({ accountKey: account?.email ?? null }),
+    () => ({
+      accountKey: account?.email ?? null,
+      // Roll the monthly counter at midnight in the visitor's local time.
+      tz: typeof Intl !== "undefined"
+        ? Intl.DateTimeFormat().resolvedOptions().timeZone
+        : undefined,
+    }),
     [account?.email],
   );
   const [remaining, setRemaining] = useState<number>(() => tarotRemaining(plan, quotaScope));
@@ -907,6 +913,18 @@ export function TarotDraw() {
           </h2>
           {/* Quota chip — always visible so the visitor sees used / remaining. */}
           <span
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            aria-label={
+              plan === "oracle"
+                ? (lang === "zh" ? "本月塔罗 AI 解读次数：无限" : "Tarot AI readings this month: unlimited")
+                : plan === "sage"
+                  ? (lang === "zh"
+                      ? `本月塔罗 AI 解读，已使用 ${used} 次，剩余 ${remaining} 次，共 ${TAROT_LIMITS.sage} 次`
+                      : `Tarot AI readings this month: ${used} used, ${remaining} of ${TAROT_LIMITS.sage} remaining`)
+                  : (lang === "zh" ? "塔罗 AI 解读，仅贤者会员可用" : "Tarot AI readings: Sage members only")
+            }
             className={`inline-flex items-center gap-2 whitespace-nowrap rounded-full border px-3 py-1 text-[10px] uppercase tracking-[0.28em] ${
               plan === "oracle"
                 ? "border-gold-dust/60 bg-gold-dust/10 text-gold-light"
@@ -916,9 +934,9 @@ export function TarotDraw() {
                     : "border-white/15 bg-white/[0.02] text-stone-warm/50"
                   : "border-white/15 bg-white/[0.02] text-stone-warm/60"
             }`}
-            title={lang === "zh" ? "跨设备按账户同步" : "Synced per account across devices"}
+            title={lang === "zh" ? "跨设备按账户同步 · 本地时区月度重置" : "Synced per account across devices · resets monthly in your timezone"}
           >
-            <span className="size-1.5 rounded-full bg-gold-dust" />
+            <span className="size-1.5 rounded-full bg-gold-dust" aria-hidden="true" />
             {plan === "oracle"
               ? lang === "zh" ? "塔罗 AI · 本月无限" : "Tarot AI · unlimited"
               : plan === "sage"

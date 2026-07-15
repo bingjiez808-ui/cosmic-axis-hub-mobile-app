@@ -699,9 +699,9 @@ function ReportPage() {
       <AccountModal open={accOpen} onClose={() => setAccOpen(false)} />
 
       <section className="mx-auto mb-24 max-w-6xl px-6">
-        <div className="glass-card rounded-3xl p-8 md:p-12">
-          <div className="grid grid-cols-1 items-start gap-10 lg:grid-cols-[1fr_1.1fr]">
-            <div>
+        <div className="glass-card rounded-3xl p-6 sm:p-8 md:p-12">
+          <div className="grid grid-cols-1 items-stretch gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-10">
+            <div className="flex flex-col">
               <p className="mb-3 text-[10px] uppercase tracking-[0.4em] text-gold-dust">
                 {lang === "zh" ? "你的命盘" : "Your natal chart"}
               </p>
@@ -710,12 +710,12 @@ function ReportPage() {
                   ? "九颗行星 · 落在你专属的十二宫"
                   : "Nine planets · falling in your own twelve houses"}
               </h2>
-              <p className="mb-6 text-sm leading-relaxed text-stone-warm/60">
+              <p className="reading-copy mb-6 text-sm leading-relaxed text-stone-warm/60">
                 {lang === "zh"
                   ? "这是一张真实推算的西方回归黄道盘（Tropical Zodiac）—— 以 J2000.0 为基准，按平均黄经公式将七颗行星与上升 / 天顶落入你出生时刻真正对应的星座；相位则按行星间黄经差自动识别合、六分、四分、三分与对分。点击行星查看落位与主要相位；点击星座查看它承接的行星。"
                   : "A real tropical-zodiac natal wheel: seven planets plus Ascendant / Midheaven are placed by mean-longitude formulas referenced to J2000.0, using the exact moment you were born. Aspects (conjunction, sextile, square, trine, opposition) are detected automatically from the longitude differences. Tap a planet to reveal its sign and major aspects; tap a sign to see which planets it holds."}
               </p>
-              <div className="flex flex-wrap gap-2 text-[10px] uppercase tracking-[0.28em] text-stone-warm/50">
+              <div className="mb-4 flex flex-wrap gap-2 text-[10px] uppercase tracking-[0.28em] text-stone-warm/50">
                 <span className="rounded-full border border-white/10 px-3 py-1">☉ ☽ ☿ ♀ ♂ ♃ ♄</span>
                 <span className="rounded-full border border-white/10 px-3 py-1">Ⓐ {lang === "zh" ? "上升" : "Asc"}</span>
                 <span className="rounded-full border border-white/10 px-3 py-1">Ⓜ {lang === "zh" ? "天顶" : "MC"}</span>
@@ -728,24 +728,35 @@ function ReportPage() {
                 onClear={() => setSelectedPlanet(null)}
               />
             </div>
-            <div className="relative flex justify-center text-stone-warm/40">
-              <NatalWheel
+            <div className="flex min-w-0 flex-col items-center gap-4">
+              <div className="relative w-full text-stone-warm/40">
+                <NatalWheel
+                  lang={lang}
+                  seed={`${search.name ?? ""}|${search.date ?? ""}|${search.time ?? ""}|${search.place ?? ""}`}
+                  size={wheelSize}
+                  selectedPlanet={selectedPlanet}
+                  onSelectPlanet={setSelectedPlanet}
+                />
+                <button
+                  onClick={() => setZoomNatal(true)}
+                  className="absolute right-0 top-0 rounded-full border border-gold-dust/30 bg-obsidian/60 px-3 py-1.5 text-[10px] uppercase tracking-[0.28em] text-gold-dust/80 backdrop-blur transition-colors hover:border-gold-light hover:text-gold-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-light"
+                  aria-label={lang === "zh" ? "放大查看星盘" : "Enlarge chart"}
+                >
+                  {lang === "zh" ? "⤢ 放大" : "⤢ Enlarge"}
+                </button>
+              </div>
+
+              {/* Compact "core placements" summary — fills the right-column
+                  whitespace with per-visitor grounded facts. */}
+              <ChartFactsCard
                 lang={lang}
                 seed={`${search.name ?? ""}|${search.date ?? ""}|${search.time ?? ""}|${search.place ?? ""}`}
-                size={wheelSize}
-                selectedPlanet={selectedPlanet}
-                onSelectPlanet={setSelectedPlanet}
+                onPickPlanet={setSelectedPlanet}
               />
-              <button
-                onClick={() => setZoomNatal(true)}
-                className="absolute right-0 top-0 rounded-full border border-gold-dust/30 bg-obsidian/60 px-3 py-1.5 text-[10px] uppercase tracking-[0.28em] text-gold-dust/80 backdrop-blur transition-colors hover:border-gold-light hover:text-gold-light"
-                aria-label={lang === "zh" ? "放大查看星盘" : "Enlarge chart"}
-              >
-                {lang === "zh" ? "⤢ 放大" : "⤢ Enlarge"}
-              </button>
             </div>
           </div>
         </div>
+
 
         <ChartZoomModal
           open={zoomNatal}
@@ -868,35 +879,38 @@ function ReportPage() {
                 <p className="mb-4 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
                   {t.synthesis}
                 </p>
-                <p className="mb-8 text-base leading-relaxed text-stone-warm/80">
+                <p className="reading-copy mb-8 text-base leading-relaxed text-stone-warm/80">
                   {d.synthesis[li]}
                 </p>
 
-                <div className="rounded-2xl border border-gold-dust/20 bg-gold-dust/[0.04] p-6">
+                <div className="rounded-2xl border border-gold-dust/20 bg-gold-dust/[0.04] p-5 md:p-6">
                   <p className="mb-3 flex items-center gap-2 text-[10px] uppercase tracking-[0.32em] text-gold-light">
                     <span className="size-1.5 rounded-full bg-gold-dust" />
                     {t.in_plain_words}
                   </p>
-                  <p className="font-serif text-lg italic leading-relaxed text-stone-warm/90">
+                  <p className="reading-copy font-serif text-[15px] italic leading-[1.7] text-stone-warm/90 md:text-base">
                     {d.plain[li]}
                   </p>
                 </div>
 
                 {d.details && d.details.length > 0 && (
-                  <div className={`mt-6 grid grid-cols-1 gap-4 ${d.details.length === 3 ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
-
+                  <div
+                    className={`detail-grid mt-6 ${d.details.length === 3 ? "detail-grid-3" : ""}`}
+                    role="list"
+                  >
                     {d.details.map((block) => (
                       <div
                         key={block.label[0]}
-                        className="rounded-2xl border border-white/10 bg-white/[0.02] p-5"
+                        role="listitem"
+                        className="detail-card"
                       >
-                        <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+                        <p className="text-[10px] uppercase tracking-[0.3em] text-gold-dust/70">
                           {block.label[li]}
                         </p>
-                        <ul className="space-y-2 text-sm text-stone-warm/80">
+                        <ul className="space-y-1.5 text-stone-warm/80">
                           {block.items.map((it) => (
                             <li key={it[0]} className="flex items-start gap-2">
-                              <span className="mt-2 size-1 shrink-0 rounded-full bg-gold-dust" />
+                              <span className="mt-[7px] size-1 shrink-0 rounded-full bg-gold-dust" aria-hidden="true" />
                               <span>{it[li]}</span>
                             </li>
                           ))}
@@ -1093,5 +1107,112 @@ function PlanetReadingPanel({
       </div>
       </div>
     </motion.div>
+  );
+}
+
+// Signs → element / modality mapping for the compact facts card.
+const SIGN_ELEMENT: [string, string][] = [
+  ["Fire", "火"], ["Earth", "土"], ["Air", "风"], ["Water", "水"],
+  ["Fire", "火"], ["Earth", "土"], ["Air", "风"], ["Water", "水"],
+  ["Fire", "火"], ["Earth", "土"], ["Air", "风"], ["Water", "水"],
+];
+const SIGN_MODALITY: [string, string][] = [
+  ["Cardinal", "开创"], ["Fixed", "固定"], ["Mutable", "变动"], ["Cardinal", "开创"],
+  ["Fixed", "固定"], ["Mutable", "变动"], ["Cardinal", "开创"], ["Fixed", "固定"],
+  ["Mutable", "变动"], ["Cardinal", "开创"], ["Fixed", "固定"], ["Mutable", "变动"],
+];
+
+function ChartFactsCard({
+  lang,
+  seed,
+  onPickPlanet,
+}: {
+  lang: "en" | "zh";
+  seed: string;
+  onPickPlanet: (i: number) => void;
+}) {
+  const li = lang === "zh" ? 1 : 0;
+  const signs = computePlanetSigns(seed);
+  const core: { key: string; idx: number }[] = [
+    { key: "sun", idx: PLANETS.findIndex((p) => p.key === "sun") },
+    { key: "moon", idx: PLANETS.findIndex((p) => p.key === "moon") },
+    { key: "asc", idx: PLANETS.findIndex((p) => p.key === "asc") },
+    { key: "mc", idx: PLANETS.findIndex((p) => p.key === "mc") },
+  ];
+  // Element / modality tally across the visible bodies.
+  const tally = <T,>(pairs: T[][]) => {
+    const map = new Map<string, number>();
+    for (const p of pairs) {
+      const k = p[li] as unknown as string;
+      map.set(k, (map.get(k) ?? 0) + 1);
+    }
+    return [...map.entries()].sort((a, b) => b[1] - a[1]);
+  };
+  const bodySigns = PLANETS.slice(0, 10).map((_, i) => signs[i]);
+  const elements = tally(bodySigns.map((s) => SIGN_ELEMENT[s]));
+  const modalities = tally(bodySigns.map((s) => SIGN_MODALITY[s]));
+  const dominant = elements[0];
+  const dominantMod = modalities[0];
+
+  return (
+    <div
+      className="w-full rounded-2xl border border-gold-dust/20 bg-obsidian/40 p-4 sm:p-5"
+      aria-label={lang === "zh" ? "命盘核心概览" : "Chart facts summary"}
+    >
+      <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+        {lang === "zh" ? "命盘核心 · 快速一览" : "Core placements · at a glance"}
+      </p>
+      <ul className="grid grid-cols-2 gap-2 sm:gap-3">
+        {core.map(({ idx }) => {
+          if (idx < 0) return null;
+          const p = PLANETS[idx];
+          const s = ZODIAC_SIGNS[signs[idx]];
+          const h = houseForSign(signs[idx], signs[PLANETS.findIndex((x) => x.key === "asc")] ?? 0);
+          return (
+            <li key={p.key}>
+              <button
+                type="button"
+                onClick={() => onPickPlanet(idx)}
+                className="group flex w-full items-center gap-2 rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2 text-left transition-colors hover:border-gold-dust/50 hover:bg-gold-dust/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-light"
+                aria-label={
+                  lang === "zh"
+                    ? `${p.name[1]} 落于 ${s.zh}，第 ${h} 宫`
+                    : `${p.name[0]} in ${s.en}, house ${h}`
+                }
+              >
+                <span className="text-lg text-gold-light" aria-hidden="true">{p.glyph}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[11px] uppercase tracking-[0.24em] text-stone-warm/50">
+                    {p.name[li]}
+                  </span>
+                  <span className="reading-copy block font-serif text-[13px] italic text-stone-warm/85">
+                    {lang === "zh" ? s.zh : s.en}
+                    <span className="ml-1.5 text-[10px] not-italic tracking-[0.2em] text-gold-dust/70">
+                      · {lang === "zh" ? `第${h}宫` : `H${h}`}
+                    </span>
+                  </span>
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+      <div className="mt-3 grid grid-cols-2 gap-2 border-t border-white/5 pt-3 text-[11px] leading-snug text-stone-warm/70">
+        <p>
+          <span className="mr-1.5 text-[9px] uppercase tracking-[0.28em] text-gold-dust/70">
+            {lang === "zh" ? "主导元素" : "Dominant"}
+          </span>
+          <span className="font-serif italic text-gold-light">{dominant?.[0] ?? "—"}</span>
+          <span className="ml-1 text-stone-warm/45">×{dominant?.[1] ?? 0}</span>
+        </p>
+        <p>
+          <span className="mr-1.5 text-[9px] uppercase tracking-[0.28em] text-gold-dust/70">
+            {lang === "zh" ? "主导模式" : "Modality"}
+          </span>
+          <span className="font-serif italic text-gold-light">{dominantMod?.[0] ?? "—"}</span>
+          <span className="ml-1 text-stone-warm/45">×{dominantMod?.[1] ?? 0}</span>
+        </p>
+      </div>
+    </div>
   );
 }
