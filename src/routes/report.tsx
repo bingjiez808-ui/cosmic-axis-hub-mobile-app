@@ -1042,7 +1042,7 @@ function PlanetReadingPanel({
       transition={{ duration: 0.35 }}
       className="planet-panel relative mt-6 flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-gold-dust/25 bg-gradient-to-br from-white/[0.04] to-transparent"
     >
-      <div className="max-h-[520px] flex-1 overflow-y-auto overscroll-contain p-5 pr-4 md:max-h-[600px] lg:max-h-none">
+      <div className="max-h-[520px] flex-1 overflow-y-auto overscroll-contain p-5 pr-4 md:max-h-[600px] lg:max-h-[640px]">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
