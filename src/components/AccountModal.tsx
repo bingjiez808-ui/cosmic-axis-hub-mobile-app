@@ -5,6 +5,7 @@ import { Eye, EyeOff } from "lucide-react";
 
 import { useAccount } from "@/lib/account";
 import { useLang } from "@/lib/i18n";
+import { TAROT_LIMITS, tarotRemaining } from "@/lib/tarot-quota";
 
 type Mode = "signin" | "register" | "forgot";
 type Step = "form" | "verify" | "reset";
