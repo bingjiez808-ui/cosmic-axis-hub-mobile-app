@@ -14,12 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      phone_otps: {
+        Row: {
+          attempts: number
+          code_hash: string
+          consumed_at: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          phone: string
+        }
+        Insert: {
+          attempts?: number
+          code_hash: string
+          consumed_at?: string | null
+          created_at?: string
+          expires_at: string
+          id?: string
+          phone: string
+        }
+        Update: {
+          attempts?: number
+          code_hash?: string
+          consumed_at?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          phone?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
           display_name: string | null
           email: string
           id: string
+          membership_expires_at: string | null
+          membership_tier: Database["public"]["Enums"]["membership_tier"]
+          phone: string | null
           updated_at: string
         }
         Insert: {
@@ -27,6 +60,9 @@ export type Database = {
           display_name?: string | null
           email: string
           id: string
+          membership_expires_at?: string | null
+          membership_tier?: Database["public"]["Enums"]["membership_tier"]
+          phone?: string | null
           updated_at?: string
         }
         Update: {
@@ -34,7 +70,34 @@ export type Database = {
           display_name?: string | null
           email?: string
           id?: string
+          membership_expires_at?: string | null
+          membership_tier?: Database["public"]["Enums"]["membership_tier"]
+          phone?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      user_activity: {
+        Row: {
+          activity_date: string
+          created_at: string
+          id: string
+          path: string | null
+          user_id: string
+        }
+        Insert: {
+          activity_date?: string
+          created_at?: string
+          id?: string
+          path?: string | null
+          user_id: string
+        }
+        Update: {
+          activity_date?: string
+          created_at?: string
+          id?: string
+          path?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -68,6 +131,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      membership_tier: "none" | "sage" | "oracle"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -196,6 +260,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      membership_tier: ["none", "sage", "oracle"],
     },
   },
 } as const
