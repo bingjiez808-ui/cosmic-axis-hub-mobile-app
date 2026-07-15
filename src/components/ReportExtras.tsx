@@ -820,7 +820,13 @@ export function TarotDraw() {
   // consistent counter across devices/browsers; anonymous falls back to a
   // device-local key.
   const quotaScope = useMemo(
-    () => ({ accountKey: account?.email ?? null }),
+    () => ({
+      accountKey: account?.email ?? null,
+      // Roll the monthly counter at midnight in the visitor's local time.
+      tz: typeof Intl !== "undefined"
+        ? Intl.DateTimeFormat().resolvedOptions().timeZone
+        : undefined,
+    }),
     [account?.email],
   );
   const [remaining, setRemaining] = useState<number>(() => tarotRemaining(plan, quotaScope));
