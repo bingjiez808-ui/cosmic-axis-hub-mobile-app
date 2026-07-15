@@ -44,24 +44,32 @@ export const listAllUsers = createServerFn({ method: "GET" })
     });
     if (authErr) throw new Error(authErr.message);
 
+    // The generated Database types don't include our new tables yet — cast for now.
+    // biome-ignore lint: intentional untyped Data API access
+    const sb = supabaseAdmin as unknown as {
+      from: (table: string) => {
+        select: (columns: string) => {
+          in: (col: string, values: string[]) => Promise<{ data: Array<Record<string, unknown>> | null }>;
+        };
+      };
+    };
+
     const ids = authList.users.map((u) => u.id);
-    const { data: roles } = await supabaseAdmin
-      .from("user_roles")
-      .select("user_id, role")
-      .in("user_id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]);
-    const { data: profiles } = await supabaseAdmin
-      .from("profiles")
-      .select("id, display_name")
-      .in("id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]);
+    const safeIds = ids.length ? ids : ["00000000-0000-0000-0000-000000000000"];
+    const { data: roles } = await sb.from("user_roles").select("user_id, role").in("user_id", safeIds);
+    const { data: profiles } = await sb.from("profiles").select("id, display_name").in("id", safeIds);
 
     const roleMap = new Map<string, string[]>();
     (roles ?? []).forEach((r) => {
-      const arr = roleMap.get(r.user_id) ?? [];
-      arr.push(r.role as string);
-      roleMap.set(r.user_id, arr);
+      const uid = String(r.user_id);
+      const arr = roleMap.get(uid) ?? [];
+      arr.push(String(r.role));
+      roleMap.set(uid, arr);
     });
     const nameMap = new Map<string, string | null>();
-    (profiles ?? []).forEach((p) => nameMap.set(p.id, (p as { display_name: string | null }).display_name));
+    (profiles ?? []).forEach((p) => {
+      nameMap.set(String(p.id), (p.display_name as string | null) ?? null);
+    });
 
     return authList.users.map((u) => ({
       id: u.id,
