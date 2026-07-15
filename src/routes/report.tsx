@@ -507,20 +507,13 @@ function ReportPage() {
   // Personalised AI report — grounded in this specific chart.
   const seed = buildReportSeed(search);
   const invokeReport = generateReport;
-  const { session, loading: sessionLoading } = useSupabaseSession();
   const [ai, setAi] = useState<ReportAI | null>(null);
-  const [aiState, setAiState] = useState<"idle" | "loading" | "ready" | "error" | "signed_out">("idle");
+  const [aiState, setAiState] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [aiError, setAiError] = useState<string | null>(null);
   const latestReqRef = useRef(0);
 
   const runReport = useCallback((force = false) => {
     if (!search.date) return;
-    if (!session) {
-      setAi(null);
-      setAiState("signed_out");
-      setAiError(null);
-      return;
-    }
     const cacheKey = buildReportCacheKey(search, lang);
     if (!force) {
       try {
@@ -560,14 +553,13 @@ function ReportPage() {
         setAiState("error");
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [seed, lang, search.readingId, session]);
+  }, [seed, lang, search.readingId]);
 
   useEffect(() => {
-    if (sessionLoading) return;
     runReport(false);
-  }, [runReport, sessionLoading]);
+  }, [runReport]);
 
-  const isAwaitingPersonalized = !!search.date && aiState !== "ready" && aiState !== "error" && aiState !== "signed_out";
+  const isAwaitingPersonalized = !!search.date && aiState !== "ready" && aiState !== "error";
   const summary = ai?.summary
     ? ai.summary
     : isAwaitingPersonalized
