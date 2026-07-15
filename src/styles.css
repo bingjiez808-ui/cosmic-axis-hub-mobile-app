@@ -237,6 +237,16 @@
   40%      { opacity: 0.68; }
   60%      { opacity: 1;    }
 }
+@keyframes library-shimmer {
+  0%   { background-position: -180% 0; opacity: 0; }
+  40%  { opacity: 0.9; }
+  100% { background-position: 220% 0;  opacity: 0; }
+}
+@keyframes dust-burst {
+  0%   { opacity: 0; transform: scale(0.6); }
+  30%  { opacity: 0.85; }
+  100% { opacity: 0; transform: scale(1.4); }
+}
 
 @utility animate-slow-rotate {
   animation: slow-rotate 120s linear infinite;
