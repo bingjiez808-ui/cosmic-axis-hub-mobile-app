@@ -291,20 +291,18 @@ function noOrphan(s: string) {
                     {q.kicker[li]}
                   </p>
                   {isFirstQuiz && (
-                    <>
-                      <p className="mx-auto mb-4 max-w-lg text-xs leading-relaxed italic text-stone-warm/60">
-                        {lang === "zh"
-                          ? "接下来五题不是测验，也没有对错 —— 只用于让 AI 在合成四大体系之后，对你个人的偏差做一次微调。"
-                          : "The next five questions aren't a test — they're used to fine-tune the AI's synthesis against your personal deviations."}
-                      </p>
+                    <p className="mx-auto mb-6 max-w-lg text-xs leading-relaxed italic text-stone-warm/60">
+                      {lang === "zh"
+                        ? "接下来五题不是测验，也没有对错 —— 只用于让 AI 在合成四大体系之后，对你个人的偏差做一次微调。"
+                        : "The next five questions aren't a test — they're used to fine-tune the AI's synthesis against your personal deviations."}
                       <button
                         type="button"
                         onClick={() => setSkipQuiz(true)}
-                        className="mb-6 text-[10px] uppercase tracking-[0.32em] text-stone-warm/50 underline underline-offset-4 transition-colors hover:text-gold-dust"
+                        className="ml-2 not-italic text-stone-warm/50 underline underline-offset-4 transition-colors hover:text-gold-dust"
                       >
-                        {lang === "zh" ? "跳过校准 · 直接填写出生信息" : "Skip calibration · straight to birth info"}
+                        {lang === "zh" ? "跳过 →" : "Skip →"}
                       </button>
-                    </>
+                    </p>
                   )}
                   <h1 className="mx-auto mb-4 max-w-xl text-balance font-serif text-2xl italic leading-tight text-stone-warm md:text-4xl" style={{ wordBreak: "keep-all", overflowWrap: "break-word" }}>
                     {noOrphan(q.prompt[li])}
