@@ -124,21 +124,21 @@ Tone: warm, poetic, restrained — a candle-lit whisper. Place "mission" last an
   "dimensions": [
     {
       "key": "character | vocation | wealth | love | health | parents | children | mission",
-      "headline": "8-18 字的诗意小标题",
+      "headline": "8-14 字的诗意小标题",
       "evidence": [
-        {"tradition": "西方占星", "note": "一句具体落位，例如：太阳落狮子第 5 宫 · 月亮合金星"},
-        {"tradition": "印度占星", "note": "结合上面日期与行星，给出具体 Nakshatra / Bhava 表述"},
-        {"tradition": "八字",   "note": "结合上面干支，指出日主与十神"},
+        {"tradition": "西方占星", "note": "一句具体落位（如：太阳落狮子第 5 宫）"},
+        {"tradition": "印度占星", "note": "结合日期与行星，给出具体 Nakshatra / Bhava"},
+        {"tradition": "八字",   "note": "结合干支，指出日主与十神"},
         {"tradition": "紫微",   "note": "结合出生年月，落到具体宫位与主星"}
       ],
-      "synthesis": "3-4 句跨体系合鸣，必须点出至少一条上面列出的事实",
-      "plain": "3-4 句「说人话」——直接给来访者的行动建议，带一句他此刻的处境感",
+      "synthesis": "2 句跨体系合鸣，必须点出至少一条上面列出的事实",
+      "plain": "2 句「说人话」——一句处境感 + 一个可执行动作",
       "details": [
-        {"label": "优势 / 通道 / 缘份形状 等", "items": ["点 1", "点 2", "点 3", "点 4"]},
-        {"label": "警惕 / 窗口 / 需修的功课 等", "items": ["点 1", "点 2", "点 3", "点 4"]}
+        {"label": "优势 / 通道", "items": ["点 1", "点 2"]},
+        {"label": "警惕 / 功课", "items": ["点 1", "点 2"]}
       ]
     }
-    // …按照下方八个 key 顺序，各一个对象，共 8 个
+    // …按下方八个 key 顺序，各一个对象，共 8 个
   ]
 }`
       : `{
@@ -146,18 +146,18 @@ Tone: warm, poetic, restrained — a candle-lit whisper. Place "mission" last an
   "dimensions": [
     {
       "key": "character | vocation | wealth | love | health | parents | children | mission",
-      "headline": "6-14 word poetic sub-title",
+      "headline": "6-12 word poetic sub-title",
       "evidence": [
-        {"tradition": "Astrology", "note": "one concrete placement, e.g. Sun in Leo in 5th · Moon conjunct Venus"},
-        {"tradition": "Jyotish",   "note": "specific Nakshatra / Bhava derived from the date + planets above"},
-        {"tradition": "BaZi",      "note": "based on the pillars above, name the day-master & a Ten God"},
+        {"tradition": "Astrology", "note": "one concrete placement (e.g. Sun in Leo in 5th)"},
+        {"tradition": "Jyotish",   "note": "specific Nakshatra / Bhava derived from the date + planets"},
+        {"tradition": "BaZi",      "note": "based on the pillars, name the day-master & a Ten God"},
         {"tradition": "Zi Wei",    "note": "specific palace + main star for this year/month of birth"}
       ],
-      "synthesis": "3-4 sentences of cross-tradition convergence, citing at least one concrete fact listed above",
-      "plain": "3-4 sentences in everyday words — a concrete next move plus one line about where they stand right now",
+      "synthesis": "2 sentences of cross-tradition convergence, citing at least one concrete fact",
+      "plain": "2 sentences — one line about where they stand + one concrete next move",
       "details": [
-        {"label": "Strengths / channels / shape of the bond etc.", "items": ["point 1", "point 2", "point 3", "point 4"]},
-        {"label": "Watch-outs / windows / lessons etc.", "items": ["point 1", "point 2", "point 3", "point 4"]}
+        {"label": "Strengths / channels", "items": ["point 1", "point 2"]},
+        {"label": "Watch-outs / lessons", "items": ["point 1", "point 2"]}
       ]
     }
     // …one object per dim key below, in the given order — 8 total
@@ -170,14 +170,15 @@ ${chartFacts || (isZh ? "（未提供）" : "(not provided)")}
 ${isZh ? "需要生成的维度（严格按此顺序，8 个）" : "Required dimensions (STRICT order, 8 total)"}:
 ${dimList}
 
-${isZh ? "严格按下面的 JSON schema 输出（只输出 JSON）" : "Output strictly matches this JSON schema (JSON only)"}:
+${isZh ? "严格按下面的 JSON schema 输出（只输出 JSON，力求简洁）" : "Output strictly matches this JSON schema (JSON only, keep it tight)"}:
 ${schema}`;
 
     const { text } = await generateText({
-      model: gateway("google/gemini-3.5-flash"),
+      model: gateway("google/gemini-3.1-flash-lite"),
       system,
       prompt,
     });
+
 
     // Robust JSON extraction — strip fences and trailing prose.
     const cleaned = text
