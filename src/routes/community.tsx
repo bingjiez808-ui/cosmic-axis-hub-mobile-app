@@ -1009,10 +1009,10 @@ function CommunityPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5 }}
-                className="glass-card flex gap-4 rounded-2xl p-5"
+                className="glass-card flex gap-3 rounded-2xl p-4 sm:gap-4 sm:p-5"
               >
                 <AvatarGlyph hue={authorId.hue} glyph={h.glyph} size={56} />
-                <div className="flex-1">
+                <div className="min-w-0 flex-1">
                   <div className="mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
                     <span className="font-serif text-lg italic text-stone-warm">
                       {p.authorTitle}
@@ -1028,11 +1028,11 @@ function CommunityPage() {
                   <p className="font-serif text-base leading-relaxed text-stone-warm/85">
                     {p.text}
                   </p>
-                  <div className="mt-3 flex items-center gap-4 text-[11px] text-stone-warm/50">
+                  <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-stone-warm/50 sm:gap-4">
                     <button
                       type="button"
                       onClick={() => heart(p.id)}
-                      className="flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-1 uppercase tracking-[0.28em] transition-colors hover:border-gold-dust/40 hover:text-gold-dust"
+                      className="flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5 uppercase tracking-[0.28em] transition-colors hover:border-gold-dust/40 hover:text-gold-dust active:scale-95"
                     >
                       <span aria-hidden>✦</span>
                       <span>{p.hearts}</span>
@@ -1043,7 +1043,7 @@ function CommunityPage() {
                         setOpenComments((s) => ({ ...s, [p.id]: !s[p.id] }))
                       }
                       aria-expanded={!!openComments[p.id]}
-                      className="flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-1 uppercase tracking-[0.28em] transition-colors hover:border-gold-dust/40 hover:text-gold-dust"
+                      className="flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5 uppercase tracking-[0.28em] transition-colors hover:border-gold-dust/40 hover:text-gold-dust active:scale-95"
                     >
                       <span aria-hidden>❋</span>
                       <span>
@@ -1055,52 +1055,122 @@ function CommunityPage() {
                     </button>
                   </div>
 
-                  {/* Comments — always visible, collapsible for depth */}
+                  {/* Comments — threaded (top-level + replies) */}
                   {(p.comments ?? []).length > 0 && (
-                    <div className="mt-3 border-l border-gold-dust/20 pl-4">
+                    <div className="mt-3 border-l border-gold-dust/20 pl-3 sm:pl-4">
                       {(() => {
-                        const list = p.comments ?? [];
+                        const all = p.comments ?? [];
+                        const topLevel = all.filter((c) => !c.parentId);
+                        const repliesByParent = all.reduce<Record<string, Comment[]>>((acc, c) => {
+                          if (c.parentId) {
+                            (acc[c.parentId] ||= []).push(c);
+                          }
+                          return acc;
+                        }, {});
                         const isOpen = !!openComments[p.id];
-                        const visible = isOpen ? list : list.slice(-1);
-                        const hidden = list.length - visible.length;
+                        const visibleTop = isOpen ? topLevel : topLevel.slice(-1);
+                        const hiddenTop = topLevel.length - visibleTop.length;
+
+                        const renderComment = (c: Comment, depth = 0) => {
+                          const ch = houseByKey(c.authorHouseKey);
+                          const cid = buildIdentity(c.authorId);
+                          const replyKey = `${p.id}:${c.id}`;
+                          const replies = repliesByParent[c.id] ?? [];
+                          const showReply = !!replyOpen[replyKey];
+                          return (
+                            <li key={c.id} className="flex gap-2 sm:gap-2.5">
+                              <AvatarGlyph hue={cid.hue} glyph={ch.glyph} size={depth > 0 ? 24 : 28} />
+                              <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-baseline gap-x-2 text-[10px] uppercase tracking-[0.24em] text-stone-warm/50">
+                                  <span className="font-serif text-[13px] italic normal-case tracking-normal text-stone-warm/90">
+                                    {c.authorTitle}
+                                  </span>
+                                  <span className="text-gold-light">#{cid.number}</span>
+                                  <span className="text-gold-dust/60">{ch.name[li]}</span>
+                                  <span className="text-stone-warm/40">· {timeAgo(c.createdAt)}</span>
+                                </div>
+                                <p className="mt-0.5 font-serif text-[13.5px] leading-relaxed text-stone-warm/80">
+                                  {c.text}
+                                </p>
+                                <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.24em] text-stone-warm/45">
+                                  <button
+                                    type="button"
+                                    onClick={() => heartComment(p.id, c.id)}
+                                    className="flex items-center gap-1 rounded-full border border-white/5 px-2 py-1 transition-colors hover:border-gold-dust/40 hover:text-gold-dust active:scale-95"
+                                  >
+                                    <span aria-hidden>✦</span>
+                                    <span>{c.hearts ?? 0}</span>
+                                  </button>
+                                  {depth === 0 && (
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setReplyOpen((s) => ({ ...s, [replyKey]: !s[replyKey] }))
+                                      }
+                                      aria-expanded={showReply}
+                                      className="rounded-full border border-white/5 px-2 py-1 transition-colors hover:border-gold-dust/40 hover:text-gold-dust active:scale-95"
+                                    >
+                                      {lang === "zh" ? "回复" : "Reply"}
+                                    </button>
+                                  )}
+                                </div>
+
+                                {depth === 0 && replies.length > 0 && (
+                                  <ul className="mt-2 space-y-2 border-l border-gold-dust/10 pl-2 sm:pl-3">
+                                    {replies.map((r) => renderComment(r, 1))}
+                                  </ul>
+                                )}
+
+                                {depth === 0 && showReply && (
+                                  <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-start">
+                                    <textarea
+                                      value={replyDraft[replyKey] ?? ""}
+                                      onChange={(e) =>
+                                        setReplyDraft((s) => ({
+                                          ...s,
+                                          [replyKey]: e.target.value.slice(0, 280),
+                                        }))
+                                      }
+                                      rows={2}
+                                      placeholder={
+                                        lang === "zh"
+                                          ? `回复 ${c.authorTitle}…`
+                                          : `Reply to ${c.authorTitle}…`
+                                      }
+                                      className="min-h-[44px] w-full resize-none rounded-xl border border-white/10 bg-obsidian/40 px-3 py-2 text-[13px] text-stone-warm placeholder:text-stone-warm/30 focus:border-gold-dust/40 focus:outline-none"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => submitComment(p.id, c.id)}
+                                      disabled={!(replyDraft[replyKey] || "").trim()}
+                                      className="shrink-0 rounded-full border border-gold-dust/40 px-3 py-2 text-[10px] uppercase tracking-[0.28em] text-gold-dust transition-colors hover:bg-gold-dust/10 disabled:opacity-40 sm:py-1.5"
+                                    >
+                                      {lang === "zh" ? "回复" : "Reply"}
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </li>
+                          );
+                        };
+
                         return (
                           <>
-                            {!isOpen && hidden > 0 && (
+                            {!isOpen && hiddenTop > 0 && (
                               <button
                                 type="button"
                                 onClick={() => setOpenComments((s) => ({ ...s, [p.id]: true }))}
                                 className="mb-2 text-[10px] uppercase tracking-[0.28em] text-gold-dust/70 transition-colors hover:text-gold-dust"
                               >
                                 {lang === "zh"
-                                  ? `展开另 ${hidden} 条回声 ▾`
-                                  : `Show ${hidden} more echo${hidden > 1 ? "es" : ""} ▾`}
+                                  ? `展开另 ${hiddenTop} 条回声 ▾`
+                                  : `Show ${hiddenTop} more echo${hiddenTop > 1 ? "es" : ""} ▾`}
                               </button>
                             )}
-                            <ul className="space-y-2">
-                              {visible.map((c) => {
-                                const ch = houseByKey(c.authorHouseKey);
-                                const cid = buildIdentity(c.authorId);
-                                return (
-                                  <li key={c.id} className="flex gap-2.5">
-                                    <AvatarGlyph hue={cid.hue} glyph={ch.glyph} size={28} />
-                                    <div className="min-w-0 flex-1">
-                                      <div className="flex flex-wrap items-baseline gap-x-2 text-[10px] uppercase tracking-[0.24em] text-stone-warm/50">
-                                        <span className="font-serif text-[13px] italic normal-case tracking-normal text-stone-warm/90">
-                                          {c.authorTitle}
-                                        </span>
-                                        <span className="text-gold-light">#{cid.number}</span>
-                                        <span className="text-gold-dust/60">{ch.name[li]}</span>
-                                        <span className="text-stone-warm/40">· {timeAgo(c.createdAt)}</span>
-                                      </div>
-                                      <p className="mt-0.5 font-serif text-[13.5px] leading-relaxed text-stone-warm/80">
-                                        {c.text}
-                                      </p>
-                                    </div>
-                                  </li>
-                                );
-                              })}
+                            <ul className="space-y-3">
+                              {visibleTop.map((c) => renderComment(c, 0))}
                             </ul>
-                            {isOpen && list.length > 1 && (
+                            {isOpen && topLevel.length > 1 && (
                               <button
                                 type="button"
                                 onClick={() => setOpenComments((s) => ({ ...s, [p.id]: false }))}
@@ -1115,8 +1185,8 @@ function CommunityPage() {
                     </div>
                   )}
 
-                  {/* Reply composer */}
-                  <div className="mt-3 flex items-start gap-2">
+                  {/* Top-level echo composer */}
+                  <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-start">
                     <textarea
                       value={commentDraft[p.id] ?? ""}
                       onChange={(e) =>
@@ -1125,19 +1195,19 @@ function CommunityPage() {
                           [p.id]: e.target.value.slice(0, 280),
                         }))
                       }
-                      rows={1}
+                      rows={2}
                       placeholder={
                         lang === "zh"
                           ? "在此留下你的回声…"
                           : "Leave an echo…"
                       }
-                      className="min-h-[36px] w-full resize-none rounded-xl border border-white/10 bg-obsidian/40 px-3 py-2 text-[13px] text-stone-warm placeholder:text-stone-warm/30 focus:border-gold-dust/40 focus:outline-none"
+                      className="min-h-[44px] w-full resize-none rounded-xl border border-white/10 bg-obsidian/40 px-3 py-2 text-[13px] text-stone-warm placeholder:text-stone-warm/30 focus:border-gold-dust/40 focus:outline-none"
                     />
                     <button
                       type="button"
                       onClick={() => submitComment(p.id)}
                       disabled={!(commentDraft[p.id] || "").trim()}
-                      className="shrink-0 rounded-full border border-gold-dust/40 px-3 py-1.5 text-[10px] uppercase tracking-[0.28em] text-gold-dust transition-colors hover:bg-gold-dust/10 disabled:opacity-40"
+                      className="shrink-0 rounded-full border border-gold-dust/40 px-4 py-2 text-[10px] uppercase tracking-[0.28em] text-gold-dust transition-colors hover:bg-gold-dust/10 disabled:opacity-40 sm:py-1.5"
                     >
                       {lang === "zh" ? "回声" : "Echo"}
                     </button>
