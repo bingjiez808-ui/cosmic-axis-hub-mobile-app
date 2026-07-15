@@ -219,7 +219,10 @@
   .ritual-input::placeholder {
     color: color-mix(in oklab, white 15%, transparent);
     font-style: italic;
+  }
 }
+
+
 
 /* Fluid heading utilities — grow smoothly from mobile → desktop. */
 @utility text-fluid-hero {
