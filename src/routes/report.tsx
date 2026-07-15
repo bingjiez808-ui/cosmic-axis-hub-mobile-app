@@ -728,10 +728,6 @@ function ReportPage() {
                   planetIdx={selectedPlanet}
                   onClear={() => setSelectedPlanet(null)}
                 />
-                <ChartTipCard
-                  lang={lang}
-                  seed={`${search.name ?? ""}|${search.date ?? ""}|${search.time ?? ""}|${search.place ?? ""}`}
-                />
               </div>
             </div>
 
