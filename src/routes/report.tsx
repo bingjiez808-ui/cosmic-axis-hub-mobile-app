@@ -1166,7 +1166,7 @@ function ChartFactsCard({
           {lang === "zh" ? "点选查看解读" : "tap to read"}
         </p>
       </div>
-      <ul className="min-h-0 flex-1 divide-y divide-white/5 overflow-y-auto pretty-scroll">
+      <ul className="divide-y divide-white/5 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pretty-scroll">
         {PLANETS.map((p, idx) => {
           const s = ZODIAC_SIGNS[signs[idx]];
           const h = houseForSign(signs[idx], ascSign);
