@@ -511,18 +511,22 @@ function ReportPage() {
   const [aiError, setAiError] = useState<string | null>(null);
   const latestReqRef = useRef(0);
 
-  useEffect(() => {
+  const runReport = useCallback((force = false) => {
     if (!search.date) return;
     const cacheKey = buildReportCacheKey(search, lang);
-    try {
-      const cached = typeof sessionStorage !== "undefined" ? sessionStorage.getItem(cacheKey) : null;
-      if (cached) {
-        setAi(JSON.parse(cached) as ReportAI);
-        setAiState("ready");
-        return;
+    if (!force) {
+      try {
+        const cached = typeof sessionStorage !== "undefined" ? sessionStorage.getItem(cacheKey) : null;
+        if (cached) {
+          setAi(JSON.parse(cached) as ReportAI);
+          setAiState("ready");
+          return;
+        }
+      } catch {
+        /* ignore */
       }
-    } catch {
-      /* ignore */
+    } else {
+      try { sessionStorage.removeItem(cacheKey); } catch {}
     }
 
     const reqId = ++latestReqRef.current;
@@ -533,9 +537,6 @@ function ReportPage() {
       data: buildReportRequest(search, lang),
     })
       .then((res) => {
-        // Only apply if this is still the most recent request — protects against
-        // fast lang/seed switches without cancelling successful writes (React
-        // strict mode used to drop the resolved value here).
         if (reqId !== latestReqRef.current) return;
         setAi(res);
         setAiState("ready");
@@ -552,6 +553,10 @@ function ReportPage() {
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seed, lang, search.readingId]);
+
+  useEffect(() => {
+    runReport(false);
+  }, [runReport]);
 
   const isAwaitingPersonalized = !!search.date && aiState !== "ready" && aiState !== "error";
   const summary = ai?.summary
