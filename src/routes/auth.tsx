@@ -5,8 +5,10 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { useLang } from "@/lib/i18n";
+import { sendPhoneOtp, verifyPhoneOtp } from "@/lib/phone-auth.functions";
 
-type Mode = "sign_in" | "sign_up" | "forgot" | "reset";
+type Mode = "sign_in" | "sign_up" | "forgot" | "reset" | "phone";
+
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
