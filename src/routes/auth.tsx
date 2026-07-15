@@ -5,8 +5,10 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { useLang } from "@/lib/i18n";
+import { sendPhoneOtp, verifyPhoneOtp } from "@/lib/phone-auth.functions";
 
-type Mode = "sign_in" | "sign_up" | "forgot" | "reset";
+type Mode = "sign_in" | "sign_up" | "forgot" | "reset" | "phone";
+
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -32,6 +34,17 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
+  const [phone, setPhone] = useState("");
+  const [otp, setOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [cooldown]);
+
 
   const getPostAuthDestination = async () => {
     if (search.redirect) return search.redirect;
@@ -79,7 +92,10 @@ function AuthPage() {
         ? zh ? "取回你的印章" : "Recover your seal"
         : mode === "reset"
         ? zh ? "重铸你的印章" : "Recast your seal"
+        : mode === "phone"
+        ? zh ? "以手机号入席" : "Sign in with phone"
         : zh ? "重返图书馆" : "Return to the library",
+
     email: zh ? "邮箱" : "Email",
     password: zh ? "口令（至少 8 位）" : "Password (min 8 chars)",
     name: zh ? "如何称呼你" : "How to call you",
@@ -107,8 +123,44 @@ function AuthPage() {
     setBusy(false);
   }
 
+  async function onSendOtp() {
+    if (!phone) {
+      toast.error(zh ? "请输入手机号" : "Enter your phone");
+      return;
+    }
+    setBusy(true);
+    try {
+      await sendPhoneOtp({ data: { phone } });
+      setOtpSent(true);
+      setCooldown(30);
+      toast.success(zh ? "验证码已发送" : "Code sent");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onVerifyOtp(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      const { tokenHash } = await verifyPhoneOtp({ data: { phone, code: otp } });
+      const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: "magiclink" });
+      if (error) throw error;
+      toast.success(zh ? "入席成功" : "Welcome");
+      const to = await getPostAuthDestination();
+      navigate({ to: to as never });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function onEmailAuth(e: React.FormEvent) {
     e.preventDefault();
+
     setBusy(true);
     try {
       if (mode === "sign_in") {
@@ -179,6 +231,29 @@ function AuthPage() {
           </>
         )}
 
+        {(mode === "sign_in" || mode === "sign_up" || mode === "phone") && (
+          <div className="mb-4 flex gap-1 rounded-full border border-white/10 bg-obsidian/40 p-1">
+            <button
+              type="button"
+              onClick={() => setMode("sign_in")}
+              className={`flex-1 rounded-full px-3 py-2 text-[10px] uppercase tracking-[0.28em] transition ${
+                mode !== "phone" ? "bg-gold-dust text-obsidian" : "text-stone-warm/60 hover:text-gold-dust"
+              }`}
+            >
+              {zh ? "邮箱" : "Email"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("phone")}
+              className={`flex-1 rounded-full px-3 py-2 text-[10px] uppercase tracking-[0.28em] transition ${
+                mode === "phone" ? "bg-gold-dust text-obsidian" : "text-stone-warm/60 hover:text-gold-dust"
+              }`}
+            >
+              {zh ? "手机" : "Phone"}
+            </button>
+          </div>
+        )}
+
         {mode === "forgot" && (
           <p className="mb-4 text-xs text-stone-warm/60">{t.forgotHint}</p>
         )}
@@ -186,49 +261,91 @@ function AuthPage() {
           <p className="mb-4 text-xs text-stone-warm/60">{t.resetHint}</p>
         )}
 
-        <form onSubmit={onEmailAuth} className="space-y-3">
-          {mode !== "reset" && (
+        {mode === "phone" ? (
+          <form onSubmit={onVerifyOtp} className="space-y-3">
             <input
-              type="email"
-              autoComplete="email"
+              type="tel"
+              inputMode="tel"
               required
-              placeholder={t.email}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              placeholder={zh ? "手机号（如 +8613800000000）" : "Phone (E.164, e.g. +8613800000000)"}
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
               className="w-full rounded-lg border border-white/10 bg-obsidian/40 px-4 py-3 text-sm text-stone-warm placeholder:text-stone-warm/30 focus:border-gold-dust focus:outline-none"
             />
-          )}
-          {mode === "sign_up" && (
-            <input
-              type="text"
-              placeholder={t.name}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-lg border border-white/10 bg-obsidian/40 px-4 py-3 text-sm text-stone-warm placeholder:text-stone-warm/30 focus:border-gold-dust focus:outline-none"
-            />
-          )}
-          {(mode === "sign_in" || mode === "sign_up" || mode === "reset") && (
-            <input
-              type="password"
-              autoComplete={mode === "sign_in" ? "current-password" : "new-password"}
-              required
-              minLength={8}
-              placeholder={t.password}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg border border-white/10 bg-obsidian/40 px-4 py-3 text-sm text-stone-warm placeholder:text-stone-warm/30 focus:border-gold-dust focus:outline-none"
-            />
-          )}
-          <button
-            type="submit"
-            disabled={busy}
-            className="w-full rounded-full bg-gold-dust px-6 py-3 text-xs uppercase tracking-[0.28em] text-obsidian transition-colors hover:bg-gold-light disabled:opacity-50"
-          >
-            {mode === "sign_in" ? t.signIn : mode === "sign_up" ? t.signUp : mode === "forgot" ? t.sendReset : t.resetBtn}
-          </button>
-        </form>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="\d{6}"
+                maxLength={6}
+                required={otpSent}
+                placeholder={zh ? "6 位验证码" : "6-digit code"}
+                value={otp}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/gu, "").slice(0, 6))}
+                className="flex-1 rounded-lg border border-white/10 bg-obsidian/40 px-4 py-3 text-sm text-stone-warm placeholder:text-stone-warm/30 focus:border-gold-dust focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={onSendOtp}
+                disabled={busy || cooldown > 0 || !phone}
+                className="shrink-0 rounded-lg border border-gold-dust/40 px-4 text-[10px] uppercase tracking-[0.24em] text-gold-light hover:bg-gold-dust/10 disabled:opacity-40"
+              >
+                {cooldown > 0 ? `${cooldown}s` : otpSent ? (zh ? "重发" : "Resend") : (zh ? "发送" : "Send")}
+              </button>
+            </div>
+            <button
+              type="submit"
+              disabled={busy || otp.length !== 6}
+              className="w-full rounded-full bg-gold-dust px-6 py-3 text-xs uppercase tracking-[0.28em] text-obsidian transition-colors hover:bg-gold-light disabled:opacity-50"
+            >
+              {zh ? "以手机入席" : "Sign in with phone"}
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={onEmailAuth} className="space-y-3">
+            {mode !== "reset" && (
+              <input
+                type="email"
+                autoComplete="email"
+                required
+                placeholder={t.email}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full rounded-lg border border-white/10 bg-obsidian/40 px-4 py-3 text-sm text-stone-warm placeholder:text-stone-warm/30 focus:border-gold-dust focus:outline-none"
+              />
+            )}
+            {mode === "sign_up" && (
+              <input
+                type="text"
+                placeholder={t.name}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full rounded-lg border border-white/10 bg-obsidian/40 px-4 py-3 text-sm text-stone-warm placeholder:text-stone-warm/30 focus:border-gold-dust focus:outline-none"
+              />
+            )}
+            {(mode === "sign_in" || mode === "sign_up" || mode === "reset") && (
+              <input
+                type="password"
+                autoComplete={mode === "sign_in" ? "current-password" : "new-password"}
+                required
+                minLength={8}
+                placeholder={t.password}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full rounded-lg border border-white/10 bg-obsidian/40 px-4 py-3 text-sm text-stone-warm placeholder:text-stone-warm/30 focus:border-gold-dust focus:outline-none"
+              />
+            )}
+            <button
+              type="submit"
+              disabled={busy}
+              className="w-full rounded-full bg-gold-dust px-6 py-3 text-xs uppercase tracking-[0.28em] text-obsidian transition-colors hover:bg-gold-light disabled:opacity-50"
+            >
+              {mode === "sign_in" ? t.signIn : mode === "sign_up" ? t.signUp : mode === "forgot" ? t.sendReset : t.resetBtn}
+            </button>
+          </form>
+        )}
 
-        {mode !== "reset" && (
+        {mode !== "reset" && mode !== "phone" && (
           <div className="mt-6 flex flex-col items-center gap-2 text-[11px] text-stone-warm/60">
             {mode === "sign_in" && (
               <>
@@ -252,6 +369,7 @@ function AuthPage() {
             )}
           </div>
         )}
+
 
         <div className="mt-6 text-center">
           <Link to="/" className="text-[10px] uppercase tracking-[0.32em] text-stone-warm/40 hover:text-gold-dust">

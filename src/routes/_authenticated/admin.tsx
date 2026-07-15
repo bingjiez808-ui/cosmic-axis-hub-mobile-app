@@ -1,12 +1,26 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import {
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Bar,
+  BarChart,
+  Legend,
+} from "recharts";
 
 import { supabase } from "@/integrations/supabase/client";
 import {
   adminUpdateProfile,
+  getAdminStats,
   listAllUsers,
   sendPasswordResetEmail,
+  setUserMembership,
   setUserPassword,
 } from "@/lib/admin.functions";
 
@@ -22,22 +36,40 @@ export const Route = createFileRoute("/_authenticated/admin")({
 });
 
 type Row = Awaited<ReturnType<typeof listAllUsers>>[number];
+type Stats = Awaited<ReturnType<typeof getAdminStats>>;
+type Tier = "none" | "sage" | "oracle";
+
+const TIER_LABELS: Record<Tier, string> = {
+  none: "凡·访客",
+  sage: "贤者",
+  oracle: "神谕者",
+};
+const TIER_STYLES: Record<Tier, string> = {
+  none: "border-white/15 text-stone-warm/50",
+  sage: "border-emerald-400/50 text-emerald-300 bg-emerald-950/20",
+  oracle: "border-gold-dust text-gold-light bg-gold-dust/15",
+};
 
 function AdminPage() {
   const navigate = useNavigate();
   const [rows, setRows] = useState<Row[] | null>(null);
+  const [stats, setStats] = useState<Stats | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [q, setQ] = useState("");
+  const [tierFilter, setTierFilter] = useState<"all" | Tier>("all");
   const [editing, setEditing] = useState<Row | null>(null);
   const [reload, setReload] = useState(0);
 
   useEffect(() => {
     let cancel = false;
     setRows(null);
+    setStats(null);
     setErr(null);
-    listAllUsers()
-      .then((data) => {
-        if (!cancel) setRows(data);
+    Promise.all([listAllUsers(), getAdminStats()])
+      .then(([data, s]) => {
+        if (cancel) return;
+        setRows(data);
+        setStats(s);
       })
       .catch((e: Error) => {
         if (cancel) return;
@@ -55,20 +87,24 @@ function AdminPage() {
   const filtered = useMemo(() => {
     if (!rows) return null;
     const term = q.trim().toLowerCase();
-    if (!term) return rows;
-    return rows.filter(
-      (r) => r.email.toLowerCase().includes(term) || (r.displayName ?? "").toLowerCase().includes(term),
-    );
-  }, [rows, q]);
+    return rows.filter((r) => {
+      if (tierFilter !== "all" && r.membershipTier !== tierFilter) return false;
+      if (!term) return true;
+      return (
+        r.email.toLowerCase().includes(term) ||
+        (r.displayName ?? "").toLowerCase().includes(term) ||
+        (r.phone ?? "").includes(term)
+      );
+    });
+  }, [rows, q, tierFilter]);
 
-  const stats = useMemo(() => {
+  const quickStats = useMemo(() => {
     if (!rows) return null;
     const now = Date.now();
     const day = 24 * 60 * 60 * 1000;
     const active7 = rows.filter((r) => r.lastSignInAt && now - new Date(r.lastSignInAt).getTime() < 7 * day).length;
-    const active30 = rows.filter((r) => r.lastSignInAt && now - new Date(r.lastSignInAt).getTime() < 30 * day).length;
     const admins = rows.filter((r) => r.roles.includes("admin")).length;
-    return { total: rows.length, active7, active30, admins };
+    return { active7, admins };
   }, [rows]);
 
   return (
@@ -79,7 +115,7 @@ function AdminPage() {
             <p className="text-[10px] uppercase tracking-[0.42em] text-gold-dust">Admin</p>
             <h1 className="mt-2 font-serif text-4xl italic text-stone-warm">议政厅 · Council chamber</h1>
             <p className="mt-2 max-w-xl text-sm text-stone-warm/60">
-              后台所有注册的访客与最近入席记录。可代访客发送口令重铸信、直接重铸口令、或调整称呼。
+              查看所有访客、会员档位与近 30 日趋势。可为访客升为「贤者」或「神谕者」。
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -103,21 +139,88 @@ function AdminPage() {
         </div>
 
         {stats && (
-          <div className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-4">
-            <Stat label="Registered" value={stats.total} />
-            <Stat label="Active · 7d" value={stats.active7} />
-            <Stat label="Active · 30d" value={stats.active30} />
-            <Stat label="Admins" value={stats.admins} />
+          <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-5">
+            <Stat label="访客总数" value={stats.totals.totalUsers} />
+            <Stat label="会员总数" value={stats.totals.totalMembers} accent />
+            <Stat label="贤者" value={stats.totals.sage} />
+            <Stat label="神谕者" value={stats.totals.oracle} accent />
+            <Stat label="7日活跃" value={quickStats?.active7 ?? 0} />
           </div>
         )}
 
-        <input
-          type="search"
-          placeholder="Search email or name…"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          className="mb-4 w-full max-w-md rounded-lg border border-white/10 bg-obsidian/40 px-4 py-2 text-sm text-stone-warm placeholder:text-stone-warm/30 focus:border-gold-dust focus:outline-none"
-        />
+        {stats && (
+          <div className="mb-8 grid gap-4 md:grid-cols-2">
+            <ChartCard title="每日新增用户 · 30d">
+              <ResponsiveContainer width="100%" height={200}>
+                <LineChart data={stats.series} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 10, fill: "rgba(255,255,255,0.4)" }}
+                    tickFormatter={(v: string) => v.slice(5)}
+                  />
+                  <YAxis tick={{ fontSize: 10, fill: "rgba(255,255,255,0.4)" }} allowDecimals={false} />
+                  <Tooltip
+                    contentStyle={{
+                      background: "rgba(10,10,15,0.9)",
+                      border: "1px solid rgba(212,175,55,0.3)",
+                      borderRadius: 8,
+                      fontSize: 12,
+                    }}
+                  />
+                  <Line type="monotone" dataKey="newUsers" stroke="#d4af37" strokeWidth={2} dot={false} name="新增" />
+                </LineChart>
+              </ResponsiveContainer>
+            </ChartCard>
+            <ChartCard title="会员转化数 · 30d">
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={stats.series} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 10, fill: "rgba(255,255,255,0.4)" }}
+                    tickFormatter={(v: string) => v.slice(5)}
+                  />
+                  <YAxis tick={{ fontSize: 10, fill: "rgba(255,255,255,0.4)" }} allowDecimals={false} />
+                  <Tooltip
+                    contentStyle={{
+                      background: "rgba(10,10,15,0.9)",
+                      border: "1px solid rgba(212,175,55,0.3)",
+                      borderRadius: 8,
+                      fontSize: 12,
+                    }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 10 }} />
+                  <Bar dataKey="conversions" fill="#34d399" name="转化会员" />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartCard>
+          </div>
+        )}
+
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <input
+            type="search"
+            placeholder="搜索邮箱、姓名、手机号…"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            className="w-full max-w-md rounded-lg border border-white/10 bg-obsidian/40 px-4 py-2 text-sm text-stone-warm placeholder:text-stone-warm/30 focus:border-gold-dust focus:outline-none"
+          />
+          <div className="flex gap-1 rounded-full border border-white/10 bg-obsidian/40 p-1">
+            {(["all", "none", "sage", "oracle"] as const).map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setTierFilter(t)}
+                className={`rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.24em] transition ${
+                  tierFilter === t ? "bg-gold-dust text-obsidian" : "text-stone-warm/60 hover:text-gold-dust"
+                }`}
+              >
+                {t === "all" ? "全部" : TIER_LABELS[t]}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {err && !err.toLowerCase().includes("forbidden") && (
           <p className="mb-4 rounded-lg border border-red-500/30 bg-red-950/30 px-4 py-3 text-sm text-red-300">
@@ -126,13 +229,13 @@ function AdminPage() {
         )}
 
         <div className="glass-card overflow-hidden rounded-2xl border border-white/10">
-          <div className="hidden grid-cols-[1.5fr_1.2fr_0.8fr_0.8fr_0.7fr_1.4fr] gap-3 border-b border-white/10 bg-obsidian/40 px-4 py-3 text-[10px] uppercase tracking-[0.24em] text-stone-warm/50 md:grid">
-            <div>Visitor</div>
-            <div>Email</div>
-            <div>Joined</div>
-            <div>Last seen</div>
-            <div>Method</div>
-            <div className="text-right">Actions</div>
+          <div className="hidden grid-cols-[1.4fr_1.1fr_1fr_0.8fr_0.8fr_1.2fr] gap-3 border-b border-white/10 bg-obsidian/40 px-4 py-3 text-[10px] uppercase tracking-[0.24em] text-stone-warm/50 md:grid">
+            <div>访客</div>
+            <div>联系方式</div>
+            <div>会员</div>
+            <div>加入</div>
+            <div>最近登录</div>
+            <div className="text-right">操作</div>
           </div>
           {filtered === null ? (
             <div className="p-8 text-center text-sm text-stone-warm/50">Reading the registry…</div>
@@ -158,11 +261,22 @@ function AdminPage() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: number }) {
+function Stat({ label, value, accent }: { label: string; value: number; accent?: boolean }) {
   return (
-    <div className="glass-card rounded-xl border border-white/10 px-4 py-3">
+    <div className={`glass-card rounded-xl border px-4 py-3 ${accent ? "border-gold-dust/40" : "border-white/10"}`}>
       <div className="text-[10px] uppercase tracking-[0.28em] text-stone-warm/50">{label}</div>
-      <div className="mt-1 font-serif text-2xl text-gold-light">{value}</div>
+      <div className={`mt-1 font-serif text-2xl ${accent ? "text-gold-light" : "text-stone-warm"}`}>{value}</div>
+    </div>
+  );
+}
+
+function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="glass-card rounded-2xl border border-white/10 p-4">
+      <div className="mb-3 flex items-center justify-between">
+        <h3 className="text-[11px] uppercase tracking-[0.32em] text-gold-dust">{title}</h3>
+      </div>
+      {children}
     </div>
   );
 }
@@ -174,12 +288,22 @@ function fmtDate(v: string | null) {
   return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
 
+function TierBadge({ tier }: { tier: Tier }) {
+  return (
+    <span
+      className={`rounded-full border px-2 py-0.5 text-[9px] uppercase tracking-[0.24em] ${TIER_STYLES[tier]}`}
+    >
+      {TIER_LABELS[tier]}
+    </span>
+  );
+}
+
 function UserRow({ row, onEdit }: { row: Row; onEdit: () => void }) {
   const isAdmin = row.roles.includes("admin");
   return (
-    <div className="grid grid-cols-1 gap-2 border-b border-white/5 px-4 py-4 last:border-b-0 md:grid-cols-[1.5fr_1.2fr_0.8fr_0.8fr_0.7fr_1.4fr] md:items-center md:gap-3">
+    <div className="grid grid-cols-1 gap-2 border-b border-white/5 px-4 py-4 last:border-b-0 md:grid-cols-[1.4fr_1.1fr_1fr_0.8fr_0.8fr_1.2fr] md:items-center md:gap-3">
       <div>
-        <div className="flex items-center gap-2 font-serif text-sm text-stone-warm">
+        <div className="flex flex-wrap items-center gap-2 font-serif text-sm text-stone-warm">
           {row.displayName || "Nameless"}
           {isAdmin && (
             <span className="rounded-full border border-gold-dust/40 px-2 py-0.5 text-[9px] uppercase tracking-[0.24em] text-gold-dust">
@@ -192,39 +316,29 @@ function UserRow({ row, onEdit }: { row: Row; onEdit: () => void }) {
             </span>
           )}
         </div>
-        <div className="mt-0.5 font-mono text-[10px] text-stone-warm/40 md:hidden">{row.email}</div>
       </div>
-      <div className="hidden font-mono text-xs text-stone-warm/70 md:block">{row.email}</div>
+      <div className="font-mono text-[11px] text-stone-warm/70">
+        <div className="truncate">{row.email}</div>
+        {row.phone && <div className="text-stone-warm/50">{row.phone}</div>}
+      </div>
+      <div className="flex items-center">
+        <TierBadge tier={row.membershipTier} />
+      </div>
       <div className="text-xs text-stone-warm/60">
-        <span className="md:hidden text-stone-warm/40">Joined </span>
+        <span className="md:hidden text-stone-warm/40">加入 </span>
         {fmtDate(row.createdAt)}
       </div>
       <div className="text-xs text-stone-warm/60">
-        <span className="md:hidden text-stone-warm/40">Last seen </span>
+        <span className="md:hidden text-stone-warm/40">最近 </span>
         {fmtDate(row.lastSignInAt)}
       </div>
-      <div className="text-[10px] uppercase tracking-[0.24em] text-stone-warm/40">{row.provider}</div>
       <div className="flex flex-wrap justify-start gap-2 md:justify-end">
         <button
           type="button"
-          onClick={async () => {
-            try {
-              await sendPasswordResetEmail({ data: { email: row.email } });
-              toast.success(`Recovery letter sent to ${row.email}`);
-            } catch (e) {
-              toast.error(e instanceof Error ? e.message : String(e));
-            }
-          }}
+          onClick={onEdit}
           className="rounded-full border border-gold-dust/40 px-3 py-1.5 text-[10px] uppercase tracking-[0.24em] text-gold-light hover:bg-gold-dust/10"
         >
-          Send reset email
-        </button>
-        <button
-          type="button"
-          onClick={onEdit}
-          className="rounded-full border border-white/15 px-3 py-1.5 text-[10px] uppercase tracking-[0.24em] text-stone-warm/70 hover:border-gold-dust/60 hover:text-gold-dust"
-        >
-          Manage
+          管理
         </button>
       </div>
     </div>
@@ -233,6 +347,10 @@ function UserRow({ row, onEdit }: { row: Row; onEdit: () => void }) {
 
 function EditDrawer({ row, onClose, onSaved }: { row: Row; onClose: () => void; onSaved: () => void }) {
   const [displayName, setDisplayName] = useState(row.displayName ?? "");
+  const [tier, setTier] = useState<Tier>(row.membershipTier);
+  const [expiresAt, setExpiresAt] = useState<string>(
+    row.membershipExpiresAt ? row.membershipExpiresAt.slice(0, 10) : "",
+  );
   const [newPassword, setNewPassword] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -240,7 +358,7 @@ function EditDrawer({ row, onClose, onSaved }: { row: Row; onClose: () => void; 
     setBusy(true);
     try {
       await adminUpdateProfile({ data: { userId: row.id, displayName: displayName.trim() || null } });
-      toast.success("Profile updated");
+      toast.success("称呼已更新");
       onSaved();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e));
@@ -248,16 +366,31 @@ function EditDrawer({ row, onClose, onSaved }: { row: Row; onClose: () => void; 
       setBusy(false);
     }
   }
+
+  async function saveMembership() {
+    setBusy(true);
+    try {
+      const iso = tier === "none" ? null : expiresAt ? new Date(`${expiresAt}T23:59:59Z`).toISOString() : null;
+      await setUserMembership({ data: { userId: row.id, tier, expiresAt: iso } });
+      toast.success("会员档位已更新");
+      onSaved();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function resetPassword() {
     if (newPassword.length < 8) {
-      toast.error("Password must be at least 8 characters");
+      toast.error("口令至少 8 位");
       return;
     }
-    if (!confirm(`Set a new password for ${row.email}? The visitor will need to be told the new password out of band.`)) return;
+    if (!confirm(`Set a new password for ${row.email}?`)) return;
     setBusy(true);
     try {
       await setUserPassword({ data: { userId: row.id, password: newPassword } });
-      toast.success("Password reset");
+      toast.success("口令已重铸");
       setNewPassword("");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e));
@@ -267,21 +400,27 @@ function EditDrawer({ row, onClose, onSaved }: { row: Row; onClose: () => void; 
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm md:items-center" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm md:items-center"
+      onClick={onClose}
+    >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="glass-card w-full max-w-lg rounded-t-3xl border border-gold-dust/20 p-6 md:rounded-3xl md:p-8"
+        className="glass-card max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-gold-dust/20 p-6 md:rounded-3xl md:p-8"
       >
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust">Manage visitor</p>
+            <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust">管理访客</p>
             <h2 className="mt-1 font-serif text-xl text-stone-warm">{row.email}</h2>
+            {row.phone && <p className="mt-0.5 font-mono text-[11px] text-stone-warm/50">{row.phone}</p>}
           </div>
-          <button type="button" onClick={onClose} className="text-stone-warm/50 hover:text-gold-dust">✕</button>
+          <button type="button" onClick={onClose} className="text-stone-warm/50 hover:text-gold-dust">
+            ✕
+          </button>
         </div>
 
         <section className="mb-6">
-          <label className="text-[10px] uppercase tracking-[0.28em] text-stone-warm/50">Display name</label>
+          <label className="text-[10px] uppercase tracking-[0.28em] text-stone-warm/50">称呼</label>
           <input
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
@@ -293,18 +432,73 @@ function EditDrawer({ row, onClose, onSaved }: { row: Row; onClose: () => void; 
             disabled={busy}
             className="mt-3 rounded-full bg-gold-dust px-5 py-2 text-[10px] uppercase tracking-[0.28em] text-obsidian hover:bg-gold-light disabled:opacity-50"
           >
-            Save name
+            保存称呼
+          </button>
+        </section>
+
+        <section className="mb-6 border-t border-white/10 pt-6">
+          <label className="text-[10px] uppercase tracking-[0.28em] text-stone-warm/50">会员档位</label>
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            {(["none", "sage", "oracle"] as const).map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setTier(t)}
+                className={`rounded-lg border px-3 py-2 text-xs transition ${
+                  tier === t
+                    ? "border-gold-dust bg-gold-dust/10 text-gold-light"
+                    : "border-white/10 text-stone-warm/60 hover:border-gold-dust/40"
+                }`}
+              >
+                {TIER_LABELS[t]}
+              </button>
+            ))}
+          </div>
+          {tier !== "none" && (
+            <div className="mt-3">
+              <label className="text-[10px] uppercase tracking-[0.28em] text-stone-warm/50">到期日</label>
+              <input
+                type="date"
+                value={expiresAt}
+                onChange={(e) => setExpiresAt(e.target.value)}
+                className="mt-2 w-full rounded-lg border border-white/10 bg-obsidian/40 px-4 py-2.5 text-sm text-stone-warm focus:border-gold-dust focus:outline-none"
+              />
+              <p className="mt-1 text-[10px] text-stone-warm/40">留空表示无到期日</p>
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={saveMembership}
+            disabled={busy}
+            className="mt-3 rounded-full bg-gold-dust px-5 py-2 text-[10px] uppercase tracking-[0.28em] text-obsidian hover:bg-gold-light disabled:opacity-50"
+          >
+            保存会员
+          </button>
+        </section>
+
+        <section className="mb-6 border-t border-white/10 pt-6">
+          <label className="text-[10px] uppercase tracking-[0.28em] text-stone-warm/50">代寄取回信</label>
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                await sendPasswordResetEmail({ data: { email: row.email } });
+                toast.success(`取回信已寄至 ${row.email}`);
+              } catch (e) {
+                toast.error(e instanceof Error ? e.message : String(e));
+              }
+            }}
+            className="mt-2 rounded-full border border-gold-dust/40 px-5 py-2 text-[10px] uppercase tracking-[0.28em] text-gold-light hover:bg-gold-dust/10"
+          >
+            寄送重铸邮件
           </button>
         </section>
 
         <section className="border-t border-white/10 pt-6">
-          <label className="text-[10px] uppercase tracking-[0.28em] text-stone-warm/50">Set a new password directly</label>
-          <p className="mt-1 text-[11px] text-stone-warm/50">
-            Prefer the email path when possible — this bypasses the user's inbox.
-          </p>
+          <label className="text-[10px] uppercase tracking-[0.28em] text-stone-warm/50">直接重铸口令</label>
           <input
             type="text"
-            placeholder="New password (min 8 chars)"
+            placeholder="新口令（至少 8 位）"
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
             className="mt-2 w-full rounded-lg border border-white/10 bg-obsidian/40 px-4 py-2.5 text-sm text-stone-warm placeholder:text-stone-warm/30 focus:border-gold-dust focus:outline-none"
@@ -315,7 +509,7 @@ function EditDrawer({ row, onClose, onSaved }: { row: Row; onClose: () => void; 
             disabled={busy || newPassword.length < 8}
             className="mt-3 rounded-full border border-gold-dust/40 px-5 py-2 text-[10px] uppercase tracking-[0.28em] text-gold-light hover:bg-gold-dust/10 disabled:opacity-40"
           >
-            Set password
+            重铸口令
           </button>
         </section>
       </div>
