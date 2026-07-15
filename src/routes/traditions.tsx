@@ -32,6 +32,7 @@ type Bi = [string, string]; // [en, zh]
 
 type Chapter = {
   numeral: string;
+  elderId: TraditionId;
   title: Bi;
   subtitle: Bi;
   origin: Bi;
@@ -45,6 +46,7 @@ type Chapter = {
 const chapters: Chapter[] = [
   {
     numeral: "I",
+    elderId: "astrology",
     title: ["Western Astrology", "西方占星"],
     subtitle: [
       "The dialogue between psyche and sky",
