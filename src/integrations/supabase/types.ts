@@ -77,6 +77,27 @@ export type Database = {
         }
         Relationships: []
       }
+      tarot_usage: {
+        Row: {
+          count: number
+          month: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          count?: number
+          month: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          count?: number
+          month?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_activity: {
         Row: {
           activity_date: string

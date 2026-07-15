@@ -3,10 +3,17 @@ import { generateText } from "ai";
 import { z } from "zod";
 
 import { createLovableAiGatewayProvider } from "./ai-gateway.server";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const AskInput = z.object({
-  question: z.string().min(1),
+  question: z.string().min(1).max(4000),
   lang: z.enum(["en", "zh"]).default("zh"),
+  // Which paid surface is calling. Used to enforce membership-tier + quota
+  // server-side so the paywall cannot be bypassed from the browser.
+  //  - "tarot":       Sage or Oracle only, metered monthly via tarot_usage.
+  //  - "oracle_chat": Oracle only.
+  //  - "general":     any signed-in user (community quest reflections etc.).
+  feature: z.enum(["tarot", "oracle_chat", "general"]).default("general"),
   // The user's four-tradition snapshot — kept short so the model can weave it in.
   chart: z
     .object({
@@ -19,9 +26,92 @@ const AskInput = z.object({
     .optional(),
 });
 
+// Per-plan monthly cap for the tarot AI reading. Must match the client hint in
+// src/lib/tarot-quota.ts — but this table is the authoritative source of truth.
+const TAROT_MONTHLY_LIMIT: Record<"sage" | "oracle", number> = {
+  sage: 10,
+  oracle: Number.POSITIVE_INFINITY,
+};
+
+function currentMonthKey(): string {
+  const now = new Date();
+  return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
 export const askOracle = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => AskInput.parse(data))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+
+    // 1) Look up caller's membership tier (authoritative — never trust client).
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("membership_tier, membership_expires_at")
+      .eq("id", userId)
+      .maybeSingle();
+    if (profileError) throw new Error("Failed to load profile");
+
+    const rawTier = (profile?.membership_tier ?? "none") as string;
+    const expiresAt = profile?.membership_expires_at
+      ? new Date(profile.membership_expires_at as string)
+      : null;
+    const tierActive = !expiresAt || expiresAt.getTime() > Date.now();
+    const tier: "none" | "sage" | "oracle" =
+      tierActive && (rawTier === "sage" || rawTier === "oracle")
+        ? (rawTier as "sage" | "oracle")
+        : "none";
+
+    // 2) Enforce membership tier + quota server-side per feature surface.
+    if (data.feature === "oracle_chat" && tier !== "oracle") {
+      throw new Error("FORBIDDEN: Oracle-tier membership required.");
+    }
+    if (data.feature === "tarot") {
+      if (tier !== "sage" && tier !== "oracle") {
+        throw new Error("FORBIDDEN: Sage or Oracle membership required.");
+      }
+      // Meter monthly quota via the service-role client (client cannot write it).
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const month = currentMonthKey();
+      // Cast: generated types may not yet include tarot_usage.
+      const admin = supabaseAdmin as unknown as {
+        from: (t: string) => {
+          select: (c: string) => {
+            eq: (k: string, v: string) => {
+              eq: (k: string, v: string) => {
+                maybeSingle: () => Promise<{ data: { count: number } | null; error: unknown }>;
+              };
+            };
+          };
+          upsert: (
+            row: Record<string, unknown>,
+            opts?: { onConflict?: string },
+          ) => Promise<{ error: unknown }>;
+        };
+      };
+      const { data: row } = await admin
+        .from("tarot_usage")
+        .select("count")
+        .eq("user_id", userId)
+        .eq("month", month)
+        .maybeSingle();
+      const used = row?.count ?? 0;
+      const limit = TAROT_MONTHLY_LIMIT[tier];
+      if (Number.isFinite(limit) && used >= limit) {
+        throw new Error("QUOTA_EXCEEDED: Monthly tarot reading limit reached.");
+      }
+      const { error: upsertError } = await admin.from("tarot_usage").upsert(
+        {
+          user_id: userId,
+          month,
+          count: used + 1,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id,month" },
+      );
+      if (upsertError) throw new Error("Failed to record tarot usage");
+    }
+
     const key = process.env.LOVABLE_API_KEY;
     if (!key) throw new Error("Missing LOVABLE_API_KEY");
     const gateway = createLovableAiGatewayProvider(key);

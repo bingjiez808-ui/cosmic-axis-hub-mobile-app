@@ -877,7 +877,7 @@ export function TarotDraw() {
       const prompt = lang === "zh"
         ? `占卜问题：${question}\n\n三张塔罗牌（Rider–Waite）：\n${cards}\n\n请以「命运图书馆」贤者的口吻，将三张牌与问题深度整合，给出 3 段（过去成因 / 此刻真相 / 下一步建议），并在结尾给出一个可以在本周执行的具体动作。`
         : `Question: ${question}\n\nThree Rider–Waite tarot cards:\n${cards}\n\nAs the Library of Destiny sage, weave the three cards and the question into a deep reading in three short paragraphs (root cause / present truth / next move), and end with one concrete action the visitor can take this week.`;
-      const res = await askOracle({ data: { question: prompt, lang } });
+      const res = await askOracle({ data: { question: prompt, lang, feature: "tarot" } });
       setAiReading(res.text);
     } catch (e) {
       console.error(e);
@@ -2046,7 +2046,7 @@ function AIFollowupModal({
     try {
       const { askOracle } = await import("@/lib/oracle.functions");
       const res = await askOracle({
-        data: { question: q, lang, chart: buildChartSnapshot() },
+        data: { question: q, lang, chart: buildChartSnapshot(), feature: "oracle_chat" },
       });
       setThread((tr) => [...tr, { role: "oracle", text: res.text || "…" }]);
     } catch (err) {
