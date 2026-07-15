@@ -215,6 +215,7 @@ function SiteNav() {
   };
   const [atTop, setAtTop] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [orbActive, setOrbActive] = useState(false);
   const adminLabel = lang === "zh" ? "议政厅" : "Admin";
 
   useEffect(() => {
@@ -224,7 +225,30 @@ function SiteNav() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-
+  // Show the floating orb only briefly after the user interacts, then
+  // auto-hide after 3s of no activity.
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const reveal = () => {
+      setOrbActive(true);
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => setOrbActive(false), 3000);
+    };
+    const events: (keyof WindowEventMap)[] = [
+      "scroll",
+      "pointerdown",
+      "touchstart",
+      "mousemove",
+      "keydown",
+    ];
+    events.forEach((e) =>
+      window.addEventListener(e, reveal, { passive: true } as AddEventListenerOptions),
+    );
+    return () => {
+      if (timer) clearTimeout(timer);
+      events.forEach((e) => window.removeEventListener(e, reveal));
+    };
+  }, []);
 
 
   // Top glass bar visible only when at the top of the page.
@@ -237,15 +261,19 @@ function SiteNav() {
   const accountLabel = session ? t.nav_account : t.nav_sign_in;
   const showAdmin = !loading && isAdmin;
 
+  const orbVisible = orbActive && !showTopBar && !drawerOpen;
+
   return (
     <>
-      {/* Collapsed floating orb — visible when not at top and drawer closed */}
+      {/* Collapsed floating orb — appears on interaction, hides after 3s idle */}
       <button
         type="button"
         aria-label="Open navigation"
+        aria-hidden={!orbVisible}
+        tabIndex={orbVisible ? 0 : -1}
         onClick={() => setDrawerOpen(true)}
         className={`fixed right-4 top-4 z-[60] flex h-11 w-11 items-center justify-center rounded-full border border-gold-dust/40 bg-obsidian/70 backdrop-blur-md transition-all duration-300 hover:border-gold-dust hover:bg-gold-dust/10 md:right-6 md:top-6 ${
-          showTopBar || drawerOpen ? "pointer-events-none scale-75 opacity-0" : "opacity-100"
+          orbVisible ? "opacity-100" : "pointer-events-none scale-75 opacity-0"
         }`}
       >
         <span className="block h-2 w-2 rounded-full bg-gold-dust shadow-[0_0_10px_2px_color-mix(in_oklab,var(--gold-light)_60%,transparent)]" />
