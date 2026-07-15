@@ -183,6 +183,16 @@ const SEED_POSTS: Post[] = [
     facet: "shadow",
     text: "I keep trying to be useful when I should be honest. My chart wants me to say the hard thing first.",
     hearts: 12,
+    comments: [
+      {
+        id: "sc-1a",
+        createdAt: Date.now() - 1000 * 60 * 60 * 6,
+        authorId: "traveler-5501",
+        authorTitle: "Candle-Bearer",
+        authorHouseKey: "ember",
+        text: "This resonates. Honesty is the useful thing — the rest is just noise dressed as service.",
+      },
+    ],
   },
   {
     id: "seed-2",
@@ -193,6 +203,24 @@ const SEED_POSTS: Post[] = [
     facet: "gift",
     text: "我一直以为「太容易的事」不算天赋。今晚才明白，那正是我的火。",
     hearts: 21,
+    comments: [
+      {
+        id: "sc-2a",
+        createdAt: Date.now() - 1000 * 60 * 60 * 20,
+        authorId: "traveler-3120",
+        authorTitle: "根之歌者",
+        authorHouseKey: "loam",
+        text: "同门共鸣。别小看流畅的事 —— 那是你与世界之间最短的路。",
+      },
+      {
+        id: "sc-2b",
+        createdAt: Date.now() - 1000 * 60 * 60 * 12,
+        authorId: "traveler-7788",
+        authorTitle: "Star-Scribe",
+        authorHouseKey: "aether",
+        text: "把「容易」当作天赋的入口，收下。",
+      },
+    ],
   },
   {
     id: "seed-3",
@@ -203,6 +231,7 @@ const SEED_POSTS: Post[] = [
     facet: "vocation",
     text: "I map old libraries for a living. Turns out my 10th house lord is Mercury in the 9th — the chart knew before I did.",
     hearts: 8,
+    comments: [],
   },
 ];
 
