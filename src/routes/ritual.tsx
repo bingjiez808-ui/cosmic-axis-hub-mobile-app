@@ -133,7 +133,20 @@ function RitualPage() {
     { key: "date", prompt: t.q_date, hint: t.q_date_hint, placeholder: "", input: "date" },
     { key: "time", prompt: t.q_time, hint: t.q_time_hint, placeholder: "", input: "time" },
     { key: "place", prompt: t.q_place, hint: t.q_place_hint, placeholder: t.q_place_ph, input: "text" },
-  ];
+];
+
+/** Keep the last two glyphs of a title glued together, so a single character
+ *  never gets stranded on its own line — helps CJK where `text-wrap: balance`
+ *  can still leave an orphan. */
+function noOrphan(s: string) {
+  if (!s || s.length <= 2) return s;
+  return (
+    <>
+      {s.slice(0, -2)}
+      <span style={{ whiteSpace: "nowrap" }}>{s.slice(-2)}</span>
+    </>
+  );
+}
 
   const progress = useMemo(() => (step + 1) / totalSteps, [step, totalSteps]);
   const isLast = step === totalSteps - 1;
