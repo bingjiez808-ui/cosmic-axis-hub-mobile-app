@@ -5,6 +5,7 @@ import { useAccount } from "@/lib/account";
 import { ChartZoomModal } from "@/components/charts/DestinyCharts";
 import { TAROT_78, type TarotCard } from "@/lib/tarot-deck";
 import { askOracle } from "@/lib/oracle.functions";
+import { TAROT_LIMITS, tarotConsume, tarotRemaining } from "@/lib/tarot-quota";
 
 /* ═══════════════════════════════════════════
    Life Timeline — 大运 / Dashā decades
