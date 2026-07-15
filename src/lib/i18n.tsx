@@ -30,12 +30,13 @@ type Dict = {
   hero_lang_en: string;
   hero_lang_zh: string;
   // hero
-  hero_kicker: string;
-  hero_h1_a: string;
-  hero_h1_b: string;
-  hero_quote: string;
-  hero_cta: string;
-  hero_scroll: string;
+ hero_kicker: string;
+ hero_h1_a: string;
+ hero_h1_b: string;
+ hero_quote: string;
+ hero_subtitle: string;
+ hero_cta: string;
+ hero_scroll: string;
   // philosophy
   philosophy_a: string;
   philosophy_em: string;
