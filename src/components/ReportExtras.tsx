@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useLang, type Lang } from "@/lib/i18n";
 import { useAccount } from "@/lib/account";
 import { ChartZoomModal } from "@/components/charts/DestinyCharts";
+import { TAROT_78, type TarotCard } from "@/lib/tarot-deck";
+import { askOracle } from "@/lib/oracle.functions";
 
 /* ═══════════════════════════════════════════
    Life Timeline — 大运 / Dashā decades
