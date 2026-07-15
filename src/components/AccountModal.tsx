@@ -564,6 +564,31 @@ export function AccountModal({ open, onClose }: { open: boolean; onClose: () => 
                   <p className="text-[10px] uppercase tracking-[0.28em] text-stone-warm/40">
                     {lang === "zh" ? "当前会员等级" : "Current membership"}
                   </p>
+
+                  {/* Tarot quota */}
+                  {(() => {
+                    const p = (account.plan ?? "free") as "free" | "sage" | "oracle";
+                    const limit = TAROT_LIMITS[p];
+                    const rem = tarotRemaining(p);
+                    const label = p === "oracle"
+                      ? lang === "zh" ? "塔罗 AI 解读 · 本月无限次" : "Tarot AI readings · unlimited this month"
+                      : p === "sage"
+                        ? lang === "zh" ? `塔罗 AI 解读 · 本月剩余 ${rem} / ${limit} 次` : `Tarot AI readings · ${rem} / ${limit} left this month`
+                        : lang === "zh" ? "塔罗 AI 解读 · 升级贤者解锁（每月 10 次）" : "Tarot AI readings · unlock with Sage (10 / month)";
+                    return (
+                      <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-obsidian/40 px-3 py-2">
+                        <p className="text-[11px] tracking-normal text-stone-warm/70">{label}</p>
+                        {p !== "oracle" && isFinite(limit) && limit > 0 && (
+                          <div className="h-1.5 w-24 overflow-hidden rounded-full bg-white/5">
+                            <div
+                              className="h-full bg-gold-dust"
+                              style={{ width: `${Math.min(100, ((limit - rem) / limit) * 100)}%` }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 <div>
