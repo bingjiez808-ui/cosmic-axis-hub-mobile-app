@@ -309,6 +309,15 @@ function TraditionsPage() {
                   </ul>
                 </div>
               </div>
+
+              <button
+                type="button"
+                onClick={() => setOpenTradition(c.elderId)}
+                className="mt-10 inline-flex items-center gap-2 rounded-full border border-gold-dust/40 px-6 py-2.5 text-[10px] uppercase tracking-[0.32em] text-gold-dust transition-colors hover:bg-gold-dust/10"
+              >
+                {lang === "zh" ? "请这位长老开口" : "Consult this elder"}
+                <span className="text-sm">→</span>
+              </button>
             </div>
           </motion.article>
         ))}
