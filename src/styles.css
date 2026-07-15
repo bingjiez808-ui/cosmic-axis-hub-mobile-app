@@ -90,6 +90,21 @@
   h1, h2, h3, h4 {
     font-family: var(--font-serif);
     letter-spacing: -0.01em;
+    text-wrap: balance;
+    /* CJK: don't break inside a word; keep 「，、。—— 」 with preceding glyph */
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+    line-break: strict;
+  }
+  /* Long italic serif quotes flow as balanced blocks and never break inside a CJK phrase */
+  .font-serif.italic,
+  blockquote,
+  .quote-flow {
+    text-wrap: pretty;
+    word-break: keep-all;
+    line-break: strict;
+    overflow-wrap: break-word;
+    hanging-punctuation: allow-end;
   }
   ::selection {
     background: color-mix(in oklab, var(--gold-dust) 30%, transparent);
@@ -222,6 +237,16 @@
   40%      { opacity: 0.68; }
   60%      { opacity: 1;    }
 }
+@keyframes library-shimmer {
+  0%   { background-position: -180% 0; opacity: 0; }
+  40%  { opacity: 0.9; }
+  100% { background-position: 220% 0;  opacity: 0; }
+}
+@keyframes dust-burst {
+  0%   { opacity: 0; transform: scale(0.6); }
+  30%  { opacity: 0.85; }
+  100% { opacity: 0; transform: scale(1.4); }
+}
 
 @utility animate-slow-rotate {
   animation: slow-rotate 120s linear infinite;
@@ -237,6 +262,21 @@
 }
 @utility animate-candle-flicker {
   animation: candle-flicker 5.5s ease-in-out infinite;
+}
+@utility animate-library-shimmer {
+  background: linear-gradient(100deg,
+    transparent 0%,
+    color-mix(in oklab, var(--gold-light) 55%, transparent) 45%,
+    color-mix(in oklab, var(--gold-dust) 30%, transparent) 55%,
+    transparent 100%);
+  background-size: 220% 100%;
+  animation: library-shimmer 1.6s ease-out 1;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+@utility animate-dust-burst {
+  animation: dust-burst 1.4s ease-out 1;
+  pointer-events: none;
 }
 
 /* Print — clean PDF export of the reading */
