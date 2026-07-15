@@ -1133,12 +1133,8 @@ function ChartFactsCard({
 }) {
   const li = lang === "zh" ? 1 : 0;
   const signs = computePlanetSigns(seed);
-  const core: { key: string; idx: number }[] = [
-    { key: "sun", idx: PLANETS.findIndex((p) => p.key === "sun") },
-    { key: "moon", idx: PLANETS.findIndex((p) => p.key === "moon") },
-    { key: "asc", idx: PLANETS.findIndex((p) => p.key === "asc") },
-    { key: "mc", idx: PLANETS.findIndex((p) => p.key === "mc") },
-  ];
+  // Element / modality tally across the visible bodies.
+
   // Element / modality tally across the visible bodies.
   const tally = <T,>(pairs: T[][]) => {
     const map = new Map<string, number>();
