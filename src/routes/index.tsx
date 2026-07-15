@@ -361,7 +361,7 @@ function LandingPage() {
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1.2, delay: 0.2, ease: [0.32, 0.72, 0, 1] }}
-          className="relative z-10 max-w-5xl font-serif text-5xl leading-[1.05] text-stone-warm md:text-7xl lg:text-[5.5rem]"
+          className="relative z-10 max-w-5xl font-serif text-fluid-hero text-stone-warm"
         >
           {t.hero_h1_a}
           <br />

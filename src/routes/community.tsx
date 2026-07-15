@@ -315,19 +315,26 @@ function CommunityPage() {
   const [aiQuestInput, setAiQuestInput] = useState<Record<string, string>>({});
 
   // Identity — persisted so the same person always gets the same house/id.
-  const identity = useMemo(() => {
-    let seed = account?.email || account?.name;
-    if (!seed && typeof window !== "undefined") {
-      try {
-        seed = localStorage.getItem(IDENTITY_KEY) || "";
-        if (!seed) {
-          seed = `guest-${Math.random().toString(36).slice(2, 10)}`;
-          localStorage.setItem(IDENTITY_KEY, seed);
-        }
-      } catch {}
+  // Both SSR and the first client render use the fixed "wanderer" seed so
+  // hydration matches; the real seed (account email / persisted guest id)
+  // is applied after mount to avoid mismatches with browser-only state.
+  const [identitySeed, setIdentitySeed] = useState<string>("wanderer");
+  useEffect(() => {
+    const fromAccount = account?.email || account?.name;
+    if (fromAccount) {
+      setIdentitySeed(fromAccount);
+      return;
     }
-    return buildIdentity(seed || "wanderer");
+    try {
+      let seed = localStorage.getItem(IDENTITY_KEY) || "";
+      if (!seed) {
+        seed = `guest-${Math.random().toString(36).slice(2, 10)}`;
+        localStorage.setItem(IDENTITY_KEY, seed);
+      }
+      setIdentitySeed(seed);
+    } catch {}
   }, [account]);
+  const identity = useMemo(() => buildIdentity(identitySeed), [identitySeed]);
 
   const house = HOUSES[identity.houseIdx];
   const travelerTitle = lang === "zh" ? TITLES_ZH[identity.titleIdx] : TITLES_EN[identity.titleIdx];

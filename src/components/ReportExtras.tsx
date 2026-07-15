@@ -705,14 +705,16 @@ export function TarotDraw() {
   const isSage = plan === "sage" || plan === "oracle";
 
   // Deck is shuffled once per session so the user can swipe through all 78.
-  const [deck] = useState<TarotCard[]>(() => {
+  // Shuffling happens client-side after mount to avoid SSR hydration mismatch.
+  const [deck, setDeck] = useState<TarotCard[]>(() => TAROT_78.slice());
+  useEffect(() => {
     const arr = TAROT_78.slice();
     for (let i = arr.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [arr[i], arr[j]] = [arr[j], arr[i]];
     }
-    return arr;
-  });
+    setDeck(arr);
+  }, []);
 
   const [stage, setStage] = useState<"ask" | "pick" | "reveal">("ask");
   const [question, setQuestion] = useState("");
@@ -745,7 +747,12 @@ export function TarotDraw() {
     const filtered = arr.filter((p) => !avoid.includes(p[li]));
     return (filtered.length >= 3 ? filtered : arr).slice(0, 3);
   };
-  const [examples, setExamples] = useState<[string, string][]>(() => pickThreeExamples(EXAMPLE_POOL));
+  // Start with the first 3 for SSR stability; shuffle after mount.
+  const [examples, setExamples] = useState<[string, string][]>(() => EXAMPLE_POOL.slice(0, 3));
+  useEffect(() => {
+    setExamples(pickThreeExamples(EXAMPLE_POOL));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const positions: [string, string][] = [
     ["Past", "过去"],

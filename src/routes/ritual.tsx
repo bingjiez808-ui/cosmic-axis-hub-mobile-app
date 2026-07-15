@@ -191,7 +191,7 @@ function noOrphan(s: string) {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center px-6 pt-32 pb-24">
+    <div className="relative flex min-h-screen items-center justify-center overflow-x-hidden px-6 pt-32 pb-24">
       {/* Ceremonial rings */}
       <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
         <div
