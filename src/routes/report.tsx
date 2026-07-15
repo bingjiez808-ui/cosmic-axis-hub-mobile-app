@@ -1109,3 +1109,110 @@ function PlanetReadingPanel({
     </motion.div>
   );
 }
+
+// Signs → element / modality mapping for the compact facts card.
+const SIGN_ELEMENT: [string, string][] = [
+  ["Fire", "火"], ["Earth", "土"], ["Air", "风"], ["Water", "水"],
+  ["Fire", "火"], ["Earth", "土"], ["Air", "风"], ["Water", "水"],
+  ["Fire", "火"], ["Earth", "土"], ["Air", "风"], ["Water", "水"],
+];
+const SIGN_MODALITY: [string, string][] = [
+  ["Cardinal", "开创"], ["Fixed", "固定"], ["Mutable", "变动"], ["Cardinal", "开创"],
+  ["Fixed", "固定"], ["Mutable", "变动"], ["Cardinal", "开创"], ["Fixed", "固定"],
+  ["Mutable", "变动"], ["Cardinal", "开创"], ["Fixed", "固定"], ["Mutable", "变动"],
+];
+
+function ChartFactsCard({
+  lang,
+  seed,
+  onPickPlanet,
+}: {
+  lang: "en" | "zh";
+  seed: string;
+  onPickPlanet: (i: number) => void;
+}) {
+  const li = lang === "zh" ? 1 : 0;
+  const signs = computePlanetSigns(seed);
+  const core: { key: string; idx: number }[] = [
+    { key: "sun", idx: PLANETS.findIndex((p) => p.key === "sun") },
+    { key: "moon", idx: PLANETS.findIndex((p) => p.key === "moon") },
+    { key: "asc", idx: PLANETS.findIndex((p) => p.key === "asc") },
+    { key: "mc", idx: PLANETS.findIndex((p) => p.key === "mc") },
+  ];
+  // Element / modality tally across the visible bodies.
+  const tally = <T,>(pairs: T[][]) => {
+    const map = new Map<string, number>();
+    for (const p of pairs) {
+      const k = p[li] as unknown as string;
+      map.set(k, (map.get(k) ?? 0) + 1);
+    }
+    return [...map.entries()].sort((a, b) => b[1] - a[1]);
+  };
+  const bodySigns = PLANETS.slice(0, 10).map((_, i) => signs[i]);
+  const elements = tally(bodySigns.map((s) => SIGN_ELEMENT[s]));
+  const modalities = tally(bodySigns.map((s) => SIGN_MODALITY[s]));
+  const dominant = elements[0];
+  const dominantMod = modalities[0];
+
+  return (
+    <div
+      className="w-full rounded-2xl border border-gold-dust/20 bg-obsidian/40 p-4 sm:p-5"
+      aria-label={lang === "zh" ? "命盘核心概览" : "Chart facts summary"}
+    >
+      <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+        {lang === "zh" ? "命盘核心 · 快速一览" : "Core placements · at a glance"}
+      </p>
+      <ul className="grid grid-cols-2 gap-2 sm:gap-3">
+        {core.map(({ idx }) => {
+          if (idx < 0) return null;
+          const p = PLANETS[idx];
+          const s = ZODIAC_SIGNS[signs[idx]];
+          const h = houseForSign(signs[idx], signs[PLANETS.findIndex((x) => x.key === "asc")] ?? 0);
+          return (
+            <li key={p.key}>
+              <button
+                type="button"
+                onClick={() => onPickPlanet(idx)}
+                className="group flex w-full items-center gap-2 rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2 text-left transition-colors hover:border-gold-dust/50 hover:bg-gold-dust/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-light"
+                aria-label={
+                  lang === "zh"
+                    ? `${p.name[1]} 落于 ${s.zh}，第 ${h} 宫`
+                    : `${p.name[0]} in ${s.en}, house ${h}`
+                }
+              >
+                <span className="text-lg text-gold-light" aria-hidden="true">{p.glyph}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[11px] uppercase tracking-[0.24em] text-stone-warm/50">
+                    {p.name[li]}
+                  </span>
+                  <span className="reading-copy block font-serif text-[13px] italic text-stone-warm/85">
+                    {lang === "zh" ? s.zh : s.en}
+                    <span className="ml-1.5 text-[10px] not-italic tracking-[0.2em] text-gold-dust/70">
+                      · {lang === "zh" ? `第${h}宫` : `H${h}`}
+                    </span>
+                  </span>
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+      <div className="mt-3 grid grid-cols-2 gap-2 border-t border-white/5 pt-3 text-[11px] leading-snug text-stone-warm/70">
+        <p>
+          <span className="mr-1.5 text-[9px] uppercase tracking-[0.28em] text-gold-dust/70">
+            {lang === "zh" ? "主导元素" : "Dominant"}
+          </span>
+          <span className="font-serif italic text-gold-light">{dominant?.[0] ?? "—"}</span>
+          <span className="ml-1 text-stone-warm/45">×{dominant?.[1] ?? 0}</span>
+        </p>
+        <p>
+          <span className="mr-1.5 text-[9px] uppercase tracking-[0.28em] text-gold-dust/70">
+            {lang === "zh" ? "主导模式" : "Modality"}
+          </span>
+          <span className="font-serif italic text-gold-light">{dominantMod?.[0] ?? "—"}</span>
+          <span className="ml-1 text-stone-warm/45">×{dominantMod?.[1] ?? 0}</span>
+        </p>
+      </div>
+    </div>
+  );
+}
