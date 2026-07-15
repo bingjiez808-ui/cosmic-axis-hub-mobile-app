@@ -969,18 +969,32 @@ export function TarotDraw() {
 
             {/* Sage AI deep reading */}
             <div className="mb-6 rounded-2xl border border-gold-dust/25 bg-obsidian/40 p-5 sm:p-6">
-              <p className="mb-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust/80">
-                {lang === "zh" ? "贤者会员 · AI 深度解读" : "Sage members · AI deep reading"}
-              </p>
+              <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+                <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust/80">
+                  {lang === "zh" ? "贤者会员 · AI 深度解读" : "Sage members · AI deep reading"}
+                </p>
+                {isSage && (
+                  <p className="text-[10px] uppercase tracking-[0.28em] text-stone-warm/50">
+                    {plan === "oracle"
+                      ? lang === "zh" ? "本月剩余：无限次" : "This month: unlimited"
+                      : lang === "zh"
+                        ? `本月剩余 ${remaining} / ${TAROT_LIMITS.sage} 次`
+                        : `${remaining} / ${TAROT_LIMITS.sage} left this month`}
+                  </p>
+                )}
+              </div>
               {isSage ? (
                 <>
                   {!aiReading && !aiLoading && (
                     <button
                       type="button"
                       onClick={requestAiReading}
-                      className="rounded-full bg-gold-dust px-5 py-2 text-[11px] uppercase tracking-[0.28em] text-obsidian hover:bg-gold-light"
+                      disabled={remaining <= 0}
+                      className="rounded-full bg-gold-dust px-5 py-2 text-[11px] uppercase tracking-[0.28em] text-obsidian transition-colors hover:bg-gold-light disabled:cursor-not-allowed disabled:opacity-40"
                     >
-                      {lang === "zh" ? "生成 AI 深度解读 →" : "Generate AI deep reading →"}
+                      {remaining <= 0
+                        ? lang === "zh" ? "本月已用完" : "Monthly quota reached"
+                        : lang === "zh" ? "生成 AI 深度解读 →" : "Generate AI deep reading →"}
                     </button>
                   )}
                   {aiLoading && (
