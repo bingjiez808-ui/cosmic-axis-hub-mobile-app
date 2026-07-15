@@ -5,6 +5,7 @@ import { useAccount } from "@/lib/account";
 import { ChartZoomModal } from "@/components/charts/DestinyCharts";
 import { TAROT_78, type TarotCard } from "@/lib/tarot-deck";
 import { askOracle } from "@/lib/oracle.functions";
+import { TAROT_LIMITS, tarotConsume, tarotRemaining } from "@/lib/tarot-quota";
 
 /* ═══════════════════════════════════════════
    Life Timeline — 大运 / Dashā decades
@@ -740,8 +741,30 @@ export function TarotDraw() {
     ],
   };
 
+  // Live quota — refreshes when consumed or when window regains focus.
+  const [remaining, setRemaining] = useState<number>(() => tarotRemaining(plan));
+  useEffect(() => {
+    const refresh = () => setRemaining(tarotRemaining(plan));
+    refresh();
+    window.addEventListener("lod:tarot-quota-changed", refresh);
+    window.addEventListener("focus", refresh);
+    return () => {
+      window.removeEventListener("lod:tarot-quota-changed", refresh);
+      window.removeEventListener("focus", refresh);
+    };
+  }, [plan]);
+
   const requestAiReading = async () => {
     if (!isSage || aiLoading || picks.length !== 3) return;
+    if (!tarotConsume(plan)) {
+      setAiReading(
+        lang === "zh"
+          ? "本月的塔罗 AI 解读次数已用完 —— 请下月再来，或升级至神谕者享无限次。"
+          : "You've used all tarot AI readings this month — try again next month, or upgrade to Oracle for unlimited.",
+      );
+      return;
+    }
+    setRemaining(tarotRemaining(plan));
     setAiLoading(true);
     try {
       const cards = picks.map((i, pos) => {
@@ -946,18 +969,32 @@ export function TarotDraw() {
 
             {/* Sage AI deep reading */}
             <div className="mb-6 rounded-2xl border border-gold-dust/25 bg-obsidian/40 p-5 sm:p-6">
-              <p className="mb-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust/80">
-                {lang === "zh" ? "贤者会员 · AI 深度解读" : "Sage members · AI deep reading"}
-              </p>
+              <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+                <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust/80">
+                  {lang === "zh" ? "贤者会员 · AI 深度解读" : "Sage members · AI deep reading"}
+                </p>
+                {isSage && (
+                  <p className="text-[10px] uppercase tracking-[0.28em] text-stone-warm/50">
+                    {plan === "oracle"
+                      ? lang === "zh" ? "本月剩余：无限次" : "This month: unlimited"
+                      : lang === "zh"
+                        ? `本月剩余 ${remaining} / ${TAROT_LIMITS.sage} 次`
+                        : `${remaining} / ${TAROT_LIMITS.sage} left this month`}
+                  </p>
+                )}
+              </div>
               {isSage ? (
                 <>
                   {!aiReading && !aiLoading && (
                     <button
                       type="button"
                       onClick={requestAiReading}
-                      className="rounded-full bg-gold-dust px-5 py-2 text-[11px] uppercase tracking-[0.28em] text-obsidian hover:bg-gold-light"
+                      disabled={remaining <= 0}
+                      className="rounded-full bg-gold-dust px-5 py-2 text-[11px] uppercase tracking-[0.28em] text-obsidian transition-colors hover:bg-gold-light disabled:cursor-not-allowed disabled:opacity-40"
                     >
-                      {lang === "zh" ? "生成 AI 深度解读 →" : "Generate AI deep reading →"}
+                      {remaining <= 0
+                        ? lang === "zh" ? "本月已用完" : "Monthly quota reached"
+                        : lang === "zh" ? "生成 AI 深度解读 →" : "Generate AI deep reading →"}
                     </button>
                   )}
                   {aiLoading && (
@@ -1224,8 +1261,8 @@ export function MembershipSection({ birthISO }: { birthISO?: string } = {}) {
         name: t.mem_sage,
         desc:
           lang === "zh"
-            ? "完整 PDF 报告 · 生命时间轴精解 · 合盘关系分析（贤者专属）。"
-            : "Full PDF · life-timeline analysis · Synastry relationship reading (Sage exclusive).",
+            ? "完整 PDF 报告 · 生命时间轴精解 · 合盘关系分析 · 每月 10 次塔罗 AI 解读（贤者专属）。"
+            : "Full PDF · life-timeline analysis · Synastry reading · 10 tarot AI readings / month (Sage exclusive).",
         price: [`$2.99 / mo`, `¥19.9 / 月`][li],
         highlight: true,
       },
@@ -1234,8 +1271,8 @@ export function MembershipSection({ birthISO }: { birthISO?: string } = {}) {
         name: t.mem_oracle,
         desc:
           lang === "zh"
-            ? "包含贤者所有权益 · 无限 AI 追问 · 近 90 天状态与时间节点分析（神谕者专属）。"
-            : "Everything in Sage · unlimited AI follow-up · 90-day state & window analysis (Oracle exclusive).",
+            ? "包含贤者所有权益 · 无限 AI 追问 · 无限次塔罗 AI 解读 · 近 90 天状态与时间节点分析（神谕者专属）。"
+            : "Everything in Sage · unlimited AI follow-up · unlimited tarot AI readings · 90-day state & window analysis (Oracle exclusive).",
         price: [`$5.99 / mo`, `¥39.9 / 月`][li],
         highlight: false,
       },
