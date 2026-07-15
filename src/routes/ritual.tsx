@@ -236,36 +236,32 @@ function noOrphan(s: string) {
       </div>
 
       <div className="relative z-10 w-full max-w-2xl text-center">
-        {/* Progress — language dot · single quiz bar (5 segs) · intake dots */}
+        {/* Progress — quiz bar (5 segs, hidden if skipped) · intake dots */}
         <div className="mb-14 flex items-center justify-center gap-3">
-          {/* language */}
-          <div
-            className={`h-px transition-all duration-700 ${
-              step >= 0 ? "w-10 bg-gold-dust" : "w-6 bg-white/15"
-            }`}
-          />
-          <span className="text-[8px] uppercase tracking-[0.32em] text-stone-warm/30">·</span>
-          {/* single 5-segment quiz bar */}
-          <div className="flex overflow-hidden rounded-full border border-white/10">
-            {Array.from({ length: QUIZ.length }).map((_, i) => {
-              const reached = step >= 1 + i;
-              return (
-                <div
-                  key={i}
-                  className={`h-1.5 w-6 border-r border-white/10 last:border-r-0 transition-all duration-500 ${
-                    reached ? "bg-gold-dust" : "bg-white/[0.04]"
-                  }`}
-                />
-              );
-            })}
-          </div>
-          <span className="text-[8px] uppercase tracking-[0.32em] text-stone-warm/30">·</span>
+          {!skipQuiz && (
+            <>
+              <div className="flex overflow-hidden rounded-full border border-white/10">
+                {Array.from({ length: QUIZ.length }).map((_, i) => {
+                  const reached = step >= i;
+                  return (
+                    <div
+                      key={i}
+                      className={`h-1.5 w-6 border-r border-white/10 last:border-r-0 transition-all duration-500 ${
+                        reached ? "bg-gold-dust" : "bg-white/[0.04]"
+                      }`}
+                    />
+                  );
+                })}
+              </div>
+              <span className="text-[8px] uppercase tracking-[0.32em] text-stone-warm/30">·</span>
+            </>
+          )}
           {/* intake dots */}
           {Array.from({ length: 4 }).map((_, i) => (
             <div
               key={i}
               className={`h-px transition-all duration-700 ${
-                step >= 1 + QUIZ.length + i ? "w-10 bg-gold-dust" : "w-6 bg-white/15"
+                step >= quizCount + i ? "w-10 bg-gold-dust" : "w-6 bg-white/15"
               }`}
             />
           ))}
@@ -283,51 +279,7 @@ function noOrphan(s: string) {
               {t.step_of(step + 1, totalSteps)}
             </p>
 
-            {isLanguageStep && (
-              <>
-                <h1 className="mx-auto mb-4 max-w-[16ch] text-balance font-serif text-[24px] italic leading-[1.25] text-stone-warm sm:max-w-xl sm:text-4xl md:text-5xl" style={{ wordBreak: "keep-all", overflowWrap: "break-word" }}>
-                  {noOrphan(t.ritual_pick_language)}
-                </h1>
-                <p className="mb-14 text-sm text-stone-warm/50">
-                  {t.ritual_pick_language_hint}
-                </p>
-                <div className="mx-auto flex max-w-md flex-col gap-4">
-                  {(
-                    [
-                      { code: "en", label: "English", native: "The library will speak in English." },
-                      { code: "zh", label: "中文", native: "图书馆将以中文与你对话。" },
-                    ] as { code: Lang; label: string; native: string }[]
-                  ).map((opt) => {
-                    const active = lang === opt.code;
-                    return (
-                      <button
-                        key={opt.code}
-                        onClick={() => setLang(opt.code)}
-                        className={`glass-card flex items-center justify-between rounded-2xl px-6 py-5 text-left transition-all ${
-                          active
-                            ? "border-gold-dust/60 bg-gold-dust/10"
-                            : "hover:border-gold-dust/30"
-                        }`}
-                      >
-                        <div>
-                          <p className="font-serif text-xl text-stone-warm">{opt.label}</p>
-                          <p className="mt-1 text-xs italic text-stone-warm/50">{opt.native}</p>
-                        </div>
-                        <span
-                          className={`grid size-6 place-items-center rounded-full border transition-colors ${
-                            active
-                              ? "border-gold-dust bg-gold-dust text-obsidian"
-                              : "border-white/20 text-transparent"
-                          }`}
-                        >
-                          ✓
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </>
-            )}
+
 
             {isQuizStep && (() => {
               const q = QUIZ[quizIdx];
