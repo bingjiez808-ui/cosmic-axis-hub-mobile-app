@@ -728,7 +728,7 @@ function ReportPage() {
                 onClear={() => setSelectedPlanet(null)}
               />
             </div>
-            <div className="flex min-w-0 flex-col items-center gap-4">
+            <div className="flex min-w-0 flex-col items-center gap-4 lg:h-full">
               <div className="relative w-full text-stone-warm/40">
                 <NatalWheel
                   lang={lang}
@@ -746,13 +746,17 @@ function ReportPage() {
                 </button>
               </div>
 
-              {/* Compact "core placements" summary — fills the right-column
-                  whitespace with per-visitor grounded facts. */}
-              <ChartFactsCard
-                lang={lang}
-                seed={`${search.name ?? ""}|${search.date ?? ""}|${search.time ?? ""}|${search.place ?? ""}`}
-                onPickPlanet={setSelectedPlanet}
-              />
+              {/* Compact "core placements" summary — flexes to fill remaining
+                  right-column height so the card's bottom aligns with the
+                  left column's PlanetReadingPanel baseline. Internal list
+                  scrolls if space is tight. */}
+              <div className="flex w-full min-h-0 flex-1 flex-col">
+                <ChartFactsCard
+                  lang={lang}
+                  seed={`${search.name ?? ""}|${search.date ?? ""}|${search.time ?? ""}|${search.place ?? ""}`}
+                  onPickPlanet={setSelectedPlanet}
+                />
+              </div>
             </div>
           </div>
         </div>
