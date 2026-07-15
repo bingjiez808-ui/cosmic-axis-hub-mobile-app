@@ -378,13 +378,150 @@ function CommunityPage() {
   const [completedQuests, setCompletedQuests] = useState<Record<string, boolean>>({});
   const [openComments, setOpenComments] = useState<Record<string, boolean>>({});
   const [commentDraft, setCommentDraft] = useState<Record<string, string>>({});
+  const [replyDraft, setReplyDraft] = useState<Record<string, string>>({});
+  const [replyOpen, setReplyOpen] = useState<Record<string, boolean>>({});
+
+  // Notifications
+  const [notifs, setNotifs] = useState<Notif[]>([]);
+  const [notifOpen, setNotifOpen] = useState(false);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(NOTIFS_KEY);
+      if (raw) setNotifs(JSON.parse(raw) as Notif[]);
+    } catch {}
+  }, []);
+  const persistNotifs = (list: Notif[]) => {
+    try {
+      localStorage.setItem(NOTIFS_KEY, JSON.stringify(list.slice(0, 60)));
+    } catch {}
+  };
+  const pushNotif = (n: Omit<Notif, "id" | "createdAt" | "read">) => {
+    setNotifs((list) => {
+      const next: Notif[] = [
+        {
+          ...n,
+          id: `n-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          createdAt: Date.now(),
+          read: false,
+        },
+        ...list,
+      ].slice(0, 60);
+      persistNotifs(next);
+      return next;
+    });
+  };
+  const unreadCount = notifs.filter((n) => !n.read).length;
+  const markAllRead = () => {
+    setNotifs((list) => {
+      const next = list.map((n) => ({ ...n, read: true }));
+      persistNotifs(next);
+      return next;
+    });
+  };
+
+  const myAuthorId = `traveler-${identity.number}`;
+
+  // Simulate an ambient echo (like/reply from another traveler) targeting user's content
+  const AMBIENT_AUTHORS: { title: [string, string]; houseKey: string; seed: string }[] = [
+    { title: ["Star-Scribe", "星辰记事者"], houseKey: "aether", seed: "amb-1201" },
+    { title: ["Ember-Kin", "近火者"], houseKey: "ember", seed: "amb-4402" },
+    { title: ["Tide-Listener", "听潮者"], houseKey: "tide", seed: "amb-7713" },
+    { title: ["Root-Singer", "根之歌者"], houseKey: "loam", seed: "amb-3355" },
+  ];
+  const AMBIENT_REPLIES: [string, string][] = [
+    ["This resonates with me.", "这段话与我共振。"],
+    ["I feel this — thank you for naming it.", "我感受到了 —— 谢谢你把它说出来。"],
+    ["Softly holding this with you.", "轻轻地与你一同承接这句话。"],
+    ["The library heard you.", "图书馆听见你了。"],
+  ];
+  const scheduleAmbientEcho = (postId: string, targetKind: "post" | "comment", commentId?: string) => {
+    const delay = 2600 + Math.floor(Math.random() * 4400);
+    window.setTimeout(() => {
+      const author = AMBIENT_AUTHORS[Math.floor(Math.random() * AMBIENT_AUTHORS.length)];
+      const ident = buildIdentity(author.seed);
+      const actorTitle = lang === "zh" ? author.title[1] : author.title[0];
+      // 55% -> heart, 45% -> reply
+      const isHeart = Math.random() < 0.55;
+      if (isHeart) {
+        if (targetKind === "post") {
+          setPosts((list) => {
+            const next = list.map((p) => (p.id === postId ? { ...p, hearts: p.hearts + 1 } : p));
+            persist(next);
+            return next;
+          });
+          pushNotif({
+            kind: "heart",
+            postId,
+            actorTitle,
+            actorHouseKey: author.houseKey,
+            actorHue: ident.hue,
+            snippet: lang === "zh" ? "点亮了你的分享" : "lit your share",
+          });
+        } else if (commentId) {
+          setPosts((list) => {
+            const next = list.map((p) =>
+              p.id !== postId
+                ? p
+                : {
+                    ...p,
+                    comments: (p.comments ?? []).map((c) =>
+                      c.id === commentId ? { ...c, hearts: (c.hearts ?? 0) + 1 } : c,
+                    ),
+                  },
+            );
+            persistComments(next);
+            return next;
+          });
+          pushNotif({
+            kind: "heart-comment",
+            postId,
+            commentId,
+            actorTitle,
+            actorHouseKey: author.houseKey,
+            actorHue: ident.hue,
+            snippet: lang === "zh" ? "点亮了你的回声" : "lit your echo",
+          });
+        }
+      } else {
+        const line = AMBIENT_REPLIES[Math.floor(Math.random() * AMBIENT_REPLIES.length)];
+        const text = lang === "zh" ? line[1] : line[0];
+        const newComment: Comment = {
+          id: `c-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          createdAt: Date.now(),
+          authorId: author.seed,
+          authorTitle,
+          authorHouseKey: author.houseKey,
+          text,
+          hearts: 0,
+          parentId: targetKind === "comment" ? commentId : undefined,
+        };
+        setPosts((list) => {
+          const next = list.map((p) =>
+            p.id === postId ? { ...p, comments: [...(p.comments ?? []), newComment] } : p,
+          );
+          persistComments(next);
+          return next;
+        });
+        setOpenComments((s) => ({ ...s, [postId]: true }));
+        pushNotif({
+          kind: targetKind === "comment" ? "reply" : "comment",
+          postId,
+          commentId: newComment.id,
+          actorTitle,
+          actorHouseKey: author.houseKey,
+          actorHue: ident.hue,
+          snippet: text,
+        });
+      }
+    }, delay);
+  };
 
   const submit = () => {
     if (!draft.trim()) return;
     const p: Post = {
       id: `p-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       createdAt: Date.now(),
-      authorId: `traveler-${identity.number}`,
+      authorId: myAuthorId,
       authorTitle,
       authorHouseKey,
       facet,
@@ -396,6 +533,8 @@ function CommunityPage() {
     setPosts(next);
     persist(next);
     setDraft("");
+    // Simulate ambient reception
+    scheduleAmbientEcho(p.id, "post");
   };
 
   const heart = (id: string) => {
@@ -406,16 +545,38 @@ function CommunityPage() {
     });
   };
 
-  const submitComment = (postId: string) => {
-    const text = (commentDraft[postId] || "").trim();
+  const heartComment = (postId: string, commentId: string) => {
+    setPosts((list) => {
+      const next = list.map((p) =>
+        p.id !== postId
+          ? p
+          : {
+              ...p,
+              comments: (p.comments ?? []).map((c) =>
+                c.id === commentId ? { ...c, hearts: (c.hearts ?? 0) + 1 } : c,
+              ),
+            },
+      );
+      persistComments(next);
+      return next;
+    });
+  };
+
+  const submitComment = (postId: string, parentId?: string) => {
+    const draftKey = parentId ? `${postId}:${parentId}` : postId;
+    const src = parentId ? replyDraft : commentDraft;
+    const setSrc = parentId ? setReplyDraft : setCommentDraft;
+    const text = (src[draftKey] || "").trim();
     if (!text) return;
     const c: Comment = {
       id: `c-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       createdAt: Date.now(),
-      authorId: `traveler-${identity.number}`,
+      authorId: myAuthorId,
       authorTitle,
       authorHouseKey,
       text: text.slice(0, 280),
+      hearts: 0,
+      parentId,
     };
     setPosts((list) => {
       const next = list.map((p) =>
@@ -424,9 +585,14 @@ function CommunityPage() {
       persistComments(next);
       return next;
     });
-    setCommentDraft((s) => ({ ...s, [postId]: "" }));
+    setSrc((s) => ({ ...s, [draftKey]: "" }));
     setOpenComments((s) => ({ ...s, [postId]: true }));
+    if (parentId) setReplyOpen((s) => ({ ...s, [`${postId}:${parentId}`]: false }));
+    // Ambient echo back on the user's comment/reply
+    scheduleAmbientEcho(postId, "comment", c.id);
   };
+
+
 
 
   // (Legacy manual "accept" is replaced by the AI reflection flow below.)
