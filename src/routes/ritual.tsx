@@ -312,7 +312,7 @@ function noOrphan(s: string) {
                       ? `${quizIdx + 1} / ${QUIZ.length} · 凭第一直觉选一个 —— 用于稍后对解读做偏差修正。`
                       : `${quizIdx + 1} / ${QUIZ.length} · Pick what feels truest — used later to bias-correct your reading.`}
                   </p>
-                  <div className="mx-auto flex max-w-lg flex-col gap-3 text-left">
+                  <div className="mx-auto flex max-w-sm flex-col gap-3 text-left md:max-w-lg">
                     {q.options.map((opt) => {
                       const active = quiz[quizIdx] === opt.id;
                       return (
