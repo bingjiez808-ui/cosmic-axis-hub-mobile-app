@@ -31,12 +31,13 @@ export function useSupabaseSession(): SessionState {
         setLoading(false);
         return;
       }
-      const { data } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", s.user.id)
-        .eq("role", "admin")
-        .maybeSingle();
+      const { data } = await (supabase.rpc as unknown as (
+        fn: string,
+        args: Record<string, unknown>,
+      ) => Promise<{ data: boolean | null }>)("has_role", {
+        _user_id: s.user.id,
+        _role: "admin",
+      });
       if (!mounted) return;
       setIsAdmin(!!data);
       setLoading(false);
