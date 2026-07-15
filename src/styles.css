@@ -108,45 +108,43 @@
     background-image: radial-gradient(circle at 2px 2px, color-mix(in oklab, var(--gold-dust) 15%, transparent) 1px, transparent 0);
     background-size: 44px 44px;
   }
-  /* Ancient-library backdrop ─── layered, no external images.
-     Bookshelf columns silhouette + candle-warm vignette + parchment noise. */
-  .library-shelves {
+  .library-lamplight {
     background:
-      /* faint horizontal shelves */
-      repeating-linear-gradient(
-        180deg,
-        transparent 0 78px,
-        color-mix(in oklab, #2a1a0c 55%, transparent) 78px 80px,
-        transparent 80px 158px
-      ),
-      /* vertical bookspine columns, uneven widths */
-      repeating-linear-gradient(
-        90deg,
-        color-mix(in oklab, #3b1f0d 26%, transparent) 0 6px,
-        color-mix(in oklab, #5a2a10 20%, transparent) 6px 13px,
-        color-mix(in oklab, #241207 30%, transparent) 13px 22px,
-        color-mix(in oklab, #4a2410 22%, transparent) 22px 30px,
-        color-mix(in oklab, #1b0e06 34%, transparent) 30px 38px,
-        color-mix(in oklab, #6b3418 18%, transparent) 38px 46px,
-        color-mix(in oklab, #2e170a 28%, transparent) 46px 55px
-      );
-    filter: blur(1.5px);
+      radial-gradient(ellipse 36% 26% at 50% 34%,
+        color-mix(in oklab, var(--gold-light) 26%, transparent) 0%,
+        color-mix(in oklab, var(--gold-dust) 10%, transparent) 42%,
+        transparent 76%),
+      radial-gradient(ellipse 28% 34% at 13% 62%,
+        color-mix(in oklab, var(--gold-dust) 18%, transparent) 0%,
+        transparent 68%),
+      radial-gradient(ellipse 26% 32% at 88% 62%,
+        color-mix(in oklab, var(--gold-dust) 16%, transparent) 0%,
+        transparent 68%);
+    mix-blend-mode: screen;
   }
-  .library-candle {
+  .library-shadow-aisle {
     background:
-      radial-gradient(ellipse 55% 40% at 50% 38%,
-        color-mix(in oklab, var(--gold-light) 22%, transparent) 0%,
-        color-mix(in oklab, var(--gold-dust) 8%, transparent) 40%,
-        transparent 70%),
-      radial-gradient(ellipse 90% 70% at 50% 100%,
-        color-mix(in oklab, #1a0a04 70%, transparent) 0%,
-        transparent 60%);
+      linear-gradient(90deg,
+        color-mix(in oklab, var(--obsidian) 88%, transparent) 0%,
+        color-mix(in oklab, var(--obsidian) 32%, transparent) 24%,
+        transparent 50%,
+        color-mix(in oklab, var(--obsidian) 32%, transparent) 76%,
+        color-mix(in oklab, var(--obsidian) 88%, transparent) 100%),
+      linear-gradient(180deg,
+        color-mix(in oklab, var(--obsidian) 64%, transparent) 0%,
+        transparent 34%,
+        color-mix(in oklab, var(--obsidian) 70%, transparent) 100%);
   }
   .library-vignette {
-    background: radial-gradient(ellipse 80% 65% at 50% 45%,
-      transparent 40%,
-      color-mix(in oklab, var(--obsidian, #0b0705) 55%, transparent) 75%,
-      var(--obsidian, #0b0705) 100%);
+    background:
+      radial-gradient(ellipse 64% 58% at 50% 42%,
+        transparent 0%,
+        color-mix(in oklab, var(--obsidian) 24%, transparent) 48%,
+        color-mix(in oklab, var(--obsidian) 78%, transparent) 82%,
+        var(--obsidian) 100%),
+      linear-gradient(180deg,
+        color-mix(in oklab, var(--obsidian) 72%, transparent) 0%,
+        transparent 60%);
   }
   .library-parchment {
     background-image:

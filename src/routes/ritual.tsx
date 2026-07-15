@@ -158,6 +158,7 @@ function RitualPage() {
         ...values,
         lang,
         quiz: quiz.join(""),
+        readingId: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         ...(info
           ? {
               bazi: info.bazi,

@@ -15,6 +15,7 @@ import { LanguageProvider, useLang } from "../lib/i18n";
 import { AccountProvider, useAccount } from "../lib/account";
 import { AccountModal } from "../components/AccountModal";
 import { LibrarySplash } from "../components/LibrarySplash";
+import libraryHallImg from "../assets/ancient-library-hall.jpg";
 
 
 function NotFoundComponent() {
@@ -144,14 +145,19 @@ function RootComponent() {
         <AccountProvider>
           <div className="relative min-h-screen bg-obsidian text-stone-warm">
             <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-              {/* Ancient library — layered backdrop */}
-              <div className="library-shelves absolute inset-0 opacity-[0.28]" />
-              <div className="library-parchment absolute inset-0 opacity-60" />
-              <div className="library-candle absolute inset-0 opacity-70 animate-candle-flicker" />
+              {/* Ancient library — image-led immersive backdrop */}
+              <img
+                src={libraryHallImg}
+                alt=""
+                width={1600}
+                height={1000}
+                className="absolute inset-0 h-full w-full object-cover opacity-55 saturate-[0.85]"
+              />
+              <div className="library-shadow-aisle absolute inset-0" />
+              <div className="library-parchment absolute inset-0 opacity-45" />
+              <div className="library-lamplight absolute inset-0 opacity-75 animate-candle-flicker" />
               <div className="dust-motes absolute inset-0 opacity-70" />
-              <div className="star-bg absolute inset-0 opacity-15" />
-              <div className="absolute -top-[20%] -left-[10%] h-[60%] w-[60%] rounded-full bg-nebula-purple/15 blur-[140px] animate-pulse-gold" />
-              <div className="absolute -bottom-[10%] -right-[5%] h-[45%] w-[45%] rounded-full bg-gold-dust/8 blur-[120px] animate-pulse-gold [animation-delay:2s]" />
+              <div className="star-bg absolute inset-0 opacity-10" />
               <div className="library-vignette absolute inset-0" />
             </div>
 

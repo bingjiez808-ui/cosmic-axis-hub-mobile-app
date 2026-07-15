@@ -1,13 +1,66 @@
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 
-/**
- * Shared Lovable AI Gateway provider — server-only.
- * Reads LOVABLE_API_KEY inside the caller's handler, not at module scope.
- */
-export function createLovableAiGatewayProvider(apiKey: string) {
+const LOVABLE_AIG_RUN_ID_HEADER = "X-Lovable-AIG-Run-ID";
+
+export function createLovableAiGatewayRunIdFetch(initialRunId?: string) {
+  let runId = initialRunId?.trim() || undefined;
+  let resolveRunId: (value: string | undefined) => void = () => {};
+  let runIdResolved = false;
+  const runIdReady = new Promise<string | undefined>((resolve) => {
+    resolveRunId = resolve;
+  });
+
+  const publishRunId = (value?: string) => {
+    const nextRunId = value?.trim() || undefined;
+    if (!runId && nextRunId) runId = nextRunId;
+    if (!runIdResolved) {
+      runIdResolved = true;
+      resolveRunId(runId);
+    }
+  };
+  if (runId) publishRunId(runId);
+
+  return {
+    fetch: async (input: RequestInfo | URL, init?: RequestInit) => {
+      const headers = new Headers(init?.headers);
+      if (runId && !headers.has(LOVABLE_AIG_RUN_ID_HEADER)) {
+        headers.set(LOVABLE_AIG_RUN_ID_HEADER, runId);
+      }
+
+      try {
+        const response = await fetch(input, { ...init, headers });
+        publishRunId(response.headers.get(LOVABLE_AIG_RUN_ID_HEADER) ?? undefined);
+        return response;
+      } catch (error) {
+        publishRunId(undefined);
+        throw error;
+      }
+    },
+    getRunId: () => runId,
+    waitForRunId: () => (runId ? Promise.resolve(runId) : runIdReady),
+  };
+}
+
+/** Shared Lovable AI Gateway provider — server-only. */
+export function createLovableAiGatewayProvider(
+  apiKey: string,
+  initialRunId?: string,
+  options?: { structuredOutputs?: boolean },
+) {
+  const runIdFetch = createLovableAiGatewayRunIdFetch(initialRunId);
+
   return createOpenAICompatible({
     name: "lovable",
     baseURL: "https://ai.gateway.lovable.dev/v1",
-    headers: { "Lovable-API-Key": apiKey },
+    supportsStructuredOutputs: options?.structuredOutputs ?? false,
+    headers: {
+      "Lovable-API-Key": apiKey,
+      "X-Lovable-AIG-SDK": "vercel-ai-sdk",
+    },
+    fetch: runIdFetch.fetch,
   });
+}
+
+export function getLovableAiGatewayRunId(request: Request) {
+  return request.headers.get(LOVABLE_AIG_RUN_ID_HEADER)?.trim() || undefined;
 }
