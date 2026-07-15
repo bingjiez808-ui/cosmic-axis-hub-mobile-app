@@ -119,6 +119,21 @@ type Comment = {
   authorTitle: string;
   authorHouseKey: string;
   text: string;
+  hearts?: number;
+  parentId?: string; // replying to another comment
+};
+
+type Notif = {
+  id: string;
+  createdAt: number;
+  kind: "heart" | "comment" | "reply" | "heart-comment";
+  postId: string;
+  commentId?: string;
+  actorTitle: string;
+  actorHouseKey: string;
+  actorHue: number;
+  snippet: string;
+  read: boolean;
 };
 
 type Post = {
