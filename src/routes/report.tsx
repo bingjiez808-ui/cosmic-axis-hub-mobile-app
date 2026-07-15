@@ -1091,6 +1091,7 @@ function PlanetReadingPanel({
           </ul>
         )}
       </div>
+      </div>
     </motion.div>
   );
 }
