@@ -569,11 +569,12 @@ export function AccountModal({ open, onClose }: { open: boolean; onClose: () => 
                   {(() => {
                     const p = (account.plan ?? "free") as "free" | "sage" | "oracle";
                     const limit = TAROT_LIMITS[p];
-                    const rem = tarotRemaining(p);
+                    const rem = tarotRemaining(p, { accountKey: account.email });
+                    const usedCount = isFinite(limit) ? Math.max(0, limit - rem) : 0;
                     const label = p === "oracle"
                       ? lang === "zh" ? "塔罗 AI 解读 · 本月无限次" : "Tarot AI readings · unlimited this month"
                       : p === "sage"
-                        ? lang === "zh" ? `塔罗 AI 解读 · 本月剩余 ${rem} / ${limit} 次` : `Tarot AI readings · ${rem} / ${limit} left this month`
+                        ? lang === "zh" ? `塔罗 AI 解读 · 本月已用 ${usedCount} · 剩余 ${rem} / ${limit} 次` : `Tarot AI readings · used ${usedCount} · ${rem} / ${limit} left`
                         : lang === "zh" ? "塔罗 AI 解读 · 升级贤者解锁（每月 10 次）" : "Tarot AI readings · unlock with Sage (10 / month)";
                     return (
                       <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-obsidian/40 px-3 py-2">
