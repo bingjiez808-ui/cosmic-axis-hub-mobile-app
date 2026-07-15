@@ -728,7 +728,7 @@ function ReportPage() {
                 onClear={() => setSelectedPlanet(null)}
               />
             </div>
-            <div className="flex min-w-0 flex-col items-center gap-4">
+            <div className="flex min-w-0 flex-col items-center gap-4 lg:h-full">
               <div className="relative w-full text-stone-warm/40">
                 <NatalWheel
                   lang={lang}
@@ -746,13 +746,17 @@ function ReportPage() {
                 </button>
               </div>
 
-              {/* Compact "core placements" summary — fills the right-column
-                  whitespace with per-visitor grounded facts. */}
-              <ChartFactsCard
-                lang={lang}
-                seed={`${search.name ?? ""}|${search.date ?? ""}|${search.time ?? ""}|${search.place ?? ""}`}
-                onPickPlanet={setSelectedPlanet}
-              />
+              {/* Compact "core placements" summary — flexes to fill remaining
+                  right-column height so the card's bottom aligns with the
+                  left column's PlanetReadingPanel baseline. Internal list
+                  scrolls if space is tight. */}
+              <div className="flex w-full flex-col lg:min-h-0 lg:flex-1">
+                <ChartFactsCard
+                  lang={lang}
+                  seed={`${search.name ?? ""}|${search.date ?? ""}|${search.time ?? ""}|${search.place ?? ""}`}
+                  onPickPlanet={setSelectedPlanet}
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -1151,7 +1155,7 @@ function ChartFactsCard({
 
   return (
     <div
-      className="w-full rounded-2xl border border-gold-dust/20 bg-obsidian/40 p-4 sm:p-5"
+      className="flex w-full min-h-0 flex-col rounded-2xl border border-gold-dust/20 bg-obsidian/40 p-4 sm:p-5 lg:h-full"
       aria-label={lang === "zh" ? "命盘核心概览" : "Chart facts summary"}
     >
       <div className="mb-3 flex items-baseline justify-between gap-3">
@@ -1162,7 +1166,7 @@ function ChartFactsCard({
           {lang === "zh" ? "点选查看解读" : "tap to read"}
         </p>
       </div>
-      <ul className="divide-y divide-white/5">
+      <ul className="divide-y divide-white/5 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
         {PLANETS.map((p, idx) => {
           const s = ZODIAC_SIGNS[signs[idx]];
           const h = houseForSign(signs[idx], ascSign);

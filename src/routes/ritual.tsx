@@ -133,7 +133,20 @@ function RitualPage() {
     { key: "date", prompt: t.q_date, hint: t.q_date_hint, placeholder: "", input: "date" },
     { key: "time", prompt: t.q_time, hint: t.q_time_hint, placeholder: "", input: "time" },
     { key: "place", prompt: t.q_place, hint: t.q_place_hint, placeholder: t.q_place_ph, input: "text" },
-  ];
+];
+
+/** Keep the last two glyphs of a title glued together, so a single character
+ *  never gets stranded on its own line — helps CJK where `text-wrap: balance`
+ *  can still leave an orphan. */
+function noOrphan(s: string) {
+  if (!s || s.length <= 2) return s;
+  return (
+    <>
+      {s.slice(0, -2)}
+      <span style={{ whiteSpace: "nowrap" }}>{s.slice(-2)}</span>
+    </>
+  );
+}
 
   const progress = useMemo(() => (step + 1) / totalSteps, [step, totalSteps]);
   const isLast = step === totalSteps - 1;
@@ -241,8 +254,8 @@ function RitualPage() {
 
             {isLanguageStep && (
               <>
-                <h1 className="mx-auto mb-4 max-w-[18ch] text-balance font-serif text-[26px] italic leading-[1.2] text-stone-warm sm:max-w-xl sm:text-4xl md:text-5xl" style={{ wordBreak: "keep-all", overflowWrap: "break-word" }}>
-                  {t.ritual_pick_language}
+                <h1 className="mx-auto mb-4 max-w-[16ch] text-balance font-serif text-[24px] italic leading-[1.25] text-stone-warm sm:max-w-xl sm:text-4xl md:text-5xl" style={{ wordBreak: "keep-all", overflowWrap: "break-word" }}>
+                  {noOrphan(t.ritual_pick_language)}
                 </h1>
                 <p className="mb-14 text-sm text-stone-warm/50">
                   {t.ritual_pick_language_hint}
@@ -300,8 +313,8 @@ function RitualPage() {
                         : "The next five questions aren't a test — they're used to fine-tune the AI's synthesis against your personal deviations."}
                     </p>
                   )}
-                  <h1 className="mx-auto mb-4 max-w-xl font-serif text-2xl italic leading-tight text-stone-warm md:text-4xl">
-                    {q.prompt[li]}
+                  <h1 className="mx-auto mb-4 max-w-xl text-balance font-serif text-2xl italic leading-tight text-stone-warm md:text-4xl" style={{ wordBreak: "keep-all", overflowWrap: "break-word" }}>
+                    {noOrphan(q.prompt[li])}
                   </h1>
                   <p className="mx-auto mb-10 max-w-md text-xs italic text-stone-warm/40">
                     {lang === "zh"
@@ -349,8 +362,8 @@ function RitualPage() {
 
             {isIntakeStep && currentQ && (
               <>
-                <h1 className="mx-auto mb-4 max-w-xl font-serif text-3xl italic leading-tight text-stone-warm md:text-5xl">
-                  {currentQ.prompt}
+                <h1 className="mx-auto mb-4 max-w-xl text-balance font-serif text-3xl italic leading-tight text-stone-warm md:text-5xl" style={{ wordBreak: "keep-all", overflowWrap: "break-word" }}>
+                  {noOrphan(currentQ.prompt)}
                 </h1>
                 <p className="mb-14 text-sm text-stone-warm/50">{currentQ.hint}</p>
 
