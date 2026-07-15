@@ -736,7 +736,7 @@ function ReportPage() {
                 />
               </div>
             </div>
-            <div className="flex min-w-0 flex-col items-center gap-4 lg:h-full">
+            <div className="flex min-w-0 flex-col items-center gap-4">
               <div className="relative w-full text-stone-warm/40">
                 <NatalWheel
                   lang={lang}
@@ -754,11 +754,8 @@ function ReportPage() {
                 </button>
               </div>
 
-              {/* Compact "core placements" summary — flexes to fill remaining
-                  right-column height so the card's bottom aligns with the
-                  left column's PlanetReadingPanel baseline. Internal list
-                  scrolls if space is tight. */}
-              <div className="flex w-full flex-col lg:min-h-0 lg:flex-1">
+              {/* Core placements card — fixed natural height, not stretched. */}
+              <div className="flex w-full flex-col">
                 <ChartFactsCard
                   lang={lang}
                   seed={`${search.name ?? ""}|${search.date ?? ""}|${search.time ?? ""}|${search.place ?? ""}`}
@@ -766,6 +763,7 @@ function ReportPage() {
                 />
               </div>
             </div>
+
           </div>
         </div>
 
