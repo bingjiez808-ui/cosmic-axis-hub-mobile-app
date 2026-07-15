@@ -43,7 +43,6 @@ export type ReportAI = {
 };
 
 export const generateReport = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => Input.parse(data))
   .handler(async ({ data }): Promise<ReportAI> => {
 
