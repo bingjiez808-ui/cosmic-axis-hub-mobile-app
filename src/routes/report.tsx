@@ -558,7 +558,7 @@ function ReportPage() {
     ? ai.summary
     : isAwaitingPersonalized
       ? lang === "zh"
-        ? "长者正在依据你的出生日期、时辰、农历、八字与行星落位生成专属解读……"
+        ? "智者正在依据你的出生日期、时辰、农历、八字与行星落位生成专属解读……"
         : "The elder is generating a personal reading from your birth date, time, lunar conversion, BaZi pillars and planetary placements…"
       : lang === "zh"
         ? "你的人生更像探险者的图谱，而非追随者的轨迹 —— 一张反复回到「志业、意义与再次选择的勇气」的星图。"
@@ -810,7 +810,7 @@ function ReportPage() {
             <span>
               {aiState === "loading"
                 ? lang === "zh"
-                  ? "长者正在为你的命盘逐维度重写解读……"
+                  ? "智者正在为你的命盘逐维度重写解读……"
                   : "The elder is rewriting each dimension for your chart…"
                 : lang === "zh"
                   ? `个性化解读暂时无法生成（${aiError ?? "unknown"}）—— 先显示通用模板。`
