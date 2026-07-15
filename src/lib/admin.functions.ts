@@ -6,35 +6,22 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 /**
  * Admin server functions. Every handler:
  *   1. Runs `requireSupabaseAuth` (verified Supabase session).
- *   2. Re-verifies admin role via `has_role()` before touching admin data.
+ *   2. Re-verifies admin role before touching admin data.
  *   3. Lazy-imports the service-role client (module is never bundled to the browser).
  */
-
-async function ensureAdmin(context: { supabase: unknown; userId: string }) {
-  const sb = context.supabase as {
-    from: (t: string) => {
-      select: (c: string) => {
-        eq: (
-          k: string,
-          v: string,
-        ) => { eq: (k: string, v: string) => { maybeSingle: () => Promise<{ data: unknown; error: unknown }> } };
-      };
-    };
-  };
-  const { data, error } = await sb
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", context.userId)
-    .eq("role", "admin")
-    .maybeSingle();
-  if (error) throw new Error("Failed to verify admin role");
-  if (!data) throw new Error("Forbidden: admin role required");
-}
 
 export const listAllUsers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await ensureAdmin(context as never);
+    const { data: adminRole, error: adminError } = await context.supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", context.userId)
+      .eq("role", "admin")
+      .maybeSingle();
+    if (adminError) throw new Error("Failed to verify admin role");
+    if (!adminRole) throw new Error("Forbidden: admin role required");
+
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     // Fetch all auth users (paginated). For an early-stage app one page is plenty.
@@ -89,7 +76,15 @@ export const sendPasswordResetEmail = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => SendResetInput.parse(data))
   .handler(async ({ data, context }) => {
-    await ensureAdmin(context as never);
+    const { data: adminRole, error: adminError } = await context.supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", context.userId)
+      .eq("role", "admin")
+      .maybeSingle();
+    if (adminError) throw new Error("Failed to verify admin role");
+    if (!adminRole) throw new Error("Forbidden: admin role required");
+
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const siteUrl =
@@ -112,7 +107,15 @@ export const setUserPassword = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => SetPasswordInput.parse(data))
   .handler(async ({ data, context }) => {
-    await ensureAdmin(context as never);
+    const { data: adminRole, error: adminError } = await context.supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", context.userId)
+      .eq("role", "admin")
+      .maybeSingle();
+    if (adminError) throw new Error("Failed to verify admin role");
+    if (!adminRole) throw new Error("Forbidden: admin role required");
+
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.auth.admin.updateUserById(data.userId, {
       password: data.password,
@@ -129,7 +132,15 @@ export const adminUpdateProfile = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => UpdateProfileInput.parse(data))
   .handler(async ({ data, context }) => {
-    await ensureAdmin(context as never);
+    const { data: adminRole, error: adminError } = await context.supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", context.userId)
+      .eq("role", "admin")
+      .maybeSingle();
+    if (adminError) throw new Error("Failed to verify admin role");
+    if (!adminRole) throw new Error("Forbidden: admin role required");
+
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const sb = supabaseAdmin as unknown as {
       from: (t: string) => {
