@@ -3,6 +3,7 @@
  * Covers timezone-aware month keys, per-account scoping, monthly reset,
  * plan ceilings, and the in-flight double-charge lock.
  */
+// @ts-expect-error — bun:test is Bun's built-in runner, no npm types shipped.
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 
 // Provide a minimal in-memory localStorage shim before importing SUT.
