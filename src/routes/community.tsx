@@ -112,6 +112,15 @@ function buildIdentity(seed: string) {
 
 // ─────────────────────────────────────────────────────────────
 
+type Comment = {
+  id: string;
+  createdAt: number;
+  authorId: string;
+  authorTitle: string;
+  authorHouseKey: string;
+  text: string;
+};
+
 type Post = {
   id: string;
   createdAt: number;
@@ -121,9 +130,11 @@ type Post = {
   facet: string; // "vocation" | "love" | ...
   text: string;
   hearts: number;
+  comments?: Comment[];
 };
 
 const FEED_KEY = "lod.community.feed.v1";
+const COMMENTS_KEY = "lod.community.comments.v1";
 const IDENTITY_KEY = "lod.community.identity.v1";
 
 const FACETS: { key: string; label: [string, string] }[] = [
@@ -172,6 +183,16 @@ const SEED_POSTS: Post[] = [
     facet: "shadow",
     text: "I keep trying to be useful when I should be honest. My chart wants me to say the hard thing first.",
     hearts: 12,
+    comments: [
+      {
+        id: "sc-1a",
+        createdAt: Date.now() - 1000 * 60 * 60 * 6,
+        authorId: "traveler-5501",
+        authorTitle: "Candle-Bearer",
+        authorHouseKey: "ember",
+        text: "This resonates. Honesty is the useful thing — the rest is just noise dressed as service.",
+      },
+    ],
   },
   {
     id: "seed-2",
@@ -182,6 +203,24 @@ const SEED_POSTS: Post[] = [
     facet: "gift",
     text: "我一直以为「太容易的事」不算天赋。今晚才明白，那正是我的火。",
     hearts: 21,
+    comments: [
+      {
+        id: "sc-2a",
+        createdAt: Date.now() - 1000 * 60 * 60 * 20,
+        authorId: "traveler-3120",
+        authorTitle: "根之歌者",
+        authorHouseKey: "loam",
+        text: "同门共鸣。别小看流畅的事 —— 那是你与世界之间最短的路。",
+      },
+      {
+        id: "sc-2b",
+        createdAt: Date.now() - 1000 * 60 * 60 * 12,
+        authorId: "traveler-7788",
+        authorTitle: "Star-Scribe",
+        authorHouseKey: "aether",
+        text: "把「容易」当作天赋的入口，收下。",
+      },
+    ],
   },
   {
     id: "seed-3",
@@ -192,6 +231,7 @@ const SEED_POSTS: Post[] = [
     facet: "vocation",
     text: "I map old libraries for a living. Turns out my 10th house lord is Mercury in the 9th — the chart knew before I did.",
     hearts: 8,
+    comments: [],
   },
 ];
 
@@ -284,10 +324,22 @@ function CommunityPage() {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(FEED_KEY);
+      let base: Post[] = SEED_POSTS;
       if (raw) {
         const parsed = JSON.parse(raw) as Post[];
-        if (Array.isArray(parsed) && parsed.length) setPosts([...parsed, ...SEED_POSTS]);
+        if (Array.isArray(parsed) && parsed.length) base = [...parsed, ...SEED_POSTS];
       }
+      // Merge extra comments from localStorage keyed per postId.
+      const rawC = localStorage.getItem(COMMENTS_KEY);
+      if (rawC) {
+        const cmap = JSON.parse(rawC) as Record<string, Comment[]>;
+        base = base.map((p) => {
+          const extra = cmap[p.id];
+          if (!extra || !extra.length) return p;
+          return { ...p, comments: [...(p.comments ?? []), ...extra] };
+        });
+      }
+      setPosts(base);
     } catch {}
   }, []);
   const persist = (list: Post[]) => {
@@ -295,10 +347,21 @@ function CommunityPage() {
     const own = list.filter((p) => !p.id.startsWith("seed-"));
     try { localStorage.setItem(FEED_KEY, JSON.stringify(own)); } catch {}
   };
+  const persistComments = (list: Post[]) => {
+    // Persist ONLY user-added comments (skip seed ones by id prefix "sc-").
+    const cmap: Record<string, Comment[]> = {};
+    for (const p of list) {
+      const extra = (p.comments ?? []).filter((c) => !c.id.startsWith("sc-"));
+      if (extra.length) cmap[p.id] = extra;
+    }
+    try { localStorage.setItem(COMMENTS_KEY, JSON.stringify(cmap)); } catch {}
+  };
 
   const [facet, setFacet] = useState<string>(FACETS[0].key);
   const [draft, setDraft] = useState("");
   const [completedQuests, setCompletedQuests] = useState<Record<string, boolean>>({});
+  const [openComments, setOpenComments] = useState<Record<string, boolean>>({});
+  const [commentDraft, setCommentDraft] = useState<Record<string, string>>({});
 
   const submit = () => {
     if (!draft.trim()) return;
@@ -311,6 +374,7 @@ function CommunityPage() {
       facet,
       text: draft.trim().slice(0, 500),
       hearts: 0,
+      comments: [],
     };
     const next = [p, ...posts];
     setPosts(next);
@@ -325,6 +389,29 @@ function CommunityPage() {
       return next;
     });
   };
+
+  const submitComment = (postId: string) => {
+    const text = (commentDraft[postId] || "").trim();
+    if (!text) return;
+    const c: Comment = {
+      id: `c-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      createdAt: Date.now(),
+      authorId: `traveler-${identity.number}`,
+      authorTitle,
+      authorHouseKey,
+      text: text.slice(0, 280),
+    };
+    setPosts((list) => {
+      const next = list.map((p) =>
+        p.id === postId ? { ...p, comments: [...(p.comments ?? []), c] } : p,
+      );
+      persistComments(next);
+      return next;
+    });
+    setCommentDraft((s) => ({ ...s, [postId]: "" }));
+    setOpenComments((s) => ({ ...s, [postId]: true }));
+  };
+
 
   // (Legacy manual "accept" is replaced by the AI reflection flow below.)
 
@@ -683,7 +770,112 @@ function CommunityPage() {
                       <span aria-hidden>✦</span>
                       <span>{p.hearts}</span>
                     </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setOpenComments((s) => ({ ...s, [p.id]: !s[p.id] }))
+                      }
+                      aria-expanded={!!openComments[p.id]}
+                      className="flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-1 uppercase tracking-[0.28em] transition-colors hover:border-gold-dust/40 hover:text-gold-dust"
+                    >
+                      <span aria-hidden>❋</span>
+                      <span>
+                        {lang === "zh" ? "回声" : "Echoes"} · {(p.comments ?? []).length}
+                      </span>
+                      <span aria-hidden className="text-[9px]">
+                        {openComments[p.id] ? "▲" : "▼"}
+                      </span>
+                    </button>
                   </div>
+
+                  {/* Comments — always visible, collapsible for depth */}
+                  {(p.comments ?? []).length > 0 && (
+                    <div className="mt-3 border-l border-gold-dust/20 pl-4">
+                      {(() => {
+                        const list = p.comments ?? [];
+                        const isOpen = !!openComments[p.id];
+                        const visible = isOpen ? list : list.slice(-1);
+                        const hidden = list.length - visible.length;
+                        return (
+                          <>
+                            {!isOpen && hidden > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => setOpenComments((s) => ({ ...s, [p.id]: true }))}
+                                className="mb-2 text-[10px] uppercase tracking-[0.28em] text-gold-dust/70 transition-colors hover:text-gold-dust"
+                              >
+                                {lang === "zh"
+                                  ? `展开另 ${hidden} 条回声 ▾`
+                                  : `Show ${hidden} more echo${hidden > 1 ? "es" : ""} ▾`}
+                              </button>
+                            )}
+                            <ul className="space-y-2">
+                              {visible.map((c) => {
+                                const ch = houseByKey(c.authorHouseKey);
+                                const cid = buildIdentity(c.authorId);
+                                return (
+                                  <li key={c.id} className="flex gap-2.5">
+                                    <AvatarGlyph hue={cid.hue} glyph={ch.glyph} size={28} />
+                                    <div className="min-w-0 flex-1">
+                                      <div className="flex flex-wrap items-baseline gap-x-2 text-[10px] uppercase tracking-[0.24em] text-stone-warm/50">
+                                        <span className="font-serif text-[13px] italic normal-case tracking-normal text-stone-warm/90">
+                                          {c.authorTitle}
+                                        </span>
+                                        <span className="text-gold-light">#{cid.number}</span>
+                                        <span className="text-gold-dust/60">{ch.name[li]}</span>
+                                        <span className="text-stone-warm/40">· {timeAgo(c.createdAt)}</span>
+                                      </div>
+                                      <p className="mt-0.5 font-serif text-[13.5px] leading-relaxed text-stone-warm/80">
+                                        {c.text}
+                                      </p>
+                                    </div>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                            {isOpen && list.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => setOpenComments((s) => ({ ...s, [p.id]: false }))}
+                                className="mt-2 text-[10px] uppercase tracking-[0.28em] text-stone-warm/50 transition-colors hover:text-gold-dust"
+                              >
+                                {lang === "zh" ? "收起 ▴" : "Collapse ▴"}
+                              </button>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </div>
+                  )}
+
+                  {/* Reply composer */}
+                  <div className="mt-3 flex items-start gap-2">
+                    <textarea
+                      value={commentDraft[p.id] ?? ""}
+                      onChange={(e) =>
+                        setCommentDraft((s) => ({
+                          ...s,
+                          [p.id]: e.target.value.slice(0, 280),
+                        }))
+                      }
+                      rows={1}
+                      placeholder={
+                        lang === "zh"
+                          ? "在此留下你的回声…"
+                          : "Leave an echo…"
+                      }
+                      className="min-h-[36px] w-full resize-none rounded-xl border border-white/10 bg-obsidian/40 px-3 py-2 text-[13px] text-stone-warm placeholder:text-stone-warm/30 focus:border-gold-dust/40 focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => submitComment(p.id)}
+                      disabled={!(commentDraft[p.id] || "").trim()}
+                      className="shrink-0 rounded-full border border-gold-dust/40 px-3 py-1.5 text-[10px] uppercase tracking-[0.28em] text-gold-dust transition-colors hover:bg-gold-dust/10 disabled:opacity-40"
+                    >
+                      {lang === "zh" ? "回声" : "Echo"}
+                    </button>
+                  </div>
+
                 </div>
               </motion.article>
             );

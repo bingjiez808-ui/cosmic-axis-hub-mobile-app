@@ -257,8 +257,8 @@ function SiteNav() {
           <div className="hidden items-center gap-5 md:flex lg:gap-8">
             <Link to="/traditions" className={linkClass}>{t.nav_traditions}</Link>
             <Link to="/ritual" className={linkClass}>{t.nav_ritual}</Link>
-            <Link to="/about" className={linkClass}>{t.nav_about}</Link>
             <Link to="/community" className={linkClass}>{t.nav_community}</Link>
+            <Link to="/about" className={linkClass}>{t.nav_about}</Link>
           </div>
           <button
             type="button"
@@ -282,8 +282,8 @@ function SiteNav() {
           <div className="glass-card flex items-center gap-4 rounded-full px-4 py-1.5">
             <Link to="/traditions" className={linkClass}>{t.nav_traditions}</Link>
             <Link to="/ritual" className={linkClass}>{t.nav_ritual}</Link>
-            <Link to="/about" className={linkClass}>{t.nav_about}</Link>
             <Link to="/community" className={linkClass}>{t.nav_community}</Link>
+            <Link to="/about" className={linkClass}>{t.nav_about}</Link>
           </div>
         </div>
       </nav>
@@ -304,8 +304,8 @@ function SiteNav() {
           { to: "/", label: lang === "zh" ? "首页" : "Home" },
           { to: "/traditions", label: t.nav_traditions },
           { to: "/ritual", label: t.nav_ritual },
-          { to: "/about", label: t.nav_about },
           { to: "/community", label: t.nav_community },
+          { to: "/about", label: t.nav_about },
         ].map((item) => (
           <Link
             key={item.to}
