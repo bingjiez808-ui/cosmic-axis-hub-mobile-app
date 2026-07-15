@@ -84,6 +84,7 @@ const chapters: Chapter[] = [
   },
   {
     numeral: "II",
+    elderId: "jyotish",
     title: ["Jyotish", "印度占星 · Jyotish"],
     subtitle: [
       "The science of light — India's Vedic astrology",
@@ -121,6 +122,7 @@ const chapters: Chapter[] = [
   },
   {
     numeral: "III",
+    elderId: "bazi",
     title: ["BaZi — 八字", "八字 · 四柱"],
     subtitle: [
       "The Four Pillars of Destiny",
@@ -158,6 +160,7 @@ const chapters: Chapter[] = [
   },
   {
     numeral: "IV",
+    elderId: "ziwei",
     title: ["Zi Wei Dou Shu — 紫微斗数", "紫微斗数"],
     subtitle: [
       "The Purple Star Astrology of the Chinese imperium",
