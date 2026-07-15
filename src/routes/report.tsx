@@ -1133,9 +1133,7 @@ function ChartFactsCard({
 }) {
   const li = lang === "zh" ? 1 : 0;
   const signs = computePlanetSigns(seed);
-  // Element / modality tally across the visible bodies.
-
-  // Element / modality tally across the visible bodies.
+  // Element / modality tally across the ten visible bodies.
   const tally = <T,>(pairs: T[][]) => {
     const map = new Map<string, number>();
     for (const p of pairs) {
@@ -1149,9 +1147,7 @@ function ChartFactsCard({
   const modalities = tally(bodySigns.map((s) => SIGN_MODALITY[s]));
   const dominant = elements[0];
   const dominantMod = modalities[0];
-
-  const ascIdx = PLANETS.findIndex((x) => x.key === "asc");
-  const ascSign = signs[ascIdx] ?? 0;
+  const ascSign = signs[PLANETS.findIndex((x) => x.key === "asc")] ?? 0;
 
   return (
     <div
