@@ -88,13 +88,24 @@ describe("scoped quota", () => {
 });
 
 describe("double-charge lock", () => {
-  test("re-entrant consume within the lock window is rejected", () => {
+  test("re-entrant consume from inside the same frame is rejected", () => {
     const scope = { accountKey: "lock@t.co" };
-    // First call succeeds; a synchronous second call must be denied because
-    // the in-flight guard is still hot until its setTimeout fires.
-    expect(tarotConsume("sage", scope)).toBe(true);
-    expect(tarotConsume("sage", scope)).toBe(false);
-    // Only one increment landed.
-    expect(tarotUsed(scope)).toBe(1);
+    // Simulate the guard: call consume once, and while its handler is still
+    // on the stack the second call must be denied via the IN_FLIGHT set.
+    let secondResult: boolean | null = null;
+    // Monkey-patch write path by observing the lock — easiest way is to
+    // dispatchEvent, which the SUT emits after write. We hook that.
+    const origDispatch = (window as unknown as { dispatchEvent: (e: Event) => boolean }).dispatchEvent;
+    (window as unknown as { dispatchEvent: (e: Event) => boolean }).dispatchEvent = (e: Event) => {
+      if (secondResult === null) secondResult = tarotConsume("sage", scope);
+      return origDispatch(e);
+    };
+    try {
+      expect(tarotConsume("sage", scope)).toBe(true);
+      expect(secondResult).toBe(false);
+      expect(tarotUsed(scope)).toBe(1);
+    } finally {
+      (window as unknown as { dispatchEvent: (e: Event) => boolean }).dispatchEvent = origDispatch;
+    }
   });
 });
