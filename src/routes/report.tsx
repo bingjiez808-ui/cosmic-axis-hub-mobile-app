@@ -560,13 +560,14 @@ function ReportPage() {
         setAiState("error");
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [seed, lang, search.readingId]);
+  }, [seed, lang, search.readingId, session]);
 
   useEffect(() => {
+    if (sessionLoading) return;
     runReport(false);
-  }, [runReport]);
+  }, [runReport, sessionLoading]);
 
-  const isAwaitingPersonalized = !!search.date && aiState !== "ready" && aiState !== "error";
+  const isAwaitingPersonalized = !!search.date && aiState !== "ready" && aiState !== "error" && aiState !== "signed_out";
   const summary = ai?.summary
     ? ai.summary
     : isAwaitingPersonalized
