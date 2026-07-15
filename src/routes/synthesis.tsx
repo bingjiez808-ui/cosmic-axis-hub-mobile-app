@@ -126,7 +126,7 @@ function SynthesisPage() {
     return () => {
       cancelled = true;
     };
-  }, [lang, reportFingerprint, search, retryTick]);
+  }, [lang, reportFingerprint, search, retryTick, session, sessionLoading]);
 
   useEffect(() => {
     const total = phases.length;
