@@ -324,10 +324,22 @@ function CommunityPage() {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(FEED_KEY);
+      let base: Post[] = SEED_POSTS;
       if (raw) {
         const parsed = JSON.parse(raw) as Post[];
-        if (Array.isArray(parsed) && parsed.length) setPosts([...parsed, ...SEED_POSTS]);
+        if (Array.isArray(parsed) && parsed.length) base = [...parsed, ...SEED_POSTS];
       }
+      // Merge extra comments from localStorage keyed per postId.
+      const rawC = localStorage.getItem(COMMENTS_KEY);
+      if (rawC) {
+        const cmap = JSON.parse(rawC) as Record<string, Comment[]>;
+        base = base.map((p) => {
+          const extra = cmap[p.id];
+          if (!extra || !extra.length) return p;
+          return { ...p, comments: [...(p.comments ?? []), ...extra] };
+        });
+      }
+      setPosts(base);
     } catch {}
   }, []);
   const persist = (list: Post[]) => {
@@ -335,10 +347,21 @@ function CommunityPage() {
     const own = list.filter((p) => !p.id.startsWith("seed-"));
     try { localStorage.setItem(FEED_KEY, JSON.stringify(own)); } catch {}
   };
+  const persistComments = (list: Post[]) => {
+    // Persist ONLY user-added comments (skip seed ones by id prefix "sc-").
+    const cmap: Record<string, Comment[]> = {};
+    for (const p of list) {
+      const extra = (p.comments ?? []).filter((c) => !c.id.startsWith("sc-"));
+      if (extra.length) cmap[p.id] = extra;
+    }
+    try { localStorage.setItem(COMMENTS_KEY, JSON.stringify(cmap)); } catch {}
+  };
 
   const [facet, setFacet] = useState<string>(FACETS[0].key);
   const [draft, setDraft] = useState("");
   const [completedQuests, setCompletedQuests] = useState<Record<string, boolean>>({});
+  const [openComments, setOpenComments] = useState<Record<string, boolean>>({});
+  const [commentDraft, setCommentDraft] = useState<Record<string, string>>({});
 
   const submit = () => {
     if (!draft.trim()) return;
@@ -351,6 +374,7 @@ function CommunityPage() {
       facet,
       text: draft.trim().slice(0, 500),
       hearts: 0,
+      comments: [],
     };
     const next = [p, ...posts];
     setPosts(next);
@@ -365,6 +389,29 @@ function CommunityPage() {
       return next;
     });
   };
+
+  const submitComment = (postId: string) => {
+    const text = (commentDraft[postId] || "").trim();
+    if (!text) return;
+    const c: Comment = {
+      id: `c-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      createdAt: Date.now(),
+      authorId: `traveler-${identity.number}`,
+      authorTitle,
+      authorHouseKey,
+      text: text.slice(0, 280),
+    };
+    setPosts((list) => {
+      const next = list.map((p) =>
+        p.id === postId ? { ...p, comments: [...(p.comments ?? []), c] } : p,
+      );
+      persistComments(next);
+      return next;
+    });
+    setCommentDraft((s) => ({ ...s, [postId]: "" }));
+    setOpenComments((s) => ({ ...s, [postId]: true }));
+  };
+
 
   // (Legacy manual "accept" is replaced by the AI reflection flow below.)
 
