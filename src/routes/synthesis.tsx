@@ -85,9 +85,12 @@ function SynthesisPage() {
   const lang: "en" | "zh" = search.lang === "zh" ? "zh" : "en";
   const phases = lang === "zh" ? PHASES_ZH : PHASES_EN;
   const reportFingerprint = buildReportFingerprint(search, lang);
+  const { session, loading: sessionLoading } = useSupabaseSession();
 
   useEffect(() => {
-    if (!search.date) {
+    if (sessionLoading) return;
+    if (!search.date || !session) {
+      // Unauthenticated users skip AI generation; /report shows a sign-in CTA + template.
       setReportReady(true);
       return;
     }
