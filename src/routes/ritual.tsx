@@ -362,8 +362,8 @@ function noOrphan(s: string) {
 
             {isIntakeStep && currentQ && (
               <>
-                <h1 className="mx-auto mb-4 max-w-xl font-serif text-3xl italic leading-tight text-stone-warm md:text-5xl">
-                  {currentQ.prompt}
+                <h1 className="mx-auto mb-4 max-w-xl text-balance font-serif text-3xl italic leading-tight text-stone-warm md:text-5xl" style={{ wordBreak: "keep-all", overflowWrap: "break-word" }}>
+                  {noOrphan(currentQ.prompt)}
                 </h1>
                 <p className="mb-14 text-sm text-stone-warm/50">{currentQ.hint}</p>
 
