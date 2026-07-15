@@ -92,7 +92,10 @@ function AuthPage() {
         ? zh ? "取回你的印章" : "Recover your seal"
         : mode === "reset"
         ? zh ? "重铸你的印章" : "Recast your seal"
+        : mode === "phone"
+        ? zh ? "以手机号入席" : "Sign in with phone"
         : zh ? "重返图书馆" : "Return to the library",
+
     email: zh ? "邮箱" : "Email",
     password: zh ? "口令（至少 8 位）" : "Password (min 8 chars)",
     name: zh ? "如何称呼你" : "How to call you",
