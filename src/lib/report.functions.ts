@@ -3,6 +3,8 @@ import { generateText } from "ai";
 import { z } from "zod";
 
 import { createLovableAiGatewayProvider } from "./ai-gateway.server";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+
 
 const Input = z.object({
   name: z.string().optional(),
@@ -42,8 +44,10 @@ export type ReportAI = {
 };
 
 export const generateReport = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => Input.parse(data))
   .handler(async ({ data }): Promise<ReportAI> => {
+
     const DIM_KEYS = [
       "character",
       "vocation",

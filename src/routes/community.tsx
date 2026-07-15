@@ -601,9 +601,21 @@ function CommunityPage() {
     setAvatarBusy(true);
     setAvatarError(null);
     try {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) {
+        setAvatarError(
+          lang === "zh" ? "请先登录后再生成画像。" : "Please sign in to generate a portrait.",
+        );
+        return;
+      }
       const r = await fetch("/api/generate-avatar", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({
           house: house.name[0],
           element: house.element[0],
@@ -625,6 +637,7 @@ function CommunityPage() {
     }
   };
 
+
   const askQuestOracle = async (questId: string, questPrompt: string) => {
     const answer = (aiQuestInput[questId] || "").trim();
     if (!answer) return;
@@ -638,6 +651,7 @@ function CommunityPage() {
               ? `我正在参加「同门闯关」，题目是：${questPrompt}\n我的回答是：${answer}\n请以图书馆智者的口吻，给我一段 120-180 字的、结合我所在的「${house.name[1]}」学院（${house.element[1]}元素）的温柔点评，指出我可以更深地看到自己哪一部分。`
               : `I'm doing a Guild-of-Souls quest. Prompt: ${questPrompt}\nMy answer: ${answer}\nAs the library elder, please give me a 120-180 word warm reflection tuned to my "${house.name[0]}" House (${house.element[0]} element). Point out one deeper thing I can now see about myself.`),
           lang,
+          feature: "general",
         },
       });
       setAiReflect((s) => ({ ...s, [questId]: res.text || "" }));
