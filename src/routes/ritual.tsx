@@ -1,10 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { CityCombobox } from "@/components/CityCombobox";
-import { useLang, type Lang } from "@/lib/i18n";
+import { useLang } from "@/lib/i18n";
 import { solarToLunarInfo } from "@/lib/lunar";
+
+const RITUAL_STATE_KEY = "lod:ritual-draft-v2";
 
 export const Route = createFileRoute("/ritual")({
   head: () => ({
