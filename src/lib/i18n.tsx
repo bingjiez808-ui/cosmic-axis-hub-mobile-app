@@ -233,7 +233,7 @@ const en: Dict = {
   focus_dim_health: "Health",
   focus_dim_mission: "Life Mission",
   focus_dim_family: "Family",
-  nav_community: "Guild",
+  nav_community: "Community",
   report_kicker: "The unified reading",
   report_read_across: "read across four traditions",
   in_plain_words: "In plain words",
