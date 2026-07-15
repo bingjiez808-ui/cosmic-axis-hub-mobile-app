@@ -217,8 +217,39 @@ function SynthesisPage() {
         <p className="mt-4 text-[10px] uppercase tracking-[0.32em] text-stone-warm/40">
           {phase + 1} / {phases.length} {PASSAGES[lang]}
         </p>
+
+        {reportError && (
+          <div className="mx-auto mt-10 max-w-md rounded-2xl border border-red-300/30 bg-red-500/5 p-5 text-left">
+            <p className="text-[10px] uppercase tracking-[0.32em] text-red-300/80">
+              {lang === "zh" ? "召唤未能完成" : "The rite was interrupted"}
+            </p>
+            <p className="mt-2 text-sm italic text-stone-warm/70">
+              {lang === "zh"
+                ? "长者的低语被风打断了。你可以再次尝试，或先看通用模板。"
+                : "The elders' whisper was broken by wind. Try again, or continue with the template."}
+            </p>
+            <p className="mt-2 text-[10px] tracking-[0.14em] text-stone-warm/40">{reportError}</p>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => setRetryTick((n) => n + 1)}
+                className="rounded-full border border-gold-dust/40 px-5 py-2 text-[10px] uppercase tracking-[0.28em] text-gold-dust transition-colors hover:bg-gold-dust/10"
+              >
+                {lang === "zh" ? "重新召唤" : "Retry"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setReportReady(true)}
+                className="rounded-full border border-white/15 px-5 py-2 text-[10px] uppercase tracking-[0.28em] text-stone-warm/70 transition-colors hover:border-gold-dust/40 hover:text-gold-dust"
+              >
+                {lang === "zh" ? "先看通用模板" : "Continue with template"}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 }
+
 
