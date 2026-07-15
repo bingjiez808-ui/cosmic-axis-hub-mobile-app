@@ -202,107 +202,123 @@ function LanguageToggle() {
 }
 
 function SiteNav() {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const { account } = useAccount();
   const openAcc = () => window.dispatchEvent(new Event("lod:open-account"));
-  const [visible, setVisible] = useState(true);
+  const [atTop, setAtTop] = useState(true);
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
-    let lastY = window.scrollY;
-    let hoverTop = false;
-    let idleTimer: ReturnType<typeof setTimeout> | null = null;
-    const IDLE_MS = 3000;
-
-    const resetIdle = () => {
-      if (idleTimer) clearTimeout(idleTimer);
-      idleTimer = setTimeout(() => {
-        // Only hide if we are not near the top and mouse is not near top.
-        if (window.scrollY > 40 && !hoverTop) setVisible(false);
-      }, IDLE_MS);
-    };
-
-    const update = () => {
-      const y = window.scrollY;
-      if (y < 40 || hoverTop) {
-        setVisible(true);
-      } else if (y > lastY + 6) {
-        setVisible(false);
-      } else if (y < lastY - 6) {
-        setVisible(true);
-      }
-      lastY = y;
-      resetIdle();
-    };
-    const onMove = (e: MouseEvent) => {
-      const nearTop = e.clientY < 80;
-      if (nearTop !== hoverTop) {
-        hoverTop = nearTop;
-        if (nearTop) setVisible(true);
-      }
-      resetIdle();
-    };
-    const onKey = () => resetIdle();
-    const onTouch = () => resetIdle();
-    window.addEventListener("scroll", update, { passive: true });
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("keydown", onKey);
-    window.addEventListener("touchstart", onTouch, { passive: true });
-    resetIdle();
-    return () => {
-      window.removeEventListener("scroll", update);
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("keydown", onKey);
-      window.removeEventListener("touchstart", onTouch);
-      if (idleTimer) clearTimeout(idleTimer);
-    };
+    const onScroll = () => setAtTop(window.scrollY < 40);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // Show full bar when at top, or when user has clicked the dot to expand.
+  const showFull = atTop || expanded;
+
+  // Chinese labels should not be uppercase/wide-tracked — that causes the
+  // "每字一行" vertical stack seen on narrow widths.
+  const linkClass = lang === "zh"
+    ? "whitespace-nowrap text-[13px] tracking-normal normal-case text-stone-warm/75 transition-colors hover:text-gold-dust"
+    : "whitespace-nowrap text-[11px] uppercase tracking-[0.28em] text-stone-warm/70 transition-colors hover:text-gold-dust";
+
   return (
-    <nav
-      className={`fixed top-0 left-1/2 z-50 -translate-x-1/2 p-6 transition-all duration-500 ${
-        visible ? "opacity-100 translate-y-0" : "-translate-y-full opacity-0 pointer-events-none"
-      }`}
-      onMouseEnter={() => setVisible(true)}
-    >
-      <div className="glass-card flex items-center gap-4 rounded-full px-4 py-2 text-[11px] font-light uppercase tracking-[0.28em] md:gap-8 md:px-6 md:py-2.5">
-        <Link to="/" className="font-serif text-sm normal-case tracking-normal text-stone-warm">
-          Destiny<span className="text-gold-dust">·</span>Library
-        </Link>
-        <div className="hidden items-center gap-8 md:flex">
-          <Link to="/traditions" className="text-stone-warm/70 transition-colors hover:text-gold-dust">
-            {t.nav_traditions}
+    <>
+      {/* Collapsed floating orb — visible when not at top and not expanded */}
+      <button
+        type="button"
+        aria-label="Open navigation"
+        onClick={() => setExpanded(true)}
+        className={`fixed right-4 top-4 z-[60] flex h-11 w-11 items-center justify-center rounded-full border border-gold-dust/40 bg-obsidian/70 backdrop-blur-md transition-all duration-300 hover:border-gold-dust hover:bg-gold-dust/10 md:right-6 md:top-6 ${
+          showFull ? "pointer-events-none scale-75 opacity-0" : "opacity-100"
+        }`}
+      >
+        <span className="block h-2 w-2 rounded-full bg-gold-dust shadow-[0_0_10px_2px_color-mix(in_oklab,var(--gold-light)_60%,transparent)]" />
+      </button>
+
+      {/* Full navigation bar */}
+      <nav
+        className={`fixed top-0 left-1/2 z-50 -translate-x-1/2 p-3 md:p-6 transition-all duration-500 ${
+          showFull ? "opacity-100 translate-y-0" : "-translate-y-full opacity-0 pointer-events-none"
+        }`}
+        onMouseLeave={() => {
+          if (!atTop) setExpanded(false);
+        }}
+      >
+        <div className="glass-card flex max-w-[96vw] items-center gap-3 rounded-full px-3 py-2 md:gap-6 md:px-6 md:py-2.5">
+          <Link
+            to="/"
+            className="whitespace-nowrap font-serif text-sm tracking-normal text-stone-warm"
+            onClick={() => setExpanded(false)}
+          >
+            Destiny<span className="text-gold-dust">·</span>Library
           </Link>
-          <Link to="/ritual" className="text-stone-warm/70 transition-colors hover:text-gold-dust">
-            {t.nav_ritual}
-          </Link>
-          <Link to="/about" className="text-stone-warm/70 transition-colors hover:text-gold-dust">
-            {t.nav_about}
-          </Link>
-          <Link to="/community" className="text-stone-warm/70 transition-colors hover:text-gold-dust">
-            {t.nav_community}
-          </Link>
-        </div>
-        <button
-          type="button"
-          onClick={openAcc}
-          className="flex items-center gap-2 rounded-full border border-gold-dust/40 px-3 py-1 text-[10px] tracking-[0.28em] text-gold-dust transition-colors hover:bg-gold-dust/10"
-        >
-          {account?.avatar && (
-            <img
-              src={account.avatar}
-              alt=""
-              className="h-5 w-5 rounded-full border border-gold-dust/40 object-cover"
-            />
+          <div className="hidden items-center gap-5 md:flex lg:gap-8">
+            <Link to="/traditions" className={linkClass} onClick={() => setExpanded(false)}>
+              {t.nav_traditions}
+            </Link>
+            <Link to="/ritual" className={linkClass} onClick={() => setExpanded(false)}>
+              {t.nav_ritual}
+            </Link>
+            <Link to="/about" className={linkClass} onClick={() => setExpanded(false)}>
+              {t.nav_about}
+            </Link>
+            <Link to="/community" className={linkClass} onClick={() => setExpanded(false)}>
+              {t.nav_community}
+            </Link>
+          </div>
+          <button
+            type="button"
+            onClick={openAcc}
+            className="flex items-center gap-2 whitespace-nowrap rounded-full border border-gold-dust/40 px-3 py-1 text-[10px] tracking-[0.24em] text-gold-dust transition-colors hover:bg-gold-dust/10"
+          >
+            {account?.avatar && (
+              <img
+                src={account.avatar}
+                alt=""
+                className="h-5 w-5 rounded-full border border-gold-dust/40 object-cover"
+              />
+            )}
+            <span>{account ? `${t.nav_account} · ${account.name.slice(0, 8)}` : t.nav_sign_in}</span>
+          </button>
+          <LanguageToggle />
+          {/* Collapse back into orb (only when not at top) */}
+          {!atTop && (
+            <button
+              type="button"
+              aria-label="Collapse navigation"
+              onClick={() => setExpanded(false)}
+              className="ml-1 hidden h-6 w-6 items-center justify-center rounded-full text-stone-warm/50 hover:text-gold-dust md:flex"
+            >
+              ×
+            </button>
           )}
-          <span>{account ? `${t.nav_account} · ${account.name.slice(0, 8)}` : t.nav_sign_in}</span>
-        </button>
-        <LanguageToggle />
-      </div>
-      {/* invisible hotspot to reveal on hover near top */}
-      <div className="fixed left-0 right-0 top-0 h-6" aria-hidden />
-    </nav>
+        </div>
+
+        {/* Mobile menu row */}
+        <div className="mt-2 flex justify-center md:hidden">
+          <div className="glass-card flex items-center gap-4 rounded-full px-4 py-1.5">
+            <Link to="/traditions" className={linkClass} onClick={() => setExpanded(false)}>
+              {t.nav_traditions}
+            </Link>
+            <Link to="/ritual" className={linkClass} onClick={() => setExpanded(false)}>
+              {t.nav_ritual}
+            </Link>
+            <Link to="/about" className={linkClass} onClick={() => setExpanded(false)}>
+              {t.nav_about}
+            </Link>
+            <Link to="/community" className={linkClass} onClick={() => setExpanded(false)}>
+              {t.nav_community}
+            </Link>
+          </div>
+        </div>
+      </nav>
+    </>
   );
 }
+
 
 
 function SiteFooter() {
