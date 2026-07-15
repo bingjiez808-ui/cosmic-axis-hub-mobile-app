@@ -700,7 +700,7 @@ function ReportPage() {
 
       <section className="mx-auto mb-24 max-w-6xl px-6">
         <div className="glass-card rounded-3xl p-8 md:p-12">
-          <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-[1fr_1.1fr]">
+          <div className="grid grid-cols-1 items-start gap-10 lg:grid-cols-[1fr_1.1fr]">
             <div>
               <p className="mb-3 text-[10px] uppercase tracking-[0.4em] text-gold-dust">
                 {lang === "zh" ? "你的命盘" : "Your natal chart"}
@@ -1014,8 +1014,9 @@ function PlanetReadingPanel({
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35 }}
-      className="relative mt-6 overflow-hidden rounded-2xl border border-gold-dust/25 bg-gradient-to-br from-white/[0.04] to-transparent p-5"
+      className="planet-panel relative mt-6 overflow-hidden rounded-2xl border border-gold-dust/25 bg-gradient-to-br from-white/[0.04] to-transparent"
     >
+      <div className="max-h-[520px] overflow-y-auto overscroll-contain p-5 pr-4 md:max-h-[600px]">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
@@ -1089,6 +1090,7 @@ function PlanetReadingPanel({
             ))}
           </ul>
         )}
+      </div>
       </div>
     </motion.div>
   );

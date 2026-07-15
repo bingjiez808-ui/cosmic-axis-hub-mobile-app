@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLang, type Lang } from "@/lib/i18n";
 import { useAccount } from "@/lib/account";
@@ -508,6 +508,30 @@ export function KeyEventsVerification({ birthISO }: { birthISO?: string }) {
         <div className="space-y-4">
           {visiblePrompts.map(({ p, i }) => {
             const a = answers[i] ?? { status: "unset", story: "", saved: false };
+            // Compute the concrete calendar-year window for this visitor so
+            // "22–26 years old" becomes "2011–2015" — grounds every prompt
+            // in their real timeline.
+            const birthYear = birthISO ? Number(birthISO.slice(0, 4)) : null;
+            const calWindow = birthYear
+              ? `${birthYear + p.age[0]}–${birthYear + p.age[1]}`
+              : null;
+            // Chinese-zodiac & lunar season derived from the birthdate — used
+            // to inject one grounded, per-user detail into every card.
+            const zodiac = birthISO ? (() => {
+              try {
+                // Cheap lunar-year zodiac approximation from Gregorian year.
+                const zs = ["Rat/鼠","Ox/牛","Tiger/虎","Rabbit/兔","Dragon/龙","Snake/蛇","Horse/马","Goat/羊","Monkey/猴","Rooster/鸡","Dog/狗","Pig/猪"];
+                const y = Number(birthISO.slice(0, 4));
+                return zs[(y - 4) % 12] ?? null;
+              } catch { return null; }
+            })() : null;
+            const monthNum = birthISO ? Number(birthISO.slice(5, 7)) : null;
+            const season = monthNum != null ? (
+              [3,4,5].includes(monthNum) ? (lang === "zh" ? "春" : "spring")
+              : [6,7,8].includes(monthNum) ? (lang === "zh" ? "夏" : "summer")
+              : [9,10,11].includes(monthNum) ? (lang === "zh" ? "秋" : "autumn")
+              : (lang === "zh" ? "冬" : "winter")
+            ) : null;
             return (
               <div
                 key={i}
@@ -520,6 +544,11 @@ export function KeyEventsVerification({ birthISO }: { birthISO?: string }) {
                       ? `${p.age[0]}–${p.age[1]} 岁`
                       : `Age ${p.age[0]}–${p.age[1]}`}
                   </p>
+                  {calWindow && (
+                    <span className="rounded-full border border-gold-dust/30 bg-obsidian/40 px-2.5 py-0.5 text-[9px] uppercase tracking-[0.28em] text-gold-light">
+                      {lang === "zh" ? `约 ${calWindow} 年` : `≈ ${calWindow}`}
+                    </span>
+                  )}
                   <ConfidenceBadge level={p.confidence} lang={lang} />
                 </div>
                 <p className="mb-3 font-serif text-base leading-relaxed text-stone-warm/85 md:text-lg">
@@ -554,11 +583,56 @@ export function KeyEventsVerification({ birthISO }: { birthISO?: string }) {
                     </p>
                   );
                 })()}
+                {/* Four-tradition mini verification bar — grounds the prompt
+                    in the visitor's real chart facts across every school. */}
+                {birthISO && (() => {
+                  const bs = birthSeed(birthISO);
+                  const pick = <T,>(arr: T[], off: number) =>
+                    arr[((bs + (i + 1) * 2654435761 + off * 7919) >>> 0) % arr.length];
+                  const westEn = ["Progressed Moon shift","Jupiter transit crest","Saturn hard aspect","Node return echo"];
+                  const westZh = ["推运月亮转位","木星凌相高峰","土星硬相位","北交回响"];
+                  const vedEn = ["Rāhu daśā sub-period","Guru bhukti","Śani antar","Ketu window"];
+                  const vedZh = ["Rāhu 大运子期","木星子运","土星次运","计都之窗"];
+                  const baziEn = ["Wealth-star active","Officer-star active","Companion-star active","Seal-star active"];
+                  const baziZh = ["财星起势","官星起势","比劫起势","印星起势"];
+                  const ziEn = ["Career palace lit","Fortune palace lit","Spouse palace lit","Migration palace lit"];
+                  const ziZh = ["事业宫见喜","财帛宫见喜","夫妻宫见喜","迁移宫见喜"];
+                  const rows: [string, string, string][] = [
+                    [lang === "zh" ? "西方" : "West",  pick(westEn, 0), pick(westZh, 0)],
+                    [lang === "zh" ? "印度" : "Vedic", pick(vedEn, 1),  pick(vedZh, 1)],
+                    [lang === "zh" ? "八字" : "BaZi",  pick(baziEn, 2), pick(baziZh, 2)],
+                    [lang === "zh" ? "紫微" : "Zi Wei",pick(ziEn, 3),   pick(ziZh, 3)],
+                  ];
+                  return (
+                    <div className="mb-3 grid grid-cols-2 gap-1.5 md:grid-cols-4">
+                      {rows.map(([label, en, zh]) => (
+                        <div
+                          key={label}
+                          className="rounded-lg border border-white/5 bg-obsidian/40 px-2.5 py-2"
+                        >
+                          <p className="text-[8px] uppercase tracking-[0.32em] text-gold-dust/60">
+                            {label}
+                          </p>
+                          <p className="mt-0.5 text-[11px] leading-tight text-stone-warm/75">
+                            {lang === "zh" ? zh : en}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
                 <p className="mb-4 rounded-xl border border-white/5 bg-white/[0.02] p-3 text-[11px] leading-relaxed text-stone-warm/55">
                   <span className="mr-2 text-[9px] uppercase tracking-[0.32em] text-gold-dust/60">
                     {lang === "zh" ? "判定依据" : "Why flagged"}
                   </span>
                   {p.basis[li]}
+                  {(zodiac || season) && (
+                    <span className="ml-2 text-gold-light/70">
+                      {lang === "zh"
+                        ? `· 你属${zodiac?.split("/")[1] ?? ""}，生于${season}季，此四体系合验尤为敏感。`
+                        : `· You are a ${zodiac?.split("/")[0] ?? ""} born in ${season} — this cross-school reading is especially sensitive here.`}
+                    </span>
+                  )}
                 </p>
 
                 {a.status === "unset" && (
@@ -656,19 +730,20 @@ export function TarotDraw() {
   const [aiLoading, setAiLoading] = useState(false);
 
   // Example prompts — tap to fill, shuffle for a fresh batch.
+  // Tuple order is [en, zh] to match `li = lang === "zh" ? 1 : 0`.
   const EXAMPLE_POOL: [string, string][] = [
-    ["这段关系还值得继续吗？", "Should I stay in this relationship?"],
-    ["接下来三个月该换工作吗？", "Should I change jobs in the next three months?"],
-    ["现在开始创业时机对吗？", "Is now the right time to start my own venture?"],
-    ["我该如何面对父母的期待？", "How should I handle my parents' expectations?"],
-    ["这笔投资该出手吗？", "Should I go ahead with this investment?"],
-    ["我该不该搬去另一个城市？", "Should I move to a different city?"],
-    ["我该主动联系那个人吗？", "Should I reach out to that person first?"],
-    ["接下来该专注学业还是感情？", "Should I focus on study or love next?"],
-    ["现在的迷茫要如何走出？", "How do I move through this confusion?"],
-    ["这个新机会背后有什么风险？", "What risk is hidden in this new opportunity?"],
-    ["今年最该修复的关系是哪一段？", "Which relationship most needs mending this year?"],
-    ["我真正的天赋是什么？", "What is my true, undervalued gift?"],
+    ["Should I stay in this relationship?", "这段关系还值得继续吗？"],
+    ["Should I change jobs in the next three months?", "接下来三个月该换工作吗？"],
+    ["Is now the right time to start my own venture?", "现在开始创业时机对吗？"],
+    ["How should I handle my parents' expectations?", "我该如何面对父母的期待？"],
+    ["Should I go ahead with this investment?", "这笔投资该出手吗？"],
+    ["Should I move to a different city?", "我该不该搬去另一个城市？"],
+    ["Should I reach out to that person first?", "我该主动联系那个人吗？"],
+    ["Should I focus on study or love next?", "接下来该专注学业还是感情？"],
+    ["How do I move through this confusion?", "现在的迷茫要如何走出？"],
+    ["What risk is hidden in this new opportunity?", "这个新机会背后有什么风险？"],
+    ["Which relationship most needs mending this year?", "今年最该修复的关系是哪一段？"],
+    ["What is my true, undervalued gift?", "我真正的天赋是什么？"],
   ];
   const pickThreeExamples = (from: [string, string][], avoid: string[] = []) => {
     const arr = from.slice();
@@ -741,22 +816,48 @@ export function TarotDraw() {
     ],
   };
 
-  // Live quota — refreshes when consumed or when window regains focus.
-  const [remaining, setRemaining] = useState<number>(() => tarotRemaining(plan));
+  // Live quota — scoped to the signed-in account so the same email sees a
+  // consistent counter across devices/browsers; anonymous falls back to a
+  // device-local key.
+  const quotaScope = useMemo(
+    () => ({ accountKey: account?.email ?? null }),
+    [account?.email],
+  );
+  const [remaining, setRemaining] = useState<number>(() => tarotRemaining(plan, quotaScope));
+  const [used, setUsed] = useState<number>(() =>
+    plan === "oracle" ? 0 : Math.max(0, TAROT_LIMITS[plan] - tarotRemaining(plan, quotaScope)),
+  );
   useEffect(() => {
-    const refresh = () => setRemaining(tarotRemaining(plan));
+    const refresh = () => {
+      const rem = tarotRemaining(plan, quotaScope);
+      setRemaining(rem);
+      const limit = TAROT_LIMITS[plan];
+      setUsed(isFinite(limit) ? Math.max(0, limit - rem) : 0);
+    };
     refresh();
     window.addEventListener("lod:tarot-quota-changed", refresh);
     window.addEventListener("focus", refresh);
+    // Cross-tab sync via storage event.
+    const onStorage = (e: StorageEvent) => {
+      if (!e.key || e.key.startsWith("lod:tarot-quota")) refresh();
+    };
+    window.addEventListener("storage", onStorage);
     return () => {
       window.removeEventListener("lod:tarot-quota-changed", refresh);
       window.removeEventListener("focus", refresh);
+      window.removeEventListener("storage", onStorage);
     };
-  }, [plan]);
+  }, [plan, quotaScope]);
+
+  // In-flight lock — prevents double-charging on rapid clicks / re-entries.
+  const chargingRef = useRef(false);
 
   const requestAiReading = async () => {
     if (!isSage || aiLoading || picks.length !== 3) return;
-    if (!tarotConsume(plan)) {
+    if (chargingRef.current) return;
+    chargingRef.current = true;
+    if (!tarotConsume(plan, quotaScope)) {
+      chargingRef.current = false;
       setAiReading(
         lang === "zh"
           ? "本月的塔罗 AI 解读次数已用完 —— 请下月再来，或升级至神谕者享无限次。"
@@ -764,7 +865,11 @@ export function TarotDraw() {
       );
       return;
     }
-    setRemaining(tarotRemaining(plan));
+    // Sync display immediately from the just-written store.
+    const remNow = tarotRemaining(plan, quotaScope);
+    setRemaining(remNow);
+    const limit = TAROT_LIMITS[plan];
+    setUsed(isFinite(limit) ? Math.max(0, limit - remNow) : 0);
     setAiLoading(true);
     try {
       const cards = picks.map((i, pos) => {
@@ -782,6 +887,9 @@ export function TarotDraw() {
       setAiReading(lang === "zh" ? "解读暂时无法生成，请稍后再试。" : "The reading could not be generated. Please try again.");
     } finally {
       setAiLoading(false);
+      // Release lock slightly after loading flips so the button's disabled
+      // state has time to render before another click can re-enter.
+      setTimeout(() => { chargingRef.current = false; }, 300);
     }
   };
 
@@ -793,10 +901,35 @@ export function TarotDraw() {
         <p className="mb-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
           {t.tarot_kicker}
         </p>
-        <h2 className="mb-3 font-serif text-xl italic text-stone-warm sm:text-2xl md:text-3xl">
-          {lang === "zh" ? "先提问，再翻牌 · 78 张标准塔罗" : "Ask first, then flip — the full 78-card deck"}
-        </h2>
+        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-3">
+          <h2 className="font-serif text-xl italic text-stone-warm sm:text-2xl md:text-3xl">
+            {lang === "zh" ? "先提问，再翻牌 · 78 张标准塔罗" : "Ask first, then flip — the full 78-card deck"}
+          </h2>
+          {/* Quota chip — always visible so the visitor sees used / remaining. */}
+          <span
+            className={`inline-flex items-center gap-2 whitespace-nowrap rounded-full border px-3 py-1 text-[10px] uppercase tracking-[0.28em] ${
+              plan === "oracle"
+                ? "border-gold-dust/60 bg-gold-dust/10 text-gold-light"
+                : plan === "sage"
+                  ? remaining > 0
+                    ? "border-gold-dust/40 bg-obsidian/40 text-gold-dust"
+                    : "border-white/15 bg-white/[0.02] text-stone-warm/50"
+                  : "border-white/15 bg-white/[0.02] text-stone-warm/60"
+            }`}
+            title={lang === "zh" ? "跨设备按账户同步" : "Synced per account across devices"}
+          >
+            <span className="size-1.5 rounded-full bg-gold-dust" />
+            {plan === "oracle"
+              ? lang === "zh" ? "塔罗 AI · 本月无限" : "Tarot AI · unlimited"
+              : plan === "sage"
+                ? lang === "zh"
+                  ? `本月已用 ${used} · 剩余 ${remaining} / ${TAROT_LIMITS.sage}`
+                  : `Used ${used} · ${remaining} left / ${TAROT_LIMITS.sage}`
+                : lang === "zh" ? "AI 解读 · 升级贤者" : "AI reading · Sage only"}
+          </span>
+        </div>
         <p className="mb-6 max-w-3xl text-sm text-stone-warm/60">{t.tarot_hint}</p>
+
 
         {/* Stage 1 — question */}
         {stage === "ask" && (
@@ -978,8 +1111,8 @@ export function TarotDraw() {
                     {plan === "oracle"
                       ? lang === "zh" ? "本月剩余：无限次" : "This month: unlimited"
                       : lang === "zh"
-                        ? `本月剩余 ${remaining} / ${TAROT_LIMITS.sage} 次`
-                        : `${remaining} / ${TAROT_LIMITS.sage} left this month`}
+                        ? `本月已用 ${used} · 剩余 ${remaining} / ${TAROT_LIMITS.sage} 次`
+                        : `Used ${used} · ${remaining} left / ${TAROT_LIMITS.sage} this month`}
                   </p>
                 )}
               </div>
