@@ -373,110 +373,134 @@ function ConfidenceBadge({ level, lang }: { level: "high" | "mid" | "low"; lang:
 }
 
 /* ═══════════════════════════════════════════
-   Key Events verification — yes/no with story fallback
+   Key Events verification — user tells the AI a real event,
+   AI infers a specific date from the four traditions, then
+   the user confirms or corrects, and a final synthesis is drawn.
 ═══════════════════════════════════════════ */
 
-type Confidence = "high" | "mid" | "low";
+import { inferKeyEvents, synthesizeKeyEvents } from "@/lib/key-events.functions";
+import { buildReportRequest, type ReportSearchLike } from "@/lib/report-input";
 
-type Prompt = {
-  age: [number, number]; // age window
-  theme: [string, string];
-  guess: [string, string];
-  confidence: Confidence;
-  basis: [string, string]; // why the reading tags this window as "already happened"
+type EventRow = {
+  id: string;
+  event: string;
+  rangeStart: string;
+  rangeEnd: string;
+  aiWhen?: string;
+  aiReasoning?: string;
+  accurate: "unset" | "yes" | "no";
+  userCorrection: string;
 };
 
-const PROMPTS: Prompt[] = [
-  {
-    age: [16, 19],
-    theme: ["A first opening", "第一次开门"],
-    guess: [
-      "Around ages 16–19, the chart shows a first real departure — a school, a city, or a person that pulled you out of your childhood shape.",
-      "16–19 岁前后，命盘出现第一次真正的离开 —— 一所学校、一座城市，或一个人，把你从童年的形状里拉了出来。",
-    ],
-    confidence: "high",
-    basis: [
-      "Jupiter's first return + BaZi 沐浴/冠带 stage. Three systems converge on a departure event — that's why the reading treats it as almost certainly lived.",
-      "木星首次回归 + 八字沐浴/冠带阶段。三个体系同时指向一次「离开事件」，所以命盘几乎必然判定为已发生。",
-    ],
-  },
-  {
-    age: [22, 26],
-    theme: ["The first identity shock", "第一次身份撞击"],
-    guess: [
-      "Between 22 and 26, the reading senses a bruise: a rejection, a heartbreak, or a career door that closed — and quietly redirected you.",
-      "22–26 岁之间，命盘感知到一次「淤青」：拒绝、心碎、或职业上的关门 —— 它悄悄地把你重新导向了。",
-    ],
-    confidence: "mid",
-    basis: [
-      "Progressed Moon square natal Sun + Zi Wei 天梁 in career palace. Two systems agree on a bruise, but the shape (love vs. work) varies by chart.",
-      "推运月亮刑本命太阳 + 紫微天梁入事业宫。两个体系一致指向淤青，但具体形状（感情或事业）因盘而异。",
-    ],
-  },
-  {
-    age: [28, 32],
-    theme: ["Saturn's first return", "土星第一次回归"],
-    guess: [
-      "Around 28–32, a major re-choice: you either left something (job, city, relationship) or entered the one that lasts.",
-      "28–32 岁前后，一次重大的重选：你要么离开了什么（工作、城市、关系），要么走进了那个真正留下的。",
-    ],
-    confidence: "high",
-    basis: [
-      "Saturn return is the strongest single transit in Western astrology; BaZi 大运 also swaps pillar here. Nearly every chart records a re-choice event.",
-      "土星回归是西方占星最强的单一行运；八字大运在此换柱。几乎每张命盘都会记录一次重选。",
-    ],
-  },
-  {
-    age: [33, 38],
-    theme: ["A wealth or vocation turn", "财官转向"],
-    guess: [
-      "Between 33 and 38, the BaZi 大运 shifts to a Wealth/Officer cycle — a promotion, a business, or a first real accumulation of money.",
-      "33–38 岁之间，八字大运进入财官之运 —— 升迁、创业，或第一次真正的财富积累。",
-    ],
-    confidence: "mid",
-    basis: [
-      "BaZi 财官运 is the primary signal — Jyotish dashā often agrees, but Western transits are quieter here, so the reading calls this likely, not certain.",
-      "主要信号来自八字财官大运 —— Jyotish 大运多半一致，但西方行运在此偏静，故只判为「可能」。",
-    ],
-  },
-  {
-    age: [40, 45],
-    theme: ["The bloom", "盛放之年"],
-    guess: [
-      "Around 40–45, public visibility peaks. A recognition, a book, a promotion, a stage — the chart wanted the world to see this you.",
-      "40–45 岁前后，公众能见度达到高峰。一次被看见、一本书、一次升迁、一个舞台 —— 命盘要世界看到这样的你。",
-    ],
-    confidence: "low",
-    basis: [
-      "This is a slower, cumulative phase rather than a sharp transit. The reading flags it because BaZi + Zi Wei both bright, but the timing has ±3 years drift.",
-      "此为缓慢累积期，非尖锐行运。八字与紫微皆偏亮，故列出，但时间可漂移 ±3 年，因此置信度较低。",
-    ],
-  },
-];
+function newEventId() {
+  return `ke_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
+}
 
-type Answer = { status: "unset" | "yes" | "no"; story: string; saved: boolean };
-
-export function KeyEventsVerification({ birthISO }: { birthISO?: string }) {
+export function KeyEventsVerification({
+  birthISO,
+  search,
+}: {
+  birthISO?: string;
+  search?: ReportSearchLike;
+}) {
   const { t, lang } = useLang();
-  const li = lang === "zh" ? 1 : 0;
-  const [answers, setAnswers] = useState<Record<number, Answer>>({});
+  const [rows, setRows] = useState<EventRow[]>([
+    {
+      id: newEventId(),
+      event: "",
+      rangeStart: "",
+      rangeEnd: "",
+      accurate: "unset",
+      userCorrection: "",
+    },
+  ]);
+  const [inferring, setInferring] = useState(false);
+  const [synthesizing, setSynthesizing] = useState(false);
+  const [synthesis, setSynthesis] = useState<string>("");
+  const [error, setError] = useState<string>("");
 
-  const age = computeCurrentAge(birthISO);
+  const updateRow = (id: string, patch: Partial<EventRow>) =>
+    setRows((rs) => rs.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+  const removeRow = (id: string) => setRows((rs) => rs.filter((r) => r.id !== id));
+  const addRow = () =>
+    setRows((rs) => [
+      ...rs,
+      {
+        id: newEventId(),
+        event: "",
+        rangeStart: "",
+        rangeEnd: "",
+        accurate: "unset",
+        userCorrection: "",
+      },
+    ]);
 
-  // Only ask about windows the user has already lived through.
-  // If age can't be computed, fall back to the first three prompts.
-  const visiblePrompts = useMemo(() => {
-    if (age == null) return PROMPTS.slice(0, 3).map((p, i) => ({ p, i }));
-    return PROMPTS
-      .map((p, i) => ({ p, i }))
-      .filter(({ p }) => age >= p.age[0]);
-  }, [age]);
+  const readyToInfer = rows.some((r) => r.event.trim().length > 0);
+  const readyToSynthesize =
+    rows.some((r) => r.aiWhen) &&
+    rows.every(
+      (r) => !r.event.trim() || r.accurate === "yes" || (r.accurate === "no" && r.userCorrection.trim()),
+    );
 
-  const set = (i: number, patch: Partial<Answer>) =>
-    setAnswers((a) => {
-      const prev: Answer = a[i] ?? { status: "unset", story: "", saved: false };
-      return { ...a, [i]: { ...prev, ...patch } };
-    });
+  const chartFactsBase = useMemo(() => {
+    const s: ReportSearchLike = search ?? { date: birthISO, lang };
+    return buildReportRequest(s, lang);
+  }, [search, birthISO, lang]);
+
+  async function handleInfer() {
+    setError("");
+    const events = rows
+      .filter((r) => r.event.trim())
+      .map((r) => ({
+        id: r.id,
+        event: r.event.trim(),
+        rangeStart: r.rangeStart || undefined,
+        rangeEnd: r.rangeEnd || undefined,
+      }));
+    if (!events.length) return;
+    setInferring(true);
+    try {
+      const { results } = await inferKeyEvents({ data: { ...chartFactsBase, events } });
+      setRows((rs) =>
+        rs.map((r) => {
+          const found = results.find((x) => x.id === r.id);
+          return found ? { ...r, aiWhen: found.when, aiReasoning: found.reasoning } : r;
+        }),
+      );
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setInferring(false);
+    }
+  }
+
+  async function handleSynthesize() {
+    setError("");
+    setSynthesizing(true);
+    try {
+      const events = rows
+        .filter((r) => r.event.trim() && r.aiWhen)
+        .map((r) => ({
+          event: r.event.trim(),
+          rangeStart: r.rangeStart || undefined,
+          rangeEnd: r.rangeEnd || undefined,
+          aiWhen: r.aiWhen,
+          aiReasoning: r.aiReasoning,
+          accurate: r.accurate,
+          userCorrection: r.userCorrection || undefined,
+        }));
+      const { synthesis: out } = await synthesizeKeyEvents({
+        data: { ...chartFactsBase, events },
+      });
+      setSynthesis(out);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setSynthesizing(false);
+    }
+  }
+
+  const isZh = lang === "zh";
 
   return (
     <section className="mx-auto max-w-5xl px-6 pb-24 md:px-12">
@@ -485,213 +509,180 @@ export function KeyEventsVerification({ birthISO }: { birthISO?: string }) {
           {t.ke_kicker}
         </p>
         <h2 className="mb-3 font-serif text-2xl italic text-stone-warm md:text-3xl">
-          {t.ke_title}
+          {isZh ? "把真实发生过的事告诉命盘" : "Tell the chart what really happened"}
         </h2>
-        <p className="mb-3 max-w-3xl text-sm text-stone-warm/60">{t.ke_hint}</p>
-        {age != null && (
-          <p className="mb-6 inline-flex items-center gap-2 rounded-full border border-gold-dust/30 px-4 py-1.5 text-[10px] uppercase tracking-[0.28em] text-gold-light">
-            <span className="size-1.5 rounded-full bg-gold-dust" />
-            {lang === "zh"
-              ? `你的当前年龄 · ${age} 岁 — 只回顾你已经走过的年份`
-              : `Your current age · ${age} — only reviewing the years you've already lived`}
-          </p>
-        )}
-        {visiblePrompts.length === 0 && (
-          <p className="mb-6 rounded-2xl border border-white/10 bg-white/[0.02] p-5 text-sm text-stone-warm/60">
-            {lang === "zh"
-              ? "你还很年轻 —— 命盘的第一批可验证节点尚未到来。请先阅读上方的大运轴，静待第一次开门。"
-              : "You're still early — the chart's first verifiable milestones haven't arrived yet. Read the timeline above and wait for the first door to open."}
-          </p>
-        )}
-
+        <p className="mb-6 max-w-3xl text-sm text-stone-warm/60">
+          {isZh
+            ? "先写下你人生里真实发生过的一件事，并给出大概年份范围（例如：2021–2025 期间的一次分手；2016–2018 期间的一次骨折）。命盘将从西方占星 / 印度占星 / 八字 / 紫微四个体系交叉推演，给出尽量具体的时间点，请你再判断准不准。"
+            : "First tell the chart something that actually happened in your life, with a rough year range (e.g. a breakup between 2021 and 2025; a fracture between 2016 and 2018). The reading will cross-check Western astrology, Vedic Jyotish, BaZi, and Zi Wei Dou Shu, then land on the most specific time it can — and you decide if it's accurate."}
+        </p>
 
         <div className="space-y-4">
-          {visiblePrompts.map(({ p, i }) => {
-            const a = answers[i] ?? { status: "unset", story: "", saved: false };
-            // Compute the concrete calendar-year window for this visitor so
-            // "22–26 years old" becomes "2011–2015" — grounds every prompt
-            // in their real timeline.
-            const birthYear = birthISO ? Number(birthISO.slice(0, 4)) : null;
-            const calWindow = birthYear
-              ? `${birthYear + p.age[0]}–${birthYear + p.age[1]}`
-              : null;
-            // Chinese-zodiac & lunar season derived from the birthdate — used
-            // to inject one grounded, per-user detail into every card.
-            const zodiac = birthISO ? (() => {
-              try {
-                // Cheap lunar-year zodiac approximation from Gregorian year.
-                const zs = ["Rat/鼠","Ox/牛","Tiger/虎","Rabbit/兔","Dragon/龙","Snake/蛇","Horse/马","Goat/羊","Monkey/猴","Rooster/鸡","Dog/狗","Pig/猪"];
-                const y = Number(birthISO.slice(0, 4));
-                return zs[(y - 4) % 12] ?? null;
-              } catch { return null; }
-            })() : null;
-            const monthNum = birthISO ? Number(birthISO.slice(5, 7)) : null;
-            const season = monthNum != null ? (
-              [3,4,5].includes(monthNum) ? (lang === "zh" ? "春" : "spring")
-              : [6,7,8].includes(monthNum) ? (lang === "zh" ? "夏" : "summer")
-              : [9,10,11].includes(monthNum) ? (lang === "zh" ? "秋" : "autumn")
-              : (lang === "zh" ? "冬" : "winter")
-            ) : null;
-            return (
-              <div
-                key={i}
-                className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 md:p-6"
-              >
-                <div className="mb-3 flex flex-wrap items-center gap-2">
-                  <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
-                    {t.ke_prompt} · {p.theme[li]} ·{" "}
-                    {lang === "zh"
-                      ? `${p.age[0]}–${p.age[1]} 岁`
-                      : `Age ${p.age[0]}–${p.age[1]}`}
-                  </p>
-                  {calWindow && (
-                    <span className="rounded-full border border-gold-dust/30 bg-obsidian/40 px-2.5 py-0.5 text-[9px] uppercase tracking-[0.28em] text-gold-light">
-                      {lang === "zh" ? `约 ${calWindow} 年` : `≈ ${calWindow}`}
-                    </span>
-                  )}
-                  <ConfidenceBadge level={p.confidence} lang={lang} />
-                </div>
-                <p className="mb-3 font-serif text-base leading-relaxed text-stone-warm/85 md:text-lg">
-                  {p.guess[li]}
+          {rows.map((r, idx) => (
+            <div
+              key={r.id}
+              className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 md:p-6"
+            >
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+                  {isZh ? `节点 #${idx + 1}` : `Event #${idx + 1}`}
                 </p>
-                {birthISO && (() => {
-                  const bs = birthSeed(birthISO);
-                  const tintEn = [
-                    "For your specific chart, this node lands closer to the earlier half of the window.",
-                    "For you, the shape here reads more like a departure than an arrival.",
-                    "For your chart, the person/place involved carries a water-element tone.",
-                    "For you, this node quietly rewrote a value, not a plan.",
-                    "For your chart, the bruise here left a skill more than a scar.",
-                    "For you, this window tilts toward a study/craft event over a romance.",
-                    "For your chart, one older figure (mentor / parent / boss) enters this frame.",
-                    "For you, the true weight of this node only surfaced 2–3 years later.",
-                  ];
-                  const tintZh = [
-                    "在你的盘里，这个节点更靠近窗口的前半段。",
-                    "在你的盘里，这里更像一次「离开」，而不是「到达」。",
-                    "在你的盘里，涉及的人 / 地点带着水元素的调性。",
-                    "在你的盘里，这个节点悄悄改写了一条价值观，而不是一份计划。",
-                    "在你的盘里，这里的淤青，留下的是一项能力，而不是伤疤。",
-                    "在你的盘里，这个窗口更偏向「学业 / 手艺事件」，而非恋情。",
-                    "在你的盘里，有一位年长者（导师 / 父母 / 上级）在此登场。",
-                    "在你的盘里，这个节点的真正分量，是 2–3 年后才浮现的。",
-                  ];
-                  const idx = ((bs + i * 2654435761) >>> 0) % 8;
-                  return (
-                    <p className="mb-3 font-serif text-[13px] italic leading-relaxed text-gold-light/85">
-                      {(lang === "zh" ? tintZh : tintEn)[idx]}
-                    </p>
-                  );
-                })()}
-                {/* Four-tradition mini verification bar — grounds the prompt
-                    in the visitor's real chart facts across every school. */}
-                {birthISO && (() => {
-                  const bs = birthSeed(birthISO);
-                  const pick = <T,>(arr: T[], off: number) =>
-                    arr[((bs + (i + 1) * 2654435761 + off * 7919) >>> 0) % arr.length];
-                  const westEn = ["Progressed Moon shift","Jupiter transit crest","Saturn hard aspect","Node return echo"];
-                  const westZh = ["推运月亮转位","木星凌相高峰","土星硬相位","北交回响"];
-                  const vedEn = ["Rāhu daśā sub-period","Guru bhukti","Śani antar","Ketu window"];
-                  const vedZh = ["Rāhu 大运子期","木星子运","土星次运","计都之窗"];
-                  const baziEn = ["Wealth-star active","Officer-star active","Companion-star active","Seal-star active"];
-                  const baziZh = ["财星起势","官星起势","比劫起势","印星起势"];
-                  const ziEn = ["Career palace lit","Fortune palace lit","Spouse palace lit","Migration palace lit"];
-                  const ziZh = ["事业宫见喜","财帛宫见喜","夫妻宫见喜","迁移宫见喜"];
-                  const rows: [string, string, string][] = [
-                    [lang === "zh" ? "西方" : "West",  pick(westEn, 0), pick(westZh, 0)],
-                    [lang === "zh" ? "印度" : "Vedic", pick(vedEn, 1),  pick(vedZh, 1)],
-                    [lang === "zh" ? "八字" : "BaZi",  pick(baziEn, 2), pick(baziZh, 2)],
-                    [lang === "zh" ? "紫微" : "Zi Wei",pick(ziEn, 3),   pick(ziZh, 3)],
-                  ];
-                  return (
-                    <div className="mb-3 grid grid-cols-2 gap-1.5 md:grid-cols-4">
-                      {rows.map(([label, en, zh]) => (
-                        <div
-                          key={label}
-                          className="rounded-lg border border-white/5 bg-obsidian/40 px-2.5 py-2"
-                        >
-                          <p className="text-[8px] uppercase tracking-[0.32em] text-gold-dust/60">
-                            {label}
-                          </p>
-                          <p className="mt-0.5 text-[11px] leading-tight text-stone-warm/75">
-                            {lang === "zh" ? zh : en}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                })()}
-                <p className="mb-4 rounded-xl border border-white/5 bg-white/[0.02] p-3 text-[11px] leading-relaxed text-stone-warm/55">
-                  <span className="mr-2 text-[9px] uppercase tracking-[0.32em] text-gold-dust/60">
-                    {lang === "zh" ? "判定依据" : "Why flagged"}
-                  </span>
-                  {p.basis[li]}
-                  {(zodiac || season) && (
-                    <span className="ml-2 text-gold-light/70">
-                      {lang === "zh"
-                        ? `· 你属${zodiac?.split("/")[1] ?? ""}，生于${season}季，此四体系合验尤为敏感。`
-                        : `· You are a ${zodiac?.split("/")[0] ?? ""} born in ${season} — this cross-school reading is especially sensitive here.`}
-                    </span>
-                  )}
-                </p>
-
-                {a.status === "unset" && (
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => set(i, { status: "yes" })}
-                      className="rounded-full bg-gold-dust px-5 py-2 text-[10px] uppercase tracking-[0.28em] text-obsidian hover:bg-gold-light"
-                    >
-                      {t.ke_yes}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => set(i, { status: "no" })}
-                      className="rounded-full border border-gold-dust/40 px-5 py-2 text-[10px] uppercase tracking-[0.28em] text-gold-dust hover:bg-gold-dust/10"
-                    >
-                      {t.ke_no}
-                    </button>
-                  </div>
-                )}
-
-                {a.status === "yes" && (
-                  <p className="flex items-center gap-2 text-[11px] uppercase tracking-[0.24em] text-gold-light">
-                    <span className="size-1.5 rounded-full bg-gold-dust" />
-                    {t.ke_verified}
-                  </p>
-                )}
-
-                {a.status === "no" && (
-                  <div className="mt-2 space-y-3">
-                    <p className="text-sm text-stone-warm/70">{t.ke_story_prompt}</p>
-                    <textarea
-                      value={a.story}
-                      onChange={(e) => set(i, { story: e.target.value, saved: false })}
-                      placeholder={t.ke_story_ph}
-                      rows={3}
-                      className="ritual-input !py-3 !text-base w-full"
-                    />
-                    <div className="flex items-center gap-3">
-                      <button
-                        type="button"
-                        disabled={!a.story.trim()}
-                        onClick={() => set(i, { saved: true })}
-                        className="rounded-full bg-gold-dust px-5 py-2 text-[10px] uppercase tracking-[0.28em] text-obsidian disabled:opacity-40 hover:bg-gold-light"
-                      >
-                        {t.ke_save_story}
-                      </button>
-                      {a.saved && (
-                        <span className="text-[10px] uppercase tracking-[0.24em] text-gold-light">
-                          {t.ke_saved}
-                        </span>
-                      )}
-                    </div>
-                  </div>
+                {rows.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeRow(r.id)}
+                    className="text-[10px] uppercase tracking-[0.24em] text-stone-warm/50 hover:text-gold-light"
+                  >
+                    {isZh ? "移除" : "Remove"}
+                  </button>
                 )}
               </div>
-            );
-          })}
+
+              <div className="grid gap-3 md:grid-cols-[1fr_auto_auto]">
+                <input
+                  value={r.event}
+                  onChange={(e) => updateRow(r.id, { event: e.target.value, aiWhen: undefined, aiReasoning: undefined })}
+                  placeholder={
+                    isZh ? "发生了什么？例如：分手 / 骨折 / 换城市" : "What happened? e.g. breakup / fracture / move"
+                  }
+                  className="ritual-input !py-3 !text-base w-full"
+                />
+                <input
+                  value={r.rangeStart}
+                  onChange={(e) => updateRow(r.id, { rangeStart: e.target.value })}
+                  placeholder={isZh ? "起始年" : "start year"}
+                  inputMode="numeric"
+                  className="ritual-input !py-3 !text-base md:w-28"
+                />
+                <input
+                  value={r.rangeEnd}
+                  onChange={(e) => updateRow(r.id, { rangeEnd: e.target.value })}
+                  placeholder={isZh ? "结束年" : "end year"}
+                  inputMode="numeric"
+                  className="ritual-input !py-3 !text-base md:w-28"
+                />
+              </div>
+
+              {r.aiWhen && (
+                <div className="mt-4 space-y-3 rounded-xl border border-gold-dust/30 bg-obsidian/40 p-4">
+                  <p className="text-[10px] uppercase tracking-[0.32em] text-gold-light">
+                    {isZh ? "命盘推测的具体时间" : "Chart's inferred time"}
+                  </p>
+                  <p className="font-serif text-lg italic text-stone-warm">{r.aiWhen}</p>
+                  {r.aiReasoning && (
+                    <p className="text-[12px] leading-relaxed text-stone-warm/70">{r.aiReasoning}</p>
+                  )}
+
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => updateRow(r.id, { accurate: "yes" })}
+                      className={`rounded-full px-4 py-2 text-[10px] uppercase tracking-[0.28em] transition-colors ${
+                        r.accurate === "yes"
+                          ? "bg-gold-dust text-obsidian"
+                          : "border border-gold-dust/40 text-gold-dust hover:bg-gold-dust/10"
+                      }`}
+                    >
+                      {isZh ? "准确" : "Accurate"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => updateRow(r.id, { accurate: "no" })}
+                      className={`rounded-full px-4 py-2 text-[10px] uppercase tracking-[0.28em] transition-colors ${
+                        r.accurate === "no"
+                          ? "bg-gold-dust text-obsidian"
+                          : "border border-gold-dust/40 text-gold-dust hover:bg-gold-dust/10"
+                      }`}
+                    >
+                      {isZh ? "不准确" : "Off"}
+                    </button>
+                  </div>
+
+                  {r.accurate === "no" && (
+                    <div className="space-y-2">
+                      <p className="text-[11px] text-stone-warm/60">
+                        {isZh ? "请告诉命盘真实发生的时间：" : "Tell the chart when it actually happened:"}
+                      </p>
+                      <input
+                        value={r.userCorrection}
+                        onChange={(e) => updateRow(r.id, { userCorrection: e.target.value })}
+                        placeholder={isZh ? "例如：2022 年 9 月" : "e.g. September 2022"}
+                        className="ritual-input !py-3 !text-base w-full"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
+
+        <div className="mt-5 flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={addRow}
+            className="rounded-full border border-white/15 px-5 py-2 text-[10px] uppercase tracking-[0.28em] text-stone-warm/70 hover:bg-white/[0.04]"
+          >
+            {isZh ? "+ 再加一件事" : "+ Add another"}
+          </button>
+          <button
+            type="button"
+            disabled={!readyToInfer || inferring}
+            onClick={handleInfer}
+            className="rounded-full bg-gold-dust px-6 py-2 text-[10px] uppercase tracking-[0.28em] text-obsidian disabled:opacity-40 hover:bg-gold-light"
+          >
+            {inferring
+              ? isZh
+                ? "命盘推算中…"
+                : "Reading the chart…"
+              : isZh
+              ? "让命盘推测时间"
+              : "Let the chart infer"}
+          </button>
+        </div>
+
+        {error && (
+          <p className="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-[12px] text-red-200">
+            {error}
+          </p>
+        )}
+
+        {rows.some((r) => r.aiWhen) && (
+          <div className="mt-8 border-t border-white/10 pt-6">
+            <button
+              type="button"
+              disabled={!readyToSynthesize || synthesizing}
+              onClick={handleSynthesize}
+              className="rounded-full border border-gold-dust/50 bg-obsidian/40 px-6 py-2 text-[10px] uppercase tracking-[0.28em] text-gold-light disabled:opacity-40 hover:bg-gold-dust/10"
+            >
+              {synthesizing
+                ? isZh
+                  ? "生成微调后的综合判断…"
+                  : "Recalibrating the synthesis…"
+                : isZh
+                ? "生成微调后的综合判断"
+                : "Generate recalibrated synthesis"}
+            </button>
+            {!readyToSynthesize && rows.some((r) => r.aiWhen) && (
+              <p className="mt-2 text-[11px] text-stone-warm/50">
+                {isZh
+                  ? "请先对每个推测标记准 / 不准；若不准，请给出真实时间。"
+                  : "Mark each guess accurate or off first; if off, fill in the true time."}
+              </p>
+            )}
+          </div>
+        )}
+
+        {synthesis && (
+          <div className="mt-6 rounded-2xl border border-gold-dust/30 bg-obsidian/40 p-6">
+            <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-light">
+              {isZh ? "微调后的综合判断" : "Recalibrated synthesis"}
+            </p>
+            <div className="whitespace-pre-wrap font-serif text-[15px] leading-relaxed text-stone-warm/85">
+              {synthesis}
+            </div>
+          </div>
+        )}
 
         <p className="mt-6 text-[10px] uppercase tracking-[0.24em] text-stone-warm/30">
           {t.ke_note}
