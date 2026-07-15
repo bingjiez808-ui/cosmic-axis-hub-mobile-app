@@ -1005,7 +1005,7 @@ function PlanetReadingPanel({
 }) {
   if (planetIdx == null) {
     return (
-      <div className="mt-6 rounded-2xl border border-dashed border-white/10 bg-white/[0.02] px-5 py-6 text-[11px] uppercase tracking-[0.28em] text-stone-warm/40">
+      <div className="mt-6 flex h-full min-h-[140px] items-center justify-center rounded-2xl border border-dashed border-white/10 bg-white/[0.02] px-5 py-6 text-center text-[11px] uppercase tracking-[0.28em] text-stone-warm/40">
         {lang === "zh"
           ? "点击右侧任一行星 · 查看其落位与相位解读"
           : "Tap any planet on the right · see its placement & aspects"}
