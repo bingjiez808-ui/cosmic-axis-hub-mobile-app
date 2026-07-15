@@ -701,7 +701,7 @@ function ReportPage() {
       <section className="mx-auto mb-24 max-w-6xl px-6">
         <div className="glass-card rounded-3xl p-6 sm:p-8 md:p-12">
           <div className="grid grid-cols-1 items-stretch gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-10">
-            <div className="flex flex-col">
+            <div className="flex min-w-0 flex-col lg:h-full">
               <p className="mb-3 text-[10px] uppercase tracking-[0.4em] text-gold-dust">
                 {lang === "zh" ? "你的命盘" : "Your natal chart"}
               </p>
@@ -721,12 +721,20 @@ function ReportPage() {
                 <span className="rounded-full border border-white/10 px-3 py-1">Ⓜ {lang === "zh" ? "天顶" : "MC"}</span>
               </div>
 
-              <PlanetReadingPanel
-                lang={lang}
-                seed={`${search.name ?? ""}|${search.date ?? ""}|${search.time ?? ""}|${search.place ?? ""}`}
-                planetIdx={selectedPlanet}
-                onClear={() => setSelectedPlanet(null)}
-              />
+              <div className="flex min-w-0 flex-col gap-4 lg:min-h-0 lg:flex-1">
+                <div className="flex min-w-0 flex-col lg:min-h-0 lg:flex-1">
+                  <PlanetReadingPanel
+                    lang={lang}
+                    seed={`${search.name ?? ""}|${search.date ?? ""}|${search.time ?? ""}|${search.place ?? ""}`}
+                    planetIdx={selectedPlanet}
+                    onClear={() => setSelectedPlanet(null)}
+                  />
+                </div>
+                <ChartTipCard
+                  lang={lang}
+                  seed={`${search.name ?? ""}|${search.date ?? ""}|${search.time ?? ""}|${search.place ?? ""}`}
+                />
+              </div>
             </div>
             <div className="flex min-w-0 flex-col items-center gap-4 lg:h-full">
               <div className="relative w-full text-stone-warm/40">
@@ -997,7 +1005,7 @@ function PlanetReadingPanel({
 }) {
   if (planetIdx == null) {
     return (
-      <div className="mt-6 rounded-2xl border border-dashed border-white/10 bg-white/[0.02] px-5 py-6 text-[11px] uppercase tracking-[0.28em] text-stone-warm/40">
+      <div className="mt-6 flex h-full min-h-[140px] items-center justify-center rounded-2xl border border-dashed border-white/10 bg-white/[0.02] px-5 py-6 text-center text-[11px] uppercase tracking-[0.28em] text-stone-warm/40">
         {lang === "zh"
           ? "点击右侧任一行星 · 查看其落位与相位解读"
           : "Tap any planet on the right · see its placement & aspects"}
@@ -1032,9 +1040,9 @@ function PlanetReadingPanel({
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35 }}
-      className="planet-panel relative mt-6 overflow-hidden rounded-2xl border border-gold-dust/25 bg-gradient-to-br from-white/[0.04] to-transparent"
+      className="planet-panel relative mt-6 flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-gold-dust/25 bg-gradient-to-br from-white/[0.04] to-transparent"
     >
-      <div className="max-h-[520px] overflow-y-auto overscroll-contain p-5 pr-4 md:max-h-[600px]">
+      <div className="max-h-[520px] flex-1 overflow-y-auto overscroll-contain p-5 pr-4 md:max-h-[600px] lg:max-h-none">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
@@ -1125,6 +1133,60 @@ const SIGN_MODALITY: [string, string][] = [
   ["Fixed", "固定"], ["Mutable", "变动"], ["Cardinal", "开创"], ["Fixed", "固定"],
   ["Mutable", "变动"], ["Cardinal", "开创"], ["Fixed", "固定"], ["Mutable", "变动"],
 ];
+
+function ChartTipCard({ lang, seed }: { lang: "en" | "zh"; seed: string }) {
+  const li = lang === "zh" ? 1 : 0;
+  const signs = computePlanetSigns(seed);
+  const bodySigns = PLANETS.slice(0, 10).map((_, i) => signs[i]);
+  const tally = (arr: [string, string][]) => {
+    const m = new Map<string, number>();
+    for (const p of arr) {
+      const k = p[li];
+      m.set(k, (m.get(k) ?? 0) + 1);
+    }
+    return [...m.entries()].sort((a, b) => b[1] - a[1]);
+  };
+  const els = tally(bodySigns.map((s) => SIGN_ELEMENT[s]));
+  const mods = tally(bodySigns.map((s) => SIGN_MODALITY[s]));
+  const el = els[0]?.[0] ?? "";
+  const mod = mods[0]?.[0] ?? "";
+  const tipZh: Record<string, string> = {
+    火: "以行动点火 —— 先出发再校准，热度是你的引擎。",
+    土: "以身体为准 —— 慢即是稳，落地一次胜过空想十次。",
+    风: "以对话推进 —— 让想法在他人身上先成形。",
+    水: "以感受导航 —— 情绪不是干扰,是数据。",
+  };
+  const tipEn: Record<string, string> = {
+    Fire: "Ignite by acting — leave first, calibrate on the road. Heat is your engine.",
+    Earth: "Anchor through the body — slow is steady; one landed step beats ten imagined.",
+    Air: "Move through dialogue — let ideas take shape in someone else first.",
+    Water: "Navigate by feeling — emotion is not noise, it is data.",
+  };
+  const modZh: Record<string, string> = {
+    开创: "开创模式主导 · 你擅长起头，注意收尾。",
+    固定: "固定模式主导 · 你擅长坚持，注意松动。",
+    变动: "变动模式主导 · 你擅长适配，注意锚点。",
+  };
+  const modEn: Record<string, string> = {
+    Cardinal: "Cardinal-dominant · you start well; mind the finish.",
+    Fixed: "Fixed-dominant · you hold well; mind the flex.",
+    Mutable: "Mutable-dominant · you adapt well; mind the anchor.",
+  };
+  return (
+    <div className="rounded-2xl border border-gold-dust/20 bg-obsidian/40 p-4 sm:p-5">
+      <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+        {lang === "zh" ? "命盘提示 · 主导之声" : "Chart tip · dominant voice"}
+      </p>
+      <p className="mt-3 font-serif text-base italic leading-relaxed text-stone-warm/90 sm:text-lg">
+        {lang === "zh" ? tipZh[el] : tipEn[el]}
+      </p>
+      <p className="mt-2 text-[11px] leading-relaxed text-stone-warm/55">
+        {lang === "zh" ? modZh[mod] : modEn[mod]}
+      </p>
+    </div>
+  );
+}
+
 
 function ChartFactsCard({
   lang,
