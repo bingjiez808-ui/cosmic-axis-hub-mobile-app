@@ -750,7 +750,7 @@ function ReportPage() {
                   right-column height so the card's bottom aligns with the
                   left column's PlanetReadingPanel baseline. Internal list
                   scrolls if space is tight. */}
-              <div className="flex w-full min-h-0 flex-1 flex-col">
+              <div className="flex w-full flex-col lg:min-h-0 lg:flex-1">
                 <ChartFactsCard
                   lang={lang}
                   seed={`${search.name ?? ""}|${search.date ?? ""}|${search.time ?? ""}|${search.place ?? ""}`}
