@@ -701,7 +701,7 @@ function ReportPage() {
       <section className="mx-auto mb-24 max-w-6xl px-6">
         <div className="glass-card rounded-3xl p-6 sm:p-8 md:p-12">
           <div className="grid grid-cols-1 items-stretch gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-10">
-            <div className="flex flex-col">
+            <div className="flex min-w-0 flex-col lg:h-full">
               <p className="mb-3 text-[10px] uppercase tracking-[0.4em] text-gold-dust">
                 {lang === "zh" ? "你的命盘" : "Your natal chart"}
               </p>
