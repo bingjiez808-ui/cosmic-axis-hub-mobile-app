@@ -721,12 +721,20 @@ function ReportPage() {
                 <span className="rounded-full border border-white/10 px-3 py-1">Ⓜ {lang === "zh" ? "天顶" : "MC"}</span>
               </div>
 
-              <PlanetReadingPanel
-                lang={lang}
-                seed={`${search.name ?? ""}|${search.date ?? ""}|${search.time ?? ""}|${search.place ?? ""}`}
-                planetIdx={selectedPlanet}
-                onClear={() => setSelectedPlanet(null)}
-              />
+              <div className="flex min-w-0 flex-col gap-4 lg:min-h-0 lg:flex-1">
+                <div className="flex min-w-0 flex-col lg:min-h-0 lg:flex-1">
+                  <PlanetReadingPanel
+                    lang={lang}
+                    seed={`${search.name ?? ""}|${search.date ?? ""}|${search.time ?? ""}|${search.place ?? ""}`}
+                    planetIdx={selectedPlanet}
+                    onClear={() => setSelectedPlanet(null)}
+                  />
+                </div>
+                <ChartTipCard
+                  lang={lang}
+                  seed={`${search.name ?? ""}|${search.date ?? ""}|${search.time ?? ""}|${search.place ?? ""}`}
+                />
+              </div>
             </div>
             <div className="flex min-w-0 flex-col items-center gap-4 lg:h-full">
               <div className="relative w-full text-stone-warm/40">
