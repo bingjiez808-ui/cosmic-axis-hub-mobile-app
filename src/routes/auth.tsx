@@ -173,11 +173,12 @@ function AuthPage() {
         const to = await getPostAuthDestination();
         navigate({ to: to as never });
       } else if (mode === "sign_up") {
+        const redirectParam = search.redirect ? `?redirect=${encodeURIComponent(search.redirect)}` : "";
         const { error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/auth`,
+            emailRedirectTo: `${window.location.origin}/auth${redirectParam}`,
             data: { name: name || undefined },
           },
         });
