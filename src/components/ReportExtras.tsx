@@ -742,22 +742,48 @@ export function TarotDraw() {
     ],
   };
 
-  // Live quota — refreshes when consumed or when window regains focus.
-  const [remaining, setRemaining] = useState<number>(() => tarotRemaining(plan));
+  // Live quota — scoped to the signed-in account so the same email sees a
+  // consistent counter across devices/browsers; anonymous falls back to a
+  // device-local key.
+  const quotaScope = useMemo(
+    () => ({ accountKey: account?.email ?? null }),
+    [account?.email],
+  );
+  const [remaining, setRemaining] = useState<number>(() => tarotRemaining(plan, quotaScope));
+  const [used, setUsed] = useState<number>(() =>
+    plan === "oracle" ? 0 : Math.max(0, TAROT_LIMITS[plan] - tarotRemaining(plan, quotaScope)),
+  );
   useEffect(() => {
-    const refresh = () => setRemaining(tarotRemaining(plan));
+    const refresh = () => {
+      const rem = tarotRemaining(plan, quotaScope);
+      setRemaining(rem);
+      const limit = TAROT_LIMITS[plan];
+      setUsed(isFinite(limit) ? Math.max(0, limit - rem) : 0);
+    };
     refresh();
     window.addEventListener("lod:tarot-quota-changed", refresh);
     window.addEventListener("focus", refresh);
+    // Cross-tab sync via storage event.
+    const onStorage = (e: StorageEvent) => {
+      if (!e.key || e.key.startsWith("lod:tarot-quota")) refresh();
+    };
+    window.addEventListener("storage", onStorage);
     return () => {
       window.removeEventListener("lod:tarot-quota-changed", refresh);
       window.removeEventListener("focus", refresh);
+      window.removeEventListener("storage", onStorage);
     };
-  }, [plan]);
+  }, [plan, quotaScope]);
+
+  // In-flight lock — prevents double-charging on rapid clicks / re-entries.
+  const chargingRef = useRef(false);
 
   const requestAiReading = async () => {
     if (!isSage || aiLoading || picks.length !== 3) return;
-    if (!tarotConsume(plan)) {
+    if (chargingRef.current) return;
+    chargingRef.current = true;
+    if (!tarotConsume(plan, quotaScope)) {
+      chargingRef.current = false;
       setAiReading(
         lang === "zh"
           ? "本月的塔罗 AI 解读次数已用完 —— 请下月再来，或升级至神谕者享无限次。"
@@ -765,7 +791,11 @@ export function TarotDraw() {
       );
       return;
     }
-    setRemaining(tarotRemaining(plan));
+    // Sync display immediately from the just-written store.
+    const remNow = tarotRemaining(plan, quotaScope);
+    setRemaining(remNow);
+    const limit = TAROT_LIMITS[plan];
+    setUsed(isFinite(limit) ? Math.max(0, limit - remNow) : 0);
     setAiLoading(true);
     try {
       const cards = picks.map((i, pos) => {
@@ -783,6 +813,9 @@ export function TarotDraw() {
       setAiReading(lang === "zh" ? "解读暂时无法生成，请稍后再试。" : "The reading could not be generated. Please try again.");
     } finally {
       setAiLoading(false);
+      // Release lock slightly after loading flips so the button's disabled
+      // state has time to render before another click can re-enter.
+      setTimeout(() => { chargingRef.current = false; }, 300);
     }
   };
 
