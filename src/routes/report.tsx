@@ -736,7 +736,7 @@ function ReportPage() {
                 />
               </div>
             </div>
-            <div className="flex min-w-0 flex-col items-center gap-4 lg:h-full">
+            <div className="flex min-w-0 flex-col items-center gap-4">
               <div className="relative w-full text-stone-warm/40">
                 <NatalWheel
                   lang={lang}
@@ -754,11 +754,8 @@ function ReportPage() {
                 </button>
               </div>
 
-              {/* Compact "core placements" summary — flexes to fill remaining
-                  right-column height so the card's bottom aligns with the
-                  left column's PlanetReadingPanel baseline. Internal list
-                  scrolls if space is tight. */}
-              <div className="flex w-full flex-col lg:min-h-0 lg:flex-1">
+              {/* Core placements card — fixed natural height, not stretched. */}
+              <div className="flex w-full flex-col">
                 <ChartFactsCard
                   lang={lang}
                   seed={`${search.name ?? ""}|${search.date ?? ""}|${search.time ?? ""}|${search.place ?? ""}`}
@@ -766,6 +763,7 @@ function ReportPage() {
                 />
               </div>
             </div>
+
           </div>
         </div>
 
@@ -1042,7 +1040,7 @@ function PlanetReadingPanel({
       transition={{ duration: 0.35 }}
       className="planet-panel relative mt-6 flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-gold-dust/25 bg-gradient-to-br from-white/[0.04] to-transparent"
     >
-      <div className="max-h-[520px] flex-1 overflow-y-auto overscroll-contain p-5 pr-4 md:max-h-[600px] lg:max-h-none">
+      <div className="max-h-[520px] flex-1 overflow-y-auto overscroll-contain p-5 pr-4 md:max-h-[600px] lg:max-h-[640px]">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
@@ -1217,7 +1215,7 @@ function ChartFactsCard({
 
   return (
     <div
-      className="flex w-full min-h-0 flex-col rounded-2xl border border-gold-dust/20 bg-obsidian/40 p-4 sm:p-5 lg:h-full"
+      className="flex w-full flex-col rounded-2xl border border-gold-dust/20 bg-obsidian/40 p-4 sm:p-5"
       aria-label={lang === "zh" ? "命盘核心概览" : "Chart facts summary"}
     >
       <div className="mb-3 flex items-baseline justify-between gap-3">
@@ -1228,7 +1226,8 @@ function ChartFactsCard({
           {lang === "zh" ? "点选查看解读" : "tap to read"}
         </p>
       </div>
-      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:min-h-0 lg:flex-1 lg:auto-rows-fr lg:overflow-y-auto">
+      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+
         {PLANETS.map((p, idx) => {
           const s = ZODIAC_SIGNS[signs[idx]];
           const h = houseForSign(signs[idx], ascSign);
