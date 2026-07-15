@@ -309,3 +309,20 @@
 .tarot-scroll::-webkit-scrollbar {
   display: none;
 }
+
+/* Planet-placement panel — internal scroll with a thin gold rail so long
+   reading text stays inside a fixed frame beside the chart. */
+.planet-panel > div {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(45 70% 60% / 0.35) transparent;
+}
+.planet-panel > div::-webkit-scrollbar {
+  width: 6px;
+}
+.planet-panel > div::-webkit-scrollbar-thumb {
+  background: hsl(45 70% 60% / 0.35);
+  border-radius: 999px;
+}
+.planet-panel > div::-webkit-scrollbar-track {
+  background: transparent;
+}
