@@ -1215,7 +1215,7 @@ function ChartFactsCard({
 
   return (
     <div
-      className="flex w-full min-h-0 flex-col rounded-2xl border border-gold-dust/20 bg-obsidian/40 p-4 sm:p-5 lg:h-full"
+      className="flex w-full flex-col rounded-2xl border border-gold-dust/20 bg-obsidian/40 p-4 sm:p-5"
       aria-label={lang === "zh" ? "命盘核心概览" : "Chart facts summary"}
     >
       <div className="mb-3 flex items-baseline justify-between gap-3">
@@ -1226,7 +1226,8 @@ function ChartFactsCard({
           {lang === "zh" ? "点选查看解读" : "tap to read"}
         </p>
       </div>
-      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:min-h-0 lg:flex-1 lg:auto-rows-fr lg:overflow-y-auto">
+      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+
         {PLANETS.map((p, idx) => {
           const s = ZODIAC_SIGNS[signs[idx]];
           const h = houseForSign(signs[idx], ascSign);
