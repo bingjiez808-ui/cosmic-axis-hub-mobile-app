@@ -255,21 +255,7 @@ function noOrphan(s: string) {
             {isLanguageStep && (
               <>
                 <h1 className="mx-auto mb-4 max-w-[16ch] text-balance font-serif text-[24px] italic leading-[1.25] text-stone-warm sm:max-w-xl sm:text-4xl md:text-5xl" style={{ wordBreak: "keep-all", overflowWrap: "break-word" }}>
-                  {(() => {
-                    const s = t.ritual_pick_language;
-                    if (s.length <= 2) return s;
-                    // Keep the last two glyphs (e.g. "话?" / "you?") on the same
-                    // line as the char before them, so a single character never
-                    // gets stranded on its own row.
-                    const head = s.slice(0, -2);
-                    const tail = s.slice(-2);
-                    return (
-                      <>
-                        {head}
-                        <span style={{ whiteSpace: "nowrap" }}>{tail}</span>
-                      </>
-                    );
-                  })()}
+                  {noOrphan(t.ritual_pick_language)}
                 </h1>
                 <p className="mb-14 text-sm text-stone-warm/50">
                   {t.ritual_pick_language_hint}
