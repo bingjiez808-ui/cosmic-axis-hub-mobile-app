@@ -1160,43 +1160,49 @@ function ChartFactsCard({
     >
       <div className="mb-3 flex items-baseline justify-between gap-3">
         <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
-          {lang === "zh" ? "命盘核心 · 全部星体" : "Core placements · all bodies"}
+          {lang === "zh" ? "命盘核心 · 快速一览" : "Core placements · quick view"}
         </p>
         <p className="text-[9px] uppercase tracking-[0.28em] text-stone-warm/40">
           {lang === "zh" ? "点选查看解读" : "tap to read"}
         </p>
       </div>
-      <ul className="divide-y divide-white/5 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
+      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:min-h-0 lg:flex-1 lg:auto-rows-fr lg:overflow-y-auto">
         {PLANETS.map((p, idx) => {
           const s = ZODIAC_SIGNS[signs[idx]];
           const h = houseForSign(signs[idx], ascSign);
           return (
-            <li key={p.key}>
-              <button
-                type="button"
-                onClick={() => onPickPlanet(idx)}
-                className="group flex w-full items-baseline gap-3 px-1 py-2 text-left transition-colors hover:bg-gold-dust/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-light rounded-md"
-                aria-label={
-                  lang === "zh"
-                    ? `${p.name[1]} 落于 ${s.zh}，第 ${h} 宫`
-                    : `${p.name[0]} in ${s.en}, house ${h}`
-                }
+            <button
+              key={p.key}
+              type="button"
+              onClick={() => onPickPlanet(idx)}
+              className="group flex h-full items-center gap-3 rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5 text-left transition-colors hover:border-gold-dust/40 hover:bg-gold-dust/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-light"
+              aria-label={
+                lang === "zh"
+                  ? `${p.name[1]} 落于 ${s.zh}，第 ${h} 宫`
+                  : `${p.name[0]} in ${s.en}, house ${h}`
+              }
+            >
+              <span
+                className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-gold-dust/25 bg-obsidian/60 text-[15px] leading-none text-gold-light"
+                aria-hidden="true"
               >
-                <span className="w-5 shrink-0 text-center text-base leading-none text-gold-light" aria-hidden="true">{p.glyph}</span>
-                <span className="min-w-0 flex-1 truncate text-[12px] tracking-[0.06em] text-stone-warm/75">
+                {p.glyph}
+              </span>
+              <span className="flex min-w-0 flex-1 flex-col leading-tight">
+                <span className="truncate text-[11px] tracking-[0.14em] text-stone-warm/55">
                   {p.name[li]}
                 </span>
-                <span className="shrink-0 whitespace-nowrap text-right font-serif text-[13px] italic text-stone-warm/90">
+                <span className="mt-0.5 truncate font-serif text-[13px] italic text-stone-warm/95">
                   {lang === "zh" ? s.zh : s.en}
-                  <span className="ml-2 text-[10px] not-italic tracking-[0.2em] text-gold-dust/70">
-                    {lang === "zh" ? `第${h}宫` : `H${h}`}
+                  <span className="ml-1.5 not-italic text-[10px] tracking-[0.18em] text-gold-dust/70">
+                    · {lang === "zh" ? `第${h}宫` : `H${h}`}
                   </span>
                 </span>
-              </button>
-            </li>
+              </span>
+            </button>
           );
         })}
-      </ul>
+      </div>
       <div className="mt-3 grid grid-cols-2 gap-2 border-t border-white/5 pt-3 text-[11px] leading-snug text-stone-warm/70">
         <p>
           <span className="mr-1.5 text-[9px] uppercase tracking-[0.28em] text-gold-dust/70">
