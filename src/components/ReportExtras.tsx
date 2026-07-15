@@ -2152,19 +2152,24 @@ function TraditionCard({
   );
 }
 
-export function SynastryPreview() {
+export function SynastryPreview({ userBirthISO }: { userBirthISO?: string } = {}) {
   const { lang } = useLang();
   const li = lang === "zh" ? 1 : 0;
   const [partner, setPartner] = useState({ name: "", date: "", time: "", place: "" });
   const [revealed, setRevealed] = useState(false);
 
-  // Deterministic pseudo-score derived from the two dates — placeholder for a real synastry engine.
+  // Deterministic pseudo-score — now blends BOTH birth dates so the reading
+  // is personal to the visitor, not just to the partner they typed in.
   const score = useMemo(() => {
     if (!revealed || !partner.date) return null;
-    let h = 0;
-    for (const c of partner.date + partner.name) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+    let h = 2166136261 >>> 0;
+    const combo = (userBirthISO || "0000-00-00") + "|" + partner.date + "|" + partner.name;
+    for (let i = 0; i < combo.length; i++) {
+      h ^= combo.charCodeAt(i);
+      h = Math.imul(h, 16777619) >>> 0;
+    }
     return 62 + (h % 32); // 62–93
-  }, [revealed, partner.date, partner.name]);
+  }, [revealed, partner.date, partner.name, userBirthISO]);
 
   const axes: { label: [string, string]; value: number }[] = useMemo(() => {
     if (score == null) return [];
