@@ -1154,42 +1154,46 @@ function ChartFactsCard({
   const dominant = elements[0];
   const dominantMod = modalities[0];
 
+  const ascIdx = PLANETS.findIndex((x) => x.key === "asc");
+  const ascSign = signs[ascIdx] ?? 0;
+
   return (
     <div
       className="w-full rounded-2xl border border-gold-dust/20 bg-obsidian/40 p-4 sm:p-5"
       aria-label={lang === "zh" ? "命盘核心概览" : "Chart facts summary"}
     >
-      <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
-        {lang === "zh" ? "命盘核心 · 快速一览" : "Core placements · at a glance"}
-      </p>
-      <ul className="grid grid-cols-2 gap-2 sm:gap-3">
-        {core.map(({ idx }) => {
-          if (idx < 0) return null;
-          const p = PLANETS[idx];
+      <div className="mb-3 flex items-baseline justify-between gap-3">
+        <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+          {lang === "zh" ? "命盘核心 · 全部星体" : "Core placements · all bodies"}
+        </p>
+        <p className="text-[9px] uppercase tracking-[0.28em] text-stone-warm/40">
+          {lang === "zh" ? "点选查看解读" : "tap to read"}
+        </p>
+      </div>
+      <ul className="divide-y divide-white/5">
+        {PLANETS.map((p, idx) => {
           const s = ZODIAC_SIGNS[signs[idx]];
-          const h = houseForSign(signs[idx], signs[PLANETS.findIndex((x) => x.key === "asc")] ?? 0);
+          const h = houseForSign(signs[idx], ascSign);
           return (
             <li key={p.key}>
               <button
                 type="button"
                 onClick={() => onPickPlanet(idx)}
-                className="group flex w-full items-center gap-2 rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2 text-left transition-colors hover:border-gold-dust/50 hover:bg-gold-dust/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-light"
+                className="group flex w-full items-baseline gap-3 px-1 py-2 text-left transition-colors hover:bg-gold-dust/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-light rounded-md"
                 aria-label={
                   lang === "zh"
                     ? `${p.name[1]} 落于 ${s.zh}，第 ${h} 宫`
                     : `${p.name[0]} in ${s.en}, house ${h}`
                 }
               >
-                <span className="text-lg text-gold-light" aria-hidden="true">{p.glyph}</span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-[11px] uppercase tracking-[0.24em] text-stone-warm/50">
-                    {p.name[li]}
-                  </span>
-                  <span className="reading-copy block font-serif text-[13px] italic text-stone-warm/85">
-                    {lang === "zh" ? s.zh : s.en}
-                    <span className="ml-1.5 text-[10px] not-italic tracking-[0.2em] text-gold-dust/70">
-                      · {lang === "zh" ? `第${h}宫` : `H${h}`}
-                    </span>
+                <span className="w-5 shrink-0 text-center text-base leading-none text-gold-light" aria-hidden="true">{p.glyph}</span>
+                <span className="min-w-0 flex-1 truncate text-[12px] tracking-[0.06em] text-stone-warm/75">
+                  {p.name[li]}
+                </span>
+                <span className="shrink-0 whitespace-nowrap text-right font-serif text-[13px] italic text-stone-warm/90">
+                  {lang === "zh" ? s.zh : s.en}
+                  <span className="ml-2 text-[10px] not-italic tracking-[0.2em] text-gold-dust/70">
+                    {lang === "zh" ? `第${h}宫` : `H${h}`}
                   </span>
                 </span>
               </button>
@@ -1216,3 +1220,4 @@ function ChartFactsCard({
     </div>
   );
 }
+
