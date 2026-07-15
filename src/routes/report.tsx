@@ -698,30 +698,34 @@ function ReportPage() {
       />
       <AccountModal open={accOpen} onClose={() => setAccOpen(false)} />
 
-      <section className="mx-auto mb-24 max-w-6xl px-6">
-        <div className="glass-card rounded-3xl p-6 sm:p-8 md:p-12">
-          <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-10">
-            <div className="flex min-w-0 flex-col">
-              <p className="mb-3 text-[10px] uppercase tracking-[0.4em] text-gold-dust">
-                {lang === "zh" ? "你的命盘" : "Your natal chart"}
-              </p>
-              <h2 className="mb-4 font-serif text-3xl italic text-stone-warm md:text-4xl">
-                {lang === "zh"
-                  ? "九颗行星 · 落在你专属的十二宫"
-                  : "Nine planets · falling in your own twelve houses"}
-              </h2>
-              <p className="reading-copy mb-6 text-sm leading-relaxed text-stone-warm/60">
-                {lang === "zh"
-                  ? "这是一张真实推算的西方回归黄道盘（Tropical Zodiac）—— 以 J2000.0 为基准，按平均黄经公式将七颗行星与上升 / 天顶落入你出生时刻真正对应的星座；相位则按行星间黄经差自动识别合、六分、四分、三分与对分。点击行星查看落位与主要相位；点击星座查看它承接的行星。"
-                  : "A real tropical-zodiac natal wheel: seven planets plus Ascendant / Midheaven are placed by mean-longitude formulas referenced to J2000.0, using the exact moment you were born. Aspects (conjunction, sextile, square, trine, opposition) are detected automatically from the longitude differences. Tap a planet to reveal its sign and major aspects; tap a sign to see which planets it holds."}
-              </p>
-              <div className="mb-4 flex flex-wrap gap-2 text-[10px] uppercase tracking-[0.28em] text-stone-warm/50">
-                <span className="rounded-full border border-white/10 px-3 py-1">☉ ☽ ☿ ♀ ♂ ♃ ♄</span>
-                <span className="rounded-full border border-white/10 px-3 py-1">Ⓐ {lang === "zh" ? "上升" : "Asc"}</span>
-                <span className="rounded-full border border-white/10 px-3 py-1">Ⓜ {lang === "zh" ? "天顶" : "MC"}</span>
-              </div>
+      <section className="mx-auto mb-24 max-w-6xl px-4 sm:px-6">
+        <div className="glass-card rounded-3xl p-4 sm:p-8 md:p-12">
+          {/* Intro block — always full width so mobile sees context first */}
+          <div className="mb-6 min-w-0 lg:mb-8">
+            <p className="mb-3 text-[10px] uppercase tracking-[0.4em] text-gold-dust">
+              {lang === "zh" ? "你的命盘" : "Your natal chart"}
+            </p>
+            <h2 className="mb-4 font-serif text-2xl italic text-stone-warm sm:text-3xl md:text-4xl">
+              {lang === "zh"
+                ? "九颗行星 · 落在你专属的十二宫"
+                : "Nine planets · falling in your own twelve houses"}
+            </h2>
+            <p className="reading-copy mb-4 text-sm leading-relaxed text-stone-warm/60">
+              {lang === "zh"
+                ? "这是一张真实推算的西方回归黄道盘（Tropical Zodiac）—— 以 J2000.0 为基准，按平均黄经公式将七颗行星与上升 / 天顶落入你出生时刻真正对应的星座；相位则按行星间黄经差自动识别合、六分、四分、三分与对分。点击行星查看落位与主要相位；点击星座查看它承接的行星。"
+                : "A real tropical-zodiac natal wheel: seven planets plus Ascendant / Midheaven are placed by mean-longitude formulas referenced to J2000.0, using the exact moment you were born. Aspects (conjunction, sextile, square, trine, opposition) are detected automatically from the longitude differences. Tap a planet to reveal its sign and major aspects; tap a sign to see which planets it holds."}
+            </p>
+            <div className="flex flex-wrap gap-2 text-[10px] uppercase tracking-[0.28em] text-stone-warm/50">
+              <span className="rounded-full border border-white/10 px-3 py-1">☉ ☽ ☿ ♀ ♂ ♃ ♄</span>
+              <span className="rounded-full border border-white/10 px-3 py-1">Ⓐ {lang === "zh" ? "上升" : "Asc"}</span>
+              <span className="rounded-full border border-white/10 px-3 py-1">Ⓜ {lang === "zh" ? "天顶" : "MC"}</span>
+            </div>
+          </div>
 
-              <div className="flex min-w-0 flex-col gap-4">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:items-stretch lg:gap-10">
+            {/* Left: planet reading panel — on mobile it comes after the wheel */}
+            <div className="order-2 flex min-w-0 flex-col lg:order-1 lg:h-full">
+              <div className="flex min-w-0 flex-1 flex-col">
                 <PlanetReadingPanel
                   lang={lang}
                   seed={`${search.name ?? ""}|${search.date ?? ""}|${search.time ?? ""}|${search.place ?? ""}`}
@@ -731,7 +735,8 @@ function ReportPage() {
               </div>
             </div>
 
-            <div className="flex min-w-0 flex-col items-center gap-4">
+            {/* Right: wheel + core placements */}
+            <div className="order-1 flex min-w-0 flex-col items-center gap-4 lg:order-2">
               <div className="relative w-full text-stone-warm/40">
                 <NatalWheel
                   lang={lang}
@@ -742,14 +747,13 @@ function ReportPage() {
                 />
                 <button
                   onClick={() => setZoomNatal(true)}
-                  className="absolute right-0 top-0 rounded-full border border-gold-dust/30 bg-obsidian/60 px-3 py-1.5 text-[10px] uppercase tracking-[0.28em] text-gold-dust/80 backdrop-blur transition-colors hover:border-gold-light hover:text-gold-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-light"
+                  className="absolute right-0 top-0 rounded-full border border-gold-dust/30 bg-obsidian/60 px-2.5 py-1 text-[10px] uppercase tracking-[0.28em] text-gold-dust/80 backdrop-blur transition-colors hover:border-gold-light hover:text-gold-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-light sm:px-3 sm:py-1.5"
                   aria-label={lang === "zh" ? "放大查看星盘" : "Enlarge chart"}
                 >
                   {lang === "zh" ? "⤢ 放大" : "⤢ Enlarge"}
                 </button>
               </div>
 
-              {/* Core placements card — fixed natural height, not stretched. */}
               <div className="flex w-full flex-col">
                 <ChartFactsCard
                   lang={lang}
@@ -761,6 +765,7 @@ function ReportPage() {
 
           </div>
         </div>
+
 
 
         <ChartZoomModal
@@ -998,7 +1003,7 @@ function PlanetReadingPanel({
 }) {
   if (planetIdx == null) {
     return (
-      <div className="mt-6 flex h-full min-h-[140px] items-center justify-center rounded-2xl border border-dashed border-white/10 bg-white/[0.02] px-5 py-6 text-center text-[11px] uppercase tracking-[0.28em] text-stone-warm/40">
+      <div className="flex h-full min-h-[140px] items-center justify-center rounded-2xl border border-dashed border-white/10 bg-white/[0.02] px-5 py-6 text-center text-[11px] uppercase tracking-[0.28em] text-stone-warm/40">
         {lang === "zh"
           ? "点击右侧任一行星 · 查看其落位与相位解读"
           : "Tap any planet on the right · see its placement & aspects"}
@@ -1033,9 +1038,10 @@ function PlanetReadingPanel({
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35 }}
-      className="planet-panel relative mt-6 flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-gold-dust/25 bg-gradient-to-br from-white/[0.04] to-transparent"
+      className="planet-panel relative flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-gold-dust/25 bg-gradient-to-br from-white/[0.04] to-transparent"
     >
-      <div className="max-h-[520px] flex-1 overflow-y-auto overscroll-contain p-5 pr-4 md:max-h-[600px] lg:max-h-[640px]">
+      <div className="max-h-[520px] flex-1 overflow-y-auto overscroll-contain p-5 pr-4 md:max-h-[600px] lg:max-h-none">
+
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
