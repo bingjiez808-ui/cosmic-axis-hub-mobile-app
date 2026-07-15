@@ -505,7 +505,7 @@ function CommunityPage() {
             </h3>
           </div>
         </div>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div className="flex flex-col gap-4">
           {QUESTS.map((q, i) => {
             const done = completedQuests[q.id];
             const reflection = aiReflect[q.id];
@@ -517,57 +517,68 @@ function CommunityPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: i * 0.08 }}
-                className={`glass-card flex flex-col rounded-2xl p-5 sm:p-6 ${done ? "border-gold-dust/60" : ""}`}
+                className={`glass-card grid grid-cols-1 gap-5 rounded-2xl p-5 sm:p-6 md:grid-cols-[minmax(0,300px)_minmax(0,1fr)] md:gap-8 ${done ? "border-gold-dust/60" : ""}`}
               >
-                <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
-                  {lang === "zh" ? `第 ${i + 1} 关` : `Quest ${i + 1}`}
-                </p>
-                <p className="mb-4 font-serif text-base leading-relaxed text-stone-warm/85 sm:text-lg">
-                  {q.label[li]}
-                </p>
-                <textarea
-                  value={aiQuestInput[q.id] ?? ""}
-                  onChange={(e) =>
-                    setAiQuestInput((s) => ({ ...s, [q.id]: e.target.value.slice(0, 400) }))
-                  }
-                  rows={3}
-                  placeholder={
-                    lang === "zh"
-                      ? "写下你的回答，AI 长者会为你点评…"
-                      : "Write your answer — the elder will reflect back…"
-                  }
-                  className="w-full resize-none rounded-xl border border-white/10 bg-obsidian/40 p-3 text-sm text-stone-warm placeholder:text-stone-warm/30 focus:border-gold-dust/40 focus:outline-none"
-                />
-                {reflection && (
-                  <div className="mt-3 rounded-xl border border-gold-dust/25 bg-gold-dust/[0.05] p-3">
-                    <p className="mb-1 text-[9px] uppercase tracking-[0.32em] text-gold-dust/70">
-                      {lang === "zh" ? "长者回音" : "The elder replies"}
+                {/* Left · prompt + badge */}
+                <div className="flex min-w-0 flex-col justify-between gap-4">
+                  <div>
+                    <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+                      {lang === "zh" ? `第 ${i + 1} 关` : `Quest ${i + 1}`}
                     </p>
-                    <p className="whitespace-pre-line font-serif text-sm italic leading-relaxed text-stone-warm/85">
-                      {reflection}
+                    <p className="font-serif text-base leading-relaxed text-stone-warm/85 sm:text-lg">
+                      {q.label[li]}
                     </p>
                   </div>
-                )}
-                <div className="mt-4 flex items-center justify-between gap-3">
                   <span
-                    className={`text-[10px] uppercase tracking-[0.28em] ${
-                      done ? "text-gold-light" : "text-stone-warm/40"
+                    className={`inline-flex w-fit rounded-full border px-3 py-1 text-[10px] uppercase tracking-[0.28em] ${
+                      done
+                        ? "border-gold-dust/60 bg-gold-dust/10 text-gold-light"
+                        : "border-white/10 text-stone-warm/40"
                     }`}
                   >
                     {done ? `✓ ${q.badge[li]}` : q.badge[li]}
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => askQuestOracle(q.id, q.label[li])}
-                    disabled={isBusy || !(aiQuestInput[q.id] || "").trim()}
-                    className="rounded-full border border-gold-dust/40 px-4 py-1.5 text-[10px] uppercase tracking-[0.28em] text-gold-dust transition-colors hover:bg-gold-dust/10 disabled:opacity-40"
-                  >
-                    {isBusy
-                      ? lang === "zh" ? "长者沉思…" : "Reflecting…"
-                      : done
-                        ? lang === "zh" ? "再问一次" : "Ask again"
-                        : lang === "zh" ? "呈上答卷" : "Submit"}
-                  </button>
+                </div>
+
+                {/* Right · input + reflection */}
+                <div className="flex min-w-0 flex-col">
+                  <textarea
+                    value={aiQuestInput[q.id] ?? ""}
+                    onChange={(e) =>
+                      setAiQuestInput((s) => ({ ...s, [q.id]: e.target.value.slice(0, 400) }))
+                    }
+                    rows={3}
+                    placeholder={
+                      lang === "zh"
+                        ? "写下你的回答，AI 长者会为你点评…"
+                        : "Write your answer — the elder will reflect back…"
+                    }
+                    className="w-full resize-none rounded-xl border border-white/10 bg-obsidian/40 p-3 text-sm text-stone-warm placeholder:text-stone-warm/30 focus:border-gold-dust/40 focus:outline-none"
+                  />
+                  <div className="mt-3 flex items-center justify-end">
+                    <button
+                      type="button"
+                      onClick={() => askQuestOracle(q.id, q.label[li])}
+                      disabled={isBusy || !(aiQuestInput[q.id] || "").trim()}
+                      className="rounded-full border border-gold-dust/40 px-4 py-1.5 text-[10px] uppercase tracking-[0.28em] text-gold-dust transition-colors hover:bg-gold-dust/10 disabled:opacity-40"
+                    >
+                      {isBusy
+                        ? lang === "zh" ? "长者沉思…" : "Reflecting…"
+                        : done
+                          ? lang === "zh" ? "再问一次" : "Ask again"
+                          : lang === "zh" ? "呈上答卷" : "Submit"}
+                    </button>
+                  </div>
+                  {reflection && (
+                    <div className="mt-4 rounded-xl border border-gold-dust/25 bg-gold-dust/[0.05] p-4">
+                      <p className="mb-1 text-[9px] uppercase tracking-[0.32em] text-gold-dust/70">
+                        {lang === "zh" ? "长者回音" : "The elder replies"}
+                      </p>
+                      <p className="whitespace-pre-line font-serif text-sm italic leading-relaxed text-stone-warm/85">
+                        {reflection}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </motion.div>
             );
