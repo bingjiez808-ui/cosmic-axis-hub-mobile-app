@@ -1155,7 +1155,7 @@ function ChartFactsCard({
 
   return (
     <div
-      className="flex h-full w-full min-h-0 flex-col rounded-2xl border border-gold-dust/20 bg-obsidian/40 p-4 sm:p-5"
+      className="flex w-full min-h-0 flex-col rounded-2xl border border-gold-dust/20 bg-obsidian/40 p-4 sm:p-5 lg:h-full"
       aria-label={lang === "zh" ? "命盘核心概览" : "Chart facts summary"}
     >
       <div className="mb-3 flex items-baseline justify-between gap-3">
