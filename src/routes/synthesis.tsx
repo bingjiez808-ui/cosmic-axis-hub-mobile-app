@@ -79,6 +79,8 @@ function SynthesisPage() {
   const navigate = useNavigate();
   const [phase, setPhase] = useState(0);
   const [reportReady, setReportReady] = useState(false);
+  const [reportError, setReportError] = useState<string | null>(null);
+  const [retryTick, setRetryTick] = useState(0);
   const lang: "en" | "zh" = search.lang === "zh" ? "zh" : "en";
   const phases = lang === "zh" ? PHASES_ZH : PHASES_EN;
   const reportFingerprint = buildReportFingerprint(search, lang);
@@ -91,11 +93,15 @@ function SynthesisPage() {
 
     let cancelled = false;
     setReportReady(false);
+    setReportError(null);
     const cacheKey = buildReportCacheKey(search, lang);
     const cached = typeof sessionStorage !== "undefined" ? sessionStorage.getItem(cacheKey) : null;
-    if (cached) {
+    if (cached && retryTick === 0) {
       setReportReady(true);
       return;
+    }
+    if (retryTick > 0) {
+      try { sessionStorage.removeItem(cacheKey); } catch {}
     }
 
     generateReport({ data: buildReportRequest(search, lang) })
@@ -108,14 +114,15 @@ function SynthesisPage() {
         }
         setReportReady(true);
       })
-      .catch(() => {
-        if (!cancelled) setReportReady(true);
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setReportError(err instanceof Error ? err.message : String(err));
       });
 
     return () => {
       cancelled = true;
     };
-  }, [lang, reportFingerprint, search]);
+  }, [lang, reportFingerprint, search, retryTick]);
 
   useEffect(() => {
     const total = phases.length;
