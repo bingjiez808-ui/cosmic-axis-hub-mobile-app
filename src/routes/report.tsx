@@ -805,22 +805,6 @@ function ReportPage() {
 
       {/* Dimensions */}
       <section className="mx-auto max-w-5xl space-y-10 px-6 md:px-12">
-        {search.date && aiState === "signed_out" && (
-          <div className="glass-card flex flex-col gap-3 rounded-2xl px-5 py-3 text-[11px] uppercase tracking-[0.28em] text-gold-dust/80 sm:flex-row sm:items-center sm:justify-between">
-            <span className="normal-case tracking-normal text-[13px] text-stone-warm/90">
-              {lang === "zh"
-                ? "登录后，智者将根据你的出生盘为八个维度撰写专属解读；未登录时先显示通用模板。"
-                : "Sign in and the elder will craft a personal reading for all eight dimensions of your chart. A generic template is shown until you sign in."}
-            </span>
-            <button
-              type="button"
-              onClick={() => setAccOpen(true)}
-              className="flex-none rounded-full border border-gold-dust/50 px-4 py-1.5 text-[10px] tracking-[0.28em] text-gold-dust transition-colors hover:bg-gold-dust/10"
-            >
-              {lang === "zh" ? "登录 / 注册" : "Sign in"}
-            </button>
-          </div>
-        )}
         {search.date && (aiState === "loading" || aiState === "error") && (
           <div
             className={`glass-card flex flex-col gap-3 rounded-2xl px-5 py-3 text-[11px] uppercase tracking-[0.28em] sm:flex-row sm:items-center sm:justify-between ${
