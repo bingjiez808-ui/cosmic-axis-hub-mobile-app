@@ -335,6 +335,8 @@ function TraditionsPage() {
           {HEADER.cta[li]}
         </Link>
       </div>
+
+      <TraditionModal id={openTradition} onClose={() => setOpenTradition(null)} />
     </div>
   );
 }
