@@ -1214,7 +1214,7 @@ export function MembershipSection({ birthISO }: { birthISO?: string } = {}) {
             </p>
             <span className="h-px flex-1 bg-gold-dust/30" />
           </div>
-          <SynastryPreview />
+          <SynastryPreview userBirthISO={birthISO} />
         </div>
       )}
 
