@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { useAccount } from "@/lib/account";
 import { useLang } from "@/lib/i18n";
+import { useSupabaseSession } from "@/lib/session";
 
 /**
  * 同门 · Guild of Souls — the community share space.
