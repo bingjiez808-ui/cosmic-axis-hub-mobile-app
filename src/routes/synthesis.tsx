@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import treeImg from "@/assets/tree-of-destiny.jpg";
 import { generateReport } from "@/lib/report.functions";
 import { buildReportCacheKey, buildReportFingerprint, buildReportRequest } from "@/lib/report-input";
-import { useSupabaseSession } from "@/lib/session";
 
 type SearchParams = {
   name?: string;
