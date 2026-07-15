@@ -1,5 +1,20 @@
 import { motion } from "framer-motion";
-import { useState, type ReactElement } from "react";
+import { useEffect, useState, type ReactElement } from "react";
+
+/**
+ * Client-only mount flag. SSR renders a plain placeholder and the SVG
+ * appears after hydration. This avoids hydration mismatches caused by
+ * `Math.sin`/`Math.cos` producing slightly different bits on Cloudflare
+ * workerd (SSR) vs V8 (browser) — the ECMAScript spec does not fix the
+ * precision of transcendental functions.
+ */
+function useMounted() {
+  const [m, setM] = useState(false);
+  useEffect(() => setM(true), []);
+  return m;
+}
+
+
 
 
 /* ─────────────────────────────────────────────────────────────
@@ -38,6 +53,8 @@ export function ZodiacWheel({
   const r3 = size / 2 - 78;
   const cx = size / 2;
   const cy = size / 2;
+  const mounted = useMounted();
+  if (!mounted) return <div className="relative mx-auto" style={{ width: size, height: size }} />;
 
   return (
     <div className="relative mx-auto" style={{ width: size, height: size }}>
@@ -203,6 +220,8 @@ export function StrengthRadar({
     return [cx + Math.cos(a) * r * v, cy + Math.sin(a) * r * v] as const;
   });
   const poly = pts.map((p) => p.join(",")).join(" ");
+  const mounted = useMounted();
+  if (!mounted) return <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size} />;
 
   return (
     <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size}>
@@ -298,6 +317,8 @@ export function FiveElements({
     const a = (i * 72 - 90) * (Math.PI / 180);
     return [cx + Math.cos(a) * r, cy + Math.sin(a) * r] as const;
   });
+  const mounted = useMounted();
+  if (!mounted) return <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size} />;
 
   return (
     <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size}>
@@ -656,6 +677,11 @@ export function NatalWheel({
 }) {
   const [hoverSign, setHoverSign] = useState<number | null>(null);
   const [hoverPlanet, setHoverPlanet] = useState<number | null>(null);
+  // Gate SVG rendering to the client: Math.sin/cos precision differs between
+  // workerd (SSR) and V8 (browser), which would otherwise cause hydration
+  // mismatches on hundreds of coord attributes.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const signs = computePlanetSigns(seed);
 
   const cx = size / 2;
@@ -740,27 +766,30 @@ export function NatalWheel({
 
   return (
     <div className="relative mx-auto" style={{ width: size, height: size }}>
-      {/* rotating outer scaffold */}
-      <div className="absolute inset-0 animate-slow-rotate opacity-70">
-        <svg viewBox={`0 0 ${size} ${size}`} className="h-full w-full">
-          <circle cx={cx} cy={cy} r={rOuter} fill="none" stroke="currentColor" strokeOpacity="0.08" />
-          {Array.from({ length: 72 }).map((_, i) => {
-            const a = (i * 5 * Math.PI) / 180;
-            const long = i % 6 === 0;
-            const x1 = cx + Math.cos(a) * (rOuter - (long ? 12 : 5));
-            const y1 = cy + Math.sin(a) * (rOuter - (long ? 12 : 5));
-            const x2 = cx + Math.cos(a) * rOuter;
-            const y2 = cy + Math.sin(a) * rOuter;
-            return (
-              <line key={i} x1={x1} y1={y1} x2={x2} y2={y2}
-                stroke="currentColor" strokeOpacity={long ? 0.45 : 0.18} strokeWidth={long ? 1 : 0.5}
-              />
-            );
-          })}
-        </svg>
-      </div>
+      {/* rotating outer scaffold — client-only to avoid float-precision hydration drift */}
+      {mounted && (
+        <div className="absolute inset-0 animate-slow-rotate opacity-70">
+          <svg viewBox={`0 0 ${size} ${size}`} className="h-full w-full">
+            <circle cx={cx} cy={cy} r={rOuter} fill="none" stroke="currentColor" strokeOpacity="0.08" />
+            {Array.from({ length: 72 }).map((_, i) => {
+              const a = (i * 5 * Math.PI) / 180;
+              const long = i % 6 === 0;
+              const x1 = cx + Math.cos(a) * (rOuter - (long ? 12 : 5));
+              const y1 = cy + Math.sin(a) * (rOuter - (long ? 12 : 5));
+              const x2 = cx + Math.cos(a) * rOuter;
+              const y2 = cy + Math.sin(a) * rOuter;
+              return (
+                <line key={i} x1={x1} y1={y1} x2={x2} y2={y2}
+                  stroke="currentColor" strokeOpacity={long ? 0.45 : 0.18} strokeWidth={long ? 1 : 0.5}
+                />
+              );
+            })}
+          </svg>
+        </div>
+      )}
 
-      {/* Static sign ring + house dividers */}
+      {/* Static sign ring + house dividers — client-only for float-precision safety */}
+      {mounted && (
       <svg
         viewBox={`0 0 ${size} ${size}`}
         className="absolute inset-0 h-full w-full"
@@ -950,6 +979,7 @@ export function NatalWheel({
         </defs>
         <circle cx={cx} cy={cy} r={rInner - 4} fill="url(#natal-core)" />
       </svg>
+      )}
 
       {/* center label */}
       <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-4 text-center">
