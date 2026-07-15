@@ -304,8 +304,8 @@ function SiteNav() {
           { to: "/", label: lang === "zh" ? "首页" : "Home" },
           { to: "/traditions", label: t.nav_traditions },
           { to: "/ritual", label: t.nav_ritual },
-          { to: "/about", label: t.nav_about },
           { to: "/community", label: t.nav_community },
+          { to: "/about", label: t.nav_about },
         ].map((item) => (
           <Link
             key={item.to}
