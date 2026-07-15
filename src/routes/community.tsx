@@ -306,6 +306,7 @@ function AvatarGlyph({
 
 function CommunityPage() {
   const { lang } = useLang();
+  const { session, loading: sessionLoading } = useSupabaseSession();
   const li = lang === "zh" ? 1 : 0;
   const { account, setAvatar } = useAccount();
   const [avatarBusy, setAvatarBusy] = useState(false);
