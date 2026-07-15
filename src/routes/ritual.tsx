@@ -307,11 +307,10 @@ function noOrphan(s: string) {
                   <h1 className="mx-auto mb-4 max-w-[16ch] text-balance font-serif text-xl italic leading-tight text-stone-warm sm:max-w-xl sm:text-2xl md:text-4xl" style={{ wordBreak: "keep-all", overflowWrap: "break-word" }}>
                     {noOrphan(q.prompt[li])}
                   </h1>
-                  <p className="mx-auto mb-10 max-w-md text-xs italic text-stone-warm/40">
-                    {lang === "zh"
-                      ? `${quizIdx + 1} / ${QUIZ.length} · 凭第一直觉选一个 —— 用于稍后对解读做偏差修正。`
-                      : `${quizIdx + 1} / ${QUIZ.length} · Pick what feels truest — used later to bias-correct your reading.`}
+                  <p className="mx-auto mb-6 text-xs italic text-stone-warm/40">
+                    {`${quizIdx + 1} / ${QUIZ.length}`}
                   </p>
+
                   <div className="mx-auto flex max-w-sm flex-col gap-3 text-left md:max-w-lg">
                     {q.options.map((opt) => {
                       const active = quiz[quizIdx] === opt.id;
