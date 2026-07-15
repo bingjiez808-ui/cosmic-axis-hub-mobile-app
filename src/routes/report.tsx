@@ -1016,17 +1016,6 @@ function PlanetReadingPanel({
       transition={{ duration: 0.35 }}
       className="relative mt-6 overflow-hidden rounded-2xl border border-gold-dust/25 bg-gradient-to-br from-white/[0.04] to-transparent p-5"
     >
-      {/* library shimmer + dust burst tie the wheel to the reading */}
-      <span key={`shim-${planetIdx}`} aria-hidden className="animate-library-shimmer absolute inset-0 rounded-2xl" />
-      <span
-        key={`dust-${planetIdx}`}
-        aria-hidden
-        className="animate-dust-burst absolute -left-4 -top-4 size-24 rounded-full"
-        style={{
-          background:
-            "radial-gradient(circle, color-mix(in oklab, var(--gold-light) 55%, transparent) 0%, transparent 70%)",
-        }}
-      />
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
