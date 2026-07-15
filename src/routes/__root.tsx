@@ -15,6 +15,7 @@ import { LanguageProvider, useLang } from "../lib/i18n";
 import { AccountProvider, useAccount } from "../lib/account";
 import { AccountModal } from "../components/AccountModal";
 import { LibrarySplash } from "../components/LibrarySplash";
+import { useSupabaseSession } from "../lib/session";
 import libraryHallImg from "../assets/ancient-library-hall.jpg";
 
 
@@ -204,9 +205,11 @@ function LanguageToggle() {
 function SiteNav() {
   const { t, lang } = useLang();
   const { account } = useAccount();
+  const { isAdmin } = useSupabaseSession();
   const openAcc = () => window.dispatchEvent(new Event("lod:open-account"));
   const [atTop, setAtTop] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const adminLabel = lang === "zh" ? "议政厅" : "Admin";
 
   useEffect(() => {
     const onScroll = () => setAtTop(window.scrollY < 40);
