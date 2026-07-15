@@ -215,6 +215,7 @@ function noOrphan(s: string) {
             }
           : {}),
       });
+      try { sessionStorage.removeItem(RITUAL_STATE_KEY); } catch {}
       navigate({ to: "/synthesis", search: () => Object.fromEntries(params) as never });
     } else {
       setStep((s) => s + 1);
