@@ -313,8 +313,8 @@ function noOrphan(s: string) {
                         : "The next five questions aren't a test — they're used to fine-tune the AI's synthesis against your personal deviations."}
                     </p>
                   )}
-                  <h1 className="mx-auto mb-4 max-w-xl font-serif text-2xl italic leading-tight text-stone-warm md:text-4xl">
-                    {q.prompt[li]}
+                  <h1 className="mx-auto mb-4 max-w-xl text-balance font-serif text-2xl italic leading-tight text-stone-warm md:text-4xl" style={{ wordBreak: "keep-all", overflowWrap: "break-word" }}>
+                    {noOrphan(q.prompt[li])}
                   </h1>
                   <p className="mx-auto mb-10 max-w-md text-xs italic text-stone-warm/40">
                     {lang === "zh"
