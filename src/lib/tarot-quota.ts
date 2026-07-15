@@ -54,15 +54,16 @@ function storageKey(accountKey?: string | null): string {
 }
 
 function read(scope?: Scope): Store {
-  if (typeof window === "undefined") return { month: monthKey(), used: 0 };
+  const now = monthKey(scope?.tz);
+  if (typeof window === "undefined") return { month: now, used: 0 };
   try {
     const raw = window.localStorage.getItem(storageKey(scope?.accountKey));
-    if (!raw) return { month: monthKey(), used: 0 };
+    if (!raw) return { month: now, used: 0 };
     const s = JSON.parse(raw) as Store;
-    if (s.month !== monthKey()) return { month: monthKey(), used: 0 };
+    if (s.month !== now) return { month: now, used: 0 };
     return s;
   } catch {
-    return { month: monthKey(), used: 0 };
+    return { month: now, used: 0 };
   }
 }
 
