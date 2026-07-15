@@ -630,8 +630,6 @@ export function KeyEventsVerification({ birthISO }: { birthISO?: string }) {
    Tarot — 78-card swipeable deck
 ═══════════════════════════════════════════ */
 
-import { TAROT_78, type TarotCard } from "@/lib/tarot-deck";
-import { askOracle } from "@/lib/oracle.functions";
 
 export function TarotDraw() {
   const { t, lang } = useLang();
