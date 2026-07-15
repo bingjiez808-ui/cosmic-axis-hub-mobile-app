@@ -109,7 +109,7 @@ const QUIZ: QuizQ[] = [
 
 function RitualPage() {
   const navigate = useNavigate();
-  const { lang, setLang, t } = useLang();
+  const { lang, t } = useLang();
   const li = lang === "zh" ? 1 : 0;
 
   const [values, setValues] = useState<Record<FieldKey, string>>({
@@ -119,10 +119,40 @@ function RitualPage() {
     place: "",
   });
   const [quiz, setQuiz] = useState<string[]>(["", "", "", "", ""]);
-  // 0 = language, 1..5 = quiz Q1..Q5, 6..9 = intake
+  // 0..4 = quiz Q1..Q5, 5..8 = intake
   const [step, setStep] = useState(0);
+  const [skipQuiz, setSkipQuiz] = useState(false);
+  const [restored, setRestored] = useState(false);
 
-  const totalSteps = 1 + QUIZ.length + 4; // 10
+  // Restore draft from sessionStorage (client-only, avoids hydration mismatch)
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(RITUAL_STATE_KEY);
+      if (raw) {
+        const s = JSON.parse(raw);
+        if (s && typeof s === "object") {
+          if (s.values) setValues((v) => ({ ...v, ...s.values }));
+          if (Array.isArray(s.quiz) && s.quiz.length === QUIZ.length) setQuiz(s.quiz);
+          if (typeof s.step === "number") setStep(Math.max(0, Math.min(s.step, QUIZ.length + 3)));
+          if (typeof s.skipQuiz === "boolean") setSkipQuiz(s.skipQuiz);
+        }
+      }
+    } catch {}
+    setRestored(true);
+  }, []);
+
+  // Persist on change
+  useEffect(() => {
+    if (!restored) return;
+    try {
+      sessionStorage.setItem(
+        RITUAL_STATE_KEY,
+        JSON.stringify({ values, quiz, step, skipQuiz }),
+      );
+    } catch {}
+  }, [values, quiz, step, skipQuiz, restored]);
+
+  const totalSteps = (skipQuiz ? 0 : QUIZ.length) + 4;
 
   const questionSteps: {
     key: FieldKey;
@@ -150,20 +180,19 @@ function noOrphan(s: string) {
   );
 }
 
+  const quizCount = skipQuiz ? 0 : QUIZ.length;
   const progress = useMemo(() => (step + 1) / totalSteps, [step, totalSteps]);
   const isLast = step === totalSteps - 1;
-  const isLanguageStep = step === 0;
-  const isQuizStep = step >= 1 && step <= QUIZ.length;
-  const quizIdx = isQuizStep ? step - 1 : -1;
-  const isIntakeStep = step >= 1 + QUIZ.length;
-  const intakeIdx = isIntakeStep ? step - (1 + QUIZ.length) : -1;
+  const isQuizStep = !skipQuiz && step < QUIZ.length;
+  const quizIdx = isQuizStep ? step : -1;
+  const isIntakeStep = step >= quizCount;
+  const intakeIdx = isIntakeStep ? step - quizCount : -1;
   const currentQ = isIntakeStep ? questionSteps[intakeIdx] : null;
 
-  const canAdvance = isLanguageStep
-    ? true
-    : isQuizStep
+  const canAdvance = isQuizStep
     ? !!quiz[quizIdx]
     : (values[currentQ!.key] ?? "").trim().length > 0;
+
 
   const advance = () => {
     if (!canAdvance) return;
