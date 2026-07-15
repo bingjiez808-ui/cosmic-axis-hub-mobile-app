@@ -700,8 +700,8 @@ function ReportPage() {
 
       <section className="mx-auto mb-24 max-w-6xl px-6">
         <div className="glass-card rounded-3xl p-6 sm:p-8 md:p-12">
-          <div className="grid grid-cols-1 items-stretch gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-10">
-            <div className="flex min-w-0 flex-col lg:h-full">
+          <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-10">
+            <div className="flex min-w-0 flex-col">
               <p className="mb-3 text-[10px] uppercase tracking-[0.4em] text-gold-dust">
                 {lang === "zh" ? "你的命盘" : "Your natal chart"}
               </p>
@@ -721,21 +721,20 @@ function ReportPage() {
                 <span className="rounded-full border border-white/10 px-3 py-1">Ⓜ {lang === "zh" ? "天顶" : "MC"}</span>
               </div>
 
-              <div className="flex min-w-0 flex-col gap-4 lg:min-h-0 lg:flex-1">
-                <div className="flex min-w-0 flex-col lg:min-h-0 lg:flex-1">
-                  <PlanetReadingPanel
-                    lang={lang}
-                    seed={`${search.name ?? ""}|${search.date ?? ""}|${search.time ?? ""}|${search.place ?? ""}`}
-                    planetIdx={selectedPlanet}
-                    onClear={() => setSelectedPlanet(null)}
-                  />
-                </div>
+              <div className="flex min-w-0 flex-col gap-4">
+                <PlanetReadingPanel
+                  lang={lang}
+                  seed={`${search.name ?? ""}|${search.date ?? ""}|${search.time ?? ""}|${search.place ?? ""}`}
+                  planetIdx={selectedPlanet}
+                  onClear={() => setSelectedPlanet(null)}
+                />
                 <ChartTipCard
                   lang={lang}
                   seed={`${search.name ?? ""}|${search.date ?? ""}|${search.time ?? ""}|${search.place ?? ""}`}
                 />
               </div>
             </div>
+
             <div className="flex min-w-0 flex-col items-center gap-4">
               <div className="relative w-full text-stone-warm/40">
                 <NatalWheel
