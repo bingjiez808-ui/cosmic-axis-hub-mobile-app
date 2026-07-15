@@ -668,6 +668,91 @@ function CommunityPage() {
 
   return (
     <div className="pt-32 pb-32">
+      {/* Notification bell — floating, mobile-friendly */}
+      <div className="fixed right-4 top-24 z-40 md:right-8">
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => {
+              const next = !notifOpen;
+              setNotifOpen(next);
+              if (next && unreadCount > 0) markAllRead();
+            }}
+            aria-label={lang === "zh" ? "通知" : "Notifications"}
+            aria-expanded={notifOpen}
+            className="glass-card flex h-11 w-11 items-center justify-center rounded-full border border-white/10 text-stone-warm/80 backdrop-blur transition-colors hover:border-gold-dust/40 hover:text-gold-dust"
+          >
+            <span aria-hidden className="text-lg">✧</span>
+            {unreadCount > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-gold-dust px-1 text-[10px] font-medium text-obsidian">
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
+          </button>
+          {notifOpen && (
+            <div
+              role="dialog"
+              className="glass-card absolute right-0 mt-2 w-[min(88vw,340px)] overflow-hidden rounded-2xl border border-white/10 backdrop-blur"
+            >
+              <div className="flex items-center justify-between border-b border-white/10 px-4 py-2.5">
+                <span className="text-[10px] uppercase tracking-[0.32em] text-gold-dust">
+                  {lang === "zh" ? "回声 · 通知" : "Echoes · Inbox"}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setNotifOpen(false)}
+                  className="text-[11px] text-stone-warm/50 hover:text-gold-dust"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="max-h-[60vh] overflow-y-auto">
+                {notifs.length === 0 ? (
+                  <p className="px-4 py-6 text-center text-[12px] text-stone-warm/50">
+                    {lang === "zh"
+                      ? "尚无回声。你的分享会先被听见。"
+                      : "No echoes yet. Your voice will be heard first."}
+                  </p>
+                ) : (
+                  <ul className="divide-y divide-white/5">
+                    {notifs.map((n) => {
+                      const nh = houseByKey(n.actorHouseKey);
+                      const kindLabel =
+                        n.kind === "heart"
+                          ? lang === "zh" ? "点亮分享" : "lit your share"
+                          : n.kind === "heart-comment"
+                            ? lang === "zh" ? "点亮回声" : "lit your echo"
+                            : n.kind === "reply"
+                              ? lang === "zh" ? "回复了你" : "replied to you"
+                              : lang === "zh" ? "回应了你" : "echoed you";
+                      return (
+                        <li key={n.id} className="flex gap-2.5 px-4 py-3">
+                          <AvatarGlyph hue={n.actorHue} glyph={nh.glyph} size={28} />
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-baseline gap-x-2 text-[10px] uppercase tracking-[0.24em] text-stone-warm/50">
+                              <span className="font-serif text-[13px] italic normal-case tracking-normal text-stone-warm/90">
+                                {n.actorTitle}
+                              </span>
+                              <span className="text-gold-dust/70">{kindLabel}</span>
+                              <span className="text-stone-warm/40">· {timeAgo(n.createdAt)}</span>
+                            </div>
+                            {n.snippet && (
+                              <p className="mt-0.5 line-clamp-2 font-serif text-[12.5px] leading-relaxed text-stone-warm/70">
+                                {n.snippet}
+                              </p>
+                            )}
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Header */}
       <header className="mx-auto max-w-4xl px-6 pb-16 text-center">
         <p className="mb-4 text-[10px] uppercase tracking-[0.42em] text-gold-dust">
