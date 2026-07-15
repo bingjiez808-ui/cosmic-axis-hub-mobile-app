@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import treeImg from "@/assets/tree-of-destiny.jpg";
 import { generateReport } from "@/lib/report.functions";
 import { buildReportCacheKey, buildReportFingerprint, buildReportRequest } from "@/lib/report-input";
-import { useSupabaseSession } from "@/lib/session";
 
 type SearchParams = {
   name?: string;
@@ -85,12 +84,9 @@ function SynthesisPage() {
   const lang: "en" | "zh" = search.lang === "zh" ? "zh" : "en";
   const phases = lang === "zh" ? PHASES_ZH : PHASES_EN;
   const reportFingerprint = buildReportFingerprint(search, lang);
-  const { session, loading: sessionLoading } = useSupabaseSession();
 
   useEffect(() => {
-    if (sessionLoading) return;
-    if (!search.date || !session) {
-      // Unauthenticated users skip AI generation; /report shows a sign-in CTA + template.
+    if (!search.date) {
       setReportReady(true);
       return;
     }
@@ -126,7 +122,7 @@ function SynthesisPage() {
     return () => {
       cancelled = true;
     };
-  }, [lang, reportFingerprint, search, retryTick, session, sessionLoading]);
+  }, [lang, reportFingerprint, search, retryTick]);
 
   useEffect(() => {
     const total = phases.length;
