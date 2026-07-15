@@ -788,6 +788,36 @@ export function TarotDraw() {
               placeholder={lang === "zh" ? "例如：这段关系还值得继续吗？" : "e.g. Should I stay in this relationship?"}
               className="w-full resize-none rounded-xl border border-white/10 bg-obsidian/60 p-4 text-sm text-stone-warm placeholder:text-stone-warm/30 focus:border-gold-dust/60 focus:outline-none"
             />
+
+            {/* Example prompts */}
+            <div className="mt-4">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <p className="text-[10px] uppercase tracking-[0.28em] text-gold-dust/70">
+                  {lang === "zh" ? "示例提问 · 可直接点选" : "Example questions — tap to use"}
+                </p>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setExamples(pickThreeExamples(EXAMPLE_POOL, examples.map((e) => e[li])))
+                  }
+                  className="whitespace-nowrap rounded-full border border-gold-dust/30 px-3 py-1 text-[10px] uppercase tracking-[0.24em] text-gold-dust/80 transition-colors hover:border-gold-dust hover:bg-gold-dust/10"
+                >
+                  {lang === "zh" ? "换一批 ↻" : "Shuffle ↻"}
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {examples.map((ex, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setQuestion(ex[li])}
+                    className="max-w-full whitespace-normal break-words rounded-full border border-white/10 bg-obsidian/60 px-3 py-1.5 text-left text-[12px] leading-snug text-stone-warm/80 transition-colors hover:border-gold-dust/50 hover:bg-gold-dust/10 hover:text-gold-light"
+                  >
+                    {ex[li]}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
               <p className="text-[10px] uppercase tracking-[0.28em] text-stone-warm/40">
                 {lang === "zh" ? "写下越具体，签越准" : "The clearer the question, the truer the reading"}
