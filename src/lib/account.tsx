@@ -53,7 +53,8 @@ export function AccountProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const syncAccount = (user: { email?: string | null; user_metadata?: Record<string, unknown> } | null) => {
-      if (!user?.email) {
+      const userEmail = user?.email;
+      if (!userEmail) {
         setAccount(null);
         try {
           localStorage.removeItem(ACC_KEY);
@@ -66,14 +67,14 @@ export function AccountProvider({ children }: { children: ReactNode }) {
           ? meta.name
           : typeof meta.full_name === "string"
             ? meta.full_name
-            : user.email.split("@")[0];
+            : userEmail.split("@")[0];
       const avatar = typeof meta.avatar_url === "string" ? meta.avatar_url : undefined;
       setAccount((prev) => {
         const next: Account = {
           plan: prev?.plan ?? "free",
           avatar: prev?.avatar ?? avatar,
-          name: prev?.email === user.email ? prev.name : displayName,
-          email: user.email,
+          name: prev && prev.email === userEmail ? prev.name : displayName,
+          email: userEmail,
         };
         try {
           localStorage.setItem(ACC_KEY, JSON.stringify(next));
