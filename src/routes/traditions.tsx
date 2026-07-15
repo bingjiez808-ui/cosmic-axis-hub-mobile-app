@@ -219,6 +219,7 @@ const HEADER = {
 function TraditionsPage() {
   const { lang } = useLang();
   const li: 0 | 1 = lang === "zh" ? 1 : 0;
+  const [openTradition, setOpenTradition] = useState<TraditionId | null>(null);
 
   return (
     <div className="pt-32 pb-32">
