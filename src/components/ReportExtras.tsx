@@ -656,19 +656,20 @@ export function TarotDraw() {
   const [aiLoading, setAiLoading] = useState(false);
 
   // Example prompts — tap to fill, shuffle for a fresh batch.
+  // Tuple order is [en, zh] to match `li = lang === "zh" ? 1 : 0`.
   const EXAMPLE_POOL: [string, string][] = [
-    ["这段关系还值得继续吗？", "Should I stay in this relationship?"],
-    ["接下来三个月该换工作吗？", "Should I change jobs in the next three months?"],
-    ["现在开始创业时机对吗？", "Is now the right time to start my own venture?"],
-    ["我该如何面对父母的期待？", "How should I handle my parents' expectations?"],
-    ["这笔投资该出手吗？", "Should I go ahead with this investment?"],
-    ["我该不该搬去另一个城市？", "Should I move to a different city?"],
-    ["我该主动联系那个人吗？", "Should I reach out to that person first?"],
-    ["接下来该专注学业还是感情？", "Should I focus on study or love next?"],
-    ["现在的迷茫要如何走出？", "How do I move through this confusion?"],
-    ["这个新机会背后有什么风险？", "What risk is hidden in this new opportunity?"],
-    ["今年最该修复的关系是哪一段？", "Which relationship most needs mending this year?"],
-    ["我真正的天赋是什么？", "What is my true, undervalued gift?"],
+    ["Should I stay in this relationship?", "这段关系还值得继续吗？"],
+    ["Should I change jobs in the next three months?", "接下来三个月该换工作吗？"],
+    ["Is now the right time to start my own venture?", "现在开始创业时机对吗？"],
+    ["How should I handle my parents' expectations?", "我该如何面对父母的期待？"],
+    ["Should I go ahead with this investment?", "这笔投资该出手吗？"],
+    ["Should I move to a different city?", "我该不该搬去另一个城市？"],
+    ["Should I reach out to that person first?", "我该主动联系那个人吗？"],
+    ["Should I focus on study or love next?", "接下来该专注学业还是感情？"],
+    ["How do I move through this confusion?", "现在的迷茫要如何走出？"],
+    ["What risk is hidden in this new opportunity?", "这个新机会背后有什么风险？"],
+    ["Which relationship most needs mending this year?", "今年最该修复的关系是哪一段？"],
+    ["What is my true, undervalued gift?", "我真正的天赋是什么？"],
   ];
   const pickThreeExamples = (from: [string, string][], avoid: string[] = []) => {
     const arr = from.slice();
