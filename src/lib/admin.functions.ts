@@ -10,17 +10,25 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
  *   3. Lazy-imports the service-role client (module is never bundled to the browser).
  */
 
-async function ensureAdmin(context: { supabase: ReturnType<typeof getSupabaseType>; userId: string }) {
-  const { data, error } = await context.supabase.rpc("has_role", {
-    _user_id: context.userId,
-    _role: "admin",
-  });
+async function ensureAdmin(context: { supabase: unknown; userId: string }) {
+  const sb = context.supabase as {
+    from: (t: string) => {
+      select: (c: string) => {
+        eq: (
+          k: string,
+          v: string,
+        ) => { eq: (k: string, v: string) => { maybeSingle: () => Promise<{ data: unknown; error: unknown }> } };
+      };
+    };
+  };
+  const { data, error } = await sb
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", context.userId)
+    .eq("role", "admin")
+    .maybeSingle();
   if (error) throw new Error("Failed to verify admin role");
   if (!data) throw new Error("Forbidden: admin role required");
-}
-// type helper only — never called
-function getSupabaseType() {
-  return null as unknown as { rpc: (fn: string, args: unknown) => Promise<{ data: unknown; error: unknown }> };
 }
 
 export const listAllUsers = createServerFn({ method: "GET" })
