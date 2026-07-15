@@ -837,12 +837,19 @@ export function TarotDraw() {
         {/* Stage 2 — swipeable 78-card deck */}
         {stage === "pick" && (
           <div>
-            <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
-              <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust">
+            <div className="mb-4 grid grid-cols-[auto_1fr_auto] items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setStage("ask")}
+                className="whitespace-nowrap rounded-full border border-white/10 px-3 py-1 text-[10px] uppercase tracking-[0.24em] text-stone-warm/60 hover:border-gold-dust/40 hover:text-gold-dust"
+              >
+                {lang === "zh" ? "← 改问题" : "← Edit"}
+              </button>
+              <p className="text-center text-[10px] uppercase tracking-[0.32em] text-gold-dust">
                 {picks.length} / 3 — {positions[picks.length]?.[li] ?? ""}
               </p>
-              <p className="text-[10px] uppercase tracking-[0.28em] text-stone-warm/40">
-                {lang === "zh" ? "← 左右滑动 78 张 →" : "← swipe through all 78 →"}
+              <p className="whitespace-nowrap text-right text-[10px] uppercase tracking-[0.24em] text-stone-warm/40">
+                {lang === "zh" ? "左右滑动" : "swipe →"}
               </p>
             </div>
             <div className="tarot-scroll -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-4 sm:-mx-6 sm:gap-4 sm:px-6">
