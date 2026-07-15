@@ -131,7 +131,12 @@ export const adminUpdateProfile = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await ensureAdmin(context as never);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin
+    const sb = supabaseAdmin as unknown as {
+      from: (t: string) => {
+        update: (v: Record<string, unknown>) => { eq: (k: string, v: string) => Promise<{ error: { message: string } | null }> };
+      };
+    };
+    const { error } = await sb
       .from("profiles")
       .update({ display_name: data.displayName, updated_at: new Date().toISOString() })
       .eq("id", data.userId);
