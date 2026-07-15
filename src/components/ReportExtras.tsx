@@ -1224,8 +1224,8 @@ export function MembershipSection({ birthISO }: { birthISO?: string } = {}) {
         name: t.mem_sage,
         desc:
           lang === "zh"
-            ? "完整 PDF 报告 · 生命时间轴精解 · 合盘关系分析（贤者专属）。"
-            : "Full PDF · life-timeline analysis · Synastry relationship reading (Sage exclusive).",
+            ? "完整 PDF 报告 · 生命时间轴精解 · 合盘关系分析 · 每月 10 次塔罗 AI 解读（贤者专属）。"
+            : "Full PDF · life-timeline analysis · Synastry reading · 10 tarot AI readings / month (Sage exclusive).",
         price: [`$2.99 / mo`, `¥19.9 / 月`][li],
         highlight: true,
       },
@@ -1234,8 +1234,8 @@ export function MembershipSection({ birthISO }: { birthISO?: string } = {}) {
         name: t.mem_oracle,
         desc:
           lang === "zh"
-            ? "包含贤者所有权益 · 无限 AI 追问 · 近 90 天状态与时间节点分析（神谕者专属）。"
-            : "Everything in Sage · unlimited AI follow-up · 90-day state & window analysis (Oracle exclusive).",
+            ? "包含贤者所有权益 · 无限 AI 追问 · 无限次塔罗 AI 解读 · 近 90 天状态与时间节点分析（神谕者专属）。"
+            : "Everything in Sage · unlimited AI follow-up · unlimited tarot AI readings · 90-day state & window analysis (Oracle exclusive).",
         price: [`$5.99 / mo`, `¥39.9 / 月`][li],
         highlight: false,
       },
