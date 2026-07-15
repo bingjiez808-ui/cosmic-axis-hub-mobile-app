@@ -868,35 +868,38 @@ function ReportPage() {
                 <p className="mb-4 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
                   {t.synthesis}
                 </p>
-                <p className="mb-8 text-base leading-relaxed text-stone-warm/80">
+                <p className="reading-copy mb-8 text-base leading-relaxed text-stone-warm/80">
                   {d.synthesis[li]}
                 </p>
 
-                <div className="rounded-2xl border border-gold-dust/20 bg-gold-dust/[0.04] p-6">
+                <div className="rounded-2xl border border-gold-dust/20 bg-gold-dust/[0.04] p-5 md:p-6">
                   <p className="mb-3 flex items-center gap-2 text-[10px] uppercase tracking-[0.32em] text-gold-light">
                     <span className="size-1.5 rounded-full bg-gold-dust" />
                     {t.in_plain_words}
                   </p>
-                  <p className="font-serif text-lg italic leading-relaxed text-stone-warm/90">
+                  <p className="reading-copy font-serif text-[15px] italic leading-[1.7] text-stone-warm/90 md:text-base">
                     {d.plain[li]}
                   </p>
                 </div>
 
                 {d.details && d.details.length > 0 && (
-                  <div className={`mt-6 grid grid-cols-1 gap-4 ${d.details.length === 3 ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
-
+                  <div
+                    className={`detail-grid mt-6 ${d.details.length === 3 ? "detail-grid-3" : ""}`}
+                    role="list"
+                  >
                     {d.details.map((block) => (
                       <div
                         key={block.label[0]}
-                        className="rounded-2xl border border-white/10 bg-white/[0.02] p-5"
+                        role="listitem"
+                        className="detail-card"
                       >
-                        <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+                        <p className="text-[10px] uppercase tracking-[0.3em] text-gold-dust/70">
                           {block.label[li]}
                         </p>
-                        <ul className="space-y-2 text-sm text-stone-warm/80">
+                        <ul className="space-y-1.5 text-stone-warm/80">
                           {block.items.map((it) => (
                             <li key={it[0]} className="flex items-start gap-2">
-                              <span className="mt-2 size-1 shrink-0 rounded-full bg-gold-dust" />
+                              <span className="mt-[7px] size-1 shrink-0 rounded-full bg-gold-dust" aria-hidden="true" />
                               <span>{it[li]}</span>
                             </li>
                           ))}
