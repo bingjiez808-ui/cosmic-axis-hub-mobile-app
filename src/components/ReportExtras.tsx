@@ -903,7 +903,7 @@ export function SaveReadingBar({
 ═══════════════════════════════════════════ */
 
 type Plan = "free" | "sage" | "oracle";
-type PayMethod = "wechat" | "alipay" | "visa";
+type PayMethod = "wechat" | "alipay" | "unionpay" | "visa";
 
 export function MembershipSection({ birthISO }: { birthISO?: string } = {}) {
   const { lang, t } = useLang();
