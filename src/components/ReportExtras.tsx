@@ -61,6 +61,18 @@ function computeCurrentAge(birthISO?: string): number | null {
   return Math.max(0, Math.min(age, 90));
 }
 
+// Turn a birth string into a stable 32-bit seed so every visitor gets a
+// different — but consistent — timeline shape.
+function birthSeed(birthISO?: string): number {
+  const s = birthISO || "0000-00-00";
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619) >>> 0;
+  }
+  return h || 1;
+}
+
 export function LifeTimeline({ birthISO }: { birthISO?: string }) {
   const { lang, t } = useLang();
   const li = lang === "zh" ? 1 : 0;
@@ -72,6 +84,31 @@ export function LifeTimeline({ birthISO }: { birthISO?: string }) {
 
   const nowPct = age == null ? null : Math.min(100, (age / 80) * 100);
   const activeDecade = DECADES[active];
+  const seed = birthSeed(birthISO);
+
+  const personalTintEn = [
+    "For you specifically, this decade tilts toward outward proof more than inward retreat.",
+    "For you, this decade rewards steady craft over sudden leaps — the ledger compounds quietly.",
+    "In your chart, this decade opens two relationship-shaped doors: choose the slower one.",
+    "For you, the second half of this decade is louder than the first — protect early rest.",
+    "In your chart, this decade rebuilds around one honest conversation you've postponed.",
+    "For you, this decade's real currency is trust — build a small, deep circle over a broad one.",
+    "In your chart, this decade tilts your body's demand upward — treat sleep as strategy.",
+    "For you, this decade closes with a decision that redefines the next twenty years.",
+  ];
+  const personalTintZh = [
+    "在你的盘里，这十年更偏「向外证明」，而非「向内退守」。",
+    "在你的盘里，这十年奖励稳定的手艺胜过突然的跳跃 —— 账本悄悄复利。",
+    "在你的盘里，这十年打开两扇「关系形状」的门：选那扇慢的。",
+    "在你的盘里，这十年的下半段比上半段更响 —— 提早护住休息。",
+    "在你的盘里，这十年围绕一次被拖延的诚实对话，进行重建。",
+    "在你的盘里，这十年的真正货币是「信任」—— 养一个小而深的圈子。",
+    "在你的盘里，这十年身体的诉求会上抬 —— 把睡眠当作策略。",
+    "在你的盘里，这十年以一次「重新定义未来二十年」的决定收束。",
+  ];
+  const personalTint = (lang === "zh" ? personalTintZh : personalTintEn)[
+    ((seed + active * 2654435761) >>> 0) % 8
+  ];
 
   return (
     <section className="mx-auto max-w-5xl px-6 pb-24 md:px-12">
@@ -160,11 +197,14 @@ export function LifeTimeline({ birthISO }: { birthISO?: string }) {
             <h3 className="mb-4 font-serif text-2xl italic text-gold-light">
               {activeDecade.theme[li]}
             </h3>
-            <p className="mb-6 font-serif text-lg leading-relaxed text-stone-warm/85">
+            <p className="mb-3 font-serif text-lg leading-relaxed text-stone-warm/85">
               {activeDecade.detail[li]}
             </p>
+            <p className="mb-6 font-serif text-[15px] italic leading-relaxed text-gold-light/80">
+              {personalTint}
+            </p>
 
-            <YearByYearChart from={activeDecade.from} to={activeDecade.to} age={age} lang={lang} />
+            <YearByYearChart from={activeDecade.from} to={activeDecade.to} age={age} lang={lang} birthISO={birthISO} />
           </motion.div>
         </AnimatePresence>
       </div>
@@ -187,13 +227,16 @@ function YearByYearChart({
   to,
   age,
   lang,
+  birthISO,
 }: {
   from: number;
   to: number;
   age: number | null;
   lang: Lang;
+  birthISO?: string;
 }) {
-  const rnd = prand(from + 1);
+  const bs = birthSeed(birthISO);
+  const rnd = prand(((bs ^ (from + 1)) >>> 0) || 1);
   const themesEn = [
     "seeding — a quiet beginning",
     "opening — a first door",
@@ -205,6 +248,12 @@ function YearByYearChart({
     "shedding — release what no longer fits",
     "pivot — direction quietly changes",
     "integration — the decade completes",
+    "signal — a message arrives from far",
+    "rebuild — the body asks to be re-parented",
+    "witness — someone truly sees you",
+    "wager — a small brave bet",
+    "return — an old thread reappears",
+    "widening — your circle grows deeper",
   ];
   const themesZh = [
     "播种 —— 安静的起点",
@@ -217,14 +266,22 @@ function YearByYearChart({
     "剥离 —— 放下不再合身的",
     "转向 —— 方向悄然改变",
     "整合 —— 十年的收束",
+    "信号 —— 远方来的一封信",
+    "重建 —— 身体请求被重新照料",
+    "被看见 —— 有人真正读懂你",
+    "小赌 —— 一次勇敢的下注",
+    "回流 —— 旧线索再度出现",
+    "拓宽 —— 你的圈子长得更深",
   ];
+  const pool = lang === "zh" ? themesZh : themesEn;
   const years = Array.from({ length: to - from }, (_, i) => {
     const yr = from + i;
-    const intensity = 0.35 + rnd() * 0.6; // 0.35–0.95
+    const intensity = 0.35 + rnd() * 0.6;
+    const themeIdx = Math.floor(rnd() * pool.length);
     return {
       age: yr,
       intensity,
-      theme: (lang === "zh" ? themesZh : themesEn)[i % 10],
+      theme: pool[themeIdx],
       isNow: age != null && age === yr,
       isPast: age != null && age > yr,
     };
@@ -233,9 +290,8 @@ function YearByYearChart({
   return (
     <div className="mt-2 rounded-xl border border-white/10 bg-obsidian/40 p-4 md:p-5">
       <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
-        {lang === "zh" ? "逐年细读 · 能量曲线" : "Year by year · energy curve"}
+        {lang === "zh" ? "逐年细读 · 能量曲线（依你的生日推算）" : "Year by year · energy curve (from your birthdate)"}
       </p>
-      {/* Bars */}
       <div className="flex items-end gap-1.5 md:gap-2">
         {years.map((y) => (
           <div key={y.age} className="group flex flex-1 flex-col items-center gap-1.5">
@@ -268,7 +324,6 @@ function YearByYearChart({
         ))}
       </div>
 
-      {/* Legend list */}
       <ul className="mt-5 grid grid-cols-1 gap-1.5 text-[11px] leading-relaxed md:grid-cols-2">
         {years.map((y) => (
           <li
