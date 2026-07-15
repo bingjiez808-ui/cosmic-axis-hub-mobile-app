@@ -205,7 +205,7 @@ function LanguageToggle() {
 function SiteNav() {
   const { t, lang } = useLang();
   const { account } = useAccount();
-  const { session, isAdmin } = useSupabaseSession();
+  const { session, isAdmin, loading } = useSupabaseSession();
   const openAcc = () => {
     if (!session) {
       window.location.assign("/auth");
@@ -234,7 +234,8 @@ function SiteNav() {
     ? "whitespace-nowrap text-[13px] tracking-normal normal-case text-stone-warm/75 transition-colors hover:text-gold-dust flex-none"
     : "whitespace-nowrap text-[11px] uppercase tracking-[0.28em] text-stone-warm/70 transition-colors hover:text-gold-dust flex-none";
 
-  const accountLabel = account ? t.nav_account : t.nav_sign_in;
+  const accountLabel = session ? t.nav_account : t.nav_sign_in;
+  const showAdmin = !loading && isAdmin;
 
   return (
     <>
@@ -268,7 +269,7 @@ function SiteNav() {
             <Link to="/ritual" className={linkClass}>{t.nav_ritual}</Link>
             <Link to="/community" className={linkClass}>{t.nav_community}</Link>
             <Link to="/about" className={linkClass}>{t.nav_about}</Link>
-            {isAdmin && (
+            {showAdmin && (
               <Link to="/admin" className={linkClass + " text-gold-dust"}>{adminLabel}</Link>
             )}
           </div>
@@ -291,11 +292,12 @@ function SiteNav() {
 
         {/* Mobile menu row */}
         <div className="mt-2 flex justify-center md:hidden">
-          <div className="glass-card flex items-center gap-4 rounded-full px-4 py-1.5">
+          <div className="glass-card flex max-w-[96vw] items-center gap-4 overflow-x-auto rounded-full px-4 py-1.5">
             <Link to="/traditions" className={linkClass}>{t.nav_traditions}</Link>
             <Link to="/ritual" className={linkClass}>{t.nav_ritual}</Link>
             <Link to="/community" className={linkClass}>{t.nav_community}</Link>
             <Link to="/about" className={linkClass}>{t.nav_about}</Link>
+            {showAdmin && <Link to="/admin" className={linkClass + " text-gold-dust"}>{adminLabel}</Link>}
           </div>
         </div>
       </nav>
@@ -318,7 +320,7 @@ function SiteNav() {
           { to: "/ritual", label: t.nav_ritual },
           { to: "/community", label: t.nav_community },
           { to: "/about", label: t.nav_about },
-          ...(isAdmin ? [{ to: "/admin", label: adminLabel }] : []),
+          ...(showAdmin ? [{ to: "/admin", label: adminLabel }] : []),
         ].map((item) => (
           <Link
             key={item.to}

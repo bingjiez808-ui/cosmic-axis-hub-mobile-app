@@ -11,9 +11,9 @@ export type SessionState = {
 };
 
 /**
- * Client-only Supabase session hook. Also fetches whether the current user
- * has the `admin` role from public.user_roles (RLS lets each user read their
- * own row). Safe to use in top-level components (returns loading=true during SSR).
+ * Client-only backend session hook. It checks the signed-in user's own
+ * user_roles row directly so the admin affordance does not depend on an
+ * exposed RPC function.
  */
 export function useSupabaseSession(): SessionState {
   const [session, setSession] = useState<Session | null>(null);
@@ -31,13 +31,12 @@ export function useSupabaseSession(): SessionState {
         setLoading(false);
         return;
       }
-      const { data } = await (supabase.rpc as unknown as (
-        fn: string,
-        args: Record<string, unknown>,
-      ) => Promise<{ data: boolean | null }>)("has_role", {
-        _user_id: s.user.id,
-        _role: "admin",
-      });
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", s.user.id)
+        .eq("role", "admin")
+        .maybeSingle();
       if (!mounted) return;
       setIsAdmin(!!data);
       setLoading(false);

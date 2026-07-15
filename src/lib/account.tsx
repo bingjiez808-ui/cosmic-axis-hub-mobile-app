@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
+import { supabase } from "@/integrations/supabase/client";
+
 /**
  * Local-first account & saved-readings store. Persisted to localStorage.
  * A future Sage-plan upgrade will sync this to the cloud — the shape here
@@ -49,6 +51,45 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     } catch {}
   }, []);
 
+  useEffect(() => {
+    const syncAccount = (user: { email?: string | null; user_metadata?: Record<string, unknown> } | null) => {
+      const userEmail = user?.email;
+      if (!userEmail) {
+        setAccount(null);
+        try {
+          localStorage.removeItem(ACC_KEY);
+        } catch {}
+        return;
+      }
+      const meta = user.user_metadata ?? {};
+      const displayName =
+        typeof meta.name === "string"
+          ? meta.name
+          : typeof meta.full_name === "string"
+            ? meta.full_name
+            : userEmail.split("@")[0];
+      const avatar = typeof meta.avatar_url === "string" ? meta.avatar_url : undefined;
+      setAccount((prev) => {
+        const next: Account = {
+          plan: prev?.plan ?? "free",
+          avatar: prev?.avatar ?? avatar,
+          name: prev && prev.email === userEmail ? prev.name : displayName,
+          email: userEmail,
+        };
+        try {
+          localStorage.setItem(ACC_KEY, JSON.stringify(next));
+        } catch {}
+        return next;
+      });
+    };
+
+    supabase.auth.getSession().then(({ data }) => syncAccount(data.session?.user ?? null));
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      syncAccount(session?.user ?? null);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
   const signIn = (a: Account) => {
     const withPlan: Account = { plan: "free", ...a };
     setAccount(withPlan);
@@ -82,6 +123,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     try {
       localStorage.removeItem(ACC_KEY);
     } catch {}
+    void supabase.auth.signOut();
   };
 
   const persist = (list: SavedReading[]) => {
