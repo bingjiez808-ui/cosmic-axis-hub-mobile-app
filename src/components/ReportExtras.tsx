@@ -522,6 +522,35 @@ export function KeyEventsVerification({ birthISO }: { birthISO?: string }) {
                 <p className="mb-3 font-serif text-base leading-relaxed text-stone-warm/85 md:text-lg">
                   {p.guess[li]}
                 </p>
+                {birthISO && (() => {
+                  const bs = birthSeed(birthISO);
+                  const tintEn = [
+                    "For your specific chart, this node lands closer to the earlier half of the window.",
+                    "For you, the shape here reads more like a departure than an arrival.",
+                    "For your chart, the person/place involved carries a water-element tone.",
+                    "For you, this node quietly rewrote a value, not a plan.",
+                    "For your chart, the bruise here left a skill more than a scar.",
+                    "For you, this window tilts toward a study/craft event over a romance.",
+                    "For your chart, one older figure (mentor / parent / boss) enters this frame.",
+                    "For you, the true weight of this node only surfaced 2–3 years later.",
+                  ];
+                  const tintZh = [
+                    "在你的盘里，这个节点更靠近窗口的前半段。",
+                    "在你的盘里，这里更像一次「离开」，而不是「到达」。",
+                    "在你的盘里，涉及的人 / 地点带着水元素的调性。",
+                    "在你的盘里，这个节点悄悄改写了一条价值观，而不是一份计划。",
+                    "在你的盘里，这里的淤青，留下的是一项能力，而不是伤疤。",
+                    "在你的盘里，这个窗口更偏向「学业 / 手艺事件」，而非恋情。",
+                    "在你的盘里，有一位年长者（导师 / 父母 / 上级）在此登场。",
+                    "在你的盘里，这个节点的真正分量，是 2–3 年后才浮现的。",
+                  ];
+                  const idx = ((bs + i * 2654435761) >>> 0) % 8;
+                  return (
+                    <p className="mb-3 font-serif text-[13px] italic leading-relaxed text-gold-light/85">
+                      {(lang === "zh" ? tintZh : tintEn)[idx]}
+                    </p>
+                  );
+                })()}
                 <p className="mb-4 rounded-xl border border-white/5 bg-white/[0.02] p-3 text-[11px] leading-relaxed text-stone-warm/55">
                   <span className="mr-2 text-[9px] uppercase tracking-[0.32em] text-gold-dust/60">
                     {lang === "zh" ? "判定依据" : "Why flagged"}
