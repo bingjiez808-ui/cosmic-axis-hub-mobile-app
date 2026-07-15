@@ -741,8 +741,30 @@ export function TarotDraw() {
     ],
   };
 
+  // Live quota — refreshes when consumed or when window regains focus.
+  const [remaining, setRemaining] = useState<number>(() => tarotRemaining(plan));
+  useEffect(() => {
+    const refresh = () => setRemaining(tarotRemaining(plan));
+    refresh();
+    window.addEventListener("lod:tarot-quota-changed", refresh);
+    window.addEventListener("focus", refresh);
+    return () => {
+      window.removeEventListener("lod:tarot-quota-changed", refresh);
+      window.removeEventListener("focus", refresh);
+    };
+  }, [plan]);
+
   const requestAiReading = async () => {
     if (!isSage || aiLoading || picks.length !== 3) return;
+    if (!tarotConsume(plan)) {
+      setAiReading(
+        lang === "zh"
+          ? "本月的塔罗 AI 解读次数已用完 —— 请下月再来，或升级至神谕者享无限次。"
+          : "You've used all tarot AI readings this month — try again next month, or upgrade to Oracle for unlimited.",
+      );
+      return;
+    }
+    setRemaining(tarotRemaining(plan));
     setAiLoading(true);
     try {
       const cards = picks.map((i, pos) => {
