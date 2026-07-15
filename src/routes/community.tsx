@@ -112,6 +112,15 @@ function buildIdentity(seed: string) {
 
 // ─────────────────────────────────────────────────────────────
 
+type Comment = {
+  id: string;
+  createdAt: number;
+  authorId: string;
+  authorTitle: string;
+  authorHouseKey: string;
+  text: string;
+};
+
 type Post = {
   id: string;
   createdAt: number;
@@ -121,9 +130,11 @@ type Post = {
   facet: string; // "vocation" | "love" | ...
   text: string;
   hearts: number;
+  comments?: Comment[];
 };
 
 const FEED_KEY = "lod.community.feed.v1";
+const COMMENTS_KEY = "lod.community.comments.v1";
 const IDENTITY_KEY = "lod.community.identity.v1";
 
 const FACETS: { key: string; label: [string, string] }[] = [
