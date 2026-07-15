@@ -770,7 +770,112 @@ function CommunityPage() {
                       <span aria-hidden>✦</span>
                       <span>{p.hearts}</span>
                     </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setOpenComments((s) => ({ ...s, [p.id]: !s[p.id] }))
+                      }
+                      aria-expanded={!!openComments[p.id]}
+                      className="flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-1 uppercase tracking-[0.28em] transition-colors hover:border-gold-dust/40 hover:text-gold-dust"
+                    >
+                      <span aria-hidden>❋</span>
+                      <span>
+                        {lang === "zh" ? "回声" : "Echoes"} · {(p.comments ?? []).length}
+                      </span>
+                      <span aria-hidden className="text-[9px]">
+                        {openComments[p.id] ? "▲" : "▼"}
+                      </span>
+                    </button>
                   </div>
+
+                  {/* Comments — always visible, collapsible for depth */}
+                  {(p.comments ?? []).length > 0 && (
+                    <div className="mt-3 border-l border-gold-dust/20 pl-4">
+                      {(() => {
+                        const list = p.comments ?? [];
+                        const isOpen = !!openComments[p.id];
+                        const visible = isOpen ? list : list.slice(-1);
+                        const hidden = list.length - visible.length;
+                        return (
+                          <>
+                            {!isOpen && hidden > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => setOpenComments((s) => ({ ...s, [p.id]: true }))}
+                                className="mb-2 text-[10px] uppercase tracking-[0.28em] text-gold-dust/70 transition-colors hover:text-gold-dust"
+                              >
+                                {lang === "zh"
+                                  ? `展开另 ${hidden} 条回声 ▾`
+                                  : `Show ${hidden} more echo${hidden > 1 ? "es" : ""} ▾`}
+                              </button>
+                            )}
+                            <ul className="space-y-2">
+                              {visible.map((c) => {
+                                const ch = houseByKey(c.authorHouseKey);
+                                const cid = buildIdentity(c.authorId);
+                                return (
+                                  <li key={c.id} className="flex gap-2.5">
+                                    <AvatarGlyph hue={cid.hue} glyph={ch.glyph} size={28} />
+                                    <div className="min-w-0 flex-1">
+                                      <div className="flex flex-wrap items-baseline gap-x-2 text-[10px] uppercase tracking-[0.24em] text-stone-warm/50">
+                                        <span className="font-serif text-[13px] italic normal-case tracking-normal text-stone-warm/90">
+                                          {c.authorTitle}
+                                        </span>
+                                        <span className="text-gold-light">#{cid.number}</span>
+                                        <span className="text-gold-dust/60">{ch.name[li]}</span>
+                                        <span className="text-stone-warm/40">· {timeAgo(c.createdAt)}</span>
+                                      </div>
+                                      <p className="mt-0.5 font-serif text-[13.5px] leading-relaxed text-stone-warm/80">
+                                        {c.text}
+                                      </p>
+                                    </div>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                            {isOpen && list.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => setOpenComments((s) => ({ ...s, [p.id]: false }))}
+                                className="mt-2 text-[10px] uppercase tracking-[0.28em] text-stone-warm/50 transition-colors hover:text-gold-dust"
+                              >
+                                {lang === "zh" ? "收起 ▴" : "Collapse ▴"}
+                              </button>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </div>
+                  )}
+
+                  {/* Reply composer */}
+                  <div className="mt-3 flex items-start gap-2">
+                    <textarea
+                      value={commentDraft[p.id] ?? ""}
+                      onChange={(e) =>
+                        setCommentDraft((s) => ({
+                          ...s,
+                          [p.id]: e.target.value.slice(0, 280),
+                        }))
+                      }
+                      rows={1}
+                      placeholder={
+                        lang === "zh"
+                          ? "在此留下你的回声…"
+                          : "Leave an echo…"
+                      }
+                      className="min-h-[36px] w-full resize-none rounded-xl border border-white/10 bg-obsidian/40 px-3 py-2 text-[13px] text-stone-warm placeholder:text-stone-warm/30 focus:border-gold-dust/40 focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => submitComment(p.id)}
+                      disabled={!(commentDraft[p.id] || "").trim()}
+                      className="shrink-0 rounded-full border border-gold-dust/40 px-3 py-1.5 text-[10px] uppercase tracking-[0.28em] text-gold-dust transition-colors hover:bg-gold-dust/10 disabled:opacity-40"
+                    >
+                      {lang === "zh" ? "回声" : "Echo"}
+                    </button>
+                  </div>
+
                 </div>
               </motion.article>
             );
