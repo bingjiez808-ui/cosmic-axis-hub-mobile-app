@@ -381,7 +381,7 @@ function LandingPage() {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1.2, delay: 1.1 }}
-          className="relative z-10 mt-6 max-w-2xl px-2 text-sm leading-relaxed text-stone-warm/55 md:text-base"
+          className="relative z-10 mt-4 max-w-2xl px-2 text-sm leading-relaxed text-stone-warm/55 md:mt-6 md:text-base"
         >
           {t.hero_subtitle}
         </motion.p>
@@ -390,11 +390,11 @@ function LandingPage() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 1.3 }}
-          className="relative z-10 mt-14"
+          className="relative z-10 mt-10 md:mt-14"
         >
           <Link
             to="/ritual"
-            className="group relative inline-flex overflow-hidden rounded-full border border-gold-dust/30 px-12 py-5 transition-colors hover:border-gold-dust"
+            className="group relative inline-flex overflow-hidden rounded-full border border-gold-dust/40 bg-obsidian/80 px-10 py-4 backdrop-blur-sm transition-colors hover:border-gold-dust md:px-12 md:py-5"
           >
             <span className="relative z-10 text-xs font-medium uppercase tracking-[0.32em] text-gold-dust">
               {t.hero_cta}
@@ -402,6 +402,7 @@ function LandingPage() {
             <span className="absolute inset-0 translate-y-full bg-gold-dust/10 transition-transform duration-500 group-hover:translate-y-0" />
           </Link>
         </motion.div>
+
 
         <div className="absolute bottom-10 flex flex-col items-center">
           <div className="h-16 w-px bg-gradient-to-b from-transparent to-gold-dust/50" />
