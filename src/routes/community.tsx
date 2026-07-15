@@ -119,6 +119,21 @@ type Comment = {
   authorTitle: string;
   authorHouseKey: string;
   text: string;
+  hearts?: number;
+  parentId?: string; // replying to another comment
+};
+
+type Notif = {
+  id: string;
+  createdAt: number;
+  kind: "heart" | "comment" | "reply" | "heart-comment";
+  postId: string;
+  commentId?: string;
+  actorTitle: string;
+  actorHouseKey: string;
+  actorHue: number;
+  snippet: string;
+  read: boolean;
 };
 
 type Post = {
@@ -135,6 +150,7 @@ type Post = {
 
 const FEED_KEY = "lod.community.feed.v1";
 const COMMENTS_KEY = "lod.community.comments.v1";
+const NOTIFS_KEY = "lod.community.notifs.v1";
 const IDENTITY_KEY = "lod.community.identity.v1";
 
 const FACETS: { key: string; label: [string, string] }[] = [
@@ -362,13 +378,150 @@ function CommunityPage() {
   const [completedQuests, setCompletedQuests] = useState<Record<string, boolean>>({});
   const [openComments, setOpenComments] = useState<Record<string, boolean>>({});
   const [commentDraft, setCommentDraft] = useState<Record<string, string>>({});
+  const [replyDraft, setReplyDraft] = useState<Record<string, string>>({});
+  const [replyOpen, setReplyOpen] = useState<Record<string, boolean>>({});
+
+  // Notifications
+  const [notifs, setNotifs] = useState<Notif[]>([]);
+  const [notifOpen, setNotifOpen] = useState(false);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(NOTIFS_KEY);
+      if (raw) setNotifs(JSON.parse(raw) as Notif[]);
+    } catch {}
+  }, []);
+  const persistNotifs = (list: Notif[]) => {
+    try {
+      localStorage.setItem(NOTIFS_KEY, JSON.stringify(list.slice(0, 60)));
+    } catch {}
+  };
+  const pushNotif = (n: Omit<Notif, "id" | "createdAt" | "read">) => {
+    setNotifs((list) => {
+      const next: Notif[] = [
+        {
+          ...n,
+          id: `n-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          createdAt: Date.now(),
+          read: false,
+        },
+        ...list,
+      ].slice(0, 60);
+      persistNotifs(next);
+      return next;
+    });
+  };
+  const unreadCount = notifs.filter((n) => !n.read).length;
+  const markAllRead = () => {
+    setNotifs((list) => {
+      const next = list.map((n) => ({ ...n, read: true }));
+      persistNotifs(next);
+      return next;
+    });
+  };
+
+  const myAuthorId = `traveler-${identity.number}`;
+
+  // Simulate an ambient echo (like/reply from another traveler) targeting user's content
+  const AMBIENT_AUTHORS: { title: [string, string]; houseKey: string; seed: string }[] = [
+    { title: ["Star-Scribe", "星辰记事者"], houseKey: "aether", seed: "amb-1201" },
+    { title: ["Ember-Kin", "近火者"], houseKey: "ember", seed: "amb-4402" },
+    { title: ["Tide-Listener", "听潮者"], houseKey: "tide", seed: "amb-7713" },
+    { title: ["Root-Singer", "根之歌者"], houseKey: "loam", seed: "amb-3355" },
+  ];
+  const AMBIENT_REPLIES: [string, string][] = [
+    ["This resonates with me.", "这段话与我共振。"],
+    ["I feel this — thank you for naming it.", "我感受到了 —— 谢谢你把它说出来。"],
+    ["Softly holding this with you.", "轻轻地与你一同承接这句话。"],
+    ["The library heard you.", "图书馆听见你了。"],
+  ];
+  const scheduleAmbientEcho = (postId: string, targetKind: "post" | "comment", commentId?: string) => {
+    const delay = 2600 + Math.floor(Math.random() * 4400);
+    window.setTimeout(() => {
+      const author = AMBIENT_AUTHORS[Math.floor(Math.random() * AMBIENT_AUTHORS.length)];
+      const ident = buildIdentity(author.seed);
+      const actorTitle = lang === "zh" ? author.title[1] : author.title[0];
+      // 55% -> heart, 45% -> reply
+      const isHeart = Math.random() < 0.55;
+      if (isHeart) {
+        if (targetKind === "post") {
+          setPosts((list) => {
+            const next = list.map((p) => (p.id === postId ? { ...p, hearts: p.hearts + 1 } : p));
+            persist(next);
+            return next;
+          });
+          pushNotif({
+            kind: "heart",
+            postId,
+            actorTitle,
+            actorHouseKey: author.houseKey,
+            actorHue: ident.hue,
+            snippet: lang === "zh" ? "点亮了你的分享" : "lit your share",
+          });
+        } else if (commentId) {
+          setPosts((list) => {
+            const next = list.map((p) =>
+              p.id !== postId
+                ? p
+                : {
+                    ...p,
+                    comments: (p.comments ?? []).map((c) =>
+                      c.id === commentId ? { ...c, hearts: (c.hearts ?? 0) + 1 } : c,
+                    ),
+                  },
+            );
+            persistComments(next);
+            return next;
+          });
+          pushNotif({
+            kind: "heart-comment",
+            postId,
+            commentId,
+            actorTitle,
+            actorHouseKey: author.houseKey,
+            actorHue: ident.hue,
+            snippet: lang === "zh" ? "点亮了你的回声" : "lit your echo",
+          });
+        }
+      } else {
+        const line = AMBIENT_REPLIES[Math.floor(Math.random() * AMBIENT_REPLIES.length)];
+        const text = lang === "zh" ? line[1] : line[0];
+        const newComment: Comment = {
+          id: `c-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          createdAt: Date.now(),
+          authorId: author.seed,
+          authorTitle,
+          authorHouseKey: author.houseKey,
+          text,
+          hearts: 0,
+          parentId: targetKind === "comment" ? commentId : undefined,
+        };
+        setPosts((list) => {
+          const next = list.map((p) =>
+            p.id === postId ? { ...p, comments: [...(p.comments ?? []), newComment] } : p,
+          );
+          persistComments(next);
+          return next;
+        });
+        setOpenComments((s) => ({ ...s, [postId]: true }));
+        pushNotif({
+          kind: targetKind === "comment" ? "reply" : "comment",
+          postId,
+          commentId: newComment.id,
+          actorTitle,
+          actorHouseKey: author.houseKey,
+          actorHue: ident.hue,
+          snippet: text,
+        });
+      }
+    }, delay);
+  };
 
   const submit = () => {
     if (!draft.trim()) return;
     const p: Post = {
       id: `p-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       createdAt: Date.now(),
-      authorId: `traveler-${identity.number}`,
+      authorId: myAuthorId,
       authorTitle,
       authorHouseKey,
       facet,
@@ -380,6 +533,8 @@ function CommunityPage() {
     setPosts(next);
     persist(next);
     setDraft("");
+    // Simulate ambient reception
+    scheduleAmbientEcho(p.id, "post");
   };
 
   const heart = (id: string) => {
@@ -390,16 +545,38 @@ function CommunityPage() {
     });
   };
 
-  const submitComment = (postId: string) => {
-    const text = (commentDraft[postId] || "").trim();
+  const heartComment = (postId: string, commentId: string) => {
+    setPosts((list) => {
+      const next = list.map((p) =>
+        p.id !== postId
+          ? p
+          : {
+              ...p,
+              comments: (p.comments ?? []).map((c) =>
+                c.id === commentId ? { ...c, hearts: (c.hearts ?? 0) + 1 } : c,
+              ),
+            },
+      );
+      persistComments(next);
+      return next;
+    });
+  };
+
+  const submitComment = (postId: string, parentId?: string) => {
+    const draftKey = parentId ? `${postId}:${parentId}` : postId;
+    const src = parentId ? replyDraft : commentDraft;
+    const setSrc = parentId ? setReplyDraft : setCommentDraft;
+    const text = (src[draftKey] || "").trim();
     if (!text) return;
     const c: Comment = {
       id: `c-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       createdAt: Date.now(),
-      authorId: `traveler-${identity.number}`,
+      authorId: myAuthorId,
       authorTitle,
       authorHouseKey,
       text: text.slice(0, 280),
+      hearts: 0,
+      parentId,
     };
     setPosts((list) => {
       const next = list.map((p) =>
@@ -408,9 +585,14 @@ function CommunityPage() {
       persistComments(next);
       return next;
     });
-    setCommentDraft((s) => ({ ...s, [postId]: "" }));
+    setSrc((s) => ({ ...s, [draftKey]: "" }));
     setOpenComments((s) => ({ ...s, [postId]: true }));
+    if (parentId) setReplyOpen((s) => ({ ...s, [`${postId}:${parentId}`]: false }));
+    // Ambient echo back on the user's comment/reply
+    scheduleAmbientEcho(postId, "comment", c.id);
   };
+
+
 
 
   // (Legacy manual "accept" is replaced by the AI reflection flow below.)
@@ -486,6 +668,91 @@ function CommunityPage() {
 
   return (
     <div className="pt-32 pb-32">
+      {/* Notification bell — floating, mobile-friendly */}
+      <div className="fixed right-4 top-24 z-40 md:right-8">
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => {
+              const next = !notifOpen;
+              setNotifOpen(next);
+              if (next && unreadCount > 0) markAllRead();
+            }}
+            aria-label={lang === "zh" ? "通知" : "Notifications"}
+            aria-expanded={notifOpen}
+            className="glass-card flex h-11 w-11 items-center justify-center rounded-full border border-white/10 text-stone-warm/80 backdrop-blur transition-colors hover:border-gold-dust/40 hover:text-gold-dust"
+          >
+            <span aria-hidden className="text-lg">✧</span>
+            {unreadCount > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-gold-dust px-1 text-[10px] font-medium text-obsidian">
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
+          </button>
+          {notifOpen && (
+            <div
+              role="dialog"
+              className="glass-card absolute right-0 mt-2 w-[min(88vw,340px)] overflow-hidden rounded-2xl border border-white/10 backdrop-blur"
+            >
+              <div className="flex items-center justify-between border-b border-white/10 px-4 py-2.5">
+                <span className="text-[10px] uppercase tracking-[0.32em] text-gold-dust">
+                  {lang === "zh" ? "回声 · 通知" : "Echoes · Inbox"}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setNotifOpen(false)}
+                  className="text-[11px] text-stone-warm/50 hover:text-gold-dust"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="max-h-[60vh] overflow-y-auto">
+                {notifs.length === 0 ? (
+                  <p className="px-4 py-6 text-center text-[12px] text-stone-warm/50">
+                    {lang === "zh"
+                      ? "尚无回声。你的分享会先被听见。"
+                      : "No echoes yet. Your voice will be heard first."}
+                  </p>
+                ) : (
+                  <ul className="divide-y divide-white/5">
+                    {notifs.map((n) => {
+                      const nh = houseByKey(n.actorHouseKey);
+                      const kindLabel =
+                        n.kind === "heart"
+                          ? lang === "zh" ? "点亮分享" : "lit your share"
+                          : n.kind === "heart-comment"
+                            ? lang === "zh" ? "点亮回声" : "lit your echo"
+                            : n.kind === "reply"
+                              ? lang === "zh" ? "回复了你" : "replied to you"
+                              : lang === "zh" ? "回应了你" : "echoed you";
+                      return (
+                        <li key={n.id} className="flex gap-2.5 px-4 py-3">
+                          <AvatarGlyph hue={n.actorHue} glyph={nh.glyph} size={28} />
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-baseline gap-x-2 text-[10px] uppercase tracking-[0.24em] text-stone-warm/50">
+                              <span className="font-serif text-[13px] italic normal-case tracking-normal text-stone-warm/90">
+                                {n.actorTitle}
+                              </span>
+                              <span className="text-gold-dust/70">{kindLabel}</span>
+                              <span className="text-stone-warm/40">· {timeAgo(n.createdAt)}</span>
+                            </div>
+                            {n.snippet && (
+                              <p className="mt-0.5 line-clamp-2 font-serif text-[12.5px] leading-relaxed text-stone-warm/70">
+                                {n.snippet}
+                              </p>
+                            )}
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Header */}
       <header className="mx-auto max-w-4xl px-6 pb-16 text-center">
         <p className="mb-4 text-[10px] uppercase tracking-[0.42em] text-gold-dust">
@@ -742,10 +1009,10 @@ function CommunityPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5 }}
-                className="glass-card flex gap-4 rounded-2xl p-5"
+                className="glass-card flex gap-3 rounded-2xl p-4 sm:gap-4 sm:p-5"
               >
                 <AvatarGlyph hue={authorId.hue} glyph={h.glyph} size={56} />
-                <div className="flex-1">
+                <div className="min-w-0 flex-1">
                   <div className="mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
                     <span className="font-serif text-lg italic text-stone-warm">
                       {p.authorTitle}
@@ -761,11 +1028,11 @@ function CommunityPage() {
                   <p className="font-serif text-base leading-relaxed text-stone-warm/85">
                     {p.text}
                   </p>
-                  <div className="mt-3 flex items-center gap-4 text-[11px] text-stone-warm/50">
+                  <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-stone-warm/50 sm:gap-4">
                     <button
                       type="button"
                       onClick={() => heart(p.id)}
-                      className="flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-1 uppercase tracking-[0.28em] transition-colors hover:border-gold-dust/40 hover:text-gold-dust"
+                      className="flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5 uppercase tracking-[0.28em] transition-colors hover:border-gold-dust/40 hover:text-gold-dust active:scale-95"
                     >
                       <span aria-hidden>✦</span>
                       <span>{p.hearts}</span>
@@ -776,7 +1043,7 @@ function CommunityPage() {
                         setOpenComments((s) => ({ ...s, [p.id]: !s[p.id] }))
                       }
                       aria-expanded={!!openComments[p.id]}
-                      className="flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-1 uppercase tracking-[0.28em] transition-colors hover:border-gold-dust/40 hover:text-gold-dust"
+                      className="flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5 uppercase tracking-[0.28em] transition-colors hover:border-gold-dust/40 hover:text-gold-dust active:scale-95"
                     >
                       <span aria-hidden>❋</span>
                       <span>
@@ -788,52 +1055,122 @@ function CommunityPage() {
                     </button>
                   </div>
 
-                  {/* Comments — always visible, collapsible for depth */}
+                  {/* Comments — threaded (top-level + replies) */}
                   {(p.comments ?? []).length > 0 && (
-                    <div className="mt-3 border-l border-gold-dust/20 pl-4">
+                    <div className="mt-3 border-l border-gold-dust/20 pl-3 sm:pl-4">
                       {(() => {
-                        const list = p.comments ?? [];
+                        const all = p.comments ?? [];
+                        const topLevel = all.filter((c) => !c.parentId);
+                        const repliesByParent = all.reduce<Record<string, Comment[]>>((acc, c) => {
+                          if (c.parentId) {
+                            (acc[c.parentId] ||= []).push(c);
+                          }
+                          return acc;
+                        }, {});
                         const isOpen = !!openComments[p.id];
-                        const visible = isOpen ? list : list.slice(-1);
-                        const hidden = list.length - visible.length;
+                        const visibleTop = isOpen ? topLevel : topLevel.slice(-1);
+                        const hiddenTop = topLevel.length - visibleTop.length;
+
+                        const renderComment = (c: Comment, depth = 0) => {
+                          const ch = houseByKey(c.authorHouseKey);
+                          const cid = buildIdentity(c.authorId);
+                          const replyKey = `${p.id}:${c.id}`;
+                          const replies = repliesByParent[c.id] ?? [];
+                          const showReply = !!replyOpen[replyKey];
+                          return (
+                            <li key={c.id} className="flex gap-2 sm:gap-2.5">
+                              <AvatarGlyph hue={cid.hue} glyph={ch.glyph} size={depth > 0 ? 24 : 28} />
+                              <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-baseline gap-x-2 text-[10px] uppercase tracking-[0.24em] text-stone-warm/50">
+                                  <span className="font-serif text-[13px] italic normal-case tracking-normal text-stone-warm/90">
+                                    {c.authorTitle}
+                                  </span>
+                                  <span className="text-gold-light">#{cid.number}</span>
+                                  <span className="text-gold-dust/60">{ch.name[li]}</span>
+                                  <span className="text-stone-warm/40">· {timeAgo(c.createdAt)}</span>
+                                </div>
+                                <p className="mt-0.5 font-serif text-[13.5px] leading-relaxed text-stone-warm/80">
+                                  {c.text}
+                                </p>
+                                <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.24em] text-stone-warm/45">
+                                  <button
+                                    type="button"
+                                    onClick={() => heartComment(p.id, c.id)}
+                                    className="flex items-center gap-1 rounded-full border border-white/5 px-2 py-1 transition-colors hover:border-gold-dust/40 hover:text-gold-dust active:scale-95"
+                                  >
+                                    <span aria-hidden>✦</span>
+                                    <span>{c.hearts ?? 0}</span>
+                                  </button>
+                                  {depth === 0 && (
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setReplyOpen((s) => ({ ...s, [replyKey]: !s[replyKey] }))
+                                      }
+                                      aria-expanded={showReply}
+                                      className="rounded-full border border-white/5 px-2 py-1 transition-colors hover:border-gold-dust/40 hover:text-gold-dust active:scale-95"
+                                    >
+                                      {lang === "zh" ? "回复" : "Reply"}
+                                    </button>
+                                  )}
+                                </div>
+
+                                {depth === 0 && replies.length > 0 && (
+                                  <ul className="mt-2 space-y-2 border-l border-gold-dust/10 pl-2 sm:pl-3">
+                                    {replies.map((r) => renderComment(r, 1))}
+                                  </ul>
+                                )}
+
+                                {depth === 0 && showReply && (
+                                  <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-start">
+                                    <textarea
+                                      value={replyDraft[replyKey] ?? ""}
+                                      onChange={(e) =>
+                                        setReplyDraft((s) => ({
+                                          ...s,
+                                          [replyKey]: e.target.value.slice(0, 280),
+                                        }))
+                                      }
+                                      rows={2}
+                                      placeholder={
+                                        lang === "zh"
+                                          ? `回复 ${c.authorTitle}…`
+                                          : `Reply to ${c.authorTitle}…`
+                                      }
+                                      className="min-h-[44px] w-full resize-none rounded-xl border border-white/10 bg-obsidian/40 px-3 py-2 text-[13px] text-stone-warm placeholder:text-stone-warm/30 focus:border-gold-dust/40 focus:outline-none"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => submitComment(p.id, c.id)}
+                                      disabled={!(replyDraft[replyKey] || "").trim()}
+                                      className="shrink-0 rounded-full border border-gold-dust/40 px-3 py-2 text-[10px] uppercase tracking-[0.28em] text-gold-dust transition-colors hover:bg-gold-dust/10 disabled:opacity-40 sm:py-1.5"
+                                    >
+                                      {lang === "zh" ? "回复" : "Reply"}
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </li>
+                          );
+                        };
+
                         return (
                           <>
-                            {!isOpen && hidden > 0 && (
+                            {!isOpen && hiddenTop > 0 && (
                               <button
                                 type="button"
                                 onClick={() => setOpenComments((s) => ({ ...s, [p.id]: true }))}
                                 className="mb-2 text-[10px] uppercase tracking-[0.28em] text-gold-dust/70 transition-colors hover:text-gold-dust"
                               >
                                 {lang === "zh"
-                                  ? `展开另 ${hidden} 条回声 ▾`
-                                  : `Show ${hidden} more echo${hidden > 1 ? "es" : ""} ▾`}
+                                  ? `展开另 ${hiddenTop} 条回声 ▾`
+                                  : `Show ${hiddenTop} more echo${hiddenTop > 1 ? "es" : ""} ▾`}
                               </button>
                             )}
-                            <ul className="space-y-2">
-                              {visible.map((c) => {
-                                const ch = houseByKey(c.authorHouseKey);
-                                const cid = buildIdentity(c.authorId);
-                                return (
-                                  <li key={c.id} className="flex gap-2.5">
-                                    <AvatarGlyph hue={cid.hue} glyph={ch.glyph} size={28} />
-                                    <div className="min-w-0 flex-1">
-                                      <div className="flex flex-wrap items-baseline gap-x-2 text-[10px] uppercase tracking-[0.24em] text-stone-warm/50">
-                                        <span className="font-serif text-[13px] italic normal-case tracking-normal text-stone-warm/90">
-                                          {c.authorTitle}
-                                        </span>
-                                        <span className="text-gold-light">#{cid.number}</span>
-                                        <span className="text-gold-dust/60">{ch.name[li]}</span>
-                                        <span className="text-stone-warm/40">· {timeAgo(c.createdAt)}</span>
-                                      </div>
-                                      <p className="mt-0.5 font-serif text-[13.5px] leading-relaxed text-stone-warm/80">
-                                        {c.text}
-                                      </p>
-                                    </div>
-                                  </li>
-                                );
-                              })}
+                            <ul className="space-y-3">
+                              {visibleTop.map((c) => renderComment(c, 0))}
                             </ul>
-                            {isOpen && list.length > 1 && (
+                            {isOpen && topLevel.length > 1 && (
                               <button
                                 type="button"
                                 onClick={() => setOpenComments((s) => ({ ...s, [p.id]: false }))}
@@ -848,8 +1185,8 @@ function CommunityPage() {
                     </div>
                   )}
 
-                  {/* Reply composer */}
-                  <div className="mt-3 flex items-start gap-2">
+                  {/* Top-level echo composer */}
+                  <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-start">
                     <textarea
                       value={commentDraft[p.id] ?? ""}
                       onChange={(e) =>
@@ -858,19 +1195,19 @@ function CommunityPage() {
                           [p.id]: e.target.value.slice(0, 280),
                         }))
                       }
-                      rows={1}
+                      rows={2}
                       placeholder={
                         lang === "zh"
                           ? "在此留下你的回声…"
                           : "Leave an echo…"
                       }
-                      className="min-h-[36px] w-full resize-none rounded-xl border border-white/10 bg-obsidian/40 px-3 py-2 text-[13px] text-stone-warm placeholder:text-stone-warm/30 focus:border-gold-dust/40 focus:outline-none"
+                      className="min-h-[44px] w-full resize-none rounded-xl border border-white/10 bg-obsidian/40 px-3 py-2 text-[13px] text-stone-warm placeholder:text-stone-warm/30 focus:border-gold-dust/40 focus:outline-none"
                     />
                     <button
                       type="button"
                       onClick={() => submitComment(p.id)}
                       disabled={!(commentDraft[p.id] || "").trim()}
-                      className="shrink-0 rounded-full border border-gold-dust/40 px-3 py-1.5 text-[10px] uppercase tracking-[0.28em] text-gold-dust transition-colors hover:bg-gold-dust/10 disabled:opacity-40"
+                      className="shrink-0 rounded-full border border-gold-dust/40 px-4 py-2 text-[10px] uppercase tracking-[0.28em] text-gold-dust transition-colors hover:bg-gold-dust/10 disabled:opacity-40 sm:py-1.5"
                     >
                       {lang === "zh" ? "回声" : "Echo"}
                     </button>
