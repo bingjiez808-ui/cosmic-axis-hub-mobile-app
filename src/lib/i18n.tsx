@@ -168,9 +168,9 @@ type Dict = {
 };
 
 const en: Dict = {
-  nav_traditions: "Four Pillars",
-  nav_ritual: "The Ritual",
-  nav_about: "About",
+ nav_traditions: "Traditions",
+ nav_ritual: "The Ritual",
+ nav_about: "About",
   nav_sign_in: "Sign in",
   nav_account: "Account",
   ritual_pick_language: "In which tongue shall the library speak to you?",
