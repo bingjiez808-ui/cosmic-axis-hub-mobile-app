@@ -507,13 +507,20 @@ function ReportPage() {
   // Personalised AI report — grounded in this specific chart.
   const seed = buildReportSeed(search);
   const invokeReport = generateReport;
+  const { session, loading: sessionLoading } = useSupabaseSession();
   const [ai, setAi] = useState<ReportAI | null>(null);
-  const [aiState, setAiState] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [aiState, setAiState] = useState<"idle" | "loading" | "ready" | "error" | "signed_out">("idle");
   const [aiError, setAiError] = useState<string | null>(null);
   const latestReqRef = useRef(0);
 
   const runReport = useCallback((force = false) => {
     if (!search.date) return;
+    if (!session) {
+      setAi(null);
+      setAiState("signed_out");
+      setAiError(null);
+      return;
+    }
     const cacheKey = buildReportCacheKey(search, lang);
     if (!force) {
       try {
