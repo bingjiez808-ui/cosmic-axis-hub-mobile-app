@@ -263,6 +263,21 @@
 @utility animate-candle-flicker {
   animation: candle-flicker 5.5s ease-in-out infinite;
 }
+@utility animate-library-shimmer {
+  background: linear-gradient(100deg,
+    transparent 0%,
+    color-mix(in oklab, var(--gold-light) 55%, transparent) 45%,
+    color-mix(in oklab, var(--gold-dust) 30%, transparent) 55%,
+    transparent 100%);
+  background-size: 220% 100%;
+  animation: library-shimmer 1.6s ease-out 1;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+@utility animate-dust-burst {
+  animation: dust-burst 1.4s ease-out 1;
+  pointer-events: none;
+}
 
 /* Print — clean PDF export of the reading */
 @media print {
