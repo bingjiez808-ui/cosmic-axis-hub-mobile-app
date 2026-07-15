@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { useAccount } from "@/lib/account";
 import { useLang } from "@/lib/i18n";
+import { useSupabaseSession } from "@/lib/session";
 
 /**
  * 同门 · Guild of Souls — the community share space.
@@ -305,6 +306,7 @@ function AvatarGlyph({
 
 function CommunityPage() {
   const { lang } = useLang();
+  const { session, loading: sessionLoading } = useSupabaseSession();
   const li = lang === "zh" ? 1 : 0;
   const { account, setAvatar } = useAccount();
   const [avatarBusy, setAvatarBusy] = useState(false);
@@ -792,6 +794,27 @@ function CommunityPage() {
             : "Travelers from many histories arrive at this library and are sorted into different houses. Share one facet of yourself, take a small quest, and find those who resonate with you."}
         </p>
       </header>
+
+      {/* Gentle sign-in nudge for anonymous travelers */}
+      {!sessionLoading && !session && (
+        <div className="mx-auto mb-10 max-w-3xl px-6 md:px-12">
+          <div className="glass-card flex flex-col items-start gap-3 rounded-2xl px-5 py-4 text-left sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs italic leading-relaxed text-stone-warm/70">
+              {lang === "zh"
+                ? "你目前以匿名游客的身份进入 —— 分享与回声都保存在本地。登录后可跨设备保留身份，并生成专属画像。"
+                : "You are here as an anonymous traveler — your shares and echoes stay on this device. Sign in to keep your identity across devices and generate a portrait."}
+            </p>
+            <a
+              href="/auth"
+              className="flex-none whitespace-nowrap rounded-full border border-gold-dust/40 px-4 py-2 text-[10px] uppercase tracking-[0.28em] text-gold-dust transition-colors hover:bg-gold-dust/10"
+            >
+              {lang === "zh" ? "登录" : "Sign in"}
+            </a>
+          </div>
+        </div>
+      )}
+
+
 
       {/* Identity card */}
       <section className="mx-auto max-w-5xl px-6 md:px-12">

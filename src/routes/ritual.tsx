@@ -1,10 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { CityCombobox } from "@/components/CityCombobox";
-import { useLang, type Lang } from "@/lib/i18n";
+import { useLang } from "@/lib/i18n";
 import { solarToLunarInfo } from "@/lib/lunar";
+
+const RITUAL_STATE_KEY = "lod:ritual-draft-v2";
 
 export const Route = createFileRoute("/ritual")({
   head: () => ({
@@ -107,7 +109,7 @@ const QUIZ: QuizQ[] = [
 
 function RitualPage() {
   const navigate = useNavigate();
-  const { lang, setLang, t } = useLang();
+  const { lang, t } = useLang();
   const li = lang === "zh" ? 1 : 0;
 
   const [values, setValues] = useState<Record<FieldKey, string>>({
@@ -117,10 +119,40 @@ function RitualPage() {
     place: "",
   });
   const [quiz, setQuiz] = useState<string[]>(["", "", "", "", ""]);
-  // 0 = language, 1..5 = quiz Q1..Q5, 6..9 = intake
+  // 0..4 = quiz Q1..Q5, 5..8 = intake
   const [step, setStep] = useState(0);
+  const [skipQuiz, setSkipQuiz] = useState(false);
+  const [restored, setRestored] = useState(false);
 
-  const totalSteps = 1 + QUIZ.length + 4; // 10
+  // Restore draft from sessionStorage (client-only, avoids hydration mismatch)
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(RITUAL_STATE_KEY);
+      if (raw) {
+        const s = JSON.parse(raw);
+        if (s && typeof s === "object") {
+          if (s.values) setValues((v) => ({ ...v, ...s.values }));
+          if (Array.isArray(s.quiz) && s.quiz.length === QUIZ.length) setQuiz(s.quiz);
+          if (typeof s.step === "number") setStep(Math.max(0, Math.min(s.step, QUIZ.length + 3)));
+          if (typeof s.skipQuiz === "boolean") setSkipQuiz(s.skipQuiz);
+        }
+      }
+    } catch {}
+    setRestored(true);
+  }, []);
+
+  // Persist on change
+  useEffect(() => {
+    if (!restored) return;
+    try {
+      sessionStorage.setItem(
+        RITUAL_STATE_KEY,
+        JSON.stringify({ values, quiz, step, skipQuiz }),
+      );
+    } catch {}
+  }, [values, quiz, step, skipQuiz, restored]);
+
+  const totalSteps = (skipQuiz ? 0 : QUIZ.length) + 4;
 
   const questionSteps: {
     key: FieldKey;
@@ -148,20 +180,19 @@ function noOrphan(s: string) {
   );
 }
 
+  const quizCount = skipQuiz ? 0 : QUIZ.length;
   const progress = useMemo(() => (step + 1) / totalSteps, [step, totalSteps]);
   const isLast = step === totalSteps - 1;
-  const isLanguageStep = step === 0;
-  const isQuizStep = step >= 1 && step <= QUIZ.length;
-  const quizIdx = isQuizStep ? step - 1 : -1;
-  const isIntakeStep = step >= 1 + QUIZ.length;
-  const intakeIdx = isIntakeStep ? step - (1 + QUIZ.length) : -1;
+  const isQuizStep = !skipQuiz && step < QUIZ.length;
+  const quizIdx = isQuizStep ? step : -1;
+  const isIntakeStep = step >= quizCount;
+  const intakeIdx = isIntakeStep ? step - quizCount : -1;
   const currentQ = isIntakeStep ? questionSteps[intakeIdx] : null;
 
-  const canAdvance = isLanguageStep
-    ? true
-    : isQuizStep
+  const canAdvance = isQuizStep
     ? !!quiz[quizIdx]
     : (values[currentQ!.key] ?? "").trim().length > 0;
+
 
   const advance = () => {
     if (!canAdvance) return;
@@ -184,6 +215,7 @@ function noOrphan(s: string) {
             }
           : {}),
       });
+      try { sessionStorage.removeItem(RITUAL_STATE_KEY); } catch {}
       navigate({ to: "/synthesis", search: () => Object.fromEntries(params) as never });
     } else {
       setStep((s) => s + 1);
@@ -205,36 +237,32 @@ function noOrphan(s: string) {
       </div>
 
       <div className="relative z-10 w-full max-w-2xl text-center">
-        {/* Progress — language dot · single quiz bar (5 segs) · intake dots */}
+        {/* Progress — quiz bar (5 segs, hidden if skipped) · intake dots */}
         <div className="mb-14 flex items-center justify-center gap-3">
-          {/* language */}
-          <div
-            className={`h-px transition-all duration-700 ${
-              step >= 0 ? "w-10 bg-gold-dust" : "w-6 bg-white/15"
-            }`}
-          />
-          <span className="text-[8px] uppercase tracking-[0.32em] text-stone-warm/30">·</span>
-          {/* single 5-segment quiz bar */}
-          <div className="flex overflow-hidden rounded-full border border-white/10">
-            {Array.from({ length: QUIZ.length }).map((_, i) => {
-              const reached = step >= 1 + i;
-              return (
-                <div
-                  key={i}
-                  className={`h-1.5 w-6 border-r border-white/10 last:border-r-0 transition-all duration-500 ${
-                    reached ? "bg-gold-dust" : "bg-white/[0.04]"
-                  }`}
-                />
-              );
-            })}
-          </div>
-          <span className="text-[8px] uppercase tracking-[0.32em] text-stone-warm/30">·</span>
+          {!skipQuiz && (
+            <>
+              <div className="flex overflow-hidden rounded-full border border-white/10">
+                {Array.from({ length: QUIZ.length }).map((_, i) => {
+                  const reached = step >= i;
+                  return (
+                    <div
+                      key={i}
+                      className={`h-1.5 w-6 border-r border-white/10 last:border-r-0 transition-all duration-500 ${
+                        reached ? "bg-gold-dust" : "bg-white/[0.04]"
+                      }`}
+                    />
+                  );
+                })}
+              </div>
+              <span className="text-[8px] uppercase tracking-[0.32em] text-stone-warm/30">·</span>
+            </>
+          )}
           {/* intake dots */}
           {Array.from({ length: 4 }).map((_, i) => (
             <div
               key={i}
               className={`h-px transition-all duration-700 ${
-                step >= 1 + QUIZ.length + i ? "w-10 bg-gold-dust" : "w-6 bg-white/15"
+                step >= quizCount + i ? "w-10 bg-gold-dust" : "w-6 bg-white/15"
               }`}
             />
           ))}
@@ -252,51 +280,7 @@ function noOrphan(s: string) {
               {t.step_of(step + 1, totalSteps)}
             </p>
 
-            {isLanguageStep && (
-              <>
-                <h1 className="mx-auto mb-4 max-w-[16ch] text-balance font-serif text-[24px] italic leading-[1.25] text-stone-warm sm:max-w-xl sm:text-4xl md:text-5xl" style={{ wordBreak: "keep-all", overflowWrap: "break-word" }}>
-                  {noOrphan(t.ritual_pick_language)}
-                </h1>
-                <p className="mb-14 text-sm text-stone-warm/50">
-                  {t.ritual_pick_language_hint}
-                </p>
-                <div className="mx-auto flex max-w-md flex-col gap-4">
-                  {(
-                    [
-                      { code: "en", label: "English", native: "The library will speak in English." },
-                      { code: "zh", label: "中文", native: "图书馆将以中文与你对话。" },
-                    ] as { code: Lang; label: string; native: string }[]
-                  ).map((opt) => {
-                    const active = lang === opt.code;
-                    return (
-                      <button
-                        key={opt.code}
-                        onClick={() => setLang(opt.code)}
-                        className={`glass-card flex items-center justify-between rounded-2xl px-6 py-5 text-left transition-all ${
-                          active
-                            ? "border-gold-dust/60 bg-gold-dust/10"
-                            : "hover:border-gold-dust/30"
-                        }`}
-                      >
-                        <div>
-                          <p className="font-serif text-xl text-stone-warm">{opt.label}</p>
-                          <p className="mt-1 text-xs italic text-stone-warm/50">{opt.native}</p>
-                        </div>
-                        <span
-                          className={`grid size-6 place-items-center rounded-full border transition-colors ${
-                            active
-                              ? "border-gold-dust bg-gold-dust text-obsidian"
-                              : "border-white/20 text-transparent"
-                          }`}
-                        >
-                          ✓
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </>
-            )}
+
 
             {isQuizStep && (() => {
               const q = QUIZ[quizIdx];
@@ -307,11 +291,20 @@ function noOrphan(s: string) {
                     {q.kicker[li]}
                   </p>
                   {isFirstQuiz && (
-                    <p className="mx-auto mb-6 max-w-lg text-xs leading-relaxed italic text-stone-warm/60">
-                      {lang === "zh"
-                        ? "接下来五题不是测验，也没有对错 —— 只用于让 AI 在合成四大体系之后，对你个人的偏差做一次微调。"
-                        : "The next five questions aren't a test — they're used to fine-tune the AI's synthesis against your personal deviations."}
-                    </p>
+                    <>
+                      <p className="mx-auto mb-4 max-w-lg text-xs leading-relaxed italic text-stone-warm/60">
+                        {lang === "zh"
+                          ? "接下来五题不是测验，也没有对错 —— 只用于让 AI 在合成四大体系之后，对你个人的偏差做一次微调。"
+                          : "The next five questions aren't a test — they're used to fine-tune the AI's synthesis against your personal deviations."}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setSkipQuiz(true)}
+                        className="mb-6 text-[10px] uppercase tracking-[0.32em] text-stone-warm/50 underline underline-offset-4 transition-colors hover:text-gold-dust"
+                      >
+                        {lang === "zh" ? "跳过校准 · 直接填写出生信息" : "Skip calibration · straight to birth info"}
+                      </button>
+                    </>
                   )}
                   <h1 className="mx-auto mb-4 max-w-xl text-balance font-serif text-2xl italic leading-tight text-stone-warm md:text-4xl" style={{ wordBreak: "keep-all", overflowWrap: "break-word" }}>
                     {noOrphan(q.prompt[li])}

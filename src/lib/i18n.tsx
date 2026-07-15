@@ -168,9 +168,9 @@ type Dict = {
 };
 
 const en: Dict = {
-  nav_traditions: "Four Pillars",
-  nav_ritual: "The Ritual",
-  nav_about: "About",
+ nav_traditions: "Traditions",
+ nav_ritual: "The Ritual",
+ nav_about: "About",
   nav_sign_in: "Sign in",
   nav_account: "Account",
   ritual_pick_language: "In which tongue shall the library speak to you?",
@@ -233,7 +233,7 @@ const en: Dict = {
   focus_dim_health: "Health",
   focus_dim_mission: "Life Mission",
   focus_dim_family: "Family",
-  nav_community: "Guild",
+  nav_community: "Community",
   report_kicker: "The unified reading",
   report_read_across: "read across four traditions",
   in_plain_words: "In plain words",
