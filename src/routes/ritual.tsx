@@ -241,7 +241,7 @@ function RitualPage() {
 
             {isLanguageStep && (
               <>
-                <h1 className="mx-auto mb-4 max-w-xl font-serif text-3xl italic leading-tight text-stone-warm md:text-5xl">
+                <h1 className="mx-auto mb-4 max-w-[18ch] text-balance font-serif text-[26px] italic leading-[1.2] text-stone-warm sm:max-w-xl sm:text-4xl md:text-5xl" style={{ wordBreak: "keep-all", overflowWrap: "break-word" }}>
                   {t.ritual_pick_language}
                 </h1>
                 <p className="mb-14 text-sm text-stone-warm/50">
