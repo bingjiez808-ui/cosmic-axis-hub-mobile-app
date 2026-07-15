@@ -150,6 +150,7 @@ type Post = {
 
 const FEED_KEY = "lod.community.feed.v1";
 const COMMENTS_KEY = "lod.community.comments.v1";
+const NOTIFS_KEY = "lod.community.notifs.v1";
 const IDENTITY_KEY = "lod.community.identity.v1";
 
 const FACETS: { key: string; label: [string, string] }[] = [
