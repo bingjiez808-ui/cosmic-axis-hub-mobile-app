@@ -366,7 +366,7 @@ function CommunityPage() {
         data: {
           question:
             (lang === "zh"
-              ? `我正在参加「同门闯关」，题目是：${questPrompt}\n我的回答是：${answer}\n请以图书馆长者的口吻，给我一段 120-180 字的、结合我所在的「${house.name[1]}」学院（${house.element[1]}元素）的温柔点评，指出我可以更深地看到自己哪一部分。`
+              ? `我正在参加「同门闯关」，题目是：${questPrompt}\n我的回答是：${answer}\n请以图书馆智者的口吻，给我一段 120-180 字的、结合我所在的「${house.name[1]}」学院（${house.element[1]}元素）的温柔点评，指出我可以更深地看到自己哪一部分。`
               : `I'm doing a Guild-of-Souls quest. Prompt: ${questPrompt}\nMy answer: ${answer}\nAs the library elder, please give me a 120-180 word warm reflection tuned to my "${house.name[0]}" House (${house.element[0]} element). Point out one deeper thing I can now see about myself.`),
           lang,
         },
@@ -550,7 +550,7 @@ function CommunityPage() {
                     rows={3}
                     placeholder={
                       lang === "zh"
-                        ? "写下你的回答，AI 长者会为你点评…"
+                        ? "写下你的回答，AI 智者会为你点评…"
                         : "Write your answer — the elder will reflect back…"
                     }
                     className="w-full resize-none rounded-xl border border-white/10 bg-obsidian/40 p-3 text-sm text-stone-warm placeholder:text-stone-warm/30 focus:border-gold-dust/40 focus:outline-none"
@@ -563,7 +563,7 @@ function CommunityPage() {
                       className="rounded-full border border-gold-dust/40 px-4 py-1.5 text-[10px] uppercase tracking-[0.28em] text-gold-dust transition-colors hover:bg-gold-dust/10 disabled:opacity-40"
                     >
                       {isBusy
-                        ? lang === "zh" ? "长者沉思…" : "Reflecting…"
+                        ? lang === "zh" ? "智者沉思…" : "Reflecting…"
                         : done
                           ? lang === "zh" ? "再问一次" : "Ask again"
                           : lang === "zh" ? "呈上答卷" : "Submit"}
@@ -572,7 +572,7 @@ function CommunityPage() {
                   {reflection && (
                     <div className="mt-4 rounded-xl border border-gold-dust/25 bg-gold-dust/[0.05] p-4">
                       <p className="mb-1 text-[9px] uppercase tracking-[0.32em] text-gold-dust/70">
-                        {lang === "zh" ? "长者回音" : "The elder replies"}
+                        {lang === "zh" ? "智者回音" : "The elder replies"}
                       </p>
                       <p className="whitespace-pre-line font-serif text-sm italic leading-relaxed text-stone-warm/85">
                         {reflection}

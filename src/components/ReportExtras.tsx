@@ -2208,7 +2208,7 @@ function AIFollowupModal({
                     {lang === "zh" ? "神谕图书馆" : "The Oracle's Library"}
                   </p>
                   <h3 className="font-serif text-lg italic text-stone-warm sm:text-2xl">
-                    {lang === "zh" ? "向长者提问" : "Ask the Elder"}
+                    {lang === "zh" ? "向智者提问" : "Ask the Elder"}
                   </h3>
                 </div>
               </div>
@@ -2294,7 +2294,7 @@ function AIFollowupModal({
                     <p className="mb-1 text-[9px] uppercase tracking-[0.32em] text-gold-dust/70">
                       {m.role === "user"
                         ? lang === "zh" ? "你" : "You"
-                        : lang === "zh" ? "长者" : "The Elder"}
+                        : lang === "zh" ? "智者" : "The Elder"}
                     </p>
                     <p className={`whitespace-pre-line ${m.role === "oracle" ? "font-serif italic" : ""}`}>
                       {shown}
@@ -2311,7 +2311,7 @@ function AIFollowupModal({
                   transition={{ duration: 1.4, repeat: Infinity }}
                   className="text-[11px] uppercase tracking-[0.32em] text-gold-dust/70"
                 >
-                  {lang === "zh" ? "长者正在翻阅古卷…" : "The elder turns an old page…"}
+                  {lang === "zh" ? "智者正在翻阅古卷…" : "The elder turns an old page…"}
                 </motion.p>
               )}
             </div>
