@@ -174,7 +174,7 @@ ${isZh ? "严格按下面的 JSON schema 输出（只输出 JSON）" : "Output s
 ${schema}`;
 
     const { text } = await generateText({
-      model: gateway("google/gemini-2.5-flash"),
+      model: gateway("google/gemini-3.5-flash"),
       system,
       prompt,
     });
