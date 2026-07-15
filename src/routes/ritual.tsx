@@ -304,7 +304,7 @@ function noOrphan(s: string) {
                       </button>
                     </p>
                   )}
-                  <h1 className="mx-auto mb-4 max-w-xl text-balance font-serif text-2xl italic leading-tight text-stone-warm md:text-4xl" style={{ wordBreak: "keep-all", overflowWrap: "break-word" }}>
+                  <h1 className="mx-auto mb-4 max-w-[16ch] text-balance font-serif text-xl italic leading-tight text-stone-warm sm:max-w-xl sm:text-2xl md:text-4xl" style={{ wordBreak: "keep-all", overflowWrap: "break-word" }}>
                     {noOrphan(q.prompt[li])}
                   </h1>
                   <p className="mx-auto mb-10 max-w-md text-xs italic text-stone-warm/40">
