@@ -104,6 +104,7 @@ export function AccountModal({ open, onClose }: { open: boolean; onClose: () => 
               <div className="space-y-4">
                 <Link
                   to="/auth"
+                  search={{ reset: undefined, redirect: undefined }}
                   onClick={onClose}
                   className="flex w-full items-center justify-center rounded-full bg-gold-dust px-6 py-3 text-[10px] uppercase tracking-[0.32em] text-obsidian transition-colors hover:bg-gold-light focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-light"
                 >

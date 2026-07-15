@@ -116,7 +116,10 @@ function AuthPage() {
 
   async function onGoogle() {
     setBusy(true);
-    const res = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
+    const redirectParam = search.redirect ? `?redirect=${encodeURIComponent(search.redirect)}` : "";
+    const res = await lovable.auth.signInWithOAuth("google", {
+      redirect_uri: `${window.location.origin}/auth${redirectParam}`,
+    });
     if (res && "error" in res && res.error) {
       toast.error(res.error instanceof Error ? res.error.message : String(res.error));
     }
@@ -170,11 +173,12 @@ function AuthPage() {
         const to = await getPostAuthDestination();
         navigate({ to: to as never });
       } else if (mode === "sign_up") {
+        const redirectParam = search.redirect ? `?redirect=${encodeURIComponent(search.redirect)}` : "";
         const { error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/auth`,
+            emailRedirectTo: `${window.location.origin}/auth${redirectParam}`,
             data: { name: name || undefined },
           },
         });
