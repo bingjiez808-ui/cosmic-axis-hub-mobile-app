@@ -205,8 +205,14 @@ function LanguageToggle() {
 function SiteNav() {
   const { t, lang } = useLang();
   const { account } = useAccount();
-  const { isAdmin } = useSupabaseSession();
-  const openAcc = () => window.dispatchEvent(new Event("lod:open-account"));
+  const { session, isAdmin } = useSupabaseSession();
+  const openAcc = () => {
+    if (!session) {
+      window.location.assign("/auth");
+      return;
+    }
+    window.dispatchEvent(new Event("lod:open-account"));
+  };
   const [atTop, setAtTop] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const adminLabel = lang === "zh" ? "议政厅" : "Admin";
