@@ -123,7 +123,41 @@ function AuthPage() {
     setBusy(false);
   }
 
-  async function onEmailAuth(e: React.FormEvent) {
+  async function onSendOtp() {
+    if (!phone) {
+      toast.error(zh ? "请输入手机号" : "Enter your phone");
+      return;
+    }
+    setBusy(true);
+    try {
+      await sendPhoneOtp({ data: { phone } });
+      setOtpSent(true);
+      setCooldown(30);
+      toast.success(zh ? "验证码已发送" : "Code sent");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onVerifyOtp(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      const { tokenHash } = await verifyPhoneOtp({ data: { phone, code: otp } });
+      const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: "magiclink" });
+      if (error) throw error;
+      toast.success(zh ? "入席成功" : "Welcome");
+      const to = await getPostAuthDestination();
+      navigate({ to: to as never });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
     e.preventDefault();
     setBusy(true);
     try {
