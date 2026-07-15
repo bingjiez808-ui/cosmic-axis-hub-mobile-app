@@ -299,3 +299,13 @@
   a { text-decoration: none !important; }
 }
 
+
+/* Tarot horizontal deck — hide native scrollbar for a cleaner feel */
+.tarot-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  scroll-behavior: smooth;
+}
+.tarot-scroll::-webkit-scrollbar {
+  display: none;
+}

@@ -206,7 +206,7 @@ function SiteNav() {
   const { account } = useAccount();
   const openAcc = () => window.dispatchEvent(new Event("lod:open-account"));
   const [atTop, setAtTop] = useState(true);
-  const [expanded, setExpanded] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setAtTop(window.scrollY < 40);
@@ -215,106 +215,162 @@ function SiteNav() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Show full bar when at top, or when user has clicked the dot to expand.
-  const showFull = atTop || expanded;
+  // Lock body scroll while side drawer is open.
+  useEffect(() => {
+    if (drawerOpen) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = prev;
+      };
+    }
+  }, [drawerOpen]);
 
-  // Chinese labels should not be uppercase/wide-tracked — that causes the
-  // "每字一行" vertical stack seen on narrow widths.
+  // Top glass bar visible only when at the top of the page.
+  const showTopBar = atTop;
+
   const linkClass = lang === "zh"
-    ? "whitespace-nowrap text-[13px] tracking-normal normal-case text-stone-warm/75 transition-colors hover:text-gold-dust"
-    : "whitespace-nowrap text-[11px] uppercase tracking-[0.28em] text-stone-warm/70 transition-colors hover:text-gold-dust";
+    ? "whitespace-nowrap text-[13px] tracking-normal normal-case text-stone-warm/75 transition-colors hover:text-gold-dust flex-none"
+    : "whitespace-nowrap text-[11px] uppercase tracking-[0.28em] text-stone-warm/70 transition-colors hover:text-gold-dust flex-none";
+
+  const accountLabel = account ? t.nav_account : t.nav_sign_in;
 
   return (
     <>
-      {/* Collapsed floating orb — visible when not at top and not expanded */}
+      {/* Collapsed floating orb — visible when not at top and drawer closed */}
       <button
         type="button"
         aria-label="Open navigation"
-        onClick={() => setExpanded(true)}
+        onClick={() => setDrawerOpen(true)}
         className={`fixed right-4 top-4 z-[60] flex h-11 w-11 items-center justify-center rounded-full border border-gold-dust/40 bg-obsidian/70 backdrop-blur-md transition-all duration-300 hover:border-gold-dust hover:bg-gold-dust/10 md:right-6 md:top-6 ${
-          showFull ? "pointer-events-none scale-75 opacity-0" : "opacity-100"
+          showTopBar || drawerOpen ? "pointer-events-none scale-75 opacity-0" : "opacity-100"
         }`}
       >
         <span className="block h-2 w-2 rounded-full bg-gold-dust shadow-[0_0_10px_2px_color-mix(in_oklab,var(--gold-light)_60%,transparent)]" />
       </button>
 
-      {/* Full navigation bar */}
+      {/* Full top navigation bar — only at top of page */}
       <nav
         className={`fixed top-0 left-1/2 z-50 -translate-x-1/2 p-3 md:p-6 transition-all duration-500 ${
-          showFull ? "opacity-100 translate-y-0" : "-translate-y-full opacity-0 pointer-events-none"
+          showTopBar ? "opacity-100 translate-y-0" : "-translate-y-full opacity-0 pointer-events-none"
         }`}
-        onMouseLeave={() => {
-          if (!atTop) setExpanded(false);
-        }}
       >
         <div className="glass-card flex max-w-[96vw] items-center gap-3 rounded-full px-3 py-2 md:gap-6 md:px-6 md:py-2.5">
           <Link
             to="/"
-            className="whitespace-nowrap font-serif text-sm tracking-normal text-stone-warm"
-            onClick={() => setExpanded(false)}
+            className="flex-none whitespace-nowrap font-serif text-sm tracking-normal text-stone-warm"
           >
             Destiny<span className="text-gold-dust">·</span>Library
           </Link>
           <div className="hidden items-center gap-5 md:flex lg:gap-8">
-            <Link to="/traditions" className={linkClass} onClick={() => setExpanded(false)}>
-              {t.nav_traditions}
-            </Link>
-            <Link to="/ritual" className={linkClass} onClick={() => setExpanded(false)}>
-              {t.nav_ritual}
-            </Link>
-            <Link to="/about" className={linkClass} onClick={() => setExpanded(false)}>
-              {t.nav_about}
-            </Link>
-            <Link to="/community" className={linkClass} onClick={() => setExpanded(false)}>
-              {t.nav_community}
-            </Link>
+            <Link to="/traditions" className={linkClass}>{t.nav_traditions}</Link>
+            <Link to="/ritual" className={linkClass}>{t.nav_ritual}</Link>
+            <Link to="/about" className={linkClass}>{t.nav_about}</Link>
+            <Link to="/community" className={linkClass}>{t.nav_community}</Link>
           </div>
           <button
             type="button"
             onClick={openAcc}
-            className="flex items-center gap-2 whitespace-nowrap rounded-full border border-gold-dust/40 px-3 py-1 text-[10px] tracking-[0.24em] text-gold-dust transition-colors hover:bg-gold-dust/10"
+            className="flex flex-none items-center gap-2 whitespace-nowrap rounded-full border border-gold-dust/40 px-3 py-1 text-[10px] tracking-[0.24em] text-gold-dust transition-colors hover:bg-gold-dust/10"
           >
             {account?.avatar && (
               <img
                 src={account.avatar}
                 alt=""
-                className="h-5 w-5 rounded-full border border-gold-dust/40 object-cover"
+                className="h-5 w-5 flex-none rounded-full border border-gold-dust/40 object-cover"
               />
             )}
-            <span>{account ? `${t.nav_account} · ${account.name.slice(0, 8)}` : t.nav_sign_in}</span>
+            <span className="whitespace-nowrap">{accountLabel}</span>
           </button>
           <LanguageToggle />
-          {/* Collapse back into orb (only when not at top) */}
-          {!atTop && (
-            <button
-              type="button"
-              aria-label="Collapse navigation"
-              onClick={() => setExpanded(false)}
-              className="ml-1 hidden h-6 w-6 items-center justify-center rounded-full text-stone-warm/50 hover:text-gold-dust md:flex"
-            >
-              ×
-            </button>
-          )}
         </div>
 
         {/* Mobile menu row */}
         <div className="mt-2 flex justify-center md:hidden">
           <div className="glass-card flex items-center gap-4 rounded-full px-4 py-1.5">
-            <Link to="/traditions" className={linkClass} onClick={() => setExpanded(false)}>
-              {t.nav_traditions}
-            </Link>
-            <Link to="/ritual" className={linkClass} onClick={() => setExpanded(false)}>
-              {t.nav_ritual}
-            </Link>
-            <Link to="/about" className={linkClass} onClick={() => setExpanded(false)}>
-              {t.nav_about}
-            </Link>
-            <Link to="/community" className={linkClass} onClick={() => setExpanded(false)}>
-              {t.nav_community}
-            </Link>
+            <Link to="/traditions" className={linkClass}>{t.nav_traditions}</Link>
+            <Link to="/ritual" className={linkClass}>{t.nav_ritual}</Link>
+            <Link to="/about" className={linkClass}>{t.nav_about}</Link>
+            <Link to="/community" className={linkClass}>{t.nav_community}</Link>
           </div>
         </div>
       </nav>
+
+      {/* Side drawer — opens from the right when dot is tapped */}
+      <div
+        aria-hidden={!drawerOpen}
+        onClick={() => setDrawerOpen(false)}
+        className={`fixed inset-0 z-[70] bg-obsidian/60 backdrop-blur-sm transition-opacity duration-300 ${
+          drawerOpen ? "opacity-100" : "pointer-events-none opacity-0"
+        }`}
+      />
+      <aside
+        role="dialog"
+        aria-label="Navigation"
+        className={`fixed right-0 top-0 z-[80] h-full w-[82vw] max-w-[340px] border-l border-gold-dust/25 bg-obsidian/95 backdrop-blur-xl shadow-[-20px_0_60px_rgba(0,0,0,0.6)] transition-transform duration-400 ${
+          drawerOpen ? "translate-x-0" : "translate-x-full"
+        }`}
+      >
+        <div className="flex items-center justify-between border-b border-white/10 px-6 py-5">
+          <span className="font-serif text-base tracking-normal text-stone-warm">
+            Destiny<span className="text-gold-dust">·</span>Library
+          </span>
+          <button
+            type="button"
+            aria-label="Close navigation"
+            onClick={() => setDrawerOpen(false)}
+            className="grid h-8 w-8 place-items-center rounded-full text-stone-warm/60 hover:bg-white/5 hover:text-gold-dust"
+          >
+            ×
+          </button>
+        </div>
+
+        <nav className="flex flex-col gap-1 px-4 py-4">
+          {[
+            { to: "/", label: lang === "zh" ? "首页" : "Home" },
+            { to: "/traditions", label: t.nav_traditions },
+            { to: "/ritual", label: t.nav_ritual },
+            { to: "/about", label: t.nav_about },
+            { to: "/community", label: t.nav_community },
+          ].map((item) => (
+            <Link
+              key={item.to}
+              to={item.to}
+              onClick={() => setDrawerOpen(false)}
+              className={`whitespace-nowrap rounded-xl px-4 py-3 text-sm ${
+                lang === "zh"
+                  ? "tracking-normal text-stone-warm/85"
+                  : "uppercase tracking-[0.28em] text-stone-warm/75"
+              } transition-colors hover:bg-gold-dust/10 hover:text-gold-light`}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+
+        <div className="mt-auto flex flex-col gap-3 border-t border-white/10 px-6 py-5">
+          <button
+            type="button"
+            onClick={() => {
+              setDrawerOpen(false);
+              openAcc();
+            }}
+            className="flex items-center justify-center gap-2 rounded-full border border-gold-dust/40 px-4 py-2 text-[11px] uppercase tracking-[0.28em] text-gold-dust hover:bg-gold-dust/10"
+          >
+            {account?.avatar && (
+              <img
+                src={account.avatar}
+                alt=""
+                className="h-5 w-5 flex-none rounded-full border border-gold-dust/40 object-cover"
+              />
+            )}
+            <span>{accountLabel}</span>
+          </button>
+          <div className="flex items-center justify-center">
+            <LanguageToggle />
+          </div>
+        </div>
+      </aside>
     </>
   );
 }
