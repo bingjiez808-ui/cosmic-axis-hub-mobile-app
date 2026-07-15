@@ -625,175 +625,321 @@ export function KeyEventsVerification({ birthISO }: { birthISO?: string }) {
 }
 
 /* ═══════════════════════════════════════════
-   Tarot — three cards
+   Tarot — 78-card swipeable deck
 ═══════════════════════════════════════════ */
 
-const TAROT: {
-  name: [string, string];
-  glyph: string;
-  read: [string, string];
-}[] = [
-  { name: ["The Fool", "愚者"], glyph: "0", read: ["A new beginning without a map.", "无地图的启程。"] },
-  { name: ["The Magician", "魔术师"], glyph: "I", read: ["The tools are already in your hands.", "工具早已在你手中。"] },
-  { name: ["The High Priestess", "女祭司"], glyph: "II", read: ["Listen to what you already know.", "倾听你已经知道的。"] },
-  { name: ["The Empress", "女皇"], glyph: "III", read: ["Abundance ripens where you nourish.", "你滋养之处，丰盈自会生长。"] },
-  { name: ["The Lovers", "恋人"], glyph: "VI", read: ["A choice about values, not just love.", "关于价值观的抉择，不仅是感情。"] },
-  { name: ["The Chariot", "战车"], glyph: "VII", read: ["Willpower steers two opposing forces.", "意志驾驭两股相反之力。"] },
-  { name: ["Strength", "力量"], glyph: "VIII", read: ["Gentleness is your real strength.", "温柔才是你真正的力量。"] },
-  { name: ["The Hermit", "隐者"], glyph: "IX", read: ["Withdraw to see clearly.", "退一步，才看得清。"] },
-  { name: ["Wheel of Fortune", "命运之轮"], glyph: "X", read: ["A cycle turns beyond your control.", "一轮周期，超出你的控制。"] },
-  { name: ["The Star", "星星"], glyph: "XVII", read: ["Quiet hope after difficulty.", "低谷之后，安静的希望。"] },
-  { name: ["The Moon", "月亮"], glyph: "XVIII", read: ["Not everything visible is real.", "所见并非皆真。"] },
-  { name: ["The Sun", "太阳"], glyph: "XIX", read: ["Clarity, warmth, arrival.", "澄澈、温暖、抵达。"] },
-];
+import { TAROT_78, type TarotCard } from "@/lib/tarot-deck";
+import { askOracle } from "@/lib/oracle.functions";
 
 export function TarotDraw() {
   const { t, lang } = useLang();
+  const { account } = useAccount();
   const li = lang === "zh" ? 1 : 0;
-  const [deck] = useState(() => TAROT.slice());
+  const plan = (account?.plan ?? "free") as "free" | "sage" | "oracle";
+  const isSage = plan === "sage" || plan === "oracle";
+
+  // Deck is shuffled once per session so the user can swipe through all 78.
+  const [deck] = useState<TarotCard[]>(() => {
+    const arr = TAROT_78.slice();
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  });
+
+  const [stage, setStage] = useState<"ask" | "pick" | "reveal">("ask");
+  const [question, setQuestion] = useState("");
   const [picks, setPicks] = useState<number[]>([]);
-  const positions = [t.tarot_pos_past, t.tarot_pos_present, t.tarot_pos_future];
+  const [aiReading, setAiReading] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+
+  const positions: [string, string][] = [
+    ["Past", "过去"],
+    ["Present", "此刻"],
+    ["Emerging", "将来"],
+  ];
+
+  const beginPicks = () => {
+    if (!question.trim()) return;
+    setPicks([]);
+    setAiReading(null);
+    setStage("pick");
+  };
 
   const pick = (idx: number) => {
     if (picks.includes(idx) || picks.length >= 3) return;
-    setPicks((p) => [...p, idx]);
+    const next = [...picks, idx];
+    setPicks(next);
+    if (next.length === 3) setStage("reveal");
   };
-  const reset = () => setPicks([]);
+
+  const reset = () => {
+    setPicks([]);
+    setAiReading(null);
+    setStage("ask");
+  };
+
+  const tier = (() => {
+    if (picks.length !== 3) return null;
+    const total = picks.reduce((s, i) => s + deck[i].score, 0);
+    if (total >= 4) return "great" as const;
+    if (total >= 2) return "good" as const;
+    if (total >= 0) return "mid" as const;
+    return "low" as const;
+  })();
+
+  const tierLabel: Record<"great" | "good" | "mid" | "low", [string, string]> = {
+    great: ["Upper-upper fortune · 上上签", "上上签"],
+    good: ["Upper fortune · 上签", "上签"],
+    mid: ["Middle fortune · 中签", "中签"],
+    low: ["Lower fortune · 下签", "下签"],
+  };
+  const tierVerdict: Record<"great" | "good" | "mid" | "low", [string, string]> = {
+    great: [
+      "Three cards land in bright company. The wind is at your back — move on the plans you've been quietly rehearsing.",
+      "三张牌落在明亮的位置。风顺 —— 请把你私下反复排练的计划真正动起来。",
+    ],
+    good: [
+      "The reading tilts favorable. Real momentum here, though the middle card asks for one honest admission.",
+      "整体偏顺。此刻确实有势能，但中间那张牌，要你诚实说出一句你早已知道的话。",
+    ],
+    mid: [
+      "A balanced draw — neither push nor stop. Gather information; don't force a decision this week.",
+      "一次持平的签 —— 既非推进，也非停手。多收集信息，本周不强行下决定。",
+    ],
+    low: [
+      "The draw runs cool. Not disaster — a warning to slow down, protect health and money, delay commitments.",
+      "签面偏冷。这不是灾难，而是一份「慢下来」的提醒：护住健康与金钱，推迟需要表演的承诺。",
+    ],
+  };
+
+  const requestAiReading = async () => {
+    if (!isSage || aiLoading || picks.length !== 3) return;
+    setAiLoading(true);
+    try {
+      const cards = picks.map((i, pos) => {
+        const c = deck[i];
+        const p = positions[pos][li];
+        return `${p}: ${c.nameEn} / ${c.nameZh} — ${c.hintEn}`;
+      }).join("\n");
+      const prompt = lang === "zh"
+        ? `占卜问题：${question}\n\n三张塔罗牌（Rider–Waite）：\n${cards}\n\n请以「命运图书馆」贤者的口吻，将三张牌与问题深度整合，给出 3 段（过去成因 / 此刻真相 / 下一步建议），并在结尾给出一个可以在本周执行的具体动作。`
+        : `Question: ${question}\n\nThree Rider–Waite tarot cards:\n${cards}\n\nAs the Library of Destiny sage, weave the three cards and the question into a deep reading in three short paragraphs (root cause / present truth / next move), and end with one concrete action the visitor can take this week.`;
+      const res = await askOracle({ data: { question: prompt, lang } });
+      setAiReading(res.text);
+    } catch (e) {
+      console.error(e);
+      setAiReading(lang === "zh" ? "解读暂时无法生成，请稍后再试。" : "The reading could not be generated. Please try again.");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const openAccount = () => window.dispatchEvent(new Event("lod:open-account"));
 
   return (
-    <section className="mx-auto max-w-5xl px-6 pb-24 md:px-12 print:hidden">
-      <div className="glass-card rounded-3xl p-8 md:p-12">
+    <section className="mx-auto max-w-5xl px-4 pb-24 sm:px-6 md:px-12 print:hidden">
+      <div className="glass-card rounded-3xl p-5 sm:p-8 md:p-12">
         <p className="mb-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
           {t.tarot_kicker}
         </p>
-        <h2 className="mb-3 font-serif text-2xl italic text-stone-warm md:text-3xl">
-          {t.tarot_title}
+        <h2 className="mb-3 font-serif text-xl italic text-stone-warm sm:text-2xl md:text-3xl">
+          {lang === "zh" ? "先提问，再翻牌 · 78 张标准塔罗" : "Ask first, then flip — the full 78-card deck"}
         </h2>
-        <p className="mb-8 max-w-3xl text-sm text-stone-warm/60">{t.tarot_hint}</p>
+        <p className="mb-6 max-w-3xl text-sm text-stone-warm/60">{t.tarot_hint}</p>
 
-        {/* Deck */}
-        <div className="mb-8 grid grid-cols-4 gap-3 md:grid-cols-6">
-          {deck.map((_, idx) => {
-            const chosen = picks.includes(idx);
-            const disabled = chosen || picks.length >= 3;
-            return (
-              <motion.button
-                key={idx}
+        {/* Stage 1 — question */}
+        {stage === "ask" && (
+          <div className="rounded-2xl border border-gold-dust/25 bg-obsidian/40 p-5 sm:p-6">
+            <label className="mb-3 block text-[10px] uppercase tracking-[0.32em] text-gold-dust/80">
+              {lang === "zh" ? "你今晚要问的事" : "What you are asking tonight"}
+            </label>
+            <textarea
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              rows={3}
+              placeholder={lang === "zh" ? "例如：这段关系还值得继续吗？" : "e.g. Should I stay in this relationship?"}
+              className="w-full resize-none rounded-xl border border-white/10 bg-obsidian/60 p-4 text-sm text-stone-warm placeholder:text-stone-warm/30 focus:border-gold-dust/60 focus:outline-none"
+            />
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+              <p className="text-[10px] uppercase tracking-[0.28em] text-stone-warm/40">
+                {lang === "zh" ? "写下越具体，签越准" : "The clearer the question, the truer the reading"}
+              </p>
+              <button
                 type="button"
-                onClick={() => pick(idx)}
-                disabled={disabled}
-                whileHover={disabled ? undefined : { y: -6, rotate: -1 }}
-                animate={chosen ? { opacity: 0.15, y: 0 } : { opacity: 1 }}
-                className="relative aspect-[2/3] rounded-xl border border-gold-dust/30 bg-gradient-to-br from-nebula-purple/30 via-void-blue to-obsidian shadow-[0_0_20px_rgba(0,0,0,0.4)] disabled:cursor-default"
+                onClick={beginPicks}
+                disabled={!question.trim()}
+                className="rounded-full bg-gold-dust px-5 py-2 text-[11px] uppercase tracking-[0.28em] text-obsidian transition-colors hover:bg-gold-light disabled:cursor-not-allowed disabled:opacity-40"
               >
-                <span className="absolute inset-2 rounded-lg border border-gold-dust/20" />
-                <span className="absolute inset-0 grid place-items-center font-serif text-2xl italic text-gold-dust/60">
-                  ✦
-                </span>
-              </motion.button>
-            );
-          })}
-        </div>
-
-        {/* Revealed cards */}
-        {picks.length > 0 && (
-          <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
-            {picks.map((cardIdx, pos) => {
-              const c = deck[cardIdx];
-              return (
-                <motion.div
-                  key={cardIdx}
-                  initial={{ rotateY: 180, opacity: 0 }}
-                  animate={{ rotateY: 0, opacity: 1 }}
-                  transition={{ duration: 0.8, ease: [0.32, 0.72, 0, 1] }}
-                  className="rounded-2xl border border-gold-dust/30 bg-gold-dust/[0.06] p-6 text-center"
-                >
-                  <p className="mb-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust">
-                    {positions[pos]}
-                  </p>
-                  <p className="mb-2 font-serif text-4xl italic text-gold-light">{c.glyph}</p>
-                  <p className="mb-3 font-serif text-lg text-stone-warm">{c.name[li]}</p>
-                  <p className="text-sm leading-relaxed text-stone-warm/70">{c.read[li]}</p>
-                </motion.div>
-              );
-            })}
+                {lang === "zh" ? "开始翻牌 →" : "Begin the draw →"}
+              </button>
+            </div>
           </div>
         )}
 
-        {/* Three-card synthesis */}
-        {picks.length === 3 && (() => {
-          const scores = [0, 2, 1, 2, 1, 1, 2, 0, 0, 2, -1, 2];
-          const total = picks.reduce((s, i) => s + scores[i], 0);
-          let tier: "great" | "good" | "mid" | "low";
-          if (total >= 4) tier = "great";
-          else if (total >= 2) tier = "good";
-          else if (total >= 0) tier = "mid";
-          else tier = "low";
+        {/* Stage 2 — swipeable 78-card deck */}
+        {stage === "pick" && (
+          <div>
+            <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
+              <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust">
+                {picks.length} / 3 — {positions[picks.length]?.[li] ?? ""}
+              </p>
+              <p className="text-[10px] uppercase tracking-[0.28em] text-stone-warm/40">
+                {lang === "zh" ? "← 左右滑动 78 张 →" : "← swipe through all 78 →"}
+              </p>
+            </div>
+            <div className="tarot-scroll -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-4 sm:-mx-6 sm:gap-4 sm:px-6">
+              {deck.map((c, idx) => {
+                const chosen = picks.includes(idx);
+                const disabled = chosen || picks.length >= 3;
+                return (
+                  <motion.button
+                    key={c.id}
+                    type="button"
+                    onClick={() => pick(idx)}
+                    disabled={disabled}
+                    whileHover={disabled ? undefined : { y: -6 }}
+                    animate={chosen ? { opacity: 0.15 } : { opacity: 1 }}
+                    className="relative aspect-[2/3] w-[42vw] max-w-[180px] flex-none snap-center overflow-hidden rounded-xl border border-gold-dust/30 bg-gradient-to-br from-nebula-purple/40 via-void-blue to-obsidian shadow-[0_8px_28px_rgba(0,0,0,0.55)] disabled:cursor-default sm:w-[160px]"
+                  >
+                    <span className="absolute inset-2 rounded-lg border border-gold-dust/25" />
+                    <span className="absolute inset-0 grid place-items-center font-serif text-3xl italic text-gold-dust/50">
+                      ✦
+                    </span>
+                    <span className="absolute bottom-2 left-0 right-0 text-center font-mono text-[9px] tracking-[0.28em] text-gold-dust/50">
+                      {String(idx + 1).padStart(2, "0")} / 78
+                    </span>
+                  </motion.button>
+                );
+              })}
+            </div>
+            <p className="mt-2 text-center text-[10px] uppercase tracking-[0.28em] text-stone-warm/50">
+              {lang === "zh"
+                ? `问题：${question.length > 40 ? question.slice(0, 40) + "…" : question}`
+                : `Question: ${question.length > 60 ? question.slice(0, 60) + "…" : question}`}
+            </p>
+          </div>
+        )}
 
-          const label: Record<typeof tier, [string, string]> = {
-            great: ["Upper Upper Fortune · 上上签", "上上签"],
-            good: ["Upper Fortune · 上签", "上签"],
-            mid: ["Middle Fortune · 中签", "中签"],
-            low: ["Lower Fortune · 下签", "下签"],
-          };
-          const verdict: Record<typeof tier, [string, string]> = {
-            great: [
-              "Three cards land in bright company. The past you carried gave you tools, the present is opening, and the future is warming — this is a rare aligned draw. Move on the plans you've been quietly rehearsing.",
-              "三张牌落在明亮的位置。过去给你留下了工具，此刻正在开门，未来在升温 —— 这是一次难得对齐的抽签。请把你私下反复排练的计划真正动起来。",
-            ],
-            good: [
-              "The reading tilts favorable. There's real momentum here, though something in one position asks you to be honest — usually the middle card names the truth you already know.",
-              "整体偏顺。此刻确实有真实的势能，但有一张牌要你诚实一点 —— 通常中间那张，说的是你早已知道的实话。",
-            ],
-            mid: [
-              "A balanced draw — neither push nor stop. This is a listening moment: gather more information, don't force a decision this week, and let the future card mature before naming it.",
-              "一次持平的签 —— 既非推进，也非停手。此刻是聆听时刻：多收集信息，别在这一周强行下决定，让代表未来的那张牌先熟成。",
-            ],
-            low: [
-              "The draw runs cool. It's not disaster — it's a warning to slow down, protect health and money, and delay any commitment that requires you to perform. Rest is a strategy this month.",
-              "签面偏冷。这不是灾难，而是一份「慢下来」的提醒：护住健康与金钱，推迟一切需要「表演」的承诺。这个月，休息本身就是策略。",
-            ],
-          };
+        {/* Stage 3 — reveal */}
+        {stage === "reveal" && tier && (
+          <div>
+            <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+              {picks.map((cardIdx, pos) => {
+                const c = deck[cardIdx];
+                return (
+                  <motion.div
+                    key={c.id}
+                    initial={{ rotateY: 180, opacity: 0 }}
+                    animate={{ rotateY: 0, opacity: 1 }}
+                    transition={{ duration: 0.9, delay: pos * 0.15, ease: [0.32, 0.72, 0, 1] }}
+                    className="overflow-hidden rounded-2xl border border-gold-dust/30 bg-gold-dust/[0.06]"
+                  >
+                    <p className="pt-4 text-center text-[10px] uppercase tracking-[0.32em] text-gold-dust">
+                      {positions[pos][li]}
+                    </p>
+                    <div className="mx-auto mt-3 aspect-[2/3] w-[62%] overflow-hidden rounded-lg border border-gold-dust/20 bg-obsidian/60">
+                      <img
+                        src={c.image}
+                        alt={c.nameEn}
+                        loading="lazy"
+                        className="h-full w-full object-cover"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).style.display = "none";
+                        }}
+                      />
+                    </div>
+                    <div className="p-4 text-center">
+                      <p className="font-serif text-lg italic text-gold-light">{c.glyph}</p>
+                      <p className="mt-1 font-serif text-base text-stone-warm">{c.nameZh} · {c.nameEn}</p>
+                      <p className="mt-2 text-xs leading-relaxed text-stone-warm/70">{li === 1 ? c.hintZh : c.hintEn}</p>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
 
-          return (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.4 }}
-              className="mb-6 rounded-2xl border border-gold-dust/40 bg-gradient-to-br from-gold-dust/[0.10] via-nebula-purple/[0.06] to-transparent p-6 md:p-8"
+              transition={{ duration: 0.7, delay: 0.5 }}
+              className="mb-6 rounded-2xl border border-gold-dust/40 bg-gradient-to-br from-gold-dust/[0.12] via-nebula-purple/[0.06] to-transparent p-5 sm:p-8"
             >
               <p className="mb-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.32em] text-gold-light">
                 <span className="size-1.5 rounded-full bg-gold-dust" />
-                {lang === "zh" ? "三牌综述" : "Three-card synthesis"}
+                {lang === "zh" ? "签面结论" : "Fortune verdict"}
               </p>
               <p className="mb-3 font-serif text-2xl italic text-gold-light md:text-3xl">
-                {label[tier][li]}
+                {tierLabel[tier][li]}
+              </p>
+              <p className="mb-3 text-[10px] uppercase tracking-[0.28em] text-stone-warm/50">
+                {lang === "zh" ? "关于：" : "On: "}{question}
               </p>
               <p className="font-serif text-base leading-relaxed text-stone-warm/85 md:text-lg">
-                {verdict[tier][li]}
-              </p>
-              <p className="mt-4 text-[10px] uppercase tracking-[0.28em] text-stone-warm/40">
-                {picks.map((i) => deck[i].name[li]).join(" · ")}
+                {tierVerdict[tier][li]}
               </p>
             </motion.div>
-          );
-        })()}
 
+            {/* Sage AI deep reading */}
+            <div className="mb-6 rounded-2xl border border-gold-dust/25 bg-obsidian/40 p-5 sm:p-6">
+              <p className="mb-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust/80">
+                {lang === "zh" ? "贤者会员 · AI 深度解读" : "Sage members · AI deep reading"}
+              </p>
+              {isSage ? (
+                <>
+                  {!aiReading && !aiLoading && (
+                    <button
+                      type="button"
+                      onClick={requestAiReading}
+                      className="rounded-full bg-gold-dust px-5 py-2 text-[11px] uppercase tracking-[0.28em] text-obsidian hover:bg-gold-light"
+                    >
+                      {lang === "zh" ? "生成 AI 深度解读 →" : "Generate AI deep reading →"}
+                    </button>
+                  )}
+                  {aiLoading && (
+                    <p className="text-sm italic text-stone-warm/60">
+                      {lang === "zh" ? "贤者正在书写…" : "The sage is writing…"}
+                    </p>
+                  )}
+                  {aiReading && (
+                    <div className="whitespace-pre-wrap font-serif text-[15px] leading-relaxed text-stone-warm/90">
+                      {aiReading}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <p className="max-w-md text-sm text-stone-warm/70">
+                    {lang === "zh"
+                      ? "开通「贤者」，AI 会将你的问题、三张牌与命盘一起深度解读。"
+                      : "Unlock Sage to have the AI weave your question, three cards and chart into one deep reading."}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={openAccount}
+                    className="rounded-full border border-gold-dust/50 px-5 py-2 text-[11px] uppercase tracking-[0.28em] text-gold-dust hover:bg-gold-dust/10"
+                  >
+                    {lang === "zh" ? "开通贤者 →" : "Unlock Sage →"}
+                  </button>
+                </div>
+              )}
+            </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <p className="text-[10px] uppercase tracking-[0.28em] text-stone-warm/50">
-            {picks.length} / 3 — {picks.length < 3 ? t.tarot_pick : t.tarot_read}
-          </p>
-          {picks.length > 0 && (
-            <button
-              type="button"
-              onClick={reset}
-              className="rounded-full border border-gold-dust/40 px-5 py-2 text-[10px] uppercase tracking-[0.28em] text-gold-dust hover:bg-gold-dust/10"
-            >
-              {t.tarot_reset}
-            </button>
-          )}
-        </div>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-[10px] uppercase tracking-[0.28em] text-stone-warm/50">
+                {picks.map((i) => deck[i].nameZh).join(" · ")}
+              </p>
+              <button
+                type="button"
+                onClick={reset}
+                className="rounded-full border border-gold-dust/40 px-5 py-2 text-[10px] uppercase tracking-[0.28em] text-gold-dust hover:bg-gold-dust/10"
+              >
+                {t.tarot_reset}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );
