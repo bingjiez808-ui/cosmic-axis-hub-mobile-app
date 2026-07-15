@@ -47,32 +47,32 @@ export const Route = createFileRoute("/synthesis")({
 });
 
 const PHASES_EN = [
-  { label: "Casting the Western wheel", detail: "Sun · Moon · Ascendant · Ten planets" },
-  { label: "Drawing the Nakshatra mandala", detail: "27 lunar mansions · Dasha timing" },
-  { label: "Assembling the four pillars", detail: "Ten stems · Twelve branches · Five elements" },
-  { label: "Populating the twelve palaces", detail: "Fourteen major stars · Four transformations" },
-  { label: "Cross-tradition pattern search", detail: "Clustering agreements · Marking conflicts" },
-  { label: "Composing the unified reading", detail: "One life, four languages" },
+  { label: "Lighting the four candles", detail: "The elders take their seats around the table" },
+  { label: "The Western elder unrolls the wheel", detail: "Sun, Moon and Ascendant answer their names" },
+  { label: "The Vedic elder draws the mandala", detail: "27 lunar mansions kneel into the circle" },
+  { label: "The Chinese elder casts the four pillars", detail: "Ten stems, twelve branches, five breaths" },
+  { label: "The purple elder opens the twelve palaces", detail: "Fourteen stars step through the gates" },
+  { label: "The four voices become one whisper", detail: "Your reading is being written by candlelight" },
 ];
 
 const PHASES_ZH = [
-  { label: "起西方本命盘", detail: "太阳 · 月亮 · 上升 · 十颗行星" },
-  { label: "绘制二十七宿曼陀罗", detail: "27 星宿 · 大运周期" },
-  { label: "排列四柱八字", detail: "十天干 · 十二地支 · 五行" },
-  { label: "填布紫微十二宫", detail: "十四主星 · 四化" },
-  { label: "跨传统模式搜索", detail: "汇合共识 · 标出冲突" },
-  { label: "谱写统一解读", detail: "一段人生 · 四种语言" },
+  { label: "四盏烛火依次亮起", detail: "四方长者围坐入席" },
+  { label: "西方长者展开命轮", detail: "日月上升,一一应名" },
+  { label: "印度长者绘制曼陀罗", detail: "二十七宿俯身入圈" },
+  { label: "中原长者摆布四柱", detail: "十干十二支,五行相应" },
+  { label: "紫微长者开启十二宫", detail: "十四主星,依次入宫" },
+  { label: "四方之声化作低语", detail: "你的命盘正被烛下缓缓写就" },
 ];
 
 const HEADLINE = {
-  en: "The library is speaking to itself…",
-  zh: "图书馆正在自言自语……",
+  en: "The four elders are speaking your name…",
+  zh: "四方长者正在低声唤你之名……",
 };
 const KICKER = {
-  en: (name?: string) => (name ? `Reading of ${name}` : "The reading"),
-  zh: (name?: string) => (name ? `${name} 的解读` : "命盘解读"),
+  en: (name?: string) => (name ? `Summoning ${name}` : "Summoning the reading"),
+  zh: (name?: string) => (name ? `召唤 ${name} 的命盘` : "召唤命盘"),
 };
-const PASSAGES = { en: "passages", zh: "段" };
+const PASSAGES = { en: "rites", zh: "礼" };
 
 function SynthesisPage() {
   const search = Route.useSearch();
