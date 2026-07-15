@@ -1362,6 +1362,12 @@ function UpgradeCheckoutModal({
       emoji: "🅰",
     },
     {
+      id: "unionpay",
+      label: ["UnionPay card", "银联卡支付"],
+      hint: ["China UnionPay · debit / credit", "银联借记卡 / 信用卡"],
+      emoji: "🀄",
+    },
+    {
       id: "visa",
       label: ["Visa / Mastercard", "Visa 信用卡"],
       hint: ["International card", "国际信用卡"],
