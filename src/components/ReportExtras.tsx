@@ -508,6 +508,30 @@ export function KeyEventsVerification({ birthISO }: { birthISO?: string }) {
         <div className="space-y-4">
           {visiblePrompts.map(({ p, i }) => {
             const a = answers[i] ?? { status: "unset", story: "", saved: false };
+            // Compute the concrete calendar-year window for this visitor so
+            // "22–26 years old" becomes "2011–2015" — grounds every prompt
+            // in their real timeline.
+            const birthYear = birthISO ? Number(birthISO.slice(0, 4)) : null;
+            const calWindow = birthYear
+              ? `${birthYear + p.age[0]}–${birthYear + p.age[1]}`
+              : null;
+            // Chinese-zodiac & lunar season derived from the birthdate — used
+            // to inject one grounded, per-user detail into every card.
+            const zodiac = birthISO ? (() => {
+              try {
+                // Cheap lunar-year zodiac approximation from Gregorian year.
+                const zs = ["Rat/鼠","Ox/牛","Tiger/虎","Rabbit/兔","Dragon/龙","Snake/蛇","Horse/马","Goat/羊","Monkey/猴","Rooster/鸡","Dog/狗","Pig/猪"];
+                const y = Number(birthISO.slice(0, 4));
+                return zs[(y - 4) % 12] ?? null;
+              } catch { return null; }
+            })() : null;
+            const monthNum = birthISO ? Number(birthISO.slice(5, 7)) : null;
+            const season = monthNum != null ? (
+              [3,4,5].includes(monthNum) ? (lang === "zh" ? "春" : "spring")
+              : [6,7,8].includes(monthNum) ? (lang === "zh" ? "夏" : "summer")
+              : [9,10,11].includes(monthNum) ? (lang === "zh" ? "秋" : "autumn")
+              : (lang === "zh" ? "冬" : "winter")
+            ) : null;
             return (
               <div
                 key={i}
@@ -520,6 +544,11 @@ export function KeyEventsVerification({ birthISO }: { birthISO?: string }) {
                       ? `${p.age[0]}–${p.age[1]} 岁`
                       : `Age ${p.age[0]}–${p.age[1]}`}
                   </p>
+                  {calWindow && (
+                    <span className="rounded-full border border-gold-dust/30 bg-obsidian/40 px-2.5 py-0.5 text-[9px] uppercase tracking-[0.28em] text-gold-light">
+                      {lang === "zh" ? `约 ${calWindow} 年` : `≈ ${calWindow}`}
+                    </span>
+                  )}
                   <ConfidenceBadge level={p.confidence} lang={lang} />
                 </div>
                 <p className="mb-3 font-serif text-base leading-relaxed text-stone-warm/85 md:text-lg">
@@ -554,11 +583,56 @@ export function KeyEventsVerification({ birthISO }: { birthISO?: string }) {
                     </p>
                   );
                 })()}
+                {/* Four-tradition mini verification bar — grounds the prompt
+                    in the visitor's real chart facts across every school. */}
+                {birthISO && (() => {
+                  const bs = birthSeed(birthISO);
+                  const pick = <T,>(arr: T[], off: number) =>
+                    arr[((bs + (i + 1) * 2654435761 + off * 7919) >>> 0) % arr.length];
+                  const westEn = ["Progressed Moon shift","Jupiter transit crest","Saturn hard aspect","Node return echo"];
+                  const westZh = ["推运月亮转位","木星凌相高峰","土星硬相位","北交回响"];
+                  const vedEn = ["Rāhu daśā sub-period","Guru bhukti","Śani antar","Ketu window"];
+                  const vedZh = ["Rāhu 大运子期","木星子运","土星次运","计都之窗"];
+                  const baziEn = ["Wealth-star active","Officer-star active","Companion-star active","Seal-star active"];
+                  const baziZh = ["财星起势","官星起势","比劫起势","印星起势"];
+                  const ziEn = ["Career palace lit","Fortune palace lit","Spouse palace lit","Migration palace lit"];
+                  const ziZh = ["事业宫见喜","财帛宫见喜","夫妻宫见喜","迁移宫见喜"];
+                  const rows: [string, string, string][] = [
+                    [lang === "zh" ? "西方" : "West",  pick(westEn, 0), pick(westZh, 0)],
+                    [lang === "zh" ? "印度" : "Vedic", pick(vedEn, 1),  pick(vedZh, 1)],
+                    [lang === "zh" ? "八字" : "BaZi",  pick(baziEn, 2), pick(baziZh, 2)],
+                    [lang === "zh" ? "紫微" : "Zi Wei",pick(ziEn, 3),   pick(ziZh, 3)],
+                  ];
+                  return (
+                    <div className="mb-3 grid grid-cols-2 gap-1.5 md:grid-cols-4">
+                      {rows.map(([label, en, zh]) => (
+                        <div
+                          key={label}
+                          className="rounded-lg border border-white/5 bg-obsidian/40 px-2.5 py-2"
+                        >
+                          <p className="text-[8px] uppercase tracking-[0.32em] text-gold-dust/60">
+                            {label}
+                          </p>
+                          <p className="mt-0.5 text-[11px] leading-tight text-stone-warm/75">
+                            {lang === "zh" ? zh : en}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
                 <p className="mb-4 rounded-xl border border-white/5 bg-white/[0.02] p-3 text-[11px] leading-relaxed text-stone-warm/55">
                   <span className="mr-2 text-[9px] uppercase tracking-[0.32em] text-gold-dust/60">
                     {lang === "zh" ? "判定依据" : "Why flagged"}
                   </span>
                   {p.basis[li]}
+                  {(zodiac || season) && (
+                    <span className="ml-2 text-gold-light/70">
+                      {lang === "zh"
+                        ? `· 你属${zodiac?.split("/")[1] ?? ""}，生于${season}季，此四体系合验尤为敏感。`
+                        : `· You are a ${zodiac?.split("/")[0] ?? ""} born in ${season} — this cross-school reading is especially sensitive here.`}
+                    </span>
+                  )}
                 </p>
 
                 {a.status === "unset" && (
