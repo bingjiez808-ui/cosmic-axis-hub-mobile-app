@@ -3,6 +3,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 
 import treeImg from "@/assets/tree-of-destiny.jpg";
+import { generateReport } from "@/lib/report.functions";
+import { buildReportCacheKey, buildReportFingerprint, buildReportRequest } from "@/lib/report-input";
 
 type SearchParams = {
   name?: string;
@@ -11,6 +13,10 @@ type SearchParams = {
   place?: string;
   lang?: "en" | "zh";
   quiz?: string;
+  bazi?: string;
+  zodiac?: string;
+  lunar?: string;
+  readingId?: string;
 };
 
 export const Route = createFileRoute("/synthesis")({
@@ -32,6 +38,10 @@ export const Route = createFileRoute("/synthesis")({
     place: typeof s.place === "string" ? s.place : undefined,
     lang: s.lang === "zh" ? "zh" : s.lang === "en" ? "en" : undefined,
     quiz: typeof s.quiz === "string" ? s.quiz : undefined,
+    bazi: typeof s.bazi === "string" ? s.bazi : undefined,
+    zodiac: typeof s.zodiac === "string" ? s.zodiac : undefined,
+    lunar: typeof s.lunar === "string" ? s.lunar : undefined,
+    readingId: typeof s.readingId === "string" ? s.readingId : undefined,
   }),
   component: SynthesisPage,
 });
@@ -68,8 +78,44 @@ function SynthesisPage() {
   const search = Route.useSearch();
   const navigate = useNavigate();
   const [phase, setPhase] = useState(0);
+  const [reportReady, setReportReady] = useState(false);
   const lang: "en" | "zh" = search.lang === "zh" ? "zh" : "en";
   const phases = lang === "zh" ? PHASES_ZH : PHASES_EN;
+  const reportFingerprint = buildReportFingerprint(search, lang);
+
+  useEffect(() => {
+    if (!search.date) {
+      setReportReady(true);
+      return;
+    }
+
+    let cancelled = false;
+    setReportReady(false);
+    const cacheKey = buildReportCacheKey(search, lang);
+    const cached = typeof sessionStorage !== "undefined" ? sessionStorage.getItem(cacheKey) : null;
+    if (cached) {
+      setReportReady(true);
+      return;
+    }
+
+    generateReport({ data: buildReportRequest(search, lang) })
+      .then((res) => {
+        if (cancelled) return;
+        try {
+          sessionStorage.setItem(cacheKey, JSON.stringify(res));
+        } catch {
+          /* ignore quota */
+        }
+        setReportReady(true);
+      })
+      .catch(() => {
+        if (!cancelled) setReportReady(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [lang, reportFingerprint, search]);
 
   useEffect(() => {
     const total = phases.length;
@@ -78,19 +124,24 @@ function SynthesisPage() {
       setPhase((p) => {
         if (p >= total - 1) {
           clearInterval(interval);
-          setTimeout(() => {
-            navigate({
-              to: "/report",
-              search: () => search as never,
-            });
-          }, 1400);
           return p;
         }
         return p + 1;
       });
     }, perPhase);
     return () => clearInterval(interval);
-  }, [navigate, search, phases.length]);
+  }, [phases.length]);
+
+  useEffect(() => {
+    if (phase < phases.length - 1 || !reportReady) return;
+    const timer = setTimeout(() => {
+      navigate({
+        to: "/report",
+        search: () => search as never,
+      });
+    }, 900);
+    return () => clearTimeout(timer);
+  }, [navigate, phase, phases.length, reportReady, search]);
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-6 pt-32 pb-24 text-center">

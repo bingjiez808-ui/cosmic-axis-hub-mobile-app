@@ -24,6 +24,7 @@ import {
 import { AccountModal } from "@/components/AccountModal";
 import { useLang } from "@/lib/i18n";
 import { generateReport, type ReportAI } from "@/lib/report.functions";
+import { buildReportCacheKey, buildReportRequest, buildReportSeed } from "@/lib/report-input";
 
 type SearchParams = {
   name?: string;
@@ -35,6 +36,7 @@ type SearchParams = {
   bazi?: string;
   zodiac?: string;
   lunar?: string;
+  readingId?: string;
 };
 
 const pickStr = (v: unknown) => (typeof v === "string" ? v : undefined);
@@ -61,6 +63,7 @@ export const Route = createFileRoute("/report")({
     bazi: pickStr(s.bazi),
     zodiac: pickStr(s.zodiac),
     lunar: pickStr(s.lunar),
+    readingId: pickStr(s.readingId),
   }),
   component: ReportPage,
 });
@@ -501,7 +504,7 @@ function ReportPage() {
   }, []);
 
   // Personalised AI report — grounded in this specific chart.
-  const seed = `${search.name ?? ""}|${search.date ?? ""}|${search.time ?? ""}|${search.place ?? ""}`;
+  const seed = buildReportSeed(search);
   const invokeReport = generateReport;
   const [ai, setAi] = useState<ReportAI | null>(null);
   const [aiState, setAiState] = useState<"idle" | "loading" | "ready" | "error">("idle");
@@ -510,7 +513,7 @@ function ReportPage() {
 
   useEffect(() => {
     if (!search.date) return;
-    const cacheKey = `oracle-report::${lang}::${seed}`;
+    const cacheKey = buildReportCacheKey(search, lang);
     try {
       const cached = typeof sessionStorage !== "undefined" ? sessionStorage.getItem(cacheKey) : null;
       if (cached) {
@@ -523,28 +526,11 @@ function ReportPage() {
     }
 
     const reqId = ++latestReqRef.current;
+    setAi(null);
     setAiState("loading");
     setAiError(null);
-    const signs = computePlanetSigns(seed);
-    const ascSign = signs[PLANETS.findIndex((p) => p.key === "asc")] ?? 0;
-    const planets = PLANETS.map((p, i) => ({
-      name: p.name[0],
-      sign: ZODIAC_SIGNS[signs[i]].en,
-      house: houseForSign(signs[i], ascSign),
-    }));
     invokeReport({
-      data: {
-        name: search.name,
-        date: search.date,
-        time: search.time,
-        place: search.place,
-        lang,
-        quiz: search.quiz,
-        planets,
-        bazi: search.bazi,
-        zodiac: search.zodiac,
-        lunar: search.lunar,
-      },
+      data: buildReportRequest(search, lang),
     })
       .then((res) => {
         // Only apply if this is still the most recent request — protects against
@@ -565,13 +551,18 @@ function ReportPage() {
         setAiState("error");
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [seed, lang]);
+  }, [seed, lang, search.readingId]);
 
+  const isAwaitingPersonalized = !!search.date && aiState !== "ready" && aiState !== "error";
   const summary = ai?.summary
     ? ai.summary
-    : lang === "zh"
-      ? "你的人生更像探险者的图谱，而非追随者的轨迹 —— 一张反复回到「志业、意义与再次选择的勇气」的星图。"
-      : "Your life is written more as an explorer's than a follower's — a chart that repeatedly returns to the questions of vocation, meaning and the courage to choose again.";
+    : isAwaitingPersonalized
+      ? lang === "zh"
+        ? "长者正在依据你的出生日期、时辰、农历、八字与行星落位生成专属解读……"
+        : "The elder is generating a personal reading from your birth date, time, lunar conversion, BaZi pillars and planetary placements…"
+      : lang === "zh"
+        ? "你的人生更像探险者的图谱，而非追随者的轨迹 —— 一张反复回到「志业、意义与再次选择的勇气」的星图。"
+        : "Your life is written more as an explorer's than a follower's — a chart that repeatedly returns to the questions of vocation, meaning and the courage to choose again.";
 
   // Merge AI content into the base dimensions (viz / stars / strengths keep
   // their fallback shape; text is overridden per-visitor).
@@ -807,7 +798,20 @@ function ReportPage() {
             )}
           </div>
         )}
-        {displayed.map((d, idx) => (
+        {isAwaitingPersonalized && (
+          <div className="glass-card rounded-3xl p-8 text-center md:p-12">
+            <div className="mx-auto mb-6 size-12 rounded-full border border-gold-dust/30 border-t-gold-light animate-slow-rotate" />
+            <p className="mb-3 text-[10px] uppercase tracking-[0.34em] text-gold-dust">
+              {lang === "zh" ? "正在生成专属命盘解读" : "Personal chart reading in progress"}
+            </p>
+            <p className="mx-auto max-w-2xl font-serif text-xl italic leading-relaxed text-stone-warm/80">
+              {lang === "zh"
+                ? "本页会等待 AI 把你的阳历生日、农历换算、八字四柱与行星宫位写入每一个维度；在完成前不再显示通用模板。"
+                : "This page is waiting for AI to write your solar date, lunar conversion, BaZi pillars and planetary houses into every dimension; no generic template is shown while it loads."}
+            </p>
+          </div>
+        )}
+        {!isAwaitingPersonalized && displayed.map((d, idx) => (
           <motion.article
             key={d.key}
             initial={{ opacity: 0, y: 30 }}
