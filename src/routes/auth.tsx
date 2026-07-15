@@ -158,7 +158,9 @@ function AuthPage() {
     }
   }
 
+  async function onEmailAuth(e: React.FormEvent) {
     e.preventDefault();
+
     setBusy(true);
     try {
       if (mode === "sign_in") {
