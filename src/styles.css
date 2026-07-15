@@ -90,6 +90,21 @@
   h1, h2, h3, h4 {
     font-family: var(--font-serif);
     letter-spacing: -0.01em;
+    text-wrap: balance;
+    /* CJK: don't break inside a word; keep 「，、。—— 」 with preceding glyph */
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+    line-break: strict;
+  }
+  /* Long italic serif quotes flow as balanced blocks and never break inside a CJK phrase */
+  .font-serif.italic,
+  blockquote,
+  .quote-flow {
+    text-wrap: pretty;
+    word-break: keep-all;
+    line-break: strict;
+    overflow-wrap: break-word;
+    hanging-punctuation: allow-end;
   }
   ::selection {
     background: color-mix(in oklab, var(--gold-dust) 30%, transparent);
