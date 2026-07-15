@@ -699,9 +699,9 @@ function ReportPage() {
       <AccountModal open={accOpen} onClose={() => setAccOpen(false)} />
 
       <section className="mx-auto mb-24 max-w-6xl px-6">
-        <div className="glass-card rounded-3xl p-8 md:p-12">
-          <div className="grid grid-cols-1 items-start gap-10 lg:grid-cols-[1fr_1.1fr]">
-            <div>
+        <div className="glass-card rounded-3xl p-6 sm:p-8 md:p-12">
+          <div className="grid grid-cols-1 items-stretch gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-10">
+            <div className="flex flex-col">
               <p className="mb-3 text-[10px] uppercase tracking-[0.4em] text-gold-dust">
                 {lang === "zh" ? "你的命盘" : "Your natal chart"}
               </p>
@@ -710,12 +710,12 @@ function ReportPage() {
                   ? "九颗行星 · 落在你专属的十二宫"
                   : "Nine planets · falling in your own twelve houses"}
               </h2>
-              <p className="mb-6 text-sm leading-relaxed text-stone-warm/60">
+              <p className="reading-copy mb-6 text-sm leading-relaxed text-stone-warm/60">
                 {lang === "zh"
                   ? "这是一张真实推算的西方回归黄道盘（Tropical Zodiac）—— 以 J2000.0 为基准，按平均黄经公式将七颗行星与上升 / 天顶落入你出生时刻真正对应的星座；相位则按行星间黄经差自动识别合、六分、四分、三分与对分。点击行星查看落位与主要相位；点击星座查看它承接的行星。"
                   : "A real tropical-zodiac natal wheel: seven planets plus Ascendant / Midheaven are placed by mean-longitude formulas referenced to J2000.0, using the exact moment you were born. Aspects (conjunction, sextile, square, trine, opposition) are detected automatically from the longitude differences. Tap a planet to reveal its sign and major aspects; tap a sign to see which planets it holds."}
               </p>
-              <div className="flex flex-wrap gap-2 text-[10px] uppercase tracking-[0.28em] text-stone-warm/50">
+              <div className="mb-4 flex flex-wrap gap-2 text-[10px] uppercase tracking-[0.28em] text-stone-warm/50">
                 <span className="rounded-full border border-white/10 px-3 py-1">☉ ☽ ☿ ♀ ♂ ♃ ♄</span>
                 <span className="rounded-full border border-white/10 px-3 py-1">Ⓐ {lang === "zh" ? "上升" : "Asc"}</span>
                 <span className="rounded-full border border-white/10 px-3 py-1">Ⓜ {lang === "zh" ? "天顶" : "MC"}</span>
@@ -728,24 +728,35 @@ function ReportPage() {
                 onClear={() => setSelectedPlanet(null)}
               />
             </div>
-            <div className="relative flex justify-center text-stone-warm/40">
-              <NatalWheel
+            <div className="flex min-w-0 flex-col items-center gap-4">
+              <div className="relative w-full text-stone-warm/40">
+                <NatalWheel
+                  lang={lang}
+                  seed={`${search.name ?? ""}|${search.date ?? ""}|${search.time ?? ""}|${search.place ?? ""}`}
+                  size={wheelSize}
+                  selectedPlanet={selectedPlanet}
+                  onSelectPlanet={setSelectedPlanet}
+                />
+                <button
+                  onClick={() => setZoomNatal(true)}
+                  className="absolute right-0 top-0 rounded-full border border-gold-dust/30 bg-obsidian/60 px-3 py-1.5 text-[10px] uppercase tracking-[0.28em] text-gold-dust/80 backdrop-blur transition-colors hover:border-gold-light hover:text-gold-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-light"
+                  aria-label={lang === "zh" ? "放大查看星盘" : "Enlarge chart"}
+                >
+                  {lang === "zh" ? "⤢ 放大" : "⤢ Enlarge"}
+                </button>
+              </div>
+
+              {/* Compact "core placements" summary — fills the right-column
+                  whitespace with per-visitor grounded facts. */}
+              <ChartFactsCard
                 lang={lang}
                 seed={`${search.name ?? ""}|${search.date ?? ""}|${search.time ?? ""}|${search.place ?? ""}`}
-                size={wheelSize}
-                selectedPlanet={selectedPlanet}
-                onSelectPlanet={setSelectedPlanet}
+                onPickPlanet={setSelectedPlanet}
               />
-              <button
-                onClick={() => setZoomNatal(true)}
-                className="absolute right-0 top-0 rounded-full border border-gold-dust/30 bg-obsidian/60 px-3 py-1.5 text-[10px] uppercase tracking-[0.28em] text-gold-dust/80 backdrop-blur transition-colors hover:border-gold-light hover:text-gold-light"
-                aria-label={lang === "zh" ? "放大查看星盘" : "Enlarge chart"}
-              >
-                {lang === "zh" ? "⤢ 放大" : "⤢ Enlarge"}
-              </button>
             </div>
           </div>
         </div>
+
 
         <ChartZoomModal
           open={zoomNatal}
