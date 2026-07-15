@@ -654,6 +654,32 @@ export function TarotDraw() {
   const [aiReading, setAiReading] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
 
+  // Example prompts — tap to fill, shuffle for a fresh batch.
+  const EXAMPLE_POOL: [string, string][] = [
+    ["这段关系还值得继续吗？", "Should I stay in this relationship?"],
+    ["接下来三个月该换工作吗？", "Should I change jobs in the next three months?"],
+    ["现在开始创业时机对吗？", "Is now the right time to start my own venture?"],
+    ["我该如何面对父母的期待？", "How should I handle my parents' expectations?"],
+    ["这笔投资该出手吗？", "Should I go ahead with this investment?"],
+    ["我该不该搬去另一个城市？", "Should I move to a different city?"],
+    ["我该主动联系那个人吗？", "Should I reach out to that person first?"],
+    ["接下来该专注学业还是感情？", "Should I focus on study or love next?"],
+    ["现在的迷茫要如何走出？", "How do I move through this confusion?"],
+    ["这个新机会背后有什么风险？", "What risk is hidden in this new opportunity?"],
+    ["今年最该修复的关系是哪一段？", "Which relationship most needs mending this year?"],
+    ["我真正的天赋是什么？", "What is my true, undervalued gift?"],
+  ];
+  const pickThreeExamples = (from: [string, string][], avoid: string[] = []) => {
+    const arr = from.slice();
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    const filtered = arr.filter((p) => !avoid.includes(p[li]));
+    return (filtered.length >= 3 ? filtered : arr).slice(0, 3);
+  };
+  const [examples, setExamples] = useState<[string, string][]>(() => pickThreeExamples(EXAMPLE_POOL));
+
   const positions: [string, string][] = [
     ["Past", "过去"],
     ["Present", "此刻"],
@@ -762,6 +788,36 @@ export function TarotDraw() {
               placeholder={lang === "zh" ? "例如：这段关系还值得继续吗？" : "e.g. Should I stay in this relationship?"}
               className="w-full resize-none rounded-xl border border-white/10 bg-obsidian/60 p-4 text-sm text-stone-warm placeholder:text-stone-warm/30 focus:border-gold-dust/60 focus:outline-none"
             />
+
+            {/* Example prompts */}
+            <div className="mt-4">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <p className="text-[10px] uppercase tracking-[0.28em] text-gold-dust/70">
+                  {lang === "zh" ? "示例提问 · 可直接点选" : "Example questions — tap to use"}
+                </p>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setExamples(pickThreeExamples(EXAMPLE_POOL, examples.map((e) => e[li])))
+                  }
+                  className="whitespace-nowrap rounded-full border border-gold-dust/30 px-3 py-1 text-[10px] uppercase tracking-[0.24em] text-gold-dust/80 transition-colors hover:border-gold-dust hover:bg-gold-dust/10"
+                >
+                  {lang === "zh" ? "换一批 ↻" : "Shuffle ↻"}
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {examples.map((ex, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setQuestion(ex[li])}
+                    className="max-w-full whitespace-normal break-words rounded-full border border-white/10 bg-obsidian/60 px-3 py-1.5 text-left text-[12px] leading-snug text-stone-warm/80 transition-colors hover:border-gold-dust/50 hover:bg-gold-dust/10 hover:text-gold-light"
+                  >
+                    {ex[li]}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
               <p className="text-[10px] uppercase tracking-[0.28em] text-stone-warm/40">
                 {lang === "zh" ? "写下越具体，签越准" : "The clearer the question, the truer the reading"}
@@ -781,12 +837,19 @@ export function TarotDraw() {
         {/* Stage 2 — swipeable 78-card deck */}
         {stage === "pick" && (
           <div>
-            <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
-              <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust">
+            <div className="mb-4 grid grid-cols-[auto_1fr_auto] items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setStage("ask")}
+                className="whitespace-nowrap rounded-full border border-white/10 px-3 py-1 text-[10px] uppercase tracking-[0.24em] text-stone-warm/60 hover:border-gold-dust/40 hover:text-gold-dust"
+              >
+                {lang === "zh" ? "← 改问题" : "← Edit"}
+              </button>
+              <p className="text-center text-[10px] uppercase tracking-[0.32em] text-gold-dust">
                 {picks.length} / 3 — {positions[picks.length]?.[li] ?? ""}
               </p>
-              <p className="text-[10px] uppercase tracking-[0.28em] text-stone-warm/40">
-                {lang === "zh" ? "← 左右滑动 78 张 →" : "← swipe through all 78 →"}
+              <p className="whitespace-nowrap text-right text-[10px] uppercase tracking-[0.24em] text-stone-warm/40">
+                {lang === "zh" ? "左右滑动" : "swipe →"}
               </p>
             </div>
             <div className="tarot-scroll -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-4 sm:-mx-6 sm:gap-4 sm:px-6">

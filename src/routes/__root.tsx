@@ -215,16 +215,8 @@ function SiteNav() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Lock body scroll while side drawer is open.
-  useEffect(() => {
-    if (drawerOpen) {
-      const prev = document.body.style.overflow;
-      document.body.style.overflow = "hidden";
-      return () => {
-        document.body.style.overflow = prev;
-      };
-    }
-  }, [drawerOpen]);
+
+
 
   // Top glass bar visible only when at the top of the page.
   const showTopBar = atTop;
@@ -296,79 +288,58 @@ function SiteNav() {
         </div>
       </nav>
 
-      {/* Side drawer — opens from the right when dot is tapped */}
-      <div
-        aria-hidden={!drawerOpen}
-        onClick={() => setDrawerOpen(false)}
-        className={`fixed inset-0 z-[70] bg-obsidian/60 backdrop-blur-sm transition-opacity duration-300 ${
-          drawerOpen ? "opacity-100" : "pointer-events-none opacity-0"
-        }`}
-      />
+      {/* Slim vertical rail — slides in from the right when the dot is tapped.
+          No backdrop, no dialog: just a compact column of links. */}
       <aside
-        role="dialog"
-        aria-label="Navigation"
-        className={`fixed right-0 top-0 z-[80] h-full w-[82vw] max-w-[340px] border-l border-gold-dust/25 bg-obsidian/95 backdrop-blur-xl shadow-[-20px_0_60px_rgba(0,0,0,0.6)] transition-transform duration-400 ${
-          drawerOpen ? "translate-x-0" : "translate-x-full"
+        aria-label="Navigation rail"
+        aria-hidden={!drawerOpen}
+        onMouseLeave={() => setDrawerOpen(false)}
+        className={`fixed right-3 top-20 z-[75] flex flex-col items-stretch gap-1 rounded-2xl border border-gold-dust/25 bg-obsidian/85 p-2 backdrop-blur-xl shadow-[-10px_10px_40px_rgba(0,0,0,0.5)] transition-all duration-300 ${
+          drawerOpen
+            ? "translate-x-0 opacity-100"
+            : "pointer-events-none translate-x-6 opacity-0"
         }`}
       >
-        <div className="flex items-center justify-between border-b border-white/10 px-6 py-5">
-          <span className="font-serif text-base tracking-normal text-stone-warm">
-            Destiny<span className="text-gold-dust">·</span>Library
-          </span>
-          <button
-            type="button"
-            aria-label="Close navigation"
+        {[
+          { to: "/", label: lang === "zh" ? "首页" : "Home" },
+          { to: "/traditions", label: t.nav_traditions },
+          { to: "/ritual", label: t.nav_ritual },
+          { to: "/about", label: t.nav_about },
+          { to: "/community", label: t.nav_community },
+        ].map((item) => (
+          <Link
+            key={item.to}
+            to={item.to}
             onClick={() => setDrawerOpen(false)}
-            className="grid h-8 w-8 place-items-center rounded-full text-stone-warm/60 hover:bg-white/5 hover:text-gold-dust"
+            className={`whitespace-nowrap rounded-lg px-4 py-2 text-right text-[12px] ${
+              lang === "zh"
+                ? "tracking-normal text-stone-warm/85"
+                : "uppercase tracking-[0.24em] text-stone-warm/75"
+            } transition-colors hover:bg-gold-dust/10 hover:text-gold-light`}
           >
-            ×
-          </button>
-        </div>
-
-        <nav className="flex flex-col gap-1 px-4 py-4">
-          {[
-            { to: "/", label: lang === "zh" ? "首页" : "Home" },
-            { to: "/traditions", label: t.nav_traditions },
-            { to: "/ritual", label: t.nav_ritual },
-            { to: "/about", label: t.nav_about },
-            { to: "/community", label: t.nav_community },
-          ].map((item) => (
-            <Link
-              key={item.to}
-              to={item.to}
-              onClick={() => setDrawerOpen(false)}
-              className={`whitespace-nowrap rounded-xl px-4 py-3 text-sm ${
-                lang === "zh"
-                  ? "tracking-normal text-stone-warm/85"
-                  : "uppercase tracking-[0.28em] text-stone-warm/75"
-              } transition-colors hover:bg-gold-dust/10 hover:text-gold-light`}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-
-        <div className="mt-auto flex flex-col gap-3 border-t border-white/10 px-6 py-5">
-          <button
-            type="button"
-            onClick={() => {
-              setDrawerOpen(false);
-              openAcc();
-            }}
-            className="flex items-center justify-center gap-2 rounded-full border border-gold-dust/40 px-4 py-2 text-[11px] uppercase tracking-[0.28em] text-gold-dust hover:bg-gold-dust/10"
-          >
-            {account?.avatar && (
-              <img
-                src={account.avatar}
-                alt=""
-                className="h-5 w-5 flex-none rounded-full border border-gold-dust/40 object-cover"
-              />
-            )}
-            <span>{accountLabel}</span>
-          </button>
-          <div className="flex items-center justify-center">
-            <LanguageToggle />
-          </div>
+            {item.label}
+          </Link>
+        ))}
+        <div className="my-1 h-px bg-white/10" />
+        <button
+          type="button"
+          onClick={() => {
+            setDrawerOpen(false);
+            openAcc();
+          }}
+          className="flex items-center justify-end gap-2 whitespace-nowrap rounded-lg px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-gold-dust hover:bg-gold-dust/10"
+        >
+          {account?.avatar && (
+            <img
+              src={account.avatar}
+              alt=""
+              className="h-5 w-5 flex-none rounded-full border border-gold-dust/40 object-cover"
+            />
+          )}
+          <span>{accountLabel}</span>
+        </button>
+        <div className="flex justify-end px-2 pb-1">
+          <LanguageToggle />
         </div>
       </aside>
     </>
