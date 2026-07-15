@@ -1037,8 +1037,8 @@ export function TarotDraw() {
                     {plan === "oracle"
                       ? lang === "zh" ? "本月剩余：无限次" : "This month: unlimited"
                       : lang === "zh"
-                        ? `本月剩余 ${remaining} / ${TAROT_LIMITS.sage} 次`
-                        : `${remaining} / ${TAROT_LIMITS.sage} left this month`}
+                        ? `本月已用 ${used} · 剩余 ${remaining} / ${TAROT_LIMITS.sage} 次`
+                        : `Used ${used} · ${remaining} left / ${TAROT_LIMITS.sage} this month`}
                   </p>
                 )}
               </div>
