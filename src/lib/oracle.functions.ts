@@ -145,7 +145,7 @@ Never claim to be an AI. Never say fate is fixed — destiny is only a map.`;
     const prompt = `${chartLine ? `Visitor's chart:\n${chartLine}\n\n` : ""}Question:\n${data.question}`;
 
     const { text } = await generateText({
-      model: gateway("google/gemini-2.5-flash"),
+      model: gateway("google/gemini-3.1-flash-lite"),
       system,
       prompt,
     });
