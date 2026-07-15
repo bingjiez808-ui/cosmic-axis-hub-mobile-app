@@ -827,10 +827,35 @@ export function TarotDraw() {
         <p className="mb-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
           {t.tarot_kicker}
         </p>
-        <h2 className="mb-3 font-serif text-xl italic text-stone-warm sm:text-2xl md:text-3xl">
-          {lang === "zh" ? "先提问，再翻牌 · 78 张标准塔罗" : "Ask first, then flip — the full 78-card deck"}
-        </h2>
+        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-3">
+          <h2 className="font-serif text-xl italic text-stone-warm sm:text-2xl md:text-3xl">
+            {lang === "zh" ? "先提问，再翻牌 · 78 张标准塔罗" : "Ask first, then flip — the full 78-card deck"}
+          </h2>
+          {/* Quota chip — always visible so the visitor sees used / remaining. */}
+          <span
+            className={`inline-flex items-center gap-2 whitespace-nowrap rounded-full border px-3 py-1 text-[10px] uppercase tracking-[0.28em] ${
+              plan === "oracle"
+                ? "border-gold-dust/60 bg-gold-dust/10 text-gold-light"
+                : plan === "sage"
+                  ? remaining > 0
+                    ? "border-gold-dust/40 bg-obsidian/40 text-gold-dust"
+                    : "border-white/15 bg-white/[0.02] text-stone-warm/50"
+                  : "border-white/15 bg-white/[0.02] text-stone-warm/60"
+            }`}
+            title={lang === "zh" ? "跨设备按账户同步" : "Synced per account across devices"}
+          >
+            <span className="size-1.5 rounded-full bg-gold-dust" />
+            {plan === "oracle"
+              ? lang === "zh" ? "塔罗 AI · 本月无限" : "Tarot AI · unlimited"
+              : plan === "sage"
+                ? lang === "zh"
+                  ? `本月已用 ${used} · 剩余 ${remaining} / ${TAROT_LIMITS.sage}`
+                  : `Used ${used} · ${remaining} left / ${TAROT_LIMITS.sage}`
+                : lang === "zh" ? "AI 解读 · 升级贤者" : "AI reading · Sage only"}
+          </span>
+        </div>
         <p className="mb-6 max-w-3xl text-sm text-stone-warm/60">{t.tarot_hint}</p>
+
 
         {/* Stage 1 — question */}
         {stage === "ask" && (
