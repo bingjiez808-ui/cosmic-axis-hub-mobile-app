@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { motion } from "framer-motion";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   ChartZoomModal,
@@ -511,18 +511,22 @@ function ReportPage() {
   const [aiError, setAiError] = useState<string | null>(null);
   const latestReqRef = useRef(0);
 
-  useEffect(() => {
+  const runReport = useCallback((force = false) => {
     if (!search.date) return;
     const cacheKey = buildReportCacheKey(search, lang);
-    try {
-      const cached = typeof sessionStorage !== "undefined" ? sessionStorage.getItem(cacheKey) : null;
-      if (cached) {
-        setAi(JSON.parse(cached) as ReportAI);
-        setAiState("ready");
-        return;
+    if (!force) {
+      try {
+        const cached = typeof sessionStorage !== "undefined" ? sessionStorage.getItem(cacheKey) : null;
+        if (cached) {
+          setAi(JSON.parse(cached) as ReportAI);
+          setAiState("ready");
+          return;
+        }
+      } catch {
+        /* ignore */
       }
-    } catch {
-      /* ignore */
+    } else {
+      try { sessionStorage.removeItem(cacheKey); } catch {}
     }
 
     const reqId = ++latestReqRef.current;
@@ -533,9 +537,6 @@ function ReportPage() {
       data: buildReportRequest(search, lang),
     })
       .then((res) => {
-        // Only apply if this is still the most recent request — protects against
-        // fast lang/seed switches without cancelling successful writes (React
-        // strict mode used to drop the resolved value here).
         if (reqId !== latestReqRef.current) return;
         setAi(res);
         setAiState("ready");
@@ -552,6 +553,10 @@ function ReportPage() {
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seed, lang, search.readingId]);
+
+  useEffect(() => {
+    runReport(false);
+  }, [runReport]);
 
   const isAwaitingPersonalized = !!search.date && aiState !== "ready" && aiState !== "error";
   const summary = ai?.summary
@@ -801,7 +806,7 @@ function ReportPage() {
       <section className="mx-auto max-w-5xl space-y-10 px-6 md:px-12">
         {search.date && (aiState === "loading" || aiState === "error") && (
           <div
-            className={`glass-card flex items-center justify-between gap-4 rounded-2xl px-5 py-3 text-[11px] uppercase tracking-[0.28em] ${
+            className={`glass-card flex flex-col gap-3 rounded-2xl px-5 py-3 text-[11px] uppercase tracking-[0.28em] sm:flex-row sm:items-center sm:justify-between ${
               aiState === "error" ? "text-red-300/80" : "text-gold-dust/80"
             }`}
           >
@@ -816,6 +821,15 @@ function ReportPage() {
             </span>
             {aiState === "loading" && (
               <span className="size-2 animate-pulse rounded-full bg-gold-dust" />
+            )}
+            {aiState === "error" && (
+              <button
+                type="button"
+                onClick={() => runReport(true)}
+                className="flex-none rounded-full border border-red-300/40 px-4 py-1.5 text-[10px] tracking-[0.28em] text-red-200 transition-colors hover:bg-red-300/10"
+              >
+                {lang === "zh" ? "重试" : "Retry"}
+              </button>
             )}
           </div>
         )}

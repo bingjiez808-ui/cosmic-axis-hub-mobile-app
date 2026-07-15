@@ -1,10 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
+import { useState } from "react";
 
 import astrologyImg from "@/assets/tradition-astrology.jpg";
 import jyotishImg from "@/assets/tradition-jyotish.jpg";
 import baziImg from "@/assets/tradition-bazi.jpg";
 import ziweiImg from "@/assets/tradition-ziwei.jpg";
+import { TraditionModal, type TraditionId } from "@/components/TraditionModal";
 import { useLang } from "@/lib/i18n";
 
 export const Route = createFileRoute("/traditions")({
@@ -30,6 +32,7 @@ type Bi = [string, string]; // [en, zh]
 
 type Chapter = {
   numeral: string;
+  elderId: TraditionId;
   title: Bi;
   subtitle: Bi;
   origin: Bi;
@@ -43,6 +46,7 @@ type Chapter = {
 const chapters: Chapter[] = [
   {
     numeral: "I",
+    elderId: "astrology",
     title: ["Western Astrology", "西方占星"],
     subtitle: [
       "The dialogue between psyche and sky",
@@ -80,6 +84,7 @@ const chapters: Chapter[] = [
   },
   {
     numeral: "II",
+    elderId: "jyotish",
     title: ["Jyotish", "印度占星 · Jyotish"],
     subtitle: [
       "The science of light — India's Vedic astrology",
@@ -117,6 +122,7 @@ const chapters: Chapter[] = [
   },
   {
     numeral: "III",
+    elderId: "bazi",
     title: ["BaZi — 八字", "八字 · 四柱"],
     subtitle: [
       "The Four Pillars of Destiny",
@@ -154,6 +160,7 @@ const chapters: Chapter[] = [
   },
   {
     numeral: "IV",
+    elderId: "ziwei",
     title: ["Zi Wei Dou Shu — 紫微斗数", "紫微斗数"],
     subtitle: [
       "The Purple Star Astrology of the Chinese imperium",
@@ -212,6 +219,7 @@ const HEADER = {
 function TraditionsPage() {
   const { lang } = useLang();
   const li: 0 | 1 = lang === "zh" ? 1 : 0;
+  const [openTradition, setOpenTradition] = useState<TraditionId | null>(null);
 
   return (
     <div className="pt-32 pb-32">
@@ -301,6 +309,15 @@ function TraditionsPage() {
                   </ul>
                 </div>
               </div>
+
+              <button
+                type="button"
+                onClick={() => setOpenTradition(c.elderId)}
+                className="mt-10 inline-flex items-center gap-2 rounded-full border border-gold-dust/40 px-6 py-2.5 text-[10px] uppercase tracking-[0.32em] text-gold-dust transition-colors hover:bg-gold-dust/10"
+              >
+                {lang === "zh" ? "请这位长老开口" : "Consult this elder"}
+                <span className="text-sm">→</span>
+              </button>
             </div>
           </motion.article>
         ))}
@@ -318,6 +335,8 @@ function TraditionsPage() {
           {HEADER.cta[li]}
         </Link>
       </div>
+
+      <TraditionModal id={openTradition} onClose={() => setOpenTradition(null)} />
     </div>
   );
 }

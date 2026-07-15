@@ -30,12 +30,13 @@ type Dict = {
   hero_lang_en: string;
   hero_lang_zh: string;
   // hero
-  hero_kicker: string;
-  hero_h1_a: string;
-  hero_h1_b: string;
-  hero_quote: string;
-  hero_cta: string;
-  hero_scroll: string;
+ hero_kicker: string;
+ hero_h1_a: string;
+ hero_h1_b: string;
+ hero_quote: string;
+ hero_subtitle: string;
+ hero_cta: string;
+ hero_scroll: string;
   // philosophy
   philosophy_a: string;
   philosophy_em: string;
@@ -197,8 +198,9 @@ const en: Dict = {
   hero_kicker: "An AI synthesis of human destiny",
   hero_h1_a: "Every civilization has tried to",
   hero_h1_b: "answer the same question.",
-  hero_quote: "“Who are you?”",
-  hero_cta: "Enter the Library",
+ hero_quote: "“Who are you?”",
+ hero_subtitle: "Share your birth details — our AI weaves Western Astrology, Vedic Jyotish, Chinese BaZi and Zi Wei Dou Shu into one reading of who you are.",
+ hero_cta: "Enter the Library",
   hero_scroll: "Scroll to explore",
   philosophy_a: "Four civilizations — separated by oceans and centuries — each built a language for the same silence inside a human being.",
   philosophy_em: "This library reads all four at once.",
@@ -348,6 +350,7 @@ const zh: Dict = {
   hero_h1_a: "每一种文明，都在追问",
   hero_h1_b: "同一个问题。",
   hero_quote: "「你，是谁？」",
+  hero_subtitle: "输入你的出生信息，AI 将融合西方占星、印度吠陀、中国八字与紫微斗数，为你合成一份关于「你是谁」的解读。",
   hero_cta: "步入图书馆",
   hero_scroll: "向下滚动继续",
   philosophy_a: "四种文明 —— 隔着大洋与千年 —— 各自为人内心的同一片寂静，谱写了一门语言。",
