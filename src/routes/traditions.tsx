@@ -1,10 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
+import { useState } from "react";
 
 import astrologyImg from "@/assets/tradition-astrology.jpg";
 import jyotishImg from "@/assets/tradition-jyotish.jpg";
 import baziImg from "@/assets/tradition-bazi.jpg";
 import ziweiImg from "@/assets/tradition-ziwei.jpg";
+import { TraditionModal, type TraditionId } from "@/components/TraditionModal";
 import { useLang } from "@/lib/i18n";
 
 export const Route = createFileRoute("/traditions")({
