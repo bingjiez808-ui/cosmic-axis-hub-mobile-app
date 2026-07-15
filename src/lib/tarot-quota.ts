@@ -110,7 +110,10 @@ export function tarotConsume(plan: TarotPlan, scope?: Scope): boolean {
     }
     return true;
   } finally {
-    // Release after the current microtask so a synchronous second call still races-out.
-    setTimeout(() => IN_FLIGHT.delete(key), 400);
+    // Release synchronously — the guard's real purpose is re-entrancy
+    // (StrictMode double-invoke, sync double-invocation from the same
+    // handler frame). Rapid user clicks are handled at the call site with
+    // a component-level ref while the async AI call is in flight.
+    IN_FLIGHT.delete(key);
   }
 }
