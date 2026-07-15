@@ -33,6 +33,20 @@ function AuthPage() {
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
 
+  const getPostAuthDestination = async () => {
+    if (search.redirect) return search.redirect;
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData.user?.id;
+    if (!userId) return "/";
+    const { data } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "admin")
+      .maybeSingle();
+    return data ? "/admin" : "/";
+  };
+
   // Detect a recovery link (Supabase sets type=recovery in the hash on redirect).
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -43,9 +57,16 @@ function AuthPage() {
   // If already signed in and not in reset flow, bounce away.
   useEffect(() => {
     if (mode === "reset") return;
+    let cancelled = false;
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: (search.redirect as never) ?? "/" });
+      if (!data.session) return;
+      getPostAuthDestination().then((to) => {
+        if (!cancelled) navigate({ to: to as never });
+      });
     });
+    return () => {
+      cancelled = true;
+    };
   }, [mode, navigate, search.redirect]);
 
   const zh = lang === "zh";
@@ -94,7 +115,8 @@ function AuthPage() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         toast.success(zh ? "入席成功" : "Welcome back");
-        navigate({ to: (search.redirect as never) ?? "/" });
+        const to = await getPostAuthDestination();
+        navigate({ to: to as never });
       } else if (mode === "sign_up") {
         const { error } = await supabase.auth.signUp({
           email,
