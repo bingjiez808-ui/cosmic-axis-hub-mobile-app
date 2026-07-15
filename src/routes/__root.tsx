@@ -257,8 +257,8 @@ function SiteNav() {
           <div className="hidden items-center gap-5 md:flex lg:gap-8">
             <Link to="/traditions" className={linkClass}>{t.nav_traditions}</Link>
             <Link to="/ritual" className={linkClass}>{t.nav_ritual}</Link>
-            <Link to="/about" className={linkClass}>{t.nav_about}</Link>
             <Link to="/community" className={linkClass}>{t.nav_community}</Link>
+            <Link to="/about" className={linkClass}>{t.nav_about}</Link>
           </div>
           <button
             type="button"
