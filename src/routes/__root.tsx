@@ -263,7 +263,7 @@ function SiteNav() {
             <Link to="/community" className={linkClass}>{t.nav_community}</Link>
             <Link to="/about" className={linkClass}>{t.nav_about}</Link>
             {isAdmin && (
-              <Link to="/_authenticated/admin" className={linkClass + " text-gold-dust"}>{adminLabel}</Link>
+              <Link to="/admin" className={linkClass + " text-gold-dust"}>{adminLabel}</Link>
             )}
           </div>
           <button
@@ -312,7 +312,7 @@ function SiteNav() {
           { to: "/ritual", label: t.nav_ritual },
           { to: "/community", label: t.nav_community },
           { to: "/about", label: t.nav_about },
-          ...(isAdmin ? [{ to: "/_authenticated/admin", label: adminLabel }] : []),
+          ...(isAdmin ? [{ to: "/admin", label: adminLabel }] : []),
         ].map((item) => (
           <Link
             key={item.to}
