@@ -17,9 +17,17 @@ import {
   Star,
   Check,
   AlertTriangle,
-  ChevronDown,
+  ChevronRight,
+  Maximize2,
   type LucideIcon,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { ElderCompanion } from "@/components/ElderCompanion";
 
 const DIM_ICONS: Record<string, LucideIcon> = {
   character: Sparkles,
@@ -576,6 +584,8 @@ function ReportPage() {
   const [selectedPlanet, setSelectedPlanet] = useState<number | null>(0);
   const [wheelSize, setWheelSize] = useState(360);
   const [zoomNatal, setZoomNatal] = useState(false);
+  // Which dimension's detail modal is open (by key), or null.
+  const [detailKey, setDetailKey] = useState<string | null>(null);
 
   // Sync report language with the choice made in the ritual, if provided.
   useEffect(() => {
@@ -1119,53 +1129,41 @@ function ReportPage() {
                 </div>
 
                 {d.details && d.details.length > 0 && (
-                  <details className="group mt-6 overflow-hidden rounded-2xl border border-gold-dust/15 bg-white/[0.02] transition-colors open:border-gold-dust/30 open:bg-white/[0.03]">
-                    <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 text-[10px] uppercase tracking-[0.32em] text-gold-dust/80 hover:text-gold-light [&::-webkit-details-marker]:hidden">
-                      <span className="flex items-center gap-2">
-                        <Layers size={12} strokeWidth={1.5} />
-                        {lang === "zh" ? "展开细节 · 通道 / 警惕" : "Unfold detail · channels / cautions"}
+                  <button
+                    type="button"
+                    onClick={() => setDetailKey(d.key)}
+                    className="group mt-6 flex w-full items-center justify-between gap-3 rounded-2xl border border-gold-dust/25 bg-gradient-to-br from-gold-dust/[0.06] to-transparent px-5 py-4 text-left transition-all hover:border-gold-dust/50 hover:from-gold-dust/[0.1] hover:shadow-[0_10px_40px_-20px_hsl(45_70%_60%/0.6)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-light"
+                  >
+                    <span className="flex min-w-0 items-center gap-3">
+                      <span className="grid size-9 shrink-0 place-items-center rounded-xl border border-gold-dust/30 bg-obsidian/60 text-gold-light">
+                        <Maximize2 size={14} strokeWidth={1.6} />
                       </span>
-                      <ChevronDown size={14} className="transition-transform group-open:rotate-180" />
-                    </summary>
-                    <div
-                      className={`detail-grid px-5 pb-5 ${d.details.length === 3 ? "detail-grid-3" : ""}`}
-                      role="list"
-                    >
-                      {d.details.map((block, bIdx) => {
-                        const isCaution = bIdx > 0;
-                        const ItemIcon = isCaution ? AlertTriangle : Check;
-                        return (
-                          <div
-                            key={block.label[0]}
-                            role="listitem"
-                            className={`detail-card ${isCaution ? "detail-card-caution" : "detail-card-strength"}`}
-                          >
-                            <p
-                              className={`flex items-center gap-2 text-[10px] uppercase tracking-[0.3em] ${
-                                isCaution ? "text-amber-200/85" : "text-emerald-200/85"
-                              }`}
-                            >
-                              <ItemIcon size={12} strokeWidth={2} />
-                              {block.label[li]}
-                            </p>
-                            <ul className="space-y-1.5 text-stone-warm/80">
-                              {block.items.map((it) => (
-                                <li key={it[0]} className="flex items-start gap-2">
-                                  <span
-                                    className={`mt-[7px] size-1 shrink-0 rounded-full ${
-                                      isCaution ? "bg-amber-300/70" : "bg-emerald-300/70"
-                                    }`}
-                                    aria-hidden="true"
-                                  />
-                                  <span>{it[li]}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </details>
+                      <span className="min-w-0">
+                        <span className="block text-[10px] uppercase tracking-[0.32em] text-gold-dust/80">
+                          {lang === "zh" ? "查看四体系详细佐证" : "View four-system evidence"}
+                        </span>
+                        <span className="mt-1 block truncate font-serif text-sm italic text-stone-warm/75">
+                          {lang === "zh"
+                            ? "通道 · 警惕 · 落位数据 · 图示"
+                            : "Channels · cautions · placements · charts"}
+                        </span>
+                      </span>
+                    </span>
+                    <span className="flex items-center gap-2 text-gold-dust/70 transition-transform group-hover:translate-x-1">
+                      {/* Preview dots — one per detail block */}
+                      <span className="hidden gap-1 sm:flex">
+                        {d.details.map((_, i) => (
+                          <span
+                            key={i}
+                            className={`size-1.5 rounded-full ${
+                              i === 0 ? "bg-emerald-300/70" : "bg-amber-300/70"
+                            }`}
+                          />
+                        ))}
+                      </span>
+                      <ChevronRight size={16} />
+                    </span>
+                  </button>
                 )}
               </div>
             </div>
@@ -1219,7 +1217,199 @@ function ReportPage() {
           </Link>
         </div>
       </div>
+
+      {/* Dimension detail modal — richer four-system evidence + channels / cautions */}
+      <DimensionDetailModal
+        dimension={displayed.find((x) => x.key === detailKey) ?? null}
+        open={detailKey !== null}
+        onClose={() => setDetailKey(null)}
+        lang={lang}
+        t={t}
+      />
+
+      {/* Floating sage companion — decorative, interactive */}
+      <ElderCompanion lang={lang} />
     </div>
+  );
+}
+
+function DimensionDetailModal({
+  dimension,
+  open,
+  onClose,
+  lang,
+  t,
+}: {
+  dimension: Dimension | null;
+  open: boolean;
+  onClose: () => void;
+  lang: "en" | "zh";
+  t: ReturnType<typeof useLang>["t"];
+}) {
+  const li = lang === "zh" ? 1 : 0;
+  const d = dimension;
+  const DIcon = d ? DIM_ICONS[d.key] ?? Sparkles : Sparkles;
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent
+        className="max-h-[92vh] w-[96vw] max-w-4xl overflow-y-auto border border-gold-dust/25 bg-obsidian/95 p-0 backdrop-blur-xl [&>button]:text-gold-light"
+      >
+        {d && (
+          <div className="relative">
+            {/* Ambient background */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 -z-0 opacity-70"
+              style={{
+                background:
+                  "radial-gradient(ellipse 60% 40% at 20% 0%, color-mix(in oklab, var(--gold-dust) 12%, transparent) 0%, transparent 70%), radial-gradient(ellipse 60% 40% at 100% 100%, color-mix(in oklab, var(--nebula-purple) 18%, transparent) 0%, transparent 70%)",
+              }}
+            />
+
+            {/* Header */}
+            <div className="relative flex items-start gap-4 border-b border-white/10 px-6 py-6 sm:px-10 sm:py-7">
+              <div className="grid size-14 shrink-0 place-items-center rounded-2xl border border-gold-dust/30 bg-gradient-to-br from-gold-dust/[0.14] to-transparent text-gold-light">
+                <DIcon size={24} strokeWidth={1.5} />
+              </div>
+              <div className="min-w-0 pr-8">
+                <DialogTitle asChild>
+                  <p className="mb-1 text-[10px] uppercase tracking-[0.32em] text-gold-dust/80">
+                    {d.title[li]} · {lang === "zh" ? "详细佐证" : "detailed evidence"}
+                  </p>
+                </DialogTitle>
+                <DialogDescription asChild>
+                  <h3 className="font-serif text-xl italic leading-snug text-stone-warm sm:text-2xl">
+                    {d.headline[li]}
+                  </h3>
+                </DialogDescription>
+              </div>
+            </div>
+
+            <div className="relative grid gap-8 px-6 py-7 sm:px-10 md:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
+              {/* Left column — data visualisation */}
+              <div className="flex flex-col gap-6">
+                {/* Four-system strength bars */}
+                <div>
+                  <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/80">
+                    {lang === "zh" ? "四大体系强度" : "Four-system strength"}
+                  </p>
+                  <ul className="space-y-2.5">
+                    {t.four_traditions.map((label, i) => {
+                      const v = d.strengths[i];
+                      const TIcon = traditionIcon(d.evidence[i]?.tradition[0] ?? label);
+                      return (
+                        <li key={label} className="flex items-center gap-3">
+                          <span className="grid size-6 shrink-0 place-items-center rounded-md border border-gold-dust/25 text-gold-light">
+                            <TIcon size={11} strokeWidth={1.6} />
+                          </span>
+                          <span className="w-20 shrink-0 text-[10px] uppercase tracking-[0.22em] text-stone-warm/60">
+                            {label}
+                          </span>
+                          <span className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-white/[0.06]">
+                            <motion.span
+                              initial={{ width: 0 }}
+                              animate={{ width: `${Math.round(v * 100)}%` }}
+                              transition={{ duration: 0.9, ease: [0.32, 0.72, 0, 1] }}
+                              className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-gold-dust/70 to-gold-light"
+                            />
+                          </span>
+                          <span className="w-8 shrink-0 text-right font-serif text-[11px] italic text-gold-light">
+                            {Math.round(v * 100)}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+
+                {/* Evidence details from each tradition */}
+                <div>
+                  <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/80">
+                    {lang === "zh" ? "各体系落位" : "Placements by tradition"}
+                  </p>
+                  <ul className="space-y-2.5">
+                    {d.evidence.map((e) => {
+                      const TIcon = traditionIcon(e.tradition[0]);
+                      return (
+                        <li
+                          key={e.tradition[0]}
+                          className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2.5"
+                        >
+                          <p className="mb-1 flex items-center gap-2 font-serif text-[13px] italic text-gold-light">
+                            <TIcon size={12} strokeWidth={1.5} />
+                            {e.tradition[li]}
+                          </p>
+                          <p className="text-[12px] leading-relaxed text-stone-warm/70">
+                            {e.note[li]}
+                          </p>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              </div>
+
+              {/* Right column — channels & cautions, spelled out */}
+              <div className="flex flex-col gap-5">
+                {d.details?.map((block, bIdx) => {
+                  const isCaution = bIdx > 0;
+                  const ItemIcon = isCaution ? AlertTriangle : Check;
+                  return (
+                    <motion.div
+                      key={block.label[0]}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4, delay: 0.08 * bIdx }}
+                      className={`rounded-2xl border p-4 sm:p-5 ${
+                        isCaution
+                          ? "border-amber-200/25 bg-gradient-to-br from-amber-300/[0.06] to-transparent"
+                          : "border-emerald-200/25 bg-gradient-to-br from-emerald-300/[0.06] to-transparent"
+                      }`}
+                    >
+                      <p
+                        className={`mb-3 flex items-center gap-2 text-[10px] uppercase tracking-[0.3em] ${
+                          isCaution ? "text-amber-200/90" : "text-emerald-200/90"
+                        }`}
+                      >
+                        <span
+                          className={`grid size-6 place-items-center rounded-md ${
+                            isCaution
+                              ? "bg-amber-300/15 text-amber-200"
+                              : "bg-emerald-300/15 text-emerald-200"
+                          }`}
+                        >
+                          <ItemIcon size={11} strokeWidth={2} />
+                        </span>
+                        {block.label[li]}
+                      </p>
+                      <ul className="space-y-2">
+                        {block.items.map((it, i) => (
+                          <li
+                            key={it[0]}
+                            className="flex items-start gap-3 rounded-lg border border-white/5 bg-obsidian/40 px-3 py-2 text-[13px] leading-relaxed text-stone-warm/85"
+                          >
+                            <span
+                              className={`grid size-5 shrink-0 place-items-center rounded-full font-serif text-[10px] italic ${
+                                isCaution
+                                  ? "bg-amber-300/20 text-amber-100"
+                                  : "bg-emerald-300/20 text-emerald-100"
+                              }`}
+                            >
+                              {i + 1}
+                            </span>
+                            <span>{it[li]}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
 
