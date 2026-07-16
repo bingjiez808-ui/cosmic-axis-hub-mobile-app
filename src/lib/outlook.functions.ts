@@ -50,6 +50,13 @@ export type OutlookDimension = {
   mitigations: string[];
 };
 
+export type OutlookWatchItem = {
+  year: string;
+  theme: string;
+  note: string;
+  detail: string;
+};
+
 export type OutlookAI = {
   timeline: {
     summary: string;
@@ -62,6 +69,7 @@ export type OutlookAI = {
     windows: OutlookWindow[];
     dimensions: OutlookDimension[];
   };
+  watchlist: OutlookWatchItem[];
 };
 
 export const generateChartOutlook = createServerFn({ method: "POST" })
