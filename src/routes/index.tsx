@@ -11,6 +11,12 @@ import { TraditionModal, type TraditionId } from "@/components/TraditionModal";
 import { useLang } from "@/lib/i18n";
 
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { property: "og:url", content: "https://fate-nexus-ai.lovable.app/" },
+    ],
+    links: [{ rel: "canonical", href: "https://fate-nexus-ai.lovable.app/" }],
+  }),
   component: LandingPage,
 });
 
