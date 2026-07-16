@@ -330,6 +330,44 @@ export const renameChart = createServerFn({ method: "POST" })
   });
 
 /* --------------------------------------------------------------------- */
+/* updateChartGender — owner only. Rebuilds input_snapshot.gender so the */
+/* Zi Wei calculator becomes available. Admin CANNOT set this for other */
+/* users — only the chart owner may declare their own gender.            */
+/* --------------------------------------------------------------------- */
+
+const UpdateChartGenderInput = z.object({
+  chartId: z.string().uuid(),
+  gender: z.enum(["male", "female"]),
+});
+
+export const updateChartGender = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => UpdateChartGenderInput.parse(data))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    // Ownership guard: RLS + explicit user_id filter.
+    const { data: existing, error: readErr } = await supabase
+      .from("charts")
+      .select("id, user_id, input_snapshot")
+      .eq("id", data.chartId)
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (readErr || !existing) throw new Error("chart_not_found");
+    const prev =
+      existing.input_snapshot && typeof existing.input_snapshot === "object"
+        ? (existing.input_snapshot as Record<string, unknown>)
+        : {};
+    const next = { ...prev, gender: data.gender };
+    const { error } = await supabase
+      .from("charts")
+      .update({ input_snapshot: next as never })
+      .eq("id", data.chartId)
+      .eq("user_id", userId);
+    if (error) throw new Error("chart_update_failed");
+    return { ok: true, gender: data.gender };
+  });
+
+/* --------------------------------------------------------------------- */
 /* Email-verified guard                                                  */
 /* --------------------------------------------------------------------- */
 

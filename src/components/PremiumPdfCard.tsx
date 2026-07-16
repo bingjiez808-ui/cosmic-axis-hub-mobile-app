@@ -19,7 +19,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useLang } from "@/lib/i18n";
-import { ensureChart } from "@/lib/reports-store.functions";
+import { ensureChart, updateChartGender } from "@/lib/reports-store.functions";
 import {
   generatePremiumReport,
   getPremiumStatus,
@@ -119,6 +119,16 @@ const TXT = {
     zh: "以下体系还没有真实计算器，我们不会用模板伪造报告，也暂时不接受付费或授权：",
     en: "The following traditions have no real calculator yet. We refuse to ship a template report and cannot accept purchase or grant until they are wired up:",
   },
+  gender_backfill_title: {
+    zh: "补充紫微计算所需的性别",
+    en: "Add the gender used by the Zi Wei calculator",
+  },
+  gender_backfill_body: {
+    zh: "紫微斗数需要出生性别（仅用于传统算法），补充后即可解锁高级 AI 深度报告。只有本人可以更新自己的命盘。",
+    en: "Zi Wei Dou Shu requires birth gender (used only by the traditional algorithm). Adding it unlocks the Premium AI Deep Reading. Only you can update your own chart.",
+  },
+  gender_male: { zh: "男", en: "Male" },
+  gender_female: { zh: "女", en: "Female" },
 };
 
 function pick<T extends { zh: string; en: string }>(t: T, lang: "zh" | "en"): string {
@@ -222,27 +232,33 @@ export function PremiumPdfCard({
 
   const refresh = useCallback(async () => {
     if (!search?.date) return;
-    // Pre-flight: block if any tradition has no real calculator. This
-    // mirrors the server-side `assertSystemsComplete` gate so the UI
-    // never asks for money while modules are still missing.
-    const snap = buildCalculationSnapshot({
-      date: search.date,
-      time: search.time,
-      place: search.place,
-      lang,
-      gender: search.gender ?? null,
-    });
-    const missing = missingSystems(snap);
-    if (missing.length > 0) {
-      setState({ kind: "systems_incomplete", chartId: null, missing });
-      return;
-    }
     try {
       const { data: sess } = await supabase.auth.getSession();
       if (!sess.session) {
+        // Signed-out visitors still see a systems check for transparency.
+        const snap = buildCalculationSnapshot({
+          date: search.date,
+          time: search.time,
+          place: search.place,
+          lang,
+          gender: search.gender ?? null,
+        });
+        const missing = missingSystems(snap);
+        if (missing.length > 0) {
+          setState({ kind: "systems_incomplete", chartId: null, missing });
+          return;
+        }
         setState({ kind: "signed_out" });
         return;
       }
+      // Save/upsert chart FIRST so we can offer a per-chart gender backfill.
+      const preSnap = buildCalculationSnapshot({
+        date: search.date,
+        time: search.time,
+        place: search.place,
+        lang,
+        gender: search.gender ?? null,
+      });
       const chart = await ensureChart({
         data: {
           name: search.name,
@@ -250,9 +266,14 @@ export function PremiumPdfCard({
           time: search.time,
           place: search.place,
           lang,
-          input_snapshot: { ...search, lang, calculation_snapshot: snap },
+          input_snapshot: { ...search, lang, calculation_snapshot: preSnap },
         },
       });
+      const missing = missingSystems(preSnap);
+      if (missing.length > 0) {
+        setState({ kind: "systems_incomplete", chartId: chart.chartId, missing });
+        return;
+      }
       const status = await getPremiumStatus({ data: { chartId: chart.chartId } });
       setState(applyStatus(chart.chartId, status));
     } catch (err) {
@@ -275,6 +296,18 @@ export function PremiumPdfCard({
       }
     }
   }, [search, lang, applyStatus]);
+
+  const onBackfillGender = async (chartId: string, gender: "male" | "female") => {
+    setBusy(true);
+    try {
+      await updateChartGender({ data: { chartId, gender } });
+      await refresh();
+    } catch {
+      setState({ kind: "error", message: pick(TXT.error, lang) });
+    } finally {
+      setBusy(false);
+    }
+  };
 
   useEffect(() => {
     refresh();
@@ -387,8 +420,9 @@ export function PremiumPdfCard({
             onUnlock={onUnlock}
             onGenerate={onGenerate}
             onOpen={onOpen}
-          onResendVerification={onResendVerification}
-          resent={resent}
+            onResendVerification={onResendVerification}
+            onBackfillGender={onBackfillGender}
+            resent={resent}
             fullWidth
           />
           <p className="text-center text-[10px] uppercase tracking-[0.24em] text-stone-warm/40 md:text-right">
@@ -440,6 +474,7 @@ export function PremiumPdfCard({
           onGenerate={onGenerate}
           onOpen={onOpen}
           onResendVerification={onResendVerification}
+          onBackfillGender={onBackfillGender}
           resent={resent}
         />
       </div>
@@ -502,6 +537,7 @@ function ActionRow({
   onGenerate,
   onOpen,
   onResendVerification,
+  onBackfillGender,
   resent,
   fullWidth = false,
 }: {
@@ -512,6 +548,7 @@ function ActionRow({
   onGenerate: () => void;
   onOpen: (btn: HTMLButtonElement | null) => void;
   onResendVerification: () => void;
+  onBackfillGender: (chartId: string, gender: "male" | "female") => void;
   resent: boolean;
   fullWidth?: boolean;
 }) {
@@ -552,6 +589,40 @@ function ActionRow({
   }
   if (state.kind === "no_chart") return <p className="text-sm text-stone-warm/50">…</p>;
   if (state.kind === "systems_incomplete") {
+    // Special case: only Zi Wei missing AND owner has a chart → offer the
+    // safe gender-backfill dialog. Only chart owner can update.
+    const onlyZiwei = state.missing.length === 1 && state.missing[0] === "ziwei";
+    if (onlyZiwei && state.chartId) {
+      const chartId = state.chartId;
+      return (
+        <div
+          className={`rounded-2xl border border-gold-dust/25 bg-gold-dust/[0.04] p-3 text-[12px] leading-relaxed text-stone-warm/80 ${fullWidth ? "w-full" : ""}`}
+        >
+          <p className="mb-2 text-[11px] uppercase tracking-[0.28em] text-gold-dust/80">
+            {pick(TXT.gender_backfill_title, lang)}
+          </p>
+          <p className="mb-3">{pick(TXT.gender_backfill_body, lang)}</p>
+          <div role="radiogroup" aria-label={pick(TXT.gender_backfill_title, lang)} className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => onBackfillGender(chartId, "male")}
+              className="min-h-[44px] rounded-full border border-gold-dust/40 px-5 py-2 text-[11px] uppercase tracking-[0.28em] text-gold-light hover:bg-gold-dust/10 disabled:opacity-50"
+            >
+              {pick(TXT.gender_male, lang)}
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => onBackfillGender(chartId, "female")}
+              className="min-h-[44px] rounded-full border border-gold-dust/40 px-5 py-2 text-[11px] uppercase tracking-[0.28em] text-gold-light hover:bg-gold-dust/10 disabled:opacity-50"
+            >
+              {pick(TXT.gender_female, lang)}
+            </button>
+          </div>
+        </div>
+      );
+    }
     return (
       <div
         className={`rounded-2xl border border-white/10 bg-white/[0.02] p-3 text-[12px] leading-relaxed text-stone-warm/70 ${fullWidth ? "w-full" : ""}`}

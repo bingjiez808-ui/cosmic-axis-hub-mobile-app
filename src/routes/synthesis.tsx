@@ -17,6 +17,7 @@ type SearchParams = {
   zodiac?: string;
   lunar?: string;
   readingId?: string;
+  gender?: "male" | "female";
 };
 
 export const Route = createFileRoute("/synthesis")({
@@ -42,6 +43,7 @@ export const Route = createFileRoute("/synthesis")({
     zodiac: typeof s.zodiac === "string" ? s.zodiac : undefined,
     lunar: typeof s.lunar === "string" ? s.lunar : undefined,
     readingId: typeof s.readingId === "string" ? s.readingId : undefined,
+    gender: s.gender === "male" ? "male" : s.gender === "female" ? "female" : undefined,
   }),
   component: SynthesisPage,
 });

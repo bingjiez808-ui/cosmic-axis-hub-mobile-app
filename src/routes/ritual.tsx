@@ -30,7 +30,8 @@ export const Route = createFileRoute("/ritual")({
   component: RitualPage,
 });
 
-type FieldKey = "name" | "date" | "time" | "place";
+type FieldKey = "name" | "date" | "time" | "place" | "gender";
+type Gender = "male" | "female" | "";
 
 // -------- 5 psychology-inspired calibration questions --------
 // Not tests, no right answers — used to nudge the AI reading toward the user.
@@ -125,6 +126,7 @@ function RitualPage() {
     date: "",
     time: "",
     place: "",
+    gender: "",
   });
   const [quiz] = useState<string[]>(["", "", "", "", ""]);
   // Quiz has been retired — the flow is intake-only now.
@@ -140,7 +142,7 @@ function RitualPage() {
         const s = JSON.parse(raw);
         if (s && typeof s === "object") {
           if (s.values) setValues((v) => ({ ...v, ...s.values }));
-          if (typeof s.step === "number") setStep(Math.max(0, Math.min(s.step, 3)));
+          if (typeof s.step === "number") setStep(Math.max(0, Math.min(s.step, 4)));
         }
       }
     } catch {}
@@ -158,19 +160,20 @@ function RitualPage() {
     } catch {}
   }, [values, quiz, step, skipQuiz, restored]);
 
-  const totalSteps = (skipQuiz ? 0 : QUIZ.length) + 4;
+  const totalSteps = (skipQuiz ? 0 : QUIZ.length) + 5;
 
   const questionSteps: {
     key: FieldKey;
     prompt: string;
     hint: string;
     placeholder: string;
-    input: "text" | "date" | "time";
+    input: "text" | "date" | "time" | "gender";
   }[] = [
     { key: "name", prompt: t.q_name, hint: t.q_name_hint, placeholder: t.q_name_ph, input: "text" },
     { key: "date", prompt: t.q_date, hint: t.q_date_hint, placeholder: "", input: "date" },
     { key: "time", prompt: t.q_time, hint: t.q_time_hint, placeholder: "", input: "time" },
     { key: "place", prompt: t.q_place, hint: t.q_place_hint, placeholder: t.q_place_ph, input: "text" },
+    { key: "gender", prompt: t.q_gender, hint: t.q_gender_hint, placeholder: "", input: "gender" },
 ];
 
 // `noOrphan` lives in @/lib/typography — imported at the top of the file.
@@ -187,15 +190,22 @@ function RitualPage() {
 
   const canAdvance = isQuizStep
     ? !!quiz[quizIdx]
-    : (values[currentQ!.key] ?? "").trim().length > 0;
+    : currentQ?.key === "gender"
+      ? true // gender step allows skip
+      : (values[currentQ!.key] ?? "").trim().length > 0;
 
 
   const advance = () => {
     if (!canAdvance) return;
     if (isLast) {
       const info = solarToLunarInfo(values.date, values.time);
+      const gender = values.gender === "male" || values.gender === "female" ? values.gender : "";
       const params = new URLSearchParams({
-        ...values,
+        name: values.name,
+        date: values.date,
+        time: values.time,
+        place: values.place,
+        ...(gender ? { gender } : {}),
         lang,
         quiz: quiz.join(""),
         readingId: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -254,7 +264,7 @@ function RitualPage() {
             </>
           )}
           {/* intake dots */}
-          {Array.from({ length: 4 }).map((_, i) => (
+          {Array.from({ length: 5 }).map((_, i) => (
             <div
               key={i}
               className={`h-px transition-all duration-700 ${
@@ -294,6 +304,37 @@ function RitualPage() {
                     placeholder={currentQ.placeholder}
                     onCommit={advance}
                   />
+                ) : currentQ.key === "gender" ? (
+                  <div className="mx-auto max-w-md">
+                    <div role="radiogroup" aria-label={t.q_gender} className="flex flex-wrap justify-center gap-3">
+                      {(["male", "female", ""] as Gender[]).map((g) => {
+                        const label =
+                          g === "male" ? t.q_gender_male : g === "female" ? t.q_gender_female : t.q_gender_skip;
+                        const active = values.gender === g;
+                        return (
+                          <button
+                            key={g || "skip"}
+                            type="button"
+                            role="radio"
+                            aria-checked={active}
+                            onClick={() => setValues((v) => ({ ...v, gender: g }))}
+                            className={`min-h-[44px] rounded-full border px-6 py-2.5 text-[11px] uppercase tracking-[0.28em] transition-colors ${
+                              active
+                                ? "border-gold-dust bg-gold-dust/10 text-gold-light"
+                                : "border-white/15 text-stone-warm/70 hover:border-gold-dust/40 hover:text-gold-dust"
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {values.gender === "" && (
+                      <p className="mx-auto mt-4 max-w-md rounded-2xl border border-nebula-purple/30 bg-nebula-purple/[0.06] p-3 text-left text-[11.5px] leading-relaxed text-stone-warm/70">
+                        ⚠ {t.q_gender_skip_warn}
+                      </p>
+                    )}
+                  </div>
                 ) : (
                   <div className="mx-auto max-w-md">
                     <input

@@ -25,6 +25,12 @@ type Dict = {
   q_place: string;
   q_place_hint: string;
   q_place_ph: string;
+  q_gender: string;
+  q_gender_hint: string;
+  q_gender_male: string;
+  q_gender_female: string;
+  q_gender_skip: string;
+  q_gender_skip_warn: string;
   hero_lang_kicker: string;
   hero_lang_prompt: string;
   hero_lang_en: string;
@@ -191,6 +197,12 @@ const en: Dict = {
   q_place: "And where on the earth did it happen?",
   q_place_hint: "The place fixes the horizon of your chart.",
   q_place_ph: "Search a city — e.g. Shanghai",
+  q_gender: "Which body did you enter this life through?",
+  q_gender_hint: "Used only by traditional algorithms (Zi Wei Dou Shu 紫微斗数 requires it). Never displayed as your identity; you can change it later.",
+  q_gender_male: "Male",
+  q_gender_female: "Female",
+  q_gender_skip: "Prefer not to say",
+  q_gender_skip_warn: "Zi Wei Dou Shu and the Premium AI Deep Reading cannot be generated until you provide this. Your free reading still works.",
   hero_lang_kicker: "Choose your language",
   hero_lang_prompt: "The library will speak to you in —",
   hero_lang_en: "English",
@@ -342,6 +354,12 @@ const zh: Dict = {
   q_place: "又是在地球上哪一处发生的？",
   q_place_hint: "出生地点确定你星盘的地平线。",
   q_place_ph: "搜索城市 — 例如 上海",
+  q_gender: "你是以怎样的身体进入这一生的？",
+  q_gender_hint: "仅用于传统算法计算（紫微斗数需要此项）。不会作为身份显示，之后可以修改。",
+  q_gender_male: "男",
+  q_gender_female: "女",
+  q_gender_skip: "暂不填写",
+  q_gender_skip_warn: "紫微斗数与「高级 AI 深度报告」将无法生成；免费网页报告不受影响。",
   hero_lang_kicker: "选择你的语言",
   hero_lang_prompt: "图书馆将以此语言与你对话 —",
   hero_lang_en: "English",
