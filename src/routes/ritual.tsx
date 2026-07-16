@@ -30,7 +30,8 @@ export const Route = createFileRoute("/ritual")({
   component: RitualPage,
 });
 
-type FieldKey = "name" | "date" | "time" | "place";
+type FieldKey = "name" | "date" | "time" | "place" | "gender";
+type Gender = "male" | "female" | "";
 
 // -------- 5 psychology-inspired calibration questions --------
 // Not tests, no right answers — used to nudge the AI reading toward the user.
