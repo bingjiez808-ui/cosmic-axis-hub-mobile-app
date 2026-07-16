@@ -474,6 +474,7 @@ export function PremiumPdfCard({
           onGenerate={onGenerate}
           onOpen={onOpen}
           onResendVerification={onResendVerification}
+          onBackfillGender={onBackfillGender}
           resent={resent}
         />
       </div>
