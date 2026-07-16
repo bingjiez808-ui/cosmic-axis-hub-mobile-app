@@ -176,6 +176,7 @@ export const Route = createFileRoute("/report")({
     zodiac: pickStr(s.zodiac),
     lunar: pickStr(s.lunar),
     readingId: pickStr(s.readingId),
+    gender: s.gender === "male" ? "male" : s.gender === "female" ? "female" : undefined,
   }),
   component: ReportPage,
 });
