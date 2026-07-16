@@ -330,7 +330,7 @@ function SiteNav() {
               className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-gold-dust/40 text-gold-dust md:hidden"
             >
               {account?.avatar ? (
-                <img src={account.avatar} alt="" className="h-7 w-7 rounded-full object-cover" />
+                <img src={account.avatar} alt="" loading="lazy" decoding="async" className="h-7 w-7 rounded-full object-cover" />
               ) : (
                 <span className="text-[10px] tracking-[0.16em]">{lang === "zh" ? "我" : "ME"}</span>
               )}
