@@ -2000,17 +2000,21 @@ export function MembershipSection({
           })}
         </div>
 
-        {/* Teaser cards — hidden fully unlocked tier features under blur for lower tiers */}
-        <TierTeasers lang={lang} li={li} plan={plan} onUpgrade={handleUpgradeClick} />
+        {/* Top row — three equal-width cards: Synastry teaser, 90-day teaser, Ask Sage. */}
+        <TierTeasers
+          lang={lang}
+          li={li}
+          plan={plan}
+          onUpgrade={handleUpgradeClick}
+          onOpenChat={() => setChatOpen(true)}
+          chatLocked={t.mem_ai_locked}
+        />
 
-
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <PremiumPdfCard search={search} />
-
-          <AskSageCard lang={lang} locked={t.mem_ai_locked} onOpen={() => setChatOpen(true)} />
-        </div>
+        {/* Full-width premium PDF bar below the three cards. */}
+        <PremiumPdfCard search={search} variant="bar" />
 
       </div>
+
 
       {/* Sage-exclusive: Synastry relationship reading */}
       {(plan === "sage" || plan === "oracle") && (
