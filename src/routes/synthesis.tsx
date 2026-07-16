@@ -173,6 +173,8 @@ function SynthesisPage() {
             alt=""
             width={1280}
             height={1280}
+            decoding="async"
+            fetchPriority="high"
             className="relative size-full rounded-full object-cover opacity-80"
           />
         </div>
