@@ -122,6 +122,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_feedback: {
+        Row: {
+          category: Database["public"]["Enums"]["feedback_category"]
+          created_at: string
+          id: string
+          keywords: string[]
+          lang: string | null
+          message: string
+          resolved: boolean
+          user_id: string | null
+        }
+        Insert: {
+          category?: Database["public"]["Enums"]["feedback_category"]
+          created_at?: string
+          id?: string
+          keywords?: string[]
+          lang?: string | null
+          message: string
+          resolved?: boolean
+          user_id?: string | null
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["feedback_category"]
+          created_at?: string
+          id?: string
+          keywords?: string[]
+          lang?: string | null
+          message?: string
+          resolved?: boolean
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -152,6 +185,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      feedback_category: "device" | "order" | "other"
       membership_tier: "none" | "sage" | "oracle"
     }
     CompositeTypes: {
@@ -281,6 +315,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      feedback_category: ["device", "order", "other"],
       membership_tier: ["none", "sage", "oracle"],
     },
   },
