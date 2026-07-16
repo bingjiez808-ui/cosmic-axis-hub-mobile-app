@@ -6,6 +6,8 @@ import { createLovableAiGatewayProvider } from "./ai-gateway.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { guardrailsFor, safeMessage } from "./ai-guardrails";
 import { enforceRateLimit } from "./rate-limit.server";
+import { isEmailVerified } from "./reports-store.functions";
+
 
 
 
