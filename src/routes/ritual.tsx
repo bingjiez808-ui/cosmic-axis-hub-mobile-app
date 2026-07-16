@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { CityCombobox } from "@/components/CityCombobox";
 import { useLang } from "@/lib/i18n";
 import { solarToLunarInfo } from "@/lib/lunar";
+import { noOrphan } from "@/lib/typography";
 
 const RITUAL_STATE_KEY = "lod:ritual-draft-v2";
 
@@ -165,18 +166,8 @@ function RitualPage() {
     { key: "place", prompt: t.q_place, hint: t.q_place_hint, placeholder: t.q_place_ph, input: "text" },
 ];
 
-/** Keep the last two glyphs of a title glued together, so a single character
- *  never gets stranded on its own line — helps CJK where `text-wrap: balance`
- *  can still leave an orphan. */
-function noOrphan(s: string) {
-  if (!s || s.length <= 2) return s;
-  return (
-    <>
-      {s.slice(0, -2)}
-      <span style={{ whiteSpace: "nowrap" }}>{s.slice(-2)}</span>
-    </>
-  );
-}
+// `noOrphan` lives in @/lib/typography — imported at the top of the file.
+
 
   const quizCount = skipQuiz ? 0 : QUIZ.length;
   const progress = useMemo(() => (step + 1) / totalSteps, [step, totalSteps]);

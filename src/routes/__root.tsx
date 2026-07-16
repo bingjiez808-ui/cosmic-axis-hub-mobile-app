@@ -152,6 +152,8 @@ function RootComponent() {
                 alt=""
                 width={1600}
                 height={1000}
+                decoding="async"
+                fetchPriority="high"
                 className="absolute inset-0 h-full w-full object-cover opacity-55 saturate-[0.85]"
               />
               <div className="library-shadow-aisle absolute inset-0" />
@@ -311,7 +313,9 @@ function SiteNav() {
                 <img
                   src={account.avatar}
                   alt=""
-                  className="h-5 w-5 flex-none rounded-full border border-gold-dust/40 object-cover"
+                className="h-5 w-5 flex-none rounded-full border border-gold-dust/40 object-cover"
+                loading="lazy"
+                decoding="async"
                 />
               )}
               <span className="whitespace-nowrap">{accountLabel}</span>
@@ -326,7 +330,7 @@ function SiteNav() {
               className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-gold-dust/40 text-gold-dust md:hidden"
             >
               {account?.avatar ? (
-                <img src={account.avatar} alt="" className="h-7 w-7 rounded-full object-cover" />
+                <img src={account.avatar} alt="" loading="lazy" decoding="async" className="h-7 w-7 rounded-full object-cover" />
               ) : (
                 <span className="text-[10px] tracking-[0.16em]">{lang === "zh" ? "我" : "ME"}</span>
               )}
@@ -406,6 +410,8 @@ function SiteNav() {
             <img
               src={account.avatar}
               alt=""
+              loading="lazy"
+              decoding="async"
               className="h-5 w-5 flex-none rounded-full border border-gold-dust/40 object-cover"
             />
           )}
