@@ -65,7 +65,7 @@ const EN: Copy = {
   whatRemoved: {
     h: "What gets removed",
     items: [
-      "Your account (email, password credential, and any legacy phone number from earlier versions)",
+      "Your account (email address, sign-in credentials, and any legacy phone number from earlier versions)",
       "Your profile: display name, avatar, membership tier",
       "Birth details you provided (date, time, place, time zone)",
       "Saved readings and generated report content tied to your account",
