@@ -108,7 +108,7 @@ const GetReportInput = z.object({
 export type SavedReportRow = {
   id: string;
   status: "pending" | "completed" | "failed";
-  report_json: unknown;
+  report_json: Record<string, unknown> | null;
   generated_at: string | null;
   updated_at: string;
 };
