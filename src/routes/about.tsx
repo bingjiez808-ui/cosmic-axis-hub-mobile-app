@@ -83,6 +83,32 @@ function AboutPage() {
           </div>
         ))}
       </div>
+
+      <div className="mt-16 glass-card rounded-2xl p-6">
+        <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust">
+          {lang === "zh" ? "使用免责声明" : "Disclaimer"}
+        </p>
+        <div className="space-y-3 text-[14px] leading-relaxed text-stone-warm/75">
+          {lang === "zh" ? (
+            <>
+              <p>本产品由 AI 辅助生成，输出可能不准确、不完整或存在偏差。所有内容仅用于娱乐、文化探索与自我反思，不构成医疗、心理、法律、金融或其他专业建议。</p>
+              <p>请勿依赖本产品做出健康、安全、投资、感情或法律等高风险决定；如有需要，请咨询合格的专业人士。</p>
+            </>
+          ) : (
+            <>
+              <p>This product is AI-assisted. Its output may be inaccurate, incomplete or biased. All content is provided for entertainment, cultural exploration and personal reflection only, and does not constitute medical, psychological, legal, financial or other professional advice.</p>
+              <p>Please do not rely on it for high-stakes decisions about health, safety, investments, relationships or legal matters — consult a qualified professional instead.</p>
+            </>
+          )}
+          <p className="text-[12px] text-stone-warm/50">
+            <Link to="/privacy" className="underline hover:text-gold-dust">{lang === "zh" ? "隐私政策" : "Privacy"}</Link>
+            {" · "}
+            <Link to="/terms" className="underline hover:text-gold-dust">{lang === "zh" ? "服务条款" : "Terms"}</Link>
+            {" · "}
+            <Link to="/delete-account" className="underline hover:text-gold-dust">{lang === "zh" ? "删除账户" : "Delete account"}</Link>
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
