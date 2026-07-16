@@ -196,7 +196,17 @@ Hard rules:
       { "key": "love",   "title": "Love",   "points": ["3"], "cautions": ["2"], "mitigations": ["2"] },
       { "key": "health", "title": "Health", "points": ["3"], "cautions": ["2"], "mitigations": ["2"] }
     ]
-  }
+  },
+  "watchlist": [
+    /* 5 items covering key windows over the next 1-6 years, chronological */
+    {
+      "year": "2026 · Q3",
+      "theme": "6-12 char image",
+      "note": "1 sentence anchored in this year's luck-pillar stem/branch, year-pillar or live transit",
+      "detail": "2-3 sentences of concrete guidance citing this person's natal planets/houses meeting the transit"
+    }
+    /* 5 total; year may read like 'YYYY · Q?', 'YYYY spring/summer', or 'YYYY–YYYY' */
+  ]
 }`;
 
     const prompt = `${isZh ? "命盘事实" : "Chart facts"}:
