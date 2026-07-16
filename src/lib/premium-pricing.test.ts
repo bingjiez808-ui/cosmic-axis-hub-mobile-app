@@ -6,6 +6,7 @@
  * never pass an amount into `startPremiumCheckout` / `grantPremiumReportAccess`.
  * These assertions guard against accidental drift back to ¥99.
  */
+// @ts-expect-error — bun:test is Bun's built-in runner.
 import { describe, expect, test } from "bun:test";
 
 import {
