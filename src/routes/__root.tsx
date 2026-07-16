@@ -316,22 +316,41 @@ function SiteNav() {
             )}
           </div>
           <div className="flex items-center gap-2 md:justify-self-end md:gap-3">
-            <button
-              type="button"
-              onClick={openAcc}
-              className="hidden flex-none items-center gap-2 whitespace-nowrap rounded-full border border-gold-dust/40 px-3 py-1 text-[10px] tracking-[0.24em] text-gold-dust transition-colors hover:bg-gold-dust/10 md:flex"
-            >
-              {account?.avatar && (
-                <img
-                  src={account.avatar}
-                  alt=""
-                className="h-5 w-5 flex-none rounded-full border border-gold-dust/40 object-cover"
-                loading="lazy"
-                decoding="async"
-                />
-              )}
-              <span className="whitespace-nowrap">{accountLabel}</span>
-            </button>
+            {session ? (
+              <button
+                type="button"
+                onClick={openAcc}
+                className="hidden flex-none items-center gap-2 whitespace-nowrap rounded-full border border-gold-dust/40 px-3 py-1 text-[10px] tracking-[0.24em] text-gold-dust transition-colors hover:bg-gold-dust/10 md:flex"
+              >
+                {account?.avatar && (
+                  <img
+                    src={account.avatar}
+                    alt=""
+                    className="h-5 w-5 flex-none rounded-full border border-gold-dust/40 object-cover"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                )}
+                <span className="whitespace-nowrap">{accountLabel}</span>
+              </button>
+            ) : (
+              <div className="hidden items-center gap-2 md:flex">
+                <Link
+                  to="/auth"
+                  search={{ mode: "login", redirect: undefined }}
+                  className="flex-none whitespace-nowrap rounded-full border border-gold-dust/40 px-3 py-1 text-[10px] tracking-[0.24em] text-gold-dust transition-colors hover:bg-gold-dust/10"
+                >
+                  {lang === "zh" ? "登录" : "Sign in"}
+                </Link>
+                <Link
+                  to="/auth"
+                  search={{ mode: "signup", redirect: undefined }}
+                  className="flex-none whitespace-nowrap rounded-full bg-gold-dust px-3 py-1 text-[10px] tracking-[0.24em] text-obsidian transition-colors hover:bg-gold-light"
+                >
+                  {lang === "zh" ? "注册" : "Sign up"}
+                </Link>
+              </div>
+            )}
             <div className="hidden md:block"><LanguageToggle /></div>
 
             {/* Mobile-only account chip (compact) */}
