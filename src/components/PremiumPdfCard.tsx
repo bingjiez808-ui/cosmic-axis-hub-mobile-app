@@ -222,27 +222,33 @@ export function PremiumPdfCard({
 
   const refresh = useCallback(async () => {
     if (!search?.date) return;
-    // Pre-flight: block if any tradition has no real calculator. This
-    // mirrors the server-side `assertSystemsComplete` gate so the UI
-    // never asks for money while modules are still missing.
-    const snap = buildCalculationSnapshot({
-      date: search.date,
-      time: search.time,
-      place: search.place,
-      lang,
-      gender: search.gender ?? null,
-    });
-    const missing = missingSystems(snap);
-    if (missing.length > 0) {
-      setState({ kind: "systems_incomplete", chartId: null, missing });
-      return;
-    }
     try {
       const { data: sess } = await supabase.auth.getSession();
       if (!sess.session) {
+        // Signed-out visitors still see a systems check for transparency.
+        const snap = buildCalculationSnapshot({
+          date: search.date,
+          time: search.time,
+          place: search.place,
+          lang,
+          gender: search.gender ?? null,
+        });
+        const missing = missingSystems(snap);
+        if (missing.length > 0) {
+          setState({ kind: "systems_incomplete", chartId: null, missing });
+          return;
+        }
         setState({ kind: "signed_out" });
         return;
       }
+      // Save/upsert chart FIRST so we can offer a per-chart gender backfill.
+      const preSnap = buildCalculationSnapshot({
+        date: search.date,
+        time: search.time,
+        place: search.place,
+        lang,
+        gender: search.gender ?? null,
+      });
       const chart = await ensureChart({
         data: {
           name: search.name,
@@ -250,9 +256,14 @@ export function PremiumPdfCard({
           time: search.time,
           place: search.place,
           lang,
-          input_snapshot: { ...search, lang, calculation_snapshot: snap },
+          input_snapshot: { ...search, lang, calculation_snapshot: preSnap },
         },
       });
+      const missing = missingSystems(preSnap);
+      if (missing.length > 0) {
+        setState({ kind: "systems_incomplete", chartId: chart.chartId, missing });
+        return;
+      }
       const status = await getPremiumStatus({ data: { chartId: chart.chartId } });
       setState(applyStatus(chart.chartId, status));
     } catch (err) {
@@ -275,6 +286,18 @@ export function PremiumPdfCard({
       }
     }
   }, [search, lang, applyStatus]);
+
+  const onBackfillGender = async (chartId: string, gender: "male" | "female") => {
+    setBusy(true);
+    try {
+      await updateChartGender({ data: { chartId, gender } });
+      await refresh();
+    } catch {
+      setState({ kind: "error", message: pick(TXT.error, lang) });
+    } finally {
+      setBusy(false);
+    }
+  };
 
   useEffect(() => {
     refresh();
