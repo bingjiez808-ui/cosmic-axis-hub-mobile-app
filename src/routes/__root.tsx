@@ -152,6 +152,8 @@ function RootComponent() {
                 alt=""
                 width={1600}
                 height={1000}
+                decoding="async"
+                fetchPriority="high"
                 className="absolute inset-0 h-full w-full object-cover opacity-55 saturate-[0.85]"
               />
               <div className="library-shadow-aisle absolute inset-0" />
