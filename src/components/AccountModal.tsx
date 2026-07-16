@@ -111,7 +111,7 @@ export function AccountModal({ open, onClose }: { open: boolean; onClose: () => 
                   {t.acc_sign_in}
                 </Link>
                 <p className="text-center text-[10px] uppercase tracking-[0.24em] text-stone-warm/35">
-                  {lang === "zh" ? "邮箱验证码或 Google 登录" : "Email code or Google sign-in"}
+                  {lang === "zh" ? "邮箱魔法链接或 Google 登录" : "Email magic link or Google sign-in"}
                 </p>
               </div>
             ) : (
