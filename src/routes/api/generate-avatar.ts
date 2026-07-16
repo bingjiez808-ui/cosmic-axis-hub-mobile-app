@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 
+import { enforceRateLimit } from "@/lib/rate-limit.server";
+
 /**
  * POST /api/generate-avatar
  * Generates a small animated-style portrait for the traveler based on their attributes.
@@ -35,8 +37,16 @@ export const Route = createFileRoute("/api/generate-avatar")({
           return new Response("Unauthorized", { status: 401 });
         }
 
+        // Per-user throttle so a compromised session can't run up the AI bill.
+        try {
+          enforceRateLimit(`avatar:${userData.user.id}`, 5, 5 * 60_000, "avatar generations");
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : "Too many requests";
+          return new Response(msg, { status: 429 });
+        }
+
         const key = process.env.LOVABLE_API_KEY;
-        if (!key) return new Response("Missing LOVABLE_API_KEY", { status: 500 });
+        if (!key) return new Response("Avatar service is not configured", { status: 500 });
 
         const body = (await request.json().catch(() => ({}))) as {
           house?: string;
@@ -75,8 +85,11 @@ subtle art-nouveau border, cinematic lighting. Square 1:1.`.trim();
             }),
           });
           if (!upstream.ok) {
-            const text = await upstream.text();
-            return new Response(text || "avatar generation failed", { status: upstream.status });
+            // Log the upstream detail server-side; return a generic message
+            // so provider paths / keys / prompts don't leak to the client.
+            const detail = await upstream.text().catch(() => "");
+            console.error(`[generate-avatar] upstream ${upstream.status}:`, detail.slice(0, 500));
+            return new Response("Avatar generation failed", { status: 502 });
           }
           const json = (await upstream.json()) as {
             choices?: { message?: { images?: { image_url?: { url?: string } }[] } }[];
@@ -87,7 +100,8 @@ subtle art-nouveau border, cinematic lighting. Square 1:1.`.trim();
             headers: { "Content-Type": "application/json" },
           });
         } catch (e) {
-          return new Response(String(e), { status: 500 });
+          console.error("[generate-avatar] threw:", e instanceof Error ? e.message : "");
+          return new Response("Avatar generation failed", { status: 500 });
         }
       },
     },

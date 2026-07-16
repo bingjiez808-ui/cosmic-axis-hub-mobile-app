@@ -3,29 +3,35 @@ import { generateText } from "ai";
 import { z } from "zod";
 
 import { createLovableAiGatewayProvider } from "./ai-gateway.server";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { guardrailsFor, safeMessage } from "./ai-guardrails";
+import { enforceRateLimit } from "./rate-limit.server";
+
+
 
 
 const BaseInput = z.object({
-  name: z.string().optional(),
-  date: z.string().optional(),
-  time: z.string().optional(),
-  place: z.string().optional(),
+  name: z.string().max(120).optional(),
+  date: z.string().max(40).optional(),
+  time: z.string().max(20).optional(),
+  place: z.string().max(160).optional(),
   lang: z.enum(["en", "zh"]).default("en"),
-  quiz: z.string().optional(),
+  quiz: z.string().max(400).optional(),
   // Structured astrology facts computed on the client so the model
   // grounds every dimension in the visitor's real chart.
   planets: z
     .array(
       z.object({
-        name: z.string(),
-        sign: z.string(),
-        house: z.number().optional(),
+        name: z.string().max(40),
+        sign: z.string().max(40),
+        house: z.number().int().min(1).max(12).optional(),
       }),
     )
+    .max(30)
     .default([]),
-  bazi: z.string().optional(),
-  zodiac: z.string().optional(),
-  lunar: z.string().optional(),
+  bazi: z.string().max(120).optional(),
+  zodiac: z.string().max(40).optional(),
+  lunar: z.string().max(80).optional(),
 });
 
 export const DIM_KEYS = [
@@ -98,7 +104,7 @@ function buildSystem(isZh: boolean) {
   const uniquenessRule = isZh
     ? "硬性规则：每一段（headline、synthesis、plain）都必须引用至少一项出生事实（阳历日期/时辰/农历/生肖/八字/具体行星落位）。禁止使用通用模板句；缺失体系数据要说明为近似推断。"
     : "Hard rule: every paragraph (headline, synthesis, plain) must cite at least one birth fact (solar date/time, lunar date, zodiac, BaZi pillars, or a concrete planet placement). Generic template sentences are forbidden; if a tradition lacks exact data, state it as an approximation.";
-  return isZh
+  const base = isZh
     ? `你是"命运图书馆"里精通西方占星、印度占星（Jyotish）、八字与紫微斗数的老者。只输出严格合法的 JSON —— 不能有前后缀、注释或 Markdown 代码块。
 所有文字必须紧扣来访者的真实命盘事实。绝不能给出任何两个人都一样的通用文字 —— 每一段都要至少引用一条上面列出的具体事实。
 ${uniquenessRule}
@@ -107,6 +113,7 @@ ${uniquenessRule}
 Every paragraph must anchor in the visitor's real chart facts listed below — never produce text two people would receive verbatim.
 ${uniquenessRule}
 Tone: warm, poetic, restrained — a candle-lit whisper.`;
+  return `${base}\n\n${guardrailsFor(isZh ? "zh" : "en")}`;
 }
 
 /* ═══════════════════════════════════════════
@@ -114,32 +121,38 @@ Tone: warm, poetic, restrained — a candle-lit whisper.`;
    so the client can render it as soon as it arrives.
 ═══════════════════════════════════════════ */
 export const generateReportSummary = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => BaseInput.parse(data))
-  .handler(async ({ data }): Promise<{ summary: string }> => {
-    const key = process.env.LOVABLE_API_KEY;
-    if (!key) throw new Error("Missing LOVABLE_API_KEY");
-    const gateway = createLovableAiGatewayProvider(key);
-    const isZh = data.lang === "zh";
-    const chartFacts = buildChartFacts(data);
+  .handler(async ({ data, context }): Promise<{ summary: string }> => {
+    enforceRateLimit(`report-summary:${context.userId}`, 20, 60_000, "report generations");
+    try {
+      const key = process.env.LOVABLE_API_KEY;
+      if (!key) throw new Error("Report service is not configured");
+      const gateway = createLovableAiGatewayProvider(key);
+      const isZh = data.lang === "zh";
+      const chartFacts = buildChartFacts(data);
 
-    const schema = isZh
-      ? `{ "summary": "两三句诗意概括，必须直接呼应来访者具体的日/时/干支/主要行星落位" }`
-      : `{ "summary": "2-3 sentence poetic epigraph that directly echoes the visitor's specific date/time/pillars/main placements" }`;
+      const schema = isZh
+        ? `{ "summary": "两三句诗意概括，必须直接呼应来访者具体的日/时/干支/主要行星落位" }`
+        : `{ "summary": "2-3 sentence poetic epigraph that directly echoes the visitor's specific date/time/pillars/main placements" }`;
 
-    const prompt = `${isZh ? "来访者命盘事实" : "Visitor chart facts"}:
+      const prompt = `${isZh ? "来访者命盘事实" : "Visitor chart facts"}:
 ${chartFacts || (isZh ? "（未提供）" : "(not provided)")}
 
 ${isZh ? "严格输出 JSON（只输出 JSON）" : "Output STRICT JSON only"}:
 ${schema}`;
 
-    const { text } = await generateText({
-      model: gateway("google/gemini-3.5-flash"),
-      system: buildSystem(isZh),
-      prompt,
-    });
+      const { text } = await generateText({
+        model: gateway("google/gemini-2.5-flash"),
+        system: buildSystem(isZh),
+        prompt,
+      });
 
-    const parsed = extractJson<{ summary?: string }>(text);
-    return { summary: parsed.summary ?? "" };
+      const parsed = extractJson<{ summary?: string }>(text);
+      return { summary: parsed.summary ?? "" };
+    } catch (err) {
+      throw new Error(safeMessage(err, "Report summary failed"));
+    }
   });
 
 /* ═══════════════════════════════════════════
@@ -151,25 +164,28 @@ const DimensionInput = BaseInput.extend({
 });
 
 export const generateReportDimension = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => DimensionInput.parse(data))
-  .handler(async ({ data }): Promise<ReportDimensionAI> => {
-    const key = process.env.LOVABLE_API_KEY;
-    if (!key) throw new Error("Missing LOVABLE_API_KEY");
-    const gateway = createLovableAiGatewayProvider(key);
-    const isZh = data.lang === "zh";
-    const chartFacts = buildChartFacts(data);
-    const titles = isZh ? DIM_TITLES_ZH : DIM_TITLES_EN;
-    const dimKey = data.key;
-    const dimTitle = titles[dimKey];
+  .handler(async ({ data, context }): Promise<ReportDimensionAI> => {
+    enforceRateLimit(`report-dim:${context.userId}`, 40, 60_000, "dimension generations");
+    try {
+      const key = process.env.LOVABLE_API_KEY;
+      if (!key) throw new Error("Report service is not configured");
+      const gateway = createLovableAiGatewayProvider(key);
+      const isZh = data.lang === "zh";
+      const chartFacts = buildChartFacts(data);
+      const titles = isZh ? DIM_TITLES_ZH : DIM_TITLES_EN;
+      const dimKey = data.key;
+      const dimTitle = titles[dimKey];
 
-    const missionNote = dimKey === "mission"
-      ? isZh
-        ? "这是最后一个维度：合鸣并升华前七维（性格/事业/财富/情感/健康/父母/子女）。"
-        : "This is the final dimension: synthesise and elevate the previous seven dimensions (character / vocation / wealth / love / health / parents / children)."
-      : "";
+      const missionNote = dimKey === "mission"
+        ? isZh
+          ? "这是最后一个维度：合鸣并升华前七维（性格/事业/财富/情感/健康/父母/子女）。"
+          : "This is the final dimension: synthesise and elevate the previous seven dimensions (character / vocation / wealth / love / health / parents / children)."
+        : "";
 
-    const schema = isZh
-      ? `{
+      const schema = isZh
+        ? `{
   "key": "${dimKey}",
   "headline": "8-18 字的诗意小标题",
   "evidence": [
@@ -185,7 +201,7 @@ export const generateReportDimension = createServerFn({ method: "POST" })
     {"label": "警惕 / 窗口 / 需修的功课 等", "items": ["点 1", "点 2", "点 3", "点 4"]}
   ]
 }`
-      : `{
+        : `{
   "key": "${dimKey}",
   "headline": "6-14 word poetic sub-title",
   "evidence": [
@@ -202,7 +218,7 @@ export const generateReportDimension = createServerFn({ method: "POST" })
   ]
 }`;
 
-    const prompt = `${isZh ? "来访者命盘事实" : "Visitor chart facts"}:
+      const prompt = `${isZh ? "来访者命盘事实" : "Visitor chart facts"}:
 ${chartFacts || (isZh ? "（未提供）" : "(not provided)")}
 
 ${isZh ? "需要生成的维度" : "Dimension to generate"}: ${dimKey} · ${dimTitle}
@@ -211,21 +227,24 @@ ${missionNote}
 ${isZh ? "严格输出 JSON（只输出 JSON）" : "Output STRICT JSON only"}:
 ${schema}`;
 
-    const { text } = await generateText({
-      model: gateway("google/gemini-3.5-flash"),
-      system: buildSystem(isZh),
-      prompt,
-    });
+      const { text } = await generateText({
+        model: gateway("google/gemini-2.5-flash"),
+        system: buildSystem(isZh),
+        prompt,
+      });
 
-    const parsed = extractJson<Partial<ReportDimensionAI>>(text);
-    return {
-      key: dimKey,
-      headline: parsed.headline ?? dimTitle,
-      evidence: Array.isArray(parsed.evidence) ? parsed.evidence.slice(0, 4) : [],
-      synthesis: parsed.synthesis ?? "",
-      plain: parsed.plain ?? "",
-      details: Array.isArray(parsed.details) ? parsed.details.slice(0, 2) : [],
-    };
+      const parsed = extractJson<Partial<ReportDimensionAI>>(text);
+      return {
+        key: dimKey,
+        headline: parsed.headline ?? dimTitle,
+        evidence: Array.isArray(parsed.evidence) ? parsed.evidence.slice(0, 4) : [],
+        synthesis: parsed.synthesis ?? "",
+        plain: parsed.plain ?? "",
+        details: Array.isArray(parsed.details) ? parsed.details.slice(0, 2) : [],
+      };
+    } catch (err) {
+      throw new Error(safeMessage(err, "Dimension generation failed"));
+    }
   });
 
 /* ═══════════════════════════════════════════
@@ -234,8 +253,11 @@ ${schema}`;
    streaming pieces so behaviour stays consistent.
 ═══════════════════════════════════════════ */
 export const generateReport = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => BaseInput.parse(data))
-  .handler(async ({ data }): Promise<ReportAI> => {
+  .handler(async ({ data, context }): Promise<ReportAI> => {
+    enforceRateLimit(`report-full:${context.userId}`, 5, 60_000, "full report generations");
+    // Sub-calls run their own auth + rate checks via the exported fns.
     const [{ summary }, ...dims] = await Promise.all([
       generateReportSummary({ data }),
       ...DIM_KEYS.map((k) => generateReportDimension({ data: { ...data, key: k } })),
