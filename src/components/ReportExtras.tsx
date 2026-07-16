@@ -23,10 +23,11 @@ function useChartOutlook(search: ReportSearchLike | undefined, lang: Lang) {
   const [outlook, setOutlook] = useState<OutlookAI | null>(null);
   const [state, setState] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const inflight = useRef(0);
+  const outlookLang = search?.lang ?? lang;
 
   const fingerprint = useMemo(
-    () => (search?.date ? buildReportFingerprint(search, lang) : ""),
-    [search, lang],
+    () => (search?.date ? buildReportFingerprint(search, outlookLang) : ""),
+    [search, outlookLang],
   );
 
   useEffect(() => {
@@ -45,7 +46,7 @@ function useChartOutlook(search: ReportSearchLike | undefined, lang: Lang) {
       date: search.date,
       time: search.time,
       place: search.place,
-      lang,
+      lang: outlookLang,
     });
     if (savedHit?.aiOutlook) {
       setOutlook(savedHit.aiOutlook);
@@ -70,7 +71,7 @@ function useChartOutlook(search: ReportSearchLike | undefined, lang: Lang) {
     const reqId = ++inflight.current;
     setOutlook(null);
     setState("loading");
-    generateChartOutlook({ data: buildReportRequest(search, lang) })
+    generateChartOutlook({ data: buildReportRequest(search, outlookLang) })
       .then((res) => {
         if (reqId !== inflight.current) return;
         setOutlook(res);
