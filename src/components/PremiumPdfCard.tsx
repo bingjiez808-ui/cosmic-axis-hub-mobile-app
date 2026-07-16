@@ -481,6 +481,24 @@ function ActionRow({
       </button>
     );
   }
+  if (state.kind === "verify_needed") {
+    return (
+      <div className={`flex flex-col gap-2 ${fullWidth ? "w-full" : ""}`}>
+        <p className="rounded-2xl border border-nebula-purple/40 bg-nebula-purple/[0.08] p-3 text-[12px] leading-relaxed text-stone-warm/80">
+          {pick(TXT.need_verify, lang)}
+          {state.email ? ` · ${state.email}` : ""}
+        </p>
+        <button
+          type="button"
+          disabled={resent}
+          onClick={onResendVerification}
+          className={`rounded-full border border-gold-dust/60 px-5 py-2.5 text-[10px] uppercase tracking-[0.28em] text-gold-light hover:bg-gold-dust/10 disabled:opacity-50 min-h-[44px] ${fullWidth ? "w-full" : ""}`}
+        >
+          {resent ? pick(TXT.resent_verify, lang) : pick(TXT.resend_verify, lang)}
+        </button>
+      </div>
+    );
+  }
   if (state.kind === "no_chart") return <p className="text-sm text-stone-warm/50">…</p>;
   if (state.kind === "locked") {
     return (
