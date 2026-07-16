@@ -23,7 +23,13 @@ import {
 } from "@/components/ReportExtras";
 import { AccountModal } from "@/components/AccountModal";
 import { useLang } from "@/lib/i18n";
-import { generateReport, type ReportAI } from "@/lib/report.functions";
+import {
+  DIM_KEYS,
+  generateReportDimension,
+  generateReportSummary,
+  type ReportAI,
+  type ReportDimensionAI,
+} from "@/lib/report.functions";
 import { buildReportCacheKey, buildReportFingerprint, buildReportRequest, buildReportSeed } from "@/lib/report-input";
 import { useAccount } from "@/lib/account";
 
