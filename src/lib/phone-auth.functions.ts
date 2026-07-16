@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { createHash, randomInt, timingSafeEqual } from "node:crypto";
 
+import { enforceRateLimit } from "./rate-limit.server";
+
 /**
  * Phone OTP sign-in via Twilio SMS.
  *
