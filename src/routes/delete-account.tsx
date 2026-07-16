@@ -248,7 +248,7 @@ function DeleteAccountPage() {
             <p className="mb-4 text-[13px] text-stone-warm/70">{c.howSignedOut}</p>
             <Link
               to="/auth"
-              search={{ reset: undefined, redirect: "/delete-account" }}
+              search={{ redirect: "/delete-account" }}
               className="inline-flex min-h-11 items-center justify-center rounded-full bg-gold-dust px-6 text-[11px] uppercase tracking-[0.28em] text-obsidian hover:bg-gold-light"
             >
               {c.signInFirst}
