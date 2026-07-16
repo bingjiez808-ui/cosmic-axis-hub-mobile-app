@@ -111,7 +111,13 @@ type UiState =
   | { kind: "failed"; chartId: string; message: string }
   | { kind: "error"; message: string };
 
-export function PremiumPdfCard({ search }: { search?: ReportSearchLike }) {
+export function PremiumPdfCard({
+  search,
+  variant = "card",
+}: {
+  search?: ReportSearchLike;
+  variant?: "card" | "bar";
+}) {
   const { lang } = useLang();
   const [state, setState] = useState<UiState>({ kind: "loading" });
   const [busy, setBusy] = useState(false);
