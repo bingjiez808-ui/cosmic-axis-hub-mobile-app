@@ -420,8 +420,9 @@ export function PremiumPdfCard({
             onUnlock={onUnlock}
             onGenerate={onGenerate}
             onOpen={onOpen}
-          onResendVerification={onResendVerification}
-          resent={resent}
+            onResendVerification={onResendVerification}
+            onBackfillGender={onBackfillGender}
+            resent={resent}
             fullWidth
           />
           <p className="text-center text-[10px] uppercase tracking-[0.24em] text-stone-warm/40 md:text-right">
