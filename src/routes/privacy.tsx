@@ -82,7 +82,7 @@ const EN: Copy = {
     {
       h: "5. Security",
       body: [
-        "Data is transmitted over TLS. Passwords are hashed. Access to production data is restricted to a small number of maintainers.",
+        "Data is transmitted over TLS. Sign-in credentials are stored by our authentication provider using industry-standard protections. Access to production data is restricted to a small number of maintainers.",
         "No system is perfectly secure. If we become aware of a breach that affects you, we will notify you as required by applicable law.",
       ],
     },
