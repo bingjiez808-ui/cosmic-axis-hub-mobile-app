@@ -40,23 +40,74 @@ type Ctx = {
   removeReading: (id: string) => void;
   updateReadingAI: (fingerprint: string, patch: ReadingAIPatch) => void;
   findReadingByFingerprint: (fingerprint: string) => SavedReading | undefined;
+  findReading: (lookup: SavedReadingLookup) => SavedReading | undefined;
 };
 
 const AccountCtx = createContext<Ctx | null>(null);
 
 const ACC_KEY = "lod.account";
-const READS_KEY = "lod.saved_readings";
+export const READS_KEY = "lod.saved_readings";
+
+export type SavedReadingLookup = {
+  id?: string;
+  fingerprint?: string;
+  name?: string;
+  date?: string;
+  time?: string;
+  place?: string;
+  lang?: "en" | "zh";
+};
+
+function readStoredJson<T>(key: string, fallback: T): T {
+  try {
+    if (typeof localStorage === "undefined") return fallback;
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeStoredJson<T>(key: string, value: T) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {}
+}
+
+export function readStoredSavedReadings(): SavedReading[] {
+  const list = readStoredJson<SavedReading[]>(READS_KEY, []);
+  return Array.isArray(list) ? list : [];
+}
+
+export function findSavedReading(list: SavedReading[], lookup: SavedReadingLookup) {
+  if (lookup.id) {
+    const byId = list.find((s) => s.id === lookup.id);
+    if (byId) return byId;
+  }
+  if (lookup.fingerprint) {
+    const byFingerprint = list.find((s) => s.fingerprint === lookup.fingerprint);
+    if (byFingerprint) return byFingerprint;
+  }
+  if (!lookup.date) return undefined;
+  const same = (a?: string, b?: string) => (a ?? "") === (b ?? "");
+  return list.find(
+    (s) =>
+      same(s.name, lookup.name) &&
+      same(s.date, lookup.date) &&
+      same(s.time, lookup.time) &&
+      same(s.place, lookup.place) &&
+      (!lookup.lang || !s.lang || s.lang === lookup.lang),
+  );
+}
 
 export function AccountProvider({ children }: { children: ReactNode }) {
-  const [account, setAccount] = useState<Account | null>(null);
-  const [saved, setSaved] = useState<SavedReading[]>([]);
+  const [account, setAccount] = useState<Account | null>(() => readStoredJson<Account | null>(ACC_KEY, null));
+  const [saved, setSaved] = useState<SavedReading[]>(() => readStoredSavedReadings());
 
   useEffect(() => {
     try {
-      const a = localStorage.getItem(ACC_KEY);
-      if (a) setAccount(JSON.parse(a));
-      const r = localStorage.getItem(READS_KEY);
-      if (r) setSaved(JSON.parse(r));
+      setAccount(readStoredJson<Account | null>(ACC_KEY, null));
+      setSaved(readStoredSavedReadings());
     } catch {}
   }, []);
 
@@ -137,49 +188,65 @@ export function AccountProvider({ children }: { children: ReactNode }) {
 
   const persist = (list: SavedReading[]) => {
     setSaved(list);
-    try {
-      localStorage.setItem(READS_KEY, JSON.stringify(list));
-    } catch {}
+    writeStoredJson(READS_KEY, list);
   };
 
   const saveReading: Ctx["saveReading"] = (r) => {
-    // Merge with any existing entry that matches name+date+place so AI cache carries over.
-    const prior = saved.find(
-      (s) => s.name === (r.name ?? "") && s.date === r.date && s.place === r.place,
-    );
-    const entry: SavedReading = {
-      ...prior,
-      ...r,
-      aiReport: r.aiReport ?? prior?.aiReport,
-      aiOutlook: r.aiOutlook ?? prior?.aiOutlook,
-      fingerprint: r.fingerprint ?? prior?.fingerprint,
-      id: prior?.id ?? `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      createdAt: prior?.createdAt ?? Date.now(),
-    };
-    const next = [entry, ...saved.filter((s) => s.id !== entry.id)].slice(0, 20);
-    persist(next);
+    setSaved((current) => {
+      const base = current.length ? current : readStoredSavedReadings();
+      // Merge with any existing entry that matches the stable reading id,
+      // fingerprint, or the visible birth fields so AI cache carries over.
+      const prior = findSavedReading(base, {
+        fingerprint: r.fingerprint,
+        name: r.name ?? "",
+        date: r.date,
+        time: r.time,
+        place: r.place,
+        lang: r.lang,
+      });
+      const entry: SavedReading = {
+        ...prior,
+        ...r,
+        aiReport: r.aiReport ?? prior?.aiReport,
+        aiOutlook: r.aiOutlook ?? prior?.aiOutlook,
+        fingerprint: r.fingerprint ?? prior?.fingerprint,
+        id: prior?.id ?? `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        createdAt: prior?.createdAt ?? Date.now(),
+      };
+      const next = [entry, ...base.filter((s) => s.id !== entry.id)].slice(0, 20);
+      writeStoredJson(READS_KEY, next);
+      return next;
+    });
   };
 
   const removeReading = (id: string) => persist(saved.filter((s) => s.id !== id));
 
   const updateReadingAI: Ctx["updateReadingAI"] = (fingerprint, patch) => {
     if (!fingerprint) return;
-    let changed = false;
-    const next = saved.map((s) => {
-      if (s.fingerprint === fingerprint) {
-        changed = true;
-        return { ...s, ...patch, fingerprint };
-      }
-      return s;
+    setSaved((current) => {
+      const base = current.length ? current : readStoredSavedReadings();
+      let changed = false;
+      const next = base.map((s) => {
+        if (s.fingerprint === fingerprint) {
+          changed = true;
+          return { ...s, ...patch, fingerprint };
+        }
+        return s;
+      });
+      if (!changed) return current;
+      writeStoredJson(READS_KEY, next);
+      return next;
     });
-    if (changed) persist(next);
   };
 
   const findReadingByFingerprint: Ctx["findReadingByFingerprint"] = (fingerprint) =>
-    fingerprint ? saved.find((s) => s.fingerprint === fingerprint) : undefined;
+    fingerprint ? findSavedReading(saved, { fingerprint }) ?? findSavedReading(readStoredSavedReadings(), { fingerprint }) : undefined;
+
+  const findReading: Ctx["findReading"] = (lookup) =>
+    findSavedReading(saved, lookup) ?? findSavedReading(readStoredSavedReadings(), lookup);
 
   return (
-    <AccountCtx.Provider value={{ account, signIn, signOut, setPlan, setAvatar, saved, saveReading, removeReading, updateReadingAI, findReadingByFingerprint }}>
+    <AccountCtx.Provider value={{ account, signIn, signOut, setPlan, setAvatar, saved, saveReading, removeReading, updateReadingAI, findReadingByFingerprint, findReading }}>
       {children}
     </AccountCtx.Provider>
   );
