@@ -513,11 +513,13 @@ function ReportPage() {
   }, []);
 
   // Personalised AI report — grounded in this specific chart.
+  // Streaming: one request per dimension + summary, so pieces render
+  // progressively instead of waiting for a single monolithic response.
   const seed = buildReportSeed(search);
-  const invokeReport = generateReport;
   const [ai, setAi] = useState<ReportAI | null>(null);
   const [aiState, setAiState] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [aiError, setAiError] = useState<string | null>(null);
+  const [aiProgress, setAiProgress] = useState({ done: 0, total: 0 });
   const latestReqRef = useRef(0);
   const { findReadingByFingerprint, updateReadingAI } = useAccount();
 
@@ -550,31 +552,77 @@ function ReportPage() {
     }
 
     const reqId = ++latestReqRef.current;
-    setAi(null);
+    const req = buildReportRequest(search, lang);
+    const totalSteps = DIM_KEYS.length + 1; // dimensions + summary
+    const acc: { summary: string; dimensions: ReportDimensionAI[] } = {
+      summary: "",
+      dimensions: [],
+    };
+
+    setAi({ summary: "", dimensions: [] });
     setAiState("loading");
     setAiError(null);
-    invokeReport({
-      data: buildReportRequest(search, lang),
-    })
+    setAiProgress({ done: 0, total: totalSteps });
+
+    let firstError: unknown = null;
+    const bump = () => {
+      if (reqId !== latestReqRef.current) return;
+      setAiProgress((p) => ({ done: Math.min(p.total, p.done + 1), total: p.total }));
+    };
+
+    const summaryPromise = generateReportSummary({ data: req })
       .then((res) => {
         if (reqId !== latestReqRef.current) return;
-        setAi(res);
-        setAiState("ready");
-        try {
-          sessionStorage.setItem(cacheKey, JSON.stringify(res));
-        } catch {
-          /* ignore quota */
-        }
-        // Write back to any matching saved reading so future sessions skip regeneration.
-        updateReadingAI(fingerprint, { aiReport: res, fingerprint });
+        acc.summary = res.summary;
+        setAi((prev) => ({ summary: res.summary, dimensions: prev?.dimensions ?? [] }));
       })
-      .catch((err: unknown) => {
-        if (reqId !== latestReqRef.current) return;
-        setAiError(err instanceof Error ? err.message : String(err));
+      .catch((err) => { firstError = firstError ?? err; })
+      .finally(bump);
+
+    const dimPromises = DIM_KEYS.map((k) =>
+      generateReportDimension({ data: { ...req, key: k } })
+        .then((dim) => {
+          if (reqId !== latestReqRef.current) return;
+          acc.dimensions.push(dim);
+          // Keep them in canonical order for stable rendering.
+          const ordered = DIM_KEYS
+            .map((key) => acc.dimensions.find((d) => d.key === key))
+            .filter((d): d is ReportDimensionAI => !!d);
+          setAi((prev) => ({ summary: prev?.summary ?? acc.summary, dimensions: ordered }));
+        })
+        .catch((err) => { firstError = firstError ?? err; })
+        .finally(bump),
+    );
+
+    Promise.all([summaryPromise, ...dimPromises]).then(() => {
+      if (reqId !== latestReqRef.current) return;
+      if (acc.dimensions.length === 0 && !acc.summary) {
+        setAiError(firstError instanceof Error ? firstError.message : String(firstError ?? "unknown"));
         setAiState("error");
-      });
+        return;
+      }
+      // Fill any missing dimensions with a placeholder so downstream code sees 8 items.
+      const finalDims: ReportDimensionAI[] = DIM_KEYS.map((k) =>
+        acc.dimensions.find((d) => d.key === k) ?? {
+          key: k,
+          headline: "",
+          evidence: [],
+          synthesis: "",
+          plain: "",
+          details: [],
+        },
+      );
+      const finalReport: ReportAI = { summary: acc.summary, dimensions: finalDims };
+      setAi(finalReport);
+      setAiState("ready");
+      try {
+        sessionStorage.setItem(cacheKey, JSON.stringify(finalReport));
+      } catch { /* ignore quota */ }
+      updateReadingAI(fingerprint, { aiReport: finalReport, fingerprint });
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seed, lang, search.readingId]);
+
 
   useEffect(() => {
     runReport(false);
