@@ -488,6 +488,7 @@ function Stars({ n }: { n: number }) {
 function ReportPage() {
   const search = Route.useSearch();
   const { lang, setLang, t } = useLang();
+  const reportLang = search.lang ?? lang;
   const li = lang === "zh" ? 1 : 0;
   const [accOpen, setAccOpen] = useState(false);
   // Default to Sun (index 0) so the left panel shows its reading on load.
@@ -525,8 +526,8 @@ function ReportPage() {
 
   const runReport = useCallback((force = false) => {
     if (!search.date) return;
-    const cacheKey = buildReportCacheKey(search, lang);
-    const fingerprint = buildReportFingerprint(search, lang);
+    const cacheKey = buildReportCacheKey(search, reportLang);
+    const fingerprint = buildReportFingerprint(search, reportLang);
 
     if (!force) {
       // 1. Persisted saved-reading cache (survives across sessions).
@@ -538,7 +539,7 @@ function ReportPage() {
         date: search.date,
         time: search.time,
         place: search.place,
-        lang,
+        lang: reportLang,
       });
       if (savedHit?.aiReport) {
         setAi(savedHit.aiReport);
@@ -561,7 +562,7 @@ function ReportPage() {
     }
 
     const reqId = ++latestReqRef.current;
-    const req = buildReportRequest(search, lang);
+    const req = buildReportRequest(search, reportLang);
     const totalSteps = DIM_KEYS.length + 1; // dimensions + summary
     const acc: { summary: string; dimensions: ReportDimensionAI[] } = {
       summary: "",
@@ -630,7 +631,7 @@ function ReportPage() {
       updateReadingAI(fingerprint, { aiReport: finalReport, fingerprint });
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [seed, lang, search.readingId]);
+  }, [seed, reportLang, search.readingId]);
 
 
   useEffect(() => {
@@ -771,7 +772,7 @@ function ReportPage() {
 
       {/* Save-this-reading bar */}
       {(() => {
-        const fingerprint = search.date ? buildReportFingerprint(search, lang) : undefined;
+        const fingerprint = search.date ? buildReportFingerprint(search, reportLang) : undefined;
         const savedReading = findReading({
           id: search.readingId,
           fingerprint,
@@ -779,7 +780,7 @@ function ReportPage() {
           date: search.date,
           time: search.time,
           place: search.place,
-          lang,
+          lang: reportLang,
         });
         return (
       <SaveReadingBar
@@ -788,7 +789,7 @@ function ReportPage() {
           date: search.date,
           time: search.time,
           place: search.place,
-          lang,
+          lang: reportLang,
         }}
         onOpenAccount={() => setAccOpen(true)}
         fingerprint={fingerprint}
