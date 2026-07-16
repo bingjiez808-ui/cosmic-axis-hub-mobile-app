@@ -80,6 +80,7 @@ export const generateChartOutlook = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => Input.parse(data))
   .handler(async ({ data, context }): Promise<OutlookAI> => {
+    if (!isEmailVerified(context.claims)) throw new Error("email_not_verified");
     enforceRateLimit(`outlook:${context.userId}`, 8, 60_000, "outlook generations");
     const key = process.env.LOVABLE_API_KEY;
     if (!key) throw new Error("Outlook service is not configured");
