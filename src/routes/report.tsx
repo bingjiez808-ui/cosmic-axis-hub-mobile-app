@@ -129,6 +129,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { buildReportCacheKey, buildReportFingerprint, buildReportRequest, buildReportSeed } from "@/lib/report-input";
 import { REPORT_AI_VERSION } from "@/lib/ai-cache-version";
 import { useAccount } from "@/lib/account";
+import {
+  buildCalculationSnapshot,
+  ELEMENT_LABEL_EN,
+  ELEMENT_LABEL_ZH,
+  type CalculationSnapshot,
+} from "@/lib/calc-snapshot";
 
 
 type SearchParams = {
@@ -630,6 +636,7 @@ function ReportPage() {
   const [aiProgress, setAiProgress] = useState({ done: 0, total: 0 });
   const latestReqRef = useRef(0);
   const { updateReadingAI } = useAccount();
+  const navigate = useNavigate();
 
   const runReport = useCallback(() => {
     if (!search.date) return;
@@ -677,6 +684,23 @@ function ReportPage() {
         setAiState("error");
         return;
       }
+
+      // Migrate a temporary/legacy readingId in the URL to the persisted
+      // chart UUID that actually belongs to this user. Only rewrite when
+      // (a) the URL param is present AND (b) it is not already a UUID.
+      // We NEVER match legacy local links by name; the DB row here was
+      // selected by normalized_input_hash so ownership is guaranteed.
+      try {
+        const rid = (search.readingId ?? "").trim();
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rid);
+        if (rid && !isUuid && rid !== chartId) {
+          navigate({
+            to: "/report",
+            replace: true,
+            search: ((s: SearchParams) => ({ ...s, readingId: chartId })) as never,
+          });
+        }
+      } catch { /* best-effort URL sync */ }
 
       // 3. Look up existing report.
       try {
@@ -831,7 +855,6 @@ function ReportPage() {
   }, [runReport]);
 
   // Redirect unauthenticated users to sign in, preserving their input as a draft.
-  const navigate = useNavigate();
   useEffect(() => {
     if (aiState !== "needs-auth") return;
     navigate({
@@ -851,8 +874,48 @@ function ReportPage() {
         ? "你的人生更像探险者的图谱，而非追随者的轨迹 —— 一张反复回到「志业、意义与再次选择的勇气」的星图。"
         : "Your life is written more as an explorer's than a follower's — a chart that repeatedly returns to the questions of vocation, meaning and the courage to choose again.";
 
+  // Calculation snapshot: real, verifiable values from the four traditions.
+  // Vedic and Zi Wei do not have real calculators yet — those evidence rows
+  // are labelled "计算模块尚未完成 / Calculation module not yet complete" so
+  // we never ship a hard-coded template line that could contradict the
+  // actual chart (e.g. "太阳落火象" for a Scorpio Sun).
+  const snapshot: CalculationSnapshot = useMemo(
+    () =>
+      buildCalculationSnapshot({
+        date: search.date,
+        time: search.time,
+        place: search.place,
+        lang: reportLang,
+      }),
+    [search.date, search.time, search.place, reportLang],
+  );
+
+  const snapshotEvidence = useMemo(() => {
+    const sun = snapshot.western.sun;
+    const bazi = snapshot.bazi;
+    const pendingZh = "计算模块尚未完成";
+    const pendingEn = "Calculation module not yet complete";
+    const astro: [string, string] = sun
+      ? [
+          `Sun in ${sun.sign_en} · ${ELEMENT_LABEL_EN[sun.element]} element`,
+          `太阳落${sun.sign_zh} · ${ELEMENT_LABEL_ZH[sun.element]}`,
+        ]
+      : [pendingEn, pendingZh];
+    const baziLine: [string, string] = bazi.day_master && bazi.pillars
+      ? [
+          `Day-master ${bazi.day_master.stem} (${bazi.day_master.element}); pillars ${bazi.pillars.year} ${bazi.pillars.month} ${bazi.pillars.day}${bazi.pillars.hour ? " " + bazi.pillars.hour : ""}`,
+          `日主 ${bazi.day_master.stem}（${bazi.day_master.element}）· 四柱 ${bazi.pillars.year} ${bazi.pillars.month} ${bazi.pillars.day}${bazi.pillars.hour ? " " + bazi.pillars.hour : ""}`,
+        ]
+      : [pendingEn, pendingZh];
+    const vedic: [string, string] = [pendingEn, pendingZh];
+    const ziwei: [string, string] = [pendingEn, pendingZh];
+    return { astro, baziLine, vedic, ziwei };
+  }, [snapshot]);
+
   // Merge AI content into the base dimensions (viz / stars / strengths keep
-  // their fallback shape; text is overridden per-visitor).
+  // their fallback shape; text is overridden per-visitor). Fallback evidence
+  // is REPLACED with real snapshot values, so nothing rendered before the
+  // AI hydrates can contradict the visitor's actual chart.
   const aiByKey = useMemo(() => {
     const m = new Map<string, ReportAI["dimensions"][number]>();
     ai?.dimensions.forEach((d) => m.set(d.key, d));
@@ -862,7 +925,15 @@ function ReportPage() {
     () =>
       dimensions.map((d) => {
         const p = aiByKey.get(d.key);
-        if (!p) return d;
+        // Rebuild the evidence bar from real snapshot values so the
+        // fallback template never claims the wrong Sun / Day-master.
+        const fallbackEvidence: Dimension["evidence"] = [
+          { tradition: ["Astrology", "西方占星"], note: snapshotEvidence.astro },
+          { tradition: ["Jyotish", "印度占星"], note: snapshotEvidence.vedic },
+          { tradition: ["BaZi", "八字"], note: snapshotEvidence.baziLine },
+          { tradition: ["Zi Wei", "紫微"], note: snapshotEvidence.ziwei },
+        ];
+        if (!p) return { ...d, evidence: fallbackEvidence };
         return {
           ...d,
           headline: [p.headline, p.headline] as [string, string],
@@ -874,7 +945,7 @@ function ReportPage() {
                   tradition: [e.tradition, e.tradition] as [string, string],
                   note: [e.note, e.note] as [string, string],
                 }))
-              : d.evidence,
+              : fallbackEvidence,
           details:
             p.details.length > 0
               ? p.details.map((b) => ({
@@ -884,7 +955,7 @@ function ReportPage() {
               : d.details,
         };
       }),
-    [aiByKey],
+    [aiByKey, snapshotEvidence],
   );
 
 

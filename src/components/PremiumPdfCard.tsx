@@ -28,6 +28,12 @@ import {
 } from "@/lib/premium.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { PremiumReportReader } from "@/components/PremiumReportReader";
+import {
+  buildCalculationSnapshot,
+  missingSystems,
+  systemDisplayName,
+  type RequiredSystem,
+} from "@/lib/calc-snapshot";
 
 type ReportSearchLike = {
   name?: string;
@@ -103,6 +109,15 @@ const TXT = {
   order_pending_pill: { zh: "订单已记录", en: "Order recorded" },
   paid_pill: { zh: "已解锁", en: "Unlocked" },
   ready_pill: { zh: "报告已就绪", en: "Report ready" },
+  systems_incomplete_pill: { zh: "计算模块未完成", en: "Calculators pending" },
+  systems_incomplete_title: {
+    zh: "计算模块尚未完成",
+    en: "Calculation modules are not complete yet",
+  },
+  systems_incomplete_body: {
+    zh: "以下体系还没有真实计算器，我们不会用模板伪造报告，也暂时不接受付费或授权：",
+    en: "The following traditions have no real calculator yet. We refuse to ship a template report and cannot accept purchase or grant until they are wired up:",
+  },
 };
 
 function pick<T extends { zh: string; en: string }>(t: T, lang: "zh" | "en"): string {
@@ -114,6 +129,7 @@ type UiState =
   | { kind: "signed_out" }
   | { kind: "no_chart" }
   | { kind: "verify_needed"; email: string | null }
+  | { kind: "systems_incomplete"; chartId: string | null; missing: string[] }
   | { kind: "locked"; chartId: string }
   | { kind: "order_pending"; chartId: string; message: string }
   | { kind: "paid_no_report"; chartId: string }
@@ -124,6 +140,9 @@ type UiState =
 
 function extractErrorCode(err: unknown): string {
   const raw = err instanceof Error ? err.message : String(err ?? "");
+  if (raw.startsWith("systems_incomplete") || raw.includes("systems_incomplete")) {
+    return "systems_incomplete";
+  }
   const known = [
     "email_not_verified",
     "chart_not_found",
@@ -136,6 +155,13 @@ function extractErrorCode(err: unknown): string {
     "ai_gateway_not_configured",
   ];
   return known.find((k) => raw.includes(k)) ?? "";
+}
+
+function extractMissingSystems(err: unknown): string[] {
+  const raw = err instanceof Error ? err.message : String(err ?? "");
+  const m = raw.match(/systems_incomplete:([a-z,]+)/i);
+  if (!m) return [];
+  return m[1].split(",").filter(Boolean);
 }
 
 export function PremiumPdfCard({
@@ -195,6 +221,20 @@ export function PremiumPdfCard({
 
   const refresh = useCallback(async () => {
     if (!search?.date) return;
+    // Pre-flight: block if any tradition has no real calculator. This
+    // mirrors the server-side `assertSystemsComplete` gate so the UI
+    // never asks for money while modules are still missing.
+    const snap = buildCalculationSnapshot({
+      date: search.date,
+      time: search.time,
+      place: search.place,
+      lang,
+    });
+    const missing = missingSystems(snap);
+    if (missing.length > 0) {
+      setState({ kind: "systems_incomplete", chartId: null, missing });
+      return;
+    }
     try {
       const { data: sess } = await supabase.auth.getSession();
       if (!sess.session) {
@@ -208,14 +248,20 @@ export function PremiumPdfCard({
           time: search.time,
           place: search.place,
           lang,
-          input_snapshot: { ...search, lang },
+          input_snapshot: { ...search, lang, calculation_snapshot: snap },
         },
       });
       const status = await getPremiumStatus({ data: { chartId: chart.chartId } });
       setState(applyStatus(chart.chartId, status));
     } catch (err) {
       const code = extractErrorCode(err);
-      if (code === "email_not_verified") {
+      if (code === "systems_incomplete") {
+        setState({
+          kind: "systems_incomplete",
+          chartId: null,
+          missing: extractMissingSystems(err),
+        });
+      } else if (code === "email_not_verified") {
         const { data: sess } = await supabase.auth.getSession();
         setState({ kind: "verify_needed", email: sess.session?.user?.email ?? null });
       } else if (code === "chart_not_found" || code === "chart_not_found_for_user") {
@@ -433,6 +479,9 @@ function StatePill({ state, lang }: { state: UiState; lang: "zh" | "en" }) {
   } else if (state.kind === "ready") {
     label = pick(TXT.ready_pill, lang);
     cls = "border-gold-dust/60 text-gold-light";
+  } else if (state.kind === "systems_incomplete") {
+    label = pick(TXT.systems_incomplete_pill, lang);
+    cls = "border-white/20 text-stone-warm/60";
   } else return null;
   return (
     <span
@@ -500,6 +549,23 @@ function ActionRow({
     );
   }
   if (state.kind === "no_chart") return <p className="text-sm text-stone-warm/50">…</p>;
+  if (state.kind === "systems_incomplete") {
+    return (
+      <div
+        className={`rounded-2xl border border-white/10 bg-white/[0.02] p-3 text-[12px] leading-relaxed text-stone-warm/70 ${fullWidth ? "w-full" : ""}`}
+      >
+        <p className="mb-2 text-[11px] uppercase tracking-[0.28em] text-stone-warm/50">
+          {pick(TXT.systems_incomplete_title, lang)}
+        </p>
+        <p className="mb-2">{pick(TXT.systems_incomplete_body, lang)}</p>
+        <ul className="list-disc space-y-1 pl-4">
+          {state.missing.map((m) => (
+            <li key={m}>{systemDisplayName(m as RequiredSystem, lang)}</li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
   if (state.kind === "locked") {
     return (
       <button type="button" disabled={busy} onClick={onUnlock} className={btnBase}>

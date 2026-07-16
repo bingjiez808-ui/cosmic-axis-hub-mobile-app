@@ -36,6 +36,7 @@ import { createLovableAiGatewayProvider } from "./ai-gateway.server";
 import { guardrailsFor, safeMessage } from "./ai-guardrails";
 import { enforceRateLimit } from "./rate-limit.server";
 import { isEmailVerified, assertEmailVerifiedOrAdmin } from "./reports-store.functions";
+import { buildCalculationSnapshot, missingSystems } from "./calc-snapshot";
 
 // Canonical product identity.
 export const PREMIUM_PRODUCT_VERSION = "premium_deep_report_v1";
@@ -180,6 +181,30 @@ async function loadChartOwnedBy(userId: string, chartId: string) {
   return data;
 }
 
+/**
+ * Server-side gate: paid deep-report is only allowed when every required
+ * tradition (western / bazi / vedic / ziwei) has a real calculator.
+ * Missing systems throw `systems_incomplete:<a,b,c>` so the UI can show
+ * "计算模块尚未完成" with the exact list.
+ */
+function assertSystemsComplete(chart: {
+  birth_date: string | null;
+  birth_time: string | null;
+  birth_place: string | null;
+  lang: string | null;
+}) {
+  const snap = buildCalculationSnapshot({
+    date: chart.birth_date ?? null,
+    time: chart.birth_time ?? null,
+    place: chart.birth_place ?? null,
+    lang: (chart.lang as "en" | "zh") ?? "en",
+  });
+  const missing = missingSystems(snap);
+  if (missing.length > 0) {
+    throw new Error(`systems_incomplete:${missing.join(",")}`);
+  }
+}
+
 /* --------------------------------------------------------------------- */
 /* getPremiumStatus                                                       */
 /* --------------------------------------------------------------------- */
@@ -292,7 +317,8 @@ export const startPremiumCheckout = createServerFn({ method: "POST" })
     const { userId, claims } = context;
     await assertEmailVerifiedOrAdmin(context);
     enforceRateLimit(`premium-checkout:${userId}`, 10, 60_000, "premium checkouts");
-    await loadChartOwnedBy(userId, data.chartId);
+    const chart = await loadChartOwnedBy(userId, data.chartId);
+    assertSystemsComplete(chart);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -834,8 +860,9 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
     await assertEmailVerifiedOrAdmin(context);
     enforceRateLimit(`premium-generate:${userId}`, 3, 60_000, "premium report generations");
 
-    // 1. Chart must belong to this user.
+    // 1. Chart must belong to this user + all systems complete.
     const chart = await loadChartOwnedBy(userId, data.chartId);
+    assertSystemsComplete(chart);
 
     // 2. Some paid entitlement must exist (current or legacy).
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
