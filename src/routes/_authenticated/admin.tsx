@@ -25,8 +25,10 @@ import {
 } from "@/lib/admin.functions";
 import {
   grantPremiumReportAccess,
+  listAdminChartsForUser,
   listAdminPremiumOrders,
   type AdminOrderRow,
+  type AdminUserChartRow,
 } from "@/lib/premium.functions";
 
 export const Route = createFileRoute("/_authenticated/admin")({
@@ -588,8 +590,10 @@ function PremiumOrdersSection({
         高级深度报告订单 · Premium Deep Reading orders
       </h2>
 
+      <GrantByChartPanel onGranted={onReload} />
 
       <div className="glass-card rounded-2xl border border-white/10 p-4">
+
         <div className="mb-4 flex flex-wrap items-center gap-3">
           {(["all", "pending", "paid", "failed", "refunded"] as const).map((s) => (
             <button
@@ -727,4 +731,148 @@ function PremiumOrdersSection({
     </div>
   );
 }
+
+/* ═══════════════════════════════════════════
+   Grant-by-chart — pick user + one of their charts
+   and issue a test grant (source=admin_test_grant).
+═══════════════════════════════════════════ */
+
+function GrantByChartPanel({ onGranted }: { onGranted: () => void }) {
+  const [query, setQuery] = useState("");
+  const [charts, setCharts] = useState<AdminUserChartRow[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [note, setNote] = useState("admin_test_grant");
+  const [granting, setGranting] = useState<string | null>(null);
+
+  const doLookup = async () => {
+    if (query.trim().length < 3) {
+      toast.error("请输入邮箱或用户 UUID");
+      return;
+    }
+    setLoading(true);
+    try {
+      const rows = await listAdminChartsForUser({ data: { query: query.trim() } });
+      setCharts(rows);
+      if (rows.length === 0) toast.message("未找到该用户或该用户没有命盘");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const doGrant = async (row: AdminUserChartRow) => {
+    if (note.trim().length < 4) {
+      toast.error("备注至少 4 字");
+      return;
+    }
+    if (row.hasLegacyPaid) {
+      toast.error("该命盘已有历史 paid 订单，无需再次开通");
+      return;
+    }
+    if (!window.confirm(`确认为 ${row.email ?? row.userId} 的命盘「${row.name ?? row.chartId.slice(0, 8)}」授予测试权益？`))
+      return;
+    setGranting(row.chartId);
+    try {
+      await grantPremiumReportAccess({
+        data: { userId: row.userId, chartId: row.chartId, note: note.trim() },
+      });
+      toast.success("已授予测试权益");
+      await doLookup();
+      onGranted();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e));
+    } finally {
+      setGranting(null);
+    }
+  };
+
+  return (
+    <div className="mb-4 glass-card rounded-2xl border border-gold-dust/30 p-4">
+      <h3 className="mb-2 font-serif text-lg italic text-gold-light">
+        按命盘授予测试权益 · Grant test access by chart
+      </h3>
+      <p className="mb-3 text-[11px] text-stone-warm/50">
+        输入用户邮箱或 UUID → 选择其命盘 → 幂等授予 ¥79 高级深度报告 paid 订单，不触发真实扣款。
+      </p>
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") doLookup();
+          }}
+          placeholder="user@example.com or UUID"
+          className="w-72 rounded-full border border-white/10 bg-obsidian/40 px-4 py-1.5 text-sm text-stone-warm placeholder:text-stone-warm/30 focus:border-gold-dust focus:outline-none"
+        />
+        <button
+          type="button"
+          onClick={doLookup}
+          disabled={loading}
+          className="rounded-full border border-gold-dust/50 px-4 py-1.5 text-[10px] uppercase tracking-[0.28em] text-gold-light hover:bg-gold-dust/10 disabled:opacity-50"
+        >
+          {loading ? "查询中…" : "查询命盘"}
+        </button>
+        <input
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="备注（写入审计日志，最少 4 字）"
+          className="ml-auto w-72 rounded-full border border-white/10 bg-obsidian/40 px-4 py-1.5 text-[11px] text-stone-warm placeholder:text-stone-warm/30 focus:border-gold-dust focus:outline-none"
+        />
+      </div>
+
+      {charts && charts.length > 0 && (
+        <div className="mt-4 overflow-x-auto">
+          <table className="w-full text-left text-[12px]">
+            <thead className="text-[10px] uppercase tracking-[0.24em] text-stone-warm/50">
+              <tr>
+                <th className="px-2 py-2">Chart</th>
+                <th className="px-2 py-2">Birth</th>
+                <th className="px-2 py-2">Status</th>
+                <th className="px-2 py-2 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody className="text-stone-warm/80">
+              {charts.map((c) => {
+                const alreadyPaid = c.hasCurrentPaid || c.hasLegacyPaid;
+                return (
+                  <tr key={c.chartId} className="border-t border-white/5">
+                    <td className="px-2 py-2">{c.name ?? c.chartId.slice(0, 8)}</td>
+                    <td className="px-2 py-2 text-[11px] text-stone-warm/60">
+                      {[c.birthDate, c.birthTime, c.birthPlace].filter(Boolean).join(" · ") || "—"}
+                    </td>
+                    <td className="px-2 py-2 text-[10px] uppercase tracking-[0.24em]">
+                      {c.hasLegacyPaid
+                        ? "legacy paid"
+                        : c.hasCurrentPaid
+                          ? "paid"
+                          : c.hasCurrentPending
+                            ? "pending"
+                            : "—"}
+                    </td>
+                    <td className="px-2 py-2 text-right">
+                      <button
+                        type="button"
+                        onClick={() => doGrant(c)}
+                        disabled={alreadyPaid || granting === c.chartId}
+                        className="rounded-full border border-gold-dust/40 px-3 py-1 text-[10px] uppercase tracking-[0.28em] text-gold-light hover:bg-gold-dust/10 disabled:opacity-40"
+                      >
+                        {alreadyPaid
+                          ? "已开通"
+                          : granting === c.chartId
+                            ? "开通中…"
+                            : "授予测试权益"}
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 

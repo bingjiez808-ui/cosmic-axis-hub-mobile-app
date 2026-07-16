@@ -146,9 +146,7 @@ export const beginReport = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => BeginReportInput.parse(data))
   .handler(async ({ data, context }) => {
     const { userId } = context;
-    if (!isEmailVerified(context.claims)) {
-      throw new Error("email_not_verified");
-    }
+    await assertEmailVerifiedOrAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     // First: is there already a row? Return whatever it says.
@@ -338,7 +336,13 @@ export const renameChart = createServerFn({ method: "POST" })
 type Claims = {
   email_verified?: boolean;
   email?: string;
-  user_metadata?: { email_verified?: boolean };
+  email_confirmed_at?: string | null;
+  confirmed_at?: string | null;
+  phone_verified?: boolean;
+  user_metadata?: {
+    email_verified?: boolean;
+    email_confirmed_at?: string | null;
+  };
   app_metadata?: { provider?: string; providers?: string[] };
 };
 
@@ -347,6 +351,16 @@ export function isEmailVerified(claims: unknown): boolean {
   // Explicit top-level flag (present on most Supabase JWTs).
   if (c.email_verified === true) return true;
   if (c.user_metadata?.email_verified === true) return true;
+  // Some JWT shapes expose the raw confirmation timestamps instead of a
+  // boolean — treat any non-empty timestamp as verified. This is the
+  // shape we get for accounts confirmed via the Supabase admin API.
+  if (typeof c.email_confirmed_at === "string" && c.email_confirmed_at) return true;
+  if (typeof c.confirmed_at === "string" && c.confirmed_at) return true;
+  if (
+    typeof c.user_metadata?.email_confirmed_at === "string" &&
+    c.user_metadata.email_confirmed_at
+  )
+    return true;
   // Third-party OAuth providers (Google, Apple, etc.) return verified users.
   const provs = new Set<string>([
     ...(c.app_metadata?.provider ? [c.app_metadata.provider] : []),
@@ -354,4 +368,39 @@ export function isEmailVerified(claims: unknown): boolean {
   ]);
   if ([...provs].some((p) => p !== "email" && p !== "phone")) return true;
   return false;
+}
+
+/**
+ * Same verification rule as `isEmailVerified` with an admin escape hatch.
+ * An admin JWT may pre-date its email confirmation (created via admin API)
+ * yet must still be able to run premium / outlook flows for QA. The admin
+ * check reads the caller's own `user_roles` row through RLS, so it cannot
+ * be forged by client input. Throws "email_not_verified" for regular
+ * unverified accounts — the same error code the UI already surfaces.
+ */
+export async function assertEmailVerifiedOrAdmin(context: {
+  supabase: unknown;
+  userId: string;
+  claims: unknown;
+}): Promise<void> {
+  if (isEmailVerified(context.claims)) return;
+  const sb = context.supabase as {
+    from: (t: string) => {
+      select: (c: string) => {
+        eq: (k: string, v: string) => {
+          eq: (k: string, v: string) => {
+            maybeSingle: () => Promise<{ data: unknown; error: unknown }>;
+          };
+        };
+      };
+    };
+  };
+  const { data } = await sb
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", context.userId)
+    .eq("role", "admin")
+    .maybeSingle();
+  if (data) return;
+  throw new Error("email_not_verified");
 }

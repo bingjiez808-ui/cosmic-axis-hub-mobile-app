@@ -317,7 +317,7 @@ function FocusComparison() {
 
       {/* Four focus cards */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="popLayout" initial={false}>
           {cards.map((c, i) => (
             <motion.div
               key={`${active}-${c.key}`}

@@ -82,8 +82,22 @@ const TXT = {
   },
   need_auth: { zh: "请先登录以购买", en: "Sign in to purchase" },
   need_verify: {
-    zh: "请先验证你的邮箱后再购买或生成",
+    zh: "请先完成邮箱验证后再购买或生成",
     en: "Please verify your email before purchasing or generating",
+  },
+  resend_verify: { zh: "重发验证邮件", en: "Resend verification email" },
+  resent_verify: { zh: "验证邮件已重新发送", en: "Verification email resent" },
+  no_chart_saved: {
+    zh: "未能保存当前命盘，请稍后重试",
+    en: "Could not save this chart. Please retry.",
+  },
+  chart_not_owned: {
+    zh: "该命盘不属于当前账户",
+    en: "This chart does not belong to your account",
+  },
+  order_missing: {
+    zh: "尚未解锁：请先购买或让管理员开通测试权益",
+    en: "Not unlocked yet — purchase or ask an admin to grant test access",
   },
   error: { zh: "操作失败，请稍后重试。", en: "Something went wrong, please retry." },
   order_pending_pill: { zh: "订单已记录", en: "Order recorded" },
@@ -99,6 +113,7 @@ type UiState =
   | { kind: "loading" }
   | { kind: "signed_out" }
   | { kind: "no_chart" }
+  | { kind: "verify_needed"; email: string | null }
   | { kind: "locked"; chartId: string }
   | { kind: "order_pending"; chartId: string; message: string }
   | { kind: "paid_no_report"; chartId: string }
@@ -106,6 +121,22 @@ type UiState =
   | { kind: "ready"; chartId: string }
   | { kind: "failed"; chartId: string; message: string }
   | { kind: "error"; message: string };
+
+function extractErrorCode(err: unknown): string {
+  const raw = err instanceof Error ? err.message : String(err ?? "");
+  const known = [
+    "email_not_verified",
+    "chart_not_found",
+    "chart_not_found_for_user",
+    "chart_lookup_failed",
+    "order_not_paid",
+    "order_create_failed",
+    "already_granted_legacy",
+    "provider_pending_config",
+    "ai_gateway_not_configured",
+  ];
+  return known.find((k) => raw.includes(k)) ?? "";
+}
 
 export function PremiumPdfCard({
   search,
@@ -120,6 +151,20 @@ export function PremiumPdfCard({
   const [readerOpen, setReaderOpen] = useState(false);
   const openerRef = useRef<HTMLButtonElement | null>(null);
   const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const [resent, setResent] = useState(false);
+
+  const onResendVerification = async () => {
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      const email = sess.session?.user?.email;
+      if (!email) return;
+      await supabase.auth.resend({ type: "signup", email });
+      setResent(true);
+    } catch {
+      /* best-effort */
+    }
+  };
 
   const clearPoll = () => {
     if (pollTimer.current) {
@@ -169,9 +214,14 @@ export function PremiumPdfCard({
       const status = await getPremiumStatus({ data: { chartId: chart.chartId } });
       setState(applyStatus(chart.chartId, status));
     } catch (err) {
-      const msg = (err as Error)?.message ?? "";
-      if (msg.includes("email_not_verified")) {
-        setState({ kind: "error", message: pick(TXT.need_verify, lang) });
+      const code = extractErrorCode(err);
+      if (code === "email_not_verified") {
+        const { data: sess } = await supabase.auth.getSession();
+        setState({ kind: "verify_needed", email: sess.session?.user?.email ?? null });
+      } else if (code === "chart_not_found" || code === "chart_not_found_for_user") {
+        setState({ kind: "error", message: pick(TXT.chart_not_owned, lang) });
+      } else if (code === "chart_lookup_failed") {
+        setState({ kind: "error", message: pick(TXT.no_chart_saved, lang) });
       } else {
         setState({ kind: "error", message: pick(TXT.error, lang) });
       }
@@ -203,8 +253,14 @@ export function PremiumPdfCard({
           message: pick(TXT.provider_pending, lang),
         });
       else await refresh();
-    } catch {
-      setState({ kind: "error", message: pick(TXT.error, lang) });
+    } catch (err) {
+      const code = extractErrorCode(err);
+      if (code === "email_not_verified") {
+        const { data: sess } = await supabase.auth.getSession();
+        setState({ kind: "verify_needed", email: sess.session?.user?.email ?? null });
+      } else {
+        setState({ kind: "error", message: pick(TXT.error, lang) });
+      }
     } finally {
       setBusy(false);
     }
@@ -217,8 +273,16 @@ export function PremiumPdfCard({
     try {
       await generatePremiumReport({ data: { chartId: state.chartId } });
       await refresh();
-    } catch {
-      setState({ kind: "error", message: pick(TXT.error, lang) });
+    } catch (err) {
+      const code = extractErrorCode(err);
+      if (code === "email_not_verified") {
+        const { data: sess } = await supabase.auth.getSession();
+        setState({ kind: "verify_needed", email: sess.session?.user?.email ?? null });
+      } else if (code === "order_not_paid") {
+        setState({ kind: "error", message: pick(TXT.order_missing, lang) });
+      } else {
+        setState({ kind: "failed", chartId: state.chartId, message: code || "generation_failed" });
+      }
     } finally {
       setBusy(false);
     }
@@ -275,6 +339,8 @@ export function PremiumPdfCard({
             onUnlock={onUnlock}
             onGenerate={onGenerate}
             onOpen={onOpen}
+          onResendVerification={onResendVerification}
+          resent={resent}
             fullWidth
           />
           <p className="text-center text-[10px] uppercase tracking-[0.24em] text-stone-warm/40 md:text-right">
@@ -325,6 +391,8 @@ export function PremiumPdfCard({
           onUnlock={onUnlock}
           onGenerate={onGenerate}
           onOpen={onOpen}
+          onResendVerification={onResendVerification}
+          resent={resent}
         />
       </div>
 
@@ -382,6 +450,8 @@ function ActionRow({
   onUnlock,
   onGenerate,
   onOpen,
+  onResendVerification,
+  resent,
   fullWidth = false,
 }: {
   state: UiState;
@@ -390,6 +460,8 @@ function ActionRow({
   onUnlock: () => void;
   onGenerate: () => void;
   onOpen: (btn: HTMLButtonElement | null) => void;
+  onResendVerification: () => void;
+  resent: boolean;
   fullWidth?: boolean;
 }) {
   const btnBase = `rounded-full bg-gold-dust text-[11px] uppercase tracking-[0.28em] text-obsidian hover:bg-gold-light disabled:opacity-50 min-h-[44px] px-6 py-2.5 ${
@@ -407,6 +479,24 @@ function ActionRow({
       >
         {pick(TXT.need_auth, lang)}
       </button>
+    );
+  }
+  if (state.kind === "verify_needed") {
+    return (
+      <div className={`flex flex-col gap-2 ${fullWidth ? "w-full" : ""}`}>
+        <p className="rounded-2xl border border-nebula-purple/40 bg-nebula-purple/[0.08] p-3 text-[12px] leading-relaxed text-stone-warm/80">
+          {pick(TXT.need_verify, lang)}
+          {state.email ? ` · ${state.email}` : ""}
+        </p>
+        <button
+          type="button"
+          disabled={resent}
+          onClick={onResendVerification}
+          className={`rounded-full border border-gold-dust/60 px-5 py-2.5 text-[10px] uppercase tracking-[0.28em] text-gold-light hover:bg-gold-dust/10 disabled:opacity-50 min-h-[44px] ${fullWidth ? "w-full" : ""}`}
+        >
+          {resent ? pick(TXT.resent_verify, lang) : pick(TXT.resend_verify, lang)}
+        </button>
+      </div>
     );
   }
   if (state.kind === "no_chart") return <p className="text-sm text-stone-warm/50">…</p>;

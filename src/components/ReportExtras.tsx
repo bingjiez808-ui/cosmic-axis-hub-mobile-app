@@ -1850,8 +1850,8 @@ export function MembershipSection({
         name: t.mem_sage,
         desc:
           lang === "zh"
-            ? "完整 PDF 报告 · 生命时间轴精解 · 合盘关系分析 · 每月 10 次塔罗 AI 解读（贤者专属）。"
-            : "Full PDF · life-timeline analysis · Synastry reading · 10 tarot AI readings / month (Sage exclusive).",
+            ? "站内深度阅读体验 · 生命时间轴精解 · 合盘关系分析 · 每月 10 次塔罗 AI 解读（贤者专属）。"
+            : "In-app deep reading · life-timeline analysis · Synastry reading · 10 tarot AI readings / month (Sage exclusive).",
         price: [`$2.99 / mo`, `¥19.9 / 月`][li],
         highlight: true,
       },
@@ -1869,9 +1869,6 @@ export function MembershipSection({
     [t, li, lang],
   );
 
-  const exportPdf = () => {
-    if (typeof window !== "undefined") window.print();
-  };
 
   const handleUpgradeClick = (target: Plan) => {
     if (!account) {

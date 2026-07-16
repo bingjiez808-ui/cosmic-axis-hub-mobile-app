@@ -6,7 +6,7 @@ import { createLovableAiGatewayProvider } from "./ai-gateway.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { guardrailsFor, safeMessage } from "./ai-guardrails";
 import { enforceRateLimit } from "./rate-limit.server";
-import { isEmailVerified } from "./reports-store.functions";
+import { isEmailVerified, assertEmailVerifiedOrAdmin } from "./reports-store.functions";
 
 
 
@@ -126,7 +126,7 @@ export const generateReportSummary = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => BaseInput.parse(data))
   .handler(async ({ data, context }): Promise<{ summary: string }> => {
-    if (!isEmailVerified(context.claims)) throw new Error("email_not_verified");
+    await assertEmailVerifiedOrAdmin(context);
     enforceRateLimit(`report-summary:${context.userId}`, 20, 60_000, "report generations");
     try {
       const key = process.env.LOVABLE_API_KEY;
@@ -170,7 +170,7 @@ export const generateReportDimension = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => DimensionInput.parse(data))
   .handler(async ({ data, context }): Promise<ReportDimensionAI> => {
-    if (!isEmailVerified(context.claims)) throw new Error("email_not_verified");
+    await assertEmailVerifiedOrAdmin(context);
     enforceRateLimit(`report-dim:${context.userId}`, 40, 60_000, "dimension generations");
     try {
       const key = process.env.LOVABLE_API_KEY;
@@ -260,7 +260,7 @@ export const generateReport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => BaseInput.parse(data))
   .handler(async ({ data, context }): Promise<ReportAI> => {
-    if (!isEmailVerified(context.claims)) throw new Error("email_not_verified");
+    await assertEmailVerifiedOrAdmin(context);
     enforceRateLimit(`report-full:${context.userId}`, 5, 60_000, "full report generations");
     // Sub-calls run their own auth + rate checks via the exported fns.
     const [{ summary }, ...dims] = await Promise.all([
