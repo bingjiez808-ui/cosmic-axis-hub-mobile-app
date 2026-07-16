@@ -24,6 +24,7 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthIndexRouteImport } from './routes/auth.index'
+import { Route as AuthResetRouteImport } from './routes/auth.reset'
 import { Route as ApiGenerateAvatarRouteImport } from './routes/api/generate-avatar'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
@@ -105,6 +106,11 @@ const AuthIndexRoute = AuthIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthResetRoute = AuthResetRouteImport.update({
+  id: '/reset',
+  path: '/reset',
+  getParentRoute: () => AuthRoute,
+} as any)
 const ApiGenerateAvatarRoute = ApiGenerateAvatarRouteImport.update({
   id: '/api/generate-avatar',
   path: '/api/generate-avatar',
@@ -157,6 +163,7 @@ export interface FileRoutesByFullPath {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/api/generate-avatar': typeof ApiGenerateAvatarRoute
+  '/auth/reset': typeof AuthResetRoute
   '/auth/': typeof AuthIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -178,6 +185,7 @@ export interface FileRoutesByTo {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/api/generate-avatar': typeof ApiGenerateAvatarRoute
+  '/auth/reset': typeof AuthResetRoute
   '/auth': typeof AuthIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -202,6 +210,7 @@ export interface FileRoutesById {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/api/generate-avatar': typeof ApiGenerateAvatarRoute
+  '/auth/reset': typeof AuthResetRoute
   '/auth/': typeof AuthIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -226,6 +235,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/admin'
     | '/api/generate-avatar'
+    | '/auth/reset'
     | '/auth/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -247,6 +257,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/admin'
     | '/api/generate-avatar'
+    | '/auth/reset'
     | '/auth'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -270,6 +281,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/_authenticated/admin'
     | '/api/generate-avatar'
+    | '/auth/reset'
     | '/auth/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -404,6 +416,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthIndexRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/auth/reset': {
+      id: '/auth/reset'
+      path: '/reset'
+      fullPath: '/auth/reset'
+      preLoaderRoute: typeof AuthResetRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/api/generate-avatar': {
       id: '/api/generate-avatar'
       path: '/api/generate-avatar'
@@ -461,10 +480,12 @@ const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
 interface AuthRouteChildren {
+  AuthResetRoute: typeof AuthResetRoute
   AuthIndexRoute: typeof AuthIndexRoute
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
+  AuthResetRoute: AuthResetRoute,
   AuthIndexRoute: AuthIndexRoute,
 }
 
