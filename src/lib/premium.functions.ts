@@ -192,17 +192,26 @@ function assertSystemsComplete(chart: {
   birth_time: string | null;
   birth_place: string | null;
   lang: string | null;
+  input_snapshot?: unknown;
 }) {
+  const g = extractGender(chart.input_snapshot);
   const snap = buildCalculationSnapshot({
     date: chart.birth_date ?? null,
     time: chart.birth_time ?? null,
     place: chart.birth_place ?? null,
     lang: (chart.lang as "en" | "zh") ?? "en",
+    gender: g,
   });
   const missing = missingSystems(snap);
   if (missing.length > 0) {
     throw new Error(`systems_incomplete:${missing.join(",")}`);
   }
+}
+
+function extractGender(snap: unknown): "male" | "female" | null {
+  if (!snap || typeof snap !== "object") return null;
+  const v = (snap as Record<string, unknown>).gender;
+  return v === "male" || v === "female" ? v : null;
 }
 
 /* --------------------------------------------------------------------- */

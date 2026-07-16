@@ -40,6 +40,7 @@ type ReportSearchLike = {
   date?: string;
   time?: string;
   place?: string;
+  gender?: "male" | "female";
 };
 
 const TXT = {
