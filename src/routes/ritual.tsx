@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { CityCombobox } from "@/components/CityCombobox";
 import { useLang } from "@/lib/i18n";
 import { solarToLunarInfo } from "@/lib/lunar";
+import { noOrphan } from "@/lib/typography";
 
 const RITUAL_STATE_KEY = "lod:ritual-draft-v2";
 
