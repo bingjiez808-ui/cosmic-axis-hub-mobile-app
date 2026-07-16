@@ -155,7 +155,13 @@ function birthSeed(birthISO?: string): number {
   return h || 1;
 }
 
-export function LifeTimeline({ birthISO }: { birthISO?: string }) {
+export function LifeTimeline({
+  birthISO,
+  search,
+}: {
+  birthISO?: string;
+  search?: ReportSearchLike;
+}) {
   const { lang, t } = useLang();
   const li = lang === "zh" ? 1 : 0;
   const age = computeCurrentAge(birthISO);
@@ -164,8 +170,11 @@ export function LifeTimeline({ birthISO }: { birthISO?: string }) {
     return Math.min(DECADES.length - 1, Math.floor(age / 10));
   });
 
+  const { outlook, state: aiState } = useChartOutlook(search, lang);
+  const aiDecade = outlook?.timeline.decades[active];
+
   const nowPct = age == null ? null : Math.min(100, (age / 80) * 100);
-  const activeDecade = DECADES[active];
+  const fallbackDecade = DECADES[active];
   const seed = birthSeed(birthISO);
 
   const personalTintEn = [
@@ -188,9 +197,13 @@ export function LifeTimeline({ birthISO }: { birthISO?: string }) {
     "在你的盘里，这十年身体的诉求会上抬 —— 把睡眠当作策略。",
     "在你的盘里，这十年以一次「重新定义未来二十年」的决定收束。",
   ];
-  const personalTint = (lang === "zh" ? personalTintZh : personalTintEn)[
+  const fallbackTint = (lang === "zh" ? personalTintZh : personalTintEn)[
     ((seed + active * 2654435761) >>> 0) % 8
   ];
+
+  const theme = aiDecade?.theme?.trim() || fallbackDecade.theme[li];
+  const detail = aiDecade?.detail?.trim() || fallbackDecade.detail[li];
+  const personalTint = aiDecade?.personalTint?.trim() || fallbackTint;
 
   return (
     <section className="mx-auto max-w-5xl px-6 pb-24 md:px-12">
@@ -211,7 +224,18 @@ export function LifeTimeline({ birthISO }: { birthISO?: string }) {
           )}
         </div>
 
-        <p className="mb-8 max-w-3xl text-sm text-stone-warm/60">{t.tl_hint}</p>
+        <p className="mb-4 max-w-3xl text-sm text-stone-warm/60">{t.tl_hint}</p>
+        {aiState === "loading" && (
+          <p className="mb-6 flex items-center gap-2 text-[10px] uppercase tracking-[0.28em] text-gold-dust/70">
+            <span className="size-1.5 animate-pulse rounded-full bg-gold-dust" />
+            {lang === "zh" ? "正在依据你的大运与行运重写……" : "Rewriting from your luck pillars & transits…"}
+          </p>
+        )}
+        {outlook?.timeline.summary && (
+          <p className="mb-8 max-w-3xl font-serif text-base italic leading-relaxed text-gold-light/80">
+            {outlook.timeline.summary}
+          </p>
+        )}
 
         <div className="relative mb-10">
           <div className="absolute left-0 right-0 top-1/2 h-px -translate-y-1/2 bg-gradient-to-r from-transparent via-gold-dust/40 to-transparent" />
@@ -273,20 +297,25 @@ export function LifeTimeline({ birthISO }: { birthISO?: string }) {
           >
             <p className="mb-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
               {lang === "zh"
-                ? `${activeDecade.from}–${activeDecade.to} 岁`
-                : `${t.tl_age} ${activeDecade.from}–${activeDecade.to}`}
+                ? `${fallbackDecade.from}–${fallbackDecade.to} 岁`
+                : `${t.tl_age} ${fallbackDecade.from}–${fallbackDecade.to}`}
             </p>
-            <h3 className="mb-4 font-serif text-2xl italic text-gold-light">
-              {activeDecade.theme[li]}
-            </h3>
+            <h3 className="mb-4 font-serif text-2xl italic text-gold-light">{theme}</h3>
             <p className="mb-3 font-serif text-lg leading-relaxed text-stone-warm/85">
-              {activeDecade.detail[li]}
+              {detail}
             </p>
             <p className="mb-6 font-serif text-[15px] italic leading-relaxed text-gold-light/80">
               {personalTint}
             </p>
 
-            <YearByYearChart from={activeDecade.from} to={activeDecade.to} age={age} lang={lang} birthISO={birthISO} />
+            <YearByYearChart
+              from={fallbackDecade.from}
+              to={fallbackDecade.to}
+              age={age}
+              lang={lang}
+              birthISO={birthISO}
+              aiYears={aiDecade?.years}
+            />
           </motion.div>
         </AnimatePresence>
       </div>
