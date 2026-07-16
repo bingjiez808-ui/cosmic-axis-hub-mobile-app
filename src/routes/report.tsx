@@ -1017,8 +1017,10 @@ function ReportPage() {
               </div>
             </div>
           </motion.article>
-        ))}
+          );
+        })}
       </section>
+
 
       {/* Life Timeline — 大运 */}
       <div className="mt-24">
