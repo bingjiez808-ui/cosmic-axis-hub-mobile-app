@@ -1121,7 +1121,7 @@ function ReportPage() {
             {aiState === "error" && (
               <button
                 type="button"
-                onClick={() => runReport(true)}
+                onClick={() => runReport()}
                 className="flex-none rounded-full border border-red-300/40 px-4 py-1.5 text-[10px] tracking-[0.28em] text-red-200 transition-colors hover:bg-red-300/10"
               >
                 {lang === "zh" ? "重试" : "Retry"}
