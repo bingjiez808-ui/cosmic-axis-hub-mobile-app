@@ -147,6 +147,7 @@ function RootComponent() {
   useEffect(() => {
     const handler = () => setAccOpen(true);
     window.addEventListener("lod:open-account", handler);
+    void import("../lib/pwa-register").then(({ registerServiceWorker }) => registerServiceWorker());
     return () => window.removeEventListener("lod:open-account", handler);
   }, []);
 
