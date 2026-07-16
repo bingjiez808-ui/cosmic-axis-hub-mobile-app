@@ -255,8 +255,8 @@ function SiteNav() {
   const showTopBar = atTop;
 
   const linkClass = lang === "zh"
-    ? "whitespace-nowrap text-[13px] tracking-normal normal-case text-stone-warm/75 transition-colors hover:text-gold-dust flex-none"
-    : "whitespace-nowrap text-[11px] uppercase tracking-[0.28em] text-stone-warm/70 transition-colors hover:text-gold-dust flex-none";
+    ? "inline-flex min-h-11 items-center whitespace-nowrap text-[13px] tracking-normal normal-case text-stone-warm/75 transition-colors hover:text-gold-dust flex-none"
+    : "inline-flex min-h-11 items-center whitespace-nowrap text-[11px] uppercase tracking-[0.28em] text-stone-warm/70 transition-colors hover:text-gold-dust flex-none";
 
   const accountLabel = session ? t.nav_account : t.nav_sign_in;
   const showAdmin = !loading && isAdmin;
