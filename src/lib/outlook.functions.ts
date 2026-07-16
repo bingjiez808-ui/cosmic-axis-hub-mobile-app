@@ -6,6 +6,7 @@ import { createLovableAiGatewayProvider } from "./ai-gateway.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { guardrailsFor, safeMessage } from "./ai-guardrails";
 import { enforceRateLimit } from "./rate-limit.server";
+import { isEmailVerified } from "./reports-store.functions";
 
 const Input = z.object({
   name: z.string().max(120).optional(),
