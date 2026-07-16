@@ -18,7 +18,14 @@ export const Route = createFileRoute("/ritual")({
         content:
           "The intake ritual for your unified reading. Choose your language, answer five calibration questions, then share the coordinates of your first breath.",
       },
+      { property: "og:title", content: "The Ritual — Library of Destiny" },
+      { property: "og:description", content: "Begin the intake ritual for your unified reading." },
+      { property: "og:url", content: "https://fate-nexus-ai.lovable.app/ritual" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "The Ritual — Library of Destiny" },
+      { name: "twitter:description", content: "Begin the intake ritual for your unified reading." },
     ],
+    links: [{ rel: "canonical", href: "https://fate-nexus-ai.lovable.app/ritual" }],
   }),
   component: RitualPage,
 });
