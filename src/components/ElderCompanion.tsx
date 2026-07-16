@@ -117,7 +117,13 @@ export function ElderCompanion({ lang }: { lang: "en" | "zh" }) {
   };
 
   return (
-    <div className="pointer-events-none fixed bottom-4 left-3 z-40 flex items-end gap-2 print:hidden sm:bottom-6 sm:left-4">
+    <div
+      className="pointer-events-none fixed bottom-2 left-2 z-40 flex items-end gap-2 print:hidden sm:bottom-6 sm:left-4"
+      style={{
+        paddingBottom: "env(safe-area-inset-bottom)",
+        paddingLeft: "env(safe-area-inset-left)",
+      }}
+    >
       <motion.button
         type="button"
         onClick={() => {
@@ -125,7 +131,7 @@ export function ElderCompanion({ lang }: { lang: "en" | "zh" }) {
           if (!open) setTipIdx((i) => (i + 1) % tips.length);
         }}
         aria-label={lang === "zh" ? "智者" : "The elder"}
-        className="pointer-events-auto relative grid size-11 place-items-center rounded-full border border-gold-dust/40 bg-obsidian/80 shadow-[0_8px_20px_-8px_rgba(0,0,0,0.6)] backdrop-blur-md transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-light sm:size-12"
+        className="pointer-events-auto relative grid size-9 place-items-center rounded-full border border-gold-dust/40 bg-obsidian/80 shadow-[0_8px_20px_-8px_rgba(0,0,0,0.6)] backdrop-blur-md transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-light sm:size-11"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.4 }}
@@ -138,7 +144,7 @@ export function ElderCompanion({ lang }: { lang: "en" | "zh" }) {
           }}
           aria-hidden="true"
         />
-        <svg viewBox="0 0 64 64" className="relative size-7 sm:size-8" aria-hidden="true">
+        <svg viewBox="0 0 64 64" className="relative size-5 sm:size-7" aria-hidden="true">
           <defs>
             <linearGradient id="sage-robe" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="color-mix(in oklab, var(--gold-light) 80%, transparent)" />
@@ -164,7 +170,7 @@ export function ElderCompanion({ lang }: { lang: "en" | "zh" }) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 6, scale: 0.97 }}
             transition={{ duration: 0.28, ease: [0.32, 0.72, 0, 1] }}
-            className="pointer-events-auto relative mb-1 flex w-[86vw] max-w-sm flex-col overflow-hidden rounded-2xl border border-gold-dust/30 bg-obsidian/95 shadow-2xl backdrop-blur-md sm:w-[22rem]"
+            className="pointer-events-auto relative mb-1 flex w-[calc(100vw-5rem)] max-w-sm flex-col overflow-hidden rounded-2xl border border-gold-dust/30 bg-obsidian/95 shadow-2xl backdrop-blur-md sm:w-[22rem]"
           >
             <div className="flex items-start justify-between gap-2 border-b border-gold-dust/20 px-4 py-3">
               <div>
