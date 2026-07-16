@@ -975,15 +975,9 @@ function ReportPage() {
       {/* Save-this-reading bar */}
       {(() => {
         const fingerprint = search.date ? buildReportFingerprint(search, reportLang) : undefined;
-        const savedReading = findReading({
-          id: search.readingId,
-          fingerprint,
-          name: search.name ?? "Anonymous",
-          date: search.date,
-          time: search.time,
-          place: search.place,
-          lang: reportLang,
-        });
+        const savedReading = undefined as
+          | { aiReport?: ReportAI; aiReportVersion?: string; aiOutlook?: unknown; aiOutlookVersion?: string }
+          | undefined;
         return (
       <SaveReadingBar
         reading={{
