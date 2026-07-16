@@ -1380,12 +1380,33 @@ const WATCHLIST: {
   },
 ];
 
-export function FutureWatchlist() {
+export function FutureWatchlist({ search }: { search?: ReportSearchLike }) {
   const { t, lang } = useLang();
   const { account } = useAccount();
   const plan = (account?.plan ?? "free") as "free" | "sage" | "oracle";
   const isOracle = plan === "oracle";
   const li = lang === "zh" ? 1 : 0;
+
+  const { outlook, state: aiState } = useChartOutlook(search, lang);
+  const aiWatch = outlook?.watchlist && outlook.watchlist.length > 0 ? outlook.watchlist : null;
+
+  // AI-driven items when ready; otherwise fall back to seed WATCHLIST as skeleton copy.
+  const items = aiWatch
+    ? aiWatch.map((w) => ({
+        year: w.year,
+        theme: w.theme,
+        note: w.note,
+        detail: w.detail,
+        locked: false as const,
+      }))
+    : WATCHLIST.map((w) => ({
+        year: w.year,
+        theme: w.theme[li],
+        note: w.note[li],
+        detail: w.detail?.[li] ?? "",
+        locked: w.locked ?? false,
+      }));
+
   return (
     <section className="mx-auto max-w-5xl px-6 pb-24 md:px-12">
       <div className="glass-card rounded-3xl p-8 md:p-12">
@@ -1395,31 +1416,41 @@ export function FutureWatchlist() {
         <h2 className="mb-3 font-serif text-2xl italic text-stone-warm md:text-3xl">
           {t.fw_title}
         </h2>
-        <p className="mb-8 max-w-3xl text-sm text-stone-warm/60">{t.fw_hint}</p>
+        <p className="mb-4 max-w-3xl text-sm text-stone-warm/60">{t.fw_hint}</p>
+        {search?.date && aiState === "loading" && (
+          <p className="mb-6 text-[11px] uppercase tracking-[0.28em] text-gold-dust/70">
+            {lang === "zh" ? "老者正在推演未来的窗口…" : "The elder is scrying the years ahead…"}
+          </p>
+        )}
+        {search?.date && aiState === "error" && (
+          <p className="mb-6 text-[11px] uppercase tracking-[0.28em] text-red-300/80">
+            {lang === "zh" ? "推演暂未完成，先以骨架示意。" : "Divination unfinished — showing skeleton for now."}
+          </p>
+        )}
 
         <ol className="relative space-y-4 border-l border-gold-dust/30 pl-6">
-          {WATCHLIST.map((w) => {
+          {items.map((w, idx) => {
             const unlocked = isOracle || !w.locked;
             return (
-              <li key={w.year} className="relative">
+              <li key={`${w.year}-${idx}`} className="relative">
                 <span className="absolute -left-[29px] top-2 size-2.5 rounded-full bg-gold-dust shadow-[0_0_12px_hsl(45_70%_60%/0.6)]" />
                 <div className={`rounded-2xl border p-5 ${unlocked ? "border-gold-dust/30 bg-gold-dust/[0.06]" : "border-white/10 bg-white/[0.02]"}`}>
                   <p className="mb-1 text-[10px] uppercase tracking-[0.32em] text-gold-dust">
                     {w.year}
                   </p>
                   <p className="mb-2 font-serif text-lg italic text-stone-warm">
-                    {w.theme[li]}
+                    {w.theme}
                   </p>
                   {unlocked ? (
                     <>
-                      <p className="text-sm leading-relaxed text-stone-warm/70">{w.note[li]}</p>
+                      <p className="text-sm leading-relaxed text-stone-warm/70">{w.note}</p>
                       {isOracle && w.detail && (
                         <div className="mt-3 rounded-xl border border-gold-dust/20 bg-obsidian/40 p-4">
                           <p className="mb-1 text-[9px] uppercase tracking-[0.32em] text-gold-dust/80">
                             {lang === "zh" ? "流年运势 · 详解" : "Yearly forecast · detail"}
                           </p>
                           <p className="text-sm leading-relaxed text-stone-warm/85">
-                            {w.detail[li]}
+                            {w.detail}
                           </p>
                         </div>
                       )}
