@@ -6,6 +6,85 @@ import { ChartZoomModal } from "@/components/charts/DestinyCharts";
 import { TAROT_78, type TarotCard } from "@/lib/tarot-deck";
 import { askOracle } from "@/lib/oracle.functions";
 import { TAROT_LIMITS, tarotConsume, tarotRemaining } from "@/lib/tarot-quota";
+import { generateChartOutlook, type OutlookAI } from "@/lib/outlook.functions";
+import {
+  buildReportFingerprint,
+  buildReportRequest,
+  type ReportSearchLike,
+} from "@/lib/report-input";
+
+/* ═══════════════════════════════════════════
+   Shared AI outlook (timeline + 90-day windows)
+   — one AI call, cached in sessionStorage + saved reading
+═══════════════════════════════════════════ */
+
+function useChartOutlook(search: ReportSearchLike | undefined, lang: Lang) {
+  const { findReadingByFingerprint, updateReadingAI } = useAccount();
+  const [outlook, setOutlook] = useState<OutlookAI | null>(null);
+  const [state, setState] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const inflight = useRef(0);
+
+  const fingerprint = useMemo(
+    () => (search?.date ? buildReportFingerprint(search, lang) : ""),
+    [search, lang],
+  );
+
+  useEffect(() => {
+    if (!search?.date || !fingerprint) {
+      setOutlook(null);
+      setState("idle");
+      return;
+    }
+    const cacheKey = `destiny-ai-outlook-v1::${fingerprint}`;
+
+    // 1. Saved reading (persisted across sessions).
+    const savedHit = findReadingByFingerprint(fingerprint);
+    if (savedHit?.aiOutlook) {
+      setOutlook(savedHit.aiOutlook);
+      setState("ready");
+      return;
+    }
+
+    // 2. Session cache.
+    try {
+      const cached = typeof sessionStorage !== "undefined" ? sessionStorage.getItem(cacheKey) : null;
+      if (cached) {
+        const parsed = JSON.parse(cached) as OutlookAI;
+        setOutlook(parsed);
+        setState("ready");
+        return;
+      }
+    } catch {
+      /* ignore */
+    }
+
+    // 3. Generate.
+    const reqId = ++inflight.current;
+    setOutlook(null);
+    setState("loading");
+    generateChartOutlook({ data: buildReportRequest(search, lang) })
+      .then((res) => {
+        if (reqId !== inflight.current) return;
+        setOutlook(res);
+        setState("ready");
+        try {
+          sessionStorage.setItem(cacheKey, JSON.stringify(res));
+        } catch {
+          /* ignore quota */
+        }
+        updateReadingAI(fingerprint, { aiOutlook: res, fingerprint });
+      })
+      .catch((err) => {
+        if (reqId !== inflight.current) return;
+        console.warn("outlook generation failed", err);
+        setState("error");
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fingerprint]);
+
+  return { outlook, state, fingerprint };
+}
+
 
 /* ═══════════════════════════════════════════
    Life Timeline — 大运 / Dashā decades
