@@ -244,6 +244,65 @@ export function PremiumPdfCard({
     }
   };
 
+  if (variant === "bar") {
+    return (
+      <div className="glass-card relative overflow-hidden rounded-3xl p-5 md:p-6">
+        <div className="flex flex-col gap-5 md:flex-row md:items-center md:gap-6">
+          {/* Left: title + price */}
+          <div className="min-w-0 md:flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+                {pick(TXT.kicker, lang)}
+              </p>
+              <StatePill state={state} lang={lang} />
+            </div>
+            <h3 className="mt-1 font-serif text-lg italic text-stone-warm md:text-xl">
+              {pick(TXT.title, lang)}
+            </h3>
+            <p className="mt-1 text-[11px] uppercase tracking-[0.24em] text-gold-light">
+              {pick(TXT.price, lang)}
+            </p>
+            <p className="mt-2 text-[12.5px] leading-relaxed text-stone-warm/70">
+              {pick(TXT.pitch, lang)}
+            </p>
+          </div>
+
+          {/* Middle: chips */}
+          <ul className="flex flex-wrap gap-2 md:max-w-[38%] md:flex-1">
+            {(lang === "zh" ? TXT.chips.zh : TXT.chips.en).map((c) => (
+              <li
+                key={c}
+                className="rounded-full border border-gold-dust/25 bg-gold-dust/[0.05] px-3 py-1 text-[11px] text-stone-warm/80"
+              >
+                ✧ {c}
+              </li>
+            ))}
+          </ul>
+
+          {/* Right: action */}
+          <div className="flex w-full flex-col items-stretch gap-2 md:w-auto md:min-w-[13rem] md:items-end">
+            <ActionRow
+              state={state}
+              busy={busy}
+              lang={lang}
+              onUnlock={onUnlock}
+              onGenerate={onGenerate}
+              onDownload={onDownload}
+              fullWidth
+            />
+            <p className="text-center text-[10px] uppercase tracking-[0.24em] text-stone-warm/40 md:text-right">
+              {pick(TXT.time, lang)}
+            </p>
+          </div>
+        </div>
+
+        <p className="mt-4 border-t border-white/5 pt-3 text-[11px] leading-relaxed text-stone-warm/40">
+          {pick(TXT.disclaimer, lang)} · {pick(TXT.once_note, lang)}
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="glass-card rounded-3xl p-6 md:p-8">
       <div className="flex flex-wrap items-start justify-between gap-3">
