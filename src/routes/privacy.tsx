@@ -49,7 +49,7 @@ const EN: Copy = {
       h: "1. Information we collect",
       body: [
         "Birth details you enter into the ritual: full name (or nickname), date of birth, time of birth, place of birth (city / region) and time zone. These are required to compute an astrological chart.",
-        "Account information when you sign in: email address, and optionally a phone number, display name and avatar. Passwords are stored only in hashed form by our authentication provider — we never see them.",
+        "Account information when you sign in: email address, and optionally a display name and avatar. Passwords are stored only in hashed form by our authentication provider — we never see them. Phone-number sign-in is not currently offered; if you signed in by phone in an earlier version, any historical phone number on your account is removed together with the rest of your data when you delete your account.",
         "Content you create: saved readings, questions you ask the AI companion, tarot draws, community posts, and messages sent through the \"elder\" companion or the feedback / bug-report flow.",
         "Technical data: IP address, browser type, device information and basic usage events (which pages you visit, when). We do not use third-party advertising trackers.",
       ],
