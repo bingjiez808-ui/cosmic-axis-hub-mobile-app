@@ -530,7 +530,17 @@ function ReportPage() {
 
     if (!force) {
       // 1. Persisted saved-reading cache (survives across sessions).
-      const savedHit = findReadingByFingerprint(fingerprint);
+      //    Read from context first; if provider hasn't hydrated yet, fall back to localStorage directly.
+      let savedHit = findReadingByFingerprint(fingerprint);
+      if (!savedHit) {
+        try {
+          const raw = typeof localStorage !== "undefined" ? localStorage.getItem("lod.saved_readings") : null;
+          if (raw) {
+            const list = JSON.parse(raw) as Array<{ fingerprint?: string; aiReport?: ReportAI }>;
+            savedHit = list.find((s) => s.fingerprint === fingerprint) as typeof savedHit;
+          }
+        } catch { /* ignore */ }
+      }
       if (savedHit?.aiReport) {
         setAi(savedHit.aiReport);
         setAiState("ready");
