@@ -143,15 +143,20 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   };
 
   const saveReading: Ctx["saveReading"] = (r) => {
+    // Merge with any existing entry that matches name+date+place so AI cache carries over.
+    const prior = saved.find(
+      (s) => s.name === (r.name ?? "") && s.date === r.date && s.place === r.place,
+    );
     const entry: SavedReading = {
+      ...prior,
       ...r,
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      createdAt: Date.now(),
+      aiReport: r.aiReport ?? prior?.aiReport,
+      aiOutlook: r.aiOutlook ?? prior?.aiOutlook,
+      fingerprint: r.fingerprint ?? prior?.fingerprint,
+      id: prior?.id ?? `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      createdAt: prior?.createdAt ?? Date.now(),
     };
-    // De-dupe by identical name+date+place (keep newest).
-    const next = [entry, ...saved.filter(
-      (s) => !(s.name === entry.name && s.date === entry.date && s.place === entry.place),
-    )].slice(0, 20);
+    const next = [entry, ...saved.filter((s) => s.id !== entry.id)].slice(0, 20);
     persist(next);
   };
 
