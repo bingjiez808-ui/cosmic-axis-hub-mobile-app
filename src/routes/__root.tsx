@@ -429,25 +429,46 @@ function SiteNav() {
           </Link>
         ))}
         <div className="my-1 h-px bg-white/10" />
-        <button
-          type="button"
-          onClick={() => {
-            setDrawerOpen(false);
-            openAcc();
-          }}
-          className="flex min-h-11 items-center justify-end gap-2 whitespace-nowrap rounded-lg px-4 py-3 text-[11px] uppercase tracking-[0.24em] text-gold-dust hover:bg-gold-dust/10"
-        >
-          {account?.avatar && (
-            <img
-              src={account.avatar}
-              alt=""
-              loading="lazy"
-              decoding="async"
-              className="h-5 w-5 flex-none rounded-full border border-gold-dust/40 object-cover"
-            />
-          )}
-          <span>{accountLabel}</span>
-        </button>
+        {session ? (
+          <button
+            type="button"
+            onClick={() => {
+              setDrawerOpen(false);
+              openAcc();
+            }}
+            className="flex min-h-11 items-center justify-end gap-2 whitespace-nowrap rounded-lg px-4 py-3 text-[11px] uppercase tracking-[0.24em] text-gold-dust hover:bg-gold-dust/10"
+          >
+            {account?.avatar && (
+              <img
+                src={account.avatar}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                className="h-5 w-5 flex-none rounded-full border border-gold-dust/40 object-cover"
+              />
+            )}
+            <span>{accountLabel}</span>
+          </button>
+        ) : (
+          <>
+            <Link
+              to="/auth"
+              search={{ mode: "login", redirect: undefined }}
+              onClick={() => setDrawerOpen(false)}
+              className="flex min-h-11 items-center justify-end whitespace-nowrap rounded-lg px-4 py-3 text-[11px] uppercase tracking-[0.24em] text-gold-dust hover:bg-gold-dust/10"
+            >
+              {lang === "zh" ? "登录" : "Sign in"}
+            </Link>
+            <Link
+              to="/auth"
+              search={{ mode: "signup", redirect: undefined }}
+              onClick={() => setDrawerOpen(false)}
+              className="flex min-h-11 items-center justify-end whitespace-nowrap rounded-lg bg-gold-dust/10 px-4 py-3 text-[11px] uppercase tracking-[0.24em] text-gold-light hover:bg-gold-dust/20"
+            >
+              {lang === "zh" ? "注册" : "Sign up"}
+            </Link>
+          </>
+        )}
         <div className="flex justify-end px-2 pb-1">
           <LanguageToggle />
         </div>
