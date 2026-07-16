@@ -360,6 +360,28 @@ function SiteNav() {
             : "pointer-events-none translate-x-6 opacity-0"
         }`}
       >
+      {/* Backdrop for the side rail — mobile-only for easy dismissal */}
+      <div
+        aria-hidden="true"
+        onClick={() => setDrawerOpen(false)}
+        className={`fixed inset-0 z-[70] bg-obsidian/60 backdrop-blur-sm transition-opacity md:hidden ${
+          drawerOpen ? "opacity-100" : "pointer-events-none opacity-0"
+        }`}
+      />
+
+      {/* Slim vertical rail — slides in from the right when the dot is tapped.
+          No backdrop, no dialog: just a compact column of links. */}
+      <aside
+        aria-label="Navigation rail"
+        aria-hidden={!drawerOpen}
+        onMouseLeave={() => setDrawerOpen(false)}
+        style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}
+        className={`fixed right-3 top-16 z-[75] flex max-h-[calc(100dvh-5rem)] w-56 flex-col items-stretch gap-1 overflow-y-auto rounded-2xl border border-gold-dust/25 bg-obsidian/95 p-2 backdrop-blur-xl shadow-[-10px_10px_40px_rgba(0,0,0,0.5)] transition-all duration-300 md:top-20 md:w-auto md:bg-obsidian/85 ${
+          drawerOpen
+            ? "translate-x-0 opacity-100"
+            : "pointer-events-none translate-x-6 opacity-0"
+        }`}
+      >
         {[
           { to: "/", label: lang === "zh" ? "首页" : "Home" },
           { to: "/traditions", label: t.nav_traditions },
@@ -372,7 +394,7 @@ function SiteNav() {
             key={item.to}
             to={item.to}
             onClick={() => setDrawerOpen(false)}
-            className={`whitespace-nowrap rounded-lg px-4 py-2 text-right text-[12px] ${
+            className={`flex min-h-11 items-center justify-end whitespace-nowrap rounded-lg px-4 py-3 text-right text-[13px] ${
               lang === "zh"
                 ? "tracking-normal text-stone-warm/85"
                 : "uppercase tracking-[0.24em] text-stone-warm/75"
@@ -388,7 +410,7 @@ function SiteNav() {
             setDrawerOpen(false);
             openAcc();
           }}
-          className="flex items-center justify-end gap-2 whitespace-nowrap rounded-lg px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-gold-dust hover:bg-gold-dust/10"
+          className="flex min-h-11 items-center justify-end gap-2 whitespace-nowrap rounded-lg px-4 py-3 text-[11px] uppercase tracking-[0.24em] text-gold-dust hover:bg-gold-dust/10"
         >
           {account?.avatar && (
             <img
