@@ -23,7 +23,12 @@ export const Route = createFileRoute("/traditions")({
         property: "og:description",
         content: "Western Astrology · Vedic Jyotish · BaZi · Zi Wei Dou Shu.",
       },
+      { property: "og:url", content: "https://fate-nexus-ai.lovable.app/traditions" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "The Four Traditions · 四大传统" },
+      { name: "twitter:description", content: "Western Astrology · Vedic Jyotish · BaZi · Zi Wei Dou Shu." },
     ],
+    links: [{ rel: "canonical", href: "https://fate-nexus-ai.lovable.app/traditions" }],
   }),
   component: TraditionsPage,
 });
