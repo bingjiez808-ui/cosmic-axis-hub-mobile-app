@@ -101,17 +101,25 @@ export function AccountModal({ open, onClose }: { open: boolean; onClose: () => 
                 {lang === "zh" ? "正在读取登录状态…" : "Checking sign-in status…"}
               </div>
             ) : !displayAccount ? (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <Link
                   to="/auth"
-                  search={{ redirect: undefined }}
+                  search={{ redirect: undefined, mode: "login" }}
                   onClick={onClose}
                   className="flex w-full items-center justify-center rounded-full bg-gold-dust px-6 py-3 text-[10px] uppercase tracking-[0.32em] text-obsidian transition-colors hover:bg-gold-light focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-light"
                 >
-                  {t.acc_sign_in}
+                  {lang === "zh" ? "登录" : "Sign in"}
+                </Link>
+                <Link
+                  to="/auth"
+                  search={{ redirect: undefined, mode: "signup" }}
+                  onClick={onClose}
+                  className="flex w-full items-center justify-center rounded-full border border-gold-dust/50 px-6 py-3 text-[10px] uppercase tracking-[0.32em] text-gold-light transition-colors hover:bg-gold-dust/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-light"
+                >
+                  {lang === "zh" ? "注册新账号" : "Create account"}
                 </Link>
                 <p className="text-center text-[10px] uppercase tracking-[0.24em] text-stone-warm/35">
-                  {lang === "zh" ? "邮箱魔法链接或 Google 登录" : "Email magic link or Google sign-in"}
+                  {lang === "zh" ? "邮箱魔法链接或 Google" : "Email magic link or Google"}
                 </p>
               </div>
             ) : (
