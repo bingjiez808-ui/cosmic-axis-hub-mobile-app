@@ -380,6 +380,7 @@ function ActionRow({
   onUnlock,
   onGenerate,
   onDownload,
+  fullWidth = false,
 }: {
   state: UiState;
   busy: boolean;
@@ -387,7 +388,11 @@ function ActionRow({
   onUnlock: () => void;
   onGenerate: () => void;
   onDownload: () => void;
+  fullWidth?: boolean;
 }) {
+  const btnBase = `rounded-full bg-gold-dust text-[11px] uppercase tracking-[0.28em] text-obsidian hover:bg-gold-light disabled:opacity-50 min-h-[44px] px-6 py-2.5 ${
+    fullWidth ? "w-full text-center" : ""
+  }`;
   if (state.kind === "loading") {
     return <p className="text-sm text-stone-warm/50">…</p>;
   }
@@ -398,7 +403,7 @@ function ActionRow({
         onClick={() => {
           if (typeof window !== "undefined") window.dispatchEvent(new Event("lod:open-account"));
         }}
-        className="rounded-full border border-gold-dust/50 px-5 py-2.5 text-[10px] uppercase tracking-[0.28em] text-gold-dust hover:bg-gold-dust/10"
+        className={`rounded-full border border-gold-dust/50 px-5 py-2.5 text-[10px] uppercase tracking-[0.28em] text-gold-dust hover:bg-gold-dust/10 min-h-[44px] ${fullWidth ? "w-full" : ""}`}
       >
         {pick(TXT.need_auth, lang)}
       </button>
@@ -413,7 +418,7 @@ function ActionRow({
         type="button"
         disabled={busy}
         onClick={onUnlock}
-        className="rounded-full bg-gold-dust px-6 py-2.5 text-[11px] uppercase tracking-[0.32em] text-obsidian hover:bg-gold-light disabled:opacity-50"
+        className={btnBase}
       >
         {pick(TXT.cta_unlock, lang)}
       </button>
@@ -421,19 +426,19 @@ function ActionRow({
   }
   if (state.kind === "order_pending") {
     return (
-      <p className="rounded-2xl border border-nebula-purple/40 bg-nebula-purple/[0.08] p-4 text-sm text-stone-warm/80">
+      <p className={`rounded-2xl border border-nebula-purple/40 bg-nebula-purple/[0.08] p-3 text-[12px] leading-relaxed text-stone-warm/80 ${fullWidth ? "w-full" : ""}`}>
         {state.message}
       </p>
     );
   }
   if (state.kind === "paid_no_report" || state.kind === "failed") {
     return (
-      <div className="flex flex-wrap items-center gap-3">
+      <div className={`flex flex-wrap items-center gap-3 ${fullWidth ? "w-full" : ""}`}>
         <button
           type="button"
           disabled={busy}
           onClick={onGenerate}
-          className="rounded-full bg-gold-dust px-6 py-2.5 text-[11px] uppercase tracking-[0.32em] text-obsidian hover:bg-gold-light disabled:opacity-50"
+          className={btnBase}
         >
           {pick(TXT.cta_generate, lang)}
         </button>
@@ -445,7 +450,7 @@ function ActionRow({
   }
   if (state.kind === "generating") {
     return (
-      <div className="flex items-center gap-3 rounded-full border border-gold-dust/30 px-5 py-2.5 text-[11px] uppercase tracking-[0.32em] text-gold-dust">
+      <div className={`flex items-center gap-3 rounded-full border border-gold-dust/30 px-5 py-2.5 text-[11px] uppercase tracking-[0.32em] text-gold-dust min-h-[44px] ${fullWidth ? "w-full justify-center" : ""}`}>
         <span className="inline-block size-2 animate-pulse rounded-full bg-gold-dust" />
         {pick(TXT.busy_generate, lang)}
       </div>
@@ -453,7 +458,7 @@ function ActionRow({
   }
   if (state.kind === "renderer_pending") {
     return (
-      <p className="rounded-2xl border border-gold-dust/30 bg-gold-dust/[0.05] p-4 text-sm text-stone-warm/70">
+      <p className={`rounded-2xl border border-gold-dust/30 bg-gold-dust/[0.05] p-3 text-[12px] leading-relaxed text-stone-warm/70 ${fullWidth ? "w-full" : ""}`}>
         {pick(TXT.renderer_pending, lang)}
       </p>
     );
@@ -464,7 +469,7 @@ function ActionRow({
         type="button"
         disabled={busy}
         onClick={onDownload}
-        className="rounded-full bg-gold-dust px-6 py-2.5 text-[11px] uppercase tracking-[0.32em] text-obsidian hover:bg-gold-light disabled:opacity-50"
+        className={btnBase}
       >
         {pick(TXT.cta_download, lang)}
       </button>
