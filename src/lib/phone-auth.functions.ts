@@ -123,6 +123,8 @@ export const verifyPhoneOtp = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => VerifyInput.parse(data))
   .handler(async ({ data }) => {
     const phone = normalizePhone(data.phone);
+    // Blunt guess floods before hitting the 5-attempt DB counter.
+    enforceRateLimit(`otp-verify:${phone}`, 10, 5 * 60_000, "verification attempts");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const sb = supabaseAdmin as unknown as {
