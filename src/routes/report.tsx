@@ -998,7 +998,7 @@ function ReportPage() {
 
 
       {/* Dimensions */}
-      <section className="mx-auto max-w-5xl space-y-10 px-6 md:px-12">
+      <section className="mx-auto max-w-5xl space-y-10 px-4 sm:px-6 md:px-12">
         {search.date && (aiState === "loading" || aiState === "error") && (
           <div
             className={`glass-card flex flex-col gap-3 rounded-2xl px-5 py-3 text-[11px] uppercase tracking-[0.28em] sm:flex-row sm:items-center sm:justify-between ${
