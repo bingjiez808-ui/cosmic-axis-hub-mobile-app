@@ -222,7 +222,7 @@ function SiteNav() {
   const { session, isAdmin, loading } = useSupabaseSession();
   const openAcc = () => {
     if (!session) {
-      window.location.assign("/auth");
+      window.location.assign("/auth?mode=login");
       return;
     }
     window.dispatchEvent(new Event("lod:open-account"));
@@ -316,22 +316,41 @@ function SiteNav() {
             )}
           </div>
           <div className="flex items-center gap-2 md:justify-self-end md:gap-3">
-            <button
-              type="button"
-              onClick={openAcc}
-              className="hidden flex-none items-center gap-2 whitespace-nowrap rounded-full border border-gold-dust/40 px-3 py-1 text-[10px] tracking-[0.24em] text-gold-dust transition-colors hover:bg-gold-dust/10 md:flex"
-            >
-              {account?.avatar && (
-                <img
-                  src={account.avatar}
-                  alt=""
-                className="h-5 w-5 flex-none rounded-full border border-gold-dust/40 object-cover"
-                loading="lazy"
-                decoding="async"
-                />
-              )}
-              <span className="whitespace-nowrap">{accountLabel}</span>
-            </button>
+            {session ? (
+              <button
+                type="button"
+                onClick={openAcc}
+                className="hidden flex-none items-center gap-2 whitespace-nowrap rounded-full border border-gold-dust/40 px-3 py-1 text-[10px] tracking-[0.24em] text-gold-dust transition-colors hover:bg-gold-dust/10 md:flex"
+              >
+                {account?.avatar && (
+                  <img
+                    src={account.avatar}
+                    alt=""
+                    className="h-5 w-5 flex-none rounded-full border border-gold-dust/40 object-cover"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                )}
+                <span className="whitespace-nowrap">{accountLabel}</span>
+              </button>
+            ) : (
+              <div className="hidden items-center gap-2 md:flex">
+                <Link
+                  to="/auth"
+                  search={{ mode: "login", redirect: undefined }}
+                  className="flex-none whitespace-nowrap rounded-full border border-gold-dust/40 px-3 py-1 text-[10px] tracking-[0.24em] text-gold-dust transition-colors hover:bg-gold-dust/10"
+                >
+                  {lang === "zh" ? "登录" : "Sign in"}
+                </Link>
+                <Link
+                  to="/auth"
+                  search={{ mode: "signup", redirect: undefined }}
+                  className="flex-none whitespace-nowrap rounded-full bg-gold-dust px-3 py-1 text-[10px] tracking-[0.24em] text-obsidian transition-colors hover:bg-gold-light"
+                >
+                  {lang === "zh" ? "注册" : "Sign up"}
+                </Link>
+              </div>
+            )}
             <div className="hidden md:block"><LanguageToggle /></div>
 
             {/* Mobile-only account chip (compact) */}
@@ -410,25 +429,46 @@ function SiteNav() {
           </Link>
         ))}
         <div className="my-1 h-px bg-white/10" />
-        <button
-          type="button"
-          onClick={() => {
-            setDrawerOpen(false);
-            openAcc();
-          }}
-          className="flex min-h-11 items-center justify-end gap-2 whitespace-nowrap rounded-lg px-4 py-3 text-[11px] uppercase tracking-[0.24em] text-gold-dust hover:bg-gold-dust/10"
-        >
-          {account?.avatar && (
-            <img
-              src={account.avatar}
-              alt=""
-              loading="lazy"
-              decoding="async"
-              className="h-5 w-5 flex-none rounded-full border border-gold-dust/40 object-cover"
-            />
-          )}
-          <span>{accountLabel}</span>
-        </button>
+        {session ? (
+          <button
+            type="button"
+            onClick={() => {
+              setDrawerOpen(false);
+              openAcc();
+            }}
+            className="flex min-h-11 items-center justify-end gap-2 whitespace-nowrap rounded-lg px-4 py-3 text-[11px] uppercase tracking-[0.24em] text-gold-dust hover:bg-gold-dust/10"
+          >
+            {account?.avatar && (
+              <img
+                src={account.avatar}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                className="h-5 w-5 flex-none rounded-full border border-gold-dust/40 object-cover"
+              />
+            )}
+            <span>{accountLabel}</span>
+          </button>
+        ) : (
+          <>
+            <Link
+              to="/auth"
+              search={{ mode: "login", redirect: undefined }}
+              onClick={() => setDrawerOpen(false)}
+              className="flex min-h-11 items-center justify-end whitespace-nowrap rounded-lg px-4 py-3 text-[11px] uppercase tracking-[0.24em] text-gold-dust hover:bg-gold-dust/10"
+            >
+              {lang === "zh" ? "登录" : "Sign in"}
+            </Link>
+            <Link
+              to="/auth"
+              search={{ mode: "signup", redirect: undefined }}
+              onClick={() => setDrawerOpen(false)}
+              className="flex min-h-11 items-center justify-end whitespace-nowrap rounded-lg bg-gold-dust/10 px-4 py-3 text-[11px] uppercase tracking-[0.24em] text-gold-light hover:bg-gold-dust/20"
+            >
+              {lang === "zh" ? "注册" : "Sign up"}
+            </Link>
+          </>
+        )}
         <div className="flex justify-end px-2 pb-1">
           <LanguageToggle />
         </div>
