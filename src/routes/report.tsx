@@ -1127,53 +1127,41 @@ function ReportPage() {
                 </div>
 
                 {d.details && d.details.length > 0 && (
-                  <details className="group mt-6 overflow-hidden rounded-2xl border border-gold-dust/15 bg-white/[0.02] transition-colors open:border-gold-dust/30 open:bg-white/[0.03]">
-                    <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 text-[10px] uppercase tracking-[0.32em] text-gold-dust/80 hover:text-gold-light [&::-webkit-details-marker]:hidden">
-                      <span className="flex items-center gap-2">
-                        <Layers size={12} strokeWidth={1.5} />
-                        {lang === "zh" ? "展开细节 · 通道 / 警惕" : "Unfold detail · channels / cautions"}
+                  <button
+                    type="button"
+                    onClick={() => setDetailKey(d.key)}
+                    className="group mt-6 flex w-full items-center justify-between gap-3 rounded-2xl border border-gold-dust/25 bg-gradient-to-br from-gold-dust/[0.06] to-transparent px-5 py-4 text-left transition-all hover:border-gold-dust/50 hover:from-gold-dust/[0.1] hover:shadow-[0_10px_40px_-20px_hsl(45_70%_60%/0.6)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-light"
+                  >
+                    <span className="flex min-w-0 items-center gap-3">
+                      <span className="grid size-9 shrink-0 place-items-center rounded-xl border border-gold-dust/30 bg-obsidian/60 text-gold-light">
+                        <Maximize2 size={14} strokeWidth={1.6} />
                       </span>
-                      <ChevronDown size={14} className="transition-transform group-open:rotate-180" />
-                    </summary>
-                    <div
-                      className={`detail-grid px-5 pb-5 ${d.details.length === 3 ? "detail-grid-3" : ""}`}
-                      role="list"
-                    >
-                      {d.details.map((block, bIdx) => {
-                        const isCaution = bIdx > 0;
-                        const ItemIcon = isCaution ? AlertTriangle : Check;
-                        return (
-                          <div
-                            key={block.label[0]}
-                            role="listitem"
-                            className={`detail-card ${isCaution ? "detail-card-caution" : "detail-card-strength"}`}
-                          >
-                            <p
-                              className={`flex items-center gap-2 text-[10px] uppercase tracking-[0.3em] ${
-                                isCaution ? "text-amber-200/85" : "text-emerald-200/85"
-                              }`}
-                            >
-                              <ItemIcon size={12} strokeWidth={2} />
-                              {block.label[li]}
-                            </p>
-                            <ul className="space-y-1.5 text-stone-warm/80">
-                              {block.items.map((it) => (
-                                <li key={it[0]} className="flex items-start gap-2">
-                                  <span
-                                    className={`mt-[7px] size-1 shrink-0 rounded-full ${
-                                      isCaution ? "bg-amber-300/70" : "bg-emerald-300/70"
-                                    }`}
-                                    aria-hidden="true"
-                                  />
-                                  <span>{it[li]}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </details>
+                      <span className="min-w-0">
+                        <span className="block text-[10px] uppercase tracking-[0.32em] text-gold-dust/80">
+                          {lang === "zh" ? "查看四体系详细佐证" : "View four-system evidence"}
+                        </span>
+                        <span className="mt-1 block truncate font-serif text-sm italic text-stone-warm/75">
+                          {lang === "zh"
+                            ? "通道 · 警惕 · 落位数据 · 图示"
+                            : "Channels · cautions · placements · charts"}
+                        </span>
+                      </span>
+                    </span>
+                    <span className="flex items-center gap-2 text-gold-dust/70 transition-transform group-hover:translate-x-1">
+                      {/* Preview dots — one per detail block */}
+                      <span className="hidden gap-1 sm:flex">
+                        {d.details.map((_, i) => (
+                          <span
+                            key={i}
+                            className={`size-1.5 rounded-full ${
+                              i === 0 ? "bg-emerald-300/70" : "bg-amber-300/70"
+                            }`}
+                          />
+                        ))}
+                      </span>
+                      <ChevronRight size={16} />
+                    </span>
+                  </button>
                 )}
               </div>
             </div>
