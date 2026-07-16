@@ -41,6 +41,8 @@ export const sendPhoneOtp = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => SendInput.parse(data))
   .handler(async ({ data }) => {
     const phone = normalizePhone(data.phone);
+    // Cap SMS to 5 per hour per phone number on top of the DB 30s throttle.
+    enforceRateLimit(`otp-send:${phone}`, 5, 60 * 60_000, "SMS codes");
     const lovableKey = process.env.LOVABLE_API_KEY;
     const twilioKey = process.env.TWILIO_API_KEY;
     const twilioFrom = process.env.TWILIO_FROM_NUMBER;
