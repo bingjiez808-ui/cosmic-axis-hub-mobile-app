@@ -201,7 +201,6 @@ const ZH: Copy = {
   contactHeading: "十一、联系我们",
   contactBody: [
     `主体：${LEGAL_CONTACT.entityName}`,
-    `地址：${LEGAL_CONTACT.address}`,
     `邮箱：${LEGAL_CONTACT.email}`,
   ],
 };
