@@ -47,29 +47,18 @@ const AccountCtx = createContext<Ctx | null>(null);
 const ACC_KEY = "lod.account";
 const READS_KEY = "lod.saved_readings";
 
-const readInitialAccount = (): Account | null => {
-  if (typeof localStorage === "undefined") return null;
-  try {
-    const a = localStorage.getItem(ACC_KEY);
-    return a ? (JSON.parse(a) as Account) : null;
-  } catch {
-    return null;
-  }
-};
-
-const readInitialSaved = (): SavedReading[] => {
-  if (typeof localStorage === "undefined") return [];
-  try {
-    const r = localStorage.getItem(READS_KEY);
-    return r ? (JSON.parse(r) as SavedReading[]) : [];
-  } catch {
-    return [];
-  }
-};
-
 export function AccountProvider({ children }: { children: ReactNode }) {
-  const [account, setAccount] = useState<Account | null>(readInitialAccount);
-  const [saved, setSaved] = useState<SavedReading[]>(readInitialSaved);
+  const [account, setAccount] = useState<Account | null>(null);
+  const [saved, setSaved] = useState<SavedReading[]>([]);
+
+  useEffect(() => {
+    try {
+      const a = localStorage.getItem(ACC_KEY);
+      if (a) setAccount(JSON.parse(a));
+      const r = localStorage.getItem(READS_KEY);
+      if (r) setSaved(JSON.parse(r));
+    } catch {}
+  }, []);
 
   useEffect(() => {
     const syncAccount = (user: { email?: string | null; user_metadata?: Record<string, unknown> } | null) => {
