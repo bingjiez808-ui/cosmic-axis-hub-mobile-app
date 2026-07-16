@@ -1869,9 +1869,6 @@ export function MembershipSection({
     [t, li, lang],
   );
 
-  const exportPdf = () => {
-    if (typeof window !== "undefined") window.print();
-  };
 
   const handleUpgradeClick = (target: Plan) => {
     if (!account) {
