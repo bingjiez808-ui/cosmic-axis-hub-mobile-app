@@ -18,6 +18,45 @@ export function AccountModal({ open, onClose }: { open: boolean; onClose: () => 
   const titleId = useId();
   const descId = useId();
   const dialogRef = useRef<HTMLDivElement | null>(null);
+  const [dbCharts, setDbCharts] = useState<ChartRow[] | null>(null);
+
+  useEffect(() => {
+    if (!open || !session) return;
+    listUserCharts().then((r) => setDbCharts(r)).catch(() => setDbCharts([]));
+  }, [open, session]);
+
+  // Hash set of saved DB charts — any local `saved` entry with a matching
+  // normalized-input hash is a duplicate of a DB chart and hidden from the
+  // secondary list. Compares on the same (date/time/place/lang) fingerprint
+  // the server uses via `computeChartHash`, so renames don't split rows.
+  const dbHashes = useMemo(() => {
+    if (!dbCharts) return null;
+    const s = new Set<string>();
+    for (const r of dbCharts) {
+      s.add(
+        computeChartHash({
+          date: r.birth_date ?? "",
+          time: r.birth_time ?? "",
+          place: r.birth_place ?? "",
+          lang: (r.lang as "en" | "zh") ?? "en",
+        }),
+      );
+    }
+    return s;
+  }, [dbCharts]);
+
+  const savedFiltered = useMemo(() => {
+    if (!dbHashes) return saved;
+    return saved.filter((s) => {
+      const h = computeChartHash({
+        date: s.date ?? "",
+        time: s.time ?? "",
+        place: s.place ?? "",
+        lang: (s.lang as "en" | "zh") ?? "en",
+      });
+      return !dbHashes.has(h);
+    });
+  }, [saved, dbHashes]);
 
   const displayAccount = account ?? (session?.user.email
     ? {
