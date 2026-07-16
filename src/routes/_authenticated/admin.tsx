@@ -650,7 +650,7 @@ function PremiumOrdersSection({
                     </td>
                     <td className="px-2 py-2 text-[11px] text-stone-warm/60">
                       {r.reportStatus ?? "—"}
-                      {r.hasPdf ? " · pdf" : ""}
+                      {r.isLegacy ? " · legacy" : ""}
                     </td>
                     <td className="px-2 py-2">
                       {r.currency} {(r.amountCents / 100).toFixed(2)}
