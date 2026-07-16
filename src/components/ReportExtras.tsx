@@ -1727,94 +1727,89 @@ function AskSageCard({
   onOpen: () => void;
 }) {
   const zh = lang === "zh";
-  const title = zh ? "你的专属智者" : "Your private Sage";
-  const subtitle = zh ? "Your private Sage" : "你的专属智者";
-  const desc = zh
-    ? "他已经阅读了你的完整命盘，可以继续追问感情、事业、财富、家庭、健康与关键时间窗口。"
-    : "The Sage has already read your full chart. Keep asking — love, career, wealth, family, health, and the key time windows ahead.";
-  const cta = zh ? "开始向智者提问" : "Ask the Sage";
-  const ctaSub = zh ? "Ask the Sage" : "开始向智者提问";
-  const chips = zh
+  const kicker = zh ? "神谕者提问 · 私人智者" : "Ask the Sage · Private oracle";
+  const badge = zh ? "神谕者" : "Oracle";
+  const title = zh
+    ? "问一位读过你命盘的智者"
+    : "Ask the Sage who has read your chart";
+  const bullets = zh
     ? [
-        "下一段感情什么时候出现？",
-        "今年最好的赚钱窗口在哪里？",
-        "现在适合换工作还是深耕？",
+        "继续追问感情、事业与财富。",
+        "看见家庭、健康与关键时间窗口。",
+        "回答会结合你已经生成的完整命盘。",
       ]
     : [
-        "When does my next relationship arrive?",
-        "Where is this year's best window for wealth?",
-        "Should I switch jobs or go deeper now?",
+        "Follow up on love, vocation and wealth.",
+        "Explore family, wellbeing and key timing windows.",
+        "Every answer is grounded in your saved chart.",
       ];
+  const cta = zh ? "开始向智者提问" : "Ask the Sage";
+  const recommended = zh ? "推荐" : "Recommended";
 
   return (
     <div
       role="group"
-      className="glass-card group relative flex flex-col overflow-hidden rounded-2xl p-6 transition-colors hover:border-gold-dust/40"
+      className="relative flex flex-col overflow-hidden rounded-2xl border border-gold-dust/20 bg-gradient-to-b from-white/[0.04] to-white/[0.01] p-6"
     >
-      <div
-        className="pointer-events-none absolute -right-16 -top-16 h-52 w-52 rounded-full opacity-60 blur-3xl"
-        style={{
-          background:
-            "radial-gradient(circle at 50% 50%, color-mix(in oklab, var(--nebula-purple) 55%, transparent), transparent 70%)",
-        }}
-        aria-hidden="true"
-      />
-      <div
-        className="pointer-events-none absolute -left-12 bottom-0 h-40 w-40 rounded-full opacity-40 blur-3xl"
-        style={{
-          background:
-            "radial-gradient(circle at 50% 50%, color-mix(in oklab, var(--gold-dust) 45%, transparent), transparent 70%)",
-        }}
-        aria-hidden="true"
-      />
-
-      <div className="relative flex items-start gap-4">
-        <SageAvatar className="h-16 w-16 shrink-0 rounded-full border border-gold-dust/40 bg-obsidian/60 sm:h-20 sm:w-20" />
-        <div className="min-w-0 flex-1">
-          <p className="flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust/80">
-            <span>{title}</span>
-            <span className="text-stone-warm/40">/</span>
-            <span className="normal-case tracking-normal text-stone-warm/60">{subtitle}</span>
-            <span className="rounded-full border border-gold-dust/40 px-2 py-0.5 text-[8px] tracking-[0.28em] text-gold-light">
-              {locked}
-            </span>
-          </p>
-          <p className="mt-2 font-serif text-[1.05rem] leading-relaxed text-stone-warm sm:text-lg">
-            {desc}
-          </p>
-        </div>
-      </div>
-
-      <div className="relative mt-5 flex flex-wrap gap-2">
-        {chips.map((q) => (
-          <button
-            key={q}
-            type="button"
-            onClick={onOpen}
-            className="rounded-full border border-gold-dust/25 bg-obsidian/40 px-3 py-1.5 text-left text-[11px] leading-snug text-stone-warm/85 transition-colors hover:border-gold-dust/60 hover:text-gold-light"
+      {/* Recommended star — top-left, restrained gold glow */}
+      <span
+        className="pointer-events-none absolute left-3 top-3 inline-flex items-center gap-1"
+        title={recommended}
+      >
+        <span className="relative inline-grid place-items-center">
+          <span
+            className="absolute inset-0 rounded-full animate-pulse-gold"
+            style={{
+              background:
+                "radial-gradient(circle, color-mix(in oklab, var(--gold-light) 55%, transparent) 0%, transparent 70%)",
+            }}
+            aria-hidden="true"
+          />
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+            className="relative h-3.5 w-3.5"
+            fill="var(--gold-light)"
           >
-            {q}
-          </button>
-        ))}
-      </div>
+            <path d="M12 2 L13.6 9.2 L20.8 10.8 L14.6 14.6 L16.4 22 L12 17.6 L7.6 22 L9.4 14.6 L3.2 10.8 L10.4 9.2 Z" />
+          </svg>
+        </span>
+        <span className="sr-only">{recommended}</span>
+      </span>
 
-      <div className="relative mt-6 flex items-center justify-between gap-3">
-        <button
-          type="button"
-          onClick={onOpen}
-          className="inline-flex items-center gap-2 rounded-full bg-gold-dust px-5 py-2.5 text-[11px] uppercase tracking-[0.24em] text-obsidian transition-colors hover:bg-gold-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-light"
-        >
-          <span>{cta}</span>
-          <span className="text-[9px] tracking-[0.28em] text-obsidian/60">·</span>
-          <span className="text-[9px] normal-case tracking-[0.14em] text-obsidian/70">{ctaSub}</span>
-        </button>
-        <span
-          aria-hidden="true"
-          className="hidden font-serif text-3xl italic text-gold-dust/70 sm:inline"
-        >
-          ✦
+      <div className="mb-3 flex items-center justify-between gap-2 pl-6">
+        <p className="min-w-0 truncate text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+          {kicker}
+        </p>
+        <span className="shrink-0 rounded-full border border-gold-dust/40 px-2 py-0.5 text-[9px] uppercase tracking-[0.28em] text-gold-light">
+          {badge}
         </span>
       </div>
+
+      <p className="mb-4 font-serif text-lg italic text-stone-warm">{title}</p>
+
+      <ul className="mb-5 flex-1 space-y-2 text-sm text-stone-warm/70">
+        {bullets.map((b) => (
+          <li key={b} className="flex gap-2">
+            <span className="mt-1 size-1.5 shrink-0 rounded-full bg-gold-dust/70" />
+            <span className="italic">{b}</span>
+          </li>
+        ))}
+      </ul>
+
+      <button
+        type="button"
+        onClick={onOpen}
+        aria-label={cta}
+        className="mt-auto inline-flex w-full min-h-[44px] items-center justify-center gap-2 rounded-full bg-gold-dust px-5 py-2.5 text-[10px] uppercase tracking-[0.32em] text-obsidian transition-colors hover:bg-gold-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-light"
+      >
+        <SageAvatar
+          glow={false}
+          className="h-6 w-6 shrink-0 rounded-full border border-obsidian/20 bg-obsidian/10"
+        />
+        <span>{cta}</span>
+        <span className="sr-only"> · {locked}</span>
+      </button>
     </div>
   );
 }
