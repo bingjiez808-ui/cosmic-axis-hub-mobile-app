@@ -1447,9 +1447,15 @@ export function FutureWatchlist() {
 export function SaveReadingBar({
   reading,
   onOpenAccount,
+  fingerprint,
+  aiReport,
+  aiOutlook,
 }: {
   reading: { name?: string; date?: string; time?: string; place?: string; lang?: "en" | "zh" };
   onOpenAccount: () => void;
+  fingerprint?: string;
+  aiReport?: import("@/lib/report.functions").ReportAI | null;
+  aiOutlook?: OutlookAI | null;
 }) {
   const { t } = useLang();
   const { account, saveReading, saved } = useAccount();
@@ -1467,6 +1473,9 @@ export function SaveReadingBar({
       time: reading.time,
       place: reading.place,
       lang: reading.lang,
+      fingerprint,
+      aiReport: aiReport ?? undefined,
+      aiOutlook: aiOutlook ?? undefined,
     });
     setJustSaved(true);
     setTimeout(() => setJustSaved(false), 2400);
