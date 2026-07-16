@@ -1,5 +1,41 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  Briefcase,
+  HeartPulse,
+  HeartHandshake,
+  Coins,
+  Moon,
+  Sparkles,
+  ChevronDown,
+  type LucideIcon,
+} from "lucide-react";
+
+function watchlistIcon(theme: string): { Icon: LucideIcon; tint: string; label: [string, string] } {
+  const k = theme.toLowerCase();
+  if (/(career|职|事业|工作|门|职场|晋升|leader|role)/i.test(theme) || /career|role|leader|promot/.test(k))
+    return { Icon: Briefcase, tint: "sky", label: ["Career", "事业"] };
+  if (/(health|健康|身|重置|reset|sleep|睡|体|vitality)/i.test(theme))
+    return { Icon: HeartPulse, tint: "rose", label: ["Health", "健康"] };
+  if (/(love|情|婚|相遇|partner|marriage|relation|synastry)/i.test(theme))
+    return { Icon: HeartHandshake, tint: "pink", label: ["Love", "情感"] };
+  if (/(wealth|财|money|复利|compound|asset|equity)/i.test(theme))
+    return { Icon: Coins, tint: "amber", label: ["Wealth", "财富"] };
+  if (/(quiet|静|隐|慢|reflect|sabbatical|inward)/i.test(theme))
+    return { Icon: Moon, tint: "violet", label: ["Reflection", "静修"] };
+  return { Icon: Sparkles, tint: "gold", label: ["Turning", "转折"] };
+}
+
+const TINT_CLASSES: Record<string, { border: string; bg: string; text: string; dot: string }> = {
+  sky:    { border: "border-sky-300/30",    bg: "bg-sky-300/[0.06]",    text: "text-sky-200",    dot: "bg-sky-300" },
+  rose:   { border: "border-rose-300/30",   bg: "bg-rose-300/[0.06]",   text: "text-rose-200",   dot: "bg-rose-300" },
+  pink:   { border: "border-pink-300/30",   bg: "bg-pink-300/[0.06]",   text: "text-pink-200",   dot: "bg-pink-300" },
+  amber:  { border: "border-amber-300/30",  bg: "bg-amber-300/[0.06]",  text: "text-amber-200",  dot: "bg-amber-300" },
+  violet: { border: "border-violet-300/30", bg: "bg-violet-300/[0.06]", text: "text-violet-200", dot: "bg-violet-300" },
+  gold:   { border: "border-gold-dust/40",  bg: "bg-gold-dust/[0.08]",  text: "text-gold-light", dot: "bg-gold-dust" },
+};
+
+
 import { useLang, type Lang } from "@/lib/i18n";
 import { useAccount } from "@/lib/account";
 import { ChartZoomModal } from "@/components/charts/DestinyCharts";
