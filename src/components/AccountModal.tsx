@@ -160,6 +160,8 @@ export function AccountModal({ open, onClose }: { open: boolean; onClose: () => 
                   <TarotQuota accountKey={displayAccount.email} plan={displayAccount.plan ?? "free"} lang={lang} />
                 </div>
 
+                <MyChartsSection open={open} onClose={onClose} lang={lang} />
+
                 <div>
                   <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
                     {t.acc_view_saved}
@@ -209,6 +211,7 @@ export function AccountModal({ open, onClose }: { open: boolean; onClose: () => 
                     </ul>
                   )}
                 </div>
+
 
                 <div>
                   <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
