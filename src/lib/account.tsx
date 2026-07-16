@@ -157,8 +157,24 @@ export function AccountProvider({ children }: { children: ReactNode }) {
 
   const removeReading = (id: string) => persist(saved.filter((s) => s.id !== id));
 
+  const updateReadingAI: Ctx["updateReadingAI"] = (fingerprint, patch) => {
+    if (!fingerprint) return;
+    let changed = false;
+    const next = saved.map((s) => {
+      if (s.fingerprint === fingerprint) {
+        changed = true;
+        return { ...s, ...patch, fingerprint };
+      }
+      return s;
+    });
+    if (changed) persist(next);
+  };
+
+  const findReadingByFingerprint: Ctx["findReadingByFingerprint"] = (fingerprint) =>
+    fingerprint ? saved.find((s) => s.fingerprint === fingerprint) : undefined;
+
   return (
-    <AccountCtx.Provider value={{ account, signIn, signOut, setPlan, setAvatar, saved, saveReading, removeReading }}>
+    <AccountCtx.Provider value={{ account, signIn, signOut, setPlan, setAvatar, saved, saveReading, removeReading, updateReadingAI, findReadingByFingerprint }}>
       {children}
     </AccountCtx.Provider>
   );
