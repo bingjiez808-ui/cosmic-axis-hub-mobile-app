@@ -125,10 +125,20 @@
 
 @layer components {
   .glass-card {
-    background: color-mix(in oklab, white 3%, transparent);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border: 1px solid color-mix(in oklab, white 8%, transparent);
+    /* Layered fill: a warm obsidian wash for readable contrast, a subtle
+       gold-tinted top-light so the panel still feels lit rather than opaque. */
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in oklab, var(--gold-dust) 4%, transparent) 0%,
+        transparent 42%
+      ),
+      color-mix(in oklab, var(--obsidian) 62%, transparent);
+    backdrop-filter: blur(18px) saturate(120%);
+    border: 1px solid color-mix(in oklab, var(--gold-dust) 14%, transparent);
+    box-shadow:
+      0 1px 0 color-mix(in oklab, white 6%, transparent) inset,
+      0 24px 60px -30px color-mix(in oklab, var(--obsidian) 80%, transparent);
   }
   .star-bg {
     background-image: radial-gradient(circle at 2px 2px, color-mix(in oklab, var(--gold-dust) 15%, transparent) 1px, transparent 0);
@@ -405,8 +415,8 @@ h1, h2, h3, h4 {
   gap: 0.5rem;
   padding: 1rem;
   border-radius: 0.9rem;
-  border: 1px solid hsl(0 0% 100% / 0.08);
-  background: hsl(0 0% 100% / 0.02);
+  border: 1px solid color-mix(in oklab, var(--gold-dust) 12%, transparent);
+  background: color-mix(in oklab, var(--obsidian) 40%, transparent);
 }
 .detail-card > ul {
   font-size: 13px;
