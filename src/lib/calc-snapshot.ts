@@ -6,17 +6,23 @@
  * (free web report, premium AI report, admin QA, tests) must ground
  * evidence text in this snapshot — never in a hard-coded template.
  *
- * Status per system:
- *   - western: OK — tropical Sun sign + element derived from birth date.
- *   - bazi:    OK — four pillars via lunar-javascript, day-master + element.
- *   - vedic:   UNAVAILABLE — no sidereal / Nakshatra / Bhava calculator.
- *   - ziwei:   UNAVAILABLE — no Zi Wei Dou Shu palace calculator.
+ * Sources per system:
+ *   - western: tropical Sun sign from the solar date (boundary-safe table).
+ *   - bazi:    four pillars + day-master via lunar-javascript.
+ *   - vedic:   astronomy-engine (VSOP87) + Lahiri (Chitra-paksha) ayanamsa;
+ *              9-graha sidereal longitudes, Moon nakshatra+pada, Vimshottari
+ *              mahadasha; ascendant + bhava when lat/lng resolvable.
+ *   - ziwei:   iztro (三合派) — 命宫/身宫, 五行局, 十二宫 with 14 主星 + 四化.
+ *              Requires gender.
  *
  * Isomorphic: safe to import from client, server functions, and tests.
  */
 import { solarToLunarInfo } from "@/lib/lunar";
+import { lookupCityGeo, localBirthToUTC, type CityGeo } from "@/lib/city-geo";
+import { computeVedicChart, type VedicChart } from "@/lib/vedic";
+import { computeZiweiChart, soulPalaceMajorStars, type ZiweiChart, type ZiweiGender } from "@/lib/ziwei";
 
-export const CALCULATION_VERSION = "calc_snapshot_v1.0.0";
+export const CALCULATION_VERSION = "calc_snapshot_v2.0.0";
 
 export type SystemStatus = "ok" | "unavailable";
 export type Element = "fire" | "earth" | "air" | "water";
@@ -134,13 +140,17 @@ export type CalculationSnapshot = {
   vedic: {
     status: SystemStatus;
     source: string;
-    reason: string;
+    reason?: string;
+    chart: VedicChart | null;
   };
   ziwei: {
     status: SystemStatus;
     source: string;
-    reason: string;
+    reason?: string;
+    chart: ZiweiChart | null;
   };
+  /** Resolved geolocation for the birthplace (null when place unknown). */
+  geo: (CityGeo & { place: string }) | null;
 };
 
 export type SnapshotInput = {
@@ -148,6 +158,8 @@ export type SnapshotInput = {
   time?: string | null;
   place?: string | null;
   lang?: "en" | "zh";
+  /** Required to compute Zi Wei Dou Shu; absent → ziwei unavailable. */
+  gender?: ZiweiGender | null;
 };
 
 export function buildCalculationSnapshot(input: SnapshotInput): CalculationSnapshot {
@@ -155,6 +167,11 @@ export function buildCalculationSnapshot(input: SnapshotInput): CalculationSnaps
   const time = (input.time ?? null) || null;
   const place = (input.place ?? null) || null;
   const lang = input.lang === "zh" ? "zh" : "en";
+  const gender = input.gender ?? null;
+
+  // Geolocation lookup (used by Vedic + potentially for future Bazi true solar time).
+  const cityGeo = lookupCityGeo(place);
+  const geo = cityGeo && place ? { ...cityGeo, place } : null;
 
   // Western — tropical Sun sign from the solar date.
   const sunIdx = tropicalSunSignFromDate(date);
@@ -205,22 +222,50 @@ export function buildCalculationSnapshot(input: SnapshotInput): CalculationSnaps
     }
   }
 
+  // Vedic — needs date + time + timezone (from place).
+  let vedic: CalculationSnapshot["vedic"];
+  if (!date || !time) {
+    vedic = { status: "unavailable", source: "not_computed", reason: "missing_date_or_time", chart: null };
+  } else if (!cityGeo) {
+    vedic = { status: "unavailable", source: "not_computed", reason: "birthplace_unresolved", chart: null };
+  } else {
+    const utc = localBirthToUTC(date, time, cityGeo.tz);
+    if (!utc) {
+      vedic = { status: "unavailable", source: "not_computed", reason: "invalid_date_or_time", chart: null };
+    } else {
+      const chart = computeVedicChart({ utc, lat: cityGeo.lat, lng: cityGeo.lng });
+      vedic = chart
+        ? {
+            status: "ok",
+            source: chart.source,
+            chart,
+          }
+        : { status: "unavailable", source: "compute_failed", reason: "ephemeris_error", chart: null };
+    }
+  }
+
+  // Ziwei — needs date + time + gender (no lat/lng needed).
+  let ziwei: CalculationSnapshot["ziwei"];
+  if (!date || !time) {
+    ziwei = { status: "unavailable", source: "not_computed", reason: "missing_date_or_time", chart: null };
+  } else if (!gender) {
+    ziwei = { status: "unavailable", source: "iztro", reason: "gender_missing", chart: null };
+  } else {
+    const chart = computeZiweiChart({ solarDate: date, timeHM: time, gender });
+    ziwei = chart
+      ? { status: "ok", source: chart.source, chart }
+      : { status: "unavailable", source: "compute_failed", reason: "ziwei_error", chart: null };
+  }
+
   return {
     calculation_version: CALCULATION_VERSION,
     generated_at: new Date().toISOString(),
     input: { date, time, place, lang },
     western,
     bazi,
-    vedic: {
-      status: "unavailable",
-      source: "not_implemented",
-      reason: "no_sidereal_calculator",
-    },
-    ziwei: {
-      status: "unavailable",
-      source: "not_implemented",
-      reason: "no_ziwei_calculator",
-    },
+    vedic,
+    ziwei,
+    geo,
   };
 }
 
@@ -278,6 +323,58 @@ export function validateEvidenceAgainstSnapshot(
       }
     }
   }
+
+  // Moon Nakshatra check — any 宿/Nakshatra citation must match the snapshot's
+  // computed nakshatra (Chinese lunar-mansion name or English name).
+  const vedicChart = snap.vedic.chart;
+  if (vedicChart) {
+    const nakZh = vedicChart.moon.nakshatra_zh;
+    const nakEn = vedicChart.moon.nakshatra_en;
+    for (const ev of evidence) {
+      const note = ev.note ?? "";
+      if (!/月亮|Moon|Nakshatra|星宿/i.test(note)) continue;
+      const zhCite = note.match(/([\u4e00-\u9fff]{1,2})宿/);
+      if (zhCite && zhCite[0] !== nakZh) {
+        issues.push({
+          code: "moon_nakshatra_mismatch",
+          severity: "error",
+          message: `Nakshatra claim "${zhCite[0]}" contradicts snapshot Moon Nakshatra ${nakZh} (${nakEn}).`,
+        });
+      }
+      // English form: match one of the 27 names against a citation.
+      const enCite = note.match(/\b(Ashwini|Bharani|Krittika|Rohini|Mrigashira|Ardra|Punarvasu|Pushya|Ashlesha|Magha|Purva Phalguni|Uttara Phalguni|Hasta|Chitra|Swati|Vishakha|Anuradha|Jyeshtha|Mula|Purva Ashadha|Uttara Ashadha|Shravana|Dhanishta|Shatabhisha|Purva Bhadrapada|Uttara Bhadrapada|Revati)\b/);
+      if (enCite && enCite[1] !== nakEn) {
+        issues.push({
+          code: "moon_nakshatra_mismatch",
+          severity: "error",
+          message: `Nakshatra claim "${enCite[1]}" contradicts snapshot Moon Nakshatra ${nakEn}.`,
+        });
+      }
+    }
+  }
+
+  // Ziwei 命宫主星 check — any 命宫 claim naming a 主星 must appear in the
+  // computed soul-palace major-star list.
+  const zw = snap.ziwei.chart;
+  if (zw) {
+    const soulStars = soulPalaceMajorStars(zw);
+    const STARS_14 = ["紫微","天机","太阳","武曲","天同","廉贞","天府","太阴","贪狼","巨门","天相","天梁","七杀","破军"];
+    for (const ev of evidence) {
+      const note = ev.note ?? "";
+      if (!/命宫/.test(note)) continue;
+      const cited = STARS_14.filter((s) => note.includes(s));
+      for (const c of cited) {
+        if (!soulStars.includes(c)) {
+          issues.push({
+            code: "ziwei_soul_star_mismatch",
+            severity: "error",
+            message: `命宫主星 "${c}" cited in evidence does not match computed soul palace stars [${soulStars.join(", ") || "空宫"}].`,
+          });
+        }
+      }
+    }
+  }
+
   return issues;
 }
 

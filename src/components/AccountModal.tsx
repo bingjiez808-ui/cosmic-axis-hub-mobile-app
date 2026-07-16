@@ -1,12 +1,12 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Link } from "@tanstack/react-router";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { useAccount, type Plan } from "@/lib/account";
 import { useLang, type Lang } from "@/lib/i18n";
 import { useSupabaseSession } from "@/lib/session";
 import { TAROT_LIMITS, tarotRemaining } from "@/lib/tarot-quota";
-import { listUserCharts, renameChart, type ChartRow } from "@/lib/reports-store.functions";
+import { listUserCharts, renameChart, computeChartHash, type ChartRow } from "@/lib/reports-store.functions";
 import { listPremiumReports, type MyPremiumReportRow } from "@/lib/premium.functions";
 import { PremiumReportReader } from "@/components/PremiumReportReader";
 
@@ -18,6 +18,45 @@ export function AccountModal({ open, onClose }: { open: boolean; onClose: () => 
   const titleId = useId();
   const descId = useId();
   const dialogRef = useRef<HTMLDivElement | null>(null);
+  const [dbCharts, setDbCharts] = useState<ChartRow[] | null>(null);
+
+  useEffect(() => {
+    if (!open || !session) return;
+    listUserCharts().then((r) => setDbCharts(r)).catch(() => setDbCharts([]));
+  }, [open, session]);
+
+  // Hash set of saved DB charts — any local `saved` entry with a matching
+  // normalized-input hash is a duplicate of a DB chart and hidden from the
+  // secondary list. Compares on the same (date/time/place/lang) fingerprint
+  // the server uses via `computeChartHash`, so renames don't split rows.
+  const dbHashes = useMemo(() => {
+    if (!dbCharts) return null;
+    const s = new Set<string>();
+    for (const r of dbCharts) {
+      s.add(
+        computeChartHash({
+          date: r.birth_date ?? "",
+          time: r.birth_time ?? "",
+          place: r.birth_place ?? "",
+          lang: (r.lang as "en" | "zh") ?? "en",
+        }),
+      );
+    }
+    return s;
+  }, [dbCharts]);
+
+  const savedFiltered = useMemo(() => {
+    if (!dbHashes) return saved;
+    return saved.filter((s) => {
+      const h = computeChartHash({
+        date: s.date ?? "",
+        time: s.time ?? "",
+        place: s.place ?? "",
+        lang: (s.lang as "en" | "zh") ?? "en",
+      });
+      return !dbHashes.has(h);
+    });
+  }, [saved, dbHashes]);
 
   const displayAccount = account ?? (session?.user.email
     ? {
@@ -162,7 +201,7 @@ export function AccountModal({ open, onClose }: { open: boolean; onClose: () => 
                   <TarotQuota accountKey={displayAccount.email} plan={displayAccount.plan ?? "free"} lang={lang} />
                 </div>
 
-                <MyChartsSection open={open} onClose={onClose} lang={lang} />
+                <MyChartsSection open={open} onClose={onClose} lang={lang} rows={dbCharts} setRows={setDbCharts} />
 
                 <MyPremiumReports open={open} lang={lang} />
 
@@ -170,11 +209,11 @@ export function AccountModal({ open, onClose }: { open: boolean; onClose: () => 
                   <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
                     {t.acc_view_saved}
                   </p>
-                  {saved.length === 0 ? (
+                  {savedFiltered.length === 0 ? (
                     <p className="text-sm text-stone-warm/50">{t.acc_no_saved}</p>
                   ) : (
                     <ul className="space-y-2">
-                      {saved.map((s) => {
+                      {savedFiltered.map((s) => {
                         const q: Record<string, string> = { name: s.name, readingId: s.id };
                         if (s.date) q.date = s.date;
                         if (s.time) q.time = s.time;
@@ -265,20 +304,20 @@ export function AccountModal({ open, onClose }: { open: boolean; onClose: () => 
   );
 }
 
-function MyChartsSection({ open, onClose, lang }: { open: boolean; onClose: () => void; lang: Lang }) {
-  const [rows, setRows] = useState<ChartRow[] | null>(null);
-  const [loading, setLoading] = useState(false);
+function MyChartsSection({ open, onClose, lang, rows, setRows }: {
+  open: boolean;
+  onClose: () => void;
+  lang: Lang;
+  rows: ChartRow[] | null;
+  setRows: (r: ChartRow[] | null) => void;
+}) {
+  const loading = rows === null;
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("");
 
-  useEffect(() => {
-    if (!open) return;
-    setLoading(true);
-    listUserCharts()
-      .then((r) => setRows(r))
-      .catch(() => setRows([]))
-      .finally(() => setLoading(false));
-  }, [open]);
+  // Parent (AccountModal) already loads rows and shares them here for dedup.
+  // Kept as a no-op effect for future reactivity to `open`.
+  useEffect(() => { if (!open) return; }, [open]);
 
   const heading = lang === "zh" ? "我的命盘与报告" : "My charts & reports";
   const empty = lang === "zh"
@@ -290,7 +329,7 @@ function MyChartsSection({ open, onClose, lang }: { open: boolean; onClose: () =
     if (!name) return;
     try {
       await renameChart({ data: { chartId: id, name } });
-      setRows((prev) => (prev ? prev.map((r) => (r.id === id ? { ...r, name } : r)) : prev));
+      setRows(rows ? rows.map((r) => (r.id === id ? { ...r, name } : r)) : rows);
     } catch { /* ignore */ }
     setEditingId(null);
   }

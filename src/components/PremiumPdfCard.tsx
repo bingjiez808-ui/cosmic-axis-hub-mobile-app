@@ -40,6 +40,7 @@ type ReportSearchLike = {
   date?: string;
   time?: string;
   place?: string;
+  gender?: "male" | "female";
 };
 
 const TXT = {
@@ -229,6 +230,7 @@ export function PremiumPdfCard({
       time: search.time,
       place: search.place,
       lang,
+      gender: search.gender ?? null,
     });
     const missing = missingSystems(snap);
     if (missing.length > 0) {
