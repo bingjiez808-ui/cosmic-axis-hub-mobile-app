@@ -359,6 +359,8 @@ function MyChartsSection({ open, onClose, lang }: { open: boolean; onClose: () =
       )}
     </div>
   );
+}
+
 
 function MembershipBadge({ plan, lang }: { plan: Plan; lang: Lang }) {
   const label = plan === "oracle"
