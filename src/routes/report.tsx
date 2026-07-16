@@ -888,8 +888,9 @@ function ReportPage() {
         time: search.time,
         place: search.place,
         lang: reportLang,
+        gender: search.gender ?? null,
       }),
-    [search.date, search.time, search.place, reportLang],
+    [search.date, search.time, search.place, search.gender, reportLang],
   );
 
   const snapshotEvidence = useMemo(() => {
