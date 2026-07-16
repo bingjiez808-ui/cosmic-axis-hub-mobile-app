@@ -222,7 +222,7 @@ function SiteNav() {
   const { session, isAdmin, loading } = useSupabaseSession();
   const openAcc = () => {
     if (!session) {
-      window.location.assign("/auth");
+      window.location.assign("/auth?mode=login");
       return;
     }
     window.dispatchEvent(new Event("lod:open-account"));
