@@ -52,7 +52,7 @@ export function normalizeForHash(input: ChartInput) {
 
 export function computeChartHash(input: ChartInput): string {
   const canonical = JSON.stringify(normalizeForHash(input));
-  return createHash("sha256").update(canonical).digest("hex");
+  return bytesToHex(sha256(new TextEncoder().encode(canonical)));
 }
 
 /* --------------------------------------------------------------------- */
