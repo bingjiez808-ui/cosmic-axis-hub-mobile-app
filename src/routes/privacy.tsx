@@ -49,7 +49,7 @@ const EN: Copy = {
       h: "1. Information we collect",
       body: [
         "Birth details you enter into the ritual: full name (or nickname), date of birth, time of birth, place of birth (city / region) and time zone. These are required to compute an astrological chart.",
-        "Account information when you sign in: email address, and optionally a phone number, display name and avatar. Passwords are stored only in hashed form by our authentication provider — we never see them.",
+        "Account information when you sign in: email address, and optionally a display name and avatar. Passwords are stored only in hashed form by our authentication provider — we never see them. Phone-number sign-in is not currently offered; if you signed in by phone in an earlier version, any historical phone number on your account is removed together with the rest of your data when you delete your account.",
         "Content you create: saved readings, questions you ask the AI companion, tarot draws, community posts, and messages sent through the \"elder\" companion or the feedback / bug-report flow.",
         "Technical data: IP address, browser type, device information and basic usage events (which pages you visit, when). We do not use third-party advertising trackers.",
       ],
@@ -133,7 +133,7 @@ const ZH: Copy = {
       h: "一、我们收集哪些资料",
       body: [
         "你在仪式中填写的出生资料：本名（或称呼）、出生日期、出生时间、出生地（城市 / 地区）及时区。这些是计算命盘的必要信息。",
-        "账号资料：邮箱地址，以及可选的手机号、昵称与头像。密码由认证服务以哈希方式保存，我们看不到明文。",
+        "账号资料：邮箱地址，以及可选的昵称与头像。密码由认证服务以哈希方式保存，我们看不到明文。目前不再提供手机号登录；如你在旧版本以手机号登录，账户上残留的历史手机号会随删除账户一并清除。",
         "你创建的内容：保存的解读、向 AI 的追问、抽取的塔罗牌、社区帖子，以及通过「智者」树洞或反馈通道发送的消息。",
         "技术信息：IP 地址、浏览器与设备信息，以及基础使用事件（访问了哪些页面、访问时间）。我们不使用第三方广告追踪。",
       ],

@@ -65,7 +65,7 @@ const EN: Copy = {
   whatRemoved: {
     h: "What gets removed",
     items: [
-      "Your account (email, phone, password credential)",
+      "Your account (email, password credential, and any legacy phone number from earlier versions)",
       "Your profile: display name, avatar, membership tier",
       "Birth details you provided (date, time, place, time zone)",
       "Saved readings and generated report content tied to your account",
@@ -105,7 +105,7 @@ const ZH: Copy = {
   whatRemoved: {
     h: "会被清除的内容",
     items: [
-      "你的账户（邮箱、手机号、登录凭据）",
+      "你的账户（邮箱、登录凭据，以及旧版本中残留的历史手机号）",
       "你的档案：昵称、头像、会员等级",
       "你提供的出生资料（日期、时间、地点、时区）",
       "与你账户绑定的解读与生成内容",
