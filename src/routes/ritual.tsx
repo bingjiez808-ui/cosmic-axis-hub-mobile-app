@@ -199,8 +199,13 @@ function RitualPage() {
     if (!canAdvance) return;
     if (isLast) {
       const info = solarToLunarInfo(values.date, values.time);
+      const gender = values.gender === "male" || values.gender === "female" ? values.gender : "";
       const params = new URLSearchParams({
-        ...values,
+        name: values.name,
+        date: values.date,
+        time: values.time,
+        place: values.place,
+        ...(gender ? { gender } : {}),
         lang,
         quiz: quiz.join(""),
         readingId: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
