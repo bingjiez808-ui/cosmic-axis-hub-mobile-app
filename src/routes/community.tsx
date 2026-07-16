@@ -28,7 +28,12 @@ export const Route = createFileRoute("/community")({
         property: "og:description",
         content: "Travelers from many histories, one library — share your true self.",
       },
+      { property: "og:url", content: "https://fate-nexus-ai.lovable.app/community" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Guild of Souls · 同门" },
+      { name: "twitter:description", content: "Travelers from many histories, one library." },
     ],
+    links: [{ rel: "canonical", href: "https://fate-nexus-ai.lovable.app/community" }],
   }),
   component: CommunityPage,
 });

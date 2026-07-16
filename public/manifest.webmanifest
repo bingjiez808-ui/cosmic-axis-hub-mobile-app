@@ -1,0 +1,18 @@
+{
+  "name": "Fate Nexus",
+  "short_name": "Fate Nexus",
+  "description": "A synthesis of four ancient traditions — Western Astrology, Vedic Jyotish, Chinese BaZi and Zi Wei Dou Shu.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0a0f",
+  "theme_color": "#0a0a0f",
+  "lang": "en",
+  "categories": ["lifestyle", "education"],
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
