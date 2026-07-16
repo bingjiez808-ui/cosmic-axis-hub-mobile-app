@@ -564,7 +564,7 @@ function PremiumOrdersSection({
       toast.error("请填写备注（至少 4 字）");
       return;
     }
-    if (!window.confirm(`确认将订单标记为已付款并解锁高级 PDF？\n邮箱：${confirming.email ?? confirming.userId}`))
+    if (!window.confirm(`确认将订单标记为已付款并解锁高级深度报告？\n邮箱：${confirming.email ?? confirming.userId}`))
       return;
     setBusy(true);
     try {
@@ -585,8 +585,9 @@ function PremiumOrdersSection({
   return (
     <div className="mx-auto mt-10 max-w-6xl px-6 pb-16">
       <h2 className="mb-4 font-serif text-2xl italic text-stone-warm">
-        高级 PDF 订单 · Premium PDF orders
+        高级深度报告订单 · Premium Deep Reading orders
       </h2>
+
 
       <div className="glass-card rounded-2xl border border-white/10 p-4">
         <div className="mb-4 flex flex-wrap items-center gap-3">
@@ -650,7 +651,7 @@ function PremiumOrdersSection({
                     </td>
                     <td className="px-2 py-2 text-[11px] text-stone-warm/60">
                       {r.reportStatus ?? "—"}
-                      {r.hasPdf ? " · pdf" : ""}
+                      {r.isLegacy ? " · legacy" : ""}
                     </td>
                     <td className="px-2 py-2">
                       {r.currency} {(r.amountCents / 100).toFixed(2)}
@@ -679,7 +680,7 @@ function PremiumOrdersSection({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-obsidian/80 p-4">
           <div className="glass-card w-full max-w-md rounded-2xl border border-gold-dust/30 p-6">
             <h3 className="mb-3 font-serif text-xl text-stone-warm">
-              手动开通 ¥79 高级 PDF
+              手动开通 ¥79 高级深度报告
             </h3>
             <p className="mb-2 text-[13px] text-stone-warm/70">
               {confirming.email ?? confirming.userId}

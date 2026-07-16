@@ -1,10 +1,10 @@
 /**
- * Premium ¥99 one-time PDF report — order + generation + delivery.
+ * Premium ¥79 one-time Deep Reading — order + AI generation + in-app delivery.
  *
  * Design goals:
- * - The client can NEVER mark an order paid, mint a signed URL for
- *   somebody else's PDF, or forge `report_json`. Every state transition
- *   that grants access is a service-role write on the server.
+ * - The client can NEVER mark an order paid, mint access for somebody
+ *   else's report, or forge `content_json`. Every state transition that
+ *   grants access is a service-role write on the server.
  * - Same (user_id, chart_id, product_version) can only ever have one
  *   active order and one report row — enforced by unique indexes at
  *   the DB layer, defended by atomic begin logic here.
@@ -12,36 +12,44 @@
  *   merchant credentials exist. `startPremiumCheckout` records intent
  *   but returns `provider_unavailable`; the only real "paid" path is
  *   the admin `grantPremiumReportAccess` function with an audit log.
- * - PDF binary rendering is best-effort inside the Worker runtime. If
- *   the required font (CJK for zh reports) is not configured, the
- *   content JSON is still saved and the card surfaces a clear
- *   "renderer_pending" state. It NEVER falls back to a public URL or
- *   client-side download.
+ * - Reports are delivered ONLY inside the app, as `content_json` served
+ *   over an authenticated server function that verifies ownership. No
+ *   file downloads, no signed URLs, no public paths.
+ *
+ * Version strategy:
+ * - Current product version: `premium_deep_report_v1` — new ¥79 orders.
+ * - Legacy paid orders under `premium_pdf_v1` (¥99) and `premium_pdf_v2`
+ *   (¥79 PDF era) still grant permanent access. Their pending/failed/
+ *   refunded rows are IGNORED (never reused, never block new orders).
+ * - Report row `report_version` stays at `premium_pdf_v1` — the shared
+ *   content_json shape means historic buyers see their existing report
+ *   without regenerating, while new deep-report orders write to the
+ *   same row schema.
  */
 import { createServerFn } from "@tanstack/react-start";
 import { generateText } from "ai";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { Json } from "@/integrations/supabase/types";
 import { createLovableAiGatewayProvider } from "./ai-gateway.server";
 import { guardrailsFor, safeMessage } from "./ai-guardrails";
 import { enforceRateLimit } from "./rate-limit.server";
 import { isEmailVerified } from "./reports-store.functions";
 
 // Canonical product identity.
-// v2 (¥79) is the current live product. v1 (¥99) rows remain in the DB
-// untouched — historic paid/refunded orders keep their original amount
-// and product_version. Queries below accept BOTH versions so historic
-// buyers never lose access; new orders and grants only create v2.
-export const PREMIUM_PRODUCT_VERSION = "premium_pdf_v2";
-export const PREMIUM_LEGACY_PRODUCT_VERSIONS = ["premium_pdf_v1"] as const;
+export const PREMIUM_PRODUCT_VERSION = "premium_deep_report_v1";
+export const PREMIUM_LEGACY_PRODUCT_VERSIONS = [
+  "premium_pdf_v1",
+  "premium_pdf_v2",
+] as const;
 export const PREMIUM_ALL_PRODUCT_VERSIONS = [
   PREMIUM_PRODUCT_VERSION,
   ...PREMIUM_LEGACY_PRODUCT_VERSIONS,
 ] as const;
-// PDF report content structure is unchanged between v1 and v2, so the
-// report_version stays at v1 — a user whose v1 report is already
-// completed keeps their download after the price migration.
+// Report content_json schema is shared across product versions, so
+// historic paid buyers keep seeing their generated report without a
+// forced regeneration.
 export const PREMIUM_REPORT_VERSION = "premium_pdf_v1";
 export const PREMIUM_PROMPT_VERSION = "v1";
 export const PREMIUM_PRICE_CENTS = 7900;
@@ -59,18 +67,18 @@ export type OrderRowLite = {
 
 export type CheckoutDecision =
   | { action: "already_paid"; orderId: string }
-  | { action: "reuse_v2_pending"; orderId: string }
-  | { action: "create_v2"; amountCents: number; productVersion: string };
+  | { action: "reuse_current_pending"; orderId: string }
+  | { action: "create_current"; amountCents: number; productVersion: string };
 
 /**
  * Given every historic order for a (user, chart), decide what the
  * checkout flow should do. Rules:
- *   - legacy v1 status='paid' → permanently unlocked (already_paid).
- *   - legacy v1 pending/failed/refunded → IGNORED. Never reused, never
- *     blocks a new v2 purchase.
- *   - v2 status='paid' → already_paid.
- *   - v2 status='pending' → reuse.
- *   - otherwise → create a brand-new v2 order at PREMIUM_PRICE_CENTS.
+ *   - Any legacy paid row (v1 ¥99 or v2 ¥79 PDF) → permanent unlock.
+ *   - Legacy pending/failed/refunded → IGNORED. Never reused, never
+ *     blocks a new deep-report purchase.
+ *   - Current version paid → already_paid.
+ *   - Current version pending → reuse.
+ *   - Otherwise → create a brand-new current-version order at ¥79.
  */
 export function chooseCheckoutAction(orders: OrderRowLite[]): CheckoutDecision {
   const legacyPaid = orders.find(
@@ -80,18 +88,19 @@ export function chooseCheckoutAction(orders: OrderRowLite[]): CheckoutDecision {
   );
   if (legacyPaid) return { action: "already_paid", orderId: legacyPaid.id };
 
-  const v2Paid = orders.find(
+  const currentPaid = orders.find(
     (o) => o.product_version === PREMIUM_PRODUCT_VERSION && o.status === "paid",
   );
-  if (v2Paid) return { action: "already_paid", orderId: v2Paid.id };
+  if (currentPaid) return { action: "already_paid", orderId: currentPaid.id };
 
-  const v2Pending = orders.find(
+  const currentPending = orders.find(
     (o) => o.product_version === PREMIUM_PRODUCT_VERSION && o.status === "pending",
   );
-  if (v2Pending) return { action: "reuse_v2_pending", orderId: v2Pending.id };
+  if (currentPending)
+    return { action: "reuse_current_pending", orderId: currentPending.id };
 
   return {
-    action: "create_v2",
+    action: "create_current",
     amountCents: PREMIUM_PRICE_CENTS,
     productVersion: PREMIUM_PRODUCT_VERSION,
   };
@@ -99,17 +108,17 @@ export function chooseCheckoutAction(orders: OrderRowLite[]): CheckoutDecision {
 
 /**
  * Same rule set, applied to admin grants. Returns:
- *   - reject_legacy_v1: caller must throw already_granted_legacy_v1.
- *   - upgrade_v2_pending: flip that row to paid.
- *   - reuse_v2_paid: idempotent no-op, log audit.
- *   - create_v2_paid: insert a new v2 paid row.
- * Any legacy v1 pending/failed/refunded rows are IGNORED.
+ *   - reject_legacy: caller must throw already_granted_legacy.
+ *   - upgrade_current_pending: flip that row to paid.
+ *   - reuse_current_paid: idempotent no-op, log audit.
+ *   - create_current_paid: insert a new deep-report paid row.
+ * Legacy pending/failed/refunded rows are IGNORED.
  */
 export type GrantDecision =
-  | { action: "reject_legacy_v1"; orderId: string }
-  | { action: "reuse_v2_paid"; orderId: string }
-  | { action: "upgrade_v2_pending"; orderId: string }
-  | { action: "create_v2_paid" };
+  | { action: "reject_legacy"; orderId: string }
+  | { action: "reuse_current_paid"; orderId: string }
+  | { action: "upgrade_current_pending"; orderId: string }
+  | { action: "create_current_paid" };
 
 export function chooseGrantAction(orders: OrderRowLite[]): GrantDecision {
   const legacyPaid = orders.find(
@@ -117,25 +126,25 @@ export function chooseGrantAction(orders: OrderRowLite[]): GrantDecision {
       (PREMIUM_LEGACY_PRODUCT_VERSIONS as readonly string[]).includes(o.product_version) &&
       o.status === "paid",
   );
-  if (legacyPaid) return { action: "reject_legacy_v1", orderId: legacyPaid.id };
+  if (legacyPaid) return { action: "reject_legacy", orderId: legacyPaid.id };
 
-  const v2Paid = orders.find(
+  const currentPaid = orders.find(
     (o) => o.product_version === PREMIUM_PRODUCT_VERSION && o.status === "paid",
   );
-  if (v2Paid) return { action: "reuse_v2_paid", orderId: v2Paid.id };
+  if (currentPaid) return { action: "reuse_current_paid", orderId: currentPaid.id };
 
-  const v2Pending = orders.find(
+  const currentPending = orders.find(
     (o) => o.product_version === PREMIUM_PRODUCT_VERSION && o.status === "pending",
   );
-  if (v2Pending) return { action: "upgrade_v2_pending", orderId: v2Pending.id };
+  if (currentPending)
+    return { action: "upgrade_current_pending", orderId: currentPending.id };
 
-  return { action: "create_v2_paid" };
+  return { action: "create_current_paid" };
 }
 
 /* --------------------------------------------------------------------- */
 /* Helpers                                                                */
 /* --------------------------------------------------------------------- */
-
 
 async function ensureAdmin(context: { supabase: unknown; userId: string }) {
   const sb = context.supabase as {
@@ -186,11 +195,12 @@ export type PremiumStatus = {
     status: "pending" | "paid" | "failed" | "refunded";
     provider: string | null;
     paidAt: string | null;
+    productVersion: string;
+    isLegacy: boolean;
   } | null;
   report: {
     id: string;
     status: "pending" | "generating" | "completed" | "failed";
-    hasPdf: boolean;
     generatedAt: string | null;
     errorMessage: string | null;
   } | null;
@@ -203,12 +213,12 @@ export const getPremiumStatus = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     await loadChartOwnedBy(userId, data.chartId); // ownership guard
 
-    // Legacy v1 grants access ONLY when status='paid'. v1 pending /
-    // refunded / failed rows are historic artefacts and never count as
-    // a live entitlement or an in-progress order.
+    // Legacy grants access ONLY when status='paid'. Legacy pending /
+    // refunded / failed rows are artefacts and never count as a live
+    // entitlement or in-progress order.
     const { data: legacyPaid } = await supabase
       .from("premium_report_orders")
-      .select("id, status, provider, paid_at")
+      .select("id, status, provider, paid_at, product_version")
       .eq("user_id", userId)
       .eq("chart_id", data.chartId)
       .in("product_version", PREMIUM_LEGACY_PRODUCT_VERSIONS as unknown as string[])
@@ -217,10 +227,10 @@ export const getPremiumStatus = createServerFn({ method: "POST" })
       .limit(1)
       .maybeSingle();
 
-    // Current v2 (¥79) product — pending or paid.
-    const { data: v2Active } = await supabase
+    // Current deep-report product — pending or paid.
+    const { data: currentActive } = await supabase
       .from("premium_report_orders")
-      .select("id, status, provider, paid_at")
+      .select("id, status, provider, paid_at, product_version")
       .eq("user_id", userId)
       .eq("chart_id", data.chartId)
       .eq("product_version", PREMIUM_PRODUCT_VERSION)
@@ -229,13 +239,11 @@ export const getPremiumStatus = createServerFn({ method: "POST" })
       .limit(1)
       .maybeSingle();
 
-    // Prefer the row that grants access. A legacy v1 paid entitlement is
-    // permanent; otherwise surface the live v2 order (pending or paid).
-    const effective = legacyPaid ?? v2Active ?? null;
+    const effective = legacyPaid ?? currentActive ?? null;
 
     const { data: reportRow } = await supabase
       .from("premium_pdf_reports")
-      .select("id, status, pdf_storage_path, generated_at, error_message")
+      .select("id, status, generated_at, error_message")
       .eq("user_id", userId)
       .eq("chart_id", data.chartId)
       .eq("report_version", PREMIUM_REPORT_VERSION)
@@ -251,13 +259,16 @@ export const getPremiumStatus = createServerFn({ method: "POST" })
             status: effective.status as "pending" | "paid" | "failed" | "refunded",
             provider: effective.provider,
             paidAt: effective.paid_at,
+            productVersion: effective.product_version,
+            isLegacy: (PREMIUM_LEGACY_PRODUCT_VERSIONS as readonly string[]).includes(
+              effective.product_version,
+            ),
           }
         : null,
       report: reportRow
         ? {
             id: reportRow.id,
             status: reportRow.status as "pending" | "generating" | "completed" | "failed",
-            hasPdf: !!reportRow.pdf_storage_path,
             generatedAt: reportRow.generated_at,
             errorMessage: reportRow.error_message,
           }
@@ -285,9 +296,10 @@ export const startPremiumCheckout = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // 1) Historic v1 (¥99) buyer already unlocked → never charge again.
-    //    Only v1 status='paid' counts. v1 pending/failed/refunded are
-    //    ignored entirely and MUST NOT block or be reused for v2.
+    // 1) Historic legacy paid buyer already unlocked → never charge again.
+    //    Only legacy status='paid' counts. Legacy pending/failed/refunded
+    //    are ignored entirely and MUST NOT block or be reused for the
+    //    current product.
     const { data: legacyPaid } = await supabaseAdmin
       .from("premium_report_orders")
       .select("id")
@@ -300,8 +312,8 @@ export const startPremiumCheckout = createServerFn({ method: "POST" })
       .maybeSingle();
     if (legacyPaid) return { kind: "already_paid", orderId: legacyPaid.id };
 
-    // 2) Existing v2 active order (pending or paid) → idempotent reuse.
-    const { data: v2Existing } = await supabaseAdmin
+    // 2) Existing current-version active order (pending or paid) → reuse.
+    const { data: existing } = await supabaseAdmin
       .from("premium_report_orders")
       .select("id, status")
       .eq("user_id", userId)
@@ -311,18 +323,18 @@ export const startPremiumCheckout = createServerFn({ method: "POST" })
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-    if (v2Existing) {
-      if (v2Existing.status === "paid") return { kind: "already_paid", orderId: v2Existing.id };
+    if (existing) {
+      if (existing.status === "paid") return { kind: "already_paid", orderId: existing.id };
       return {
         kind: "provider_unavailable",
-        orderId: v2Existing.id,
+        orderId: existing.id,
         message: "provider_pending_config",
       };
     }
 
-    // 3) Otherwise create a brand-new v2 (¥79) pending order.
-    //    Any legacy v1 pending row is intentionally left untouched.
-    //    Amount, currency and product are fixed server-side.
+    // 3) Create a brand-new current-version pending order at ¥79.
+    //    Legacy pending rows are intentionally left untouched. Amount,
+    //    currency and product are fixed server-side.
     const { data: inserted, error } = await supabaseAdmin
       .from("premium_report_orders")
       .insert({
@@ -339,8 +351,6 @@ export const startPremiumCheckout = createServerFn({ method: "POST" })
       .single();
     if (error || !inserted) throw new Error("order_create_failed");
 
-    // Real payment providers are not yet configured. Return a clear
-    // "unavailable" signal so the UI does NOT auto-flip to paid.
     return {
       kind: "provider_unavailable",
       orderId: inserted.id,
@@ -365,7 +375,6 @@ export const grantPremiumReportAccess = createServerFn({ method: "POST" })
     await ensureAdmin(context as never);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // Chart must exist for the target user.
     const { data: chart } = await supabaseAdmin
       .from("charts")
       .select("id, user_id")
@@ -373,7 +382,7 @@ export const grantPremiumReportAccess = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!chart || chart.user_id !== data.userId) throw new Error("chart_not_found_for_user");
 
-    // 1) Legacy v1 already paid → already granted. Never duplicate the
+    // 1) Legacy already paid → already granted. Never duplicate the
     //    grant; log an audit entry and short-circuit.
     const { data: legacyPaid } = await supabaseAdmin
       .from("premium_report_orders")
@@ -391,15 +400,15 @@ export const grantPremiumReportAccess = createServerFn({ method: "POST" })
         admin_user_id: context.userId,
         target_user_id: data.userId,
         chart_id: data.chartId,
-        action: "already_granted_legacy_v1",
+        action: "already_granted_legacy",
         note: data.note,
       });
-      throw new Error("already_granted_legacy_v1");
+      throw new Error("already_granted_legacy");
     }
 
-    // 2) Look for an existing v2 order. v1 pending/failed/refunded rows
-    //    are intentionally ignored and never reused / mutated.
-    const { data: v2Existing } = await supabaseAdmin
+    // 2) Existing current-version order. Legacy pending/failed/refunded
+    //    rows are intentionally ignored and never reused / mutated.
+    const { data: existing } = await supabaseAdmin
       .from("premium_report_orders")
       .select("id, status")
       .eq("user_id", data.userId)
@@ -411,9 +420,9 @@ export const grantPremiumReportAccess = createServerFn({ method: "POST" })
       .maybeSingle();
 
     let orderId: string;
-    if (v2Existing) {
-      orderId = v2Existing.id;
-      if (v2Existing.status !== "paid") {
+    if (existing) {
+      orderId = existing.id;
+      if (existing.status !== "paid") {
         const { error: upErr } = await supabaseAdmin
           .from("premium_report_orders")
           .update({
@@ -474,6 +483,8 @@ export type AdminOrderRow = {
   email: string | null;
   chartId: string;
   chartName: string | null;
+  productVersion: string;
+  isLegacy: boolean;
   status: "pending" | "paid" | "failed" | "refunded";
   provider: string | null;
   amountCents: number;
@@ -481,7 +492,6 @@ export type AdminOrderRow = {
   paidAt: string | null;
   createdAt: string;
   grantNote: string | null;
-  hasPdf: boolean;
   reportStatus: "pending" | "generating" | "completed" | "failed" | null;
 };
 
@@ -494,14 +504,15 @@ export const listAdminPremiumOrders = createServerFn({ method: "POST" })
 
     let query = supabaseAdmin
       .from("premium_report_orders")
-      .select("id, user_id, chart_id, status, provider, amount_cents, currency, paid_at, created_at, grant_note")
+      .select(
+        "id, user_id, chart_id, product_version, status, provider, amount_cents, currency, paid_at, created_at, grant_note",
+      )
       .order("created_at", { ascending: false })
       .limit(200);
     if (data.status !== "all") query = query.eq("status", data.status);
     const { data: orders } = await query;
     if (!orders || orders.length === 0) return [];
 
-    const userIds = Array.from(new Set(orders.map((o) => o.user_id)));
     const chartIds = Array.from(new Set(orders.map((o) => o.chart_id)));
 
     const { data: authList } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 500 });
@@ -517,14 +528,11 @@ export const listAdminPremiumOrders = createServerFn({ method: "POST" })
 
     const { data: reports } = await supabaseAdmin
       .from("premium_pdf_reports")
-      .select("chart_id, user_id, status, pdf_storage_path")
+      .select("chart_id, user_id, status")
       .in("chart_id", chartIds);
-    const reportBy = new Map<string, { status: string; hasPdf: boolean }>();
+    const reportBy = new Map<string, string>();
     (reports ?? []).forEach((r) => {
-      reportBy.set(`${r.user_id}:${r.chart_id}`, {
-        status: r.status,
-        hasPdf: !!r.pdf_storage_path,
-      });
+      reportBy.set(`${r.user_id}:${r.chart_id}`, r.status);
     });
 
     const rows: AdminOrderRow[] = orders.map((o) => {
@@ -535,6 +543,10 @@ export const listAdminPremiumOrders = createServerFn({ method: "POST" })
         email: emailBy.get(o.user_id) ?? null,
         chartId: o.chart_id,
         chartName: chartNameBy.get(o.chart_id) ?? null,
+        productVersion: o.product_version,
+        isLegacy: (PREMIUM_LEGACY_PRODUCT_VERSIONS as readonly string[]).includes(
+          o.product_version,
+        ),
         status: o.status as AdminOrderRow["status"],
         provider: o.provider,
         amountCents: o.amount_cents,
@@ -542,8 +554,7 @@ export const listAdminPremiumOrders = createServerFn({ method: "POST" })
         paidAt: o.paid_at,
         createdAt: o.created_at,
         grantNote: o.grant_note,
-        hasPdf: rep?.hasPdf ?? false,
-        reportStatus: (rep?.status as AdminOrderRow["reportStatus"]) ?? null,
+        reportStatus: (rep as AdminOrderRow["reportStatus"]) ?? null,
       };
     });
 
@@ -560,11 +571,11 @@ export const listAdminPremiumOrders = createServerFn({ method: "POST" })
   });
 
 /* --------------------------------------------------------------------- */
-/* generatePremiumPdf — atomic begin + AI content + PDF render            */
+/* Deep-report content generation                                         */
 /* --------------------------------------------------------------------- */
 
-type PremiumChapter = { key: string; title: string; body: string };
-type PremiumContent = {
+export type PremiumChapter = { key: string; title: string; body: string };
+export type PremiumContent = {
   meta: {
     prompt_version: string;
     report_version: string;
@@ -658,13 +669,13 @@ async function generateChapter(
   const gateway = createLovableAiGatewayProvider(apiKey);
   const guardrails = guardrailsFor(isZh ? "zh" : "en");
   const system = isZh
-    ? `你是命运图书馆资深占星与命理长者。撰写一份最终会被排版成 PDF 的深度报告的一个章节。
+    ? `你是命运图书馆资深占星与命理长者。撰写一份高级 AI 深度报告的一个章节，只在站内网页中阅读。
 - 只使用来访者的真实命盘事实与已有网页报告作为依据；不使用另一个人的模板。
 - 不给医疗诊断、灾祸预言或收益保证；用「倾向 / 窗口 / 可能」等谨慎措辞。
 - 输出纯文本段落，不要 Markdown 标题或代码块。段落之间用一个空行分隔。
 - 长度约 500-900 汉字。
 ${guardrails}`
-    : `You are a senior elder of the Library of Destiny writing one chapter of a long-form PDF report.
+    : `You are a senior elder of the Library of Destiny writing one chapter of a premium deep reading delivered inside the web app.
 - Anchor every claim in the visitor's real chart facts and the existing web report; never generic templates.
 - No medical diagnoses, no guaranteed misfortune, no financial promises — use "tendency / window / possible".
 - Output plain-text paragraphs (no Markdown headers or code fences). Separate paragraphs with one blank line.
@@ -688,10 +699,9 @@ ${webReport.slice(0, 4000)}
   return text.trim().slice(0, 8000);
 }
 
-async function beginPremiumPdfRow(userId: string, chartId: string, orderId: string) {
+async function beginPremiumReportRow(userId: string, chartId: string, orderId: string) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-  // Try atomic insert of a fresh pending row.
   const { data: inserted, error } = await supabaseAdmin
     .from("premium_pdf_reports")
     .insert({
@@ -702,14 +712,13 @@ async function beginPremiumPdfRow(userId: string, chartId: string, orderId: stri
       prompt_version: PREMIUM_PROMPT_VERSION,
       status: "generating",
     })
-    .select("id, status, content_json, pdf_storage_path")
+    .select("id, status, content_json")
     .single();
   if (!error && inserted) return { row: inserted, didStart: true };
 
-  // Unique violation → someone got there first. Read back.
   const { data: existing } = await supabaseAdmin
     .from("premium_pdf_reports")
-    .select("id, status, content_json, pdf_storage_path")
+    .select("id, status, content_json")
     .eq("user_id", userId)
     .eq("chart_id", chartId)
     .eq("report_version", PREMIUM_REPORT_VERSION)
@@ -718,7 +727,7 @@ async function beginPremiumPdfRow(userId: string, chartId: string, orderId: stri
   return { row: existing, didStart: false };
 }
 
-export const generatePremiumPdf = createServerFn({ method: "POST" })
+export const generatePremiumReport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => StatusInput.parse(d))
   .handler(async ({ data, context }) => {
@@ -729,7 +738,7 @@ export const generatePremiumPdf = createServerFn({ method: "POST" })
     // 1. Chart must belong to this user.
     const chart = await loadChartOwnedBy(userId, data.chartId);
 
-    // 2. Order must be paid.
+    // 2. Some paid entitlement must exist (current or legacy).
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: order } = await supabaseAdmin
       .from("premium_report_orders")
@@ -743,36 +752,33 @@ export const generatePremiumPdf = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!order) throw new Error("order_not_paid");
 
-    // 3. Cached completed row → return as-is.
+    // 3. Cached completed row → return as-is, do NOT call AI again.
     const { data: existing } = await supabaseAdmin
       .from("premium_pdf_reports")
-      .select("id, status, content_json, pdf_storage_path")
+      .select("id, status, content_json")
       .eq("user_id", userId)
       .eq("chart_id", data.chartId)
       .eq("report_version", PREMIUM_REPORT_VERSION)
       .maybeSingle();
     if (existing?.status === "completed" && existing.content_json) {
-      return { reportId: existing.id, status: "completed" as const, hasPdf: !!existing.pdf_storage_path };
+      return { reportId: existing.id, status: "completed" as const };
     }
 
-    // 4. Atomic claim.
-    const { row, didStart } = await beginPremiumPdfRow(userId, data.chartId, order.id);
+    // 4. Atomic claim (unique index on user_id, chart_id, report_version).
+    const { row, didStart } = await beginPremiumReportRow(userId, data.chartId, order.id);
     if (!didStart) {
       return {
         reportId: row.id,
         status: row.status as "pending" | "generating" | "completed" | "failed",
-        hasPdf: !!row.pdf_storage_path,
       };
     }
 
-    // 5. We own generation.
     try {
       const apiKey = process.env.LOVABLE_API_KEY;
       if (!apiKey) throw new Error("ai_gateway_not_configured");
       const isZh = (chart.lang ?? "en") === "zh";
       const titles = isZh ? CHAPTER_TITLES_ZH : CHAPTER_TITLES_EN;
 
-      // Pull the pre-existing web report (if any) as reference material.
       const { data: webReport } = await supabaseAdmin
         .from("reports")
         .select("report_json")
@@ -794,11 +800,9 @@ export const generatePremiumPdf = createServerFn({ method: "POST" })
         .filter(Boolean)
         .join("\n");
 
-      // Sequential to respect rate limits and preserve narrative coherence.
       const chapters: PremiumChapter[] = [];
       for (const key of CHAPTER_KEYS) {
         const title = titles[key];
-        // Failure of a single chapter must NOT poison the whole report.
         let body = "";
         try {
           body = await generateChapter(key, title, chartFacts, webReportText, isZh, apiKey);
@@ -820,32 +824,11 @@ export const generatePremiumPdf = createServerFn({ method: "POST" })
           disclaimer: isZh ? DISCLAIMER_ZH : DISCLAIMER_EN,
         },
         cover: {
-          title: isZh ? "命运图书馆 · 高级 AI 深度报告" : "Library of Destiny — Premium Deep Report",
+          title: isZh ? "命运图书馆 · 高级 AI 深度报告" : "Library of Destiny — Premium Deep Reading",
           subtitle: chart.name ?? (isZh ? "私人命盘解读" : "Personal chart reading"),
         },
         chapters,
       };
-
-      // Attempt PDF render. Falls back gracefully if the runtime can't
-      // embed the required font for the requested language.
-      let pdfPath: string | null = null;
-      try {
-        const { renderPremiumPdf } = await import("./premium-pdf.server");
-        const pdfBytes = await renderPremiumPdf(content);
-        const safeName = (chart.name ?? "report")
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/^-+|-+$/g, "")
-          .slice(0, 40) || "report";
-        const stamp = new Date().toISOString().replace(/[^0-9]/g, "").slice(0, 14);
-        pdfPath = `${userId}/${data.chartId}/${safeName}-${stamp}.pdf`;
-        const { error: upErr } = await supabaseAdmin.storage
-          .from("premium-pdfs")
-          .upload(pdfPath, pdfBytes, { contentType: "application/pdf", upsert: true });
-        if (upErr) pdfPath = null;
-      } catch {
-        pdfPath = null;
-      }
 
       await supabaseAdmin
         .from("premium_pdf_reports")
@@ -854,14 +837,13 @@ export const generatePremiumPdf = createServerFn({ method: "POST" })
           content_json: content as unknown as never,
           model: "google/gemini-2.5-flash",
           provider: "lovable-ai-gateway",
-          pdf_storage_path: pdfPath,
           generated_at: new Date().toISOString(),
           error_message: null,
         })
         .eq("id", row.id)
         .eq("user_id", userId);
 
-      return { reportId: row.id, status: "completed" as const, hasPdf: !!pdfPath };
+      return { reportId: row.id, status: "completed" as const };
     } catch (err) {
       await supabaseAdmin
         .from("premium_pdf_reports")
@@ -876,31 +858,158 @@ export const generatePremiumPdf = createServerFn({ method: "POST" })
   });
 
 /* --------------------------------------------------------------------- */
-/* getPremiumPdfSignedUrl — short-lived signed URL, owner only            */
+/* getPremiumReport — owner-only content read                             */
 /* --------------------------------------------------------------------- */
 
-export const getPremiumPdfSignedUrl = createServerFn({ method: "POST" })
+export type PremiumReportRead = {
+  status: "pending" | "generating" | "completed" | "failed";
+  generatedAt: string | null;
+  content: PremiumContent | null;
+  errorMessage: string | null;
+};
+
+export const getPremiumReport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => StatusInput.parse(d))
-  .handler(async ({ data, context }): Promise<{ url: string | null; reason?: string }> => {
-    const { userId } = context;
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  .handler(async ({ data, context }): Promise<PremiumReportRead | null> => {
+    const { supabase, userId } = context;
+    // Ownership guard: chart must belong to caller.
+    const { data: chart } = await supabase
+      .from("charts")
+      .select("id, user_id")
+      .eq("id", data.chartId)
+      .maybeSingle();
+    if (!chart || chart.user_id !== userId) return null;
 
-    const { data: row } = await supabaseAdmin
+    const { data: row } = await supabase
       .from("premium_pdf_reports")
-      .select("id, user_id, status, pdf_storage_path")
+      .select("status, content_json, generated_at, error_message")
       .eq("user_id", userId)
       .eq("chart_id", data.chartId)
       .eq("report_version", PREMIUM_REPORT_VERSION)
       .maybeSingle();
-    if (!row) return { url: null, reason: "no_report" };
-    if (row.user_id !== userId) return { url: null, reason: "forbidden" };
-    if (row.status !== "completed") return { url: null, reason: "not_ready" };
-    if (!row.pdf_storage_path) return { url: null, reason: "renderer_pending" };
-
-    const { data: signed, error } = await supabaseAdmin.storage
-      .from("premium-pdfs")
-      .createSignedUrl(row.pdf_storage_path, 60 * 10); // 10 minutes
-    if (error || !signed?.signedUrl) return { url: null, reason: "sign_failed" };
-    return { url: signed.signedUrl };
+    if (!row) return null;
+    return {
+      status: row.status as PremiumReportRead["status"],
+      generatedAt: row.generated_at,
+      content: (row.content_json as unknown as PremiumContent) ?? null,
+      errorMessage: row.error_message,
+    };
   });
+
+/* --------------------------------------------------------------------- */
+/* listPremiumReports — user's own deep reports across all charts         */
+/* --------------------------------------------------------------------- */
+
+export type MyPremiumReportRow = {
+  chartId: string;
+  chartName: string | null;
+  birthDate: string | null;
+  birthPlace: string | null;
+  lang: string | null;
+  order: {
+    status: "pending" | "paid" | "failed" | "refunded";
+    productVersion: string;
+    isLegacy: boolean;
+    paidAt: string | null;
+  } | null;
+  report: {
+    status: "pending" | "generating" | "completed" | "failed";
+    generatedAt: string | null;
+  } | null;
+};
+
+export const listPremiumReports = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<MyPremiumReportRow[]> => {
+    const { supabase, userId } = context;
+
+    // Consider only orders that grant access: current version pending/
+    // paid, or legacy paid. Everything else is skipped for this listing.
+    const { data: currentOrders } = await supabase
+      .from("premium_report_orders")
+      .select("id, chart_id, status, product_version, paid_at")
+      .eq("user_id", userId)
+      .eq("product_version", PREMIUM_PRODUCT_VERSION)
+      .in("status", ["pending", "paid"])
+      .order("created_at", { ascending: false });
+
+    const { data: legacyPaidOrders } = await supabase
+      .from("premium_report_orders")
+      .select("id, chart_id, status, product_version, paid_at")
+      .eq("user_id", userId)
+      .in("product_version", PREMIUM_LEGACY_PRODUCT_VERSIONS as unknown as string[])
+      .eq("status", "paid")
+      .order("created_at", { ascending: false });
+
+    type OrderLike = {
+      id: string;
+      chart_id: string;
+      status: string;
+      product_version: string;
+      paid_at: string | null;
+    };
+    const byChart = new Map<string, OrderLike>();
+    for (const o of (currentOrders ?? []) as OrderLike[]) {
+      if (!byChart.has(o.chart_id)) byChart.set(o.chart_id, o);
+    }
+    for (const o of (legacyPaidOrders ?? []) as OrderLike[]) {
+      // Legacy paid trumps current pending for display purposes.
+      const existing = byChart.get(o.chart_id);
+      if (!existing || existing.status !== "paid") byChart.set(o.chart_id, o);
+    }
+    if (byChart.size === 0) return [];
+
+    const chartIds = Array.from(byChart.keys());
+    const { data: charts } = await supabase
+      .from("charts")
+      .select("id, name, birth_date, birth_place, lang")
+      .eq("user_id", userId)
+      .in("id", chartIds);
+
+    const { data: reports } = await supabase
+      .from("premium_pdf_reports")
+      .select("chart_id, status, generated_at")
+      .eq("user_id", userId)
+      .eq("report_version", PREMIUM_REPORT_VERSION)
+      .in("chart_id", chartIds);
+    const reportBy = new Map<string, { status: string; generated_at: string | null }>();
+    for (const r of reports ?? [])
+      reportBy.set(r.chart_id, { status: r.status, generated_at: r.generated_at });
+
+    return (charts ?? []).map((c) => {
+      const order = byChart.get(c.id)!;
+      const rep = reportBy.get(c.id);
+      return {
+        chartId: c.id,
+        chartName: c.name,
+        birthDate: c.birth_date,
+        birthPlace: c.birth_place,
+        lang: c.lang,
+        order: {
+          status: order.status as MyPremiumReportRow["order"] extends infer T
+            ? T extends { status: infer S }
+              ? S
+              : never
+            : never,
+          productVersion: order.product_version,
+          isLegacy: (PREMIUM_LEGACY_PRODUCT_VERSIONS as readonly string[]).includes(
+            order.product_version,
+          ),
+          paidAt: order.paid_at,
+        },
+        report: rep
+          ? {
+              status: rep.status as "pending" | "generating" | "completed" | "failed",
+              generatedAt: rep.generated_at,
+            }
+          : null,
+      };
+    });
+  });
+
+// Backwards-compat export: legacy callers importing the old symbol are
+// harmless since the file no longer offers PDF UI. Keeping a typed alias
+// avoids accidental client-bundle breakage from stale imports.
+export const generatePremiumPdf = generatePremiumReport;
+export type Json_ = Json; // side-effect: keep Json import referenced
