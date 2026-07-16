@@ -15,6 +15,7 @@ import { LanguageProvider, useLang } from "../lib/i18n";
 import { AccountProvider, useAccount } from "../lib/account";
 import { AccountModal } from "../components/AccountModal";
 import { LibrarySplash } from "../components/LibrarySplash";
+import { ElderCompanion } from "../components/ElderCompanion";
 import { useSupabaseSession } from "../lib/session";
 import libraryHallImg from "../assets/ancient-library-hall.jpg";
 
@@ -186,11 +187,17 @@ function RootComponent() {
           </div>
           <AccountModal open={accOpen} onClose={() => setAccOpen(false)} />
           <LibrarySplash />
+          <GlobalSageCompanion />
         </AccountProvider>
 
       </LanguageProvider>
     </QueryClientProvider>
   );
+}
+
+function GlobalSageCompanion() {
+  const { lang } = useLang();
+  return <ElderCompanion lang={lang} />;
 }
 
 
