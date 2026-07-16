@@ -1105,18 +1105,22 @@ function ReportPage() {
                   <span className="inline-block size-1.5 rotate-45 bg-gold-dust" aria-hidden="true" />
                   {t.synthesis}
                 </p>
-                <p className="reading-copy mb-8 text-base leading-relaxed text-stone-warm/80">
-                  {d.synthesis[li]}
-                </p>
+                <div className="reading-copy mb-8 space-y-4 text-base leading-relaxed text-stone-warm/80">
+                  {splitParagraphs(d.synthesis[li]).map((para, i) => (
+                    <p key={i}>{para}</p>
+                  ))}
+                </div>
 
                 <div className="rounded-2xl border border-gold-dust/25 bg-gradient-to-br from-gold-dust/[0.08] to-gold-dust/[0.02] p-5 md:p-6">
                   <p className="mb-3 flex items-center gap-2 text-[10px] uppercase tracking-[0.32em] text-gold-light">
                     <span className="size-1.5 rounded-full bg-gold-dust" />
                     {t.in_plain_words}
                   </p>
-                  <p className="reading-copy font-serif text-[15px] italic leading-[1.7] text-stone-warm/90 md:text-base">
-                    {d.plain[li]}
-                  </p>
+                  <div className="reading-copy space-y-3 font-serif text-[15px] italic leading-[1.7] text-stone-warm/90 md:text-base">
+                    {splitParagraphs(d.plain[li]).map((para, i) => (
+                      <p key={i}>{para}</p>
+                    ))}
+                  </div>
                 </div>
 
                 {d.details && d.details.length > 0 && (
