@@ -257,14 +257,18 @@ export const grantPremiumReportAccess = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!chart || chart.user_id !== data.userId) throw new Error("chart_not_found_for_user");
 
-    // Upsert the active order for this user+chart+product, then mark paid.
+    // Find any existing active order across v1 (legacy) or v2 (current).
+    // If a legacy paid v1 order exists we treat it as already granted
+    // and just append an audit record — never duplicate the purchase.
     const { data: existing } = await supabaseAdmin
       .from("premium_report_orders")
-      .select("id, status")
+      .select("id, status, product_version, amount_cents")
       .eq("user_id", data.userId)
       .eq("chart_id", data.chartId)
-      .eq("product_version", PREMIUM_PRODUCT_VERSION)
+      .in("product_version", PREMIUM_ALL_PRODUCT_VERSIONS as unknown as string[])
       .in("status", ["pending", "paid"])
+      .order("created_at", { ascending: false })
+      .limit(1)
       .maybeSingle();
 
     let orderId: string;
