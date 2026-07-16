@@ -65,7 +65,7 @@ const EN: Copy = {
   whatRemoved: {
     h: "What gets removed",
     items: [
-      "Your account (email, password credential, and any legacy phone number from earlier versions)",
+      "Your account (email address, sign-in credentials, and any legacy phone number from earlier versions)",
       "Your profile: display name, avatar, membership tier",
       "Birth details you provided (date, time, place, time zone)",
       "Saved readings and generated report content tied to your account",
@@ -248,7 +248,7 @@ function DeleteAccountPage() {
             <p className="mb-4 text-[13px] text-stone-warm/70">{c.howSignedOut}</p>
             <Link
               to="/auth"
-              search={{ reset: undefined, redirect: "/delete-account" }}
+              search={{ redirect: "/delete-account" }}
               className="inline-flex min-h-11 items-center justify-center rounded-full bg-gold-dust px-6 text-[11px] uppercase tracking-[0.28em] text-obsidian hover:bg-gold-light"
             >
               {c.signInFirst}

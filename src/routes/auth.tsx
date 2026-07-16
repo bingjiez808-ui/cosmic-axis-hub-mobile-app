@@ -6,19 +6,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { useLang } from "@/lib/i18n";
 
-type Mode = "sign_in" | "sign_up" | "forgot" | "reset";
+type Step = "email" | "otp";
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
       { title: "Enter the Library — Sign in · Library of Destiny" },
-      { name: "description", content: "Sign in or create an account to save your readings and join the 同门 circle." },
+      { name: "description", content: "Sign in with a one-time email code or Google to save your readings and join the 同门 circle." },
       { name: "robots", content: "noindex" },
     ],
   }),
   validateSearch: (s: Record<string, unknown>) => ({
-    reset: s.reset === "1" || s.reset === 1 ? "1" : undefined,
     redirect: typeof s.redirect === "string" && s.redirect.startsWith("/") ? s.redirect : undefined,
   }),
   component: AuthPage,
@@ -28,10 +28,9 @@ function AuthPage() {
   const { lang } = useLang();
   const search = Route.useSearch();
   const navigate = useNavigate();
-  const [mode, setMode] = useState<Mode>(() => (search.reset === "1" ? "reset" : "sign_in"));
+  const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
+  const [otp, setOtp] = useState("");
   const [busy, setBusy] = useState(false);
   const [cooldown, setCooldown] = useState(0);
 
@@ -40,7 +39,6 @@ function AuthPage() {
     const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
     return () => clearTimeout(t);
   }, [cooldown]);
-
 
   const getPostAuthDestination = async () => {
     if (search.redirect) return search.redirect;
@@ -56,16 +54,8 @@ function AuthPage() {
     return data ? "/admin" : "/";
   };
 
-  // Detect a recovery link (Supabase sets type=recovery in the hash on redirect).
+  // If already signed in, bounce away.
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const hash = window.location.hash || "";
-    if (hash.includes("type=recovery")) setMode("reset");
-  }, []);
-
-  // If already signed in and not in reset flow, bounce away.
-  useEffect(() => {
-    if (mode === "reset") return;
     let cancelled = false;
     supabase.auth.getSession().then(({ data }) => {
       if (!data.session) return;
@@ -76,43 +66,32 @@ function AuthPage() {
     return () => {
       cancelled = true;
     };
-  }, [mode, navigate, search.redirect]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navigate, search.redirect]);
 
   const zh = lang === "zh";
   const t = {
     kicker: zh ? "灯下入席" : "By candlelight",
     title:
-      mode === "sign_up"
-        ? zh ? "在图书馆留名" : "Sign your name in the library"
-        : mode === "forgot"
-        ? zh ? "取回你的印章" : "Recover your seal"
-        : mode === "reset"
-        ? zh ? "重铸你的印章" : "Recast your seal"
+      step === "otp"
+        ? zh ? "查收验证码" : "Check your inbox"
         : zh ? "重返图书馆" : "Return to the library",
-
     email: zh ? "邮箱" : "Email",
-    password: zh ? "口令（至少 8 位）" : "Password (min 8 chars)",
-    name: zh ? "如何称呼你" : "How to call you",
-    signIn: zh ? "点亮烛火进入" : "Light the candle · sign in",
-    signUp: zh ? "在此留名" : "Sign your name",
-    forgot: zh ? "忘记口令？" : "Forgot your seal?",
-    toSignIn: zh ? "已有印章？在此入席" : "Have a seal? Sign in",
-    toSignUp: zh ? "尚未留名？在此题名" : "New here? Sign your name",
-    sendReset: zh ? "寄出取回信" : "Send recovery letter",
-    resetBtn: zh ? "重铸口令" : "Set new password",
+    otp: zh ? "六位验证码" : "6-digit code",
+    sendCode: zh ? "寄出验证码" : "Send code",
+    verify: zh ? "验证并入席" : "Verify · sign in",
+    resend: zh ? "重新寄出验证码" : "Resend code",
+    changeEmail: zh ? "修改邮箱" : "Change email",
     google: zh ? "以 Google 之名入席" : "Continue with Google",
     or: zh ? "或" : "or",
-    resetHint: zh ? "在下方设置新的口令。" : "Set a new password below.",
-    forgotHint: zh ? "输入邮箱，我们将寄出一封取回信。" : "Enter your email — we'll send a recovery letter.",
-    // Neutral wording: don't reveal whether the address is registered.
-    resetSent: zh
-      ? "若该邮箱已注册，取回信已寄出，请查收邮箱（含垃圾箱）。"
-      : "If that address is registered, a recovery letter has been sent — please check your inbox (and spam).",
-    signedUp: zh
-      ? "若该邮箱可用，验证信已寄出，请查收邮箱（含垃圾箱）。"
-      : "If that address is available, a verification letter has been sent — please check your inbox (and spam).",
-    genericAuthError: zh ? "登录失败，请检查邮箱与口令后重试。" : "Sign-in failed. Please check your email and password and try again.",
-    genericSendError: zh ? "邮件发送失败，请稍后再试。" : "Could not send the email. Please try again later.",
+    otpHint: (addr: string) =>
+      zh
+        ? `我们已向 ${addr} 寄出一封含 6 位验证码的信，请查收邮箱（含垃圾箱）。`
+        : `We sent a 6-digit code to ${addr}. Please check your inbox (and spam).`,
+    invalidEmail: zh ? "请输入有效邮箱。" : "Please enter a valid email.",
+    invalidOtp: zh ? "请输入 6 位数字验证码。" : "Please enter the 6-digit code.",
+    sendError: zh ? "邮件发送失败，请稍后再试。" : "Could not send the code. Please try again later.",
+    verifyError: zh ? "验证码无效或已过期，请重试或重新寄出。" : "Code is invalid or expired. Please try again or resend.",
   };
 
   async function onGoogle() {
@@ -122,73 +101,83 @@ function AuthPage() {
       redirect_uri: `${window.location.origin}/auth${redirectParam}`,
     });
     if (res && "error" in res && res.error) {
-      toast.error(res.error instanceof Error ? res.error.message : String(res.error));
+      toast.error(t.sendError);
     }
     setBusy(false);
   }
 
-  async function onEmailAuth(e: React.FormEvent) {
+  async function onSendCode(e: React.FormEvent) {
     e.preventDefault();
-    if (busy) return;
-
+    if (busy || cooldown > 0) return;
+    const addr = email.trim().toLowerCase();
+    if (!EMAIL_RE.test(addr) || addr.length > 254) {
+      toast.error(t.invalidEmail);
+      return;
+    }
     setBusy(true);
     try {
-      if (mode === "sign_in") {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) {
-          // Generic message — do not disclose whether the account exists.
-          toast.error(t.genericAuthError);
-          return;
-        }
-        toast.success(zh ? "入席成功" : "Welcome back");
-        const to = await getPostAuthDestination();
-        navigate({ to: to as never });
-      } else if (mode === "sign_up") {
-        if (cooldown > 0) return;
-        const redirectParam = search.redirect ? `?redirect=${encodeURIComponent(search.redirect)}` : "";
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/auth${redirectParam}`,
-            data: { name: name || undefined },
-          },
-        });
-        // Always show a neutral success message so an attacker can't probe
-        // which addresses already have accounts.
-        if (error) {
-          toast.success(t.signedUp);
-        } else {
-          toast.success(t.signedUp);
-        }
-        setCooldown(60);
-      } else if (mode === "forgot") {
-        if (cooldown > 0) return;
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: `${window.location.origin}/auth?reset=1`,
-        });
-        // Neutral response regardless of whether the address is registered.
-        if (error) {
-          toast.success(t.resetSent);
-        } else {
-          toast.success(t.resetSent);
-        }
-        setCooldown(60);
-        setMode("sign_in");
-      } else if (mode === "reset") {
-        const { error } = await supabase.auth.updateUser({ password });
-        if (error) throw error;
-        toast.success(zh ? "口令已重铸" : "Password updated");
-        navigate({ to: "/" });
-      }
-    } catch (err) {
-      // For unexpected errors, use a generic message; don't leak details.
-      // eslint-disable-next-line no-console
-      console.error("[auth]", err instanceof Error ? err.message : "unknown");
-      toast.error(t.genericAuthError);
+      await supabase.auth.signInWithOtp({
+        email: addr,
+        options: { shouldCreateUser: true },
+      });
+      // Neutral: always show the same success state, regardless of whether
+      // the address is registered or the send actually succeeded.
+      toast.success(t.otpHint(addr));
+      setEmail(addr);
+      setStep("otp");
+      setCooldown(60);
+    } catch {
+      toast.success(t.otpHint(addr));
+      setStep("otp");
+      setCooldown(60);
     } finally {
       setBusy(false);
     }
+  }
+
+  async function onVerify(e: React.FormEvent) {
+    e.preventDefault();
+    if (busy) return;
+    const code = otp.trim();
+    if (!/^\d{6}$/.test(code)) {
+      toast.error(t.invalidOtp);
+      return;
+    }
+    setBusy(true);
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        email: email.trim().toLowerCase(),
+        token: code,
+        type: "email",
+      });
+      if (error || !data.session) {
+        toast.error(t.verifyError);
+        return;
+      }
+      toast.success(zh ? "入席成功" : "Welcome");
+      const to = await getPostAuthDestination();
+      navigate({ to: to as never });
+    } catch {
+      toast.error(t.verifyError);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onResend() {
+    if (busy || cooldown > 0) return;
+    setBusy(true);
+    try {
+      await supabase.auth.signInWithOtp({
+        email: email.trim().toLowerCase(),
+        options: { shouldCreateUser: true },
+      });
+    } catch {
+      // Ignore — keep messaging neutral.
+    }
+    toast.success(t.otpHint(email));
+    setCooldown(60);
+    setBusy(false);
   }
 
   return (
@@ -197,7 +186,7 @@ function AuthPage() {
         <p className="text-[10px] uppercase tracking-[0.42em] text-gold-dust">{t.kicker}</p>
         <h1 className="mt-3 font-serif text-3xl italic text-stone-warm">{t.title}</h1>
 
-        {mode !== "reset" && (
+        {step === "email" && (
           <>
             <button
               type="button"
@@ -219,91 +208,76 @@ function AuthPage() {
               {t.or}
               <div className="h-px flex-1 bg-white/10" />
             </div>
+
+            <form onSubmit={onSendCode} className="space-y-3">
+              <input
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                required
+                maxLength={254}
+                placeholder={t.email}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full rounded-lg border border-white/10 bg-obsidian/40 px-4 py-3 text-base text-stone-warm placeholder:text-stone-warm/30 focus:border-gold-dust focus:outline-none"
+              />
+              <button
+                type="submit"
+                disabled={busy || cooldown > 0}
+                className="w-full rounded-full bg-gold-dust px-6 py-3 text-xs uppercase tracking-[0.28em] text-obsidian transition-colors hover:bg-gold-light disabled:opacity-50"
+              >
+                {cooldown > 0 ? `${cooldown}s` : t.sendCode}
+              </button>
+            </form>
           </>
         )}
 
-        {mode === "forgot" && (
-          <p className="mb-4 text-xs text-stone-warm/60">{t.forgotHint}</p>
-        )}
-        {mode === "reset" && (
-          <p className="mb-4 text-xs text-stone-warm/60">{t.resetHint}</p>
-        )}
-
-        <form onSubmit={onEmailAuth} className="space-y-3">
-          {mode !== "reset" && (
-            <input
-              type="email"
-              autoComplete="email"
-              required
-              placeholder={t.email}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg border border-white/10 bg-obsidian/40 px-4 py-3 text-base text-stone-warm placeholder:text-stone-warm/30 focus:border-gold-dust focus:outline-none"
-            />
-          )}
-          {mode === "sign_up" && (
-            <input
-              type="text"
-              placeholder={t.name}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-lg border border-white/10 bg-obsidian/40 px-4 py-3 text-base text-stone-warm placeholder:text-stone-warm/30 focus:border-gold-dust focus:outline-none"
-            />
-          )}
-          {(mode === "sign_in" || mode === "sign_up" || mode === "reset") && (
-            <input
-              type="password"
-              autoComplete={mode === "sign_in" ? "current-password" : "new-password"}
-              required
-              minLength={8}
-              placeholder={t.password}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg border border-white/10 bg-obsidian/40 px-4 py-3 text-base text-stone-warm placeholder:text-stone-warm/30 focus:border-gold-dust focus:outline-none"
-            />
-          )}
-          <button
-            type="submit"
-            disabled={busy || ((mode === "sign_up" || mode === "forgot") && cooldown > 0)}
-            className="w-full rounded-full bg-gold-dust px-6 py-3 text-xs uppercase tracking-[0.28em] text-obsidian transition-colors hover:bg-gold-light disabled:opacity-50"
-          >
-            {cooldown > 0 && (mode === "sign_up" || mode === "forgot")
-              ? `${cooldown}s`
-              : mode === "sign_in"
-                ? t.signIn
-                : mode === "sign_up"
-                  ? t.signUp
-                  : mode === "forgot"
-                    ? t.sendReset
-                    : t.resetBtn}
-          </button>
-        </form>
-
-        {mode !== "reset" && (
-          <div className="mt-6 flex flex-col items-center gap-2 text-[11px] text-stone-warm/60">
-            {mode === "sign_in" && (
-              <>
-                <button type="button" onClick={() => setMode("forgot")} className="hover:text-gold-dust">
-                  {t.forgot}
-                </button>
-                <button type="button" onClick={() => setMode("sign_up")} className="hover:text-gold-dust">
-                  {t.toSignUp}
-                </button>
-              </>
-            )}
-            {mode === "sign_up" && (
-              <button type="button" onClick={() => setMode("sign_in")} className="hover:text-gold-dust">
-                {t.toSignIn}
+        {step === "otp" && (
+          <>
+            <p className="mt-6 mb-4 text-xs text-stone-warm/60">{t.otpHint(email)}</p>
+            <form onSubmit={onVerify} className="space-y-3">
+              <input
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                pattern="[0-9]{6}"
+                maxLength={6}
+                required
+                placeholder={t.otp}
+                value={otp}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                className="w-full rounded-lg border border-white/10 bg-obsidian/40 px-4 py-3 text-center text-lg tracking-[0.5em] text-stone-warm placeholder:text-stone-warm/30 focus:border-gold-dust focus:outline-none"
+              />
+              <button
+                type="submit"
+                disabled={busy || otp.length !== 6}
+                className="w-full rounded-full bg-gold-dust px-6 py-3 text-xs uppercase tracking-[0.28em] text-obsidian transition-colors hover:bg-gold-light disabled:opacity-50"
+              >
+                {t.verify}
               </button>
-            )}
-            {mode === "forgot" && (
-              <button type="button" onClick={() => setMode("sign_in")} className="hover:text-gold-dust">
-                {t.toSignIn}
+            </form>
+            <div className="mt-6 flex flex-col items-center gap-2 text-[11px] text-stone-warm/60">
+              <button
+                type="button"
+                onClick={onResend}
+                disabled={busy || cooldown > 0}
+                className="hover:text-gold-dust disabled:opacity-40"
+              >
+                {cooldown > 0 ? `${cooldown}s` : t.resend}
               </button>
-            )}
-          </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setOtp("");
+                  setStep("email");
+                }}
+                className="hover:text-gold-dust"
+              >
+                {t.changeEmail}
+              </button>
+            </div>
+          </>
         )}
-
 
         <div className="mt-6 text-center">
           <Link to="/" className="text-[10px] uppercase tracking-[0.32em] text-stone-warm/40 hover:text-gold-dust">
