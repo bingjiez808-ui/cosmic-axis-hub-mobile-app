@@ -28,10 +28,23 @@ import { guardrailsFor, safeMessage } from "./ai-guardrails";
 import { enforceRateLimit } from "./rate-limit.server";
 import { isEmailVerified } from "./reports-store.functions";
 
-export const PREMIUM_PRODUCT_VERSION = "premium_pdf_v1";
+// Canonical product identity.
+// v2 (¥79) is the current live product. v1 (¥99) rows remain in the DB
+// untouched — historic paid/refunded orders keep their original amount
+// and product_version. Queries below accept BOTH versions so historic
+// buyers never lose access; new orders and grants only create v2.
+export const PREMIUM_PRODUCT_VERSION = "premium_pdf_v2";
+export const PREMIUM_LEGACY_PRODUCT_VERSIONS = ["premium_pdf_v1"] as const;
+export const PREMIUM_ALL_PRODUCT_VERSIONS = [
+  PREMIUM_PRODUCT_VERSION,
+  ...PREMIUM_LEGACY_PRODUCT_VERSIONS,
+] as const;
+// PDF report content structure is unchanged between v1 and v2, so the
+// report_version stays at v1 — a user whose v1 report is already
+// completed keeps their download after the price migration.
 export const PREMIUM_REPORT_VERSION = "premium_pdf_v1";
 export const PREMIUM_PROMPT_VERSION = "v1";
-export const PREMIUM_PRICE_CENTS = 9900;
+export const PREMIUM_PRICE_CENTS = 7900;
 export const PREMIUM_CURRENCY = "CNY";
 
 /* --------------------------------------------------------------------- */
