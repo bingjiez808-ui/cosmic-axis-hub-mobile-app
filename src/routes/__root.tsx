@@ -281,14 +281,14 @@ function SiteNav() {
 
       {/* Full top navigation bar — only at top of page */}
       <nav
-        className={`fixed top-0 left-1/2 z-50 -translate-x-1/2 p-3 md:p-6 transition-all duration-500 ${
+        className={`fixed left-1/2 top-0 z-50 w-full max-w-[100vw] -translate-x-1/2 px-3 py-3 md:p-6 transition-all duration-500 ${
           showTopBar ? "opacity-100 translate-y-0" : "-translate-y-full opacity-0 pointer-events-none"
         }`}
       >
-        <div className="glass-card flex max-w-[96vw] items-center gap-3 rounded-full px-3 py-2 md:gap-6 md:px-6 md:py-2.5">
+        <div className="glass-card mx-auto flex w-full max-w-[calc(100vw-1.5rem)] items-center gap-2 rounded-full px-3 py-2 md:w-auto md:max-w-[96vw] md:gap-6 md:px-6 md:py-2.5">
           <Link
             to="/"
-            className="flex-none whitespace-nowrap font-serif text-sm tracking-normal text-stone-warm"
+            className="min-w-0 flex-1 truncate font-serif text-sm tracking-normal text-stone-warm md:flex-none md:whitespace-nowrap"
           >
             Destiny<span className="text-gold-dust">·</span>Library
           </Link>
@@ -304,7 +304,7 @@ function SiteNav() {
           <button
             type="button"
             onClick={openAcc}
-            className="flex flex-none items-center gap-2 whitespace-nowrap rounded-full border border-gold-dust/40 px-3 py-1 text-[10px] tracking-[0.24em] text-gold-dust transition-colors hover:bg-gold-dust/10"
+            className="hidden flex-none items-center gap-2 whitespace-nowrap rounded-full border border-gold-dust/40 px-3 py-1 text-[10px] tracking-[0.24em] text-gold-dust transition-colors hover:bg-gold-dust/10 md:flex"
           >
             {account?.avatar && (
               <img
@@ -315,20 +315,47 @@ function SiteNav() {
             )}
             <span className="whitespace-nowrap">{accountLabel}</span>
           </button>
-          <LanguageToggle />
-        </div>
+          <div className="hidden md:block"><LanguageToggle /></div>
 
-        {/* Mobile menu row */}
-        <div className="mt-2 flex justify-center md:hidden">
-          <div className="glass-card flex max-w-[96vw] items-center gap-4 overflow-x-auto rounded-full px-4 py-1.5">
-            <Link to="/traditions" className={linkClass}>{t.nav_traditions}</Link>
-            <Link to="/ritual" className={linkClass}>{t.nav_ritual}</Link>
-            <Link to="/community" className={linkClass}>{t.nav_community}</Link>
-            <Link to="/about" className={linkClass}>{t.nav_about}</Link>
-            {showAdmin && <Link to="/admin" className={linkClass + " text-gold-dust"}>{adminLabel}</Link>}
-          </div>
+          {/* Mobile-only account chip (compact) */}
+          <button
+            type="button"
+            onClick={openAcc}
+            aria-label={accountLabel}
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-gold-dust/40 text-gold-dust md:hidden"
+          >
+            {account?.avatar ? (
+              <img src={account.avatar} alt="" className="h-7 w-7 rounded-full object-cover" />
+            ) : (
+              <span className="text-[10px] tracking-[0.16em]">{lang === "zh" ? "我" : "ME"}</span>
+            )}
+          </button>
+
+          {/* Mobile hamburger — opens the side rail */}
+          <button
+            type="button"
+            aria-label={lang === "zh" ? "打开菜单" : "Open menu"}
+            aria-expanded={drawerOpen}
+            onClick={() => setDrawerOpen((v) => !v)}
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-gold-dust/40 text-gold-dust md:hidden"
+          >
+            <span className="flex flex-col items-center gap-[3px]">
+              <span className="block h-[1.5px] w-4 bg-current" />
+              <span className="block h-[1.5px] w-4 bg-current" />
+              <span className="block h-[1.5px] w-4 bg-current" />
+            </span>
+          </button>
         </div>
       </nav>
+
+      {/* Backdrop for the side rail — mobile-only for easy dismissal */}
+      <div
+        aria-hidden="true"
+        onClick={() => setDrawerOpen(false)}
+        className={`fixed inset-0 z-[70] bg-obsidian/60 backdrop-blur-sm transition-opacity md:hidden ${
+          drawerOpen ? "opacity-100" : "pointer-events-none opacity-0"
+        }`}
+      />
 
       {/* Slim vertical rail — slides in from the right when the dot is tapped.
           No backdrop, no dialog: just a compact column of links. */}
@@ -336,7 +363,8 @@ function SiteNav() {
         aria-label="Navigation rail"
         aria-hidden={!drawerOpen}
         onMouseLeave={() => setDrawerOpen(false)}
-        className={`fixed right-3 top-20 z-[75] flex flex-col items-stretch gap-1 rounded-2xl border border-gold-dust/25 bg-obsidian/85 p-2 backdrop-blur-xl shadow-[-10px_10px_40px_rgba(0,0,0,0.5)] transition-all duration-300 ${
+        style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}
+        className={`fixed right-3 top-16 z-[75] flex max-h-[calc(100dvh-5rem)] w-56 flex-col items-stretch gap-1 overflow-y-auto rounded-2xl border border-gold-dust/25 bg-obsidian/95 p-2 backdrop-blur-xl shadow-[-10px_10px_40px_rgba(0,0,0,0.5)] transition-all duration-300 md:top-20 md:w-auto md:bg-obsidian/85 ${
           drawerOpen
             ? "translate-x-0 opacity-100"
             : "pointer-events-none translate-x-6 opacity-0"
@@ -354,7 +382,7 @@ function SiteNav() {
             key={item.to}
             to={item.to}
             onClick={() => setDrawerOpen(false)}
-            className={`whitespace-nowrap rounded-lg px-4 py-2 text-right text-[12px] ${
+            className={`flex min-h-11 items-center justify-end whitespace-nowrap rounded-lg px-4 py-3 text-right text-[13px] ${
               lang === "zh"
                 ? "tracking-normal text-stone-warm/85"
                 : "uppercase tracking-[0.24em] text-stone-warm/75"
@@ -370,7 +398,7 @@ function SiteNav() {
             setDrawerOpen(false);
             openAcc();
           }}
-          className="flex items-center justify-end gap-2 whitespace-nowrap rounded-lg px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-gold-dust hover:bg-gold-dust/10"
+          className="flex min-h-11 items-center justify-end gap-2 whitespace-nowrap rounded-lg px-4 py-3 text-[11px] uppercase tracking-[0.24em] text-gold-dust hover:bg-gold-dust/10"
         >
           {account?.avatar && (
             <img
@@ -393,12 +421,12 @@ function SiteNav() {
 
 function SiteFooter() {
   return (
-    <footer className="relative z-10 border-t border-white/5 px-6 py-16 md:px-12">
-      <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-8 md:flex-row">
+    <footer className="relative z-10 border-t border-white/5 px-4 py-12 sm:px-6 md:px-12 md:py-16">
+      <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 text-center md:flex-row md:gap-8 md:text-left">
         <div className="font-serif text-xl text-stone-warm">
           Destiny<span className="text-gold-dust">Library</span>
         </div>
-        <div className="flex gap-10 text-[10px] font-medium uppercase tracking-[0.28em] text-stone-warm/50">
+        <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-[10px] font-medium uppercase tracking-[0.28em] text-stone-warm/50 md:gap-10">
           <Link to="/traditions" className="transition-colors hover:text-gold-dust">
             Traditions
           </Link>
