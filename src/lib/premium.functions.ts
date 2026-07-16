@@ -48,8 +48,94 @@ export const PREMIUM_PRICE_CENTS = 7900;
 export const PREMIUM_CURRENCY = "CNY";
 
 /* --------------------------------------------------------------------- */
+/* Pure decision helpers (exported for tests)                             */
+/* --------------------------------------------------------------------- */
+
+export type OrderRowLite = {
+  id: string;
+  status: "pending" | "paid" | "failed" | "refunded";
+  product_version: string;
+};
+
+export type CheckoutDecision =
+  | { action: "already_paid"; orderId: string }
+  | { action: "reuse_v2_pending"; orderId: string }
+  | { action: "create_v2"; amountCents: number; productVersion: string };
+
+/**
+ * Given every historic order for a (user, chart), decide what the
+ * checkout flow should do. Rules:
+ *   - legacy v1 status='paid' → permanently unlocked (already_paid).
+ *   - legacy v1 pending/failed/refunded → IGNORED. Never reused, never
+ *     blocks a new v2 purchase.
+ *   - v2 status='paid' → already_paid.
+ *   - v2 status='pending' → reuse.
+ *   - otherwise → create a brand-new v2 order at PREMIUM_PRICE_CENTS.
+ */
+export function chooseCheckoutAction(orders: OrderRowLite[]): CheckoutDecision {
+  const legacyPaid = orders.find(
+    (o) =>
+      (PREMIUM_LEGACY_PRODUCT_VERSIONS as readonly string[]).includes(o.product_version) &&
+      o.status === "paid",
+  );
+  if (legacyPaid) return { action: "already_paid", orderId: legacyPaid.id };
+
+  const v2Paid = orders.find(
+    (o) => o.product_version === PREMIUM_PRODUCT_VERSION && o.status === "paid",
+  );
+  if (v2Paid) return { action: "already_paid", orderId: v2Paid.id };
+
+  const v2Pending = orders.find(
+    (o) => o.product_version === PREMIUM_PRODUCT_VERSION && o.status === "pending",
+  );
+  if (v2Pending) return { action: "reuse_v2_pending", orderId: v2Pending.id };
+
+  return {
+    action: "create_v2",
+    amountCents: PREMIUM_PRICE_CENTS,
+    productVersion: PREMIUM_PRODUCT_VERSION,
+  };
+}
+
+/**
+ * Same rule set, applied to admin grants. Returns:
+ *   - reject_legacy_v1: caller must throw already_granted_legacy_v1.
+ *   - upgrade_v2_pending: flip that row to paid.
+ *   - reuse_v2_paid: idempotent no-op, log audit.
+ *   - create_v2_paid: insert a new v2 paid row.
+ * Any legacy v1 pending/failed/refunded rows are IGNORED.
+ */
+export type GrantDecision =
+  | { action: "reject_legacy_v1"; orderId: string }
+  | { action: "reuse_v2_paid"; orderId: string }
+  | { action: "upgrade_v2_pending"; orderId: string }
+  | { action: "create_v2_paid" };
+
+export function chooseGrantAction(orders: OrderRowLite[]): GrantDecision {
+  const legacyPaid = orders.find(
+    (o) =>
+      (PREMIUM_LEGACY_PRODUCT_VERSIONS as readonly string[]).includes(o.product_version) &&
+      o.status === "paid",
+  );
+  if (legacyPaid) return { action: "reject_legacy_v1", orderId: legacyPaid.id };
+
+  const v2Paid = orders.find(
+    (o) => o.product_version === PREMIUM_PRODUCT_VERSION && o.status === "paid",
+  );
+  if (v2Paid) return { action: "reuse_v2_paid", orderId: v2Paid.id };
+
+  const v2Pending = orders.find(
+    (o) => o.product_version === PREMIUM_PRODUCT_VERSION && o.status === "pending",
+  );
+  if (v2Pending) return { action: "upgrade_v2_pending", orderId: v2Pending.id };
+
+  return { action: "create_v2_paid" };
+}
+
+/* --------------------------------------------------------------------- */
 /* Helpers                                                                */
 /* --------------------------------------------------------------------- */
+
 
 async function ensureAdmin(context: { supabase: unknown; userId: string }) {
   const sb = context.supabase as {
@@ -117,16 +203,35 @@ export const getPremiumStatus = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     await loadChartOwnedBy(userId, data.chartId); // ownership guard
 
-    const { data: orderRow } = await supabase
+    // Legacy v1 grants access ONLY when status='paid'. v1 pending /
+    // refunded / failed rows are historic artefacts and never count as
+    // a live entitlement or an in-progress order.
+    const { data: legacyPaid } = await supabase
       .from("premium_report_orders")
-      .select("id, status, provider, paid_at, product_version, amount_cents")
+      .select("id, status, provider, paid_at")
       .eq("user_id", userId)
       .eq("chart_id", data.chartId)
-      .in("product_version", PREMIUM_ALL_PRODUCT_VERSIONS as unknown as string[])
+      .in("product_version", PREMIUM_LEGACY_PRODUCT_VERSIONS as unknown as string[])
+      .eq("status", "paid")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    // Current v2 (¥79) product — pending or paid.
+    const { data: v2Active } = await supabase
+      .from("premium_report_orders")
+      .select("id, status, provider, paid_at")
+      .eq("user_id", userId)
+      .eq("chart_id", data.chartId)
+      .eq("product_version", PREMIUM_PRODUCT_VERSION)
       .in("status", ["pending", "paid"])
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
+
+    // Prefer the row that grants access. A legacy v1 paid entitlement is
+    // permanent; otherwise surface the live v2 order (pending or paid).
+    const effective = legacyPaid ?? v2Active ?? null;
 
     const { data: reportRow } = await supabase
       .from("premium_pdf_reports")
@@ -140,16 +245,12 @@ export const getPremiumStatus = createServerFn({ method: "POST" })
       productVersion: PREMIUM_PRODUCT_VERSION,
       priceCents: PREMIUM_PRICE_CENTS,
       currency: PREMIUM_CURRENCY,
-      order: orderRow
+      order: effective
         ? {
-            id: orderRow.id,
-            status: orderRow.status as PremiumStatus["order"] extends infer R
-              ? R extends { status: infer S }
-                ? S
-                : never
-              : never,
-            provider: orderRow.provider,
-            paidAt: orderRow.paid_at,
+            id: effective.id,
+            status: effective.status as "pending" | "paid" | "failed" | "refunded",
+            provider: effective.provider,
+            paidAt: effective.paid_at,
           }
         : null,
       report: reportRow
@@ -184,29 +285,44 @@ export const startPremiumCheckout = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // Idempotent lookup — return the existing active order if any,
-    // including a legacy v1 (¥99) purchase so a historic buyer never
-    // gets charged again.
-    const { data: existing } = await supabaseAdmin
+    // 1) Historic v1 (¥99) buyer already unlocked → never charge again.
+    //    Only v1 status='paid' counts. v1 pending/failed/refunded are
+    //    ignored entirely and MUST NOT block or be reused for v2.
+    const { data: legacyPaid } = await supabaseAdmin
       .from("premium_report_orders")
-      .select("id, status, product_version")
+      .select("id")
       .eq("user_id", userId)
       .eq("chart_id", data.chartId)
-      .in("product_version", PREMIUM_ALL_PRODUCT_VERSIONS as unknown as string[])
+      .in("product_version", PREMIUM_LEGACY_PRODUCT_VERSIONS as unknown as string[])
+      .eq("status", "paid")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (legacyPaid) return { kind: "already_paid", orderId: legacyPaid.id };
+
+    // 2) Existing v2 active order (pending or paid) → idempotent reuse.
+    const { data: v2Existing } = await supabaseAdmin
+      .from("premium_report_orders")
+      .select("id, status")
+      .eq("user_id", userId)
+      .eq("chart_id", data.chartId)
+      .eq("product_version", PREMIUM_PRODUCT_VERSION)
       .in("status", ["pending", "paid"])
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-    if (existing) {
-      if (existing.status === "paid") return { kind: "already_paid", orderId: existing.id };
+    if (v2Existing) {
+      if (v2Existing.status === "paid") return { kind: "already_paid", orderId: v2Existing.id };
       return {
         kind: "provider_unavailable",
-        orderId: existing.id,
+        orderId: v2Existing.id,
         message: "provider_pending_config",
       };
     }
 
-    // Amount, currency and product are fixed server-side.
+    // 3) Otherwise create a brand-new v2 (¥79) pending order.
+    //    Any legacy v1 pending row is intentionally left untouched.
+    //    Amount, currency and product are fixed server-side.
     const { data: inserted, error } = await supabaseAdmin
       .from("premium_report_orders")
       .insert({
@@ -257,24 +373,47 @@ export const grantPremiumReportAccess = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!chart || chart.user_id !== data.userId) throw new Error("chart_not_found_for_user");
 
-    // Find any existing active order across v1 (legacy) or v2 (current).
-    // If a legacy paid v1 order exists we treat it as already granted
-    // and just append an audit record — never duplicate the purchase.
-    const { data: existing } = await supabaseAdmin
+    // 1) Legacy v1 already paid → already granted. Never duplicate the
+    //    grant; log an audit entry and short-circuit.
+    const { data: legacyPaid } = await supabaseAdmin
       .from("premium_report_orders")
-      .select("id, status, product_version, amount_cents")
+      .select("id")
       .eq("user_id", data.userId)
       .eq("chart_id", data.chartId)
-      .in("product_version", PREMIUM_ALL_PRODUCT_VERSIONS as unknown as string[])
+      .in("product_version", PREMIUM_LEGACY_PRODUCT_VERSIONS as unknown as string[])
+      .eq("status", "paid")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (legacyPaid) {
+      await supabaseAdmin.from("premium_grant_audit").insert({
+        order_id: legacyPaid.id,
+        admin_user_id: context.userId,
+        target_user_id: data.userId,
+        chart_id: data.chartId,
+        action: "already_granted_legacy_v1",
+        note: data.note,
+      });
+      throw new Error("already_granted_legacy_v1");
+    }
+
+    // 2) Look for an existing v2 order. v1 pending/failed/refunded rows
+    //    are intentionally ignored and never reused / mutated.
+    const { data: v2Existing } = await supabaseAdmin
+      .from("premium_report_orders")
+      .select("id, status")
+      .eq("user_id", data.userId)
+      .eq("chart_id", data.chartId)
+      .eq("product_version", PREMIUM_PRODUCT_VERSION)
       .in("status", ["pending", "paid"])
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
 
     let orderId: string;
-    if (existing) {
-      orderId = existing.id;
-      if (existing.status !== "paid") {
+    if (v2Existing) {
+      orderId = v2Existing.id;
+      if (v2Existing.status !== "paid") {
         const { error: upErr } = await supabaseAdmin
           .from("premium_report_orders")
           .update({
