@@ -119,7 +119,7 @@ export function AccountModal({ open, onClose }: { open: boolean; onClose: () => 
                   {lang === "zh" ? "注册新账号" : "Create account"}
                 </Link>
                 <p className="text-center text-[10px] uppercase tracking-[0.24em] text-stone-warm/35">
-                  {lang === "zh" ? "邮箱魔法链接或 Google" : "Email magic link or Google"}
+                  {lang === "zh" ? "邮箱与密码，或使用 Google 登录" : "Email & password, or continue with Google"}
                 </p>
               </div>
             ) : (
