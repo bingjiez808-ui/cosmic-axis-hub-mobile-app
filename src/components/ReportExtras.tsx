@@ -1489,13 +1489,17 @@ export function SaveReadingBar({
   onOpenAccount,
   fingerprint,
   aiReport,
+  aiReportVersion,
   aiOutlook,
+  aiOutlookVersion,
 }: {
   reading: { name?: string; date?: string; time?: string; place?: string; lang?: "en" | "zh" };
   onOpenAccount: () => void;
   fingerprint?: string;
   aiReport?: import("@/lib/report.functions").ReportAI | null;
+  aiReportVersion?: string;
   aiOutlook?: OutlookAI | null;
+  aiOutlookVersion?: string;
 }) {
   const { t } = useLang();
   const { account, saveReading, saved } = useAccount();
@@ -1515,7 +1519,9 @@ export function SaveReadingBar({
       lang: reading.lang,
       fingerprint,
       aiReport: aiReport ?? undefined,
+      aiReportVersion: aiReportVersion,
       aiOutlook: aiOutlook ?? undefined,
+      aiOutlookVersion: aiOutlookVersion,
     });
     setJustSaved(true);
     setTimeout(() => setJustSaved(false), 2400);
