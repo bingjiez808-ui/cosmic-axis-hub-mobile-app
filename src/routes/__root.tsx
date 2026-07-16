@@ -313,7 +313,9 @@ function SiteNav() {
                 <img
                   src={account.avatar}
                   alt=""
-                  className="h-5 w-5 flex-none rounded-full border border-gold-dust/40 object-cover"
+                className="h-5 w-5 flex-none rounded-full border border-gold-dust/40 object-cover"
+                loading="lazy"
+                decoding="async"
                 />
               )}
               <span className="whitespace-nowrap">{accountLabel}</span>
