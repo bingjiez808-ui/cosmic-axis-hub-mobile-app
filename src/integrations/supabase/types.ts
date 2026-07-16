@@ -86,6 +86,192 @@ export type Database = {
         }
         Relationships: []
       }
+      premium_grant_audit: {
+        Row: {
+          action: string
+          admin_user_id: string
+          chart_id: string
+          created_at: string
+          id: string
+          note: string | null
+          order_id: string
+          target_user_id: string
+        }
+        Insert: {
+          action: string
+          admin_user_id: string
+          chart_id: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          order_id: string
+          target_user_id: string
+        }
+        Update: {
+          action?: string
+          admin_user_id?: string
+          chart_id?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          order_id?: string
+          target_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "premium_grant_audit_chart_id_fkey"
+            columns: ["chart_id"]
+            isOneToOne: false
+            referencedRelation: "charts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "premium_grant_audit_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "premium_report_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      premium_pdf_reports: {
+        Row: {
+          chart_id: string
+          content_json: Json | null
+          created_at: string
+          error_message: string | null
+          generated_at: string | null
+          id: string
+          model: string | null
+          order_id: string | null
+          pdf_storage_path: string | null
+          prompt_version: string
+          provider: string | null
+          report_version: string
+          source_report_id: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          chart_id: string
+          content_json?: Json | null
+          created_at?: string
+          error_message?: string | null
+          generated_at?: string | null
+          id?: string
+          model?: string | null
+          order_id?: string | null
+          pdf_storage_path?: string | null
+          prompt_version?: string
+          provider?: string | null
+          report_version?: string
+          source_report_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          chart_id?: string
+          content_json?: Json | null
+          created_at?: string
+          error_message?: string | null
+          generated_at?: string | null
+          id?: string
+          model?: string | null
+          order_id?: string | null
+          pdf_storage_path?: string | null
+          prompt_version?: string
+          provider?: string | null
+          report_version?: string
+          source_report_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "premium_pdf_reports_chart_id_fkey"
+            columns: ["chart_id"]
+            isOneToOne: false
+            referencedRelation: "charts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "premium_pdf_reports_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "premium_report_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "premium_pdf_reports_source_report_id_fkey"
+            columns: ["source_report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      premium_report_orders: {
+        Row: {
+          amount_cents: number
+          chart_id: string
+          created_at: string
+          currency: string
+          grant_note: string | null
+          granted_by: string | null
+          id: string
+          paid_at: string | null
+          product_version: string
+          provider: string | null
+          provider_order_id: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_cents?: number
+          chart_id: string
+          created_at?: string
+          currency?: string
+          grant_note?: string | null
+          granted_by?: string | null
+          id?: string
+          paid_at?: string | null
+          product_version?: string
+          provider?: string | null
+          provider_order_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_cents?: number
+          chart_id?: string
+          created_at?: string
+          currency?: string
+          grant_note?: string | null
+          granted_by?: string | null
+          id?: string
+          paid_at?: string | null
+          product_version?: string
+          provider?: string | null
+          provider_order_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "premium_report_orders_chart_id_fkey"
+            columns: ["chart_id"]
+            isOneToOne: false
+            referencedRelation: "charts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string

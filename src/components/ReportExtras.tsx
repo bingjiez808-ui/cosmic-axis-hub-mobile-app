@@ -39,6 +39,7 @@ const TINT_CLASSES: Record<string, { border: string; bg: string; text: string; d
 import { useLang, type Lang } from "@/lib/i18n";
 import { useAccount } from "@/lib/account";
 import { ChartZoomModal } from "@/components/charts/DestinyCharts";
+import { PremiumPdfCard } from "@/components/PremiumPdfCard";
 import { TAROT_78, type TarotCard } from "@/lib/tarot-deck";
 import { askOracle } from "@/lib/oracle.functions";
 import { TAROT_LIMITS, tarotConsume, tarotRemaining } from "@/lib/tarot-quota";
@@ -1895,23 +1896,7 @@ export function MembershipSection({
 
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <button
-            type="button"
-            onClick={exportPdf}
-            className="glass-card group flex items-center justify-between rounded-2xl p-6 text-left transition-colors hover:border-gold-dust/40"
-          >
-            <div>
-              <p className="mb-1 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
-                {t.mem_export_pdf}
-              </p>
-              <p className="font-serif text-lg text-stone-warm">
-                {lang === "zh" ? "打印或另存为 PDF" : "Print or save as PDF"}
-              </p>
-            </div>
-            <span className="grid size-10 place-items-center rounded-full border border-gold-dust/40 text-gold-dust transition-colors group-hover:bg-gold-dust group-hover:text-obsidian">
-              ↓
-            </span>
-          </button>
+          <PremiumPdfCard search={search} />
 
           <button
             type="button"
@@ -1932,6 +1917,7 @@ export function MembershipSection({
             </span>
           </button>
         </div>
+
       </div>
 
       {/* Sage-exclusive: Synastry relationship reading */}
