@@ -1497,7 +1497,13 @@ export function SaveReadingBar({
 type Plan = "free" | "sage" | "oracle";
 type PayMethod = "wechat" | "alipay" | "unionpay" | "visa";
 
-export function MembershipSection({ birthISO }: { birthISO?: string } = {}) {
+export function MembershipSection({
+  birthISO,
+  search,
+}: {
+  birthISO?: string;
+  search?: ReportSearchLike;
+} = {}) {
   const { lang, t } = useLang();
   const li = lang === "zh" ? 1 : 0;
   const { account, setPlan: persistPlan } = useAccount();
