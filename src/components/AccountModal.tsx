@@ -405,3 +405,92 @@ function TarotQuota({ accountKey, plan, lang }: { accountKey: string; plan: Plan
     </div>
   );
 }
+function MyPremiumReports({ open, lang }: { open: boolean; lang: Lang }) {
+  const [rows, setRows] = useState<MyPremiumReportRow[] | null>(null);
+  const [readerChartId, setReaderChartId] = useState<string | null>(null);
+  const [readerChartName, setReaderChartName] = useState<string | null>(null);
+  const openerRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    listPremiumReports()
+      .then((r) => setRows(r))
+      .catch(() => setRows([]));
+  }, [open]);
+
+  const heading = lang === "zh" ? "我的高级深度报告" : "My premium deep readings";
+  const empty = lang === "zh"
+    ? "还没有购买高级深度报告。前往任一命盘的报告页解锁 ¥79 深度解读。"
+    : "No premium deep readings yet. Unlock ¥79 on any chart's report page.";
+
+  return (
+    <div>
+      <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">{heading}</p>
+      {rows === null ? (
+        <p className="text-sm text-stone-warm/40">…</p>
+      ) : rows.length === 0 ? (
+        <p className="text-sm text-stone-warm/50">{empty}</p>
+      ) : (
+        <ul className="space-y-2">
+          {rows.map((r) => {
+            const status = r.report?.status ?? (r.order?.status === "paid" ? "pending" : null);
+            const label =
+              status === "completed"
+                ? lang === "zh" ? "查看完整报告" : "Open full reading"
+                : status === "generating"
+                  ? lang === "zh" ? "生成中…" : "Generating…"
+                  : status === "failed"
+                    ? lang === "zh" ? "可重试生成" : "Retry available"
+                    : r.order?.status === "paid"
+                      ? lang === "zh" ? "待生成" : "Not generated yet"
+                      : lang === "zh" ? "订单处理中" : "Order pending";
+            return (
+              <li key={r.chartId} className="rounded-2xl border border-white/10 bg-white/[0.02] p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-serif text-base italic text-stone-warm">
+                      {r.chartName ?? (lang === "zh" ? "未命名命盘" : "Untitled chart")}
+                    </p>
+                    <p className="truncate text-[10px] uppercase tracking-[0.24em] text-stone-warm/40">
+                      {[r.birthDate, r.birthPlace].filter(Boolean).join(" · ")}
+                      {" · "}
+                      {label}
+                    </p>
+                  </div>
+                  {status === "completed" ? (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        openerRef.current = e.currentTarget;
+                        setReaderChartId(r.chartId);
+                        setReaderChartName(r.chartName);
+                      }}
+                      className="flex-none rounded-full border border-gold-dust/40 px-3 py-1.5 text-[10px] uppercase tracking-[0.28em] text-gold-dust hover:bg-gold-dust/10"
+                    >
+                      {lang === "zh" ? "查看" : "Open"}
+                    </button>
+                  ) : (
+                    <span className="flex-none rounded-full border border-white/10 px-3 py-1.5 text-[10px] uppercase tracking-[0.28em] text-stone-warm/50">
+                      {r.order?.isLegacy ? (lang === "zh" ? "旧版" : "Legacy") : "—"}
+                    </span>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      {readerChartId && (
+        <PremiumReportReader
+          open={!!readerChartId}
+          chartId={readerChartId}
+          chartName={readerChartName}
+          onClose={() => {
+            setReaderChartId(null);
+            requestAnimationFrame(() => openerRef.current?.focus());
+          }}
+        />
+      )}
+    </div>
+  );
+}
