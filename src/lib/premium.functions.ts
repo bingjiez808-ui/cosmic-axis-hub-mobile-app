@@ -117,16 +117,35 @@ export const getPremiumStatus = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     await loadChartOwnedBy(userId, data.chartId); // ownership guard
 
-    const { data: orderRow } = await supabase
+    // Legacy v1 grants access ONLY when status='paid'. v1 pending /
+    // refunded / failed rows are historic artefacts and never count as
+    // a live entitlement or an in-progress order.
+    const { data: legacyPaid } = await supabase
       .from("premium_report_orders")
-      .select("id, status, provider, paid_at, product_version, amount_cents")
+      .select("id, status, provider, paid_at")
       .eq("user_id", userId)
       .eq("chart_id", data.chartId)
-      .in("product_version", PREMIUM_ALL_PRODUCT_VERSIONS as unknown as string[])
+      .in("product_version", PREMIUM_LEGACY_PRODUCT_VERSIONS as unknown as string[])
+      .eq("status", "paid")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    // Current v2 (¥79) product — pending or paid.
+    const { data: v2Active } = await supabase
+      .from("premium_report_orders")
+      .select("id, status, provider, paid_at")
+      .eq("user_id", userId)
+      .eq("chart_id", data.chartId)
+      .eq("product_version", PREMIUM_PRODUCT_VERSION)
       .in("status", ["pending", "paid"])
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
+
+    // Prefer the row that grants access. A legacy v1 paid entitlement is
+    // permanent; otherwise surface the live v2 order (pending or paid).
+    const effective = legacyPaid ?? v2Active ?? null;
 
     const { data: reportRow } = await supabase
       .from("premium_pdf_reports")
@@ -140,16 +159,12 @@ export const getPremiumStatus = createServerFn({ method: "POST" })
       productVersion: PREMIUM_PRODUCT_VERSION,
       priceCents: PREMIUM_PRICE_CENTS,
       currency: PREMIUM_CURRENCY,
-      order: orderRow
+      order: effective
         ? {
-            id: orderRow.id,
-            status: orderRow.status as PremiumStatus["order"] extends infer R
-              ? R extends { status: infer S }
-                ? S
-                : never
-              : never,
-            provider: orderRow.provider,
-            paidAt: orderRow.paid_at,
+            id: effective.id,
+            status: effective.status as "pending" | "paid" | "failed" | "refunded",
+            provider: effective.provider,
+            paidAt: effective.paid_at,
           }
         : null,
       report: reportRow
@@ -184,29 +199,44 @@ export const startPremiumCheckout = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // Idempotent lookup — return the existing active order if any,
-    // including a legacy v1 (¥99) purchase so a historic buyer never
-    // gets charged again.
-    const { data: existing } = await supabaseAdmin
+    // 1) Historic v1 (¥99) buyer already unlocked → never charge again.
+    //    Only v1 status='paid' counts. v1 pending/failed/refunded are
+    //    ignored entirely and MUST NOT block or be reused for v2.
+    const { data: legacyPaid } = await supabaseAdmin
       .from("premium_report_orders")
-      .select("id, status, product_version")
+      .select("id")
       .eq("user_id", userId)
       .eq("chart_id", data.chartId)
-      .in("product_version", PREMIUM_ALL_PRODUCT_VERSIONS as unknown as string[])
+      .in("product_version", PREMIUM_LEGACY_PRODUCT_VERSIONS as unknown as string[])
+      .eq("status", "paid")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (legacyPaid) return { kind: "already_paid", orderId: legacyPaid.id };
+
+    // 2) Existing v2 active order (pending or paid) → idempotent reuse.
+    const { data: v2Existing } = await supabaseAdmin
+      .from("premium_report_orders")
+      .select("id, status")
+      .eq("user_id", userId)
+      .eq("chart_id", data.chartId)
+      .eq("product_version", PREMIUM_PRODUCT_VERSION)
       .in("status", ["pending", "paid"])
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-    if (existing) {
-      if (existing.status === "paid") return { kind: "already_paid", orderId: existing.id };
+    if (v2Existing) {
+      if (v2Existing.status === "paid") return { kind: "already_paid", orderId: v2Existing.id };
       return {
         kind: "provider_unavailable",
-        orderId: existing.id,
+        orderId: v2Existing.id,
         message: "provider_pending_config",
       };
     }
 
-    // Amount, currency and product are fixed server-side.
+    // 3) Otherwise create a brand-new v2 (¥79) pending order.
+    //    Any legacy v1 pending row is intentionally left untouched.
+    //    Amount, currency and product are fixed server-side.
     const { data: inserted, error } = await supabaseAdmin
       .from("premium_report_orders")
       .insert({
