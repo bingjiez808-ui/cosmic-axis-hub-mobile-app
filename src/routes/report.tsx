@@ -62,6 +62,27 @@ function traditionIcon(name: string): LucideIcon {
   return Sparkles;
 }
 
+// Split a paragraph blob into readable sub-paragraphs (2 sentences each).
+// Preserves content — only inserts paragraph breaks between sentence groups.
+function splitParagraphs(text: string, groupSize = 2): string[] {
+  if (!text) return [];
+  // Respect explicit line breaks the model may have inserted.
+  const blocks = text.split(/\n{2,}|\r\n\r\n/).map((s) => s.trim()).filter(Boolean);
+  const out: string[] = [];
+  for (const block of blocks) {
+    // Sentence splitter for CJK + Latin punctuation, keeping the delimiter.
+    const parts = block.match(/[^。！？!?.]+[。！？!?.]?["'”’)）]*\s*/g);
+    if (!parts || parts.length <= groupSize) {
+      out.push(block);
+      continue;
+    }
+    for (let i = 0; i < parts.length; i += groupSize) {
+      out.push(parts.slice(i, i + groupSize).join("").trim());
+    }
+  }
+  return out;
+}
+
 import {
   ChartZoomModal,
   FiveElements,
@@ -1084,18 +1105,22 @@ function ReportPage() {
                   <span className="inline-block size-1.5 rotate-45 bg-gold-dust" aria-hidden="true" />
                   {t.synthesis}
                 </p>
-                <p className="reading-copy mb-8 text-base leading-relaxed text-stone-warm/80">
-                  {d.synthesis[li]}
-                </p>
+                <div className="reading-copy mb-8 space-y-4 text-base leading-relaxed text-stone-warm/80">
+                  {splitParagraphs(d.synthesis[li]).map((para, i) => (
+                    <p key={i}>{para}</p>
+                  ))}
+                </div>
 
                 <div className="rounded-2xl border border-gold-dust/25 bg-gradient-to-br from-gold-dust/[0.08] to-gold-dust/[0.02] p-5 md:p-6">
                   <p className="mb-3 flex items-center gap-2 text-[10px] uppercase tracking-[0.32em] text-gold-light">
                     <span className="size-1.5 rounded-full bg-gold-dust" />
                     {t.in_plain_words}
                   </p>
-                  <p className="reading-copy font-serif text-[15px] italic leading-[1.7] text-stone-warm/90 md:text-base">
-                    {d.plain[li]}
-                  </p>
+                  <div className="reading-copy space-y-3 font-serif text-[15px] italic leading-[1.7] text-stone-warm/90 md:text-base">
+                    {splitParagraphs(d.plain[li]).map((para, i) => (
+                      <p key={i}>{para}</p>
+                    ))}
+                  </div>
                 </div>
 
                 {d.details && d.details.length > 0 && (
