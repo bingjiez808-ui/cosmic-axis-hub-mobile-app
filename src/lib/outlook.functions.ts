@@ -148,7 +148,17 @@ Hard rules:
       { "key": "love",   "title": "爱情", "points": ["3 条"], "cautions": ["2 条"], "mitigations": ["2 条"] },
       { "key": "health", "title": "健康", "points": ["3 条"], "cautions": ["2 条"], "mitigations": ["2 条"] }
     ]
-  }
+  },
+  "watchlist": [
+    /* 5 条，覆盖未来 1-6 年的关键窗口，按时间升序 */
+    {
+      "year": "2026 · Q3",
+      "theme": "6-12 字主题",
+      "note": "1 句概述，必须点出该年的大运干支/流年干支或过境行运",
+      "detail": "2-3 句具体建议，引用此人本命盘特定行星/宫位与流年互动"
+    }
+    /* 共 5 项，year 字段用「YYYY · Q?」「YYYY 春/夏/秋/冬」或「YYYY–YYYY」等自然表达 */
+  ]
 }`;
 
     const schemaEn = `{
