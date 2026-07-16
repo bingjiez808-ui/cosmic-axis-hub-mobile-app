@@ -24,7 +24,8 @@ import {
 import { AccountModal } from "@/components/AccountModal";
 import { useLang } from "@/lib/i18n";
 import { generateReport, type ReportAI } from "@/lib/report.functions";
-import { buildReportCacheKey, buildReportRequest, buildReportSeed } from "@/lib/report-input";
+import { buildReportCacheKey, buildReportFingerprint, buildReportRequest, buildReportSeed } from "@/lib/report-input";
+import { useAccount } from "@/lib/account";
 
 
 type SearchParams = {
