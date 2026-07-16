@@ -19,14 +19,15 @@ import {
 ═══════════════════════════════════════════ */
 
 function useChartOutlook(search: ReportSearchLike | undefined, lang: Lang) {
-  const { findReadingByFingerprint, updateReadingAI } = useAccount();
+  const { findReading, updateReadingAI } = useAccount();
   const [outlook, setOutlook] = useState<OutlookAI | null>(null);
   const [state, setState] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const inflight = useRef(0);
+  const outlookLang = search?.lang ?? lang;
 
   const fingerprint = useMemo(
-    () => (search?.date ? buildReportFingerprint(search, lang) : ""),
-    [search, lang],
+    () => (search?.date ? buildReportFingerprint(search, outlookLang) : ""),
+    [search, outlookLang],
   );
 
   useEffect(() => {
@@ -37,18 +38,16 @@ function useChartOutlook(search: ReportSearchLike | undefined, lang: Lang) {
     }
     const cacheKey = `destiny-ai-outlook-v1::${fingerprint}`;
 
-    // 1. Saved reading (persisted across sessions). Fall back to localStorage
-    //    in case the account provider hasn't hydrated yet on first paint.
-    let savedHit = findReadingByFingerprint(fingerprint);
-    if (!savedHit) {
-      try {
-        const raw = typeof localStorage !== "undefined" ? localStorage.getItem("lod.saved_readings") : null;
-        if (raw) {
-          const list = JSON.parse(raw) as Array<{ fingerprint?: string; aiOutlook?: OutlookAI }>;
-          savedHit = list.find((s) => s.fingerprint === fingerprint) as typeof savedHit;
-        }
-      } catch { /* ignore */ }
-    }
+    // 1. Saved reading (persisted across sessions).
+    const savedHit = findReading({
+      id: search.readingId,
+      fingerprint,
+      name: search.name ?? "Anonymous",
+      date: search.date,
+      time: search.time,
+      place: search.place,
+      lang: outlookLang,
+    });
     if (savedHit?.aiOutlook) {
       setOutlook(savedHit.aiOutlook);
       setState("ready");
@@ -72,7 +71,7 @@ function useChartOutlook(search: ReportSearchLike | undefined, lang: Lang) {
     const reqId = ++inflight.current;
     setOutlook(null);
     setState("loading");
-    generateChartOutlook({ data: buildReportRequest(search, lang) })
+    generateChartOutlook({ data: buildReportRequest(search, outlookLang) })
       .then((res) => {
         if (reqId !== inflight.current) return;
         setOutlook(res);

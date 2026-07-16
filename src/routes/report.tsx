@@ -488,6 +488,7 @@ function Stars({ n }: { n: number }) {
 function ReportPage() {
   const search = Route.useSearch();
   const { lang, setLang, t } = useLang();
+  const reportLang = search.lang ?? lang;
   const li = lang === "zh" ? 1 : 0;
   const [accOpen, setAccOpen] = useState(false);
   // Default to Sun (index 0) so the left panel shows its reading on load.
@@ -521,26 +522,25 @@ function ReportPage() {
   const [aiError, setAiError] = useState<string | null>(null);
   const [aiProgress, setAiProgress] = useState({ done: 0, total: 0 });
   const latestReqRef = useRef(0);
-  const { findReadingByFingerprint, updateReadingAI } = useAccount();
+  const { findReading, updateReadingAI } = useAccount();
 
   const runReport = useCallback((force = false) => {
     if (!search.date) return;
-    const cacheKey = buildReportCacheKey(search, lang);
-    const fingerprint = buildReportFingerprint(search, lang);
+    const cacheKey = buildReportCacheKey(search, reportLang);
+    const fingerprint = buildReportFingerprint(search, reportLang);
 
     if (!force) {
       // 1. Persisted saved-reading cache (survives across sessions).
-      //    Read from context first; if provider hasn't hydrated yet, fall back to localStorage directly.
-      let savedHit = findReadingByFingerprint(fingerprint);
-      if (!savedHit) {
-        try {
-          const raw = typeof localStorage !== "undefined" ? localStorage.getItem("lod.saved_readings") : null;
-          if (raw) {
-            const list = JSON.parse(raw) as Array<{ fingerprint?: string; aiReport?: ReportAI }>;
-            savedHit = list.find((s) => s.fingerprint === fingerprint) as typeof savedHit;
-          }
-        } catch { /* ignore */ }
-      }
+      //    Match by saved id first, then fingerprint, then visible birth fields.
+      const savedHit = findReading({
+        id: search.readingId,
+        fingerprint,
+        name: search.name ?? "Anonymous",
+        date: search.date,
+        time: search.time,
+        place: search.place,
+        lang: reportLang,
+      });
       if (savedHit?.aiReport) {
         setAi(savedHit.aiReport);
         setAiState("ready");
@@ -562,7 +562,7 @@ function ReportPage() {
     }
 
     const reqId = ++latestReqRef.current;
-    const req = buildReportRequest(search, lang);
+    const req = buildReportRequest(search, reportLang);
     const totalSteps = DIM_KEYS.length + 1; // dimensions + summary
     const acc: { summary: string; dimensions: ReportDimensionAI[] } = {
       summary: "",
@@ -631,7 +631,7 @@ function ReportPage() {
       updateReadingAI(fingerprint, { aiReport: finalReport, fingerprint });
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [seed, lang, search.readingId]);
+  }, [seed, reportLang, search.readingId]);
 
 
   useEffect(() => {
@@ -771,19 +771,33 @@ function ReportPage() {
       </header>
 
       {/* Save-this-reading bar */}
+      {(() => {
+        const fingerprint = search.date ? buildReportFingerprint(search, reportLang) : undefined;
+        const savedReading = findReading({
+          id: search.readingId,
+          fingerprint,
+          name: search.name ?? "Anonymous",
+          date: search.date,
+          time: search.time,
+          place: search.place,
+          lang: reportLang,
+        });
+        return (
       <SaveReadingBar
         reading={{
           name: search.name,
           date: search.date,
           time: search.time,
           place: search.place,
-          lang,
+          lang: reportLang,
         }}
         onOpenAccount={() => setAccOpen(true)}
-        fingerprint={search.date ? buildReportFingerprint(search, lang) : undefined}
-        aiReport={ai}
-        aiOutlook={findReadingByFingerprint(search.date ? buildReportFingerprint(search, lang) : "")?.aiOutlook}
+        fingerprint={fingerprint}
+        aiReport={ai ?? savedReading?.aiReport}
+        aiOutlook={savedReading?.aiOutlook}
       />
+        );
+      })()}
 
       <AccountModal open={accOpen} onClose={() => setAccOpen(false)} />
 

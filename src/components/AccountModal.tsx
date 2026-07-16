@@ -157,7 +157,7 @@ export function AccountModal({ open, onClose }: { open: boolean; onClose: () => 
                   ) : (
                     <ul className="space-y-2">
                       {saved.map((s) => {
-                        const q: Record<string, string> = { name: s.name };
+                        const q: Record<string, string> = { name: s.name, readingId: s.id };
                         if (s.date) q.date = s.date;
                         if (s.time) q.time = s.time;
                         if (s.place) q.place = s.place;
