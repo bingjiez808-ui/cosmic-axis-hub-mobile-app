@@ -27,7 +27,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { ElderCompanion } from "@/components/ElderCompanion";
+// Sage tree-hole is mounted globally in src/routes/__root.tsx.
 
 const DIM_ICONS: Record<string, LucideIcon> = {
   character: Sparkles,
@@ -1328,8 +1328,7 @@ function ReportPage() {
         t={t}
       />
 
-      {/* Floating sage companion — decorative, interactive */}
-      <ElderCompanion lang={lang} />
+      {/* Floating sage companion is provided globally in __root.tsx */}
     </div>
   );
 }

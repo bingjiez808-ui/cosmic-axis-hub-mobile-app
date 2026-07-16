@@ -40,6 +40,7 @@ import { useLang, type Lang } from "@/lib/i18n";
 import { useAccount } from "@/lib/account";
 import { ChartZoomModal } from "@/components/charts/DestinyCharts";
 import { PremiumPdfCard } from "@/components/PremiumPdfCard";
+import { SageAvatar } from "@/components/SageAvatar";
 import { TAROT_78, type TarotCard } from "@/lib/tarot-deck";
 import { askOracle } from "@/lib/oracle.functions";
 import { TAROT_LIMITS, tarotConsume, tarotRemaining } from "@/lib/tarot-quota";
@@ -1711,6 +1712,114 @@ export function SaveReadingBar({
    Membership + PDF export + AI follow-up
 ═══════════════════════════════════════════ */
 
+/**
+ * AskSageCard — the "your private Sage" invitation panel that sits next to
+ * the premium PDF card on the report page. Uses the shared SageAvatar so
+ * identity stays consistent with the global tree-hole entry.
+ */
+function AskSageCard({
+  lang,
+  locked,
+  onOpen,
+}: {
+  lang: Lang;
+  locked: string;
+  onOpen: () => void;
+}) {
+  const zh = lang === "zh";
+  const title = zh ? "你的专属智者" : "Your private Sage";
+  const subtitle = zh ? "Your private Sage" : "你的专属智者";
+  const desc = zh
+    ? "他已经阅读了你的完整命盘，可以继续追问感情、事业、财富、家庭、健康与关键时间窗口。"
+    : "The Sage has already read your full chart. Keep asking — love, career, wealth, family, health, and the key time windows ahead.";
+  const cta = zh ? "开始向智者提问" : "Ask the Sage";
+  const ctaSub = zh ? "Ask the Sage" : "开始向智者提问";
+  const chips = zh
+    ? [
+        "下一段感情什么时候出现？",
+        "今年最好的赚钱窗口在哪里？",
+        "现在适合换工作还是深耕？",
+      ]
+    : [
+        "When does my next relationship arrive?",
+        "Where is this year's best window for wealth?",
+        "Should I switch jobs or go deeper now?",
+      ];
+
+  return (
+    <div
+      role="group"
+      className="glass-card group relative flex flex-col overflow-hidden rounded-2xl p-6 transition-colors hover:border-gold-dust/40"
+    >
+      <div
+        className="pointer-events-none absolute -right-16 -top-16 h-52 w-52 rounded-full opacity-60 blur-3xl"
+        style={{
+          background:
+            "radial-gradient(circle at 50% 50%, color-mix(in oklab, var(--nebula-purple) 55%, transparent), transparent 70%)",
+        }}
+        aria-hidden="true"
+      />
+      <div
+        className="pointer-events-none absolute -left-12 bottom-0 h-40 w-40 rounded-full opacity-40 blur-3xl"
+        style={{
+          background:
+            "radial-gradient(circle at 50% 50%, color-mix(in oklab, var(--gold-dust) 45%, transparent), transparent 70%)",
+        }}
+        aria-hidden="true"
+      />
+
+      <div className="relative flex items-start gap-4">
+        <SageAvatar className="h-16 w-16 shrink-0 rounded-full border border-gold-dust/40 bg-obsidian/60 sm:h-20 sm:w-20" />
+        <div className="min-w-0 flex-1">
+          <p className="flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust/80">
+            <span>{title}</span>
+            <span className="text-stone-warm/40">/</span>
+            <span className="normal-case tracking-normal text-stone-warm/60">{subtitle}</span>
+            <span className="rounded-full border border-gold-dust/40 px-2 py-0.5 text-[8px] tracking-[0.28em] text-gold-light">
+              {locked}
+            </span>
+          </p>
+          <p className="mt-2 font-serif text-[1.05rem] leading-relaxed text-stone-warm sm:text-lg">
+            {desc}
+          </p>
+        </div>
+      </div>
+
+      <div className="relative mt-5 flex flex-wrap gap-2">
+        {chips.map((q) => (
+          <button
+            key={q}
+            type="button"
+            onClick={onOpen}
+            className="rounded-full border border-gold-dust/25 bg-obsidian/40 px-3 py-1.5 text-left text-[11px] leading-snug text-stone-warm/85 transition-colors hover:border-gold-dust/60 hover:text-gold-light"
+          >
+            {q}
+          </button>
+        ))}
+      </div>
+
+      <div className="relative mt-6 flex items-center justify-between gap-3">
+        <button
+          type="button"
+          onClick={onOpen}
+          className="inline-flex items-center gap-2 rounded-full bg-gold-dust px-5 py-2.5 text-[11px] uppercase tracking-[0.24em] text-obsidian transition-colors hover:bg-gold-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-light"
+        >
+          <span>{cta}</span>
+          <span className="text-[9px] tracking-[0.28em] text-obsidian/60">·</span>
+          <span className="text-[9px] normal-case tracking-[0.14em] text-obsidian/70">{ctaSub}</span>
+        </button>
+        <span
+          aria-hidden="true"
+          className="hidden font-serif text-3xl italic text-gold-dust/70 sm:inline"
+        >
+          ✦
+        </span>
+      </div>
+    </div>
+  );
+}
+
+
 type Plan = "free" | "sage" | "oracle";
 type PayMethod = "wechat" | "alipay" | "unionpay" | "visa";
 
@@ -1898,24 +2007,7 @@ export function MembershipSection({
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <PremiumPdfCard search={search} />
 
-          <button
-            type="button"
-            onClick={() => setChatOpen(true)}
-            className="glass-card group flex items-center justify-between rounded-2xl p-6 text-left transition-colors hover:border-gold-dust/40"
-          >
-            <div>
-              <p className="mb-1 flex items-center gap-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
-                {t.mem_ai_followup}
-                <span className="rounded-full border border-gold-dust/40 px-2 py-0.5 text-[8px] tracking-[0.28em] text-gold-light">
-                  {t.mem_ai_locked}
-                </span>
-              </p>
-              <p className="font-serif text-lg text-stone-warm">{t.mem_ai_followup_desc}</p>
-            </div>
-            <span className="grid size-10 place-items-center rounded-full border border-gold-dust/40 text-gold-dust transition-colors group-hover:bg-gold-dust group-hover:text-obsidian">
-              ✦
-            </span>
-          </button>
+          <AskSageCard lang={lang} locked={t.mem_ai_locked} onOpen={() => setChatOpen(true)} />
         </div>
 
       </div>

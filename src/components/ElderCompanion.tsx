@@ -2,9 +2,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Send, Loader2 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
+import { useRouterState } from "@tanstack/react-router";
 
 import { elderChat } from "@/lib/elder.functions";
 import { supabase } from "@/integrations/supabase/client";
+import { SageAvatar } from "@/components/SageAvatar";
 
 /**
  * ElderCompanion — small floating "sage" avatar (bottom-left) that opens
@@ -35,6 +37,8 @@ const OPENERS_EN = [
 ];
 
 export function ElderCompanion({ lang }: { lang: "en" | "zh" }) {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const hidden = pathname.startsWith("/admin");
   const tips = lang === "zh" ? TIPS_ZH : TIPS_EN;
   const [open, setOpen] = useState(false);
   const [tipIdx, setTipIdx] = useState(() => Math.floor(Math.random() * tips.length));
@@ -116,11 +120,15 @@ export function ElderCompanion({ lang }: { lang: "en" | "zh" }) {
     }
   };
 
+  if (hidden) return null;
+
+  const treeHoleLabel = lang === "zh" ? "智者树洞" : "Sage's tree hole";
+
   return (
     <div
       className="pointer-events-none fixed bottom-2 left-2 z-40 flex items-end gap-2 print:hidden sm:bottom-6 sm:left-4"
       style={{
-        paddingBottom: "env(safe-area-inset-bottom)",
+        paddingBottom: "max(env(safe-area-inset-bottom), 0.25rem)",
         paddingLeft: "env(safe-area-inset-left)",
       }}
     >
@@ -130,36 +138,18 @@ export function ElderCompanion({ lang }: { lang: "en" | "zh" }) {
           setOpen((v) => !v);
           if (!open) setTipIdx((i) => (i + 1) % tips.length);
         }}
-        aria-label={lang === "zh" ? "智者" : "The elder"}
-        className="pointer-events-auto relative grid size-9 place-items-center rounded-full border border-gold-dust/40 bg-obsidian/80 shadow-[0_8px_20px_-8px_rgba(0,0,0,0.6)] backdrop-blur-md transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-light sm:size-11"
+        aria-label={treeHoleLabel}
+        title={treeHoleLabel}
+        className="pointer-events-auto group relative flex items-center gap-2 rounded-full border border-gold-dust/40 bg-obsidian/80 py-1 pl-1 pr-1 shadow-[0_8px_20px_-8px_rgba(0,0,0,0.6)] backdrop-blur-md transition-transform hover:scale-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-light sm:pr-3 motion-reduce:transition-none"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.4 }}
       >
-        <span
-          className="absolute inset-0 rounded-full animate-pulse-gold"
-          style={{
-            background:
-              "radial-gradient(circle at 50% 40%, color-mix(in oklab, var(--gold-dust) 45%, transparent) 0%, transparent 65%)",
-          }}
-          aria-hidden="true"
-        />
-        <svg viewBox="0 0 64 64" className="relative size-5 sm:size-7" aria-hidden="true">
-          <defs>
-            <linearGradient id="sage-robe" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="color-mix(in oklab, var(--gold-light) 80%, transparent)" />
-              <stop offset="100%" stopColor="color-mix(in oklab, var(--gold-dust) 20%, transparent)" />
-            </linearGradient>
-          </defs>
-          <path d="M12 60 C 16 44, 20 38, 32 38 C 44 38, 48 44, 52 60 Z" fill="url(#sage-robe)" opacity="0.85" />
-          <path d="M22 34 C 24 46, 28 52, 32 54 C 36 52, 40 46, 42 34 Z" fill="color-mix(in oklab, var(--stone-warm) 85%, transparent)" opacity="0.9" />
-          <circle cx="32" cy="26" r="9" fill="color-mix(in oklab, var(--gold-light) 70%, transparent)" />
-          <path d="M20 26 C 22 14, 30 10, 32 10 C 34 10, 42 14, 44 26 Z" fill="color-mix(in oklab, var(--nebula-purple) 60%, transparent)" />
-          <path d="M32 15 l1 2.5 l2.6 0.3 l-1.9 1.8 l0.5 2.6 l-2.2 -1.3 l-2.2 1.3 l0.5 -2.6 l-1.9 -1.8 l2.6 -0.3 z" fill="var(--gold-light)" />
-          <circle cx="29" cy="26" r="0.9" fill="var(--obsidian)" />
-          <circle cx="35" cy="26" r="0.9" fill="var(--obsidian)" />
-        </svg>
-        <span className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-gold-light shadow-[0_0_8px_var(--gold-light)] animate-pulse-gold" />
+        <SageAvatar className="h-9 w-9 shrink-0 rounded-full sm:h-11 sm:w-11 motion-safe:animate-pulse-gold motion-reduce:animate-none" />
+        <span className="hidden text-[10px] uppercase tracking-[0.28em] text-gold-dust/90 sm:inline">
+          {treeHoleLabel}
+        </span>
+        <span className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-gold-light shadow-[0_0_8px_var(--gold-light)] motion-safe:animate-pulse-gold" />
       </motion.button>
 
       <AnimatePresence>
