@@ -425,3 +425,15 @@ h1, h2, h3, h4 {
 .detail-card li {
   text-wrap: pretty;
 }
+.detail-card-strength {
+  border-color: color-mix(in oklab, oklch(0.78 0.14 155) 22%, transparent);
+  background:
+    linear-gradient(180deg, color-mix(in oklab, oklch(0.78 0.14 155) 6%, transparent), transparent 60%),
+    color-mix(in oklab, var(--obsidian) 42%, transparent);
+}
+.detail-card-caution {
+  border-color: color-mix(in oklab, oklch(0.82 0.14 75) 22%, transparent);
+  background:
+    linear-gradient(180deg, color-mix(in oklab, oklch(0.82 0.14 75) 6%, transparent), transparent 60%),
+    color-mix(in oklab, var(--obsidian) 42%, transparent);
+}
