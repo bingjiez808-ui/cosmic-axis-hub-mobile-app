@@ -37,8 +37,18 @@ function useChartOutlook(search: ReportSearchLike | undefined, lang: Lang) {
     }
     const cacheKey = `destiny-ai-outlook-v1::${fingerprint}`;
 
-    // 1. Saved reading (persisted across sessions).
-    const savedHit = findReadingByFingerprint(fingerprint);
+    // 1. Saved reading (persisted across sessions). Fall back to localStorage
+    //    in case the account provider hasn't hydrated yet on first paint.
+    let savedHit = findReadingByFingerprint(fingerprint);
+    if (!savedHit) {
+      try {
+        const raw = typeof localStorage !== "undefined" ? localStorage.getItem("lod.saved_readings") : null;
+        if (raw) {
+          const list = JSON.parse(raw) as Array<{ fingerprint?: string; aiOutlook?: OutlookAI }>;
+          savedHit = list.find((s) => s.fingerprint === fingerprint) as typeof savedHit;
+        }
+      } catch { /* ignore */ }
+    }
     if (savedHit?.aiOutlook) {
       setOutlook(savedHit.aiOutlook);
       setState("ready");
