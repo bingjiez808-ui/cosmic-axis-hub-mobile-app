@@ -142,7 +142,7 @@ function RitualPage() {
         const s = JSON.parse(raw);
         if (s && typeof s === "object") {
           if (s.values) setValues((v) => ({ ...v, ...s.values }));
-          if (typeof s.step === "number") setStep(Math.max(0, Math.min(s.step, 3)));
+          if (typeof s.step === "number") setStep(Math.max(0, Math.min(s.step, 4)));
         }
       }
     } catch {}
