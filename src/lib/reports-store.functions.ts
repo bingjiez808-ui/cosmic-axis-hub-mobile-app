@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { createHash } from "crypto";
+import { sha256 } from "@noble/hashes/sha2.js";
+import { bytesToHex } from "@noble/hashes/utils.js";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Json } from "@/integrations/supabase/types";
@@ -51,7 +52,7 @@ export function normalizeForHash(input: ChartInput) {
 
 export function computeChartHash(input: ChartInput): string {
   const canonical = JSON.stringify(normalizeForHash(input));
-  return createHash("sha256").update(canonical).digest("hex");
+  return bytesToHex(sha256(new TextEncoder().encode(canonical)));
 }
 
 /* --------------------------------------------------------------------- */

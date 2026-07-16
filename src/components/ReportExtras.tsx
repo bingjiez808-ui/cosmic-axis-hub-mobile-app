@@ -2000,17 +2000,21 @@ export function MembershipSection({
           })}
         </div>
 
-        {/* Teaser cards — hidden fully unlocked tier features under blur for lower tiers */}
-        <TierTeasers lang={lang} li={li} plan={plan} onUpgrade={handleUpgradeClick} />
+        {/* Top row — three equal-width cards: Synastry teaser, 90-day teaser, Ask Sage. */}
+        <TierTeasers
+          lang={lang}
+          li={li}
+          plan={plan}
+          onUpgrade={handleUpgradeClick}
+          onOpenChat={() => setChatOpen(true)}
+          chatLocked={t.mem_ai_locked}
+        />
 
-
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <PremiumPdfCard search={search} />
-
-          <AskSageCard lang={lang} locked={t.mem_ai_locked} onOpen={() => setChatOpen(true)} />
-        </div>
+        {/* Full-width premium PDF bar below the three cards. */}
+        <PremiumPdfCard search={search} variant="bar" />
 
       </div>
+
 
       {/* Sage-exclusive: Synastry relationship reading */}
       {(plan === "sage" || plan === "oracle") && (
@@ -2064,17 +2068,25 @@ export function MembershipSection({
   );
 }
 
-/* Tier teasers — blurred previews of locked perks */
+/* Tier teasers — three equal-width cards on the report page:
+   1. Sage · Synastry teaser
+   2. Oracle · 90-day windows teaser
+   3. Your private Sage — Ask the Sage entry
+   Cards use a stable grid-cols-3 at md+ and stack single-column on mobile. */
 function TierTeasers({
   lang,
   li,
   plan,
   onUpgrade,
+  onOpenChat,
+  chatLocked,
 }: {
   lang: Lang;
   li: 0 | 1;
   plan: Plan;
   onUpgrade: (target: Plan) => void;
+  onOpenChat: () => void;
+  chatLocked: string;
 }) {
   const items: {
     target: Plan;
@@ -2108,22 +2120,22 @@ function TierTeasers({
   ];
 
   return (
-    <div className="mb-10 grid grid-cols-1 gap-4 md:grid-cols-2">
+    <div className="mb-10 grid grid-cols-1 items-stretch gap-4 md:grid-cols-3">
       {items.map((it) => (
         <div
           key={it.kicker[0]}
-          className="relative overflow-hidden rounded-2xl border border-gold-dust/20 bg-gradient-to-b from-white/[0.04] to-white/[0.01] p-6"
+          className="relative flex flex-col overflow-hidden rounded-2xl border border-gold-dust/20 bg-gradient-to-b from-white/[0.04] to-white/[0.01] p-6"
         >
-          <div className="mb-3 flex items-center justify-between">
-            <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <p className="min-w-0 truncate text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
               {it.kicker[li]}
             </p>
-            <span className="rounded-full border border-gold-dust/40 px-2 py-0.5 text-[9px] uppercase tracking-[0.28em] text-gold-light">
+            <span className="shrink-0 rounded-full border border-gold-dust/40 px-2 py-0.5 text-[9px] uppercase tracking-[0.28em] text-gold-light">
               {it.target === "sage" ? (lang === "zh" ? "贤者" : "Sage") : lang === "zh" ? "神谕者" : "Oracle"}
             </span>
           </div>
           <p className="mb-4 font-serif text-lg italic text-stone-warm">{it.title[li]}</p>
-          <ul className="mb-5 space-y-2 text-sm text-stone-warm/70">
+          <ul className="mb-5 flex-1 space-y-2 text-sm text-stone-warm/70">
             {it.bullets.map((b) => (
               <li key={b[0]} className="flex gap-2">
                 <span className="mt-1 size-1.5 shrink-0 rounded-full bg-gold-dust/70" />
@@ -2131,44 +2143,30 @@ function TierTeasers({
               </li>
             ))}
           </ul>
-          {!it.unlocked && (
-            <>
-              <div className="relative mb-4 h-16 overflow-hidden rounded-xl border border-white/5 bg-white/[0.02]">
-                <div className="absolute inset-0 space-y-2 p-3 blur-[6px] select-none">
-                  <div className="h-1.5 w-3/4 rounded-full bg-gradient-to-r from-gold-dust to-nebula-purple" />
-                  <div className="h-1.5 w-2/3 rounded-full bg-gradient-to-r from-gold-dust to-nebula-purple" />
-                  <div className="h-1.5 w-4/5 rounded-full bg-gradient-to-r from-gold-dust to-nebula-purple" />
-                  <div className="h-1.5 w-1/2 rounded-full bg-gradient-to-r from-gold-dust to-nebula-purple" />
-                </div>
-                <div className="absolute inset-0 grid place-items-center bg-obsidian/40">
-                  <span className="text-[10px] uppercase tracking-[0.32em] text-gold-light">
-                    {lang === "zh"
-                      ? `⌛ ${it.target === "sage" ? "贤者" : "神谕者"}可见细节`
-                      : `⌛ Details on ${it.target === "sage" ? "Sage" : "Oracle"}`}
-                  </span>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => onUpgrade(it.target)}
-                className="w-full rounded-full border border-gold-dust/40 px-5 py-2.5 text-[10px] uppercase tracking-[0.32em] text-gold-dust transition-colors hover:bg-gold-dust hover:text-obsidian"
-              >
-                {lang === "zh"
-                  ? `升级至${it.target === "sage" ? "贤者" : "神谕者"}，查看详细分析`
-                  : `Upgrade to ${it.target === "sage" ? "Sage" : "Oracle"} for the full reading`}
-              </button>
-            </>
-          )}
-          {it.unlocked && (
-            <p className="text-[10px] uppercase tracking-[0.32em] text-gold-light">
+          {!it.unlocked ? (
+            <button
+              type="button"
+              onClick={() => onUpgrade(it.target)}
+              className="mt-auto w-full min-h-[44px] rounded-full border border-gold-dust/40 px-5 py-2.5 text-[10px] uppercase tracking-[0.32em] text-gold-dust transition-colors hover:bg-gold-dust hover:text-obsidian"
+            >
+              {lang === "zh"
+                ? `升级至${it.target === "sage" ? "贤者" : "神谕者"}`
+                : `Upgrade to ${it.target === "sage" ? "Sage" : "Oracle"}`}
+            </button>
+          ) : (
+            <p className="mt-auto text-[10px] uppercase tracking-[0.32em] text-gold-light">
               {lang === "zh" ? "✓ 已解锁 —— 详见下方" : "✓ Unlocked — see below"}
             </p>
           )}
         </div>
       ))}
+
+      {/* Third card — Ask the Sage */}
+      <AskSageCard lang={lang} locked={chatLocked} onOpen={onOpenChat} />
     </div>
   );
 }
+
 
 /* Sign-in prompt (shown when a not-logged-in user clicks Upgrade) */
 function SignInPromptModal({

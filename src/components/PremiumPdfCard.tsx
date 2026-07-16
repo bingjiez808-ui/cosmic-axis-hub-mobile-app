@@ -1,5 +1,5 @@
 /**
- * Premium ¥99 one-time PDF unlock card.
+ * Premium ¥79 one-time PDF unlock card.
  *
  * Drives all state from the server via `getPremiumStatus`:
  *   - No order         → show pitch + "Unlock" CTA
@@ -8,6 +8,10 @@
  *   - Generating       → poll
  *   - Completed + pdf  → "Download PDF" via short-lived signed URL
  *   - Completed no pdf → "Content ready, PDF renderer pending config"
+ *
+ * Two visual variants:
+ *   - variant="card"  legacy tall card (kept for backwards-compat)
+ *   - variant="bar"   full-width horizontal bar shown on the report page
  *
  * Nothing here writes to the database or trusts client-provided flags.
  */
@@ -32,36 +36,40 @@ type ReportSearchLike = {
 };
 
 const TXT = {
-  kicker: { zh: "¥99 · 一次解锁", en: "¥99 · one-time unlock" },
+  kicker: { zh: "¥79 · 一次解锁", en: "¥79 · one-time unlock" },
   title: { zh: "高级 AI 深度 PDF 报告", en: "Premium AI Deep-Reading PDF" },
-  price: { zh: "¥99 · 一次性买断当前命盘", en: "¥99 · one-time purchase for this chart" },
+  price: { zh: "¥79 · 一次性买断当前命盘", en: "¥79 · one-time purchase for this chart" },
   pitch: {
     zh: "在你已有的网页报告基础上，由资深 AI 综合西方占星、印度占星、八字与紫微斗数，生成一份约 20–30 页的深度个人 PDF。生成一次，永久保存并可无限次重新下载。",
     en: "Building on your existing web reading, our premium AI blends Western astrology, Vedic Jyotish, BaZi and Zi Wei Dou Shu into a ~20–30 page personal PDF. Generated once, saved forever, redownload anytime.",
   },
   bullets: {
     zh: [
-      "执行摘要 · 四体系分章 · 跨体系共识与矛盾",
-      "性格 / 事业 / 财富 / 关系 / 家庭 / 健康 / 使命 / 长周期",
+      "20–30 页深度解读 · 四体系综合",
+      "性格 / 事业 / 财富 / 关系 / 家庭 / 健康",
       "未来 12 个月与关键时间窗口",
-      "反思提问 · 方法论 · 明确免责声明",
+      "生成一次 · 永久保存 · 可重复下载",
     ],
     en: [
-      "Executive summary · four tradition chapters · convergences & tensions",
-      "Character / vocation / wealth / relationships / family / health / mission / cycles",
+      "20–30 pages · four-tradition synthesis",
+      "Character / vocation / wealth / relationships / family / health",
       "Next twelve months + key time windows",
-      "Reflection prompts · methodology · explicit disclaimers",
+      "Generate once · save forever · redownload anytime",
     ],
   },
+  chips: {
+    zh: ["20–30 页深度解读", "四体系综合", "未来 12 个月", "永久保存"],
+    en: ["20–30 pages", "Four traditions", "Next 12 months", "Saved forever"],
+  },
   time: { zh: "生成通常需要 2–4 分钟", en: "Generation typically takes 2–4 minutes" },
-  cta_unlock: { zh: "解锁 ¥99 高级 PDF", en: "Unlock ¥99 Premium PDF" },
+  cta_unlock: { zh: "¥79 解锁高级 PDF", en: "Unlock ¥79 Premium PDF" },
   cta_generate: { zh: "开始生成我的 PDF", en: "Generate my PDF" },
   cta_download: { zh: "下载 PDF", en: "Download PDF" },
   cta_redownload: { zh: "重新下载", en: "Redownload" },
   busy_generate: { zh: "正在生成中，请稍候…", en: "Generating your report…" },
   provider_pending: {
-    zh: "支付渠道配置中：¥99 订单已记录，正式支付通道上线前，请联系管理员完成付款并人工开通。",
-    en: "Payment provider being configured: your ¥99 intent is recorded. Contact an admin to complete payment offline while the live checkout is finalised.",
+    zh: "支付渠道配置中：¥79 订单已记录，正式支付通道上线前，请联系管理员完成付款并人工开通。",
+    en: "Payment provider being configured: your ¥79 intent is recorded. Contact an admin to complete payment offline while the live checkout is finalised.",
   },
   once_note: {
     zh: "非订阅 · 非按次收费 · 同一命盘只需支付一次。",
@@ -103,7 +111,13 @@ type UiState =
   | { kind: "failed"; chartId: string; message: string }
   | { kind: "error"; message: string };
 
-export function PremiumPdfCard({ search }: { search?: ReportSearchLike }) {
+export function PremiumPdfCard({
+  search,
+  variant = "card",
+}: {
+  search?: ReportSearchLike;
+  variant?: "card" | "bar";
+}) {
   const { lang } = useLang();
   const [state, setState] = useState<UiState>({ kind: "loading" });
   const [busy, setBusy] = useState(false);
@@ -230,6 +244,65 @@ export function PremiumPdfCard({ search }: { search?: ReportSearchLike }) {
     }
   };
 
+  if (variant === "bar") {
+    return (
+      <div className="glass-card relative overflow-hidden rounded-3xl p-5 md:p-6">
+        <div className="flex flex-col gap-5 md:flex-row md:items-center md:gap-6">
+          {/* Left: title + price */}
+          <div className="min-w-0 md:flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+                {pick(TXT.kicker, lang)}
+              </p>
+              <StatePill state={state} lang={lang} />
+            </div>
+            <h3 className="mt-1 font-serif text-lg italic text-stone-warm md:text-xl">
+              {pick(TXT.title, lang)}
+            </h3>
+            <p className="mt-1 text-[11px] uppercase tracking-[0.24em] text-gold-light">
+              {pick(TXT.price, lang)}
+            </p>
+            <p className="mt-2 text-[12.5px] leading-relaxed text-stone-warm/70">
+              {pick(TXT.pitch, lang)}
+            </p>
+          </div>
+
+          {/* Middle: chips */}
+          <ul className="flex flex-wrap gap-2 md:max-w-[38%] md:flex-1">
+            {(lang === "zh" ? TXT.chips.zh : TXT.chips.en).map((c) => (
+              <li
+                key={c}
+                className="rounded-full border border-gold-dust/25 bg-gold-dust/[0.05] px-3 py-1 text-[11px] text-stone-warm/80"
+              >
+                ✧ {c}
+              </li>
+            ))}
+          </ul>
+
+          {/* Right: action */}
+          <div className="flex w-full flex-col items-stretch gap-2 md:w-auto md:min-w-[13rem] md:items-end">
+            <ActionRow
+              state={state}
+              busy={busy}
+              lang={lang}
+              onUnlock={onUnlock}
+              onGenerate={onGenerate}
+              onDownload={onDownload}
+              fullWidth
+            />
+            <p className="text-center text-[10px] uppercase tracking-[0.24em] text-stone-warm/40 md:text-right">
+              {pick(TXT.time, lang)}
+            </p>
+          </div>
+        </div>
+
+        <p className="mt-4 border-t border-white/5 pt-3 text-[11px] leading-relaxed text-stone-warm/40">
+          {pick(TXT.disclaimer, lang)} · {pick(TXT.once_note, lang)}
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="glass-card rounded-3xl p-6 md:p-8">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -307,6 +380,7 @@ function ActionRow({
   onUnlock,
   onGenerate,
   onDownload,
+  fullWidth = false,
 }: {
   state: UiState;
   busy: boolean;
@@ -314,7 +388,11 @@ function ActionRow({
   onUnlock: () => void;
   onGenerate: () => void;
   onDownload: () => void;
+  fullWidth?: boolean;
 }) {
+  const btnBase = `rounded-full bg-gold-dust text-[11px] uppercase tracking-[0.28em] text-obsidian hover:bg-gold-light disabled:opacity-50 min-h-[44px] px-6 py-2.5 ${
+    fullWidth ? "w-full text-center" : ""
+  }`;
   if (state.kind === "loading") {
     return <p className="text-sm text-stone-warm/50">…</p>;
   }
@@ -325,7 +403,7 @@ function ActionRow({
         onClick={() => {
           if (typeof window !== "undefined") window.dispatchEvent(new Event("lod:open-account"));
         }}
-        className="rounded-full border border-gold-dust/50 px-5 py-2.5 text-[10px] uppercase tracking-[0.28em] text-gold-dust hover:bg-gold-dust/10"
+        className={`rounded-full border border-gold-dust/50 px-5 py-2.5 text-[10px] uppercase tracking-[0.28em] text-gold-dust hover:bg-gold-dust/10 min-h-[44px] ${fullWidth ? "w-full" : ""}`}
       >
         {pick(TXT.need_auth, lang)}
       </button>
@@ -340,7 +418,7 @@ function ActionRow({
         type="button"
         disabled={busy}
         onClick={onUnlock}
-        className="rounded-full bg-gold-dust px-6 py-2.5 text-[11px] uppercase tracking-[0.32em] text-obsidian hover:bg-gold-light disabled:opacity-50"
+        className={btnBase}
       >
         {pick(TXT.cta_unlock, lang)}
       </button>
@@ -348,19 +426,19 @@ function ActionRow({
   }
   if (state.kind === "order_pending") {
     return (
-      <p className="rounded-2xl border border-nebula-purple/40 bg-nebula-purple/[0.08] p-4 text-sm text-stone-warm/80">
+      <p className={`rounded-2xl border border-nebula-purple/40 bg-nebula-purple/[0.08] p-3 text-[12px] leading-relaxed text-stone-warm/80 ${fullWidth ? "w-full" : ""}`}>
         {state.message}
       </p>
     );
   }
   if (state.kind === "paid_no_report" || state.kind === "failed") {
     return (
-      <div className="flex flex-wrap items-center gap-3">
+      <div className={`flex flex-wrap items-center gap-3 ${fullWidth ? "w-full" : ""}`}>
         <button
           type="button"
           disabled={busy}
           onClick={onGenerate}
-          className="rounded-full bg-gold-dust px-6 py-2.5 text-[11px] uppercase tracking-[0.32em] text-obsidian hover:bg-gold-light disabled:opacity-50"
+          className={btnBase}
         >
           {pick(TXT.cta_generate, lang)}
         </button>
@@ -372,7 +450,7 @@ function ActionRow({
   }
   if (state.kind === "generating") {
     return (
-      <div className="flex items-center gap-3 rounded-full border border-gold-dust/30 px-5 py-2.5 text-[11px] uppercase tracking-[0.32em] text-gold-dust">
+      <div className={`flex items-center gap-3 rounded-full border border-gold-dust/30 px-5 py-2.5 text-[11px] uppercase tracking-[0.32em] text-gold-dust min-h-[44px] ${fullWidth ? "w-full justify-center" : ""}`}>
         <span className="inline-block size-2 animate-pulse rounded-full bg-gold-dust" />
         {pick(TXT.busy_generate, lang)}
       </div>
@@ -380,7 +458,7 @@ function ActionRow({
   }
   if (state.kind === "renderer_pending") {
     return (
-      <p className="rounded-2xl border border-gold-dust/30 bg-gold-dust/[0.05] p-4 text-sm text-stone-warm/70">
+      <p className={`rounded-2xl border border-gold-dust/30 bg-gold-dust/[0.05] p-3 text-[12px] leading-relaxed text-stone-warm/70 ${fullWidth ? "w-full" : ""}`}>
         {pick(TXT.renderer_pending, lang)}
       </p>
     );
@@ -391,7 +469,7 @@ function ActionRow({
         type="button"
         disabled={busy}
         onClick={onDownload}
-        className="rounded-full bg-gold-dust px-6 py-2.5 text-[11px] uppercase tracking-[0.32em] text-obsidian hover:bg-gold-light disabled:opacity-50"
+        className={btnBase}
       >
         {pick(TXT.cta_download, lang)}
       </button>

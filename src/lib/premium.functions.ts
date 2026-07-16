@@ -28,10 +28,23 @@ import { guardrailsFor, safeMessage } from "./ai-guardrails";
 import { enforceRateLimit } from "./rate-limit.server";
 import { isEmailVerified } from "./reports-store.functions";
 
-export const PREMIUM_PRODUCT_VERSION = "premium_pdf_v1";
+// Canonical product identity.
+// v2 (¥79) is the current live product. v1 (¥99) rows remain in the DB
+// untouched — historic paid/refunded orders keep their original amount
+// and product_version. Queries below accept BOTH versions so historic
+// buyers never lose access; new orders and grants only create v2.
+export const PREMIUM_PRODUCT_VERSION = "premium_pdf_v2";
+export const PREMIUM_LEGACY_PRODUCT_VERSIONS = ["premium_pdf_v1"] as const;
+export const PREMIUM_ALL_PRODUCT_VERSIONS = [
+  PREMIUM_PRODUCT_VERSION,
+  ...PREMIUM_LEGACY_PRODUCT_VERSIONS,
+] as const;
+// PDF report content structure is unchanged between v1 and v2, so the
+// report_version stays at v1 — a user whose v1 report is already
+// completed keeps their download after the price migration.
 export const PREMIUM_REPORT_VERSION = "premium_pdf_v1";
 export const PREMIUM_PROMPT_VERSION = "v1";
-export const PREMIUM_PRICE_CENTS = 9900;
+export const PREMIUM_PRICE_CENTS = 7900;
 export const PREMIUM_CURRENCY = "CNY";
 
 /* --------------------------------------------------------------------- */
@@ -106,11 +119,13 @@ export const getPremiumStatus = createServerFn({ method: "POST" })
 
     const { data: orderRow } = await supabase
       .from("premium_report_orders")
-      .select("id, status, provider, paid_at")
+      .select("id, status, provider, paid_at, product_version, amount_cents")
       .eq("user_id", userId)
       .eq("chart_id", data.chartId)
-      .eq("product_version", PREMIUM_PRODUCT_VERSION)
+      .in("product_version", PREMIUM_ALL_PRODUCT_VERSIONS as unknown as string[])
       .in("status", ["pending", "paid"])
+      .order("created_at", { ascending: false })
+      .limit(1)
       .maybeSingle();
 
     const { data: reportRow } = await supabase
@@ -169,14 +184,18 @@ export const startPremiumCheckout = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // Idempotent lookup — return the existing active order if any.
+    // Idempotent lookup — return the existing active order if any,
+    // including a legacy v1 (¥99) purchase so a historic buyer never
+    // gets charged again.
     const { data: existing } = await supabaseAdmin
       .from("premium_report_orders")
-      .select("id, status")
+      .select("id, status, product_version")
       .eq("user_id", userId)
       .eq("chart_id", data.chartId)
-      .eq("product_version", PREMIUM_PRODUCT_VERSION)
+      .in("product_version", PREMIUM_ALL_PRODUCT_VERSIONS as unknown as string[])
       .in("status", ["pending", "paid"])
+      .order("created_at", { ascending: false })
+      .limit(1)
       .maybeSingle();
     if (existing) {
       if (existing.status === "paid") return { kind: "already_paid", orderId: existing.id };
@@ -238,14 +257,18 @@ export const grantPremiumReportAccess = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!chart || chart.user_id !== data.userId) throw new Error("chart_not_found_for_user");
 
-    // Upsert the active order for this user+chart+product, then mark paid.
+    // Find any existing active order across v1 (legacy) or v2 (current).
+    // If a legacy paid v1 order exists we treat it as already granted
+    // and just append an audit record — never duplicate the purchase.
     const { data: existing } = await supabaseAdmin
       .from("premium_report_orders")
-      .select("id, status")
+      .select("id, status, product_version, amount_cents")
       .eq("user_id", data.userId)
       .eq("chart_id", data.chartId)
-      .eq("product_version", PREMIUM_PRODUCT_VERSION)
+      .in("product_version", PREMIUM_ALL_PRODUCT_VERSIONS as unknown as string[])
       .in("status", ["pending", "paid"])
+      .order("created_at", { ascending: false })
+      .limit(1)
       .maybeSingle();
 
     let orderId: string;
@@ -571,11 +594,13 @@ export const generatePremiumPdf = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: order } = await supabaseAdmin
       .from("premium_report_orders")
-      .select("id, status")
+      .select("id, status, product_version")
       .eq("user_id", userId)
       .eq("chart_id", data.chartId)
-      .eq("product_version", PREMIUM_PRODUCT_VERSION)
-      .in("status", ["paid"])
+      .in("product_version", PREMIUM_ALL_PRODUCT_VERSIONS as unknown as string[])
+      .eq("status", "paid")
+      .order("created_at", { ascending: false })
+      .limit(1)
       .maybeSingle();
     if (!order) throw new Error("order_not_paid");
 

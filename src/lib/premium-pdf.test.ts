@@ -1,5 +1,5 @@
 /**
- * Premium ¥99 PDF renderer unit tests.
+ * Premium ¥79 PDF renderer unit tests.
  *
  * The server functions themselves depend on Supabase + AI Gateway and
  * are covered by E2E; here we assert the pure-helper contract of the

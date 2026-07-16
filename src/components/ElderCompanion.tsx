@@ -140,15 +140,12 @@ export function ElderCompanion({ lang }: { lang: "en" | "zh" }) {
         }}
         aria-label={treeHoleLabel}
         title={treeHoleLabel}
-        className="pointer-events-auto group relative flex items-center gap-2 rounded-full border border-gold-dust/40 bg-obsidian/80 py-1 pl-1 pr-1 shadow-[0_8px_20px_-8px_rgba(0,0,0,0.6)] backdrop-blur-md transition-transform hover:scale-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-light sm:pr-3 motion-reduce:transition-none"
+        className="pointer-events-auto group relative grid h-12 w-12 place-items-center rounded-full border border-gold-dust/40 bg-obsidian/80 p-0 shadow-[0_8px_20px_-8px_rgba(0,0,0,0.6)] backdrop-blur-md transition-transform hover:scale-[1.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-light sm:h-14 sm:w-14 motion-reduce:transition-none"
         initial={false}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
       >
-        <SageAvatar className="h-9 w-9 shrink-0 rounded-full sm:h-11 sm:w-11 motion-safe:animate-pulse-gold motion-reduce:animate-none" />
-        <span className="hidden text-[10px] uppercase tracking-[0.28em] text-gold-dust/90 sm:inline">
-          {treeHoleLabel}
-        </span>
+        <SageAvatar className="h-full w-full motion-safe:animate-pulse-gold motion-reduce:animate-none" />
         <span className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-gold-light shadow-[0_0_8px_var(--gold-light)] motion-safe:animate-pulse-gold" />
       </motion.button>
 
