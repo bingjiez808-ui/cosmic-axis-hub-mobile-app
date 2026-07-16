@@ -234,7 +234,7 @@ function PrivacyPage() {
           <h2 className="mb-3 font-serif text-2xl text-stone-warm">{c.contactHeading}</h2>
           <div className="glass-card space-y-1 rounded-2xl p-5 text-[14px] text-stone-warm/80">
             {c.contactBody.map((line) => (
-              <p key={line}>{line}</p>
+              <p key={line}>{renderWithMailto(line, LEGAL_CONTACT.privacyEmail)}</p>
             ))}
           </div>
         </section>
