@@ -281,14 +281,14 @@ function SiteNav() {
 
       {/* Full top navigation bar — only at top of page */}
       <nav
-        className={`fixed top-0 left-1/2 z-50 -translate-x-1/2 p-3 md:p-6 transition-all duration-500 ${
+        className={`fixed left-1/2 top-0 z-50 w-full max-w-[100vw] -translate-x-1/2 px-3 py-3 md:p-6 transition-all duration-500 ${
           showTopBar ? "opacity-100 translate-y-0" : "-translate-y-full opacity-0 pointer-events-none"
         }`}
       >
-        <div className="glass-card flex max-w-[96vw] items-center gap-3 rounded-full px-3 py-2 md:gap-6 md:px-6 md:py-2.5">
+        <div className="glass-card mx-auto flex w-full max-w-[calc(100vw-1.5rem)] items-center gap-2 rounded-full px-3 py-2 md:w-auto md:max-w-[96vw] md:gap-6 md:px-6 md:py-2.5">
           <Link
             to="/"
-            className="flex-none whitespace-nowrap font-serif text-sm tracking-normal text-stone-warm"
+            className="min-w-0 flex-1 truncate font-serif text-sm tracking-normal text-stone-warm md:flex-none md:whitespace-nowrap"
           >
             Destiny<span className="text-gold-dust">·</span>Library
           </Link>
@@ -304,7 +304,7 @@ function SiteNav() {
           <button
             type="button"
             onClick={openAcc}
-            className="flex flex-none items-center gap-2 whitespace-nowrap rounded-full border border-gold-dust/40 px-3 py-1 text-[10px] tracking-[0.24em] text-gold-dust transition-colors hover:bg-gold-dust/10"
+            className="hidden flex-none items-center gap-2 whitespace-nowrap rounded-full border border-gold-dust/40 px-3 py-1 text-[10px] tracking-[0.24em] text-gold-dust transition-colors hover:bg-gold-dust/10 md:flex"
           >
             {account?.avatar && (
               <img
@@ -315,18 +315,36 @@ function SiteNav() {
             )}
             <span className="whitespace-nowrap">{accountLabel}</span>
           </button>
-          <LanguageToggle />
-        </div>
+          <div className="hidden md:block"><LanguageToggle /></div>
 
-        {/* Mobile menu row */}
-        <div className="mt-2 flex justify-center md:hidden">
-          <div className="glass-card flex max-w-[96vw] items-center gap-4 overflow-x-auto rounded-full px-4 py-1.5">
-            <Link to="/traditions" className={linkClass}>{t.nav_traditions}</Link>
-            <Link to="/ritual" className={linkClass}>{t.nav_ritual}</Link>
-            <Link to="/community" className={linkClass}>{t.nav_community}</Link>
-            <Link to="/about" className={linkClass}>{t.nav_about}</Link>
-            {showAdmin && <Link to="/admin" className={linkClass + " text-gold-dust"}>{adminLabel}</Link>}
-          </div>
+          {/* Mobile-only account chip (compact) */}
+          <button
+            type="button"
+            onClick={openAcc}
+            aria-label={accountLabel}
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-gold-dust/40 text-gold-dust md:hidden"
+          >
+            {account?.avatar ? (
+              <img src={account.avatar} alt="" className="h-7 w-7 rounded-full object-cover" />
+            ) : (
+              <span className="text-[10px] tracking-[0.16em]">{lang === "zh" ? "我" : "ME"}</span>
+            )}
+          </button>
+
+          {/* Mobile hamburger — opens the side rail */}
+          <button
+            type="button"
+            aria-label={lang === "zh" ? "打开菜单" : "Open menu"}
+            aria-expanded={drawerOpen}
+            onClick={() => setDrawerOpen((v) => !v)}
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-gold-dust/40 text-gold-dust md:hidden"
+          >
+            <span className="flex flex-col items-center gap-[3px]">
+              <span className="block h-[1.5px] w-4 bg-current" />
+              <span className="block h-[1.5px] w-4 bg-current" />
+              <span className="block h-[1.5px] w-4 bg-current" />
+            </span>
+          </button>
         </div>
       </nav>
 
