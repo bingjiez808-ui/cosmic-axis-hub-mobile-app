@@ -210,7 +210,7 @@ export const beginReport = createServerFn({ method: "POST" })
 
 const SaveReportInput = z.object({
   reportId: z.string().uuid(),
-  report_json: z.unknown(),
+  report_json: z.custom<Json>((v) => v !== undefined),
   model: z.string().max(120).optional(),
   provider: z.string().max(120).optional(),
 });
