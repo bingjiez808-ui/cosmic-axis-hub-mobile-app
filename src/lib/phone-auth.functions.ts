@@ -103,8 +103,9 @@ export const sendPhoneOtp = createServerFn({ method: "POST" })
       body,
     });
     if (!res.ok) {
-      const text = await res.text();
-      console.error(`Twilio send failed [${res.status}]:`, text);
+      // Log only the status; the Twilio error body echoes the phone number,
+      // which we deliberately keep out of logs.
+      console.error(`Twilio send failed [${res.status}]`);
       throw new Error(`短信发送失败：${res.status}`);
     }
     return { ok: true as const };
