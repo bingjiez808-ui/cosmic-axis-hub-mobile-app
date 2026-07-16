@@ -247,6 +247,9 @@ function AdminPage() {
         </div>
       </div>
 
+      <PremiumOrdersSection reloadKey={reload} onReload={() => setReload((n) => n + 1)} />
+
+
       {editing && (
         <EditDrawer
           row={editing}
