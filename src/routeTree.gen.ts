@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TraditionsRouteImport } from './routes/traditions'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SynthesisRouteImport } from './routes/synthesis'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as RitualRouteImport } from './routes/ritual'
@@ -31,6 +32,11 @@ import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.
 const TraditionsRoute = TraditionsRouteImport.update({
   id: '/traditions',
   path: '/traditions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SynthesisRoute = SynthesisRouteImport.update({
@@ -132,6 +138,7 @@ export interface FileRoutesByFullPath {
   '/ritual': typeof RitualRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/synthesis': typeof SynthesisRoute
+  '/terms': typeof TermsRoute
   '/traditions': typeof TraditionsRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -151,6 +158,7 @@ export interface FileRoutesByTo {
   '/ritual': typeof RitualRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/synthesis': typeof SynthesisRoute
+  '/terms': typeof TermsRoute
   '/traditions': typeof TraditionsRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -172,6 +180,7 @@ export interface FileRoutesById {
   '/ritual': typeof RitualRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/synthesis': typeof SynthesisRoute
+  '/terms': typeof TermsRoute
   '/traditions': typeof TraditionsRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -193,6 +202,7 @@ export interface FileRouteTypes {
     | '/ritual'
     | '/sitemap.xml'
     | '/synthesis'
+    | '/terms'
     | '/traditions'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
@@ -212,6 +222,7 @@ export interface FileRouteTypes {
     | '/ritual'
     | '/sitemap.xml'
     | '/synthesis'
+    | '/terms'
     | '/traditions'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
@@ -232,6 +243,7 @@ export interface FileRouteTypes {
     | '/ritual'
     | '/sitemap.xml'
     | '/synthesis'
+    | '/terms'
     | '/traditions'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
@@ -253,6 +265,7 @@ export interface RootRouteChildren {
   RitualRoute: typeof RitualRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   SynthesisRoute: typeof SynthesisRoute
+  TermsRoute: typeof TermsRoute
   TraditionsRoute: typeof TraditionsRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -268,6 +281,13 @@ declare module '@tanstack/react-router' {
       path: '/traditions'
       fullPath: '/traditions'
       preLoaderRoute: typeof TraditionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/synthesis': {
@@ -415,6 +435,7 @@ const rootRouteChildren: RootRouteChildren = {
   RitualRoute: RitualRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   SynthesisRoute: SynthesisRoute,
+  TermsRoute: TermsRoute,
   TraditionsRoute: TraditionsRoute,
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
