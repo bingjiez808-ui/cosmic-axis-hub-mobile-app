@@ -5,6 +5,7 @@ import {
   houseForSign,
 } from "@/components/charts/DestinyCharts";
 import { solarToLunarInfo } from "@/lib/lunar";
+import { REPORT_AI_VERSION } from "@/lib/ai-cache-version";
 
 export type ReportSearchLike = {
   name?: string;
