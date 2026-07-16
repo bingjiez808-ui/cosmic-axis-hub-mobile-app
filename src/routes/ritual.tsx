@@ -118,10 +118,10 @@ function RitualPage() {
     time: "",
     place: "",
   });
-  const [quiz, setQuiz] = useState<string[]>(["", "", "", "", ""]);
-  // 0..4 = quiz Q1..Q5, 5..8 = intake
+  const [quiz] = useState<string[]>(["", "", "", "", ""]);
+  // Quiz has been retired — the flow is intake-only now.
   const [step, setStep] = useState(0);
-  const [skipQuiz, setSkipQuiz] = useState(false);
+  const skipQuiz = true;
   const [restored, setRestored] = useState(false);
 
   // Restore draft from sessionStorage (client-only, avoids hydration mismatch)
@@ -132,9 +132,7 @@ function RitualPage() {
         const s = JSON.parse(raw);
         if (s && typeof s === "object") {
           if (s.values) setValues((v) => ({ ...v, ...s.values }));
-          if (Array.isArray(s.quiz) && s.quiz.length === QUIZ.length) setQuiz(s.quiz);
-          if (typeof s.step === "number") setStep(Math.max(0, Math.min(s.step, QUIZ.length + 3)));
-          if (typeof s.skipQuiz === "boolean") setSkipQuiz(s.skipQuiz);
+          if (typeof s.step === "number") setStep(Math.max(0, Math.min(s.step, 3)));
         }
       }
     } catch {}
@@ -282,73 +280,7 @@ function noOrphan(s: string) {
 
 
 
-            {isQuizStep && (() => {
-              const q = QUIZ[quizIdx];
-              const isFirstQuiz = quizIdx === 0;
-              return (
-                <>
-                  <p className="mb-4 text-[10px] uppercase tracking-[0.42em] text-gold-dust">
-                    {q.kicker[li]}
-                  </p>
-                  {isFirstQuiz && (
-                    <p className="mx-auto mb-6 max-w-lg text-xs leading-relaxed italic text-stone-warm/60">
-                      {lang === "zh"
-                        ? "接下来五题不是测验，也没有对错 —— 只用于让 AI 在合成四大体系之后，对你个人的偏差做一次微调。"
-                        : "The next five questions aren't a test — they're used to fine-tune the AI's synthesis against your personal deviations."}
-                      <button
-                        type="button"
-                        onClick={() => setSkipQuiz(true)}
-                        className="ml-2 not-italic text-stone-warm/50 underline underline-offset-4 transition-colors hover:text-gold-dust"
-                      >
-                        {lang === "zh" ? "跳过 →" : "Skip →"}
-                      </button>
-                    </p>
-                  )}
-                  <h1 className="mx-auto mb-4 max-w-[16ch] text-balance font-serif text-xl italic leading-tight text-stone-warm sm:max-w-xl sm:text-2xl md:text-4xl" style={{ wordBreak: "keep-all", overflowWrap: "break-word" }}>
-                    {noOrphan(q.prompt[li])}
-                  </h1>
-                  <p className="mx-auto mb-6 text-xs italic text-stone-warm/40">
-                    {`${quizIdx + 1} / ${QUIZ.length}`}
-                  </p>
-
-                  <div className="mx-auto flex max-w-sm flex-col gap-3 text-left md:max-w-lg">
-                    {q.options.map((opt) => {
-                      const active = quiz[quizIdx] === opt.id;
-                      return (
-                        <button
-                          key={opt.id}
-                          onClick={() =>
-                            setQuiz((s) => {
-                              const next = [...s];
-                              next[quizIdx] = opt.id;
-                              return next;
-                            })
-                          }
-                          className={`glass-card flex items-start gap-4 rounded-2xl px-5 py-4 text-left transition-all ${
-                            active
-                              ? "border-gold-dust/60 bg-gold-dust/10"
-                              : "hover:border-gold-dust/30"
-                          }`}
-                        >
-                          <span
-                            className={`mt-0.5 grid size-6 shrink-0 place-items-center rounded-full border text-[10px] tracking-widest transition-colors ${
-                              active
-                                ? "border-gold-dust bg-gold-dust text-obsidian"
-                                : "border-white/20 text-stone-warm/60"
-                            }`}
-                          >
-                            {opt.id}
-                          </span>
-                          <span className="text-sm leading-relaxed text-stone-warm/85">
-                            {opt.label[li]}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </>
-              );
-            })()}
+            {/* Quiz retired — intake step only. */}
 
             {isIntakeStep && currentQ && (
               <>
