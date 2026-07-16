@@ -2,6 +2,65 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { motion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Sparkles,
+  Compass,
+  Coins,
+  Heart,
+  Activity,
+  TreePine,
+  Sprout,
+  Flame,
+  Sun,
+  Moon,
+  Layers,
+  Star,
+  Check,
+  AlertTriangle,
+  ChevronDown,
+  type LucideIcon,
+} from "lucide-react";
+
+const DIM_ICONS: Record<string, LucideIcon> = {
+  character: Sparkles,
+  vocation: Compass,
+  wealth: Coins,
+  love: Heart,
+  health: Activity,
+  parents: TreePine,
+  children: Sprout,
+  mission: Flame,
+};
+
+const TRADITION_ICONS: Record<string, LucideIcon> = {
+  Astrology: Sun,
+  astrology: Sun,
+  "Western astrology": Sun,
+  西方占星: Sun,
+  占星: Sun,
+  Jyotish: Moon,
+  "Vedic Jyotish": Moon,
+  印度占星: Moon,
+  吠陀: Moon,
+  BaZi: Layers,
+  Bazi: Layers,
+  八字: Layers,
+  "Zi Wei": Star,
+  ZiWei: Star,
+  "Zi Wei Dou Shu": Star,
+  紫微: Star,
+  紫微斗数: Star,
+};
+
+function traditionIcon(name: string): LucideIcon {
+  if (TRADITION_ICONS[name]) return TRADITION_ICONS[name];
+  const k = name.toLowerCase();
+  if (k.includes("astro") || k.includes("占星")) return Sun;
+  if (k.includes("jyot") || k.includes("vedic") || k.includes("印度") || k.includes("吠陀")) return Moon;
+  if (k.includes("bazi") || k.includes("八字") || k.includes("pillar")) return Layers;
+  if (k.includes("zi") || k.includes("紫微") || k.includes("dou")) return Star;
+  return Sparkles;
+}
 
 import {
   ChartZoomModal,
@@ -950,20 +1009,28 @@ function ReportPage() {
             transition={{ duration: 0.8, delay: idx * 0.04, ease: [0.32, 0.72, 0, 1] }}
             className={`glass-card overflow-hidden rounded-3xl p-8 md:p-12 ${pending ? "opacity-70" : ""}`}
           >
-            <div className="mb-8 flex flex-wrap items-baseline justify-between gap-4 border-b border-white/10 pb-6">
-              <div>
-                <p className="mb-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
-                  <span>{String(idx + 1).padStart(2, "0")} · {d.title[li]}</span>
-                  {pending && (
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-gold-dust/30 px-2 py-0.5 text-[9px] tracking-[0.28em] text-gold-dust/80">
-                      <span className="size-1.5 animate-pulse rounded-full bg-gold-dust" />
-                      {lang === "zh" ? "生成中" : "Writing"}
-                    </span>
-                  )}
-                </p>
-                <h2 className="font-serif text-2xl italic text-stone-warm md:text-3xl">
-                  {d.headline[li]}
-                </h2>
+            <div className="mb-8 flex flex-wrap items-start justify-between gap-4 border-b border-white/10 pb-6">
+              <div className="flex min-w-0 items-start gap-4">
+                <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl border border-gold-dust/25 bg-gradient-to-br from-gold-dust/[0.12] to-transparent text-gold-light shadow-[0_0_24px_-12px_hsl(45_70%_60%/0.5)]">
+                  {(() => {
+                    const Icon = DIM_ICONS[d.key] ?? Sparkles;
+                    return <Icon size={22} strokeWidth={1.5} />;
+                  })()}
+                </div>
+                <div className="min-w-0">
+                  <p className="mb-2 flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+                    <span>{String(idx + 1).padStart(2, "0")} · {d.title[li]}</span>
+                    {pending && (
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-gold-dust/30 px-2 py-0.5 text-[9px] tracking-[0.28em] text-gold-dust/80">
+                        <span className="size-1.5 animate-pulse rounded-full bg-gold-dust" />
+                        {lang === "zh" ? "生成中" : "Writing"}
+                      </span>
+                    )}
+                  </p>
+                  <h2 className="font-serif text-2xl italic text-stone-warm md:text-3xl">
+                    {d.headline[li]}
+                  </h2>
+                </div>
               </div>
               <Stars n={d.stars} />
             </div>
@@ -975,13 +1042,24 @@ function ReportPage() {
                 <p className="mb-4 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
                   {t.evidence_across}
                 </p>
-                <ul className="mb-8 space-y-3 text-sm">
-                  {d.evidence.map((e) => (
-                    <li key={e.tradition[0]} className="border-l border-gold-dust/30 pl-4">
-                      <p className="font-serif text-gold-light">{e.tradition[li]}</p>
-                      <p className="text-stone-warm/60">{e.note[li]}</p>
-                    </li>
-                  ))}
+                <ul className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {d.evidence.map((e) => {
+                    const TIcon = traditionIcon(e.tradition[0]);
+                    return (
+                      <li
+                        key={e.tradition[0]}
+                        className="rounded-2xl border border-gold-dust/15 bg-white/[0.02] p-4 transition-colors hover:border-gold-dust/30"
+                      >
+                        <div className="mb-2 flex items-center gap-2 text-gold-light">
+                          <TIcon size={14} strokeWidth={1.5} />
+                          <span className="font-serif text-[11px] uppercase tracking-[0.22em]">
+                            {e.tradition[li]}
+                          </span>
+                        </div>
+                        <p className="text-sm leading-relaxed text-stone-warm/70">{e.note[li]}</p>
+                      </li>
+                    );
+                  })}
                 </ul>
 
                 <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
@@ -1002,14 +1080,15 @@ function ReportPage() {
 
               {/* Right: synthesis + plain-language */}
               <div className="lg:col-span-3">
-                <p className="mb-4 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+                <p className="mb-4 flex items-center gap-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+                  <span className="inline-block size-1.5 rotate-45 bg-gold-dust" aria-hidden="true" />
                   {t.synthesis}
                 </p>
                 <p className="reading-copy mb-8 text-base leading-relaxed text-stone-warm/80">
                   {d.synthesis[li]}
                 </p>
 
-                <div className="rounded-2xl border border-gold-dust/20 bg-gold-dust/[0.04] p-5 md:p-6">
+                <div className="rounded-2xl border border-gold-dust/25 bg-gradient-to-br from-gold-dust/[0.08] to-gold-dust/[0.02] p-5 md:p-6">
                   <p className="mb-3 flex items-center gap-2 text-[10px] uppercase tracking-[0.32em] text-gold-light">
                     <span className="size-1.5 rounded-full bg-gold-dust" />
                     {t.in_plain_words}
@@ -1020,30 +1099,53 @@ function ReportPage() {
                 </div>
 
                 {d.details && d.details.length > 0 && (
-                  <div
-                    className={`detail-grid mt-6 ${d.details.length === 3 ? "detail-grid-3" : ""}`}
-                    role="list"
-                  >
-                    {d.details.map((block) => (
-                      <div
-                        key={block.label[0]}
-                        role="listitem"
-                        className="detail-card"
-                      >
-                        <p className="text-[10px] uppercase tracking-[0.3em] text-gold-dust/70">
-                          {block.label[li]}
-                        </p>
-                        <ul className="space-y-1.5 text-stone-warm/80">
-                          {block.items.map((it) => (
-                            <li key={it[0]} className="flex items-start gap-2">
-                              <span className="mt-[7px] size-1 shrink-0 rounded-full bg-gold-dust" aria-hidden="true" />
-                              <span>{it[li]}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ))}
-                  </div>
+                  <details className="group mt-6 overflow-hidden rounded-2xl border border-gold-dust/15 bg-white/[0.02] transition-colors open:border-gold-dust/30 open:bg-white/[0.03]">
+                    <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 text-[10px] uppercase tracking-[0.32em] text-gold-dust/80 hover:text-gold-light [&::-webkit-details-marker]:hidden">
+                      <span className="flex items-center gap-2">
+                        <Layers size={12} strokeWidth={1.5} />
+                        {lang === "zh" ? "展开细节 · 通道 / 警惕" : "Unfold detail · channels / cautions"}
+                      </span>
+                      <ChevronDown size={14} className="transition-transform group-open:rotate-180" />
+                    </summary>
+                    <div
+                      className={`detail-grid px-5 pb-5 ${d.details.length === 3 ? "detail-grid-3" : ""}`}
+                      role="list"
+                    >
+                      {d.details.map((block, bIdx) => {
+                        const isCaution = bIdx > 0;
+                        const ItemIcon = isCaution ? AlertTriangle : Check;
+                        return (
+                          <div
+                            key={block.label[0]}
+                            role="listitem"
+                            className={`detail-card ${isCaution ? "detail-card-caution" : "detail-card-strength"}`}
+                          >
+                            <p
+                              className={`flex items-center gap-2 text-[10px] uppercase tracking-[0.3em] ${
+                                isCaution ? "text-amber-200/85" : "text-emerald-200/85"
+                              }`}
+                            >
+                              <ItemIcon size={12} strokeWidth={2} />
+                              {block.label[li]}
+                            </p>
+                            <ul className="space-y-1.5 text-stone-warm/80">
+                              {block.items.map((it) => (
+                                <li key={it[0]} className="flex items-start gap-2">
+                                  <span
+                                    className={`mt-[7px] size-1 shrink-0 rounded-full ${
+                                      isCaution ? "bg-amber-300/70" : "bg-emerald-300/70"
+                                    }`}
+                                    aria-hidden="true"
+                                  />
+                                  <span>{it[li]}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </details>
                 )}
               </div>
             </div>

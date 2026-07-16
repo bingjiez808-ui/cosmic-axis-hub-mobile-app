@@ -1,5 +1,41 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  Briefcase,
+  HeartPulse,
+  HeartHandshake,
+  Coins,
+  Moon,
+  Sparkles,
+  ChevronDown,
+  type LucideIcon,
+} from "lucide-react";
+
+function watchlistIcon(theme: string): { Icon: LucideIcon; tint: string; label: [string, string] } {
+  const k = theme.toLowerCase();
+  if (/(career|职|事业|工作|门|职场|晋升|leader|role)/i.test(theme) || /career|role|leader|promot/.test(k))
+    return { Icon: Briefcase, tint: "sky", label: ["Career", "事业"] };
+  if (/(health|健康|身|重置|reset|sleep|睡|体|vitality)/i.test(theme))
+    return { Icon: HeartPulse, tint: "rose", label: ["Health", "健康"] };
+  if (/(love|情|婚|相遇|partner|marriage|relation|synastry)/i.test(theme))
+    return { Icon: HeartHandshake, tint: "pink", label: ["Love", "情感"] };
+  if (/(wealth|财|money|复利|compound|asset|equity)/i.test(theme))
+    return { Icon: Coins, tint: "amber", label: ["Wealth", "财富"] };
+  if (/(quiet|静|隐|慢|reflect|sabbatical|inward)/i.test(theme))
+    return { Icon: Moon, tint: "violet", label: ["Reflection", "静修"] };
+  return { Icon: Sparkles, tint: "gold", label: ["Turning", "转折"] };
+}
+
+const TINT_CLASSES: Record<string, { border: string; bg: string; text: string; dot: string }> = {
+  sky:    { border: "border-sky-300/30",    bg: "bg-sky-300/[0.06]",    text: "text-sky-200",    dot: "bg-sky-300" },
+  rose:   { border: "border-rose-300/30",   bg: "bg-rose-300/[0.06]",   text: "text-rose-200",   dot: "bg-rose-300" },
+  pink:   { border: "border-pink-300/30",   bg: "bg-pink-300/[0.06]",   text: "text-pink-200",   dot: "bg-pink-300" },
+  amber:  { border: "border-amber-300/30",  bg: "bg-amber-300/[0.06]",  text: "text-amber-200",  dot: "bg-amber-300" },
+  violet: { border: "border-violet-300/30", bg: "bg-violet-300/[0.06]", text: "text-violet-200", dot: "bg-violet-300" },
+  gold:   { border: "border-gold-dust/40",  bg: "bg-gold-dust/[0.08]",  text: "text-gold-light", dot: "bg-gold-dust" },
+};
+
+
 import { useLang, type Lang } from "@/lib/i18n";
 import { useAccount } from "@/lib/account";
 import { ChartZoomModal } from "@/components/charts/DestinyCharts";
@@ -1442,31 +1478,84 @@ export function FutureWatchlist({ search }: { search?: ReportSearchLike }) {
           </p>
         )}
 
+        {/* Horizontal year timeline — visualises the span of the 5 windows at a glance */}
+        {(() => {
+          const years = items
+            .map((w) => parseInt((w.year.match(/\d{4}/)?.[0]) ?? "0", 10))
+            .filter((n) => n > 0);
+          if (years.length < 2) return null;
+          const minY = Math.min(...years);
+          const maxY = Math.max(...years);
+          const span = Math.max(1, maxY - minY);
+          return (
+            <div className="mb-8 hidden sm:block">
+              <div className="relative h-14">
+                <div className="absolute inset-x-4 top-1/2 h-px bg-gradient-to-r from-transparent via-gold-dust/40 to-transparent" />
+                {items.map((w, i) => {
+                  const y = parseInt((w.year.match(/\d{4}/)?.[0]) ?? "0", 10);
+                  if (!y) return null;
+                  const pct = ((y - minY) / span) * 100;
+                  const meta = watchlistIcon(w.theme);
+                  const c = TINT_CLASSES[meta.tint];
+                  const Icon = meta.Icon;
+                  return (
+                    <a
+                      key={`tl-${w.year}-${i}`}
+                      href={`#watch-${i}`}
+                      className="group absolute -translate-x-1/2 top-1/2 -translate-y-1/2"
+                      style={{ left: `calc(${pct}% * 0.92 + 4%)` }}
+                    >
+                      <span className={`flex size-8 items-center justify-center rounded-full border ${c.border} ${c.bg} ${c.text} shadow-[0_0_18px_-6px_hsl(45_70%_60%/0.35)] transition-transform group-hover:scale-110`}>
+                        <Icon size={14} strokeWidth={1.6} />
+                      </span>
+                      <span className="absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap text-[9px] uppercase tracking-[0.28em] text-stone-warm/55">
+                        {y}
+                      </span>
+                    </a>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
+
         <ol className="relative space-y-4 border-l border-gold-dust/30 pl-6">
           {items.map((w, idx) => {
             const unlocked = isOracle || !w.locked;
+            const meta = watchlistIcon(w.theme);
+            const c = TINT_CLASSES[meta.tint];
+            const Icon = meta.Icon;
             return (
-              <li key={`${w.year}-${idx}`} className="relative">
-                <span className="absolute -left-[29px] top-2 size-2.5 rounded-full bg-gold-dust shadow-[0_0_12px_hsl(45_70%_60%/0.6)]" />
-                <div className={`rounded-2xl border p-5 ${unlocked ? "border-gold-dust/30 bg-gold-dust/[0.06]" : "border-white/10 bg-white/[0.02]"}`}>
-                  <p className="mb-1 text-[10px] uppercase tracking-[0.32em] text-gold-dust">
-                    {w.year}
-                  </p>
+              <li key={`${w.year}-${idx}`} id={`watch-${idx}`} className="relative scroll-mt-32">
+                <span className={`absolute -left-[31px] top-3 flex size-6 items-center justify-center rounded-full border ${c.border} ${c.bg} ${c.text} shadow-[0_0_12px_hsl(45_70%_60%/0.4)]`}>
+                  <Icon size={11} strokeWidth={1.8} />
+                </span>
+                <div className={`rounded-2xl border p-5 ${unlocked ? `${c.border} ${c.bg}` : "border-white/10 bg-white/[0.02]"}`}>
+                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust">
+                      {w.year}
+                    </p>
+                    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[9px] uppercase tracking-[0.28em] ${c.border} ${c.text}`}>
+                      <Icon size={10} strokeWidth={2} />
+                      {lang === "zh" ? meta.label[1] : meta.label[0]}
+                    </span>
+                  </div>
                   <p className="mb-2 font-serif text-lg italic text-stone-warm">
                     {w.theme}
                   </p>
                   {unlocked ? (
                     <>
-                      <p className="text-sm leading-relaxed text-stone-warm/70">{w.note}</p>
+                      <p className="text-sm leading-relaxed text-stone-warm/75">{w.note}</p>
                       {isOracle && w.detail && (
-                        <div className="mt-3 rounded-xl border border-gold-dust/20 bg-obsidian/40 p-4">
-                          <p className="mb-1 text-[9px] uppercase tracking-[0.32em] text-gold-dust/80">
-                            {lang === "zh" ? "流年运势 · 详解" : "Yearly forecast · detail"}
-                          </p>
-                          <p className="text-sm leading-relaxed text-stone-warm/85">
+                        <details className="group mt-3 overflow-hidden rounded-xl border border-gold-dust/20 bg-obsidian/40 transition-colors open:border-gold-dust/35">
+                          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-[9px] uppercase tracking-[0.32em] text-gold-dust/80 hover:text-gold-light [&::-webkit-details-marker]:hidden">
+                            <span>{lang === "zh" ? "流年运势 · 详解" : "Yearly forecast · detail"}</span>
+                            <ChevronDown size={12} className="transition-transform group-open:rotate-180" />
+                          </summary>
+                          <p className="px-4 pb-4 text-sm leading-relaxed text-stone-warm/85">
                             {w.detail}
                           </p>
-                        </div>
+                        </details>
                       )}
                     </>
                   ) : (
