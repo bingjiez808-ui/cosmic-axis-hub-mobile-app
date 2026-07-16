@@ -450,6 +450,8 @@ function ActionRow({
   onUnlock,
   onGenerate,
   onOpen,
+  onResendVerification,
+  resent,
   fullWidth = false,
 }: {
   state: UiState;
@@ -458,6 +460,8 @@ function ActionRow({
   onUnlock: () => void;
   onGenerate: () => void;
   onOpen: (btn: HTMLButtonElement | null) => void;
+  onResendVerification: () => void;
+  resent: boolean;
   fullWidth?: boolean;
 }) {
   const btnBase = `rounded-full bg-gold-dust text-[11px] uppercase tracking-[0.28em] text-obsidian hover:bg-gold-light disabled:opacity-50 min-h-[44px] px-6 py-2.5 ${
