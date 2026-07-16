@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { useLang } from "@/lib/i18n";
-import { LEGAL_CONTACT, legalCanonical } from "@/lib/legal";
+import { LEGAL_CONTACT, legalCanonical, renderWithMailto } from "@/lib/legal";
 
 export const Route = createFileRoute("/terms")({
   head: () => ({
@@ -115,7 +115,6 @@ const EN: Copy = {
   contactHeading: "11. Contact",
   contactBody: [
     `Entity: ${LEGAL_CONTACT.entityName}`,
-    `Address: ${LEGAL_CONTACT.address}`,
     `Email: ${LEGAL_CONTACT.email}`,
   ],
 };
@@ -202,7 +201,6 @@ const ZH: Copy = {
   contactHeading: "十一、联系我们",
   contactBody: [
     `主体：${LEGAL_CONTACT.entityName}`,
-    `地址：${LEGAL_CONTACT.address}`,
     `邮箱：${LEGAL_CONTACT.email}`,
   ],
 };
@@ -237,7 +235,7 @@ function TermsPage() {
           <h2 className="mb-3 font-serif text-2xl text-stone-warm">{c.contactHeading}</h2>
           <div className="glass-card space-y-1 rounded-2xl p-5 text-[14px] text-stone-warm/80">
             {c.contactBody.map((line) => (
-              <p key={line}>{line}</p>
+              <p key={line}>{renderWithMailto(line, LEGAL_CONTACT.email)}</p>
             ))}
           </div>
         </section>
