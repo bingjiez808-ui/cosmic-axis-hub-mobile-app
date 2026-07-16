@@ -19,7 +19,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useLang } from "@/lib/i18n";
-import { ensureChart } from "@/lib/reports-store.functions";
+import { ensureChart, updateChartGender } from "@/lib/reports-store.functions";
 import {
   generatePremiumReport,
   getPremiumStatus,
