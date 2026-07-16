@@ -1,5 +1,5 @@
 /**
- * Premium ¥99 one-time PDF unlock card.
+ * Premium ¥79 one-time PDF unlock card.
  *
  * Drives all state from the server via `getPremiumStatus`:
  *   - No order         → show pitch + "Unlock" CTA
@@ -8,6 +8,10 @@
  *   - Generating       → poll
  *   - Completed + pdf  → "Download PDF" via short-lived signed URL
  *   - Completed no pdf → "Content ready, PDF renderer pending config"
+ *
+ * Two visual variants:
+ *   - variant="card"  legacy tall card (kept for backwards-compat)
+ *   - variant="bar"   full-width horizontal bar shown on the report page
  *
  * Nothing here writes to the database or trusts client-provided flags.
  */
@@ -32,36 +36,40 @@ type ReportSearchLike = {
 };
 
 const TXT = {
-  kicker: { zh: "¥99 · 一次解锁", en: "¥99 · one-time unlock" },
+  kicker: { zh: "¥79 · 一次解锁", en: "¥79 · one-time unlock" },
   title: { zh: "高级 AI 深度 PDF 报告", en: "Premium AI Deep-Reading PDF" },
-  price: { zh: "¥99 · 一次性买断当前命盘", en: "¥99 · one-time purchase for this chart" },
+  price: { zh: "¥79 · 一次性买断当前命盘", en: "¥79 · one-time purchase for this chart" },
   pitch: {
     zh: "在你已有的网页报告基础上，由资深 AI 综合西方占星、印度占星、八字与紫微斗数，生成一份约 20–30 页的深度个人 PDF。生成一次，永久保存并可无限次重新下载。",
     en: "Building on your existing web reading, our premium AI blends Western astrology, Vedic Jyotish, BaZi and Zi Wei Dou Shu into a ~20–30 page personal PDF. Generated once, saved forever, redownload anytime.",
   },
   bullets: {
     zh: [
-      "执行摘要 · 四体系分章 · 跨体系共识与矛盾",
-      "性格 / 事业 / 财富 / 关系 / 家庭 / 健康 / 使命 / 长周期",
+      "20–30 页深度解读 · 四体系综合",
+      "性格 / 事业 / 财富 / 关系 / 家庭 / 健康",
       "未来 12 个月与关键时间窗口",
-      "反思提问 · 方法论 · 明确免责声明",
+      "生成一次 · 永久保存 · 可重复下载",
     ],
     en: [
-      "Executive summary · four tradition chapters · convergences & tensions",
-      "Character / vocation / wealth / relationships / family / health / mission / cycles",
+      "20–30 pages · four-tradition synthesis",
+      "Character / vocation / wealth / relationships / family / health",
       "Next twelve months + key time windows",
-      "Reflection prompts · methodology · explicit disclaimers",
+      "Generate once · save forever · redownload anytime",
     ],
   },
+  chips: {
+    zh: ["20–30 页深度解读", "四体系综合", "未来 12 个月", "永久保存"],
+    en: ["20–30 pages", "Four traditions", "Next 12 months", "Saved forever"],
+  },
   time: { zh: "生成通常需要 2–4 分钟", en: "Generation typically takes 2–4 minutes" },
-  cta_unlock: { zh: "解锁 ¥99 高级 PDF", en: "Unlock ¥99 Premium PDF" },
+  cta_unlock: { zh: "¥79 解锁高级 PDF", en: "Unlock ¥79 Premium PDF" },
   cta_generate: { zh: "开始生成我的 PDF", en: "Generate my PDF" },
   cta_download: { zh: "下载 PDF", en: "Download PDF" },
   cta_redownload: { zh: "重新下载", en: "Redownload" },
   busy_generate: { zh: "正在生成中，请稍候…", en: "Generating your report…" },
   provider_pending: {
-    zh: "支付渠道配置中：¥99 订单已记录，正式支付通道上线前，请联系管理员完成付款并人工开通。",
-    en: "Payment provider being configured: your ¥99 intent is recorded. Contact an admin to complete payment offline while the live checkout is finalised.",
+    zh: "支付渠道配置中：¥79 订单已记录，正式支付通道上线前，请联系管理员完成付款并人工开通。",
+    en: "Payment provider being configured: your ¥79 intent is recorded. Contact an admin to complete payment offline while the live checkout is finalised.",
   },
   once_note: {
     zh: "非订阅 · 非按次收费 · 同一命盘只需支付一次。",
