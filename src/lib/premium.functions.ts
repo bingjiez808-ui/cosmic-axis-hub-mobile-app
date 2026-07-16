@@ -301,12 +301,10 @@ export const grantPremiumReportAccess = createServerFn({ method: "POST" })
 /* listAdminPremiumOrders — admin only                                    */
 /* --------------------------------------------------------------------- */
 
-const ListOrdersInput = z
-  .object({
-    status: z.enum(["pending", "paid", "failed", "refunded", "all"]).default("all"),
-    search: z.string().trim().max(120).optional(),
-  })
-  .default({});
+const ListOrdersInput = z.object({
+  status: z.enum(["pending", "paid", "failed", "refunded", "all"]).default("all"),
+  search: z.string().trim().max(120).optional(),
+});
 
 export type AdminOrderRow = {
   id: string;
