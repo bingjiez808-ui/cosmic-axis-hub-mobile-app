@@ -17,6 +17,7 @@ import { Route as RitualRouteImport } from './routes/ritual'
 import { Route as ReportRouteImport } from './routes/report'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as McpRouteImport } from './routes/mcp'
+import { Route as DeleteAccountRouteImport } from './routes/delete-account'
 import { Route as CommunityRouteImport } from './routes/community'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AboutRouteImport } from './routes/about'
@@ -67,6 +68,11 @@ const PrivacyRoute = PrivacyRouteImport.update({
 const McpRoute = McpRouteImport.update({
   id: '/mcp',
   path: '/mcp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeleteAccountRoute = DeleteAccountRouteImport.update({
+  id: '/delete-account',
+  path: '/delete-account',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CommunityRoute = CommunityRouteImport.update({
@@ -132,6 +138,7 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
   '/community': typeof CommunityRoute
+  '/delete-account': typeof DeleteAccountRoute
   '/mcp': typeof McpRoute
   '/privacy': typeof PrivacyRoute
   '/report': typeof ReportRoute
@@ -152,6 +159,7 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
   '/community': typeof CommunityRoute
+  '/delete-account': typeof DeleteAccountRoute
   '/mcp': typeof McpRoute
   '/privacy': typeof PrivacyRoute
   '/report': typeof ReportRoute
@@ -174,6 +182,7 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
   '/community': typeof CommunityRoute
+  '/delete-account': typeof DeleteAccountRoute
   '/mcp': typeof McpRoute
   '/privacy': typeof PrivacyRoute
   '/report': typeof ReportRoute
@@ -196,6 +205,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/auth'
     | '/community'
+    | '/delete-account'
     | '/mcp'
     | '/privacy'
     | '/report'
@@ -216,6 +226,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/auth'
     | '/community'
+    | '/delete-account'
     | '/mcp'
     | '/privacy'
     | '/report'
@@ -237,6 +248,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/auth'
     | '/community'
+    | '/delete-account'
     | '/mcp'
     | '/privacy'
     | '/report'
@@ -259,6 +271,7 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   AuthRoute: typeof AuthRoute
   CommunityRoute: typeof CommunityRoute
+  DeleteAccountRoute: typeof DeleteAccountRoute
   McpRoute: typeof McpRoute
   PrivacyRoute: typeof PrivacyRoute
   ReportRoute: typeof ReportRoute
@@ -330,6 +343,13 @@ declare module '@tanstack/react-router' {
       path: '/mcp'
       fullPath: '/mcp'
       preLoaderRoute: typeof McpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/delete-account': {
+      id: '/delete-account'
+      path: '/delete-account'
+      fullPath: '/delete-account'
+      preLoaderRoute: typeof DeleteAccountRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/community': {
@@ -429,6 +449,7 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   AuthRoute: AuthRoute,
   CommunityRoute: CommunityRoute,
+  DeleteAccountRoute: DeleteAccountRoute,
   McpRoute: McpRoute,
   PrivacyRoute: PrivacyRoute,
   ReportRoute: ReportRoute,
