@@ -329,7 +329,7 @@ function MyChartsSection({ open, onClose, lang, rows, setRows }: {
     if (!name) return;
     try {
       await renameChart({ data: { chartId: id, name } });
-      setRows((prev) => (prev ? prev.map((r) => (r.id === id ? { ...r, name } : r)) : prev));
+      setRows(rows ? rows.map((r) => (r.id === id ? { ...r, name } : r)) : rows);
     } catch { /* ignore */ }
     setEditingId(null);
   }
