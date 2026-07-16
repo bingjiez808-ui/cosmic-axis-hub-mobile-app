@@ -304,20 +304,20 @@ export function AccountModal({ open, onClose }: { open: boolean; onClose: () => 
   );
 }
 
-function MyChartsSection({ open, onClose, lang }: { open: boolean; onClose: () => void; lang: Lang }) {
-  const [rows, setRows] = useState<ChartRow[] | null>(null);
-  const [loading, setLoading] = useState(false);
+function MyChartsSection({ open, onClose, lang, rows, setRows }: {
+  open: boolean;
+  onClose: () => void;
+  lang: Lang;
+  rows: ChartRow[] | null;
+  setRows: (r: ChartRow[] | null) => void;
+}) {
+  const loading = rows === null;
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("");
 
-  useEffect(() => {
-    if (!open) return;
-    setLoading(true);
-    listUserCharts()
-      .then((r) => setRows(r))
-      .catch(() => setRows([]))
-      .finally(() => setLoading(false));
-  }, [open]);
+  // Parent (AccountModal) already loads rows and shares them here for dedup.
+  // Kept as a no-op effect for future reactivity to `open`.
+  useEffect(() => { if (!open) return; }, [open]);
 
   const heading = lang === "zh" ? "我的命盘与报告" : "My charts & reports";
   const empty = lang === "zh"
