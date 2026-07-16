@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { useLang } from "@/lib/i18n";
-import { LEGAL_CONTACT, legalCanonical } from "@/lib/legal";
+import { LEGAL_CONTACT, legalCanonical, renderWithMailto } from "@/lib/legal";
 
 export const Route = createFileRoute("/terms")({
   head: () => ({
