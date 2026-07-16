@@ -1,11 +1,13 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Link } from "@tanstack/react-router";
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import { useAccount, type Plan } from "@/lib/account";
 import { useLang, type Lang } from "@/lib/i18n";
 import { useSupabaseSession } from "@/lib/session";
 import { TAROT_LIMITS, tarotRemaining } from "@/lib/tarot-quota";
+import { listUserCharts, renameChart, type ChartRow } from "@/lib/reports-store.functions";
+
 
 export function AccountModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t, lang } = useLang();
