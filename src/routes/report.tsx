@@ -31,6 +31,7 @@ import {
   type ReportDimensionAI,
 } from "@/lib/report.functions";
 import { buildReportCacheKey, buildReportFingerprint, buildReportRequest, buildReportSeed } from "@/lib/report-input";
+import { REPORT_AI_VERSION } from "@/lib/ai-cache-version";
 import { useAccount } from "@/lib/account";
 
 
@@ -541,7 +542,7 @@ function ReportPage() {
         place: search.place,
         lang: reportLang,
       });
-      if (savedHit?.aiReport) {
+      if (savedHit?.aiReport && savedHit.aiReportVersion === REPORT_AI_VERSION) {
         setAi(savedHit.aiReport);
         setAiState("ready");
         return;
@@ -628,7 +629,11 @@ function ReportPage() {
       try {
         sessionStorage.setItem(cacheKey, JSON.stringify(finalReport));
       } catch { /* ignore quota */ }
-      updateReadingAI(fingerprint, { aiReport: finalReport, fingerprint });
+      updateReadingAI(fingerprint, {
+        aiReport: finalReport,
+        aiReportVersion: REPORT_AI_VERSION,
+        fingerprint,
+      });
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seed, reportLang, search.readingId]);
@@ -794,7 +799,9 @@ function ReportPage() {
         onOpenAccount={() => setAccOpen(true)}
         fingerprint={fingerprint}
         aiReport={ai ?? savedReading?.aiReport}
+        aiReportVersion={ai ? REPORT_AI_VERSION : savedReading?.aiReportVersion}
         aiOutlook={savedReading?.aiOutlook}
+        aiOutlookVersion={savedReading?.aiOutlookVersion}
       />
         );
       })()}

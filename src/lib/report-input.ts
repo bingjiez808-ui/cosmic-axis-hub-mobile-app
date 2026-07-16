@@ -5,6 +5,7 @@ import {
   houseForSign,
 } from "@/components/charts/DestinyCharts";
 import { solarToLunarInfo } from "@/lib/lunar";
+import { REPORT_AI_VERSION } from "@/lib/ai-cache-version";
 
 export type ReportSearchLike = {
   name?: string;
@@ -41,7 +42,8 @@ export function buildReportFingerprint(search: ReportSearchLike, lang: "en" | "z
 
 export function buildReportCacheKey(search: ReportSearchLike, lang: "en" | "zh") {
   const run = search.readingId?.trim() || "direct";
-  return `destiny-ai-report-v5::${run}::${buildReportFingerprint(search, lang)}`;
+  // Version is embedded so a model/prompt upgrade auto-invalidates the cache.
+  return `destiny-ai-report::${REPORT_AI_VERSION}::${run}::${buildReportFingerprint(search, lang)}`;
 }
 
 export function buildReportRequest(search: ReportSearchLike, lang: "en" | "zh") {

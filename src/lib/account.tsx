@@ -24,10 +24,17 @@ export type SavedReading = {
   lang?: "en" | "zh";
   fingerprint?: string;
   aiReport?: ReportAI;
+  aiReportVersion?: string;
   aiOutlook?: OutlookAI;
+  aiOutlookVersion?: string;
 };
 
-type ReadingAIPatch = Partial<Pick<SavedReading, "aiReport" | "aiOutlook" | "fingerprint">>;
+type ReadingAIPatch = Partial<
+  Pick<
+    SavedReading,
+    "aiReport" | "aiReportVersion" | "aiOutlook" | "aiOutlookVersion" | "fingerprint"
+  >
+>;
 
 type Ctx = {
   account: Account | null;
@@ -208,7 +215,9 @@ export function AccountProvider({ children }: { children: ReactNode }) {
         ...prior,
         ...r,
         aiReport: r.aiReport ?? prior?.aiReport,
+        aiReportVersion: r.aiReportVersion ?? prior?.aiReportVersion,
         aiOutlook: r.aiOutlook ?? prior?.aiOutlook,
+        aiOutlookVersion: r.aiOutlookVersion ?? prior?.aiOutlookVersion,
         fingerprint: r.fingerprint ?? prior?.fingerprint,
         id: prior?.id ?? `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         createdAt: prior?.createdAt ?? Date.now(),
