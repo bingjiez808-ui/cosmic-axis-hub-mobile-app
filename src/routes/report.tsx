@@ -118,6 +118,14 @@ import {
   type ReportAI,
   type ReportDimensionAI,
 } from "@/lib/report.functions";
+import {
+  beginReport,
+  ensureChart,
+  failReport,
+  getSavedReport,
+  saveReport,
+} from "@/lib/reports-store.functions";
+import { supabase } from "@/integrations/supabase/client";
 import { buildReportCacheKey, buildReportFingerprint, buildReportRequest, buildReportSeed } from "@/lib/report-input";
 import { REPORT_AI_VERSION } from "@/lib/ai-cache-version";
 import { useAccount } from "@/lib/account";
