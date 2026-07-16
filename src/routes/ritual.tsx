@@ -190,7 +190,9 @@ function RitualPage() {
 
   const canAdvance = isQuizStep
     ? !!quiz[quizIdx]
-    : (values[currentQ!.key] ?? "").trim().length > 0;
+    : currentQ?.key === "gender"
+      ? true // gender step allows skip
+      : (values[currentQ!.key] ?? "").trim().length > 0;
 
 
   const advance = () => {
