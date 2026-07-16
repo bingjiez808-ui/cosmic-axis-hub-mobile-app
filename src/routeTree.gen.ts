@@ -10,11 +10,14 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TraditionsRouteImport } from './routes/traditions'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SynthesisRouteImport } from './routes/synthesis'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as RitualRouteImport } from './routes/ritual'
 import { Route as ReportRouteImport } from './routes/report'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as McpRouteImport } from './routes/mcp'
+import { Route as DeleteAccountRouteImport } from './routes/delete-account'
 import { Route as CommunityRouteImport } from './routes/community'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AboutRouteImport } from './routes/about'
@@ -30,6 +33,11 @@ import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.
 const TraditionsRoute = TraditionsRouteImport.update({
   id: '/traditions',
   path: '/traditions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SynthesisRoute = SynthesisRouteImport.update({
@@ -52,9 +60,19 @@ const ReportRoute = ReportRouteImport.update({
   path: '/report',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const McpRoute = McpRouteImport.update({
   id: '/mcp',
   path: '/mcp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeleteAccountRoute = DeleteAccountRouteImport.update({
+  id: '/delete-account',
+  path: '/delete-account',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CommunityRoute = CommunityRouteImport.update({
@@ -120,11 +138,14 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
   '/community': typeof CommunityRoute
+  '/delete-account': typeof DeleteAccountRoute
   '/mcp': typeof McpRoute
+  '/privacy': typeof PrivacyRoute
   '/report': typeof ReportRoute
   '/ritual': typeof RitualRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/synthesis': typeof SynthesisRoute
+  '/terms': typeof TermsRoute
   '/traditions': typeof TraditionsRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -138,11 +159,14 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
   '/community': typeof CommunityRoute
+  '/delete-account': typeof DeleteAccountRoute
   '/mcp': typeof McpRoute
+  '/privacy': typeof PrivacyRoute
   '/report': typeof ReportRoute
   '/ritual': typeof RitualRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/synthesis': typeof SynthesisRoute
+  '/terms': typeof TermsRoute
   '/traditions': typeof TraditionsRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -158,11 +182,14 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
   '/community': typeof CommunityRoute
+  '/delete-account': typeof DeleteAccountRoute
   '/mcp': typeof McpRoute
+  '/privacy': typeof PrivacyRoute
   '/report': typeof ReportRoute
   '/ritual': typeof RitualRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/synthesis': typeof SynthesisRoute
+  '/terms': typeof TermsRoute
   '/traditions': typeof TraditionsRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -178,11 +205,14 @@ export interface FileRouteTypes {
     | '/about'
     | '/auth'
     | '/community'
+    | '/delete-account'
     | '/mcp'
+    | '/privacy'
     | '/report'
     | '/ritual'
     | '/sitemap.xml'
     | '/synthesis'
+    | '/terms'
     | '/traditions'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
@@ -196,11 +226,14 @@ export interface FileRouteTypes {
     | '/about'
     | '/auth'
     | '/community'
+    | '/delete-account'
     | '/mcp'
+    | '/privacy'
     | '/report'
     | '/ritual'
     | '/sitemap.xml'
     | '/synthesis'
+    | '/terms'
     | '/traditions'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
@@ -215,11 +248,14 @@ export interface FileRouteTypes {
     | '/about'
     | '/auth'
     | '/community'
+    | '/delete-account'
     | '/mcp'
+    | '/privacy'
     | '/report'
     | '/ritual'
     | '/sitemap.xml'
     | '/synthesis'
+    | '/terms'
     | '/traditions'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
@@ -235,11 +271,14 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   AuthRoute: typeof AuthRoute
   CommunityRoute: typeof CommunityRoute
+  DeleteAccountRoute: typeof DeleteAccountRoute
   McpRoute: typeof McpRoute
+  PrivacyRoute: typeof PrivacyRoute
   ReportRoute: typeof ReportRoute
   RitualRoute: typeof RitualRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   SynthesisRoute: typeof SynthesisRoute
+  TermsRoute: typeof TermsRoute
   TraditionsRoute: typeof TraditionsRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -255,6 +294,13 @@ declare module '@tanstack/react-router' {
       path: '/traditions'
       fullPath: '/traditions'
       preLoaderRoute: typeof TraditionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/synthesis': {
@@ -285,11 +331,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReportRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/mcp': {
       id: '/mcp'
       path: '/mcp'
       fullPath: '/mcp'
       preLoaderRoute: typeof McpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/delete-account': {
+      id: '/delete-account'
+      path: '/delete-account'
+      fullPath: '/delete-account'
+      preLoaderRoute: typeof DeleteAccountRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/community': {
@@ -389,11 +449,14 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   AuthRoute: AuthRoute,
   CommunityRoute: CommunityRoute,
+  DeleteAccountRoute: DeleteAccountRoute,
   McpRoute: McpRoute,
+  PrivacyRoute: PrivacyRoute,
   ReportRoute: ReportRoute,
   RitualRoute: RitualRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   SynthesisRoute: SynthesisRoute,
+  TermsRoute: TermsRoute,
   TraditionsRoute: TraditionsRoute,
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:

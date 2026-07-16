@@ -200,6 +200,35 @@ export function AccountModal({ open, onClose }: { open: boolean; onClose: () => 
                   )}
                 </div>
 
+                <div>
+                  <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+                    {lang === "zh" ? "隐私与数据" : "Privacy & data"}
+                  </p>
+                  <div className="space-y-2">
+                    <Link
+                      to="/privacy"
+                      onClick={onClose}
+                      className="block rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-[12px] tracking-normal text-stone-warm/75 hover:border-gold-dust/40 hover:text-gold-dust"
+                    >
+                      {lang === "zh" ? "查看隐私政策" : "View privacy policy"}
+                    </Link>
+                    <Link
+                      to="/terms"
+                      onClick={onClose}
+                      className="block rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-[12px] tracking-normal text-stone-warm/75 hover:border-gold-dust/40 hover:text-gold-dust"
+                    >
+                      {lang === "zh" ? "查看服务条款" : "View terms of service"}
+                    </Link>
+                    <Link
+                      to="/delete-account"
+                      onClick={onClose}
+                      className="block rounded-xl border border-red-400/30 bg-red-500/5 px-4 py-3 text-[12px] tracking-normal text-red-200/90 hover:border-red-400/60 hover:bg-red-500/10"
+                    >
+                      {lang === "zh" ? "删除我的账户与数据" : "Delete my account and data"}
+                    </Link>
+                  </div>
+                </div>
+
                 <button
                   type="button"
                   onClick={() => {

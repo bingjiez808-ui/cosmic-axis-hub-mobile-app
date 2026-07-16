@@ -428,6 +428,10 @@ function SiteNav() {
 
 
 function SiteFooter() {
+  const { t, lang } = useLang();
+  const labels = lang === "zh"
+    ? { ethics: "关于", privacy: "隐私政策", terms: "服务条款", del: "删除账户", traditions: t.nav_traditions }
+    : { ethics: "Ethics", privacy: "Privacy", terms: "Terms", del: "Delete account", traditions: "Traditions" };
   return (
     <footer className="relative z-10 border-t border-white/5 px-4 py-12 sm:px-6 md:px-12 md:py-16">
       <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 text-center md:flex-row md:gap-8 md:text-left">
@@ -435,15 +439,11 @@ function SiteFooter() {
           Destiny<span className="text-gold-dust">Library</span>
         </div>
         <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-[10px] font-medium uppercase tracking-[0.28em] text-stone-warm/50 md:gap-10">
-          <Link to="/traditions" className="transition-colors hover:text-gold-dust">
-            Traditions
-          </Link>
-          <Link to="/about" className="transition-colors hover:text-gold-dust">
-            Ethics
-          </Link>
-          <Link to="/about" className="transition-colors hover:text-gold-dust">
-            Privacy
-          </Link>
+          <Link to="/traditions" className="transition-colors hover:text-gold-dust">{labels.traditions}</Link>
+          <Link to="/about" className="transition-colors hover:text-gold-dust">{labels.ethics}</Link>
+          <Link to="/privacy" className="transition-colors hover:text-gold-dust">{labels.privacy}</Link>
+          <Link to="/terms" className="transition-colors hover:text-gold-dust">{labels.terms}</Link>
+          <Link to="/delete-account" className="transition-colors hover:text-gold-dust">{labels.del}</Link>
         </div>
         <div className="text-[10px] uppercase tracking-[0.28em] italic text-stone-warm/40">
           © MMXXVI · Four civilizations, one question
