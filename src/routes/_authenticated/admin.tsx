@@ -524,3 +524,206 @@ function EditDrawer({ row, onClose, onSaved }: { row: Row; onClose: () => void; 
     </div>
   );
 }
+
+/* ═══════════════════════════════════════════
+   Premium PDF orders — admin console section
+═══════════════════════════════════════════ */
+
+function PremiumOrdersSection({
+  reloadKey,
+  onReload,
+}: {
+  reloadKey: number;
+  onReload: () => void;
+}) {
+  const [rows, setRows] = useState<AdminOrderRow[] | null>(null);
+  const [status, setStatus] = useState<"all" | "pending" | "paid" | "failed" | "refunded">("all");
+  const [search, setSearch] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [confirming, setConfirming] = useState<AdminOrderRow | null>(null);
+  const [note, setNote] = useState("");
+
+  useEffect(() => {
+    let cancel = false;
+    setRows(null);
+    listAdminPremiumOrders({ data: { status, search: search || undefined } })
+      .then((r) => {
+        if (!cancel) setRows(r);
+      })
+      .catch((e: Error) => {
+        if (!cancel) toast.error(e.message);
+      });
+    return () => {
+      cancel = true;
+    };
+  }, [reloadKey, status, search]);
+
+  const doGrant = async () => {
+    if (!confirming) return;
+    if (note.trim().length < 4) {
+      toast.error("请填写备注（至少 4 字）");
+      return;
+    }
+    if (!window.confirm(`确认将订单标记为已付款并解锁高级 PDF？\n邮箱：${confirming.email ?? confirming.userId}`))
+      return;
+    setBusy(true);
+    try {
+      await grantPremiumReportAccess({
+        data: { userId: confirming.userId, chartId: confirming.chartId, note: note.trim() },
+      });
+      toast.success("已开通");
+      setConfirming(null);
+      setNote("");
+      onReload();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="mx-auto mt-10 max-w-6xl px-6 pb-16">
+      <h2 className="mb-4 font-serif text-2xl italic text-stone-warm">
+        高级 PDF 订单 · Premium PDF orders
+      </h2>
+
+      <div className="glass-card rounded-2xl border border-white/10 p-4">
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          {(["all", "pending", "paid", "failed", "refunded"] as const).map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => setStatus(s)}
+              className={`rounded-full border px-3 py-1.5 text-[10px] uppercase tracking-[0.28em] ${
+                status === s
+                  ? "border-gold-dust bg-gold-dust/10 text-gold-light"
+                  : "border-white/10 text-stone-warm/60 hover:border-gold-dust/40"
+              }`}
+            >
+              {s}
+            </button>
+          ))}
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="邮箱 / 订单号 / 命盘名"
+            className="ml-auto w-64 rounded-full border border-white/10 bg-obsidian/40 px-4 py-1.5 text-sm text-stone-warm placeholder:text-stone-warm/30 focus:border-gold-dust focus:outline-none"
+          />
+        </div>
+
+        {rows === null ? (
+          <p className="p-6 text-center text-sm text-stone-warm/50">Reading orders…</p>
+        ) : rows.length === 0 ? (
+          <p className="p-6 text-center text-sm text-stone-warm/50">No orders match.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-[13px]">
+              <thead className="text-[10px] uppercase tracking-[0.24em] text-stone-warm/50">
+                <tr>
+                  <th className="px-2 py-2">Email</th>
+                  <th className="px-2 py-2">Chart</th>
+                  <th className="px-2 py-2">Status</th>
+                  <th className="px-2 py-2">Report</th>
+                  <th className="px-2 py-2">Amount</th>
+                  <th className="px-2 py-2">Created</th>
+                  <th className="px-2 py-2 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="text-stone-warm/80">
+                {rows.map((r) => (
+                  <tr key={r.id} className="border-t border-white/5">
+                    <td className="px-2 py-2">{r.email ?? "—"}</td>
+                    <td className="px-2 py-2">{r.chartName ?? r.chartId.slice(0, 8)}</td>
+                    <td className="px-2 py-2">
+                      <span
+                        className={`rounded-full border px-2 py-0.5 text-[9px] uppercase tracking-[0.28em] ${
+                          r.status === "paid"
+                            ? "border-gold-dust text-gold-light"
+                            : r.status === "pending"
+                              ? "border-nebula-purple/50 text-nebula-purple"
+                              : "border-white/10 text-stone-warm/40"
+                        }`}
+                      >
+                        {r.status}
+                      </span>
+                    </td>
+                    <td className="px-2 py-2 text-[11px] text-stone-warm/60">
+                      {r.reportStatus ?? "—"}
+                      {r.hasPdf ? " · pdf" : ""}
+                    </td>
+                    <td className="px-2 py-2">
+                      {r.currency} {(r.amountCents / 100).toFixed(2)}
+                    </td>
+                    <td className="px-2 py-2 text-[11px]">{fmtDate(r.createdAt)}</td>
+                    <td className="px-2 py-2 text-right">
+                      {r.status !== "paid" && (
+                        <button
+                          type="button"
+                          onClick={() => setConfirming(r)}
+                          className="rounded-full border border-gold-dust/40 px-3 py-1 text-[10px] uppercase tracking-[0.28em] text-gold-light hover:bg-gold-dust/10"
+                        >
+                          手动开通
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {confirming && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-obsidian/80 p-4">
+          <div className="glass-card w-full max-w-md rounded-2xl border border-gold-dust/30 p-6">
+            <h3 className="mb-3 font-serif text-xl text-stone-warm">
+              手动开通 ¥99 高级 PDF
+            </h3>
+            <p className="mb-2 text-[13px] text-stone-warm/70">
+              {confirming.email ?? confirming.userId}
+            </p>
+            <p className="mb-4 text-[11px] text-stone-warm/50">
+              命盘：{confirming.chartName ?? confirming.chartId}
+            </p>
+            <label className="text-[10px] uppercase tracking-[0.28em] text-stone-warm/50">
+              收款凭证 / 备注（必填）
+            </label>
+            <textarea
+              rows={3}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="例如：微信收款 2026-07-16 · 单号 xxxx · 备注"
+              className="mt-2 w-full rounded-lg border border-white/10 bg-obsidian/40 px-3 py-2 text-sm text-stone-warm placeholder:text-stone-warm/30 focus:border-gold-dust focus:outline-none"
+            />
+            <p className="mt-2 text-[10px] text-stone-warm/40">
+              该操作会写入审计日志（谁 / 何时 / 备注），并将订单状态置为 paid。
+            </p>
+            <div className="mt-4 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setConfirming(null);
+                  setNote("");
+                }}
+                className="rounded-full border border-white/10 px-4 py-2 text-[10px] uppercase tracking-[0.28em] text-stone-warm/60 hover:border-gold-dust/40"
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                onClick={doGrant}
+                disabled={busy}
+                className="rounded-full bg-gold-dust px-4 py-2 text-[10px] uppercase tracking-[0.28em] text-obsidian hover:bg-gold-light disabled:opacity-50"
+              >
+                二次确认并开通
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
