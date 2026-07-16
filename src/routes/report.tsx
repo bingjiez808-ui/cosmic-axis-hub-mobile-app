@@ -62,6 +62,27 @@ function traditionIcon(name: string): LucideIcon {
   return Sparkles;
 }
 
+// Split a paragraph blob into readable sub-paragraphs (2 sentences each).
+// Preserves content — only inserts paragraph breaks between sentence groups.
+function splitParagraphs(text: string, groupSize = 2): string[] {
+  if (!text) return [];
+  // Respect explicit line breaks the model may have inserted.
+  const blocks = text.split(/\n{2,}|\r\n\r\n/).map((s) => s.trim()).filter(Boolean);
+  const out: string[] = [];
+  for (const block of blocks) {
+    // Sentence splitter for CJK + Latin punctuation, keeping the delimiter.
+    const parts = block.match(/[^。！？!?.]+[。！？!?.]?["'”’)）]*\s*/g);
+    if (!parts || parts.length <= groupSize) {
+      out.push(block);
+      continue;
+    }
+    for (let i = 0; i < parts.length; i += groupSize) {
+      out.push(parts.slice(i, i + groupSize).join("").trim());
+    }
+  }
+  return out;
+}
+
 import {
   ChartZoomModal,
   FiveElements,
