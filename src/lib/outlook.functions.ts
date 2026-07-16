@@ -3,26 +3,30 @@ import { generateText } from "ai";
 import { z } from "zod";
 
 import { createLovableAiGatewayProvider } from "./ai-gateway.server";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { guardrailsFor, safeMessage } from "./ai-guardrails";
+import { enforceRateLimit } from "./rate-limit.server";
 
 const Input = z.object({
-  name: z.string().optional(),
-  date: z.string().optional(),
-  time: z.string().optional(),
-  place: z.string().optional(),
+  name: z.string().max(120).optional(),
+  date: z.string().max(40).optional(),
+  time: z.string().max(20).optional(),
+  place: z.string().max(160).optional(),
   lang: z.enum(["en", "zh"]).default("en"),
-  quiz: z.string().optional(),
+  quiz: z.string().max(400).optional(),
   planets: z
     .array(
       z.object({
-        name: z.string(),
-        sign: z.string(),
-        house: z.number().optional(),
+        name: z.string().max(40),
+        sign: z.string().max(40),
+        house: z.number().int().min(1).max(12).optional(),
       }),
     )
+    .max(30)
     .default([]),
-  bazi: z.string().optional(),
-  zodiac: z.string().optional(),
-  lunar: z.string().optional(),
+  bazi: z.string().max(120).optional(),
+  zodiac: z.string().max(40).optional(),
+  lunar: z.string().max(80).optional(),
 });
 
 export type OutlookDecade = {
@@ -73,10 +77,12 @@ export type OutlookAI = {
 };
 
 export const generateChartOutlook = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => Input.parse(data))
-  .handler(async ({ data }): Promise<OutlookAI> => {
+  .handler(async ({ data, context }): Promise<OutlookAI> => {
+    enforceRateLimit(`outlook:${context.userId}`, 8, 60_000, "outlook generations");
     const key = process.env.LOVABLE_API_KEY;
-    if (!key) throw new Error("Missing LOVABLE_API_KEY");
+    if (!key) throw new Error("Outlook service is not configured");
     const gateway = createLovableAiGatewayProvider(key);
     const isZh = data.lang === "zh";
     const today = new Date().toISOString().slice(0, 10);
@@ -113,7 +119,9 @@ Hard rules:
 - The 90-day windows MUST anchor in the **current month/year pillar** and the **actual transits happening now** (Mercury retrograde, Venus ingress, outer-planet aspects).
 - The 5-item watchlist covers the NEXT 1-6 years (chronological, starting from today's year); every item MUST name that year's **year-pillar or luck-pillar shift** together with a **key transit** (Saturn transit, Jupiter ingress, outer-planet aspect, nodal shift).
 - Every sentence must reference at least one concrete fact listed above — no generic templates.
-- Tone: warm, poetic, restrained.`;
+- Tone: warm, poetic, restrained.
+
+${guardrailsFor(isZh ? "zh" : "en")}`;
 
     const schemaZh = `{
   "timeline": {
@@ -218,7 +226,7 @@ ${isZh ? "严格按此 JSON schema 输出（只输出 JSON）" : "Output STRICTL
 ${isZh ? schemaZh : schemaEn}`;
 
     const { text } = await generateText({
-      model: gateway("google/gemini-3.5-flash"),
+      model: gateway("google/gemini-2.5-flash"),
       system,
       prompt,
     });

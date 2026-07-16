@@ -3,36 +3,40 @@ import { generateText } from "ai";
 import { z } from "zod";
 
 import { createLovableAiGatewayProvider } from "./ai-gateway.server";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { guardrailsFor, safeMessage } from "./ai-guardrails";
+import { enforceRateLimit } from "./rate-limit.server";
 
 const EventInput = z.object({
-  id: z.string(),
-  event: z.string().min(1),
-  rangeStart: z.union([z.string(), z.number()]).optional(),
-  rangeEnd: z.union([z.string(), z.number()]).optional(),
+  id: z.string().max(64),
+  event: z.string().min(1).max(400),
+  rangeStart: z.union([z.string().max(20), z.number()]).optional(),
+  rangeEnd: z.union([z.string().max(20), z.number()]).optional(),
 });
 
 const ChartInput = z.object({
-  name: z.string().optional(),
-  date: z.string().optional(),
-  time: z.string().optional(),
-  place: z.string().optional(),
-  bazi: z.string().optional(),
-  zodiac: z.string().optional(),
-  lunar: z.string().optional(),
+  name: z.string().max(120).optional(),
+  date: z.string().max(40).optional(),
+  time: z.string().max(20).optional(),
+  place: z.string().max(160).optional(),
+  bazi: z.string().max(120).optional(),
+  zodiac: z.string().max(40).optional(),
+  lunar: z.string().max(80).optional(),
   planets: z
     .array(
       z.object({
-        name: z.string(),
-        sign: z.string(),
-        house: z.number().optional(),
+        name: z.string().max(40),
+        sign: z.string().max(40),
+        house: z.number().int().min(1).max(12).optional(),
       }),
     )
+    .max(30)
     .default([]),
   lang: z.enum(["en", "zh"]).default("zh"),
 });
 
 const InferInput = ChartInput.extend({
-  events: z.array(EventInput).min(1),
+  events: z.array(EventInput).min(1).max(20),
 });
 
 export type InferredEvent = {
@@ -74,16 +78,19 @@ function stripJson(text: string) {
 }
 
 export const inferKeyEvents = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => InferInput.parse(d))
-  .handler(async ({ data }): Promise<{ results: InferredEvent[] }> => {
+  .handler(async ({ data, context }): Promise<{ results: InferredEvent[] }> => {
+    enforceRateLimit(`key-infer:${context.userId}`, 15, 60_000, "key-event inferences");
     const key = process.env.LOVABLE_API_KEY;
-    if (!key) throw new Error("Missing LOVABLE_API_KEY");
+    if (!key) throw new Error("Key-event service is not configured");
     const gateway = createLovableAiGatewayProvider(key);
     const isZh = data.lang === "zh";
 
-    const system = isZh
+    const system = (isZh
       ? `你是精通西方占星、印度占星（Jyotish）、八字与紫微斗数的老者。用户会告诉你他人生真实发生过的一件事（比如「分手」「骨折」「换城市」）以及大致年份范围。你的任务：只依据下面这张命盘，从四个体系中交叉推演，落到一个尽量具体的时间点（月份或季度），并简要说明每个体系提供了什么线索。语气克制、诚实、可验证。只输出严格合法 JSON，不要 Markdown。`
-      : `You are an elder fluent in Western astrology, Vedic Jyotish, Chinese BaZi and Zi Wei Dou Shu. The visitor will tell you a real life event (breakup, fracture, move…) and an approximate year range. Grounded only in the chart below, cross-read the four traditions and land on the most specific time you can (month or quarter). Briefly state what each tradition contributed. Restrained, honest, verifiable. STRICT JSON only, no Markdown.`;
+      : `You are an elder fluent in Western astrology, Vedic Jyotish, Chinese BaZi and Zi Wei Dou Shu. The visitor will tell you a real life event (breakup, fracture, move…) and an approximate year range. Grounded only in the chart below, cross-read the four traditions and land on the most specific time you can (month or quarter). Briefly state what each tradition contributed. Restrained, honest, verifiable. STRICT JSON only, no Markdown.`)
+      + "\n\n" + guardrailsFor(isZh ? "zh" : "en");
 
     const schema = `{
   "results": [
@@ -142,27 +149,30 @@ const SynthInput = ChartInput.extend({
   events: z
     .array(
       z.object({
-        event: z.string(),
-        rangeStart: z.union([z.string(), z.number()]).optional(),
-        rangeEnd: z.union([z.string(), z.number()]).optional(),
-        aiWhen: z.string().optional(),
-        aiReasoning: z.string().optional(),
+        event: z.string().max(400),
+        rangeStart: z.union([z.string().max(20), z.number()]).optional(),
+        rangeEnd: z.union([z.string().max(20), z.number()]).optional(),
+        aiWhen: z.string().max(120).optional(),
+        aiReasoning: z.string().max(1200).optional(),
         accurate: z.enum(["yes", "no", "unset"]).default("unset"),
-        userCorrection: z.string().optional(),
+        userCorrection: z.string().max(600).optional(),
       }),
     )
-    .min(1),
+    .min(1)
+    .max(20),
 });
 
 export const synthesizeKeyEvents = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => SynthInput.parse(d))
-  .handler(async ({ data }): Promise<{ synthesis: string }> => {
+  .handler(async ({ data, context }): Promise<{ synthesis: string }> => {
+    enforceRateLimit(`key-synth:${context.userId}`, 10, 60_000, "key-event syntheses");
     const key = process.env.LOVABLE_API_KEY;
-    if (!key) throw new Error("Missing LOVABLE_API_KEY");
+    if (!key) throw new Error("Key-event service is not configured");
     const gateway = createLovableAiGatewayProvider(key);
     const isZh = data.lang === "zh";
 
-    const system = isZh
+    const system = (isZh
       ? `你是"命运图书馆"的老者。用户已验证或纠正了 AI 对若干关键节点的判定。请把这些真实反馈作为微调依据，重新审视这张命盘，写一段 4–6 段的"综合判断"：
 1) 明确指出 AI 哪里判对了、哪里偏差、偏差意味着这张盘的哪个体系需要重新加权；
 2) 结合被验证过的真实时间点，给出这个人未来 3 年的三个"最值得留意的窗口"（月份精度），并说明理由；
@@ -170,7 +180,8 @@ export const synthesizeKeyEvents = createServerFn({ method: "POST" })
       : `You are the elder of the Library of Destiny. The user has verified or corrected the AI's guesses on their key life events. Use those real anchors to recalibrate the chart and write a 4–6 paragraph "final synthesis":
 1) State clearly where the AI was right, where it drifted, and which tradition's weight should be adjusted because of that drift;
 2) Using the verified anchors, name three concrete windows (month-precision) in the next 3 years that deserve attention, and why;
-3) Warm, poetic but concrete, 200–320 words. No filler.`;
+3) Warm, poetic but concrete, 200–320 words. No filler.`)
+      + "\n\n" + guardrailsFor(isZh ? "zh" : "en");
 
     const eventsBlock = data.events
       .map((e, i) => {

@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { createHash, randomInt, timingSafeEqual } from "node:crypto";
 
+import { enforceRateLimit } from "./rate-limit.server";
+
 /**
  * Phone OTP sign-in via Twilio SMS.
  *
@@ -39,6 +41,8 @@ export const sendPhoneOtp = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => SendInput.parse(data))
   .handler(async ({ data }) => {
     const phone = normalizePhone(data.phone);
+    // Cap SMS to 5 per hour per phone number on top of the DB 30s throttle.
+    enforceRateLimit(`otp-send:${phone}`, 5, 60 * 60_000, "SMS codes");
     const lovableKey = process.env.LOVABLE_API_KEY;
     const twilioKey = process.env.TWILIO_API_KEY;
     const twilioFrom = process.env.TWILIO_FROM_NUMBER;
@@ -103,8 +107,9 @@ export const sendPhoneOtp = createServerFn({ method: "POST" })
       body,
     });
     if (!res.ok) {
-      const text = await res.text();
-      console.error(`Twilio send failed [${res.status}]:`, text);
+      // Log only the status; the Twilio error body echoes the phone number,
+      // which we deliberately keep out of logs.
+      console.error(`Twilio send failed [${res.status}]`);
       throw new Error(`短信发送失败：${res.status}`);
     }
     return { ok: true as const };
@@ -118,6 +123,8 @@ export const verifyPhoneOtp = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => VerifyInput.parse(data))
   .handler(async ({ data }) => {
     const phone = normalizePhone(data.phone);
+    // Blunt guess floods before hitting the 5-attempt DB counter.
+    enforceRateLimit(`otp-verify:${phone}`, 10, 5 * 60_000, "verification attempts");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const sb = supabaseAdmin as unknown as {

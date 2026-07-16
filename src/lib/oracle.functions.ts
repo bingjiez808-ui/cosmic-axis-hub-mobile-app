@@ -4,24 +4,22 @@ import { z } from "zod";
 
 import { createLovableAiGatewayProvider } from "./ai-gateway.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { guardrailsFor, safeMessage } from "./ai-guardrails";
+import { enforceRateLimit } from "./rate-limit.server";
 
 const AskInput = z.object({
   question: z.string().min(1).max(4000),
   lang: z.enum(["en", "zh"]).default("zh"),
   // Which paid surface is calling. Used to enforce membership-tier + quota
   // server-side so the paywall cannot be bypassed from the browser.
-  //  - "tarot":       Sage or Oracle only, metered monthly via tarot_usage.
-  //  - "oracle_chat": Oracle only.
-  //  - "general":     any signed-in user (community quest reflections etc.).
   feature: z.enum(["tarot", "oracle_chat", "general"]).default("general"),
-  // The user's four-tradition snapshot — kept short so the model can weave it in.
   chart: z
     .object({
-      name: z.string().optional(),
-      astrology: z.string().optional(),
-      jyotish: z.string().optional(),
-      bazi: z.string().optional(),
-      ziwei: z.string().optional(),
+      name: z.string().max(120).optional(),
+      astrology: z.string().max(600).optional(),
+      jyotish: z.string().max(600).optional(),
+      bazi: z.string().max(200).optional(),
+      ziwei: z.string().max(600).optional(),
     })
     .optional(),
 });
@@ -43,6 +41,8 @@ export const askOracle = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => AskInput.parse(data))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    enforceRateLimit(`oracle:${userId}`, 30, 60_000, "oracle questions");
+    try {
 
     // 1) Look up caller's membership tier (authoritative — never trust client).
     const { data: profile, error: profileError } = await supabase
@@ -142,13 +142,17 @@ export const askOracle = createServerFn({ method: "POST" })
 4) English, 200–320 words, blank lines between paragraphs; numbered points are welcome.
 Never claim to be an AI. Never say fate is fixed — destiny is only a map.`;
 
-    const prompt = `${chartLine ? `Visitor's chart:\n${chartLine}\n\n` : ""}Question:\n${data.question}`;
+      const guardedSystem = system + "\n\n" + guardrailsFor(data.lang);
+      const prompt = `${chartLine ? `Visitor's chart:\n${chartLine}\n\n` : ""}Question:\n${data.question}`;
 
-    const { text } = await generateText({
-      model: gateway("google/gemini-2.5-flash"),
-      system,
-      prompt,
-    });
+      const { text } = await generateText({
+        model: gateway("google/gemini-2.5-flash"),
+        system: guardedSystem,
+        prompt,
+      });
 
-    return { text };
+      return { text };
+    } catch (err) {
+      throw new Error(safeMessage(err, "Oracle is unavailable"));
+    }
   });
