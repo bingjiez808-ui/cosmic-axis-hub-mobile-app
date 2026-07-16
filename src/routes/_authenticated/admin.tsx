@@ -23,6 +23,11 @@ import {
   setUserMembership,
   setUserPassword,
 } from "@/lib/admin.functions";
+import {
+  grantPremiumReportAccess,
+  listAdminPremiumOrders,
+  type AdminOrderRow,
+} from "@/lib/premium.functions";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
