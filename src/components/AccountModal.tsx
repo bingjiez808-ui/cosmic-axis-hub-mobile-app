@@ -201,7 +201,7 @@ export function AccountModal({ open, onClose }: { open: boolean; onClose: () => 
                   <TarotQuota accountKey={displayAccount.email} plan={displayAccount.plan ?? "free"} lang={lang} />
                 </div>
 
-                <MyChartsSection open={open} onClose={onClose} lang={lang} />
+                <MyChartsSection open={open} onClose={onClose} lang={lang} rows={dbCharts} setRows={setDbCharts} />
 
                 <MyPremiumReports open={open} lang={lang} />
 
@@ -209,11 +209,11 @@ export function AccountModal({ open, onClose }: { open: boolean; onClose: () => 
                   <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
                     {t.acc_view_saved}
                   </p>
-                  {saved.length === 0 ? (
+                  {savedFiltered.length === 0 ? (
                     <p className="text-sm text-stone-warm/50">{t.acc_no_saved}</p>
                   ) : (
                     <ul className="space-y-2">
-                      {saved.map((s) => {
+                      {savedFiltered.map((s) => {
                         const q: Record<string, string> = { name: s.name, readingId: s.id };
                         if (s.date) q.date = s.date;
                         if (s.time) q.time = s.time;
