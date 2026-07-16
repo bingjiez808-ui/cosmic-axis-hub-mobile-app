@@ -339,12 +339,14 @@ function YearByYearChart({
   age,
   lang,
   birthISO,
+  aiYears,
 }: {
   from: number;
   to: number;
   age: number | null;
   lang: Lang;
   birthISO?: string;
+  aiYears?: { age: number; intensity: number; theme: string }[];
 }) {
   const bs = birthSeed(birthISO);
   const rnd = prand(((bs ^ (from + 1)) >>> 0) || 1);
@@ -387,12 +389,15 @@ function YearByYearChart({
   const pool = lang === "zh" ? themesZh : themesEn;
   const years = Array.from({ length: to - from }, (_, i) => {
     const yr = from + i;
-    const intensity = 0.35 + rnd() * 0.6;
-    const themeIdx = Math.floor(rnd() * pool.length);
+    const aiYear = aiYears?.find((y) => y.age === yr);
+    const intensity = aiYear && typeof aiYear.intensity === "number"
+      ? Math.max(0.15, Math.min(1, aiYear.intensity))
+      : 0.35 + rnd() * 0.6;
+    const theme = aiYear?.theme?.trim() || pool[Math.floor(rnd() * pool.length)];
     return {
       age: yr,
       intensity,
-      theme: pool[themeIdx],
+      theme,
       isNow: age != null && age === yr,
       isPast: age != null && age > yr,
     };
