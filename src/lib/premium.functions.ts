@@ -571,6 +571,105 @@ export const listAdminPremiumOrders = createServerFn({ method: "POST" })
   });
 
 /* --------------------------------------------------------------------- */
+/* listAdminChartsForUser — admin only                                    */
+/*                                                                        */
+/* Lets the admin panel show every chart belonging to a target user       */
+/* (looked up by email or user id) so a test grant can be issued for a    */
+/* chart that has NO order yet. Existing paid/pending order state per     */
+/* chart is folded in so the UI can hide "already granted" charts.        */
+/* --------------------------------------------------------------------- */
+
+const AdminChartLookupInput = z.object({
+  query: z.string().trim().min(1).max(200),
+});
+
+export type AdminUserChartRow = {
+  userId: string;
+  email: string | null;
+  chartId: string;
+  name: string | null;
+  birthDate: string | null;
+  birthTime: string | null;
+  birthPlace: string | null;
+  hasCurrentPaid: boolean;
+  hasCurrentPending: boolean;
+  hasLegacyPaid: boolean;
+};
+
+export const listAdminChartsForUser = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => AdminChartLookupInput.parse(d))
+  .handler(async ({ data, context }): Promise<AdminUserChartRow[]> => {
+    await ensureAdmin(context as never);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Resolve user by email (case-insensitive) or user id.
+    const q = data.query.toLowerCase();
+    const looksLikeUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      data.query,
+    );
+
+    const { data: authList } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 500 });
+    const users = authList?.users ?? [];
+    const match = looksLikeUuid
+      ? users.find((u) => u.id === data.query)
+      : users.find((u) => (u.email ?? "").toLowerCase() === q);
+    if (!match) return [];
+
+    const { data: charts } = await supabaseAdmin
+      .from("charts")
+      .select("id, name, birth_date, birth_time, birth_place")
+      .eq("user_id", match.id)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (!charts || charts.length === 0) return [];
+
+    const chartIds = charts.map((c) => c.id);
+    const { data: orders } = await supabaseAdmin
+      .from("premium_report_orders")
+      .select("chart_id, status, product_version")
+      .eq("user_id", match.id)
+      .in("chart_id", chartIds);
+
+    const flags = new Map<
+      string,
+      { currentPaid: boolean; currentPending: boolean; legacyPaid: boolean }
+    >();
+    for (const c of chartIds) {
+      flags.set(c, { currentPaid: false, currentPending: false, legacyPaid: false });
+    }
+    for (const o of orders ?? []) {
+      const f = flags.get(o.chart_id);
+      if (!f) continue;
+      const isLegacy = (PREMIUM_LEGACY_PRODUCT_VERSIONS as readonly string[]).includes(
+        o.product_version,
+      );
+      if (isLegacy && o.status === "paid") f.legacyPaid = true;
+      if (o.product_version === PREMIUM_PRODUCT_VERSION) {
+        if (o.status === "paid") f.currentPaid = true;
+        if (o.status === "pending") f.currentPending = true;
+      }
+    }
+
+    return charts.map((c) => {
+      const f = flags.get(c.id) ?? { currentPaid: false, currentPending: false, legacyPaid: false };
+      return {
+        userId: match.id,
+        email: match.email ?? null,
+        chartId: c.id,
+        name: c.name ?? null,
+        birthDate: c.birth_date ?? null,
+        birthTime: c.birth_time ?? null,
+        birthPlace: c.birth_place ?? null,
+        hasCurrentPaid: f.currentPaid,
+        hasCurrentPending: f.currentPending,
+        hasLegacyPaid: f.legacyPaid,
+      };
+    });
+  });
+
+
+/* --------------------------------------------------------------------- */
 /* Deep-report content generation                                         */
 /* --------------------------------------------------------------------- */
 
