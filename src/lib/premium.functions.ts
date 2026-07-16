@@ -287,24 +287,47 @@ export const grantPremiumReportAccess = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!chart || chart.user_id !== data.userId) throw new Error("chart_not_found_for_user");
 
-    // Find any existing active order across v1 (legacy) or v2 (current).
-    // If a legacy paid v1 order exists we treat it as already granted
-    // and just append an audit record — never duplicate the purchase.
-    const { data: existing } = await supabaseAdmin
+    // 1) Legacy v1 already paid → already granted. Never duplicate the
+    //    grant; log an audit entry and short-circuit.
+    const { data: legacyPaid } = await supabaseAdmin
       .from("premium_report_orders")
-      .select("id, status, product_version, amount_cents")
+      .select("id")
       .eq("user_id", data.userId)
       .eq("chart_id", data.chartId)
-      .in("product_version", PREMIUM_ALL_PRODUCT_VERSIONS as unknown as string[])
+      .in("product_version", PREMIUM_LEGACY_PRODUCT_VERSIONS as unknown as string[])
+      .eq("status", "paid")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (legacyPaid) {
+      await supabaseAdmin.from("premium_grant_audit").insert({
+        order_id: legacyPaid.id,
+        admin_user_id: context.userId,
+        target_user_id: data.userId,
+        chart_id: data.chartId,
+        action: "already_granted_legacy_v1",
+        note: data.note,
+      });
+      throw new Error("already_granted_legacy_v1");
+    }
+
+    // 2) Look for an existing v2 order. v1 pending/failed/refunded rows
+    //    are intentionally ignored and never reused / mutated.
+    const { data: v2Existing } = await supabaseAdmin
+      .from("premium_report_orders")
+      .select("id, status")
+      .eq("user_id", data.userId)
+      .eq("chart_id", data.chartId)
+      .eq("product_version", PREMIUM_PRODUCT_VERSION)
       .in("status", ["pending", "paid"])
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
 
     let orderId: string;
-    if (existing) {
-      orderId = existing.id;
-      if (existing.status !== "paid") {
+    if (v2Existing) {
+      orderId = v2Existing.id;
+      if (v2Existing.status !== "paid") {
         const { error: upErr } = await supabaseAdmin
           .from("premium_report_orders")
           .update({
