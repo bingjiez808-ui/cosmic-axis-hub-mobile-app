@@ -215,10 +215,14 @@ export function LifeTimeline({
   const { lang, t } = useLang();
   const li = lang === "zh" ? 1 : 0;
   const age = computeCurrentAge(birthISO);
-  const [active, setActive] = useState<number>(() => {
-    if (age == null) return 3;
-    return Math.min(DECADES.length - 1, Math.floor(age / 10));
-  });
+  const currentDecadeIndex = age == null ? 3 : Math.min(DECADES.length - 1, Math.floor(age / 10));
+  const [active, setActive] = useState<number>(currentDecadeIndex);
+
+  const { account } = useAccount();
+  const plan = (account?.plan ?? "free") as "free" | "sage" | "oracle";
+  const isSage = plan === "sage" || plan === "oracle";
+  const isLocked = !isSage && active !== currentDecadeIndex;
+  const openAccount = () => window.dispatchEvent(new Event("lod:open-account"));
 
   const { outlook, state: aiState } = useChartOutlook(search, lang);
   const aiDecade = outlook?.timeline.decades[active];
@@ -238,14 +242,14 @@ export function LifeTimeline({
     "For you, this decade closes with a decision that redefines the next twenty years.",
   ];
   const personalTintZh = [
-    "在你的盘里，这十年更偏「向外证明」，而非「向内退守」。",
-    "在你的盘里，这十年奖励稳定的手艺胜过突然的跳跃 —— 账本悄悄复利。",
-    "在你的盘里，这十年打开两扇「关系形状」的门：选那扇慢的。",
-    "在你的盘里，这十年的下半段比上半段更响 —— 提早护住休息。",
-    "在你的盘里，这十年围绕一次被拖延的诚实对话，进行重建。",
-    "在你的盘里，这十年的真正货币是「信任」—— 养一个小而深的圈子。",
-    "在你的盘里，这十年身体的诉求会上抬 —— 把睡眠当作策略。",
-    "在你的盘里，这十年以一次「重新定义未来二十年」的决定收束。",
+    "在你的盘里,这十年更偏「向外证明」,而非「向内退守」。",
+    "在你的盘里,这十年奖励稳定的手艺胜过突然的跳跃 —— 账本悄悄复利。",
+    "在你的盘里,这十年打开两扇「关系形状」的门:选那扇慢的。",
+    "在你的盘里,这十年的下半段比上半段更响 —— 提早护住休息。",
+    "在你的盘里,这十年围绕一次被拖延的诚实对话,进行重建。",
+    "在你的盘里,这十年的真正货币是「信任」—— 养一个小而深的圈子。",
+    "在你的盘里,这十年身体的诉求会上抬 —— 把睡眠当作策略。",
+    "在你的盘里,这十年以一次「重新定义未来二十年」的决定收束。",
   ];
   const fallbackTint = (lang === "zh" ? personalTintZh : personalTintEn)[
     ((seed + active * 2654435761) >>> 0) % 8
@@ -254,6 +258,8 @@ export function LifeTimeline({
   const theme = aiDecade?.theme?.trim() || fallbackDecade.theme[li];
   const detail = aiDecade?.detail?.trim() || fallbackDecade.detail[li];
   const personalTint = aiDecade?.personalTint?.trim() || fallbackTint;
+
+  const currentRange = `${DECADES[currentDecadeIndex].from}–${DECADES[currentDecadeIndex].to}`;
 
   return (
     <section className="mx-auto max-w-5xl px-6 pb-24 md:px-12">
@@ -274,7 +280,14 @@ export function LifeTimeline({
           )}
         </div>
 
-        <p className="mb-4 max-w-3xl text-sm text-stone-warm/60">{t.tl_hint}</p>
+        <p className="mb-2 max-w-3xl text-sm text-stone-warm/60">{t.tl_hint}</p>
+        {!isSage && age != null && (
+          <p className="mb-4 max-w-3xl text-[11px] leading-relaxed text-gold-dust/70">
+            {lang === "zh"
+              ? `当前免费开放你所处的 ${currentRange} 岁十年的逐年细读,其余十年需开通「贤者」查看。`
+              : `Your current decade (${currentRange}) is unlocked for free — unlock Sage to read the other decades.`}
+          </p>
+        )}
         {aiState === "loading" && (
           <p className="mb-6 flex items-center gap-2 text-[10px] uppercase tracking-[0.28em] text-gold-dust/70">
             <span className="size-1.5 animate-pulse rounded-full bg-gold-dust" />
@@ -305,15 +318,23 @@ export function LifeTimeline({
               const isActive = i === active;
               const isPast = age != null && age >= d.to;
               const isNow = age != null && age >= d.from && age < d.to;
+              const isLockedDot = !isSage && i !== currentDecadeIndex;
               return (
                 <button
                   key={d.from}
                   type="button"
                   onClick={() => setActive(i)}
                   className="group flex flex-col items-center gap-3 py-2"
+                  title={
+                    isLockedDot
+                      ? lang === "zh"
+                        ? "贤者会员可查看"
+                        : "Sage members only"
+                      : undefined
+                  }
                 >
                   <span
-                    className={`size-4 rounded-full border transition-all ${
+                    className={`relative size-4 rounded-full border transition-all ${
                       isActive
                         ? "border-gold-dust bg-gold-dust scale-125"
                         : isNow
@@ -322,7 +343,11 @@ export function LifeTimeline({
                             ? "border-gold-dust/40 bg-gold-dust/20"
                             : "border-white/20 bg-transparent group-hover:border-gold-dust/60"
                     }`}
-                  />
+                  >
+                    {isLockedDot && (
+                      <span className="absolute -right-1.5 -top-1.5 text-[9px] leading-none">🔒</span>
+                    )}
+                  </span>
                   <span
                     className={`text-[10px] uppercase tracking-[0.22em] transition-colors ${
                       isActive ? "text-gold-light" : "text-stone-warm/50 group-hover:text-gold-dust"
@@ -347,25 +372,57 @@ export function LifeTimeline({
           >
             <p className="mb-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
               {lang === "zh"
-                ? `${fallbackDecade.from}–${fallbackDecade.to} 岁`
-                : `${t.tl_age} ${fallbackDecade.from}–${fallbackDecade.to}`}
-            </p>
-            <h3 className="mb-4 font-serif text-2xl italic text-gold-light">{theme}</h3>
-            <p className="mb-3 font-serif text-lg leading-relaxed text-stone-warm/85">
-              {detail}
-            </p>
-            <p className="mb-6 font-serif text-[15px] italic leading-relaxed text-gold-light/80">
-              {personalTint}
+                ? `${fallbackDecade.from}–${fallbackDecade.to} 岁${active === currentDecadeIndex ? " · 当前十年" : ""}`
+                : `${t.tl_age} ${fallbackDecade.from}–${fallbackDecade.to}${active === currentDecadeIndex ? " · current" : ""}`}
             </p>
 
-            <YearByYearChart
-              from={fallbackDecade.from}
-              to={fallbackDecade.to}
-              age={age}
-              lang={lang}
-              birthISO={birthISO}
-              aiYears={aiDecade?.years}
-            />
+            {isLocked ? (
+              <div className="flex flex-col items-start gap-4 py-4">
+                <h3 className="font-serif text-2xl italic text-gold-light/80">
+                  {lang === "zh" ? "贤者会员专属" : "Sage members only"}
+                </h3>
+                <p className="max-w-lg text-sm leading-relaxed text-stone-warm/70">
+                  {lang === "zh"
+                    ? `你目前处于 ${currentRange} 岁十年,该阶段已为你免费开放逐年细读。${fallbackDecade.from}–${fallbackDecade.to} 岁的逐年推演、大运干支与行运佐证,需开通「贤者」查看。`
+                    : `Your current decade (${currentRange}) is unlocked for free. Year-by-year details, luck pillars and transit evidence for age ${fallbackDecade.from}–${fallbackDecade.to} are available to Sage members.`}
+                </p>
+                <div className="flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={openAccount}
+                    className="rounded-full border border-gold-dust/60 bg-gold-dust/10 px-5 py-2 text-[11px] uppercase tracking-[0.28em] text-gold-light hover:bg-gold-dust/20"
+                  >
+                    {lang === "zh" ? "开通贤者 →" : "Unlock Sage →"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActive(currentDecadeIndex)}
+                    className="rounded-full border border-white/15 px-4 py-2 text-[10px] uppercase tracking-[0.28em] text-stone-warm/70 hover:text-gold-light"
+                  >
+                    {lang === "zh" ? "返回当前十年" : "Back to current decade"}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <h3 className="mb-4 font-serif text-2xl italic text-gold-light">{theme}</h3>
+                <p className="mb-3 font-serif text-lg leading-relaxed text-stone-warm/85">
+                  {detail}
+                </p>
+                <p className="mb-6 font-serif text-[15px] italic leading-relaxed text-gold-light/80">
+                  {personalTint}
+                </p>
+
+                <YearByYearChart
+                  from={fallbackDecade.from}
+                  to={fallbackDecade.to}
+                  age={age}
+                  lang={lang}
+                  birthISO={birthISO}
+                  aiYears={aiDecade?.years}
+                />
+              </>
+            )}
           </motion.div>
         </AnimatePresence>
       </div>
