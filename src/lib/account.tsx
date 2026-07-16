@@ -24,10 +24,17 @@ export type SavedReading = {
   lang?: "en" | "zh";
   fingerprint?: string;
   aiReport?: ReportAI;
+  aiReportVersion?: string;
   aiOutlook?: OutlookAI;
+  aiOutlookVersion?: string;
 };
 
-type ReadingAIPatch = Partial<Pick<SavedReading, "aiReport" | "aiOutlook" | "fingerprint">>;
+type ReadingAIPatch = Partial<
+  Pick<
+    SavedReading,
+    "aiReport" | "aiReportVersion" | "aiOutlook" | "aiOutlookVersion" | "fingerprint"
+  >
+>;
 
 type Ctx = {
   account: Account | null;
