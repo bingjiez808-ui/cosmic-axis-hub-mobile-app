@@ -628,7 +628,7 @@ function ReportPage() {
     runReport(false);
   }, [runReport]);
 
-  const isAwaitingPersonalized = !!search.date && aiState !== "ready" && aiState !== "error";
+  const isAwaitingPersonalized = !!search.date && aiState === "loading" && !ai?.summary;
   const summary = ai?.summary
     ? ai.summary
     : isAwaitingPersonalized
