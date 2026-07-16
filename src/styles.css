@@ -372,16 +372,17 @@
 
 /* ─────────────────────────────────────────────
    Typography self-adaptation — no single-char
-   orphan lines. `text-wrap: balance` distributes
-   words across lines so headings never drop one
-   character to a new row; `pretty` keeps last-line
-   orphans out of long body copy. Chinese: allow
-   line-break: anywhere with `hangul` fallback so
-   the browser prefers full-width breaks.
+   orphan lines. `text-wrap: pretty` is stronger
+   than `balance` at preventing a lone glyph on
+   the last line (critical for CJK titles where
+   the browser might otherwise strand `字？` or a
+   punctuation mark). Latin headings keep balance
+   as a fallback where `pretty` is unavailable.
    ───────────────────────────────────────────── */
 h1, h2, h3, h4 {
   text-wrap: balance;
-  hanging-punctuation: allow-end last;
+  text-wrap: pretty;
+  hanging-punctuation: none;
 }
 .balance {
   text-wrap: balance;
@@ -395,6 +396,36 @@ h1, h2, h3, h4 {
   text-wrap: pretty;
   overflow-wrap: anywhere;
   word-break: normal;
+}
+
+/* Defer offscreen expensive sections — pays for itself on the
+   long report page and marketing pages with many stacked cards.
+   Estimated size keeps the scrollbar/anchors stable so we do not
+   introduce CLS. */
+@utility cv-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 640px;
+}
+
+/* Respect user motion preferences — kill decorative, infinite
+   ambient animations and long-running rotations. Layout, opacity
+   transitions and page enter animations are preserved. */
+@media (prefers-reduced-motion: reduce) {
+  .dust-motes,
+  .animate-candle-flicker,
+  .animate-slow-rotate,
+  .animate-slow-rotate-reverse,
+  .animate-pulse-gold {
+    animation: none !important;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 /* Compact detail cards — same-size boxes at any breakpoint. */
 .detail-grid {
