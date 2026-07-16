@@ -991,8 +991,8 @@ function ReportPage() {
         fingerprint={fingerprint}
         aiReport={ai ?? savedReading?.aiReport}
         aiReportVersion={ai ? REPORT_AI_VERSION : savedReading?.aiReportVersion}
-        aiOutlook={savedReading?.aiOutlook}
-        aiOutlookVersion={savedReading?.aiOutlookVersion}
+        aiOutlook={undefined}
+        aiOutlookVersion={undefined}
       />
         );
       })()}
