@@ -887,8 +887,8 @@ function ReportPage() {
             <span>
               {aiState === "loading"
                 ? lang === "zh"
-                  ? "智者正在为你的命盘逐维度重写解读……"
-                  : "The elder is rewriting each dimension for your chart…"
+                  ? `智者正在逐维度写下你的命盘 · ${aiProgress.done}/${aiProgress.total}`
+                  : `The elder is writing your chart, one dimension at a time · ${aiProgress.done}/${aiProgress.total}`
                 : lang === "zh"
                   ? `个性化解读暂时无法生成（${aiError ?? "unknown"}）—— 先显示通用模板。`
                   : `Personalised reading unavailable (${aiError ?? "unknown"}) — showing template.`}
@@ -907,32 +907,28 @@ function ReportPage() {
             )}
           </div>
         )}
-        {isAwaitingPersonalized && (
-          <div className="glass-card rounded-3xl p-8 text-center md:p-12">
-            <div className="mx-auto mb-6 size-12 rounded-full border border-gold-dust/30 border-t-gold-light animate-slow-rotate" />
-            <p className="mb-3 text-[10px] uppercase tracking-[0.34em] text-gold-dust">
-              {lang === "zh" ? "正在生成专属命盘解读" : "Personal chart reading in progress"}
-            </p>
-            <p className="mx-auto max-w-2xl font-serif text-xl italic leading-relaxed text-stone-warm/80">
-              {lang === "zh"
-                ? "本页会等待 AI 把你的阳历生日、农历换算、八字四柱与行星宫位写入每一个维度；在完成前不再显示通用模板。"
-                : "This page is waiting for AI to write your solar date, lunar conversion, BaZi pillars and planetary houses into every dimension; no generic template is shown while it loads."}
-            </p>
-          </div>
-        )}
-        {!isAwaitingPersonalized && displayed.map((d, idx) => (
+        {displayed.map((d, idx) => {
+          const arrived = aiByKey.has(d.key);
+          const pending = !!search.date && aiState === "loading" && !arrived;
+          return (
           <motion.article
             key={d.key}
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-80px" }}
             transition={{ duration: 0.8, delay: idx * 0.04, ease: [0.32, 0.72, 0, 1] }}
-            className="glass-card overflow-hidden rounded-3xl p-8 md:p-12"
+            className={`glass-card overflow-hidden rounded-3xl p-8 md:p-12 ${pending ? "opacity-70" : ""}`}
           >
             <div className="mb-8 flex flex-wrap items-baseline justify-between gap-4 border-b border-white/10 pb-6">
               <div>
-                <p className="mb-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
-                  {String(idx + 1).padStart(2, "0")} · {d.title[li]}
+                <p className="mb-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+                  <span>{String(idx + 1).padStart(2, "0")} · {d.title[li]}</span>
+                  {pending && (
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-gold-dust/30 px-2 py-0.5 text-[9px] tracking-[0.28em] text-gold-dust/80">
+                      <span className="size-1.5 animate-pulse rounded-full bg-gold-dust" />
+                      {lang === "zh" ? "生成中" : "Writing"}
+                    </span>
+                  )}
                 </p>
                 <h2 className="font-serif text-2xl italic text-stone-warm md:text-3xl">
                   {d.headline[li]}
@@ -940,6 +936,7 @@ function ReportPage() {
               </div>
               <Stars n={d.stars} />
             </div>
+
 
             <div className="grid grid-cols-1 gap-8 lg:grid-cols-5">
               {/* Left: evidence + viz */}
