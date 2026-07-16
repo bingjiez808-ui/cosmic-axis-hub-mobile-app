@@ -585,8 +585,9 @@ function PremiumOrdersSection({
   return (
     <div className="mx-auto mt-10 max-w-6xl px-6 pb-16">
       <h2 className="mb-4 font-serif text-2xl italic text-stone-warm">
-        高级 PDF 订单 · Premium PDF orders
+        高级深度报告订单 · Premium Deep Reading orders
       </h2>
+
 
       <div className="glass-card rounded-2xl border border-white/10 p-4">
         <div className="mb-4 flex flex-wrap items-center gap-3">
