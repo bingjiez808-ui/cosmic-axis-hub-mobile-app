@@ -1252,10 +1252,13 @@ function DimensionDetailModal({
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent
-        className="max-h-[92vh] w-[96vw] max-w-4xl overflow-y-auto border border-gold-dust/25 bg-obsidian/95 p-0 backdrop-blur-xl [&>button]:text-gold-light"
+        className="fixed inset-x-0 bottom-0 top-2 left-0 right-0 grid h-[calc(100dvh-0.5rem)] max-h-[100dvh] w-full max-w-none translate-x-0 translate-y-0 grid-rows-[auto_1fr] gap-0 overflow-hidden rounded-b-none rounded-t-3xl border border-gold-dust/25 bg-obsidian/98 p-0 backdrop-blur-xl sm:inset-auto sm:left-[50%] sm:top-[50%] sm:h-auto sm:max-h-[92vh] sm:w-[96vw] sm:max-w-4xl sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-3xl [&>button]:right-3 [&>button]:top-3 [&>button]:z-30 [&>button]:grid [&>button]:size-11 [&>button]:place-items-center [&>button]:rounded-full [&>button]:border [&>button]:border-gold-dust/30 [&>button]:bg-obsidian/70 [&>button]:text-gold-light [&>button]:opacity-100 sm:[&>button]:right-4 sm:[&>button]:top-4"
       >
         {d && (
-          <div className="relative">
+          <div
+            className="relative row-span-2 grid grid-rows-[auto_1fr] overflow-hidden"
+            style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+          >
             {/* Ambient background */}
             <div
               aria-hidden="true"
@@ -1266,24 +1269,27 @@ function DimensionDetailModal({
               }}
             />
 
-            {/* Header */}
-            <div className="relative flex items-start gap-4 border-b border-white/10 px-6 py-6 sm:px-10 sm:py-7">
-              <div className="grid size-14 shrink-0 place-items-center rounded-2xl border border-gold-dust/30 bg-gradient-to-br from-gold-dust/[0.14] to-transparent text-gold-light">
-                <DIcon size={24} strokeWidth={1.5} />
+            {/* Sticky Header */}
+            <div className="sticky top-0 z-20 flex items-start gap-3 border-b border-white/10 bg-obsidian/95 px-5 py-4 pr-14 backdrop-blur-md sm:gap-4 sm:px-10 sm:py-7">
+              <div className="grid size-11 shrink-0 place-items-center rounded-2xl border border-gold-dust/30 bg-gradient-to-br from-gold-dust/[0.14] to-transparent text-gold-light sm:size-14">
+                <DIcon size={22} strokeWidth={1.5} />
               </div>
-              <div className="min-w-0 pr-8">
+              <div className="min-w-0 flex-1">
                 <DialogTitle asChild>
-                  <p className="mb-1 text-[10px] uppercase tracking-[0.32em] text-gold-dust/80">
+                  <p className="mb-1 text-[10px] uppercase tracking-[0.28em] text-gold-dust/80 sm:tracking-[0.32em]">
                     {d.title[li]} · {lang === "zh" ? "详细佐证" : "detailed evidence"}
                   </p>
                 </DialogTitle>
                 <DialogDescription asChild>
-                  <h3 className="font-serif text-xl italic leading-snug text-stone-warm sm:text-2xl">
+                  <h3 className="font-serif text-lg italic leading-snug text-stone-warm sm:text-2xl">
                     {d.headline[li]}
                   </h3>
                 </DialogDescription>
               </div>
             </div>
+
+            {/* Scrollable body */}
+            <div className="relative overflow-y-auto overflow-x-hidden" style={{ WebkitOverflowScrolling: "touch" }}>
 
             <div className="relative grid gap-8 px-6 py-7 sm:px-10 md:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
               {/* Left column — data visualisation */}
