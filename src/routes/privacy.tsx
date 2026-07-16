@@ -49,7 +49,7 @@ const EN: Copy = {
       h: "1. Information we collect",
       body: [
         "Birth details you enter into the ritual: full name (or nickname), date of birth, time of birth, place of birth (city / region) and time zone. These are required to compute an astrological chart.",
-        "Account information when you sign in: email address, and optionally a display name and avatar. Registration sends a one-time verification link to your email — clicking it verifies the address and creates the account. Returning sign-in uses the same magic-link flow, and Google sign-in creates an account on first use and simply signs you in on subsequent visits. We never store passwords for you. Phone-number sign-in is not currently offered; if you signed in by phone in an earlier version, any historical phone number on your account is removed together with the rest of your data when you delete your account.",
+        "Account information when you sign in: email address, and optionally a display name and avatar. Registration uses email and a password you choose; we send a one-time verification link to your email that must be clicked before you can sign in. Sign-in uses the same email and password, and passwords are handled and stored securely by our authentication provider (Supabase) — the application never sees or stores your plaintext password. Google sign-in creates an account on first use and simply signs you in on subsequent visits. Phone-number sign-in is not offered; if you signed in by phone in an earlier version, any historical phone number on your account is removed together with the rest of your data when you delete your account.",
         "Content you create: saved readings, questions you ask the AI companion, tarot draws, community posts, and messages sent through the \"elder\" companion or the feedback / bug-report flow.",
         "Technical data: IP address, browser type, device information and basic usage events (which pages you visit, when). We do not use third-party advertising trackers.",
       ],
@@ -133,7 +133,7 @@ const ZH: Copy = {
       h: "一、我们收集哪些资料",
       body: [
         "你在仪式中填写的出生资料：本名（或称呼）、出生日期、出生时间、出生地（城市 / 地区）及时区。这些是计算命盘的必要信息。",
-        "账号资料：邮箱地址，以及可选的昵称与头像。注册时我们向邮箱寄出一次性验证链接，点击后即完成邮箱验证并创建账号；后续登录也走同一枚魔法链接；Google 登录则在首次授权时自动创建账号，之后直接登录。我们不保存你的密码。目前不再提供手机号登录；如你在旧版本以手机号登录，账户上残留的历史手机号会随删除账户一并清除。",
+        "账号资料：邮箱地址，以及可选的昵称与头像。注册使用邮箱与你自行设置的密码，我们会向邮箱寄出一次性验证链接，点击验证后方可登录。登录使用同一邮箱与密码；密码由认证服务（Supabase）安全存储，我们的应用本身不会读取或保存你的明文密码。Google 登录在首次授权时自动创建账号，之后直接登录。目前不提供手机号登录；如你在旧版本以手机号登录，账户上残留的历史手机号会随删除账户一并清除。",
         "你创建的内容：保存的解读、向 AI 的追问、抽取的塔罗牌、社区帖子，以及通过「智者」树洞或反馈通道发送的消息。",
         "技术信息：IP 地址、浏览器与设备信息，以及基础使用事件（访问了哪些页面、访问时间）。我们不使用第三方广告追踪。",
       ],
