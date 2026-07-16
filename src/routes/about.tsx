@@ -17,7 +17,12 @@ export const Route = createFileRoute("/about")({
         property: "og:description",
         content: "Four civilizations, one question, and the ethics of reading a life.",
       },
+      { property: "og:url", content: "https://fate-nexus-ai.lovable.app/about" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "About — Library of Destiny" },
+      { name: "twitter:description", content: "Four civilizations, one question." },
     ],
+    links: [{ rel: "canonical", href: "https://fate-nexus-ai.lovable.app/about" }],
   }),
   component: AboutPage,
 });
