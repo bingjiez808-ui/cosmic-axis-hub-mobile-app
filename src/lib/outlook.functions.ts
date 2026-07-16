@@ -266,6 +266,13 @@ ${isZh ? schemaZh : schemaEn}`;
     });
 
     const outlook = parsed.outlook90 ?? ({} as OutlookAI["outlook90"]);
+    const rawWatch = Array.isArray((parsed as OutlookAI).watchlist) ? (parsed as OutlookAI).watchlist : [];
+    const normalizedWatch: OutlookWatchItem[] = rawWatch.slice(0, 5).map((w) => ({
+      year: w?.year ?? "",
+      theme: w?.theme ?? "",
+      note: w?.note ?? "",
+      detail: w?.detail ?? "",
+    }));
     return {
       timeline: {
         summary: parsed.timeline?.summary ?? "",
@@ -278,5 +285,6 @@ ${isZh ? schemaZh : schemaEn}`;
         windows: Array.isArray(outlook.windows) ? outlook.windows.slice(0, 4) : [],
         dimensions: Array.isArray(outlook.dimensions) ? outlook.dimensions.slice(0, 4) : [],
       },
+      watchlist: normalizedWatch,
     };
   });
