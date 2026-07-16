@@ -119,6 +119,16 @@ const TXT = {
     zh: "以下体系还没有真实计算器，我们不会用模板伪造报告，也暂时不接受付费或授权：",
     en: "The following traditions have no real calculator yet. We refuse to ship a template report and cannot accept purchase or grant until they are wired up:",
   },
+  gender_backfill_title: {
+    zh: "补充紫微计算所需的性别",
+    en: "Add the gender used by the Zi Wei calculator",
+  },
+  gender_backfill_body: {
+    zh: "紫微斗数需要出生性别（仅用于传统算法），补充后即可解锁高级 AI 深度报告。只有本人可以更新自己的命盘。",
+    en: "Zi Wei Dou Shu requires birth gender (used only by the traditional algorithm). Adding it unlocks the Premium AI Deep Reading. Only you can update your own chart.",
+  },
+  gender_male: { zh: "男", en: "Male" },
+  gender_female: { zh: "女", en: "Female" },
 };
 
 function pick<T extends { zh: string; en: string }>(t: T, lang: "zh" | "en"): string {
