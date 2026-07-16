@@ -14,6 +14,7 @@ import { Route as SynthesisRouteImport } from './routes/synthesis'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as RitualRouteImport } from './routes/ritual'
 import { Route as ReportRouteImport } from './routes/report'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as CommunityRouteImport } from './routes/community'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -50,6 +51,11 @@ const RitualRoute = RitualRouteImport.update({
 const ReportRoute = ReportRouteImport.update({
   id: '/report',
   path: '/report',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const McpRoute = McpRouteImport.update({
@@ -121,6 +127,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/community': typeof CommunityRoute
   '/mcp': typeof McpRoute
+  '/privacy': typeof PrivacyRoute
   '/report': typeof ReportRoute
   '/ritual': typeof RitualRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -139,6 +146,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/community': typeof CommunityRoute
   '/mcp': typeof McpRoute
+  '/privacy': typeof PrivacyRoute
   '/report': typeof ReportRoute
   '/ritual': typeof RitualRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -159,6 +167,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/community': typeof CommunityRoute
   '/mcp': typeof McpRoute
+  '/privacy': typeof PrivacyRoute
   '/report': typeof ReportRoute
   '/ritual': typeof RitualRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -179,6 +188,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/community'
     | '/mcp'
+    | '/privacy'
     | '/report'
     | '/ritual'
     | '/sitemap.xml'
@@ -197,6 +207,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/community'
     | '/mcp'
+    | '/privacy'
     | '/report'
     | '/ritual'
     | '/sitemap.xml'
@@ -216,6 +227,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/community'
     | '/mcp'
+    | '/privacy'
     | '/report'
     | '/ritual'
     | '/sitemap.xml'
@@ -236,6 +248,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   CommunityRoute: typeof CommunityRoute
   McpRoute: typeof McpRoute
+  PrivacyRoute: typeof PrivacyRoute
   ReportRoute: typeof ReportRoute
   RitualRoute: typeof RitualRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
@@ -283,6 +296,13 @@ declare module '@tanstack/react-router' {
       path: '/report'
       fullPath: '/report'
       preLoaderRoute: typeof ReportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mcp': {
@@ -390,6 +410,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   CommunityRoute: CommunityRoute,
   McpRoute: McpRoute,
+  PrivacyRoute: PrivacyRoute,
   ReportRoute: ReportRoute,
   RitualRoute: RitualRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
