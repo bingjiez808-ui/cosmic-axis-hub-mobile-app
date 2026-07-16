@@ -1412,6 +1412,7 @@ function DimensionDetailModal({
                 })}
               </div>
             </div>
+            </div>
           </div>
         )}
       </DialogContent>
