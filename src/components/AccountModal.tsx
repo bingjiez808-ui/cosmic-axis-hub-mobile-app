@@ -164,6 +164,8 @@ export function AccountModal({ open, onClose }: { open: boolean; onClose: () => 
 
                 <MyChartsSection open={open} onClose={onClose} lang={lang} />
 
+                <MyPremiumReports open={open} lang={lang} />
+
                 <div>
                   <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
                     {t.acc_view_saved}
