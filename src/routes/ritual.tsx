@@ -118,10 +118,10 @@ function RitualPage() {
     time: "",
     place: "",
   });
-  const [quiz, setQuiz] = useState<string[]>(["", "", "", "", ""]);
-  // 0..4 = quiz Q1..Q5, 5..8 = intake
+  const [quiz] = useState<string[]>(["", "", "", "", ""]);
+  // Quiz has been retired — the flow is intake-only now.
   const [step, setStep] = useState(0);
-  const [skipQuiz, setSkipQuiz] = useState(false);
+  const skipQuiz = true;
   const [restored, setRestored] = useState(false);
 
   // Restore draft from sessionStorage (client-only, avoids hydration mismatch)
@@ -132,9 +132,7 @@ function RitualPage() {
         const s = JSON.parse(raw);
         if (s && typeof s === "object") {
           if (s.values) setValues((v) => ({ ...v, ...s.values }));
-          if (Array.isArray(s.quiz) && s.quiz.length === QUIZ.length) setQuiz(s.quiz);
-          if (typeof s.step === "number") setStep(Math.max(0, Math.min(s.step, QUIZ.length + 3)));
-          if (typeof s.skipQuiz === "boolean") setSkipQuiz(s.skipQuiz);
+          if (typeof s.step === "number") setStep(Math.max(0, Math.min(s.step, 3)));
         }
       }
     } catch {}
