@@ -1063,21 +1063,16 @@ function ReportPage() {
                 <p className="mb-4 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
                   {t.evidence_across}
                 </p>
-                <ul className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <ul className="mb-8 space-y-3 text-sm">
                   {d.evidence.map((e) => {
                     const TIcon = traditionIcon(e.tradition[0]);
                     return (
-                      <li
-                        key={e.tradition[0]}
-                        className="rounded-2xl border border-gold-dust/15 bg-white/[0.02] p-4 transition-colors hover:border-gold-dust/30"
-                      >
-                        <div className="mb-2 flex items-center gap-2 text-gold-light">
-                          <TIcon size={14} strokeWidth={1.5} />
-                          <span className="font-serif text-[11px] uppercase tracking-[0.22em]">
-                            {e.tradition[li]}
-                          </span>
-                        </div>
-                        <p className="text-sm leading-relaxed text-stone-warm/70">{e.note[li]}</p>
+                      <li key={e.tradition[0]} className="border-l border-gold-dust/30 pl-4">
+                        <p className="mb-1 flex items-center gap-2 font-serif text-gold-light">
+                          <TIcon size={13} strokeWidth={1.5} className="opacity-80" />
+                          <span>{e.tradition[li]}</span>
+                        </p>
+                        <p className="text-stone-warm/60">{e.note[li]}</p>
                       </li>
                     );
                   })}
