@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
+import type { ReportAI } from "@/lib/report.functions";
+import type { OutlookAI } from "@/lib/outlook.functions";
 
 /**
  * Local-first account & saved-readings store. Persisted to localStorage.
@@ -20,7 +22,12 @@ export type SavedReading = {
   time?: string;
   place?: string;
   lang?: "en" | "zh";
+  fingerprint?: string;
+  aiReport?: ReportAI;
+  aiOutlook?: OutlookAI;
 };
+
+type ReadingAIPatch = Partial<Pick<SavedReading, "aiReport" | "aiOutlook" | "fingerprint">>;
 
 type Ctx = {
   account: Account | null;
@@ -31,6 +38,8 @@ type Ctx = {
   saved: SavedReading[];
   saveReading: (r: Omit<SavedReading, "id" | "createdAt">) => void;
   removeReading: (id: string) => void;
+  updateReadingAI: (fingerprint: string, patch: ReadingAIPatch) => void;
+  findReadingByFingerprint: (fingerprint: string) => SavedReading | undefined;
 };
 
 const AccountCtx = createContext<Ctx | null>(null);
