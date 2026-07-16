@@ -674,11 +674,21 @@ export function KeyEventsVerification({
         <h2 className="mb-3 font-serif text-2xl italic text-stone-warm md:text-3xl">
           {isZh ? "把真实发生过的事告诉命盘" : "Tell the chart what really happened"}
         </h2>
-        <p className="mb-6 max-w-3xl text-sm text-stone-warm/60">
+        <p className="mb-4 max-w-3xl text-sm text-stone-warm/60">
           {isZh
             ? "先写下你人生里真实发生过的一件事，并给出大概年份范围（例如：2021–2025 期间的一次分手；2016–2018 期间的一次骨折）。命盘将从西方占星 / 印度占星 / 八字 / 紫微四个体系交叉推演，给出尽量具体的时间点，请你再判断准不准。"
             : "First tell the chart something that actually happened in your life, with a rough year range (e.g. a breakup between 2021 and 2025; a fracture between 2016 and 2018). The reading will cross-check Western astrology, Vedic Jyotish, BaZi, and Zi Wei Dou Shu, then land on the most specific time it can — and you decide if it's accurate."}
         </p>
+        <div className="mb-6 flex flex-wrap items-center gap-2 rounded-2xl border border-gold-dust/25 bg-gold-dust/[0.06] px-4 py-3 text-[12px] leading-relaxed text-stone-warm/75">
+          <span className="rounded-full bg-gold-dust/20 px-2 py-0.5 text-[9px] uppercase tracking-[0.28em] text-gold-light">
+            {isZh ? "下一步" : "Next"}
+          </span>
+          <span>
+            {isZh
+              ? "在你标注「准确 / 不准确」之后，点击下方的「生成微调后的综合判断」，命盘会根据你的真实反馈对四大体系重新加权，为你个人做一次专属复盘。"
+              : "Once you mark each guess Accurate / Off, tap “Generate recalibrated synthesis” below — the chart will re-weight the four traditions against your real feedback and rewrite the reading for you personally."}
+          </span>
+        </div>
 
         <div className="space-y-4">
           {rows.map((r, idx) => (
