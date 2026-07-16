@@ -304,6 +304,37 @@ function RitualPage() {
                     placeholder={currentQ.placeholder}
                     onCommit={advance}
                   />
+                ) : currentQ.key === "gender" ? (
+                  <div className="mx-auto max-w-md">
+                    <div role="radiogroup" aria-label={t.q_gender} className="flex flex-wrap justify-center gap-3">
+                      {(["male", "female", ""] as Gender[]).map((g) => {
+                        const label =
+                          g === "male" ? t.q_gender_male : g === "female" ? t.q_gender_female : t.q_gender_skip;
+                        const active = values.gender === g;
+                        return (
+                          <button
+                            key={g || "skip"}
+                            type="button"
+                            role="radio"
+                            aria-checked={active}
+                            onClick={() => setValues((v) => ({ ...v, gender: g }))}
+                            className={`min-h-[44px] rounded-full border px-6 py-2.5 text-[11px] uppercase tracking-[0.28em] transition-colors ${
+                              active
+                                ? "border-gold-dust bg-gold-dust/10 text-gold-light"
+                                : "border-white/15 text-stone-warm/70 hover:border-gold-dust/40 hover:text-gold-dust"
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {values.gender === "" && (
+                      <p className="mx-auto mt-4 max-w-md rounded-2xl border border-nebula-purple/30 bg-nebula-purple/[0.06] p-3 text-left text-[11.5px] leading-relaxed text-stone-warm/70">
+                        ⚠ {t.q_gender_skip_warn}
+                      </p>
+                    )}
+                  </div>
                 ) : (
                   <div className="mx-auto max-w-md">
                     <input
