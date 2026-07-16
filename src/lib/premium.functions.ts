@@ -594,11 +594,13 @@ export const generatePremiumPdf = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: order } = await supabaseAdmin
       .from("premium_report_orders")
-      .select("id, status")
+      .select("id, status, product_version")
       .eq("user_id", userId)
       .eq("chart_id", data.chartId)
-      .eq("product_version", PREMIUM_PRODUCT_VERSION)
-      .in("status", ["paid"])
+      .in("product_version", PREMIUM_ALL_PRODUCT_VERSIONS as unknown as string[])
+      .eq("status", "paid")
+      .order("created_at", { ascending: false })
+      .limit(1)
       .maybeSingle();
     if (!order) throw new Error("order_not_paid");
 
