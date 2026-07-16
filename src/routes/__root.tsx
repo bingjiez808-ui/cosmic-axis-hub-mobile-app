@@ -348,18 +348,6 @@ function SiteNav() {
         </div>
       </nav>
 
-      {/* Slim vertical rail — slides in from the right when the dot is tapped.
-          No backdrop, no dialog: just a compact column of links. */}
-      <aside
-        aria-label="Navigation rail"
-        aria-hidden={!drawerOpen}
-        onMouseLeave={() => setDrawerOpen(false)}
-        className={`fixed right-3 top-20 z-[75] flex flex-col items-stretch gap-1 rounded-2xl border border-gold-dust/25 bg-obsidian/85 p-2 backdrop-blur-xl shadow-[-10px_10px_40px_rgba(0,0,0,0.5)] transition-all duration-300 ${
-          drawerOpen
-            ? "translate-x-0 opacity-100"
-            : "pointer-events-none translate-x-6 opacity-0"
-        }`}
-      >
       {/* Backdrop for the side rail — mobile-only for easy dismissal */}
       <div
         aria-hidden="true"
