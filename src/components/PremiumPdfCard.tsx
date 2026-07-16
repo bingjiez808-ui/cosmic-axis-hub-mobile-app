@@ -537,6 +537,7 @@ function ActionRow({
   onGenerate,
   onOpen,
   onResendVerification,
+  onBackfillGender,
   resent,
   fullWidth = false,
 }: {
@@ -547,6 +548,7 @@ function ActionRow({
   onGenerate: () => void;
   onOpen: (btn: HTMLButtonElement | null) => void;
   onResendVerification: () => void;
+  onBackfillGender: (chartId: string, gender: "male" | "female") => void;
   resent: boolean;
   fullWidth?: boolean;
 }) {
@@ -587,6 +589,40 @@ function ActionRow({
   }
   if (state.kind === "no_chart") return <p className="text-sm text-stone-warm/50">…</p>;
   if (state.kind === "systems_incomplete") {
+    // Special case: only Zi Wei missing AND owner has a chart → offer the
+    // safe gender-backfill dialog. Only chart owner can update.
+    const onlyZiwei = state.missing.length === 1 && state.missing[0] === "ziwei";
+    if (onlyZiwei && state.chartId) {
+      const chartId = state.chartId;
+      return (
+        <div
+          className={`rounded-2xl border border-gold-dust/25 bg-gold-dust/[0.04] p-3 text-[12px] leading-relaxed text-stone-warm/80 ${fullWidth ? "w-full" : ""}`}
+        >
+          <p className="mb-2 text-[11px] uppercase tracking-[0.28em] text-gold-dust/80">
+            {pick(TXT.gender_backfill_title, lang)}
+          </p>
+          <p className="mb-3">{pick(TXT.gender_backfill_body, lang)}</p>
+          <div role="radiogroup" aria-label={pick(TXT.gender_backfill_title, lang)} className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => onBackfillGender(chartId, "male")}
+              className="min-h-[44px] rounded-full border border-gold-dust/40 px-5 py-2 text-[11px] uppercase tracking-[0.28em] text-gold-light hover:bg-gold-dust/10 disabled:opacity-50"
+            >
+              {pick(TXT.gender_male, lang)}
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => onBackfillGender(chartId, "female")}
+              className="min-h-[44px] rounded-full border border-gold-dust/40 px-5 py-2 text-[11px] uppercase tracking-[0.28em] text-gold-light hover:bg-gold-dust/10 disabled:opacity-50"
+            >
+              {pick(TXT.gender_female, lang)}
+            </button>
+          </div>
+        </div>
+      );
+    }
     return (
       <div
         className={`rounded-2xl border border-white/10 bg-white/[0.02] p-3 text-[12px] leading-relaxed text-stone-warm/70 ${fullWidth ? "w-full" : ""}`}
