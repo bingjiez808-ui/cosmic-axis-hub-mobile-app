@@ -25,6 +25,12 @@ type Dict = {
   q_place: string;
   q_place_hint: string;
   q_place_ph: string;
+  q_gender: string;
+  q_gender_hint: string;
+  q_gender_male: string;
+  q_gender_female: string;
+  q_gender_skip: string;
+  q_gender_skip_warn: string;
   hero_lang_kicker: string;
   hero_lang_prompt: string;
   hero_lang_en: string;
