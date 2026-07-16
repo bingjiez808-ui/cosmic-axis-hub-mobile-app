@@ -48,8 +48,94 @@ export const PREMIUM_PRICE_CENTS = 7900;
 export const PREMIUM_CURRENCY = "CNY";
 
 /* --------------------------------------------------------------------- */
+/* Pure decision helpers (exported for tests)                             */
+/* --------------------------------------------------------------------- */
+
+export type OrderRowLite = {
+  id: string;
+  status: "pending" | "paid" | "failed" | "refunded";
+  product_version: string;
+};
+
+export type CheckoutDecision =
+  | { action: "already_paid"; orderId: string }
+  | { action: "reuse_v2_pending"; orderId: string }
+  | { action: "create_v2"; amountCents: number; productVersion: string };
+
+/**
+ * Given every historic order for a (user, chart), decide what the
+ * checkout flow should do. Rules:
+ *   - legacy v1 status='paid' → permanently unlocked (already_paid).
+ *   - legacy v1 pending/failed/refunded → IGNORED. Never reused, never
+ *     blocks a new v2 purchase.
+ *   - v2 status='paid' → already_paid.
+ *   - v2 status='pending' → reuse.
+ *   - otherwise → create a brand-new v2 order at PREMIUM_PRICE_CENTS.
+ */
+export function chooseCheckoutAction(orders: OrderRowLite[]): CheckoutDecision {
+  const legacyPaid = orders.find(
+    (o) =>
+      (PREMIUM_LEGACY_PRODUCT_VERSIONS as readonly string[]).includes(o.product_version) &&
+      o.status === "paid",
+  );
+  if (legacyPaid) return { action: "already_paid", orderId: legacyPaid.id };
+
+  const v2Paid = orders.find(
+    (o) => o.product_version === PREMIUM_PRODUCT_VERSION && o.status === "paid",
+  );
+  if (v2Paid) return { action: "already_paid", orderId: v2Paid.id };
+
+  const v2Pending = orders.find(
+    (o) => o.product_version === PREMIUM_PRODUCT_VERSION && o.status === "pending",
+  );
+  if (v2Pending) return { action: "reuse_v2_pending", orderId: v2Pending.id };
+
+  return {
+    action: "create_v2",
+    amountCents: PREMIUM_PRICE_CENTS,
+    productVersion: PREMIUM_PRODUCT_VERSION,
+  };
+}
+
+/**
+ * Same rule set, applied to admin grants. Returns:
+ *   - reject_legacy_v1: caller must throw already_granted_legacy_v1.
+ *   - upgrade_v2_pending: flip that row to paid.
+ *   - reuse_v2_paid: idempotent no-op, log audit.
+ *   - create_v2_paid: insert a new v2 paid row.
+ * Any legacy v1 pending/failed/refunded rows are IGNORED.
+ */
+export type GrantDecision =
+  | { action: "reject_legacy_v1"; orderId: string }
+  | { action: "reuse_v2_paid"; orderId: string }
+  | { action: "upgrade_v2_pending"; orderId: string }
+  | { action: "create_v2_paid" };
+
+export function chooseGrantAction(orders: OrderRowLite[]): GrantDecision {
+  const legacyPaid = orders.find(
+    (o) =>
+      (PREMIUM_LEGACY_PRODUCT_VERSIONS as readonly string[]).includes(o.product_version) &&
+      o.status === "paid",
+  );
+  if (legacyPaid) return { action: "reject_legacy_v1", orderId: legacyPaid.id };
+
+  const v2Paid = orders.find(
+    (o) => o.product_version === PREMIUM_PRODUCT_VERSION && o.status === "paid",
+  );
+  if (v2Paid) return { action: "reuse_v2_paid", orderId: v2Paid.id };
+
+  const v2Pending = orders.find(
+    (o) => o.product_version === PREMIUM_PRODUCT_VERSION && o.status === "pending",
+  );
+  if (v2Pending) return { action: "upgrade_v2_pending", orderId: v2Pending.id };
+
+  return { action: "create_v2_paid" };
+}
+
+/* --------------------------------------------------------------------- */
 /* Helpers                                                                */
 /* --------------------------------------------------------------------- */
+
 
 async function ensureAdmin(context: { supabase: unknown; userId: string }) {
   const sb = context.supabase as {
