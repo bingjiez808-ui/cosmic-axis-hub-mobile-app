@@ -35,7 +35,7 @@ import type { Json } from "@/integrations/supabase/types";
 import { createLovableAiGatewayProvider } from "./ai-gateway.server";
 import { guardrailsFor, safeMessage } from "./ai-guardrails";
 import { enforceRateLimit } from "./rate-limit.server";
-import { isEmailVerified } from "./reports-store.functions";
+import { isEmailVerified, assertEmailVerifiedOrAdmin } from "./reports-store.functions";
 
 // Canonical product identity.
 export const PREMIUM_PRODUCT_VERSION = "premium_deep_report_v1";
@@ -290,7 +290,7 @@ export const startPremiumCheckout = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => StatusInput.parse(d))
   .handler(async ({ data, context }): Promise<CheckoutOutcome> => {
     const { userId, claims } = context;
-    if (!isEmailVerified(claims)) throw new Error("email_not_verified");
+    await assertEmailVerifiedOrAdmin(context);
     enforceRateLimit(`premium-checkout:${userId}`, 10, 60_000, "premium checkouts");
     await loadChartOwnedBy(userId, data.chartId);
 
@@ -732,7 +732,7 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => StatusInput.parse(d))
   .handler(async ({ data, context }) => {
     const { userId, claims } = context;
-    if (!isEmailVerified(claims)) throw new Error("email_not_verified");
+    await assertEmailVerifiedOrAdmin(context);
     enforceRateLimit(`premium-generate:${userId}`, 3, 60_000, "premium report generations");
 
     // 1. Chart must belong to this user.
