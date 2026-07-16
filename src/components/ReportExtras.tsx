@@ -1783,7 +1783,7 @@ export function MembershipSection({
             <span className="h-px flex-1 bg-gold-dust/30" />
           </div>
           <RecentWindows birthISO={birthISO} search={search} />
-          <FutureWatchlist />
+          <FutureWatchlist search={search} />
         </div>
       )}
 
