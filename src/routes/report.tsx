@@ -715,7 +715,11 @@ function ReportPage() {
           lang,
         }}
         onOpenAccount={() => setAccOpen(true)}
+        fingerprint={search.date ? buildReportFingerprint(search, lang) : undefined}
+        aiReport={ai}
+        aiOutlook={findReadingByFingerprint(search.date ? buildReportFingerprint(search, lang) : "")?.aiOutlook}
       />
+
       <AccountModal open={accOpen} onClose={() => setAccOpen(false)} />
 
       <section className="mx-auto mb-24 max-w-6xl px-4 sm:px-6">
