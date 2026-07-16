@@ -564,7 +564,7 @@ function PremiumOrdersSection({
       toast.error("请填写备注（至少 4 字）");
       return;
     }
-    if (!window.confirm(`确认将订单标记为已付款并解锁高级 PDF？\n邮箱：${confirming.email ?? confirming.userId}`))
+    if (!window.confirm(`确认将订单标记为已付款并解锁高级深度报告？\n邮箱：${confirming.email ?? confirming.userId}`))
       return;
     setBusy(true);
     try {
