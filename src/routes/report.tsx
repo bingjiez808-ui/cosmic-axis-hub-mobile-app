@@ -952,7 +952,7 @@ function ReportPage() {
 
       {/* Life Timeline — 大运 */}
       <div className="mt-24">
-        <LifeTimeline birthISO={search.date} />
+        <LifeTimeline birthISO={search.date} search={search} />
       </div>
 
       {/* Key life events verification */}
@@ -962,7 +962,8 @@ function ReportPage() {
       <TarotDraw />
 
       {/* Membership tiers — Oracle unlocks Synastry + 90-day windows + Future watchlist */}
-      <MembershipSection birthISO={search.date} />
+      <MembershipSection birthISO={search.date} search={search} />
+
 
 
 
