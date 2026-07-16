@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import type {} from "@tanstack/react-start";
 
-const BASE_URL = "";
+const BASE_URL = "https://fate-nexus-ai.lovable.app";
 
 interface SitemapEntry {
   path: string;
-  changefreq?: "weekly" | "monthly";
+  changefreq?: "weekly" | "monthly" | "yearly";
   priority?: string;
 }
 
@@ -16,8 +16,12 @@ export const Route = createFileRoute("/sitemap.xml")({
         const entries: SitemapEntry[] = [
           { path: "/", changefreq: "weekly", priority: "1.0" },
           { path: "/traditions", changefreq: "monthly", priority: "0.8" },
-          { path: "/ritual", changefreq: "monthly", priority: "0.7" },
+          { path: "/ritual", changefreq: "monthly", priority: "0.8" },
+          { path: "/community", changefreq: "weekly", priority: "0.7" },
           { path: "/about", changefreq: "monthly", priority: "0.6" },
+          { path: "/privacy", changefreq: "yearly", priority: "0.3" },
+          { path: "/terms", changefreq: "yearly", priority: "0.3" },
+          { path: "/delete-account", changefreq: "yearly", priority: "0.3" },
         ];
 
         const urls = entries.map((e) =>
