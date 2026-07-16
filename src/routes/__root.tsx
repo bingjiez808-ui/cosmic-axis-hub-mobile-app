@@ -255,8 +255,8 @@ function SiteNav() {
   const showTopBar = atTop;
 
   const linkClass = lang === "zh"
-    ? "whitespace-nowrap text-[13px] tracking-normal normal-case text-stone-warm/75 transition-colors hover:text-gold-dust flex-none"
-    : "whitespace-nowrap text-[11px] uppercase tracking-[0.28em] text-stone-warm/70 transition-colors hover:text-gold-dust flex-none";
+    ? "inline-flex min-h-11 items-center whitespace-nowrap text-[13px] tracking-normal normal-case text-stone-warm/75 transition-colors hover:text-gold-dust flex-none"
+    : "inline-flex min-h-11 items-center whitespace-nowrap text-[11px] uppercase tracking-[0.28em] text-stone-warm/70 transition-colors hover:text-gold-dust flex-none";
 
   const accountLabel = session ? t.nav_account : t.nav_sign_in;
   const showAdmin = !loading && isAdmin;
@@ -285,14 +285,14 @@ function SiteNav() {
           showTopBar ? "opacity-100 translate-y-0" : "-translate-y-full opacity-0 pointer-events-none"
         }`}
       >
-        <div className="glass-card mx-auto flex w-full max-w-[calc(100vw-1.5rem)] items-center gap-2 rounded-full px-3 py-2 md:w-auto md:max-w-[96vw] md:gap-6 md:px-6 md:py-2.5">
+        <div className="glass-card mx-auto flex w-full max-w-[calc(100vw-1.5rem)] items-center gap-2 rounded-full px-3 py-2 md:grid md:w-auto md:max-w-[min(96vw,72rem)] md:grid-cols-[1fr_auto_1fr] md:items-center md:gap-4 md:px-5 md:py-2 lg:gap-8 lg:px-7">
           <Link
             to="/"
-            className="min-w-0 flex-1 truncate font-serif text-sm tracking-normal text-stone-warm md:flex-none md:whitespace-nowrap"
+            className="min-w-0 flex-1 truncate font-serif text-sm tracking-normal text-stone-warm md:flex-none md:justify-self-start md:whitespace-nowrap md:text-base"
           >
             Destiny<span className="text-gold-dust">·</span>Library
           </Link>
-          <div className="hidden items-center gap-5 md:flex lg:gap-8">
+          <div className="hidden items-center justify-center gap-4 md:flex md:justify-self-center lg:gap-8">
             <Link to="/traditions" className={linkClass}>{t.nav_traditions}</Link>
             <Link to="/ritual" className={linkClass}>{t.nav_ritual}</Link>
             <Link to="/community" className={linkClass}>{t.nav_community}</Link>
@@ -301,50 +301,52 @@ function SiteNav() {
               <Link to="/admin" className={linkClass + " text-gold-dust"}>{adminLabel}</Link>
             )}
           </div>
-          <button
-            type="button"
-            onClick={openAcc}
-            className="hidden flex-none items-center gap-2 whitespace-nowrap rounded-full border border-gold-dust/40 px-3 py-1 text-[10px] tracking-[0.24em] text-gold-dust transition-colors hover:bg-gold-dust/10 md:flex"
-          >
-            {account?.avatar && (
-              <img
-                src={account.avatar}
-                alt=""
-                className="h-5 w-5 flex-none rounded-full border border-gold-dust/40 object-cover"
-              />
-            )}
-            <span className="whitespace-nowrap">{accountLabel}</span>
-          </button>
-          <div className="hidden md:block"><LanguageToggle /></div>
+          <div className="flex items-center gap-2 md:justify-self-end md:gap-3">
+            <button
+              type="button"
+              onClick={openAcc}
+              className="hidden flex-none items-center gap-2 whitespace-nowrap rounded-full border border-gold-dust/40 px-3 py-1 text-[10px] tracking-[0.24em] text-gold-dust transition-colors hover:bg-gold-dust/10 md:flex"
+            >
+              {account?.avatar && (
+                <img
+                  src={account.avatar}
+                  alt=""
+                  className="h-5 w-5 flex-none rounded-full border border-gold-dust/40 object-cover"
+                />
+              )}
+              <span className="whitespace-nowrap">{accountLabel}</span>
+            </button>
+            <div className="hidden md:block"><LanguageToggle /></div>
 
-          {/* Mobile-only account chip (compact) */}
-          <button
-            type="button"
-            onClick={openAcc}
-            aria-label={accountLabel}
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-gold-dust/40 text-gold-dust md:hidden"
-          >
-            {account?.avatar ? (
-              <img src={account.avatar} alt="" className="h-7 w-7 rounded-full object-cover" />
-            ) : (
-              <span className="text-[10px] tracking-[0.16em]">{lang === "zh" ? "我" : "ME"}</span>
-            )}
-          </button>
+            {/* Mobile-only account chip (compact) */}
+            <button
+              type="button"
+              onClick={openAcc}
+              aria-label={accountLabel}
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-gold-dust/40 text-gold-dust md:hidden"
+            >
+              {account?.avatar ? (
+                <img src={account.avatar} alt="" className="h-7 w-7 rounded-full object-cover" />
+              ) : (
+                <span className="text-[10px] tracking-[0.16em]">{lang === "zh" ? "我" : "ME"}</span>
+              )}
+            </button>
 
-          {/* Mobile hamburger — opens the side rail */}
-          <button
-            type="button"
-            aria-label={lang === "zh" ? "打开菜单" : "Open menu"}
-            aria-expanded={drawerOpen}
-            onClick={() => setDrawerOpen((v) => !v)}
-            className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-gold-dust/40 text-gold-dust md:hidden"
-          >
-            <span className="flex flex-col items-center gap-[3px]">
-              <span className="block h-[1.5px] w-4 bg-current" />
-              <span className="block h-[1.5px] w-4 bg-current" />
-              <span className="block h-[1.5px] w-4 bg-current" />
-            </span>
-          </button>
+            {/* Mobile hamburger — opens the side rail */}
+            <button
+              type="button"
+              aria-label={lang === "zh" ? "打开菜单" : "Open menu"}
+              aria-expanded={drawerOpen}
+              onClick={() => setDrawerOpen((v) => !v)}
+              className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-gold-dust/40 text-gold-dust md:hidden"
+            >
+              <span className="flex flex-col items-center gap-[3px]">
+                <span className="block h-[1.5px] w-4 bg-current" />
+                <span className="block h-[1.5px] w-4 bg-current" />
+                <span className="block h-[1.5px] w-4 bg-current" />
+              </span>
+            </button>
+          </div>
         </div>
       </nav>
 
