@@ -512,11 +512,22 @@ function ReportPage() {
   const [aiState, setAiState] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [aiError, setAiError] = useState<string | null>(null);
   const latestReqRef = useRef(0);
+  const { findReadingByFingerprint, updateReadingAI } = useAccount();
 
   const runReport = useCallback((force = false) => {
     if (!search.date) return;
     const cacheKey = buildReportCacheKey(search, lang);
+    const fingerprint = buildReportFingerprint(search, lang);
+
     if (!force) {
+      // 1. Persisted saved-reading cache (survives across sessions).
+      const savedHit = findReadingByFingerprint(fingerprint);
+      if (savedHit?.aiReport) {
+        setAi(savedHit.aiReport);
+        setAiState("ready");
+        return;
+      }
+      // 2. Session cache.
       try {
         const cached = typeof sessionStorage !== "undefined" ? sessionStorage.getItem(cacheKey) : null;
         if (cached) {
@@ -547,6 +558,8 @@ function ReportPage() {
         } catch {
           /* ignore quota */
         }
+        // Write back to any matching saved reading so future sessions skip regeneration.
+        updateReadingAI(fingerprint, { aiReport: res, fingerprint });
       })
       .catch((err: unknown) => {
         if (reqId !== latestReqRef.current) return;
