@@ -680,7 +680,7 @@ function PremiumOrdersSection({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-obsidian/80 p-4">
           <div className="glass-card w-full max-w-md rounded-2xl border border-gold-dust/30 p-6">
             <h3 className="mb-3 font-serif text-xl text-stone-warm">
-              手动开通 ¥79 高级 PDF
+              手动开通 ¥79 高级深度报告
             </h3>
             <p className="mb-2 text-[13px] text-stone-warm/70">
               {confirming.email ?? confirming.userId}
