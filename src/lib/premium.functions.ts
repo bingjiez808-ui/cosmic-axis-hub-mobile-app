@@ -184,14 +184,18 @@ export const startPremiumCheckout = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // Idempotent lookup — return the existing active order if any.
+    // Idempotent lookup — return the existing active order if any,
+    // including a legacy v1 (¥99) purchase so a historic buyer never
+    // gets charged again.
     const { data: existing } = await supabaseAdmin
       .from("premium_report_orders")
-      .select("id, status")
+      .select("id, status, product_version")
       .eq("user_id", userId)
       .eq("chart_id", data.chartId)
-      .eq("product_version", PREMIUM_PRODUCT_VERSION)
+      .in("product_version", PREMIUM_ALL_PRODUCT_VERSIONS as unknown as string[])
       .in("status", ["pending", "paid"])
+      .order("created_at", { ascending: false })
+      .limit(1)
       .maybeSingle();
     if (existing) {
       if (existing.status === "paid") return { kind: "already_paid", orderId: existing.id };
