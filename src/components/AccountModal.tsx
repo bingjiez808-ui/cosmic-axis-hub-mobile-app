@@ -1,11 +1,13 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Link } from "@tanstack/react-router";
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import { useAccount, type Plan } from "@/lib/account";
 import { useLang, type Lang } from "@/lib/i18n";
 import { useSupabaseSession } from "@/lib/session";
 import { TAROT_LIMITS, tarotRemaining } from "@/lib/tarot-quota";
+import { listUserCharts, renameChart, type ChartRow } from "@/lib/reports-store.functions";
+
 
 export function AccountModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t, lang } = useLang();
@@ -158,6 +160,8 @@ export function AccountModal({ open, onClose }: { open: boolean; onClose: () => 
                   <TarotQuota accountKey={displayAccount.email} plan={displayAccount.plan ?? "free"} lang={lang} />
                 </div>
 
+                <MyChartsSection open={open} onClose={onClose} lang={lang} />
+
                 <div>
                   <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
                     {t.acc_view_saved}
@@ -208,6 +212,7 @@ export function AccountModal({ open, onClose }: { open: boolean; onClose: () => 
                   )}
                 </div>
 
+
                 <div>
                   <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
                     {lang === "zh" ? "隐私与数据" : "Privacy & data"}
@@ -255,6 +260,107 @@ export function AccountModal({ open, onClose }: { open: boolean; onClose: () => 
     </AnimatePresence>
   );
 }
+
+function MyChartsSection({ open, onClose, lang }: { open: boolean; onClose: () => void; lang: Lang }) {
+  const [rows, setRows] = useState<ChartRow[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draftName, setDraftName] = useState("");
+
+  useEffect(() => {
+    if (!open) return;
+    setLoading(true);
+    listUserCharts()
+      .then((r) => setRows(r))
+      .catch(() => setRows([]))
+      .finally(() => setLoading(false));
+  }, [open]);
+
+  const heading = lang === "zh" ? "我的命盘与报告" : "My charts & reports";
+  const empty = lang === "zh"
+    ? "还没有保存的命盘。完成一次仪式后会自动出现在这里。"
+    : "No saved charts yet. Complete a ritual and one will appear here.";
+
+  async function submitRename(id: string) {
+    const name = draftName.trim();
+    if (!name) return;
+    try {
+      await renameChart({ data: { chartId: id, name } });
+      setRows((prev) => (prev ? prev.map((r) => (r.id === id ? { ...r, name } : r)) : prev));
+    } catch { /* ignore */ }
+    setEditingId(null);
+  }
+
+  return (
+    <div>
+      <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">{heading}</p>
+      {loading ? (
+        <p className="text-sm text-stone-warm/40">…</p>
+      ) : !rows || rows.length === 0 ? (
+        <p className="text-sm text-stone-warm/50">{empty}</p>
+      ) : (
+        <ul className="space-y-2">
+          {rows.map((r) => {
+            const q: Record<string, string> = { readingId: r.id };
+            if (r.name) q.name = r.name;
+            if (r.birth_date) q.date = r.birth_date;
+            if (r.birth_time) q.time = r.birth_time;
+            if (r.birth_place) q.place = r.birth_place;
+            if (r.lang) q.lang = r.lang;
+            const hasReport = r.reports.some((rr) => rr.kind === "report" && rr.status === "completed");
+            return (
+              <li key={r.id} className="rounded-2xl border border-white/10 bg-white/[0.02] p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    {editingId === r.id ? (
+                      <input
+                        autoFocus
+                        value={draftName}
+                        onChange={(e) => setDraftName(e.target.value)}
+                        onBlur={() => submitRename(r.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") submitRename(r.id);
+                          if (e.key === "Escape") setEditingId(null);
+                        }}
+                        className="w-full rounded border border-gold-dust/40 bg-obsidian/40 px-2 py-1 text-sm text-stone-warm focus:outline-none"
+                        maxLength={120}
+                      />
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingId(r.id);
+                          setDraftName(r.name ?? "");
+                        }}
+                        className="truncate font-serif text-base italic text-stone-warm hover:text-gold-light"
+                        title={lang === "zh" ? "重命名" : "Rename"}
+                      >
+                        {r.name ?? (lang === "zh" ? "未命名命盘" : "Untitled chart")}
+                      </button>
+                    )}
+                    <p className="truncate text-[10px] uppercase tracking-[0.24em] text-stone-warm/40">
+                      {[r.birth_date, r.birth_place].filter(Boolean).join(" · ")}
+                      {hasReport ? "" : ` · ${lang === "zh" ? "尚未生成" : "not yet generated"}`}
+                    </p>
+                  </div>
+                  <Link
+                    to="/report"
+                    search={q}
+                    onClick={onClose}
+                    className="flex-none rounded-full border border-gold-dust/40 px-3 py-1.5 text-[10px] uppercase tracking-[0.28em] text-gold-dust hover:bg-gold-dust/10"
+                  >
+                    {lang === "zh" ? "打开报告" : "Open"}
+                  </Link>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 
 function MembershipBadge({ plan, lang }: { plan: Plan; lang: Lang }) {
   const label = plan === "oracle"

@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      charts: {
+        Row: {
+          birth_date: string | null
+          birth_place: string | null
+          birth_time: string | null
+          created_at: string
+          id: string
+          input_snapshot: Json
+          lang: string | null
+          name: string | null
+          normalized_input_hash: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          birth_date?: string | null
+          birth_place?: string | null
+          birth_time?: string | null
+          created_at?: string
+          id?: string
+          input_snapshot?: Json
+          lang?: string | null
+          name?: string | null
+          normalized_input_hash: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          birth_date?: string | null
+          birth_place?: string | null
+          birth_time?: string | null
+          created_at?: string
+          id?: string
+          input_snapshot?: Json
+          lang?: string | null
+          name?: string | null
+          normalized_input_hash?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       phone_otps: {
         Row: {
           attempts: number
@@ -76,6 +118,65 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      reports: {
+        Row: {
+          chart_id: string
+          created_at: string
+          error_message: string | null
+          generated_at: string | null
+          id: string
+          input_snapshot: Json
+          kind: string
+          model: string | null
+          provider: string | null
+          report_json: Json | null
+          report_version: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          chart_id: string
+          created_at?: string
+          error_message?: string | null
+          generated_at?: string | null
+          id?: string
+          input_snapshot?: Json
+          kind: string
+          model?: string | null
+          provider?: string | null
+          report_json?: Json | null
+          report_version: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          chart_id?: string
+          created_at?: string
+          error_message?: string | null
+          generated_at?: string | null
+          id?: string
+          input_snapshot?: Json
+          kind?: string
+          model?: string | null
+          provider?: string | null
+          report_json?: Json | null
+          report_version?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reports_chart_id_fkey"
+            columns: ["chart_id"]
+            isOneToOne: false
+            referencedRelation: "charts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tarot_usage: {
         Row: {

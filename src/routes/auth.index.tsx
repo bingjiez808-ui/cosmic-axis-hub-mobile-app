@@ -23,10 +23,10 @@ export const Route = createFileRoute("/auth/")({
       { name: "robots", content: "noindex" },
     ],
   }),
-  validateSearch: (s: Record<string, unknown>) => ({
-    redirect: typeof s.redirect === "string" && s.redirect.startsWith("/") ? s.redirect : undefined,
-    mode: s.mode === "signup" ? ("signup" as const) : s.mode === "login" ? ("login" as const) : undefined,
-    verified: s.verified === "1" ? ("1" as const) : undefined,
+  validateSearch: (s: Record<string, unknown>): { redirect?: string; mode?: "login" | "signup"; verified?: "1" } => ({
+    ...(typeof s.redirect === "string" && s.redirect.startsWith("/") ? { redirect: s.redirect } : {}),
+    ...(s.mode === "signup" ? { mode: "signup" as const } : s.mode === "login" ? { mode: "login" as const } : {}),
+    ...(s.verified === "1" ? { verified: "1" as const } : {}),
   }),
   component: AuthPage,
 });

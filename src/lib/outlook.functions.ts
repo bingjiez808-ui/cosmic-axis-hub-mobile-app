@@ -6,6 +6,7 @@ import { createLovableAiGatewayProvider } from "./ai-gateway.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { guardrailsFor, safeMessage } from "./ai-guardrails";
 import { enforceRateLimit } from "./rate-limit.server";
+import { isEmailVerified } from "./reports-store.functions";
 
 const Input = z.object({
   name: z.string().max(120).optional(),
@@ -80,6 +81,7 @@ export const generateChartOutlook = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => Input.parse(data))
   .handler(async ({ data, context }): Promise<OutlookAI> => {
+    if (!isEmailVerified(context.claims)) throw new Error("email_not_verified");
     enforceRateLimit(`outlook:${context.userId}`, 8, 60_000, "outlook generations");
     const key = process.env.LOVABLE_API_KEY;
     if (!key) throw new Error("Outlook service is not configured");

@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 
 import { motion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -118,6 +118,14 @@ import {
   type ReportAI,
   type ReportDimensionAI,
 } from "@/lib/report.functions";
+import {
+  beginReport,
+  ensureChart,
+  failReport,
+  getSavedReport,
+  saveReport,
+} from "@/lib/reports-store.functions";
+import { supabase } from "@/integrations/supabase/client";
 import { buildReportCacheKey, buildReportFingerprint, buildReportRequest, buildReportSeed } from "@/lib/report-input";
 import { REPORT_AI_VERSION } from "@/lib/ai-cache-version";
 import { useAccount } from "@/lib/account";
@@ -605,133 +613,232 @@ function ReportPage() {
   }, []);
 
   // Personalised AI report — grounded in this specific chart.
-  // Streaming: one request per dimension + summary, so pieces render
-  // progressively instead of waiting for a single monolithic response.
+  // Persistence-first flow:
+  //   1. Require an authenticated + email-verified session (else save
+  //      draft + redirect to /auth).
+  //   2. Ensure a `charts` row for this normalized birth input.
+  //   3. Look up the persisted `reports` row for this chart+version.
+  //      Completed → hydrate the report, never call the AI.
+  //      Pending  → poll until it flips (another tab is generating).
+  //      Missing  → atomically claim it via `beginReport`; only the
+  //                 caller that gets `didStart` runs the AI, then
+  //                 commits via `saveReport` / `failReport`.
   const seed = buildReportSeed(search);
   const [ai, setAi] = useState<ReportAI | null>(null);
-  const [aiState, setAiState] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [aiState, setAiState] = useState<"idle" | "loading" | "ready" | "error" | "needs-auth" | "needs-verify">("idle");
   const [aiError, setAiError] = useState<string | null>(null);
   const [aiProgress, setAiProgress] = useState({ done: 0, total: 0 });
   const latestReqRef = useRef(0);
-  const { findReading, updateReadingAI } = useAccount();
+  const { updateReadingAI } = useAccount();
 
-  const runReport = useCallback((force = false) => {
+  const runReport = useCallback(() => {
     if (!search.date) return;
-    const cacheKey = buildReportCacheKey(search, reportLang);
     const fingerprint = buildReportFingerprint(search, reportLang);
-
-    if (!force) {
-      // 1. Persisted saved-reading cache (survives across sessions).
-      //    Match by saved id first, then fingerprint, then visible birth fields.
-      const savedHit = findReading({
-        id: search.readingId,
-        fingerprint,
-        name: search.name ?? "Anonymous",
-        date: search.date,
-        time: search.time,
-        place: search.place,
-        lang: reportLang,
-      });
-      if (savedHit?.aiReport && savedHit.aiReportVersion === REPORT_AI_VERSION) {
-        setAi(savedHit.aiReport);
-        setAiState("ready");
-        return;
-      }
-      // 2. Session cache.
-      try {
-        const cached = typeof sessionStorage !== "undefined" ? sessionStorage.getItem(cacheKey) : null;
-        if (cached) {
-          setAi(JSON.parse(cached) as ReportAI);
-          setAiState("ready");
-          return;
-        }
-      } catch {
-        /* ignore */
-      }
-    } else {
-      try { sessionStorage.removeItem(cacheKey); } catch {}
-    }
-
     const reqId = ++latestReqRef.current;
-    const req = buildReportRequest(search, reportLang);
-    const totalSteps = DIM_KEYS.length + 1; // dimensions + summary
-    const acc: { summary: string; dimensions: ReportDimensionAI[] } = {
-      summary: "",
-      dimensions: [],
-    };
+    const stale = () => reqId !== latestReqRef.current;
 
-    setAi({ summary: "", dimensions: [] });
+    const totalSteps = DIM_KEYS.length + 1;
     setAiState("loading");
     setAiError(null);
     setAiProgress({ done: 0, total: totalSteps });
 
-    let firstError: unknown = null;
-    const bump = () => {
-      if (reqId !== latestReqRef.current) return;
-      setAiProgress((p) => ({ done: Math.min(p.total, p.done + 1), total: p.total }));
-    };
+    const draftKey = "lod.report-draft";
+    const currentUrl = typeof window !== "undefined" ? window.location.pathname + window.location.search : "/report";
 
-    const summaryPromise = generateReportSummary({ data: req })
-      .then((res) => {
-        if (reqId !== latestReqRef.current) return;
-        acc.summary = res.summary;
-        setAi((prev) => ({ summary: res.summary, dimensions: prev?.dimensions ?? [] }));
-      })
-      .catch((err) => { firstError = firstError ?? err; })
-      .finally(bump);
+    (async () => {
+      // 1. Session check.
+      const { data: sessionData } = await supabase.auth.getSession();
+      const session = sessionData.session;
+      if (!session) {
+        try {
+          localStorage.setItem(draftKey, JSON.stringify(search));
+        } catch { /* ignore */ }
+        setAiState("needs-auth");
+        return;
+      }
 
-    const dimPromises = DIM_KEYS.map((k) =>
-      generateReportDimension({ data: { ...req, key: k } })
-        .then((dim) => {
-          if (reqId !== latestReqRef.current) return;
-          acc.dimensions.push(dim);
-          // Keep them in canonical order for stable rendering.
-          const ordered = DIM_KEYS
-            .map((key) => acc.dimensions.find((d) => d.key === key))
-            .filter((d): d is ReportDimensionAI => !!d);
-          setAi((prev) => ({ summary: prev?.summary ?? acc.summary, dimensions: ordered }));
-        })
-        .catch((err) => { firstError = firstError ?? err; })
-        .finally(bump),
-    );
-
-    Promise.all([summaryPromise, ...dimPromises]).then(() => {
-      if (reqId !== latestReqRef.current) return;
-      if (acc.dimensions.length === 0 && !acc.summary) {
-        setAiError(firstError instanceof Error ? firstError.message : String(firstError ?? "unknown"));
+      // 2. Ensure chart row (also validates hash server-side).
+      let chartId: string;
+      try {
+        const res = await ensureChart({
+          data: {
+            name: search.name,
+            date: search.date,
+            time: search.time,
+            place: search.place,
+            lang: reportLang,
+            input_snapshot: { ...search, lang: reportLang },
+          },
+        });
+        chartId = res.chartId;
+      } catch {
+        if (stale()) return;
+        setAiError("chart_save_failed");
         setAiState("error");
         return;
       }
-      // Fill any missing dimensions with a placeholder so downstream code sees 8 items.
+
+      // 3. Look up existing report.
+      try {
+        const saved = await getSavedReport({
+          data: { chartId, kind: "report", reportVersion: REPORT_AI_VERSION },
+        });
+        if (stale()) return;
+        if (saved?.status === "completed" && saved.report_json) {
+          const finalReport = saved.report_json as unknown as ReportAI;
+          setAi(finalReport);
+          setAiState("ready");
+          updateReadingAI(fingerprint, {
+            aiReport: finalReport,
+            aiReportVersion: REPORT_AI_VERSION,
+            fingerprint,
+          });
+          return;
+        }
+      } catch { /* fall through to begin */ }
+
+      // 4. Atomic claim.
+      let claim: Awaited<ReturnType<typeof beginReport>>;
+      try {
+        claim = await beginReport({
+          data: {
+            chartId,
+            kind: "report",
+            reportVersion: REPORT_AI_VERSION,
+            input_snapshot: { ...search, lang: reportLang },
+          },
+        });
+      } catch (err) {
+        if (stale()) return;
+        const msg = (err as Error)?.message ?? "";
+        if (msg.includes("email_not_verified")) {
+          setAiState("needs-verify");
+        } else {
+          setAiError("begin_failed");
+          setAiState("error");
+        }
+        return;
+      }
+      if (stale()) return;
+
+      if (claim.status === "completed" && claim.report_json) {
+        const finalReport = claim.report_json as unknown as ReportAI;
+        setAi(finalReport);
+        setAiState("ready");
+        return;
+      }
+
+      if (!claim.didStart) {
+        // Another tab / earlier request is generating. Poll for it.
+        const started = Date.now();
+        while (!stale() && Date.now() - started < 180_000) {
+          await new Promise((r) => setTimeout(r, 2500));
+          if (stale()) return;
+          const poll = await getSavedReport({
+            data: { chartId, kind: "report", reportVersion: REPORT_AI_VERSION },
+          });
+          if (poll?.status === "completed" && poll.report_json) {
+            if (stale()) return;
+            const finalReport = poll.report_json as unknown as ReportAI;
+            setAi(finalReport);
+            setAiState("ready");
+            return;
+          }
+          if (poll?.status === "failed") break;
+        }
+        if (stale()) return;
+        setAiError("timeout");
+        setAiState("error");
+        return;
+      }
+
+      // 5. We own this generation. Run the streaming pieces.
+      const req = buildReportRequest(search, reportLang);
+      const acc: { summary: string; dimensions: ReportDimensionAI[] } = { summary: "", dimensions: [] };
+      setAi({ summary: "", dimensions: [] });
+
+      let firstError: unknown = null;
+      const bump = () => {
+        if (stale()) return;
+        setAiProgress((p) => ({ done: Math.min(p.total, p.done + 1), total: p.total }));
+      };
+
+      const summaryPromise = generateReportSummary({ data: req })
+        .then((res) => {
+          if (stale()) return;
+          acc.summary = res.summary;
+          setAi((prev) => ({ summary: res.summary, dimensions: prev?.dimensions ?? [] }));
+        })
+        .catch((err) => { firstError = firstError ?? err; })
+        .finally(bump);
+
+      const dimPromises = DIM_KEYS.map((k) =>
+        generateReportDimension({ data: { ...req, key: k } })
+          .then((dim) => {
+            if (stale()) return;
+            acc.dimensions.push(dim);
+            const ordered = DIM_KEYS
+              .map((key) => acc.dimensions.find((d) => d.key === key))
+              .filter((d): d is ReportDimensionAI => !!d);
+            setAi((prev) => ({ summary: prev?.summary ?? acc.summary, dimensions: ordered }));
+          })
+          .catch((err) => { firstError = firstError ?? err; })
+          .finally(bump),
+      );
+
+      await Promise.all([summaryPromise, ...dimPromises]);
+      if (stale()) return;
+
+      if (acc.dimensions.length === 0 && !acc.summary) {
+        await failReport({ data: { reportId: claim.reportId, error_message: (firstError as Error)?.message?.slice(0, 300) ?? "unknown" } }).catch(() => {});
+        setAiError((firstError as Error)?.message ?? "unknown");
+        setAiState("error");
+        return;
+      }
+
       const finalDims: ReportDimensionAI[] = DIM_KEYS.map((k) =>
         acc.dimensions.find((d) => d.key === k) ?? {
-          key: k,
-          headline: "",
-          evidence: [],
-          synthesis: "",
-          plain: "",
-          details: [],
+          key: k, headline: "", evidence: [], synthesis: "", plain: "", details: [],
         },
       );
       const finalReport: ReportAI = { summary: acc.summary, dimensions: finalDims };
       setAi(finalReport);
       setAiState("ready");
+
+      // Commit to DB (source of truth) + mirror locally for offline resilience.
       try {
-        sessionStorage.setItem(cacheKey, JSON.stringify(finalReport));
-      } catch { /* ignore quota */ }
+        await saveReport({
+          data: {
+            reportId: claim.reportId,
+            report_json: finalReport as never,
+            model: "google/gemini-2.5-flash",
+            provider: "lovable-ai-gateway",
+          },
+        });
+      } catch { /* keep local mirror */ }
       updateReadingAI(fingerprint, {
         aiReport: finalReport,
         aiReportVersion: REPORT_AI_VERSION,
         fingerprint,
       });
-    });
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seed, reportLang, search.readingId]);
 
 
   useEffect(() => {
-    runReport(false);
+    runReport();
   }, [runReport]);
+
+  // Redirect unauthenticated users to sign in, preserving their input as a draft.
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (aiState !== "needs-auth") return;
+    navigate({
+      to: "/auth",
+      search: { mode: "login", redirect: typeof window !== "undefined" ? window.location.pathname + window.location.search : "/report" } as never,
+    });
+  }, [aiState, navigate]);
 
   const isAwaitingPersonalized = !!search.date && aiState === "loading" && !ai?.summary;
   const summary = ai?.summary
@@ -868,15 +975,9 @@ function ReportPage() {
       {/* Save-this-reading bar */}
       {(() => {
         const fingerprint = search.date ? buildReportFingerprint(search, reportLang) : undefined;
-        const savedReading = findReading({
-          id: search.readingId,
-          fingerprint,
-          name: search.name ?? "Anonymous",
-          date: search.date,
-          time: search.time,
-          place: search.place,
-          lang: reportLang,
-        });
+        const savedReading = undefined as
+          | { aiReport?: ReportAI; aiReportVersion?: string; aiOutlook?: unknown; aiOutlookVersion?: string }
+          | undefined;
         return (
       <SaveReadingBar
         reading={{
@@ -890,8 +991,8 @@ function ReportPage() {
         fingerprint={fingerprint}
         aiReport={ai ?? savedReading?.aiReport}
         aiReportVersion={ai ? REPORT_AI_VERSION : savedReading?.aiReportVersion}
-        aiOutlook={savedReading?.aiOutlook}
-        aiOutlookVersion={savedReading?.aiOutlookVersion}
+        aiOutlook={undefined}
+        aiOutlookVersion={undefined}
       />
         );
       })()}
@@ -1020,7 +1121,7 @@ function ReportPage() {
             {aiState === "error" && (
               <button
                 type="button"
-                onClick={() => runReport(true)}
+                onClick={() => runReport()}
                 className="flex-none rounded-full border border-red-300/40 px-4 py-1.5 text-[10px] tracking-[0.28em] text-red-200 transition-colors hover:bg-red-300/10"
               >
                 {lang === "zh" ? "重试" : "Retry"}
