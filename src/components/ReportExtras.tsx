@@ -458,7 +458,7 @@ function ConfidenceBadge({ level, lang }: { level: "high" | "mid" | "low"; lang:
 ═══════════════════════════════════════════ */
 
 import { inferKeyEvents, synthesizeKeyEvents } from "@/lib/key-events.functions";
-import { buildReportRequest, type ReportSearchLike } from "@/lib/report-input";
+
 
 type EventRow = {
   id: string;
