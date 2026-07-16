@@ -128,6 +128,8 @@ export function AccountModal({ open, onClose }: { open: boolean; onClose: () => 
                       <img
                         src={displayAccount.avatar}
                         alt=""
+                        loading="lazy"
+                        decoding="async"
                         className="h-10 w-10 flex-none rounded-full border border-gold-dust/40 object-cover"
                       />
                     )}
