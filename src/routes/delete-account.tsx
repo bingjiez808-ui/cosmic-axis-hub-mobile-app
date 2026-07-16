@@ -261,7 +261,15 @@ function DeleteAccountPage() {
         <h2 className="mb-3 font-serif text-2xl text-stone-warm">{c.altHeading}</h2>
         <p className="mb-3 text-[15px] text-stone-warm/75">{c.altBody}</p>
         <div className="glass-card space-y-1 rounded-2xl p-5 text-[14px] text-stone-warm/80">
-          <p>{c.contactLabel}: {LEGAL_CONTACT.privacyEmail}</p>
+          <p>
+            {c.contactLabel}:{" "}
+            <a
+              href={`mailto:${LEGAL_CONTACT.privacyEmail}`}
+              className="text-gold-dust underline decoration-gold-dust/40 underline-offset-2 hover:text-gold-light"
+            >
+              {LEGAL_CONTACT.privacyEmail}
+            </a>
+          </p>
           <p>{LEGAL_CONTACT.entityName}</p>
         </div>
       </section>
