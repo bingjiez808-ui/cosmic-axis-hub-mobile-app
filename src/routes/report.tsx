@@ -17,9 +17,17 @@ import {
   Star,
   Check,
   AlertTriangle,
-  ChevronDown,
+  ChevronRight,
+  Maximize2,
   type LucideIcon,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { ElderCompanion } from "@/components/ElderCompanion";
 
 const DIM_ICONS: Record<string, LucideIcon> = {
   character: Sparkles,
