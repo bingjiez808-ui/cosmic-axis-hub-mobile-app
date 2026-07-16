@@ -50,6 +50,13 @@ export type OutlookDimension = {
   mitigations: string[];
 };
 
+export type OutlookWatchItem = {
+  year: string;
+  theme: string;
+  note: string;
+  detail: string;
+};
+
 export type OutlookAI = {
   timeline: {
     summary: string;
@@ -62,6 +69,7 @@ export type OutlookAI = {
     windows: OutlookWindow[];
     dimensions: OutlookDimension[];
   };
+  watchlist: OutlookWatchItem[];
 };
 
 export const generateChartOutlook = createServerFn({ method: "POST" })
@@ -96,12 +104,14 @@ export const generateChartOutlook = createServerFn({ method: "POST" })
 硬性规则：
 - 生命时间轴的每个大运（十年）都必须点出该阶段的**大运干支或十神走向**，并结合西方推进（如土星回归、木星过境）。
 - 90 天窗口必须结合**当前流月/流年干支**与**当前主要过境行星**（水星逆行、金星过境、外行星相位等）。
+- 未来观察名单（watchlist）共 5 项，覆盖未来 1-6 年（从今天所在年份起，按时间升序），每项必须点名该年的**流年干支或大运走向**并结合**关键过境**（土星过境、木星入宫、外行星相位、南北交移动等）。
 - 每一段文字都要引用至少一条上面给出的具体事实，禁止通用模板句。
 - 语气温暖、诗意、克制，像烛下低语。`
       : `You are an elder fluent in BaZi luck-decades (大运/流年) and Western transit astrology. Output STRICT JSON only — no prose, comments, or code fences.
 Hard rules:
 - Each life-timeline decade MUST cite that decade's **luck-pillar stem/branch or Ten-God trend** and pair it with a Western marker (Saturn return, Jupiter transit, etc.).
 - The 90-day windows MUST anchor in the **current month/year pillar** and the **actual transits happening now** (Mercury retrograde, Venus ingress, outer-planet aspects).
+- The 5-item watchlist covers the NEXT 1-6 years (chronological, starting from today's year); every item MUST name that year's **year-pillar or luck-pillar shift** together with a **key transit** (Saturn transit, Jupiter ingress, outer-planet aspect, nodal shift).
 - Every sentence must reference at least one concrete fact listed above — no generic templates.
 - Tone: warm, poetic, restrained.`;
 
@@ -140,7 +150,17 @@ Hard rules:
       { "key": "love",   "title": "爱情", "points": ["3 条"], "cautions": ["2 条"], "mitigations": ["2 条"] },
       { "key": "health", "title": "健康", "points": ["3 条"], "cautions": ["2 条"], "mitigations": ["2 条"] }
     ]
-  }
+  },
+  "watchlist": [
+    /* 5 条，覆盖未来 1-6 年的关键窗口，按时间升序 */
+    {
+      "year": "2026 · Q3",
+      "theme": "6-12 字主题",
+      "note": "1 句概述，必须点出该年的大运干支/流年干支或过境行运",
+      "detail": "2-3 句具体建议，引用此人本命盘特定行星/宫位与流年互动"
+    }
+    /* 共 5 项，year 字段用「YYYY · Q?」「YYYY 春/夏/秋/冬」或「YYYY–YYYY」等自然表达 */
+  ]
 }`;
 
     const schemaEn = `{
@@ -178,7 +198,17 @@ Hard rules:
       { "key": "love",   "title": "Love",   "points": ["3"], "cautions": ["2"], "mitigations": ["2"] },
       { "key": "health", "title": "Health", "points": ["3"], "cautions": ["2"], "mitigations": ["2"] }
     ]
-  }
+  },
+  "watchlist": [
+    /* 5 items covering key windows over the next 1-6 years, chronological */
+    {
+      "year": "2026 · Q3",
+      "theme": "6-12 char image",
+      "note": "1 sentence anchored in this year's luck-pillar stem/branch, year-pillar or live transit",
+      "detail": "2-3 sentences of concrete guidance citing this person's natal planets/houses meeting the transit"
+    }
+    /* 5 total; year may read like 'YYYY · Q?', 'YYYY spring/summer', or 'YYYY–YYYY' */
+  ]
 }`;
 
     const prompt = `${isZh ? "命盘事实" : "Chart facts"}:
@@ -238,6 +268,13 @@ ${isZh ? schemaZh : schemaEn}`;
     });
 
     const outlook = parsed.outlook90 ?? ({} as OutlookAI["outlook90"]);
+    const rawWatch = Array.isArray((parsed as OutlookAI).watchlist) ? (parsed as OutlookAI).watchlist : [];
+    const normalizedWatch: OutlookWatchItem[] = rawWatch.slice(0, 5).map((w) => ({
+      year: w?.year ?? "",
+      theme: w?.theme ?? "",
+      note: w?.note ?? "",
+      detail: w?.detail ?? "",
+    }));
     return {
       timeline: {
         summary: parsed.timeline?.summary ?? "",
@@ -250,5 +287,6 @@ ${isZh ? schemaZh : schemaEn}`;
         windows: Array.isArray(outlook.windows) ? outlook.windows.slice(0, 4) : [],
         dimensions: Array.isArray(outlook.dimensions) ? outlook.dimensions.slice(0, 4) : [],
       },
+      watchlist: normalizedWatch,
     };
   });
