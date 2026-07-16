@@ -484,7 +484,8 @@ function ReportPage() {
   const { lang, setLang, t } = useLang();
   const li = lang === "zh" ? 1 : 0;
   const [accOpen, setAccOpen] = useState(false);
-  const [selectedPlanet, setSelectedPlanet] = useState<number | null>(null);
+  // Default to Sun (index 0) so the left panel shows its reading on load.
+  const [selectedPlanet, setSelectedPlanet] = useState<number | null>(0);
   const [wheelSize, setWheelSize] = useState(360);
   const [zoomNatal, setZoomNatal] = useState(false);
 
