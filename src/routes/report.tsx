@@ -907,8 +907,23 @@ function ReportPage() {
           `日主 ${bazi.day_master.stem}（${bazi.day_master.element}）· 四柱 ${bazi.pillars.year} ${bazi.pillars.month} ${bazi.pillars.day}${bazi.pillars.hour ? " " + bazi.pillars.hour : ""}`,
         ]
       : [pendingEn, pendingZh];
-    const vedic: [string, string] = [pendingEn, pendingZh];
-    const ziwei: [string, string] = [pendingEn, pendingZh];
+    const v = snapshot.vedic.chart;
+    const vedic: [string, string] = v
+      ? [
+          `Moon in ${v.moon.nakshatra_en} pada ${v.moon.pada}; Vimshottari dasa of ${v.vimshottari[0]?.lord ?? v.moon.lord}${v.ascendant ? `; sidereal Ascendant ${v.ascendant.sign_en}` : ""}`,
+          `月亮 ${v.moon.nakshatra_zh}·${v.moon.pada}分位；大运起始 ${v.vimshottari[0]?.lord ?? v.moon.lord}${v.ascendant ? `；恒星上升 ${v.ascendant.sign_zh}` : ""}`,
+        ]
+      : [pendingEn, pendingZh];
+    const z = snapshot.ziwei.chart;
+    const ziwei: [string, string] = z
+      ? (() => {
+          const stars = z.palaces[z.soul_palace_index]?.major_stars.map((s) => s.name).join("·") || "空宫";
+          return [
+            `Soul palace ${stars}; body star ${z.body}; ${z.five_elements_class}`,
+            `命宫 ${stars}·身宫主星 ${z.body}·${z.five_elements_class}`,
+          ];
+        })()
+      : [pendingEn, pendingZh];
     return { astro, baziLine, vedic, ziwei };
   }, [snapshot]);
 
