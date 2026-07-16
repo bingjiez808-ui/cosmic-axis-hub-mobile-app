@@ -584,6 +584,8 @@ function ReportPage() {
   const [selectedPlanet, setSelectedPlanet] = useState<number | null>(0);
   const [wheelSize, setWheelSize] = useState(360);
   const [zoomNatal, setZoomNatal] = useState(false);
+  // Which dimension's detail modal is open (by key), or null.
+  const [detailKey, setDetailKey] = useState<string | null>(null);
 
   // Sync report language with the choice made in the ritual, if provided.
   useEffect(() => {
