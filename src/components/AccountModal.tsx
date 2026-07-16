@@ -104,14 +104,14 @@ export function AccountModal({ open, onClose }: { open: boolean; onClose: () => 
               <div className="space-y-4">
                 <Link
                   to="/auth"
-                  search={{ reset: undefined, redirect: undefined }}
+                  search={{ redirect: undefined }}
                   onClick={onClose}
                   className="flex w-full items-center justify-center rounded-full bg-gold-dust px-6 py-3 text-[10px] uppercase tracking-[0.32em] text-obsidian transition-colors hover:bg-gold-light focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-light"
                 >
                   {t.acc_sign_in}
                 </Link>
                 <p className="text-center text-[10px] uppercase tracking-[0.24em] text-stone-warm/35">
-                  {lang === "zh" ? "使用邮箱密码或 Google 登录" : "Use email/password or Google"}
+                  {lang === "zh" ? "邮箱验证码或 Google 登录" : "Email code or Google sign-in"}
                 </p>
               </div>
             ) : (
