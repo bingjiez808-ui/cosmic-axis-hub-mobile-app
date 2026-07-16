@@ -2,6 +2,65 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { motion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Sparkles,
+  Compass,
+  Coins,
+  Heart,
+  Activity,
+  TreePine,
+  Sprout,
+  Flame,
+  Sun,
+  Moon,
+  Layers,
+  Star,
+  Check,
+  AlertTriangle,
+  ChevronDown,
+  type LucideIcon,
+} from "lucide-react";
+
+const DIM_ICONS: Record<string, LucideIcon> = {
+  character: Sparkles,
+  vocation: Compass,
+  wealth: Coins,
+  love: Heart,
+  health: Activity,
+  parents: TreePine,
+  children: Sprout,
+  mission: Flame,
+};
+
+const TRADITION_ICONS: Record<string, LucideIcon> = {
+  Astrology: Sun,
+  astrology: Sun,
+  "Western astrology": Sun,
+  西方占星: Sun,
+  占星: Sun,
+  Jyotish: Moon,
+  "Vedic Jyotish": Moon,
+  印度占星: Moon,
+  吠陀: Moon,
+  BaZi: Layers,
+  Bazi: Layers,
+  八字: Layers,
+  "Zi Wei": Star,
+  ZiWei: Star,
+  "Zi Wei Dou Shu": Star,
+  紫微: Star,
+  紫微斗数: Star,
+};
+
+function traditionIcon(name: string): LucideIcon {
+  if (TRADITION_ICONS[name]) return TRADITION_ICONS[name];
+  const k = name.toLowerCase();
+  if (k.includes("astro") || k.includes("占星")) return Sun;
+  if (k.includes("jyot") || k.includes("vedic") || k.includes("印度") || k.includes("吠陀")) return Moon;
+  if (k.includes("bazi") || k.includes("八字") || k.includes("pillar")) return Layers;
+  if (k.includes("zi") || k.includes("紫微") || k.includes("dou")) return Star;
+  return Sparkles;
+}
 
 import {
   ChartZoomModal,
