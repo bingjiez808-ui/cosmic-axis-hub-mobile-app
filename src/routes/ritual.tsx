@@ -126,6 +126,7 @@ function RitualPage() {
     date: "",
     time: "",
     place: "",
+    gender: "",
   });
   const [quiz] = useState<string[]>(["", "", "", "", ""]);
   // Quiz has been retired — the flow is intake-only now.
