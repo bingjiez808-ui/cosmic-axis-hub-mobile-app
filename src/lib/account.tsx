@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
+import type { ReportAI } from "@/lib/report.functions";
+import type { OutlookAI } from "@/lib/outlook.functions";
 
 /**
  * Local-first account & saved-readings store. Persisted to localStorage.
@@ -20,7 +22,12 @@ export type SavedReading = {
   time?: string;
   place?: string;
   lang?: "en" | "zh";
+  fingerprint?: string;
+  aiReport?: ReportAI;
+  aiOutlook?: OutlookAI;
 };
+
+type ReadingAIPatch = Partial<Pick<SavedReading, "aiReport" | "aiOutlook" | "fingerprint">>;
 
 type Ctx = {
   account: Account | null;
@@ -31,6 +38,8 @@ type Ctx = {
   saved: SavedReading[];
   saveReading: (r: Omit<SavedReading, "id" | "createdAt">) => void;
   removeReading: (id: string) => void;
+  updateReadingAI: (fingerprint: string, patch: ReadingAIPatch) => void;
+  findReadingByFingerprint: (fingerprint: string) => SavedReading | undefined;
 };
 
 const AccountCtx = createContext<Ctx | null>(null);
@@ -134,22 +143,43 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   };
 
   const saveReading: Ctx["saveReading"] = (r) => {
+    // Merge with any existing entry that matches name+date+place so AI cache carries over.
+    const prior = saved.find(
+      (s) => s.name === (r.name ?? "") && s.date === r.date && s.place === r.place,
+    );
     const entry: SavedReading = {
+      ...prior,
       ...r,
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      createdAt: Date.now(),
+      aiReport: r.aiReport ?? prior?.aiReport,
+      aiOutlook: r.aiOutlook ?? prior?.aiOutlook,
+      fingerprint: r.fingerprint ?? prior?.fingerprint,
+      id: prior?.id ?? `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      createdAt: prior?.createdAt ?? Date.now(),
     };
-    // De-dupe by identical name+date+place (keep newest).
-    const next = [entry, ...saved.filter(
-      (s) => !(s.name === entry.name && s.date === entry.date && s.place === entry.place),
-    )].slice(0, 20);
+    const next = [entry, ...saved.filter((s) => s.id !== entry.id)].slice(0, 20);
     persist(next);
   };
 
   const removeReading = (id: string) => persist(saved.filter((s) => s.id !== id));
 
+  const updateReadingAI: Ctx["updateReadingAI"] = (fingerprint, patch) => {
+    if (!fingerprint) return;
+    let changed = false;
+    const next = saved.map((s) => {
+      if (s.fingerprint === fingerprint) {
+        changed = true;
+        return { ...s, ...patch, fingerprint };
+      }
+      return s;
+    });
+    if (changed) persist(next);
+  };
+
+  const findReadingByFingerprint: Ctx["findReadingByFingerprint"] = (fingerprint) =>
+    fingerprint ? saved.find((s) => s.fingerprint === fingerprint) : undefined;
+
   return (
-    <AccountCtx.Provider value={{ account, signIn, signOut, setPlan, setAvatar, saved, saveReading, removeReading }}>
+    <AccountCtx.Provider value={{ account, signIn, signOut, setPlan, setAvatar, saved, saveReading, removeReading, updateReadingAI, findReadingByFingerprint }}>
       {children}
     </AccountCtx.Provider>
   );

@@ -24,7 +24,8 @@ import {
 import { AccountModal } from "@/components/AccountModal";
 import { useLang } from "@/lib/i18n";
 import { generateReport, type ReportAI } from "@/lib/report.functions";
-import { buildReportCacheKey, buildReportRequest, buildReportSeed } from "@/lib/report-input";
+import { buildReportCacheKey, buildReportFingerprint, buildReportRequest, buildReportSeed } from "@/lib/report-input";
+import { useAccount } from "@/lib/account";
 
 
 type SearchParams = {
@@ -511,11 +512,22 @@ function ReportPage() {
   const [aiState, setAiState] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [aiError, setAiError] = useState<string | null>(null);
   const latestReqRef = useRef(0);
+  const { findReadingByFingerprint, updateReadingAI } = useAccount();
 
   const runReport = useCallback((force = false) => {
     if (!search.date) return;
     const cacheKey = buildReportCacheKey(search, lang);
+    const fingerprint = buildReportFingerprint(search, lang);
+
     if (!force) {
+      // 1. Persisted saved-reading cache (survives across sessions).
+      const savedHit = findReadingByFingerprint(fingerprint);
+      if (savedHit?.aiReport) {
+        setAi(savedHit.aiReport);
+        setAiState("ready");
+        return;
+      }
+      // 2. Session cache.
       try {
         const cached = typeof sessionStorage !== "undefined" ? sessionStorage.getItem(cacheKey) : null;
         if (cached) {
@@ -546,6 +558,8 @@ function ReportPage() {
         } catch {
           /* ignore quota */
         }
+        // Write back to any matching saved reading so future sessions skip regeneration.
+        updateReadingAI(fingerprint, { aiReport: res, fingerprint });
       })
       .catch((err: unknown) => {
         if (reqId !== latestReqRef.current) return;
@@ -701,7 +715,11 @@ function ReportPage() {
           lang,
         }}
         onOpenAccount={() => setAccOpen(true)}
+        fingerprint={search.date ? buildReportFingerprint(search, lang) : undefined}
+        aiReport={ai}
+        aiOutlook={findReadingByFingerprint(search.date ? buildReportFingerprint(search, lang) : "")?.aiOutlook}
       />
+
       <AccountModal open={accOpen} onClose={() => setAccOpen(false)} />
 
       <section className="mx-auto mb-24 max-w-6xl px-4 sm:px-6">
@@ -952,7 +970,7 @@ function ReportPage() {
 
       {/* Life Timeline — 大运 */}
       <div className="mt-24">
-        <LifeTimeline birthISO={search.date} />
+        <LifeTimeline birthISO={search.date} search={search} />
       </div>
 
       {/* Key life events verification */}
@@ -962,7 +980,8 @@ function ReportPage() {
       <TarotDraw />
 
       {/* Membership tiers — Oracle unlocks Synastry + 90-day windows + Future watchlist */}
-      <MembershipSection birthISO={search.date} />
+      <MembershipSection birthISO={search.date} search={search} />
+
 
 
 
