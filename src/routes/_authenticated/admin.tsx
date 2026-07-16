@@ -25,8 +25,10 @@ import {
 } from "@/lib/admin.functions";
 import {
   grantPremiumReportAccess,
+  listAdminChartsForUser,
   listAdminPremiumOrders,
   type AdminOrderRow,
+  type AdminUserChartRow,
 } from "@/lib/premium.functions";
 
 export const Route = createFileRoute("/_authenticated/admin")({
