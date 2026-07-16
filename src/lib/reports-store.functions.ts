@@ -3,6 +3,8 @@ import { z } from "zod";
 import { createHash } from "crypto";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { Json } from "@/integrations/supabase/types";
+
 
 /**
  * Persistence layer for user birth charts and their AI-generated reports.
