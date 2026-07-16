@@ -119,11 +119,13 @@ export const getPremiumStatus = createServerFn({ method: "POST" })
 
     const { data: orderRow } = await supabase
       .from("premium_report_orders")
-      .select("id, status, provider, paid_at")
+      .select("id, status, provider, paid_at, product_version, amount_cents")
       .eq("user_id", userId)
       .eq("chart_id", data.chartId)
-      .eq("product_version", PREMIUM_PRODUCT_VERSION)
+      .in("product_version", PREMIUM_ALL_PRODUCT_VERSIONS as unknown as string[])
       .in("status", ["pending", "paid"])
+      .order("created_at", { ascending: false })
+      .limit(1)
       .maybeSingle();
 
     const { data: reportRow } = await supabase
