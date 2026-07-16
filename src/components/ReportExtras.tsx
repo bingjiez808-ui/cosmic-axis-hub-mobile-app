@@ -39,6 +39,7 @@ const TINT_CLASSES: Record<string, { border: string; bg: string; text: string; d
 import { useLang, type Lang } from "@/lib/i18n";
 import { useAccount } from "@/lib/account";
 import { ChartZoomModal } from "@/components/charts/DestinyCharts";
+import { PremiumPdfCard } from "@/components/PremiumPdfCard";
 import { TAROT_78, type TarotCard } from "@/lib/tarot-deck";
 import { askOracle } from "@/lib/oracle.functions";
 import { TAROT_LIMITS, tarotConsume, tarotRemaining } from "@/lib/tarot-quota";
