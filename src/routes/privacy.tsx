@@ -116,7 +116,6 @@ const EN: Copy = {
   contactHeading: "10. Contact",
   contactBody: [
     `Entity: ${LEGAL_CONTACT.entityName}`,
-    `Address: ${LEGAL_CONTACT.address}`,
     `Email: ${LEGAL_CONTACT.privacyEmail}`,
   ],
 };
