@@ -160,19 +160,20 @@ function RitualPage() {
     } catch {}
   }, [values, quiz, step, skipQuiz, restored]);
 
-  const totalSteps = (skipQuiz ? 0 : QUIZ.length) + 4;
+  const totalSteps = (skipQuiz ? 0 : QUIZ.length) + 5;
 
   const questionSteps: {
     key: FieldKey;
     prompt: string;
     hint: string;
     placeholder: string;
-    input: "text" | "date" | "time";
+    input: "text" | "date" | "time" | "gender";
   }[] = [
     { key: "name", prompt: t.q_name, hint: t.q_name_hint, placeholder: t.q_name_ph, input: "text" },
     { key: "date", prompt: t.q_date, hint: t.q_date_hint, placeholder: "", input: "date" },
     { key: "time", prompt: t.q_time, hint: t.q_time_hint, placeholder: "", input: "time" },
     { key: "place", prompt: t.q_place, hint: t.q_place_hint, placeholder: t.q_place_ph, input: "text" },
+    { key: "gender", prompt: t.q_gender, hint: t.q_gender_hint, placeholder: "", input: "gender" },
 ];
 
 // `noOrphan` lives in @/lib/typography — imported at the top of the file.
