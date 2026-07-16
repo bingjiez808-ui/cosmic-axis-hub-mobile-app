@@ -148,6 +148,7 @@ type SearchParams = {
   zodiac?: string;
   lunar?: string;
   readingId?: string;
+  gender?: "male" | "female";
 };
 
 const pickStr = (v: unknown) => (typeof v === "string" ? v : undefined);
