@@ -410,6 +410,8 @@ function SiteNav() {
             <img
               src={account.avatar}
               alt=""
+              loading="lazy"
+              decoding="async"
               className="h-5 w-5 flex-none rounded-full border border-gold-dust/40 object-cover"
             />
           )}
