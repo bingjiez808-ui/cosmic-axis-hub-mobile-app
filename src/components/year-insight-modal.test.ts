@@ -145,6 +145,11 @@ describe("YearInsightModal — behavior", () => {
 describe("YearInsightModal — source-level safety invariants", () => {
   const SRC = readFileSync("src/components/YearInsightModal.tsx", "utf8");
 
+  // Strip block + line comments so a "we never diagnose" doc-comment
+  // never trips a forbidden-word scan; the check is about user-visible
+  // strings, not documentation about the rules.
+  const CODE = SRC.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
+
   test("no forbidden certainty / medical / financial forecast copy", () => {
     for (const p of [
       /diagnos/i,
@@ -153,9 +158,10 @@ describe("YearInsightModal — source-level safety invariants", () => {
       /(?:certain|guaranteed)\s+(?:profit|return|loss|death)/i,
       /确诊|必然|必定|保证盈利|保证收益|一定会/,
     ]) {
-      expect(SRC).not.toMatch(p);
+      expect(CODE).not.toMatch(p);
     }
   });
+
 
   test("does not call any AI / oracle / server fn", () => {
     expect(SRC).not.toMatch(/fetch\(/);
