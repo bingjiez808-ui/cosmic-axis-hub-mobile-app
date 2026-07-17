@@ -46,3 +46,34 @@ export function safeMessage(err: unknown, fallback = "Request failed"): string {
   }
   return scrubbed && scrubbed.length < 200 ? scrubbed : fallback;
 }
+
+/**
+ * Structured, PII-safe scrubber for chapter `error_message` / audit fields
+ * that ship to `premium_report_chapters.error_message` and `ai_usage_ledger`.
+ *
+ * Even though our validation errors are constructed from catalog keys and
+ * fact-path strings, the raw provider text or a stringified prompt could
+ * carry birth data. This scrubber redacts:
+ *   - ISO dates (YYYY-MM-DD)                     → <redacted:date>
+ *   - Times (HH:MM, HH:MM:SS)                    → <redacted:time>
+ *   - Decimal coordinates (lat/lng with 3+ dp)   → <redacted:coord>
+ *   - Common birth-field JSON keys and their values
+ *   - Bearer / secret patterns via safeMessage()
+ *
+ * The output is bounded to 400 chars — matching the `error_message` column
+ * limit — and is safe for admins to read without seeing user PII.
+ */
+export function sanitizeAuditMessage(raw: string | undefined | null): string {
+  if (!raw) return "";
+  let s = safeMessage(raw, "");
+  // Birth-related JSON key/value pairs — strip value.
+  s = s.replace(
+    /("?(?:birth_date|birth_time|birth_place|dob|date|time|name|full_name|lat|lng|latitude|longitude|tz|timezone)"?\s*[:=]\s*)"?[^",}\]]+"?/gi,
+    "$1<redacted>",
+  );
+  // ISO dates / times / coordinates in free text.
+  s = s.replace(/\b\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2})?)?\b/g, "<redacted:date>");
+  s = s.replace(/\b\d{1,2}:\d{2}(?::\d{2})?\b/g, "<redacted:time>");
+  s = s.replace(/-?\d{1,3}\.\d{3,}/g, "<redacted:coord>");
+  return s.slice(0, 400);
+}
