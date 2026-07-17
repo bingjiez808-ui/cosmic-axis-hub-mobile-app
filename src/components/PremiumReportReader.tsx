@@ -20,6 +20,7 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
 import { useLang } from "@/lib/i18n";
 import {
   generatePremiumReport,
+  processNextPremiumChapter,
   getPremiumReport,
   getPremiumReportProgress,
   type PremiumContent,
@@ -151,7 +152,14 @@ export function PremiumReportReader({
     if (continuing) return;
     setContinuing(true);
     try {
-      await generatePremiumReport({ data: { chartId } });
+      const start = await generatePremiumReport({ data: { chartId } });
+      if (start.status !== "completed") {
+        for (let i = 0; i < 32; i += 1) {
+          const step = await processNextPremiumChapter({ data: { reportId: start.reportId } });
+          if (step.status === "completed") break;
+          if (!step.processed) break;
+        }
+      }
       await loadContent();
     } catch {
       // Leave partial state visible; user can retry.

@@ -15,6 +15,7 @@ import { useLang } from "@/lib/i18n";
 import { buildCanonicalChartInput, ensureChart } from "@/lib/reports-store.functions";
 import {
   generatePremiumReport,
+  processNextPremiumChapter,
   getPremiumStatus,
   getPremiumReportProgress,
   type PremiumStatus,
@@ -55,8 +56,12 @@ const TXT = {
   cta_continue: { zh: "继续生成", en: "Continue generation" },
   cta_open: { zh: "查看完整报告", en: "Open the full report" },
   generating_safe: {
-    zh: "可以安全离开本页，生成会在后台继续，稍后回来即可查看进度。",
-    en: "You can safely leave this page — generation continues in the background.",
+    zh: "进度已保存；如果离开本页，回来后可从中断处继续。",
+    en: "Progress is saved. If you leave, return here to continue where it stopped.",
+  },
+  interrupted: {
+    zh: "生成暂时中断，已完成章节不会重做。请点击“继续生成”。",
+    en: "Generation was temporarily interrupted. Completed chapters will not run again — press Continue.",
   },
   generating_current: { zh: "当前章节", en: "Current chapter" },
   chapters_done: { zh: "章已完成", en: "chapters completed" },
@@ -137,10 +142,12 @@ export function PremiumPdfCard({
   const [busy, setBusy] = useState(false);
   const [readerOpen, setReaderOpen] = useState(false);
   const [payOpen, setPayOpen] = useState(false);
+  const [activeReportId, setActiveReportId] = useState<string | null>(null);
 
   const [resent, setResent] = useState(false);
   const openerRef = useRef<HTMLButtonElement | null>(null);
   const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const stepLoopActive = useRef(false);
 
   const clearPoll = () => {
     if (pollTimer.current) {
@@ -196,6 +203,7 @@ export function PremiumPdfCard({
         },
       });
       const status = await getPremiumStatus({ data: { chartId: chart.chartId } });
+      setActiveReportId(status.report?.id ?? null);
       setState(applyStatus(chart.chartId, status));
     } catch (err) {
       const code = extractErrorCode(err);
@@ -224,7 +232,70 @@ export function PremiumPdfCard({
     return clearPoll;
   }, [refresh]);
 
-  // Poll while generating / partial to show live chapter progress.
+  const driveGeneration = useCallback(async (
+    chartId: string,
+    knownReportId: string | null,
+    opts: { openWhenDone: boolean } = { openWhenDone: false },
+  ) => {
+    if (stepLoopActive.current) return;
+    stepLoopActive.current = true;
+    setBusy(true);
+    try {
+      let reportId = knownReportId;
+      if (!reportId) {
+        const start = await generatePremiumReport({ data: { chartId } });
+        reportId = start.reportId;
+        setActiveReportId(reportId);
+        if (start.status === "completed") {
+          await refreshProgress(chartId);
+          await refresh();
+          if (opts.openWhenDone) setReaderOpen(true);
+          return;
+        }
+      }
+
+      let idleLoops = 0;
+      for (let i = 0; i < 32; i += 1) {
+        const step = await Promise.race([
+          processNextPremiumChapter({ data: { reportId } }),
+          new Promise<never>((_, reject) => {
+            window.setTimeout(() => reject(new Error("chapter_step_timeout")), 75_000);
+          }),
+        ]);
+        setActiveReportId(step.reportId);
+        await refreshProgress(chartId);
+
+        if (step.status === "completed") {
+          await refresh();
+          if (opts.openWhenDone) setReaderOpen(true);
+          return;
+        }
+        if (step.message === "interrupted") {
+          setState({ kind: "failed", chartId });
+          return;
+        }
+        if (!step.processed) {
+          idleLoops += 1;
+          if (idleLoops >= 3) {
+            await refresh();
+            return;
+          }
+          await new Promise((resolve) => window.setTimeout(resolve, 2500));
+        } else {
+          idleLoops = 0;
+        }
+      }
+      await refresh();
+    } catch {
+      setState({ kind: "failed", chartId });
+    } finally {
+      setBusy(false);
+      stepLoopActive.current = false;
+    }
+  }, [refresh, refreshProgress]);
+
+  // Step while generating / partial to show live chapter progress. Each
+  // server request processes at most one chapter; refresh resumes safely.
   useEffect(() => {
     const chartId =
       state.kind === "generating" || state.kind === "partial" || state.kind === "ready"
@@ -235,14 +306,16 @@ export function PremiumPdfCard({
       return;
     }
     void refreshProgress(chartId);
-    if (state.kind !== "generating") return;
+    if (state.kind === "generating" || state.kind === "partial") {
+      void driveGeneration(chartId, activeReportId, { openWhenDone: false });
+    }
     clearPoll();
     pollTimer.current = setTimeout(async () => {
       await refreshProgress(chartId);
       await refresh();
     }, 4000);
     return clearPoll;
-  }, [state, refresh, refreshProgress]);
+  }, [state, refresh, refreshProgress, driveGeneration, activeReportId]);
 
   const onResendVerification = async () => {
     try {
@@ -272,23 +345,9 @@ export function PremiumPdfCard({
 
   const onGenerate = async () => {
     if (state.kind !== "paid_no_report" && state.kind !== "partial" && state.kind !== "failed") return;
-    setBusy(true);
     const chartId = state.chartId;
     setState({ kind: "generating", chartId });
-    try {
-      await generatePremiumReport({ data: { chartId } });
-      await refresh();
-    } catch (err) {
-      const code = extractErrorCode(err);
-      if (code === "email_not_verified") {
-        const { data: sess } = await supabase.auth.getSession();
-        setState({ kind: "verify_needed", email: sess.session?.user?.email ?? null });
-      } else {
-        setState({ kind: "failed", chartId });
-      }
-    } finally {
-      setBusy(false);
-    }
+    await driveGeneration(chartId, activeReportId, { openWhenDone: true });
   };
 
   const onOpen = (btn: HTMLButtonElement | null) => {
@@ -311,7 +370,7 @@ export function PremiumPdfCard({
   const nextPending = progress?.chapters.find((c) => c.status === "pending");
   const currentChapter = running ?? nextPending ?? null;
   const pctRaw = total > 0 ? Math.round((done / total) * 100) : 0;
-  const pct = state.kind === "generating" ? Math.max(pctRaw, 4) : pctRaw;
+  const pct = pctRaw;
 
   return (
     <>

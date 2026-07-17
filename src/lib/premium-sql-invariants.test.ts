@@ -58,8 +58,9 @@ describe("claim_premium_chapter — SQL invariants", () => {
     // The specific ownership predicate must be present.
     expect(sql).toMatch(/user_id\s*=\s*(_uid|auth\.uid\(\))/i);
   });
-  test("only pending or failed rows are eligible for claim", () => {
+  test("pending, failed, or stale running rows are eligible for claim", () => {
     expect(sql).toMatch(/status\s+IN\s*\(\s*'pending'\s*,\s*'failed'\s*\)/i);
+    expect(sql).toMatch(/status\s*=\s*'running'/i);
   });
   test("CAS honours lock TTL and prior claim_token", () => {
     expect(sql).toMatch(/claim_token/i);

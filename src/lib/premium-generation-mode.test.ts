@@ -49,8 +49,8 @@ describe("isDeterministicGenerationModeFor", () => {
     ).toBe(true);
   });
 
-  test("no explicit mode → key presence decides", () => {
-    expect(isDeterministicGenerationModeFor({}, { hasApiKey: true })).toBe(false);
+  test("no explicit mode defaults to deterministic for preview safety", () => {
+    expect(isDeterministicGenerationModeFor({}, { hasApiKey: true })).toBe(true);
     expect(isDeterministicGenerationModeFor({}, { hasApiKey: false })).toBe(true);
   });
 
