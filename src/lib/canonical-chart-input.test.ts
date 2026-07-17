@@ -93,7 +93,7 @@ describe("buildCanonicalChartInput", () => {
     // able to drift the hash. Since normalizeForHash whitelists fields,
     // extra keys are ignored — this locks it in.
     const withExtras = buildCanonicalChartInput(
-      { ...BASE_SEARCH, ...({ readingId: "abc", quiz: "x", zodiac: "y" } as never) },
+      Object.assign({}, BASE_SEARCH, { readingId: "abc", quiz: "x", zodiac: "y" }) as typeof BASE_SEARCH,
       "zh",
     );
     const clean = buildCanonicalChartInput(BASE_SEARCH, "zh");
