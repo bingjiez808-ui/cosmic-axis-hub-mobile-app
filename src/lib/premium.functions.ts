@@ -1000,7 +1000,7 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => StatusInput.parse(d))
   .handler(async ({ data, context }) => {
-    const { userId, claims } = context;
+    const { userId, claims, supabase } = context;
     await assertEmailVerifiedOrAdmin(context);
     enforceRateLimit(`premium-generate:${userId}`, 3, 60_000, "premium report generations");
 
