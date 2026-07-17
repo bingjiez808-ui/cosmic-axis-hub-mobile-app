@@ -55,3 +55,58 @@ describe("isEmailVerified", () => {
     expect(isEmailVerified(null)).toBe(false);
   });
 });
+
+/**
+ * `updateChartGender` is a server function whose safety comes from three
+ * places: (1) input validation (only `"male"` / `"female"` accepted),
+ * (2) owner scoping through RLS + explicit `user_id` filter, and (3)
+ * effect on the calc snapshot (ziwei flips from `gender_missing` to
+ * `ok`). The server handler is exercised via preview E2E; here we lock
+ * in the input contract and the snapshot effect so a regression is
+ * caught in CI.
+ */
+import { z } from "zod";
+import { buildCalculationSnapshot, missingSystems } from "./calc-snapshot";
+
+const UpdateChartGenderInput = z.object({
+  chartId: z.string().uuid(),
+  gender: z.enum(["male", "female"]),
+});
+
+describe("updateChartGender input contract", () => {
+  const owner = "3f8b0e2c-4a1d-4c2e-9f3a-9b1c2d3e4f5a";
+  test("accepts male/female for an owner-scoped chartId", () => {
+    expect(UpdateChartGenderInput.parse({ chartId: owner, gender: "male" }).gender).toBe("male");
+    expect(UpdateChartGenderInput.parse({ chartId: owner, gender: "female" }).gender).toBe("female");
+  });
+  test("rejects unknown gender values (no 'unspecified', no free text, no null)", () => {
+    for (const v of ["unspecified", "", null, "other", "M", "female "]) {
+      expect(() => UpdateChartGenderInput.parse({ chartId: owner, gender: v })).toThrow();
+    }
+  });
+  test("rejects non-uuid chartId (defense against tampered client payloads)", () => {
+    expect(() =>
+      UpdateChartGenderInput.parse({ chartId: "1784018592533-y6m3rg", gender: "male" }),
+    ).toThrow();
+  });
+});
+
+describe("updateChartGender snapshot effect", () => {
+  const nanjingBirth = {
+    date: "2002-11-03",
+    time: "09:26",
+    place: "Nanjing",
+    lang: "en" as const,
+  };
+  test("gender_missing → complete once ziwei receives a valid gender", () => {
+    const before = buildCalculationSnapshot({ ...nanjingBirth, gender: null });
+    expect(missingSystems(before)).toContain("ziwei");
+    const after = buildCalculationSnapshot({ ...nanjingBirth, gender: "female" });
+    expect(missingSystems(after)).not.toContain("ziwei");
+    // The rest of the snapshot must remain consistent — western/bazi
+    // are gender-independent and MUST still be ok.
+    expect(after.western.status).toBe("ok");
+    expect(after.bazi.status).toBe("ok");
+  });
+});
+

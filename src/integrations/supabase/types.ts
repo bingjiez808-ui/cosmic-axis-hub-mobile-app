@@ -136,6 +136,7 @@ export type Database = {
       }
       premium_pdf_reports: {
         Row: {
+          ai_generation_count: number
           chart_id: string
           content_json: Json | null
           created_at: string
@@ -154,6 +155,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          ai_generation_count?: number
           chart_id: string
           content_json?: Json | null
           created_at?: string
@@ -172,6 +174,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          ai_generation_count?: number
           chart_id?: string
           content_json?: Json | null
           created_at?: string

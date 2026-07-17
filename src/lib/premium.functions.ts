@@ -144,6 +144,40 @@ export function chooseGrantAction(orders: OrderRowLite[]): GrantDecision {
 }
 
 /* --------------------------------------------------------------------- */
+/* Generation gating (pure decision) — extracted for unit tests.          */
+/*                                                                        */
+/* The invariant this locks in: the AI provider is called at most once    */
+/* per (user, chart, report_version). The unique index on those columns   */
+/* means only the first inserter of a `generating` row (the didStart      */
+/* winner) is authorized to reach the AI. Every other caller — cached     */
+/* completions, concurrent losers, reopens — MUST short-circuit here.    */
+/* --------------------------------------------------------------------- */
+
+export type ExistingReportLite = {
+  status: "pending" | "generating" | "completed" | "failed";
+  hasContent: boolean;
+} | null;
+
+export type GenerationAction =
+  | { action: "return_cached" } // completed row with content_json → NEVER call AI
+  | { action: "return_existing" } // pending/generating/failed row exists → concurrent loser, NEVER call AI
+  | { action: "start_new"; willCallAi: true }; // fresh row must be inserted; only this path calls AI
+
+export function chooseGenerationAction(existing: ExistingReportLite): GenerationAction {
+  if (existing?.status === "completed" && existing.hasContent) {
+    return { action: "return_cached" };
+  }
+  if (existing) {
+    // Any pre-existing row (generating / pending / failed) means some
+    // other caller already claimed this slot. The current caller must
+    // NOT invoke the AI again.
+    return { action: "return_existing" };
+  }
+  return { action: "start_new", willCallAi: true };
+}
+
+
+/* --------------------------------------------------------------------- */
 /* Helpers                                                                */
 /* --------------------------------------------------------------------- */
 
@@ -965,6 +999,13 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
         chapters,
       };
 
+      // ai_generation_count is bumped ONLY here — the didStart branch is
+      // the sole path that actually called the AI provider. Cached
+      // completions, concurrent losers (didStart=false), and reopen
+      // reads never reach this update, so the counter accurately
+      // reflects real provider invocations. Non-atomic assignment is
+      // safe because the unique index on (user_id, chart_id,
+      // report_version) makes the didStart winner the sole writer.
       await supabaseAdmin
         .from("premium_pdf_reports")
         .update({
@@ -974,6 +1015,7 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
           provider: "lovable-ai-gateway",
           generated_at: new Date().toISOString(),
           error_message: null,
+          ai_generation_count: 1,
         })
         .eq("id", row.id)
         .eq("user_id", userId);
@@ -1001,6 +1043,7 @@ export type PremiumReportRead = {
   generatedAt: string | null;
   content: PremiumContent | null;
   errorMessage: string | null;
+  aiGenerationCount: number;
 };
 
 export const getPremiumReport = createServerFn({ method: "POST" })
@@ -1008,7 +1051,8 @@ export const getPremiumReport = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => StatusInput.parse(d))
   .handler(async ({ data, context }): Promise<PremiumReportRead | null> => {
     const { supabase, userId } = context;
-    // Ownership guard: chart must belong to caller.
+    // Ownership guard: chart must belong to caller. Cross-user reads
+    // are blocked here AND by RLS — this is defense in depth.
     const { data: chart } = await supabase
       .from("charts")
       .select("id, user_id")
@@ -1018,7 +1062,7 @@ export const getPremiumReport = createServerFn({ method: "POST" })
 
     const { data: row } = await supabase
       .from("premium_pdf_reports")
-      .select("status, content_json, generated_at, error_message")
+      .select("status, content_json, generated_at, error_message, ai_generation_count")
       .eq("user_id", userId)
       .eq("chart_id", data.chartId)
       .eq("report_version", PREMIUM_REPORT_VERSION)
@@ -1029,8 +1073,13 @@ export const getPremiumReport = createServerFn({ method: "POST" })
       generatedAt: row.generated_at,
       content: (row.content_json as unknown as PremiumContent) ?? null,
       errorMessage: row.error_message,
+      aiGenerationCount:
+        typeof (row as { ai_generation_count?: number }).ai_generation_count === "number"
+          ? (row as { ai_generation_count: number }).ai_generation_count
+          : 0,
     };
   });
+
 
 /* --------------------------------------------------------------------- */
 /* listPremiumReports — user's own deep reports across all charts         */
