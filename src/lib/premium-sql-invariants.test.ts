@@ -29,9 +29,13 @@ function loadMigrationDefining(fnName: string): string {
     .filter((f) => f.endsWith(".sql"))
     .sort();
   const hits: string[] = [];
+  const defRe = new RegExp(
+    `(?:CREATE\\s+(?:OR\\s+REPLACE\\s+)?FUNCTION)\\s+(?:public\\.)?${fnName}\\b`,
+    "i",
+  );
   for (const f of files) {
     const text = readFileSync(join(MIG_DIR, f), "utf8");
-    if (text.includes(fnName)) hits.push(text);
+    if (defRe.test(text)) hits.push(text);
   }
   if (hits.length === 0) throw new Error(`no migration defines ${fnName}`);
   // Return the last (most recent) definition — this is the effective one.
