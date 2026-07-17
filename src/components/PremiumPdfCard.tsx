@@ -402,7 +402,16 @@ export function PremiumPdfCard({
           }}
         />
       )}
+
+      <MockPaymentModal
+        open={payOpen}
+        chartId={state.kind === "locked" ? state.chartId : null}
+        lang={lang}
+        onClose={() => setPayOpen(false)}
+        onSuccess={onMockPaymentSuccess}
+      />
     </>
+
   );
 }
 
