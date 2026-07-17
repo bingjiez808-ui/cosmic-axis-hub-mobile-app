@@ -295,6 +295,8 @@ export type Database = {
           claim_token: string | null
           claimed_at: string | null
           completed_at: string | null
+          confidence: string | null
+          content_hash: string | null
           content_json: Json | null
           created_at: string
           error_message: string | null
@@ -314,6 +316,8 @@ export type Database = {
           claim_token?: string | null
           claimed_at?: string | null
           completed_at?: string | null
+          confidence?: string | null
+          content_hash?: string | null
           content_json?: Json | null
           created_at?: string
           error_message?: string | null
@@ -333,6 +337,8 @@ export type Database = {
           claim_token?: string | null
           claimed_at?: string | null
           completed_at?: string | null
+          confidence?: string | null
+          content_hash?: string | null
           content_json?: Json | null
           created_at?: string
           error_message?: string | null
@@ -629,6 +635,17 @@ export type Database = {
           _lock_ttl_seconds?: number
           _new_token: string
           _report_id: string
+        }
+        Returns: boolean
+      }
+      claim_premium_chapter_for_user: {
+        Args: {
+          _chapter_index: number
+          _chapter_key: string
+          _lock_ttl_seconds?: number
+          _new_token: string
+          _report_id: string
+          _user_id: string
         }
         Returns: boolean
       }
