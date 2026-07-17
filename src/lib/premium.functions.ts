@@ -843,7 +843,7 @@ async function generateChapter(
   webReport: string,
   isZh: boolean,
   apiKey: string,
-): Promise<string> {
+): Promise<{ text: string; usage: TokenUsage | null }> {
   const gateway = createLovableAiGatewayProvider(apiKey);
   const guardrails = guardrailsFor(isZh ? "zh" : "en");
   const system = isZh
@@ -869,15 +869,34 @@ ${isZh ? "现有网页报告摘要（可参考不要复述）" : "Existing web r
 ${webReport.slice(0, 4000)}
 `;
 
-  const { text } = await generateText({
-    model: gateway("google/gemini-2.5-flash"),
+  const result = await generateText({
+    model: gateway(READING_MODEL_ID),
     system,
     prompt,
+    temperature: 0,
   });
-  return text.trim().slice(0, 8000);
+  const u = (result as unknown as { usage?: { inputTokens?: number; outputTokens?: number; promptTokens?: number; completionTokens?: number } }).usage;
+  const usage: TokenUsage | null = u
+    ? {
+        input_tokens: u.inputTokens ?? u.promptTokens ?? 0,
+        output_tokens: u.outputTokens ?? u.completionTokens ?? 0,
+      }
+    : null;
+  return { text: result.text.trim().slice(0, 8000), usage };
 }
 
-async function beginPremiumReportRow(userId: string, chartId: string, orderId: string) {
+/**
+ * Insert (or claim) the single generating row for a given cache key.
+ * The unique index (user_id, chart_id, report_version, input_hash)
+ * makes only ONE caller the `didStart` winner; every concurrent loser
+ * gets the existing row and MUST NOT call the AI provider.
+ */
+async function beginPremiumReportRow(
+  userId: string,
+  chartId: string,
+  orderId: string,
+  cacheKey: CacheKey,
+) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
   const { data: inserted, error } = await supabaseAdmin
@@ -886,8 +905,11 @@ async function beginPremiumReportRow(userId: string, chartId: string, orderId: s
       user_id: userId,
       chart_id: chartId,
       order_id: orderId,
-      report_version: PREMIUM_REPORT_VERSION,
-      prompt_version: PREMIUM_PROMPT_VERSION,
+      report_version: cacheKey.report_version,
+      prompt_version: cacheKey.prompt_version,
+      model_id: cacheKey.model_id,
+      calculation_version: cacheKey.calculation_version,
+      input_hash: cacheKey.input_hash,
       status: "generating",
     })
     .select("id, status, content_json")
@@ -899,10 +921,45 @@ async function beginPremiumReportRow(userId: string, chartId: string, orderId: s
     .select("id, status, content_json")
     .eq("user_id", userId)
     .eq("chart_id", chartId)
-    .eq("report_version", PREMIUM_REPORT_VERSION)
+    .eq("report_version", cacheKey.report_version)
+    .eq("input_hash", cacheKey.input_hash)
     .maybeSingle();
   if (!existing) throw new Error("premium_row_lookup_failed");
   return { row: existing, didStart: false };
+}
+
+/**
+ * Build the engine input for a chart. `generated_at` on the snapshot
+ * is stripped so the input_hash is deterministic across time — only
+ * the actual chart facts + versions may influence the cache key.
+ */
+function buildEngineInputForChart(chart: {
+  name: string | null;
+  birth_date: string | null;
+  birth_time: string | null;
+  birth_place: string | null;
+  lang: string | null;
+  input_snapshot?: unknown;
+}) {
+  const gender = extractGender(chart.input_snapshot);
+  const snapshot: CalculationSnapshot = buildCalculationSnapshot({
+    date: chart.birth_date ?? null,
+    time: chart.birth_time ?? null,
+    place: chart.birth_place ?? null,
+    lang: (chart.lang as "en" | "zh") ?? "en",
+    gender,
+  });
+  // Strip volatile timestamp so the hash is stable across regenerations.
+  const stableSnapshot: CalculationSnapshot = { ...snapshot, generated_at: "" };
+  const chartFacts: EngineChartFacts = {
+    name: chart.name ?? null,
+    birth_date: chart.birth_date ?? null,
+    birth_time: chart.birth_time ?? null,
+    birth_place: chart.birth_place ?? null,
+    lang: (chart.lang as "en" | "zh") ?? "en",
+    gender,
+  };
+  return buildEngineInput(chartFacts, stableSnapshot, DEFAULT_VERSIONS);
 }
 
 export const generatePremiumReport = createServerFn({ method: "POST" })
