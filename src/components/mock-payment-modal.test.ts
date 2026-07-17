@@ -83,8 +83,13 @@ describe("MockPaymentModal — visual + safety invariants", () => {
 
   test("does not offer any PDF / export affordances", () => {
     expect(SRC).not.toMatch(/\bPDF\b/);
-    expect(SRC).not.toMatch(/导出|Export/i);
+    expect(SRC).not.toMatch(/导出/);
+    // Only the `export function` module keyword may match /export/i,
+    // so require an actual export UI affordance in JSX text.
+    expect(SRC).not.toMatch(/>\s*Export\b/);
+    expect(SRC).not.toMatch(/Export\s+report|Download\s+PDF/i);
   });
+
 });
 
 describe("PremiumPdfCard wires the modal instead of a live checkout", () => {
