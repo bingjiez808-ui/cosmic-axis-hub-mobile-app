@@ -6,9 +6,9 @@
  *   • SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_PUBLISHABLE_KEY
  *
  * PROPERTIES CHECKED
- *   1. Data API — none of premium_pdf_reports / premium_report_chapters /
- *      ai_usage_ledger have `authenticated` grants (defense-in-depth
- *      layered on top of RLS).
+ *   1. RLS owner isolation — owner A can read their own premium report,
+ *      chapters, and ai_usage_ledger rows; user B is filtered to 0 rows
+ *      on all three tables even with a valid JWT.
  *   2. claim_premium_chapter — owner (JWT user_id === report.user_id)
  *      may claim; non-owner authenticated caller is refused with
  *      `not_report_owner`.
