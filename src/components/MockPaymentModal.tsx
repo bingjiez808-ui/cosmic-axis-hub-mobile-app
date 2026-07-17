@@ -156,7 +156,7 @@ export function MockPaymentModal({
   if (!open) return null;
 
   const onConfirm = async () => {
-    if (!chartId || busy || prod) return;
+    if (!chartId || busy || disabled) return;
     setBusy(true);
     setError(null);
     try {
