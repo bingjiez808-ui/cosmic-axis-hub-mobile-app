@@ -250,7 +250,7 @@ export function PremiumPdfCard({
     setBusy(true);
     try {
       const outcome = await startPremiumCheckout({ data: { chartId: state.chartId } });
-      if (outcome.kind === "already_paid" || outcome.kind === "checkout_created") await refresh();
+      if (outcome.kind === "already_paid") await refresh();
       else setState({ kind: "order_pending", chartId: state.chartId });
     } catch (err) {
       const code = extractErrorCode(err);
