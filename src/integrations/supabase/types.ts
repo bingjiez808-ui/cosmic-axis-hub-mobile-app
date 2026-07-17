@@ -611,6 +611,80 @@ export type Database = {
         }
         Relationships: []
       }
+      year_readings_v1: {
+        Row: {
+          advice: Json
+          age: number
+          calculation_version: string
+          chart_id: string
+          composite_confidence: string | null
+          composite_direction: string | null
+          composite_score: number | null
+          content_hash: string
+          evidence_refs: Json
+          facts_hash: string
+          generated_at: string
+          id: string
+          interpretation: Json
+          lang: string
+          owner_id: string
+          skill_version: string
+          system_scores: Json
+          unavailable_systems: Json
+          year: number
+        }
+        Insert: {
+          advice: Json
+          age: number
+          calculation_version: string
+          chart_id: string
+          composite_confidence?: string | null
+          composite_direction?: string | null
+          composite_score?: number | null
+          content_hash: string
+          evidence_refs?: Json
+          facts_hash: string
+          generated_at?: string
+          id?: string
+          interpretation: Json
+          lang?: string
+          owner_id: string
+          skill_version: string
+          system_scores: Json
+          unavailable_systems?: Json
+          year: number
+        }
+        Update: {
+          advice?: Json
+          age?: number
+          calculation_version?: string
+          chart_id?: string
+          composite_confidence?: string | null
+          composite_direction?: string | null
+          composite_score?: number | null
+          content_hash?: string
+          evidence_refs?: Json
+          facts_hash?: string
+          generated_at?: string
+          id?: string
+          interpretation?: Json
+          lang?: string
+          owner_id?: string
+          skill_version?: string
+          system_scores?: Json
+          unavailable_systems?: Json
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "year_readings_v1_chart_id_fkey"
+            columns: ["chart_id"]
+            isOneToOne: false
+            referencedRelation: "charts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
