@@ -27,6 +27,10 @@ import {
   validateYearReading,
   type YearReading,
 } from "./year-readings";
+type JsonScalar = string | number | boolean | null;
+type JsonValue = JsonScalar | JsonValue[] | { [k: string]: JsonValue };
+type YearReadingRow = Record<string, JsonValue>;
+
 
 const EnsureInput = z.object({
   chartId: z.string().uuid(),
