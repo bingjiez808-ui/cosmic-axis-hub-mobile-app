@@ -160,9 +160,7 @@ export function PremiumReportReader({
     }
   }, [continuing, chartId, loadContent]);
 
-      cancel = true;
-    };
-  }, [open, chartId]);
+
 
   // Body scroll lock + Escape.
   useEffect(() => {
