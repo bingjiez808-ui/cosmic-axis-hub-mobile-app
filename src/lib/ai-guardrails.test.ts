@@ -5,10 +5,11 @@ import { sanitizeAuditMessage, safeMessage } from "./ai-guardrails";
 describe("sanitizeAuditMessage — PII-safe audit strings", () => {
   test("strips ISO dates and times", () => {
     const out = sanitizeAuditMessage(
-      "chapter_provider_error at 1990-03-15 07:42:00 provider=abc",
+      "chapter_provider_error at 1990-03-15 07:42:00 provider=abc, stand-alone 08:15",
     );
     expect(out).not.toContain("1990-03-15");
     expect(out).not.toContain("07:42");
+    expect(out).not.toContain("08:15");
     expect(out).toContain("<redacted:date>");
     expect(out).toContain("<redacted:time>");
   });
