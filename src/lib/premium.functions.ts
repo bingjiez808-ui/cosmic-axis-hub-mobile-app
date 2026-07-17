@@ -325,6 +325,8 @@ export const getPremiumStatus = createServerFn({ method: "POST" })
       .eq("user_id", userId)
       .eq("chart_id", data.chartId)
       .eq("report_version", PREMIUM_REPORT_VERSION)
+      .order("created_at", { ascending: true })
+      .limit(1)
       .maybeSingle();
 
     return {
