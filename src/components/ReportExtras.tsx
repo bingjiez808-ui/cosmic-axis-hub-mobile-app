@@ -51,6 +51,8 @@ import {
   type ReportSearchLike,
 } from "@/lib/report-input";
 import { OUTLOOK_AI_VERSION } from "@/lib/ai-cache-version";
+import { computeEnergyRange } from "@/lib/energy-score";
+
 
 /* ═══════════════════════════════════════════
    Shared AI outlook (timeline + 90-day windows)
