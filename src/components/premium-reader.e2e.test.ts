@@ -112,9 +112,6 @@ mock.module("@/lib/i18n", () => ({
 }));
 
 // The i18n hook expects a provider — supply a minimal one via mock.
-mock.module("@/lib/i18n", () => ({
-  useLang: () => ({ lang: "en" as const, setLang: () => {}, t: {} }),
-}));
 
 let React: typeof import("react");
 let ReactDOMClient: typeof import("react-dom/client");
