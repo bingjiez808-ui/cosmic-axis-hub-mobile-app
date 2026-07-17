@@ -1,3 +1,4 @@
+// @ts-expect-error bun:test
 import { describe, expect, it } from "bun:test";
 import {
   canRetry,
