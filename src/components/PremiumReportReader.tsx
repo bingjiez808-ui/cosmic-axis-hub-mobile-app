@@ -18,7 +18,13 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { useLang } from "@/lib/i18n";
-import { getPremiumReport, type PremiumContent } from "@/lib/premium.functions";
+import {
+  generatePremiumReport,
+  getPremiumReport,
+  getPremiumReportProgress,
+  type PremiumContent,
+  type PremiumReportProgress,
+} from "@/lib/premium.functions";
 import type { PremiumFacts, BaZiElement } from "@/lib/premium-facts";
 import {
   computeScrollProgress,
