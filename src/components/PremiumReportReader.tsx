@@ -542,6 +542,36 @@ export function PremiumReportReader({
                               <p key={k}>{para.trim()}</p>
                             ))}
                           </div>
+                          {ch.evidence_refs && ch.evidence_refs.length > 0 && (
+                            <details className="mt-4 rounded-2xl border border-white/10 bg-white/[0.02] px-3 py-2 text-[12px] text-stone-warm/75">
+                              <summary className="cursor-pointer select-none list-none text-[10px] uppercase tracking-[0.28em] text-gold-dust/70 [&::-webkit-details-marker]:hidden">
+                                {lang === "zh" ? "证据溯源" : "Evidence"} · {ch.evidence_refs.length}
+                              </summary>
+                              <ul className="mt-2 space-y-1.5">
+                                {ch.evidence_refs.map((r, k) => (
+                                  <li key={k} className="flex flex-wrap items-center gap-2 [overflow-wrap:anywhere]">
+                                    <code className="rounded bg-white/[0.04] px-1.5 py-0.5 text-[11px] text-stone-warm/80">
+                                      {r.path}
+                                    </code>
+                                    <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.2em] text-stone-warm/60">
+                                      {r.module}
+                                    </span>
+                                    <span
+                                      className={`rounded-full px-2 py-0.5 text-[10px] uppercase tracking-[0.2em] ${
+                                        r.confidence === "grounded"
+                                          ? "bg-emerald-500/15 text-emerald-300"
+                                          : r.confidence === "traditional"
+                                            ? "bg-amber-500/15 text-amber-200"
+                                            : "bg-nebula-purple/15 text-nebula-purple"
+                                      }`}
+                                    >
+                                      {r.confidence}
+                                    </span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </details>
+                          )}
 
                           {/* Prev/Next chapter nav */}
                           <nav
