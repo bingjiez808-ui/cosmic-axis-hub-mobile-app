@@ -18,6 +18,7 @@ export type ReportSearchLike = {
   zodiac?: string;
   lunar?: string;
   readingId?: string;
+  gender?: "male" | "female";
 };
 
 export function buildReportSeed(search: ReportSearchLike) {
