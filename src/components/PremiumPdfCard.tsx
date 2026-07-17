@@ -132,6 +132,8 @@ export function PremiumPdfCard({
   const [progress, setProgress] = useState<PremiumReportProgress | null>(null);
   const [busy, setBusy] = useState(false);
   const [readerOpen, setReaderOpen] = useState(false);
+  const [payOpen, setPayOpen] = useState(false);
+
   const [resent, setResent] = useState(false);
   const openerRef = useRef<HTMLButtonElement | null>(null);
   const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
