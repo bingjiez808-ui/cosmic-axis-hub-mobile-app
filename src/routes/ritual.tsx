@@ -169,11 +169,16 @@ function RitualPage() {
     placeholder: string;
     input: "text" | "date" | "time" | "gender";
   }[] = [
+    // Order matters: gender is asked up front alongside birth date/time so
+    // the Zi Wei calculator can run from the first synthesis. The label
+    // makes clear it is only used by traditional algorithms and is never
+    // publicly displayed. `place` intentionally comes last because it
+    // often needs a city picker and is less sensitive.
     { key: "name", prompt: t.q_name, hint: t.q_name_hint, placeholder: t.q_name_ph, input: "text" },
     { key: "date", prompt: t.q_date, hint: t.q_date_hint, placeholder: "", input: "date" },
     { key: "time", prompt: t.q_time, hint: t.q_time_hint, placeholder: "", input: "time" },
-    { key: "place", prompt: t.q_place, hint: t.q_place_hint, placeholder: t.q_place_ph, input: "text" },
     { key: "gender", prompt: t.q_gender, hint: t.q_gender_hint, placeholder: "", input: "gender" },
+    { key: "place", prompt: t.q_place, hint: t.q_place_hint, placeholder: t.q_place_ph, input: "text" },
 ];
 
 // `noOrphan` lives in @/lib/typography — imported at the top of the file.
