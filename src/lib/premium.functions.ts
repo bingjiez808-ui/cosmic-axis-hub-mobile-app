@@ -1413,6 +1413,18 @@ async function recoverStaleChapterLocks(reportId: string, userId: string) {
     .eq("user_id", userId)
     .eq("status", "running")
     .lt("claimed_at", staleBefore);
+  await supabaseAdmin
+    .from("premium_report_chapters")
+    .update({
+      status: "failed",
+      claim_token: null,
+      claimed_at: null,
+      error_message: "generation_interrupted",
+    } as unknown as never)
+    .eq("report_id", reportId)
+    .eq("user_id", userId)
+    .eq("status", "running")
+    .is("claimed_at", null);
 }
 
 function chapterConfidence(refs: Array<{ confidence: string }>): "grounded" | "traditional" | "reflective" {
