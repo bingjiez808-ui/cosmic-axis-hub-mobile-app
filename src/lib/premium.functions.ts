@@ -1073,7 +1073,7 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
     }
 
     try {
-      const isZh = (chart.lang ?? "en") === "zh";
+      const apiKey = process.env.LOVABLE_API_KEY;
 
       const { data: webReport } = await supabaseAdmin
         .from("reports")
