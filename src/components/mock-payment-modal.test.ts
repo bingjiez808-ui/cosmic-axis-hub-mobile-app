@@ -73,10 +73,13 @@ describe("MockPaymentModal — visual + safety invariants", () => {
     expect(SRC).toMatch(/示意|illustrative/i);
   });
 
-  test("has a confirm button and treats production as disabled", () => {
+  test("gates via explicit PAYMENT_MODE (not NODE_ENV / import.meta.env.PROD)", () => {
     expect(SRC).toContain('data-testid="mock-payment-confirm"');
-    expect(SRC).toContain("import.meta.env?.PROD");
-    // Disabled copy for production is present.
+    expect(SRC).toContain("VITE_PAYMENT_MODE");
+    // Must NOT gate on PROD — Lovable preview builds evaluate to true.
+    expect(SRC).not.toMatch(/import\.meta\.env\??\.PROD\b(?!=)/);
+    expect(SRC).not.toMatch(/process\.env\.NODE_ENV/);
+    // Disabled copy for a non-mock mode is still present.
     expect(SRC).toContain("支付渠道尚未开放");
     expect(SRC).toContain("Payment channel not yet available");
   });

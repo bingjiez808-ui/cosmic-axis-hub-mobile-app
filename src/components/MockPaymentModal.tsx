@@ -97,12 +97,18 @@ const METHOD_ACCENT: Record<Method, string> = {
   unionpay: "from-rose-400/40 to-rose-600/20 text-rose-200",
 };
 
-function isProduction(): boolean {
-  // Vite replaces this at build time. Preview/dev builds evaluate to false.
+function isMockPaymentEnabled(): boolean {
+  // Explicit switch (default "mock"). Lovable preview builds set
+  // import.meta.env.PROD=true but must still allow the simulated
+  // cashier — do NOT gate on PROD/NODE_ENV here.
   try {
-    return Boolean(import.meta.env?.PROD);
+    const mode = String(
+      (import.meta as unknown as { env?: Record<string, string | undefined> })
+        .env?.VITE_PAYMENT_MODE ?? "mock",
+    ).toLowerCase();
+    return mode === "mock";
   } catch {
-    return false;
+    return true;
   }
 }
 
@@ -124,7 +130,7 @@ export function MockPaymentModal({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const dialogRef = useRef<HTMLDivElement | null>(null);
-  const prod = isProduction();
+  const disabled = !isMockPaymentEnabled();
 
   useEffect(() => {
     if (!open) return;
@@ -150,7 +156,7 @@ export function MockPaymentModal({
   if (!open) return null;
 
   const onConfirm = async () => {
-    if (!chartId || busy || prod) return;
+    if (!chartId || busy || disabled) return;
     setBusy(true);
     setError(null);
     try {
@@ -332,10 +338,10 @@ export function MockPaymentModal({
               type="button"
               data-testid="mock-payment-confirm"
               onClick={onConfirm}
-              disabled={busy || prod || !chartId}
+              disabled={busy || disabled || !chartId}
               className="w-full min-h-[48px] flex-1 rounded-full bg-gold-dust px-5 py-3 text-[12px] uppercase tracking-[0.28em] text-obsidian hover:bg-gold-light disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {prod
+              {disabled
                 ? pick(T.disabled_prod, lang)
                 : busy
                   ? pick(T.processing, lang)
