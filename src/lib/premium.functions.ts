@@ -144,6 +144,40 @@ export function chooseGrantAction(orders: OrderRowLite[]): GrantDecision {
 }
 
 /* --------------------------------------------------------------------- */
+/* Generation gating (pure decision) — extracted for unit tests.          */
+/*                                                                        */
+/* The invariant this locks in: the AI provider is called at most once    */
+/* per (user, chart, report_version). The unique index on those columns   */
+/* means only the first inserter of a `generating` row (the didStart      */
+/* winner) is authorized to reach the AI. Every other caller — cached     */
+/* completions, concurrent losers, reopens — MUST short-circuit here.    */
+/* --------------------------------------------------------------------- */
+
+export type ExistingReportLite = {
+  status: "pending" | "generating" | "completed" | "failed";
+  hasContent: boolean;
+} | null;
+
+export type GenerationAction =
+  | { action: "return_cached" } // completed row with content_json → NEVER call AI
+  | { action: "return_existing" } // pending/generating/failed row exists → concurrent loser, NEVER call AI
+  | { action: "start_new"; willCallAi: true }; // fresh row must be inserted; only this path calls AI
+
+export function chooseGenerationAction(existing: ExistingReportLite): GenerationAction {
+  if (existing?.status === "completed" && existing.hasContent) {
+    return { action: "return_cached" };
+  }
+  if (existing) {
+    // Any pre-existing row (generating / pending / failed) means some
+    // other caller already claimed this slot. The current caller must
+    // NOT invoke the AI again.
+    return { action: "return_existing" };
+  }
+  return { action: "start_new", willCallAi: true };
+}
+
+
+/* --------------------------------------------------------------------- */
 /* Helpers                                                                */
 /* --------------------------------------------------------------------- */
 
