@@ -32,18 +32,14 @@ import {
 
 /* Minimal fake snapshot — the engine treats it as opaque JSON. */
 const fakeSnapshot = (): CalculationSnapshot => ({
-  version: "calc_snapshot_v2.0.0",
-  input: {
-    date: "2002-11-03",
-    time: "09:26",
-    place: "Nanjing",
-    lang: "en",
-    gender: "female",
-  } as unknown as CalculationSnapshot["input"],
-  western: { status: "ok" } as CalculationSnapshot["western"],
-  bazi: { status: "ok" } as CalculationSnapshot["bazi"],
-  vedic: { status: "ok" } as CalculationSnapshot["vedic"],
-  ziwei: { status: "ok" } as CalculationSnapshot["ziwei"],
+  calculation_version: "calc_snapshot_v2.0.0",
+  generated_at: "2026-07-17T00:00:00.000Z",
+  input: { date: "2002-11-03", time: "09:26", place: "Nanjing", lang: "en" },
+  western: { status: "ok", source: "test", sun: null },
+  bazi: { status: "ok", source: "test", pillars: null, day_master: null, zodiac: null },
+  vedic: { status: "ok", source: "test", chart: null },
+  ziwei: { status: "ok", source: "test", chart: null },
+  geo: null,
 });
 
 const chartFacts = (): EngineChartFacts => ({
