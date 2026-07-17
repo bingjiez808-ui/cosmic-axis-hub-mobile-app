@@ -11,7 +11,7 @@
  *   5. Bumping any of prompt_version / model_id / report_version /
  *      calculation_version produces a new cache key (no accidental reuse).
  */
-import { describe, it, expect } from "bun:test";
+import { describe, it, expect } from "vitest";
 
 import type { CalculationSnapshot } from "./calc-snapshot";
 import {
