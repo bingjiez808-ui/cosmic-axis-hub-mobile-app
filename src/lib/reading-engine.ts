@@ -230,7 +230,7 @@ export type RunReadingResult = {
 export async function runReading(args: RunReadingArgs): Promise<RunReadingResult> {
   const key = await makeCacheKey(args.ownerId, args.chartId, args.input);
   const hit = await args.cache.read(key);
-  if (hit && cacheKeyMatches(hit as unknown as CacheKey & CachedReading, key)) {
+  if (hit) {
     return { hit: true, reading: hit, provider_calls: 0 };
   }
   const { content, token_usage } = await args.callProvider(args.input);
