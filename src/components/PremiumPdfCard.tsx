@@ -160,9 +160,11 @@ export function PremiumPdfCard({
     if (rs === "partial") return { kind: "partial", chartId };
     if (rs === "failed") return { kind: "failed", chartId };
     if (s.order?.status === "paid") return { kind: "paid_no_report", chartId };
-    if (s.order?.status === "pending") return { kind: "order_pending", chartId };
+    // Pending orders (e.g. a legacy intent row) fall back to the ¥79
+    // unlock CTA so the customer never sees an "admin required" dead-end.
     return { kind: "locked", chartId };
   }, []);
+
 
   const refresh = useCallback(async () => {
     if (!search?.date) return;
