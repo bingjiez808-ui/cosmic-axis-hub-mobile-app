@@ -670,14 +670,11 @@ function ReportPage() {
       // 2. Ensure chart row (also validates hash server-side).
       let chartId: string;
       try {
+        const canonical = buildCanonicalChartInput(search, reportLang);
         const res = await ensureChart({
           data: {
-            name: search.name,
-            date: search.date,
-            time: search.time,
-            place: search.place,
-            lang: reportLang,
-            input_snapshot: { ...search, lang: reportLang },
+            ...canonical,
+            input_snapshot: { ...canonical.input_snapshot },
           },
         });
         chartId = res.chartId;
