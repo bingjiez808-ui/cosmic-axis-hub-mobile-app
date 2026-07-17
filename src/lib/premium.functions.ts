@@ -62,7 +62,12 @@ export const PREMIUM_ALL_PRODUCT_VERSIONS = [
 // historic paid buyers keep seeing their generated report without a
 // forced regeneration.
 export const PREMIUM_REPORT_VERSION = "premium_pdf_v1";
-export const PREMIUM_PROMPT_VERSION = "v1";
+export const PREMIUM_PROMPT_VERSION = "v2";
+// Content schema version — bumped when the shape of content_json
+// changes. v1 = 19 body-only chapters (legacy). v2 = 19 chapters + a
+// structured `facts` object grounded in the local calc snapshot.
+// Old rows keep serving their v1 content; the reader is tolerant of both.
+export const PREMIUM_REPORT_SCHEMA_VERSION = "v2";
 export const PREMIUM_PRICE_CENTS = 7900;
 export const PREMIUM_CURRENCY = "CNY";
 
