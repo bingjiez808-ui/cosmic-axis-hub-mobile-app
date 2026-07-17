@@ -43,12 +43,8 @@ describe("deep evidence paths across four systems", () => {
   });
 
   test("bazi — luck pillar gan_zhi / nominal_start_age is resolvable", () => {
-    expect(resolveFactsPath(facts, "bazi.luck.pillars[0].gan_zhi")).toEqual(
-      expect.any(String),
-    );
-    expect(typeof resolveFactsPath(facts, "bazi.luck.start.nominal_start_age")).toBe(
-      "number",
-    );
+    expect(resolveFactsPath(facts, "bazi.luck.pillars[0].gan_zhi")).toEqual(expect.any(String));
+    expect(typeof resolveFactsPath(facts, "bazi.luck.start.nominal_start_age")).toBe("number");
   });
 
   test("western — first aspect orb and planet trop_lon are numbers", () => {

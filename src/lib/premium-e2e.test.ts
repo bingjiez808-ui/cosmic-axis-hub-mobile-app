@@ -76,12 +76,16 @@ suite("premium-e2e — live Supabase", () => {
     const emailB = `${ctx.runPrefix}-b@fixtures.local`;
 
     const { data: uA, error: eA } = await ctx.admin.auth.admin.createUser({
-      email: emailA, password: pass, email_confirm: true,
+      email: emailA,
+      password: pass,
+      email_confirm: true,
     });
     if (eA || !uA?.user) throw new Error(`createUser A failed: ${eA?.message}`);
     ctx.userA = uA.user;
     const { data: uB, error: eB } = await ctx.admin.auth.admin.createUser({
-      email: emailB, password: pass, email_confirm: true,
+      email: emailB,
+      password: pass,
+      email_confirm: true,
     });
     if (eB || !uB?.user) throw new Error(`createUser B failed: ${eB?.message}`);
     ctx.userB = uB.user;
@@ -193,90 +197,125 @@ suite("premium-e2e — live Supabase", () => {
       .select("id")
       .eq("report_id", ctx.reportId);
     expect(ch ?? []).toEqual([]);
-    const { data: lg } = await c
-      .from("ai_usage_ledger")
-      .select("id")
-      .eq("report_id", ctx.reportId);
+    const { data: lg } = await c.from("ai_usage_ledger").select("id").eq("report_id", ctx.reportId);
     expect(lg ?? []).toEqual([]);
   });
 
   test("claim_premium_chapter — non-owner refused with not_report_owner", async () => {
     const c = asUser(ctx.jwtB);
     // Seed a claimable row on user A's report for B to try.
-    await ctx.admin.from("premium_report_chapters").upsert({
-      report_id: ctx.reportId, user_id: ctx.userA.id,
-      chapter_key: "b_probe", chapter_index: 90, status: "pending",
-    }, { onConflict: "report_id,chapter_key" });
-    const { error } = await c.rpc("claim_premium_chapter" as never, {
-      _report_id: ctx.reportId,
-      _chapter_key: "b_probe",
-      _chapter_index: 90,
-      _new_token: crypto.randomUUID(),
-    } as never);
+    await ctx.admin.from("premium_report_chapters").upsert(
+      {
+        report_id: ctx.reportId,
+        user_id: ctx.userA.id,
+        chapter_key: "b_probe",
+        chapter_index: 90,
+        status: "pending",
+      },
+      { onConflict: "report_id,chapter_key" },
+    );
+    const { error } = await c.rpc(
+      "claim_premium_chapter" as never,
+      {
+        _report_id: ctx.reportId,
+        _chapter_key: "b_probe",
+        _chapter_index: 90,
+        _new_token: crypto.randomUUID(),
+      } as never,
+    );
     expect(error).not.toBeNull();
     expect(error?.message ?? "").toMatch(/not_report_owner|not_authenticated/);
   });
 
   test("claim_premium_chapter — owner claims successfully", async () => {
     const c = asUser(ctx.jwtA);
-    const { data, error } = await c.rpc("claim_premium_chapter" as never, {
-      _report_id: ctx.reportId,
-      _chapter_key: "opening",
-      _chapter_index: 0,
-      _new_token: crypto.randomUUID(),
-    } as never);
+    const { data, error } = await c.rpc(
+      "claim_premium_chapter" as never,
+      {
+        _report_id: ctx.reportId,
+        _chapter_key: "opening",
+        _chapter_index: 0,
+        _new_token: crypto.randomUUID(),
+      } as never,
+    );
     expect(error).toBeNull();
     expect(data).toBe(true as never);
   });
 
   test("claim CAS — two concurrent claims, exactly one wins", async () => {
-    await ctx.admin.from("premium_report_chapters").upsert({
-      report_id: ctx.reportId, user_id: ctx.userA.id,
-      chapter_key: "conc", chapter_index: 91, status: "pending",
-      claim_token: null, claimed_at: null,
-    }, { onConflict: "report_id,chapter_key" });
+    await ctx.admin.from("premium_report_chapters").upsert(
+      {
+        report_id: ctx.reportId,
+        user_id: ctx.userA.id,
+        chapter_key: "conc",
+        chapter_index: 91,
+        status: "pending",
+        claim_token: null,
+        claimed_at: null,
+      },
+      { onConflict: "report_id,chapter_key" },
+    );
 
     const c = asUser(ctx.jwtA);
     const call = () =>
-      c.rpc("claim_premium_chapter" as never, {
-        _report_id: ctx.reportId,
-        _chapter_key: "conc",
-        _chapter_index: 91,
-        _new_token: crypto.randomUUID(),
-      } as never);
+      c.rpc(
+        "claim_premium_chapter" as never,
+        {
+          _report_id: ctx.reportId,
+          _chapter_key: "conc",
+          _chapter_index: 91,
+          _new_token: crypto.randomUUID(),
+        } as never,
+      );
     const [r1, r2] = await Promise.all([call(), call()]);
-    const winners = [r1.data === (true as never), r2.data === (true as never)]
-      .filter(Boolean).length;
+    const winners = [r1.data === (true as never), r2.data === (true as never)].filter(
+      Boolean,
+    ).length;
     expect(winners).toBe(1);
   });
 
   test("claim CAS — expired lock is reclaimable", async () => {
     // Prime a held lock with an old claimed_at.
-    await ctx.admin.from("premium_report_chapters").upsert({
-      report_id: ctx.reportId, user_id: ctx.userA.id,
-      chapter_key: "exp", chapter_index: 92, status: "pending",
-      claim_token: crypto.randomUUID(),
-      claimed_at: new Date(Date.now() - 3600_000).toISOString(),
-    }, { onConflict: "report_id,chapter_key" });
+    await ctx.admin.from("premium_report_chapters").upsert(
+      {
+        report_id: ctx.reportId,
+        user_id: ctx.userA.id,
+        chapter_key: "exp",
+        chapter_index: 92,
+        status: "pending",
+        claim_token: crypto.randomUUID(),
+        claimed_at: new Date(Date.now() - 3600_000).toISOString(),
+      },
+      { onConflict: "report_id,chapter_key" },
+    );
 
     const c = asUser(ctx.jwtA);
-    const { data, error } = await c.rpc("claim_premium_chapter" as never, {
-      _report_id: ctx.reportId,
-      _chapter_key: "exp",
-      _chapter_index: 92,
-      _new_token: crypto.randomUUID(),
-      _lock_ttl_seconds: 60,
-    } as never);
+    const { data, error } = await c.rpc(
+      "claim_premium_chapter" as never,
+      {
+        _report_id: ctx.reportId,
+        _chapter_key: "exp",
+        _chapter_index: 92,
+        _new_token: crypto.randomUUID(),
+        _lock_ttl_seconds: 60,
+      } as never,
+    );
     expect(error).toBeNull();
     expect(data).toBe(true as never);
   });
 
   test("completed chapter is immutable (trigger raises on demote)", async () => {
-    await ctx.admin.from("premium_report_chapters").upsert({
-      report_id: ctx.reportId, user_id: ctx.userA.id,
-      chapter_key: "done", chapter_index: 93, status: "completed",
-      completed_at: new Date().toISOString(),
-    }, { onConflict: "report_id,chapter_key" });
+    await ctx.admin.from("premium_report_chapters").upsert(
+      {
+        report_id: ctx.reportId,
+        user_id: ctx.userA.id,
+        chapter_key: "done",
+        chapter_index: 93,
+        status: "completed",
+        completed_at: new Date().toISOString(),
+      },
+      { onConflict: "report_id,chapter_key" },
+    );
 
     const { error } = await ctx.admin
       .from("premium_report_chapters")
@@ -299,10 +338,7 @@ suite("premium-e2e — live Supabase", () => {
   });
 
   test("admin_ai_usage_summary — service_role can EXECUTE (documents body-side gap)", async () => {
-    const { error } = await ctx.admin.rpc(
-      "admin_ai_usage_summary" as never,
-      {} as never,
-    );
+    const { error } = await ctx.admin.rpc("admin_ai_usage_summary" as never, {} as never);
     // service_role has EXECUTE, but the function body raises `admin_only`
     // because auth.uid() is NULL for service_role. This is the CURRENT
     // deployed behaviour; the follow-up migration to allow service_role
