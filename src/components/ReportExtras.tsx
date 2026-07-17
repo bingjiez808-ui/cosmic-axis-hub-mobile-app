@@ -493,6 +493,28 @@ function YearByYearChart({
   ];
   const pool = lang === "zh" ? themesZh : themesEn;
   const [hovered, setHovered] = useState<number | null>(null);
+  const [openYear, setOpenYear] = useState<YearInsightPoint | null>(null);
+  const openerRef = useRef<HTMLElement | null>(null);
+  const birthYear = useMemo(() => {
+    if (!birthISO) return null;
+    const d = new Date(birthISO);
+    return Number.isNaN(d.getTime()) ? null : d.getFullYear();
+  }, [birthISO]);
+
+  const openYearAt = (i: number, opener: HTMLElement | null) => {
+    const p = years[i];
+    if (!p) return;
+    openerRef.current = opener;
+    setOpenYear({
+      age: p.age,
+      score: p.score,
+      theme: p.theme,
+      year: birthYear != null ? birthYear + p.age : null,
+      confidence: "reference",
+      reference: true,
+    });
+  };
+
 
   // Insufficient-data path — never fabricate a line.
   if (!range) {
