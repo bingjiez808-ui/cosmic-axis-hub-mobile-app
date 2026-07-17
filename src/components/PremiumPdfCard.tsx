@@ -248,25 +248,21 @@ export function PremiumPdfCard({
     } catch { /* best-effort */ }
   };
 
-  const onUnlock = async () => {
+  const onUnlock = () => {
     if (state.kind !== "locked") return;
+    setPayOpen(true);
+  };
+
+  const onMockPaymentSuccess = async () => {
+    setPayOpen(false);
     setBusy(true);
     try {
-      const outcome = await startPremiumCheckout({ data: { chartId: state.chartId } });
-      if (outcome.kind === "already_paid") await refresh();
-      else setState({ kind: "order_pending", chartId: state.chartId });
-    } catch (err) {
-      const code = extractErrorCode(err);
-      if (code === "email_not_verified") {
-        const { data: sess } = await supabase.auth.getSession();
-        setState({ kind: "verify_needed", email: sess.session?.user?.email ?? null });
-      } else {
-        setState({ kind: "error", message: pick(TXT.error, lang) });
-      }
+      await refresh();
     } finally {
       setBusy(false);
     }
   };
+
 
   const onGenerate = async () => {
     if (state.kind !== "paid_no_report" && state.kind !== "partial" && state.kind !== "failed") return;
