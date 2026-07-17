@@ -1338,8 +1338,14 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
       const budgetStopped =
         workerReport.stopped_reason === "report_input_exhausted" ||
         workerReport.stopped_reason === "report_output_exhausted";
-      const finalStatus: "completed" | "generating" =
-        completedCount >= totalTarget ? "completed" : (budgetStopped ? "completed" : "generating");
+      const finalStatus: "completed" | "partial" | "generating" =
+        completedCount >= totalTarget
+          ? "completed"
+          : budgetStopped
+            ? "partial"
+            : completedCount > 0
+              ? "partial"
+              : "generating";
 
       const content: PremiumContent = {
         meta: {
