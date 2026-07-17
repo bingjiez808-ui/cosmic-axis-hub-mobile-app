@@ -120,6 +120,7 @@ import {
 } from "@/lib/report.functions";
 import {
   beginReport,
+  buildCanonicalChartInput,
   ensureChart,
   failReport,
   getSavedReport,
