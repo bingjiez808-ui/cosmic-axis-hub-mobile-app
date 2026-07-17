@@ -36,27 +36,36 @@ describe("premium mock payment — public contract", () => {
   });
 });
 
-describe("isMockPaymentAllowedFor — production kill-switch", () => {
-  test("disabled in production", () => {
-    expect(isMockPaymentAllowedFor({ NODE_ENV: "production" })).toBe(false);
-  });
-
-  test("enabled in dev / preview / test / undefined", () => {
-    expect(isMockPaymentAllowedFor({ NODE_ENV: "development" })).toBe(true);
-    expect(isMockPaymentAllowedFor({ NODE_ENV: "test" })).toBe(true);
-    expect(isMockPaymentAllowedFor({ NODE_ENV: "preview" })).toBe(true);
+describe("isMockPaymentAllowedFor — PAYMENT_MODE switch", () => {
+  test("enabled by default when PAYMENT_MODE unset (Lovable preview safe)", () => {
     expect(isMockPaymentAllowedFor({})).toBe(true);
+    // Critical: NODE_ENV=production alone must NOT disable — preview
+    // builds evaluate to production but must still run the mock flow.
+    expect(isMockPaymentAllowedFor({ NODE_ENV: "production" })).toBe(true);
   });
 
-  test("cannot be bypassed by a truthy non-production value", () => {
-    // Any client-supplied override still fails the strict equality guard.
-    for (const v of ["prod", "PRODUCTION", "prod-ish", "1", "true"]) {
-      expect(isMockPaymentAllowedFor({ NODE_ENV: v })).toBe(true);
+  test("explicit PAYMENT_MODE=mock enables (case-insensitive)", () => {
+    expect(isMockPaymentAllowedFor({ PAYMENT_MODE: "mock" })).toBe(true);
+    expect(isMockPaymentAllowedFor({ PAYMENT_MODE: "MOCK" })).toBe(true);
+    expect(isMockPaymentAllowedFor({ PAYMENT_MODE: "Mock" })).toBe(true);
+  });
+
+  test("any non-mock PAYMENT_MODE disables", () => {
+    for (const v of ["live", "off", "disabled", "stripe", "wechatpay", ""]) {
+      expect(isMockPaymentAllowedFor({ PAYMENT_MODE: v })).toBe(false);
     }
-    // Exact "production" is the ONLY disabling value.
-    expect(isMockPaymentAllowedFor({ NODE_ENV: "production" })).toBe(false);
+  });
+
+  test("PAYMENT_MODE overrides NODE_ENV in both directions", () => {
+    expect(
+      isMockPaymentAllowedFor({ NODE_ENV: "production", PAYMENT_MODE: "mock" }),
+    ).toBe(true);
+    expect(
+      isMockPaymentAllowedFor({ NODE_ENV: "development", PAYMENT_MODE: "live" }),
+    ).toBe(false);
   });
 });
+
 
 describe("simulateMockPremiumPayment — RPC surface", () => {
   test("input validator rejects unknown methods (never real PSP names)", () => {
