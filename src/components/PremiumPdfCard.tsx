@@ -104,8 +104,7 @@ type UiState =
   | { kind: "verify_needed"; email: string | null }
   | { kind: "legacy_incomplete" }
   | { kind: "locked"; chartId: string }
-  | { kind: "order_pending"; chartId: string }
-  | { kind: "paid_no_report"; chartId: string }
+
   | { kind: "generating"; chartId: string }
   | { kind: "partial"; chartId: string }
   | { kind: "ready"; chartId: string }
