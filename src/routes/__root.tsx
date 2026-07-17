@@ -237,6 +237,9 @@ function SiteNav() {
   const [atTop, setAtTop] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [orbActive, setOrbActive] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => { setHydrated(true); }, []);
+  const avatarUrl = hydrated ? account?.avatar : undefined;
   const adminLabel = lang === "zh" ? "议政厅" : "Admin";
 
   useEffect(() => {
@@ -329,9 +332,9 @@ function SiteNav() {
                 onClick={openAcc}
                 className="hidden flex-none items-center gap-2 whitespace-nowrap rounded-full border border-gold-dust/40 px-3 py-1 text-[10px] tracking-[0.24em] text-gold-dust transition-colors hover:bg-gold-dust/10 md:flex"
               >
-                {account?.avatar && (
+                {avatarUrl && (
                   <img
-                    src={account.avatar}
+                    src={avatarUrl!}
                     alt=""
                     className="h-5 w-5 flex-none rounded-full border border-gold-dust/40 object-cover"
                     loading="lazy"
@@ -367,8 +370,8 @@ function SiteNav() {
               aria-label={accountLabel}
               className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-gold-dust/40 text-gold-dust md:hidden"
             >
-              {account?.avatar ? (
-                <img src={account.avatar} alt="" loading="lazy" decoding="async" className="h-7 w-7 rounded-full object-cover" />
+              {avatarUrl ? (
+                <img src={avatarUrl!} alt="" loading="lazy" decoding="async" className="h-7 w-7 rounded-full object-cover" />
               ) : (
                 <span className="text-[10px] tracking-[0.16em]">{lang === "zh" ? "我" : "ME"}</span>
               )}
@@ -445,9 +448,9 @@ function SiteNav() {
             }}
             className="flex min-h-11 items-center justify-end gap-2 whitespace-nowrap rounded-lg px-4 py-3 text-[11px] uppercase tracking-[0.24em] text-gold-dust hover:bg-gold-dust/10"
           >
-            {account?.avatar && (
+            {avatarUrl && (
               <img
-                src={account.avatar}
+                src={avatarUrl!}
                 alt=""
                 loading="lazy"
                 decoding="async"
