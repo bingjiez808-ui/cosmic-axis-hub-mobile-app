@@ -74,7 +74,7 @@ const UpdateChartGenderInput = z.object({
 });
 
 describe("updateChartGender input contract", () => {
-  const owner = "11111111-1111-1111-1111-111111111111";
+  const owner = "3f8b0e2c-4a1d-4c2e-9f3a-9b1c2d3e4f5a";
   test("accepts male/female for an owner-scoped chartId", () => {
     expect(UpdateChartGenderInput.parse({ chartId: owner, gender: "male" }).gender).toBe("male");
     expect(UpdateChartGenderInput.parse({ chartId: owner, gender: "female" }).gender).toBe("female");
