@@ -31,9 +31,22 @@ describe("normalizeForHash", () => {
     const b = { date: "1990-05-15", time: "12:01", place: "NYC", lang: "en" as const };
     expect(computeChartHash(a)).not.toBe(computeChartHash(b));
   });
+  test("changing gender forces a new hash — Zi Wei is gender-dependent", () => {
+    const a = { date: "1990-05-15", time: "12:00", place: "NYC", lang: "en" as const, gender: "male" as const };
+    const b = { date: "1990-05-15", time: "12:00", place: "NYC", lang: "en" as const, gender: "female" as const };
+    expect(computeChartHash(a)).not.toBe(computeChartHash(b));
+  });
+  test("missing gender vs explicit empty-effect gender hashes identically to the pre-gender legacy shape", () => {
+    // Legacy (pre-gender) input has undefined gender. normalizeForHash
+    // maps that to "" so we can distinguish it from male/female while
+    // keeping the shape stable across omit-vs-undefined.
+    const legacy = { date: "1990-05-15", time: "12:00", place: "NYC", lang: "en" as const };
+    const withUndef = { ...legacy, gender: undefined };
+    expect(computeChartHash(legacy)).toBe(computeChartHash(withUndef));
+  });
   test("normalized shape is stable and pure", () => {
-    const input = { name: "X", date: "1990", time: "12:00", place: "NYC", lang: "en" as const };
-    expect(normalizeForHash(input)).toEqual({ date: "1990", time: "12:00", place: "nyc", lang: "en" });
+    const input = { name: "X", date: "1990", time: "12:00", place: "NYC", lang: "en" as const, gender: "male" as const };
+    expect(normalizeForHash(input)).toEqual({ date: "1990", gender: "male", lang: "en", place: "nyc", time: "12:00" });
   });
 });
 
