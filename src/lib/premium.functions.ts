@@ -1443,7 +1443,7 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
         };
       });
 
-      const isTestMode = process.env.PREMIUM_TEST_DETERMINISTIC === "1" || !apiKey;
+      const isTestMode = isDeterministicGenerationModeFor(process.env, { hasApiKey: Boolean(apiKey) });
 
       // Preflight atomic claim: for every chapter still eligible to run
       // (pending / retriable failed), attempt a CAS claim through the
