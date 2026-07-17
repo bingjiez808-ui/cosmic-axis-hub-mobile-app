@@ -16,11 +16,19 @@ const shim = {
   key: (i: number) => Array.from(memStore.keys())[i] ?? null,
   get length() { return memStore.size; },
 };
-(globalThis as unknown as { window: unknown }).window = {
-  localStorage: shim,
-  dispatchEvent: () => true,
-};
-(globalThis as unknown as { localStorage: unknown }).localStorage = shim;
+// Use defineProperty so this works even when a DOM (happy-dom) has been
+// registered by another test file — then `window` / `localStorage` are
+// non-writable data properties on globalThis.
+Object.defineProperty(globalThis, "window", {
+  value: { localStorage: shim, dispatchEvent: () => true },
+  configurable: true,
+  writable: true,
+});
+Object.defineProperty(globalThis, "localStorage", {
+  value: shim,
+  configurable: true,
+  writable: true,
+});
 
 const {
   TAROT_LIMITS,
