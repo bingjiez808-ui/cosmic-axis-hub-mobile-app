@@ -1242,9 +1242,43 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
         const title = isZh ? catalog.title_zh : catalog.title_en;
         if (isTestMode) {
           const body = `[${title}] deterministic stub — ${catalog.allowed_facts.join(",") || "no-facts"}`;
+          // Deterministic stub emits a syntactically-valid evidence_ref
+          // pointing at a real facts path so downstream validation and
+          // persistence behave identically to the real provider.
+          const stubRefs: Array<{ path: string; module: string; confidence: string }> =
+            catalog.kind === "cross"
+              ? [
+                  { path: "bazi.pillars.day", module: "bazi", confidence: "grounded" },
+                  { path: "western.sun", module: "western", confidence: "grounded" },
+                ]
+              : catalog.allowed_facts.length > 0
+                ? [
+                    {
+                      path:
+                        catalog.allowed_facts[0] === "bazi"
+                          ? "bazi.pillars.day"
+                          : catalog.allowed_facts[0] === "ziwei"
+                            ? "ziwei.five_elements_class"
+                            : catalog.allowed_facts[0] === "western"
+                              ? "western.sun"
+                              : catalog.allowed_facts[0] === "vedic"
+                                ? "vedic.moon"
+                                : catalog.allowed_facts[0] === "bazi_luck"
+                                  ? "bazi.luck.pillars"
+                                  : catalog.allowed_facts[0] === "ziwei_horoscope"
+                                    ? "ziwei.horoscope"
+                                    : catalog.allowed_facts[0] === "vedic_dasha"
+                                      ? "vedic.mahadasha"
+                                      : "western.aspects",
+                      module: catalog.allowed_facts[0],
+                      confidence: "grounded",
+                    },
+                  ]
+                : [];
           return {
             ok: true as const,
             body,
+            evidence_refs: stubRefs,
             usage: { input_tokens: 100, output_tokens: 200 },
           };
         }
@@ -1263,9 +1297,29 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
               maxOutputTokens: outputCap,
             },
           );
+          // Post-parse validation against catalog + facts tree. Any
+          // failure demotes the chapter to `failed` so the worker
+          // retries under the same budget.
+          const { validateChapterAgainstFacts } = await import("./chapter-json-schema");
+          const issues = validateChapterAgainstFacts({
+            meta: catalog,
+            facts,
+            chapter: { body: out.text, evidence_refs: out.evidence_refs as never },
+          });
+          if (issues.length > 0) {
+            return {
+              ok: false as const,
+              error: `validation:${issues
+                .slice(0, 3)
+                .map((i) => i.problem)
+                .join("|")}`.slice(0, 200),
+              usage: out.usage ?? { input_tokens: 0, output_tokens: 0 },
+            };
+          }
           return {
             ok: true as const,
             body: out.text,
+            evidence_refs: out.evidence_refs,
             usage: out.usage ?? { input_tokens: 0, output_tokens: 0 },
           };
         } catch (err) {
