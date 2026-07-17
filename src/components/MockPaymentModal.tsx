@@ -130,7 +130,7 @@ export function MockPaymentModal({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const dialogRef = useRef<HTMLDivElement | null>(null);
-  const prod = isProduction();
+  const disabled = !isMockPaymentEnabled();
 
   useEffect(() => {
     if (!open) return;
