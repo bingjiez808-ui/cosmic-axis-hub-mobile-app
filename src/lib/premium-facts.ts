@@ -385,7 +385,7 @@ export function buildPremiumFacts(
   opts: BuildFactsOptions = {},
 ): PremiumFacts {
   const vedic = deriveVedicFacts(snap, opts);
-  const unavailable = [...HONESTLY_UNAVAILABLE_MODULES];
+  const unavailable: string[] = [...HONESTLY_UNAVAILABLE_MODULES];
   // If Pratyantar level failed validation, honestly disclose it.
   if (vedic && !vedic.pratyantar_available) unavailable.push("vedic_pratyantar_validation_failed");
   return {
