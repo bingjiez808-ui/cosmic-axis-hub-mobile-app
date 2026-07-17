@@ -694,6 +694,36 @@ export function isMockPaymentAllowedFor(env: {
   return mode === "mock";
 }
 
+/**
+ * Pure helper: does the current server runtime run generation in
+ * deterministic/mock stub mode (skipping real AI Gateway calls)?
+ *
+ * Precedence (explicit switches over implicit signals):
+ *   • `REPORT_GENERATION_MODE=deterministic|mock|stub` → true
+ *   • `REPORT_GENERATION_MODE=live|real|production`    → false
+ *     (a live setting FORCES the real provider even without a key,
+ *      surfacing the missing-key error instead of silently stubbing)
+ *   • Legacy `PREMIUM_TEST_DETERMINISTIC=1`            → true
+ *   • Otherwise falls back to key presence: no key → deterministic.
+ *
+ * `NODE_ENV` is deliberately NOT consulted so Lovable preview
+ * (which builds as production) can still opt into deterministic mode
+ * via the explicit env var.
+ */
+export function isDeterministicGenerationModeFor(
+  env: {
+    REPORT_GENERATION_MODE?: string | undefined;
+    PREMIUM_TEST_DETERMINISTIC?: string | undefined;
+  },
+  runtime: { hasApiKey: boolean },
+): boolean {
+  const mode = (env.REPORT_GENERATION_MODE ?? "").toLowerCase();
+  if (mode === "deterministic" || mode === "mock" || mode === "stub") return true;
+  if (mode === "live" || mode === "real" || mode === "production") return false;
+  if (env.PREMIUM_TEST_DETERMINISTIC === "1") return true;
+  return !runtime.hasApiKey;
+}
+
 const MockPayInput = z.object({
   chartId: z.string().uuid(),
   method: z.enum(PREMIUM_MOCK_PAYMENT_METHODS),
@@ -1443,7 +1473,7 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
         };
       });
 
-      const isTestMode = process.env.PREMIUM_TEST_DETERMINISTIC === "1" || !apiKey;
+      const isTestMode = isDeterministicGenerationModeFor(process.env, { hasApiKey: Boolean(apiKey) });
 
       // Preflight atomic claim: for every chapter still eligible to run
       // (pending / retriable failed), attempt a CAS claim through the

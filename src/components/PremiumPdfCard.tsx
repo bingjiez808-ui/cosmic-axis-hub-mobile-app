@@ -84,6 +84,10 @@ const TXT = {
     zh: "报告仅供文化娱乐与自我反思，不构成医疗、法律、投资或人生决策建议。",
     en: "For cultural, reflective self-exploration only — not medical, legal, financial or life-decision advice.",
   },
+  failed_hint: {
+    zh: "上次生成未能完成，你已支付的解锁不受影响，可点击“继续生成”从中断处继续。",
+    en: "The previous run did not complete. Your unlock is safe — press “Continue generation” to resume where it stopped.",
+  },
   error: { zh: "操作失败，请稍后重试。", en: "Something went wrong, please retry." },
 };
 
@@ -511,9 +515,16 @@ function PrimaryAction({
 
   if (state.kind === "partial" || state.kind === "failed") {
     return (
-      <button type="button" disabled={busy} onClick={onGenerate} className={btnPrimary}>
-        {pick(TXT.cta_continue, lang)}
-      </button>
+      <div className="flex w-full flex-col gap-2">
+        {state.kind === "failed" && (
+          <p className="rounded-2xl border border-nebula-purple/30 bg-nebula-purple/[0.06] p-3 text-[12px] leading-relaxed text-stone-warm/75 [overflow-wrap:break-word]">
+            {pick(TXT.failed_hint, lang)}
+          </p>
+        )}
+        <button type="button" disabled={busy} onClick={onGenerate} className={btnPrimary}>
+          {pick(TXT.cta_continue, lang)}
+        </button>
+      </div>
     );
   }
 
