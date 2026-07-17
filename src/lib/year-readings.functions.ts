@@ -109,7 +109,6 @@ export const ensureYearReadings = createServerFn({ method: "POST" })
         date: chart.input.date,
         time: chart.input.time,
         place: chart.input.place,
-        tz_offset_minutes: chart.input.tz_offset_minutes ?? undefined,
         gender: (chart.input.gender as "male" | "female" | null) ?? null,
         lang: data.lang,
       });
@@ -228,5 +227,5 @@ export const getYearReadings = createServerFn({ method: "GET" })
       .eq("chart_id", data.chartId)
       .eq("lang", data.lang)
       .order("year", { ascending: true });
-    return { rows: (rows ?? []) as unknown[] };
+    return { rows: ((rows ?? []) as unknown) as Array<Record<string, unknown>> };
   });
