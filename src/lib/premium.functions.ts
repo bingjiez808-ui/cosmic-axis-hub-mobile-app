@@ -327,13 +327,27 @@ export const getPremiumStatus = createServerFn({ method: "POST" })
 
     const { data: reportRow } = await supabase
       .from("premium_pdf_reports")
-      .select("id, status, generated_at, error_message")
+      .select("id, status, generated_at, error_message, content_json")
       .eq("user_id", userId)
       .eq("chart_id", data.chartId)
       .eq("report_version", PREMIUM_REPORT_VERSION)
       .order("created_at", { ascending: true })
       .limit(1)
       .maybeSingle();
+
+    // Auto-heal: legacy or interrupted rows whose content_json already
+    // contains a full 24-chapter payload should read as "completed"
+    // even if the DB status column was left as generating/partial due
+    // to an earlier crash. This is READ-ONLY promotion; the DB row is
+    // not mutated here and no AI is ever re-invoked.
+    let reportStatus = reportRow?.status as
+      | "pending" | "generating" | "partial" | "completed" | "failed"
+      | undefined;
+    if (reportRow && reportStatus !== "completed") {
+      const cj = reportRow.content_json as { chapters?: unknown[] } | null;
+      const chapters = Array.isArray(cj?.chapters) ? cj!.chapters! : [];
+      if (chapters.length >= 24) reportStatus = "completed";
+    }
 
     return {
       productVersion: PREMIUM_PRODUCT_VERSION,
@@ -351,16 +365,17 @@ export const getPremiumStatus = createServerFn({ method: "POST" })
             ),
           }
         : null,
-      report: reportRow
+      report: reportRow && reportStatus
         ? {
             id: reportRow.id,
-            status: reportRow.status as "pending" | "generating" | "partial" | "completed" | "failed",
+            status: reportStatus,
             generatedAt: reportRow.generated_at,
             errorMessage: reportRow.error_message,
           }
         : null,
     };
   });
+
 
 /* --------------------------------------------------------------------- */
 /* startPremiumCheckout                                                   */
