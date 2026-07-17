@@ -645,7 +645,7 @@ function YearByYearChart({
                   stroke={p.isNow ? "hsl(45 90% 78%)" : "transparent"}
                   strokeWidth={p.isNow ? 2 : 0}
                 />
-                {/* Larger transparent hit area for hover/touch */}
+                {/* Larger transparent hit area for hover / touch / click */}
                 <rect
                   x={p.x - stepX / 2}
                   y={0}
@@ -654,9 +654,10 @@ function YearByYearChart({
                   fill="transparent"
                   onMouseEnter={() => setHovered(i)}
                   onTouchStart={() => setHovered(i)}
-                  onClick={() => setHovered(i)}
+                  onClick={(e) => openYearAt(i, e.currentTarget as unknown as HTMLElement)}
                   style={{ cursor: "pointer" }}
                 />
+
                 <text
                   x={p.x}
                   y={H - padBot + 20}
