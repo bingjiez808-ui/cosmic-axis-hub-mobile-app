@@ -72,10 +72,7 @@ const TXT = {
   },
   resend_verify: { zh: "重发验证邮件", en: "Resend verification" },
   resent_verify: { zh: "验证邮件已重发", en: "Verification email resent" },
-  provider_pending: {
-    zh: "支付渠道配置中：¥79 订单已记录。正式支付通道上线前，请联系管理员完成付款。",
-    en: "Payment provider being configured: your ¥79 intent is recorded. Contact an admin to complete payment offline.",
-  },
+
   legacy_incomplete: {
     zh: "这份测试命盘资料不完整，请返回命盘重新创建",
     en: "This legacy test chart is incomplete — please recreate it from the ritual",
