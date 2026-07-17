@@ -20,6 +20,11 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
 import { useLang } from "@/lib/i18n";
 import { getPremiumReport, type PremiumContent } from "@/lib/premium.functions";
 import type { PremiumFacts, BaZiElement } from "@/lib/premium-facts";
+import {
+  computeScrollProgress,
+  formatAuditLine,
+  neighborChapters,
+} from "@/lib/reader-nav";
 
 const TXT = {
   loading: { zh: "正在打开完整报告…", en: "Opening your full reading…" },
@@ -35,6 +40,11 @@ const TXT = {
     zh: "本报告仅供文化娱乐与自我反思，不构成医疗、法律、投资或人生决策建议。",
     en: "This report is for cultural, reflective self-exploration only — not medical, legal, financial or life-decision advice.",
   },
+  progress: { zh: "阅读进度", en: "Reading progress" },
+  prev: { zh: "上一章", en: "Previous" },
+  next: { zh: "下一章", en: "Next" },
+  position: { zh: "章节", en: "Chapter" },
+  drawer_title: { zh: "章节目录", en: "Table of contents" },
 };
 
 function pick<T extends { zh: string; en: string }>(t: T, lang: "zh" | "en"): string {
@@ -68,18 +78,28 @@ export function PremiumReportReader({
 }) {
   const { lang } = useLang();
   const titleId = useId();
+  const drawerTitleId = useId();
   const [content, setContent] = useState<PremiumContent | null>(null);
   const [errored, setErrored] = useState(false);
   const [active, setActive] = useState<string | null>(null);
   const [tocOpen, setTocOpen] = useState(false);
+  const [progress, setProgress] = useState(0);
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const bodyRef = useRef<HTMLDivElement | null>(null);
+  const drawerCloseRef = useRef<HTMLButtonElement | null>(null);
+  const tocButtonRef = useRef<HTMLButtonElement | null>(null);
+  // Suppress IntersectionObserver-driven active updates during a
+  // programmatic scroll (Prev/Next/TOC click); it otherwise fights the
+  // intended target while smooth-scroll animates through mid-chapters.
+  const suppressObserverRef = useRef(false);
+  const suppressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load content on open.
   useEffect(() => {
     if (!open) return;
     setContent(null);
     setErrored(false);
+    setProgress(0);
     let cancel = false;
     getPremiumReport({ data: { chartId } })
       .then((r) => {
@@ -103,7 +123,15 @@ export function PremiumReportReader({
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        // Close the mobile drawer first if it's open, else close reader.
+        if (tocOpen) {
+          setTocOpen(false);
+          tocButtonRef.current?.focus();
+        } else {
+          onClose();
+        }
+      }
     };
     document.addEventListener("keydown", onKey);
     const prev = document.body.style.overflow;
@@ -114,20 +142,132 @@ export function PremiumReportReader({
       document.body.style.overflow = prev;
       cancelAnimationFrame(raf);
     };
-  }, [open, onClose]);
+  }, [open, onClose, tocOpen]);
 
-  const scrollTo = useCallback((key: string) => {
+  // Move focus into the drawer when it opens.
+  useEffect(() => {
+    if (tocOpen) {
+      const raf = requestAnimationFrame(() => drawerCloseRef.current?.focus());
+      return () => cancelAnimationFrame(raf);
+    }
+  }, [tocOpen]);
+
+  const scrollTo = useCallback((key: string, opts?: { focusHeading?: boolean }) => {
     setActive(key);
     setTocOpen(false);
-    const el = bodyRef.current?.querySelector(`[data-ch="${key}"]`) as HTMLElement | null;
-    if (el)
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    suppressObserverRef.current = true;
+    if (suppressTimerRef.current) clearTimeout(suppressTimerRef.current);
+    suppressTimerRef.current = setTimeout(() => {
+      suppressObserverRef.current = false;
+    }, 900);
+    const container = bodyRef.current;
+    if (!container) return;
+    const el = container.querySelector(`[data-ch="${key}"]`) as HTMLElement | null;
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (opts?.focusHeading) {
+      const h = el.querySelector<HTMLElement>("[data-ch-heading]");
+      if (h) {
+        h.setAttribute("tabindex", "-1");
+        // Delay focus until smooth-scroll settles enough that the
+        // browser doesn't jump the view to the heading top abruptly.
+        setTimeout(() => h.focus({ preventScroll: true }), 350);
+      }
+    }
   }, []);
+
+  // Scroll progress + IntersectionObserver-driven active chapter.
+  useEffect(() => {
+    if (!content) return;
+    const container = bodyRef.current;
+    if (!container) return;
+
+    const onScroll = () => {
+      setProgress(
+        computeScrollProgress(
+          container.scrollTop,
+          container.scrollHeight,
+          container.clientHeight,
+        ),
+      );
+    };
+    onScroll();
+    container.addEventListener("scroll", onScroll, { passive: true });
+
+    // IntersectionObserver: pick the topmost chapter whose heading has
+    // crossed ~30% into the viewport. Facts panel is skipped (no key
+    // in the chapters list, so it can't be "active" in the TOC).
+    const sections = Array.from(
+      container.querySelectorAll<HTMLElement>("[data-ch]:not([data-ch='__facts'])"),
+    );
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (suppressObserverRef.current) return;
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        const top = visible[0];
+        if (top) {
+          const key = top.target.getAttribute("data-ch");
+          if (key) setActive(key);
+        }
+      },
+      {
+        root: container,
+        // Trigger active-swap once the heading is within the upper
+        // third of the reader viewport.
+        rootMargin: "0px 0px -70% 0px",
+        threshold: 0,
+      },
+    );
+    for (const s of sections) observer.observe(s);
+    return () => {
+      container.removeEventListener("scroll", onScroll);
+      observer.disconnect();
+    };
+  }, [content]);
 
   const heading = useMemo(() => {
     if (!content) return chartName ?? "";
     return content.cover.title;
   }, [content, chartName]);
+
+  const chapters = content?.chapters ?? [];
+  const activeIndex = active ? chapters.findIndex((c) => c.key === active) : -1;
+  const positionLabel =
+    activeIndex >= 0 && chapters.length > 0
+      ? `${activeIndex + 1} / ${chapters.length}`
+      : chapters.length > 0
+        ? `— / ${chapters.length}`
+        : "";
+  const auditLine = content
+    ? formatAuditLine(
+        {
+          generated_at: content.meta.generated_at,
+          report_schema_version: content.meta.report_schema_version ?? null,
+          prompt_version: content.meta.prompt_version,
+          model_id: null,
+          calculation_version: null,
+        },
+        lang,
+      )
+    : "";
+  // Full audit line (schema/prompt/model/calc) is rendered below the
+  // cover so it's honest but never intrusive; header keeps only the
+  // date to avoid clutter.
+  const fullAuditLine = content
+    ? formatAuditLine(
+        {
+          generated_at: content.meta.generated_at,
+          report_schema_version: content.meta.report_schema_version ?? null,
+          prompt_version: content.meta.prompt_version,
+          model_id: (content.meta as { model_id?: string | null }).model_id ?? null,
+          calculation_version:
+            (content.meta as { calculation_version?: string | null }).calculation_version ?? null,
+        },
+        lang,
+      )
+    : "";
 
   return (
     <AnimatePresence>
@@ -153,12 +293,15 @@ export function PremiumReportReader({
             tabIndex={-1}
           >
             {/* Fixed top bar */}
-            <header className="flex flex-none items-center gap-3 border-b border-white/5 px-4 py-3 md:px-8 md:py-4">
+            <header className="relative flex flex-none items-center gap-3 border-b border-white/5 px-4 py-3 md:px-8 md:py-4">
               <button
+                ref={tocButtonRef}
                 type="button"
-                onClick={() => setTocOpen((v) => !v)}
+                onClick={() => setTocOpen(true)}
                 aria-label={pick(TXT.jump, lang)}
-                className="rounded-full border border-gold-dust/30 px-3 py-1.5 text-[10px] uppercase tracking-[0.28em] text-gold-dust hover:bg-gold-dust/10 md:hidden"
+                aria-expanded={tocOpen}
+                aria-controls="premium-toc-drawer"
+                className="min-h-[44px] rounded-full border border-gold-dust/30 px-3 py-1.5 text-[10px] uppercase tracking-[0.28em] text-gold-dust hover:bg-gold-dust/10 md:hidden"
               >
                 {pick(TXT.toc, lang)}
               </button>
@@ -173,17 +316,44 @@ export function PremiumReportReader({
                   {heading || (lang === "zh" ? "高级 AI 深度报告" : "Premium AI Deep Reading")}
                 </h2>
               </div>
+              {positionLabel && (
+                <p
+                  aria-live="polite"
+                  className="hidden shrink-0 text-[10px] uppercase tracking-[0.28em] text-stone-warm/50 md:block"
+                >
+                  {pick(TXT.position, lang)} {positionLabel}
+                </p>
+              )}
               <p className="hidden text-[10px] uppercase tracking-[0.28em] text-stone-warm/40 md:block">
-                {pick(TXT.meta, lang)} · {fmtDate(content?.meta.generated_at ?? null, lang)}
+                {auditLine}
               </p>
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-full border border-white/10 px-3 py-1.5 text-[10px] uppercase tracking-[0.28em] text-stone-warm/70 hover:border-gold-dust/40 hover:text-gold-dust min-h-[36px]"
+                className="min-h-[44px] rounded-full border border-white/10 px-3 py-1.5 text-[10px] uppercase tracking-[0.28em] text-stone-warm/70 hover:border-gold-dust/40 hover:text-gold-dust"
                 aria-label={pick(TXT.close, lang)}
               >
                 {pick(TXT.close, lang)} ✕
               </button>
+
+              {/* Progress bar — real scroll position, 0-100. Sits on the
+                  bottom edge of the header so it's visible but never
+                  overlaps body text. */}
+              {content && (
+                <div
+                  role="progressbar"
+                  aria-label={pick(TXT.progress, lang)}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={progress}
+                  className="pointer-events-none absolute inset-x-0 bottom-0 h-[3px] overflow-hidden bg-white/5"
+                >
+                  <div
+                    className="h-full bg-gradient-to-r from-gold-dust via-gold-light to-nebula-purple transition-[width] duration-150 ease-out"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+              )}
             </header>
 
             {/* Body: desktop sidebar + article */}
@@ -195,11 +365,12 @@ export function PremiumReportReader({
                     {pick(TXT.toc, lang)}
                   </p>
                   <ol className="space-y-1.5">
-                    {content.chapters.map((ch, i) => (
+                    {chapters.map((ch, i) => (
                       <li key={ch.key}>
                         <button
                           type="button"
-                          onClick={() => scrollTo(ch.key)}
+                          onClick={() => scrollTo(ch.key, { focusHeading: true })}
+                          aria-current={active === ch.key ? "true" : undefined}
                           className={`block w-full truncate rounded-md px-2 py-1.5 text-left text-[12.5px] transition-colors ${
                             active === ch.key
                               ? "bg-gold-dust/10 text-gold-light"
@@ -220,7 +391,7 @@ export function PremiumReportReader({
               {/* Article */}
               <div
                 ref={bodyRef}
-                className="min-w-0 flex-1 overflow-y-auto px-5 py-6 md:px-10 md:py-10"
+                className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-5 py-6 md:px-10 md:py-10"
               >
                 {!content && !errored && (
                   <p className="text-center text-sm text-stone-warm/60">{pick(TXT.loading, lang)}</p>
@@ -235,39 +406,73 @@ export function PremiumReportReader({
                     {/* Cover / summary */}
                     <section className="mb-8 border-b border-white/5 pb-6">
                       <p className="text-[10px] uppercase tracking-[0.36em] text-gold-dust/70">
-                        {pick(TXT.meta, lang)} · {fmtDate(content.meta.generated_at, lang)}
-                        {content.meta.report_schema_version
-                          ? ` · schema ${content.meta.report_schema_version}`
-                          : ""}
+                        {pick(TXT.meta, lang)} · {auditLine || "—"}
                       </p>
                       <h1 className="mt-2 font-serif text-2xl italic text-stone-warm md:text-3xl">
                         {content.cover.title}
                       </h1>
                       <p className="mt-1 text-sm text-stone-warm/70">{content.cover.subtitle}</p>
+                      {fullAuditLine && fullAuditLine !== auditLine && (
+                        <p className="mt-3 text-[10.5px] leading-relaxed text-stone-warm/40 [overflow-wrap:break-word]">
+                          {fullAuditLine}
+                        </p>
+                      )}
                     </section>
 
                     {/* Locally-derived facts (v2+). Absent on legacy rows. */}
                     {content.facts && <FactsPanel facts={content.facts} lang={lang} />}
 
-                    {content.chapters.map((ch, i) => (
-                      <section
-                        key={ch.key}
-                        data-ch={ch.key}
-                        className="mb-10 scroll-mt-24"
-                      >
-                        <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
-                          {String(i + 1).padStart(2, "0")} · {pick(TXT.toc, lang)}
-                        </p>
-                        <h3 className="mt-1 font-serif text-xl italic text-gold-light md:text-2xl">
-                          {ch.title}
-                        </h3>
-                        <div className="mt-3 space-y-4 text-[15px] leading-[1.75] text-stone-warm/85 [overflow-wrap:break-word]">
-                          {ch.body.split(/\n\s*\n/).map((para, k) => (
-                            <p key={k}>{para.trim()}</p>
-                          ))}
-                        </div>
-                      </section>
-                    ))}
+                    {chapters.map((ch, i) => {
+                      const { prev, next } = neighborChapters(chapters, ch.key);
+                      return (
+                        <section
+                          key={ch.key}
+                          data-ch={ch.key}
+                          className="mb-10 scroll-mt-24"
+                        >
+                          <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+                            {String(i + 1).padStart(2, "0")} / {String(chapters.length).padStart(2, "0")}
+                          </p>
+                          <h3
+                            data-ch-heading
+                            className="mt-1 font-serif text-xl italic text-gold-light outline-none focus-visible:ring-2 focus-visible:ring-gold-dust/60 md:text-2xl"
+                          >
+                            {ch.title}
+                          </h3>
+                          <div className="mt-3 space-y-4 text-[15px] leading-[1.75] text-stone-warm/85 [overflow-wrap:break-word]">
+                            {ch.body.split(/\n\s*\n/).map((para, k) => (
+                              <p key={k}>{para.trim()}</p>
+                            ))}
+                          </div>
+
+                          {/* Prev/Next chapter nav */}
+                          <nav
+                            aria-label={pick(TXT.jump, lang)}
+                            className="mt-6 flex items-center justify-between gap-3 border-t border-white/5 pt-4"
+                          >
+                            <button
+                              type="button"
+                              disabled={!prev}
+                              onClick={() => prev && scrollTo(prev, { focusHeading: true })}
+                              className="min-h-[44px] rounded-full border border-white/10 px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-stone-warm/75 transition-colors hover:border-gold-dust/40 hover:text-gold-dust disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:border-white/10 disabled:hover:text-stone-warm/75"
+                            >
+                              ← {pick(TXT.prev, lang)}
+                            </button>
+                            <p className="text-[10px] uppercase tracking-[0.28em] text-stone-warm/40">
+                              {i + 1} / {chapters.length}
+                            </p>
+                            <button
+                              type="button"
+                              disabled={!next}
+                              onClick={() => next && scrollTo(next, { focusHeading: true })}
+                              className="min-h-[44px] rounded-full border border-white/10 px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-stone-warm/75 transition-colors hover:border-gold-dust/40 hover:text-gold-dust disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:border-white/10 disabled:hover:text-stone-warm/75"
+                            >
+                              {pick(TXT.next, lang)} →
+                            </button>
+                          </nav>
+                        </section>
+                      );
+                    })}
 
                     <footer className="mt-12 border-t border-white/5 pt-6 text-[11px] leading-relaxed text-stone-warm/50">
                       {content.meta.disclaimer || pick(TXT.cover_note, lang)}
@@ -277,32 +482,81 @@ export function PremiumReportReader({
               </div>
 
               {/* Mobile TOC drawer */}
-              {content && tocOpen && (
-                <div
-                  className="absolute inset-x-0 top-[60px] z-10 border-b border-white/10 bg-obsidian/95 backdrop-blur md:hidden"
-                  onClick={() => setTocOpen(false)}
-                >
-                  <ol className="max-h-[60vh] space-y-1 overflow-y-auto p-4">
-                    {content.chapters.map((ch, i) => (
-                      <li key={ch.key}>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            scrollTo(ch.key);
-                          }}
-                          className="block w-full truncate rounded-md px-3 py-2 text-left text-sm text-stone-warm/80 hover:bg-white/5 hover:text-gold-dust"
+              <AnimatePresence>
+                {content && tocOpen && (
+                  <motion.div
+                    key="drawer"
+                    className="absolute inset-0 z-20 md:hidden"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                  >
+                    {/* Backdrop */}
+                    <button
+                      type="button"
+                      aria-label={pick(TXT.close, lang)}
+                      onClick={() => {
+                        setTocOpen(false);
+                        tocButtonRef.current?.focus();
+                      }}
+                      className="absolute inset-0 h-full w-full bg-obsidian/70 backdrop-blur-sm"
+                    />
+                    <motion.div
+                      id="premium-toc-drawer"
+                      role="dialog"
+                      aria-modal="true"
+                      aria-labelledby={drawerTitleId}
+                      initial={{ y: "-100%" }}
+                      animate={{ y: 0 }}
+                      exit={{ y: "-100%" }}
+                      transition={{ duration: 0.25, ease: [0.32, 0.72, 0, 1] }}
+                      className="absolute inset-x-0 top-0 max-h-[85vh] overflow-hidden rounded-b-3xl border-b border-white/10 bg-obsidian shadow-2xl"
+                    >
+                      <div className="flex items-center justify-between border-b border-white/5 px-4 py-3">
+                        <h3
+                          id={drawerTitleId}
+                          className="text-[11px] uppercase tracking-[0.32em] text-gold-dust"
                         >
-                          <span className="mr-2 text-[11px] text-gold-dust/60">
-                            {String(i + 1).padStart(2, "0")}
-                          </span>
-                          {ch.title}
+                          {pick(TXT.drawer_title, lang)}
+                        </h3>
+                        <button
+                          ref={drawerCloseRef}
+                          type="button"
+                          onClick={() => {
+                            setTocOpen(false);
+                            tocButtonRef.current?.focus();
+                          }}
+                          className="min-h-[44px] rounded-full border border-white/10 px-3 py-1.5 text-[10px] uppercase tracking-[0.28em] text-stone-warm/70 hover:border-gold-dust/40 hover:text-gold-dust"
+                          aria-label={pick(TXT.close, lang)}
+                        >
+                          {pick(TXT.close, lang)} ✕
                         </button>
-                      </li>
-                    ))}
-                  </ol>
-                </div>
-              )}
+                      </div>
+                      <ol className="max-h-[calc(85vh-56px)] space-y-1 overflow-y-auto p-3">
+                        {chapters.map((ch, i) => (
+                          <li key={ch.key}>
+                            <button
+                              type="button"
+                              onClick={() => scrollTo(ch.key, { focusHeading: true })}
+                              aria-current={active === ch.key ? "true" : undefined}
+                              className={`block w-full min-h-[44px] truncate rounded-md px-3 py-2 text-left text-sm ${
+                                active === ch.key
+                                  ? "bg-gold-dust/10 text-gold-light"
+                                  : "text-stone-warm/80 hover:bg-white/5 hover:text-gold-dust"
+                              }`}
+                            >
+                              <span className="mr-2 text-[11px] text-gold-dust/60">
+                                {String(i + 1).padStart(2, "0")}
+                              </span>
+                              {ch.title}
+                            </button>
+                          </li>
+                        ))}
+                      </ol>
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </motion.div>
         </motion.div>
@@ -516,7 +770,7 @@ function ZiweiFactBlock({ ziwei, lang }: { ziwei: NonNullable<PremiumFacts["ziwe
         <span className="text-stone-warm/50">{pick(FACTS_TXT.lunar, lang)}: {ziwei.lunar_date || "—"}</span>
       </div>
 
-      <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
         {ziwei.palaces.map((p) => {
           const isSoul = p.index === ziwei.soul_palace_index;
           const majors = p.major_stars;
