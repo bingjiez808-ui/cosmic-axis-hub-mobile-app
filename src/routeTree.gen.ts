@@ -24,6 +24,7 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthIndexRouteImport } from './routes/auth.index'
+import { Route as DevDemoPremiumRouteImport } from './routes/dev.demo-premium'
 import { Route as AuthResetRouteImport } from './routes/auth.reset'
 import { Route as ApiGenerateAvatarRouteImport } from './routes/api/generate-avatar'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
@@ -106,6 +107,11 @@ const AuthIndexRoute = AuthIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthRoute,
 } as any)
+const DevDemoPremiumRoute = DevDemoPremiumRouteImport.update({
+  id: '/dev/demo-premium',
+  path: '/dev/demo-premium',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthResetRoute = AuthResetRouteImport.update({
   id: '/reset',
   path: '/reset',
@@ -164,6 +170,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRoute
   '/api/generate-avatar': typeof ApiGenerateAvatarRoute
   '/auth/reset': typeof AuthResetRoute
+  '/dev/demo-premium': typeof DevDemoPremiumRoute
   '/auth/': typeof AuthIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -186,6 +193,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminRoute
   '/api/generate-avatar': typeof ApiGenerateAvatarRoute
   '/auth/reset': typeof AuthResetRoute
+  '/dev/demo-premium': typeof DevDemoPremiumRoute
   '/auth': typeof AuthIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -211,6 +219,7 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/api/generate-avatar': typeof ApiGenerateAvatarRoute
   '/auth/reset': typeof AuthResetRoute
+  '/dev/demo-premium': typeof DevDemoPremiumRoute
   '/auth/': typeof AuthIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -236,6 +245,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/api/generate-avatar'
     | '/auth/reset'
+    | '/dev/demo-premium'
     | '/auth/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -258,6 +268,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/api/generate-avatar'
     | '/auth/reset'
+    | '/dev/demo-premium'
     | '/auth'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -282,6 +293,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/api/generate-avatar'
     | '/auth/reset'
+    | '/dev/demo-premium'
     | '/auth/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -305,6 +317,7 @@ export interface RootRouteChildren {
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   ApiGenerateAvatarRoute: typeof ApiGenerateAvatarRoute
+  DevDemoPremiumRoute: typeof DevDemoPremiumRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
 }
@@ -416,6 +429,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthIndexRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/dev/demo-premium': {
+      id: '/dev/demo-premium'
+      path: '/dev/demo-premium'
+      fullPath: '/dev/demo-premium'
+      preLoaderRoute: typeof DevDemoPremiumRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth/reset': {
       id: '/auth/reset'
       path: '/reset'
@@ -510,6 +530,7 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   ApiGenerateAvatarRoute: ApiGenerateAvatarRoute,
+  DevDemoPremiumRoute: DevDemoPremiumRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
 }
