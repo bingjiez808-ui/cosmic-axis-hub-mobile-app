@@ -50,7 +50,7 @@ export type BudgetDecision =
  */
 export function checkBudgetBeforeChapter(
   usedSoFar: BudgetUsage,
-  policy: typeof AI_BUDGET_POLICY = AI_BUDGET_POLICY,
+  policy: BudgetLimits = AI_BUDGET_POLICY,
 ): BudgetDecision {
   const remaining_input = policy.report_max_input_tokens - usedSoFar.input_tokens;
   const remaining_output = policy.report_max_output_tokens - usedSoFar.output_tokens;
@@ -69,7 +69,7 @@ export function checkBudgetBeforeChapter(
  */
 export function chapterOutputCap(
   usedSoFar: BudgetUsage,
-  policy: typeof AI_BUDGET_POLICY = AI_BUDGET_POLICY,
+  policy: BudgetLimits = AI_BUDGET_POLICY,
 ): number {
   const remaining = policy.report_max_output_tokens - usedSoFar.output_tokens;
   return Math.max(0, Math.min(policy.chapter_max_output_tokens, remaining));
