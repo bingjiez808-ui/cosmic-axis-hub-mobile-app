@@ -1009,6 +1009,7 @@ export type PremiumReportRead = {
   generatedAt: string | null;
   content: PremiumContent | null;
   errorMessage: string | null;
+  aiGenerationCount: number;
 };
 
 export const getPremiumReport = createServerFn({ method: "POST" })
@@ -1016,7 +1017,8 @@ export const getPremiumReport = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => StatusInput.parse(d))
   .handler(async ({ data, context }): Promise<PremiumReportRead | null> => {
     const { supabase, userId } = context;
-    // Ownership guard: chart must belong to caller.
+    // Ownership guard: chart must belong to caller. Cross-user reads
+    // are blocked here AND by RLS — this is defense in depth.
     const { data: chart } = await supabase
       .from("charts")
       .select("id, user_id")
@@ -1026,7 +1028,7 @@ export const getPremiumReport = createServerFn({ method: "POST" })
 
     const { data: row } = await supabase
       .from("premium_pdf_reports")
-      .select("status, content_json, generated_at, error_message")
+      .select("status, content_json, generated_at, error_message, ai_generation_count")
       .eq("user_id", userId)
       .eq("chart_id", data.chartId)
       .eq("report_version", PREMIUM_REPORT_VERSION)
@@ -1037,8 +1039,13 @@ export const getPremiumReport = createServerFn({ method: "POST" })
       generatedAt: row.generated_at,
       content: (row.content_json as unknown as PremiumContent) ?? null,
       errorMessage: row.error_message,
+      aiGenerationCount:
+        typeof (row as { ai_generation_count?: number }).ai_generation_count === "number"
+          ? (row as { ai_generation_count: number }).ai_generation_count
+          : 0,
     };
   });
+
 
 /* --------------------------------------------------------------------- */
 /* listPremiumReports — user's own deep reports across all charts         */
