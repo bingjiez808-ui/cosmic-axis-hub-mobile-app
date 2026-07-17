@@ -51,6 +51,8 @@ import {
   type ReportSearchLike,
 } from "@/lib/report-input";
 import { OUTLOOK_AI_VERSION } from "@/lib/ai-cache-version";
+import { computeEnergyRange } from "@/lib/energy-score";
+
 
 /* ═══════════════════════════════════════════
    Shared AI outlook (timeline + 90-day windows)
@@ -441,7 +443,12 @@ function prand(seed: number) {
   };
 }
 
-// Year-by-year visualization within a decade — energy bar + one-line theme.
+// Year-by-year visualization within a decade — deterministic energy
+// trend (line + soft area) driven by `computeEnergyScore`. AI provides
+// only textual themes for the linked list below; the y-axis values
+// come exclusively from the calculation module. When birthISO is
+// missing/invalid, the chart shows an "insufficient data" placeholder
+// and never invents a curve.
 function YearByYearChart({
   from,
   to,
@@ -457,8 +464,7 @@ function YearByYearChart({
   birthISO?: string;
   aiYears?: { age: number; intensity: number; theme: string }[];
 }) {
-  const bs = birthSeed(birthISO);
-  const rnd = prand(((bs ^ (from + 1)) >>> 0) || 1);
+  const range = computeEnergyRange(birthISO, from, to);
   const themesEn = [
     "seeding — a quiet beginning",
     "opening — a first door",
@@ -470,12 +476,6 @@ function YearByYearChart({
     "shedding — release what no longer fits",
     "pivot — direction quietly changes",
     "integration — the decade completes",
-    "signal — a message arrives from far",
-    "rebuild — the body asks to be re-parented",
-    "witness — someone truly sees you",
-    "wager — a small brave bet",
-    "return — an old thread reappears",
-    "widening — your circle grows deeper",
   ];
   const themesZh = [
     "播种 —— 安静的起点",
@@ -488,85 +488,229 @@ function YearByYearChart({
     "剥离 —— 放下不再合身的",
     "转向 —— 方向悄然改变",
     "整合 —— 十年的收束",
-    "信号 —— 远方来的一封信",
-    "重建 —— 身体请求被重新照料",
-    "被看见 —— 有人真正读懂你",
-    "小赌 —— 一次勇敢的下注",
-    "回流 —— 旧线索再度出现",
-    "拓宽 —— 你的圈子长得更深",
   ];
   const pool = lang === "zh" ? themesZh : themesEn;
-  const years = Array.from({ length: to - from }, (_, i) => {
-    const yr = from + i;
-    const aiYear = aiYears?.find((y) => y.age === yr);
-    const intensity = aiYear && typeof aiYear.intensity === "number"
-      ? Math.max(0.15, Math.min(1, aiYear.intensity))
-      : 0.35 + rnd() * 0.6;
-    const theme = aiYear?.theme?.trim() || pool[Math.floor(rnd() * pool.length)];
+  const [hovered, setHovered] = useState<number | null>(null);
+
+  // Insufficient-data path — never fabricate a line.
+  if (!range) {
+    return (
+      <div className="mt-2 rounded-xl border border-white/10 bg-obsidian/40 p-4 text-center md:p-5">
+        <p className="mb-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+          {lang === "zh" ? "生命时间轴 · 大运能量趋势" : "Life timeline · relative energy trend"}
+        </p>
+        <p className="text-[12px] leading-relaxed text-stone-warm/60">
+          {lang === "zh"
+            ? "缺少完整的出生资料，暂无法计算能量趋势。"
+            : "Not enough birth data to compute the energy trend."}
+        </p>
+      </div>
+    );
+  }
+
+  const years = range.map((p, i) => {
+    const aiTheme = aiYears?.find((y) => y.age === p.age)?.theme?.trim();
     return {
-      age: yr,
-      intensity,
-      theme,
-      isNow: age != null && age === yr,
-      isPast: age != null && age > yr,
+      age: p.age,
+      score: p.score,
+      theme: aiTheme || pool[i % pool.length],
+      isNow: age != null && age === p.age,
+      isPast: age != null && age > p.age,
     };
   });
 
+  // SVG layout — the viewBox uses a fixed 1000 × 220 canvas that
+  // scales via width=100%. Y padding keeps the line clear of edges.
+  const W = 1000;
+  const H = 220;
+  const padX = 32;
+  const padTop = 20;
+  const padBot = 40;
+  const n = years.length;
+  const stepX = (W - padX * 2) / Math.max(1, n - 1);
+  // Local Y domain with padding so subtle changes remain readable,
+  // but is always labelled "relative trend" — see caption below.
+  const scores = years.map((y) => y.score);
+  const minS = Math.min(...scores);
+  const maxS = Math.max(...scores);
+  const domainMin = Math.max(0, minS - 8);
+  const domainMax = Math.min(100, maxS + 8);
+  const domainSpan = Math.max(1, domainMax - domainMin);
+  const yFor = (score: number) =>
+    padTop + ((H - padTop - padBot) * (domainMax - score)) / domainSpan;
+  const points = years.map((y, i) => ({ x: padX + i * stepX, y: yFor(y.score), ...y }));
+  const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(" ");
+  const areaPath = `${linePath} L${points[points.length - 1].x.toFixed(2)},${H - padBot} L${points[0].x.toFixed(2)},${H - padBot} Z`;
+  const nowPoint = points.find((p) => p.isNow) ?? null;
+  const activeIdx = hovered != null
+    ? Math.max(0, Math.min(n - 1, hovered))
+    : nowPoint
+      ? points.indexOf(nowPoint)
+      : -1;
+  const activePoint = activeIdx >= 0 ? points[activeIdx] : null;
+
   return (
     <div className="mt-2 rounded-xl border border-white/10 bg-obsidian/40 p-4 md:p-5">
-      <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
-        {lang === "zh" ? "逐年细读 · 能量曲线（依你的生日推算）" : "Year by year · energy curve (from your birthdate)"}
+      <div className="mb-1 flex items-baseline justify-between gap-3">
+        <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+          {lang === "zh" ? "生命时间轴 · 大运能量趋势" : "Life timeline · relative energy trend"}
+        </p>
+        <p className="text-[10px] uppercase tracking-[0.22em] text-stone-warm/40">
+          {lang === "zh" ? `${domainMin}–${domainMax}` : `${domainMin}–${domainMax}`}
+        </p>
+      </div>
+      <p className="mb-3 text-[11px] leading-relaxed text-stone-warm/55">
+        {lang === "zh"
+          ? "仅为相对趋势，用于观察阶段变化，不代表绝对吉凶。"
+          : "Relative trend only — for observing phase shifts, not absolute fortune."}
       </p>
-      <div className="flex items-end gap-1.5 md:gap-2">
-        {years.map((y) => (
-          <div key={y.age} className="group flex flex-1 flex-col items-center gap-1.5">
-            <div className="relative flex h-24 w-full items-end">
-              <div
-                className={`w-full rounded-t transition-all ${
-                  y.isNow
-                    ? "bg-gold-dust"
-                    : y.isPast
-                      ? "bg-gold-dust/40"
-                      : "bg-gold-dust/20 group-hover:bg-gold-dust/60"
-                }`}
-                style={{ height: `${Math.round(y.intensity * 100)}%` }}
+
+      <div className="-mx-4 overflow-x-auto px-4 md:mx-0 md:px-0">
+        <div className="min-w-[520px] md:min-w-0">
+          <svg
+            viewBox={`0 0 ${W} ${H}`}
+            preserveAspectRatio="none"
+            role="img"
+            aria-label={lang === "zh" ? "大运能量趋势图" : "Relative energy trend chart"}
+            className="block h-40 w-full md:h-48"
+            onMouseLeave={() => setHovered(null)}
+          >
+            <defs>
+              <linearGradient id="energy-area" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stopColor="hsl(45 70% 60%)" stopOpacity="0.28" />
+                <stop offset="100%" stopColor="hsl(45 70% 60%)" stopOpacity="0.02" />
+              </linearGradient>
+            </defs>
+            {/* Baseline */}
+            <line
+              x1={padX}
+              x2={W - padX}
+              y1={H - padBot}
+              y2={H - padBot}
+              stroke="hsl(0 0% 100% / 0.08)"
+              strokeWidth={1}
+            />
+            {/* Vertical "now" reference line */}
+            {nowPoint && (
+              <line
+                x1={nowPoint.x}
+                x2={nowPoint.x}
+                y1={padTop - 4}
+                y2={H - padBot}
+                stroke="hsl(45 70% 60% / 0.45)"
+                strokeDasharray="3 4"
+                strokeWidth={1}
               />
-              {y.isNow && (
-                <span className="absolute -top-2 left-1/2 -translate-x-1/2 size-2 rounded-full bg-gold-dust shadow-[0_0_10px_hsl(45_70%_60%/0.9)]" />
-              )}
-            </div>
-            <span
-              className={`text-[9px] tabular-nums ${
-                y.isNow ? "text-gold-light" : "text-stone-warm/50"
-              }`}
-            >
-              {y.age}
-              <span className="ml-0.5 text-[8px] text-stone-warm/35">
-                {lang === "zh" ? "岁" : "y"}
-              </span>
-            </span>
-          </div>
-        ))}
+            )}
+            <path d={areaPath} fill="url(#energy-area)" />
+            <path
+              d={linePath}
+              fill="none"
+              stroke="hsl(45 70% 60%)"
+              strokeWidth={2}
+              strokeLinejoin="round"
+              strokeLinecap="round"
+            />
+            {points.map((p, i) => (
+              <g key={p.age}>
+                <circle
+                  cx={p.x}
+                  cy={p.y}
+                  r={p.isNow ? 6 : 3.5}
+                  fill={p.isNow ? "hsl(45 80% 65%)" : p.isPast ? "hsl(45 70% 60% / 0.6)" : "hsl(45 70% 60% / 0.35)"}
+                  stroke={p.isNow ? "hsl(45 90% 78%)" : "transparent"}
+                  strokeWidth={p.isNow ? 2 : 0}
+                />
+                {/* Larger transparent hit area for hover/touch */}
+                <rect
+                  x={p.x - stepX / 2}
+                  y={0}
+                  width={stepX}
+                  height={H}
+                  fill="transparent"
+                  onMouseEnter={() => setHovered(i)}
+                  onTouchStart={() => setHovered(i)}
+                  onClick={() => setHovered(i)}
+                  style={{ cursor: "pointer" }}
+                />
+                <text
+                  x={p.x}
+                  y={H - padBot + 20}
+                  textAnchor="middle"
+                  fontSize={p.isNow ? 12 : 11}
+                  fill={p.isNow ? "hsl(45 90% 78%)" : "hsl(0 0% 100% / 0.45)"}
+                >
+                  {p.age}
+                </text>
+              </g>
+            ))}
+            {activePoint && (
+              <g>
+                <line
+                  x1={activePoint.x}
+                  x2={activePoint.x}
+                  y1={padTop - 4}
+                  y2={H - padBot}
+                  stroke="hsl(45 90% 78% / 0.35)"
+                  strokeWidth={1}
+                />
+                {(() => {
+                  const tipW = 200;
+                  const tipH = 54;
+                  let tx = activePoint.x + 10;
+                  if (tx + tipW > W - 4) tx = activePoint.x - tipW - 10;
+                  const ty = Math.max(4, activePoint.y - tipH - 8);
+                  return (
+                    <g transform={`translate(${tx}, ${ty})`}>
+                      <rect
+                        width={tipW}
+                        height={tipH}
+                        rx={8}
+                        fill="hsl(0 0% 6% / 0.92)"
+                        stroke="hsl(45 70% 60% / 0.45)"
+                      />
+                      <text x={12} y={20} fontSize={11} fill="hsl(45 90% 78%)">
+                        {lang === "zh" ? `${activePoint.age} 岁` : `Age ${activePoint.age}`}
+                        {"  · "}
+                        {lang === "zh" ? `能量 ${activePoint.score}` : `Energy ${activePoint.score}`}
+                      </text>
+                      <text x={12} y={38} fontSize={10} fill="hsl(0 0% 100% / 0.75)">
+                        {activePoint.theme.length > 28 ? `${activePoint.theme.slice(0, 27)}…` : activePoint.theme}
+                      </text>
+                    </g>
+                  );
+                })()}
+              </g>
+            )}
+          </svg>
+        </div>
       </div>
 
-      <ul className="mt-5 grid grid-cols-1 gap-1.5 text-[11px] leading-relaxed md:grid-cols-2">
-        {years.map((y) => (
-          <li
-            key={y.age}
-            className={`flex items-baseline gap-3 border-b border-white/5 py-1 ${
-              y.isNow ? "text-gold-light" : y.isPast ? "text-stone-warm/70" : "text-stone-warm/50"
-            }`}
-          >
-            <span className="w-14 shrink-0 font-serif tabular-nums">
-              {y.age} {lang === "zh" ? "岁" : ""}
-            </span>
-            <span className="flex-1">{y.theme}</span>
-          </li>
-        ))}
+      <ul className="mt-4 grid grid-cols-1 gap-1.5 text-[11px] leading-relaxed md:grid-cols-2">
+        {years.map((y, i) => {
+          const isHover = hovered === i;
+          return (
+            <li
+              key={y.age}
+              onMouseEnter={() => setHovered(i)}
+              onFocus={() => setHovered(i)}
+              className={`flex items-baseline gap-3 rounded-md border-b border-white/5 px-2 py-1 transition-colors ${
+                isHover ? "bg-gold-dust/[0.08] text-gold-light" : y.isNow ? "text-gold-light" : y.isPast ? "text-stone-warm/70" : "text-stone-warm/50"
+              }`}
+            >
+              <span className="w-14 shrink-0 font-serif tabular-nums">
+                {y.age} {lang === "zh" ? "岁" : ""}
+              </span>
+              <span className="flex-1">{y.theme}</span>
+              <span className="text-[10px] tabular-nums text-stone-warm/45">{y.score}</span>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
 }
+
 
 
 function ConfidenceBadge({ level, lang }: { level: "high" | "mid" | "low"; lang: Lang }) {
