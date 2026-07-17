@@ -72,10 +72,7 @@ const TXT = {
   },
   resend_verify: { zh: "重发验证邮件", en: "Resend verification" },
   resent_verify: { zh: "验证邮件已重发", en: "Verification email resent" },
-  provider_pending: {
-    zh: "支付渠道配置中：¥79 订单已记录。正式支付通道上线前，请联系管理员完成付款。",
-    en: "Payment provider being configured: your ¥79 intent is recorded. Contact an admin to complete payment offline.",
-  },
+
   legacy_incomplete: {
     zh: "这份测试命盘资料不完整，请返回命盘重新创建",
     en: "This legacy test chart is incomplete — please recreate it from the ritual",
@@ -107,8 +104,9 @@ type UiState =
   | { kind: "verify_needed"; email: string | null }
   | { kind: "legacy_incomplete" }
   | { kind: "locked"; chartId: string }
-  | { kind: "order_pending"; chartId: string }
   | { kind: "paid_no_report"; chartId: string }
+
+
   | { kind: "generating"; chartId: string }
   | { kind: "partial"; chartId: string }
   | { kind: "ready"; chartId: string }
@@ -163,9 +161,11 @@ export function PremiumPdfCard({
     if (rs === "partial") return { kind: "partial", chartId };
     if (rs === "failed") return { kind: "failed", chartId };
     if (s.order?.status === "paid") return { kind: "paid_no_report", chartId };
-    if (s.order?.status === "pending") return { kind: "order_pending", chartId };
+    // Pending orders (e.g. a legacy intent row) fall back to the ¥79
+    // unlock CTA so the customer never sees an "admin required" dead-end.
     return { kind: "locked", chartId };
   }, []);
+
 
   const refresh = useCallback(async () => {
     if (!search?.date) return;
@@ -556,13 +556,8 @@ function PrimaryAction({
     );
   }
 
-  if (state.kind === "order_pending") {
-    return (
-      <p className="w-full rounded-2xl border border-nebula-purple/40 bg-nebula-purple/[0.08] p-3 text-[12px] leading-relaxed text-stone-warm/80 [overflow-wrap:break-word]">
-        {pick(TXT.provider_pending, lang)}
-      </p>
-    );
-  }
+
+
 
   if (state.kind === "paid_no_report") {
     return (

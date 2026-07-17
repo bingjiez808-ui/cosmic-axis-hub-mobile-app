@@ -52,6 +52,8 @@ import {
 } from "@/lib/report-input";
 import { OUTLOOK_AI_VERSION } from "@/lib/ai-cache-version";
 import { computeEnergyRange } from "@/lib/energy-score";
+import { YearInsightModal, type YearInsightPoint } from "@/components/YearInsightModal";
+
 
 
 /* ═══════════════════════════════════════════
@@ -491,6 +493,28 @@ function YearByYearChart({
   ];
   const pool = lang === "zh" ? themesZh : themesEn;
   const [hovered, setHovered] = useState<number | null>(null);
+  const [openYear, setOpenYear] = useState<YearInsightPoint | null>(null);
+  const openerRef = useRef<HTMLElement | null>(null);
+  const birthYear = useMemo(() => {
+    if (!birthISO) return null;
+    const d = new Date(birthISO);
+    return Number.isNaN(d.getTime()) ? null : d.getFullYear();
+  }, [birthISO]);
+
+  const openYearAt = (i: number, opener: HTMLElement | null) => {
+    const p = years[i];
+    if (!p) return;
+    openerRef.current = opener;
+    setOpenYear({
+      age: p.age,
+      score: p.score,
+      theme: p.theme,
+      year: birthYear != null ? birthYear + p.age : null,
+      confidence: "reference",
+      reference: true,
+    });
+  };
+
 
   // Insufficient-data path — never fabricate a line.
   if (!range) {
@@ -621,7 +645,7 @@ function YearByYearChart({
                   stroke={p.isNow ? "hsl(45 90% 78%)" : "transparent"}
                   strokeWidth={p.isNow ? 2 : 0}
                 />
-                {/* Larger transparent hit area for hover/touch */}
+                {/* Larger transparent hit area for hover / touch / click */}
                 <rect
                   x={p.x - stepX / 2}
                   y={0}
@@ -630,9 +654,10 @@ function YearByYearChart({
                   fill="transparent"
                   onMouseEnter={() => setHovered(i)}
                   onTouchStart={() => setHovered(i)}
-                  onClick={() => setHovered(i)}
+                  onClick={(e) => openYearAt(i, e.currentTarget as unknown as HTMLElement)}
                   style={{ cursor: "pointer" }}
                 />
+
                 <text
                   x={p.x}
                   y={H - padBot + 20}
@@ -690,25 +715,38 @@ function YearByYearChart({
         {years.map((y, i) => {
           const isHover = hovered === i;
           return (
-            <li
-              key={y.age}
-              onMouseEnter={() => setHovered(i)}
-              onFocus={() => setHovered(i)}
-              className={`flex items-baseline gap-3 rounded-md border-b border-white/5 px-2 py-1 transition-colors ${
-                isHover ? "bg-gold-dust/[0.08] text-gold-light" : y.isNow ? "text-gold-light" : y.isPast ? "text-stone-warm/70" : "text-stone-warm/50"
-              }`}
-            >
-              <span className="w-14 shrink-0 font-serif tabular-nums">
-                {y.age} {lang === "zh" ? "岁" : ""}
-              </span>
-              <span className="flex-1">{y.theme}</span>
-              <span className="text-[10px] tabular-nums text-stone-warm/45">{y.score}</span>
+            <li key={y.age}>
+              <button
+                type="button"
+                data-testid={`year-row-${y.age}`}
+                onClick={(e) => openYearAt(i, e.currentTarget)}
+                onMouseEnter={() => setHovered(i)}
+                onFocus={() => setHovered(i)}
+                className={`flex w-full items-baseline gap-3 rounded-md border-b border-white/5 px-2 py-1 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold-dust/60 ${
+                  isHover ? "bg-gold-dust/[0.08] text-gold-light" : y.isNow ? "text-gold-light" : y.isPast ? "text-stone-warm/70" : "text-stone-warm/50"
+                }`}
+              >
+                <span className="w-14 shrink-0 font-serif tabular-nums">
+                  {y.age} {lang === "zh" ? "岁" : ""}
+                </span>
+                <span className="flex-1 [overflow-wrap:break-word]">{y.theme}</span>
+                <span className="text-[10px] tabular-nums text-stone-warm/45">{y.score}</span>
+              </button>
             </li>
           );
         })}
       </ul>
+
+      <YearInsightModal
+        open={openYear != null}
+        point={openYear}
+        lang={lang}
+        onClose={() => setOpenYear(null)}
+        returnFocus={openerRef.current}
+      />
     </div>
   );
+
 }
 
 
