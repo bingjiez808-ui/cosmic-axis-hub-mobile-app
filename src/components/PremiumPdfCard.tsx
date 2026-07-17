@@ -10,7 +10,11 @@
  *
  * Two visual variants:
  *   - variant="card"  legacy tall card
- *   - variant="bar"   full-width horizontal bar shown on the report page
+ *   - variant="bar"   full-width panel shown on the report page, using a
+ *                     minmax(0,1fr) / minmax(360px,440px) two-column grid
+ *                     from lg+ so the pitch never collapses to a narrow
+ *                     column while the status/action rail keeps a stable
+ *                     comfortable width.
  *
  * Nothing here writes to the database or trusts client-provided flags,
  * and it never surfaces file downloads, exports, printing or PDFs — the
@@ -30,8 +34,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { PremiumReportReader } from "@/components/PremiumReportReader";
 import {
   buildCalculationSnapshot,
-  missingSystems,
+  missingSystemDetails,
+  missingReasonMessage,
   systemDisplayName,
+  type MissingReason,
   type RequiredSystem,
 } from "@/lib/calc-snapshot";
 
@@ -43,6 +49,8 @@ type ReportSearchLike = {
   gender?: "male" | "female";
 };
 
+type MissingDetail = { system: RequiredSystem; reason: MissingReason };
+
 const TXT = {
   kicker: { zh: "¥79 · 一次解锁", en: "¥79 · one-time unlock" },
   title: { zh: "高级 AI 深度报告", en: "Premium AI Deep Reading" },
@@ -50,20 +58,6 @@ const TXT = {
   pitch: {
     zh: "在你已有的网页报告基础上，由资深 AI 综合西方占星、印度占星、八字与紫微斗数，为当前命盘生成一份更深入的完整解读。生成一次，永久保存在你的账户，随时在站内重新阅读。",
     en: "Building on your existing web reading, our premium AI blends Western astrology, Vedic Jyotish, BaZi and Zi Wei Dou Shu into a much deeper synthesis for this chart. Generated once, saved to your account forever, reopen inside the app anytime.",
-  },
-  bullets: {
-    zh: [
-      "四体系综合 · 更深入的整合解读",
-      "性格 / 事业 / 财富 / 关系 / 家庭 / 健康 / 使命 / 周期",
-      "未来 12 个月与关键时间窗口",
-      "生成一次 · 永久保存 · 站内随时阅读",
-    ],
-    en: [
-      "Four-tradition deep synthesis",
-      "Character / vocation / wealth / relationships / family / health / mission / cycles",
-      "Next twelve months + key time windows",
-      "Generate once · saved forever · reopen inside the app",
-    ],
   },
   chips: {
     zh: ["四体系综合", "八大维度", "未来 12 个月", "永久保存"],
@@ -110,25 +104,33 @@ const TXT = {
   order_pending_pill: { zh: "订单已记录", en: "Order recorded" },
   paid_pill: { zh: "已解锁", en: "Unlocked" },
   ready_pill: { zh: "报告已就绪", en: "Report ready" },
-  systems_incomplete_pill: { zh: "计算模块未完成", en: "Calculators pending" },
-  systems_incomplete_title: {
-    zh: "计算模块尚未完成",
-    en: "Calculation modules are not complete yet",
+  systems_incomplete_pill_generic: {
+    zh: "计算模块未完成",
+    en: "Calculators pending",
   },
-  systems_incomplete_body: {
-    zh: "以下体系还没有真实计算器，我们不会用模板伪造报告，也暂时不接受付费或授权：",
-    en: "The following traditions have no real calculator yet. We refuse to ship a template report and cannot accept purchase or grant until they are wired up:",
+  systems_incomplete_pill_gender_only: {
+    zh: "待补充资料",
+    en: "One detail needed",
+  },
+  systems_incomplete_title_generic: {
+    zh: "以下体系暂时无法计算",
+    en: "The following traditions cannot be computed yet",
+  },
+  systems_incomplete_body_generic: {
+    zh: "我们不会用模板伪造报告，请按下方提示补充或修正命盘资料。",
+    en: "We refuse to ship a template report. Please follow each item's guidance to fix or complete this chart.",
   },
   gender_backfill_title: {
     zh: "补充紫微计算所需的性别",
     en: "Add the gender used by the Zi Wei calculator",
   },
   gender_backfill_body: {
-    zh: "紫微斗数需要出生性别（仅用于传统算法），补充后即可解锁高级 AI 深度报告。只有本人可以更新自己的命盘。",
-    en: "Zi Wei Dou Shu requires birth gender (used only by the traditional algorithm). Adding it unlocks the Premium AI Deep Reading. Only you can update your own chart.",
+    zh: "紫微斗数需要出生性别（仅用于传统算法）。补充后即可完成计算并解锁高级 AI 深度报告，只有本人可以更新自己的命盘。",
+    en: "Zi Wei Dou Shu requires birth gender (used only by the traditional algorithm). Adding it completes the calculation and unlocks the Premium AI Deep Reading. Only you can update your own chart.",
   },
   gender_male: { zh: "男", en: "Male" },
   gender_female: { zh: "女", en: "Female" },
+  edit_chart: { zh: "编辑命盘资料", en: "Edit chart details" },
 };
 
 function pick<T extends { zh: string; en: string }>(t: T, lang: "zh" | "en"): string {
@@ -140,7 +142,7 @@ type UiState =
   | { kind: "signed_out" }
   | { kind: "no_chart" }
   | { kind: "verify_needed"; email: string | null }
-  | { kind: "systems_incomplete"; chartId: string | null; missing: string[] }
+  | { kind: "systems_incomplete"; chartId: string | null; missing: MissingDetail[] }
   | { kind: "locked"; chartId: string }
   | { kind: "order_pending"; chartId: string; message: string }
   | { kind: "paid_no_report"; chartId: string }
@@ -166,13 +168,6 @@ function extractErrorCode(err: unknown): string {
     "ai_gateway_not_configured",
   ];
   return known.find((k) => raw.includes(k)) ?? "";
-}
-
-function extractMissingSystems(err: unknown): string[] {
-  const raw = err instanceof Error ? err.message : String(err ?? "");
-  const m = raw.match(/systems_incomplete:([a-z,]+)/i);
-  if (!m) return [];
-  return m[1].split(",").filter(Boolean);
 }
 
 export function PremiumPdfCard({
@@ -235,7 +230,6 @@ export function PremiumPdfCard({
     try {
       const { data: sess } = await supabase.auth.getSession();
       if (!sess.session) {
-        // Signed-out visitors still see a systems check for transparency.
         const snap = buildCalculationSnapshot({
           date: search.date,
           time: search.time,
@@ -243,7 +237,7 @@ export function PremiumPdfCard({
           lang,
           gender: search.gender ?? null,
         });
-        const missing = missingSystems(snap);
+        const missing = missingSystemDetails(snap);
         if (missing.length > 0) {
           setState({ kind: "systems_incomplete", chartId: null, missing });
           return;
@@ -251,7 +245,6 @@ export function PremiumPdfCard({
         setState({ kind: "signed_out" });
         return;
       }
-      // Save/upsert chart FIRST so we can offer a per-chart gender backfill.
       const preSnap = buildCalculationSnapshot({
         date: search.date,
         time: search.time,
@@ -269,7 +262,7 @@ export function PremiumPdfCard({
           input_snapshot: { ...search, lang, calculation_snapshot: preSnap },
         },
       });
-      const missing = missingSystems(preSnap);
+      const missing = missingSystemDetails(preSnap);
       if (missing.length > 0) {
         setState({ kind: "systems_incomplete", chartId: chart.chartId, missing });
         return;
@@ -278,13 +271,7 @@ export function PremiumPdfCard({
       setState(applyStatus(chart.chartId, status));
     } catch (err) {
       const code = extractErrorCode(err);
-      if (code === "systems_incomplete") {
-        setState({
-          kind: "systems_incomplete",
-          chartId: null,
-          missing: extractMissingSystems(err),
-        });
-      } else if (code === "email_not_verified") {
+      if (code === "email_not_verified") {
         const { data: sess } = await supabase.auth.getSession();
         setState({ kind: "verify_needed", email: sess.session?.user?.email ?? null });
       } else if (code === "chart_not_found" || code === "chart_not_found_for_user") {
@@ -301,6 +288,7 @@ export function PremiumPdfCard({
     setBusy(true);
     try {
       await updateChartGender({ data: { chartId, gender } });
+      // Rebuild snapshot & re-check all four systems without navigating.
       await refresh();
     } catch {
       setState({ kind: "error", message: pick(TXT.error, lang) });
@@ -380,39 +368,64 @@ export function PremiumPdfCard({
       ? state.chartId
       : null;
 
-  const cardBody = variant === "bar" ? (
-    <div className="glass-card relative overflow-hidden rounded-3xl p-5 md:p-6">
-      <div className="flex flex-col gap-5 md:flex-row md:items-center md:gap-6">
-        <div className="min-w-0 md:flex-1">
+  // ---------------------------------------------------------------------
+  // Layout
+  //
+  // Both variants share a two-column grid on lg+:
+  //   - main column:  minmax(0, 1fr) — always wraps normally, min-w-0 so
+  //                   flex-in-grid children never collapse to 1 char/line
+  //   - side rail:    minmax(360px, 440px) — the status / action / gender
+  //                   backfill panel; keeps a comfortable readable width
+  //                   without pushing the pitch into a narrow column
+  // Below lg the grid becomes a single column; on mobile everything
+  // stacks and buttons keep a 44px minimum height.
+  // ---------------------------------------------------------------------
+
+  const isBar = variant === "bar";
+
+  const cardBody = (
+    <div
+      className={`glass-card relative overflow-hidden rounded-3xl ${
+        isBar ? "p-5 md:p-6 lg:p-7" : "p-6 md:p-8"
+      }`}
+    >
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(360px,440px)] lg:items-start lg:gap-8">
+        {/* MAIN column — kicker + pill, title + price, pitch, chips */}
+        <div className="flex min-w-0 flex-col gap-4">
           <div className="flex flex-wrap items-center gap-2">
             <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
               {pick(TXT.kicker, lang)}
             </p>
             <StatePill state={state} lang={lang} />
           </div>
-          <h3 className="mt-1 font-serif text-lg italic text-stone-warm md:text-xl">
-            {pick(TXT.title, lang)}
-          </h3>
-          <p className="mt-1 text-[11px] uppercase tracking-[0.24em] text-gold-light">
-            {pick(TXT.price, lang)}
-          </p>
-          <p className="mt-2 text-[12.5px] leading-relaxed text-stone-warm/70">
+
+          <div className="min-w-0">
+            <h3 className="font-serif text-xl italic leading-tight text-stone-warm md:text-2xl">
+              {pick(TXT.title, lang)}
+            </h3>
+            <p className="mt-2 text-[11px] uppercase tracking-[0.24em] text-gold-light">
+              {pick(TXT.price, lang)}
+            </p>
+          </div>
+
+          <p className="text-[13px] leading-relaxed text-stone-warm/75 [overflow-wrap:break-word]">
             {pick(TXT.pitch, lang)}
           </p>
+
+          <ul className="flex flex-wrap gap-2">
+            {(lang === "zh" ? TXT.chips.zh : TXT.chips.en).map((c) => (
+              <li
+                key={c}
+                className="rounded-full border border-gold-dust/25 bg-gold-dust/[0.05] px-3 py-1 text-[11px] text-stone-warm/80"
+              >
+                ✧ {c}
+              </li>
+            ))}
+          </ul>
         </div>
 
-        <ul className="flex flex-wrap gap-2 md:max-w-[38%] md:flex-1">
-          {(lang === "zh" ? TXT.chips.zh : TXT.chips.en).map((c) => (
-            <li
-              key={c}
-              className="rounded-full border border-gold-dust/25 bg-gold-dust/[0.05] px-3 py-1 text-[11px] text-stone-warm/80"
-            >
-              ✧ {c}
-            </li>
-          ))}
-        </ul>
-
-        <div className="flex w-full flex-col items-stretch gap-2 md:w-auto md:min-w-[13rem] md:items-end">
+        {/* SIDE rail — action / status / gender backfill */}
+        <div className="flex min-w-0 flex-col gap-3">
           <ActionRow
             state={state}
             busy={busy}
@@ -423,64 +436,15 @@ export function PremiumPdfCard({
             onResendVerification={onResendVerification}
             onBackfillGender={onBackfillGender}
             resent={resent}
-            fullWidth
           />
-          <p className="text-center text-[10px] uppercase tracking-[0.24em] text-stone-warm/40 md:text-right">
+          <p className="text-[10px] uppercase tracking-[0.24em] text-stone-warm/40">
             {pick(TXT.time, lang)}
           </p>
         </div>
       </div>
 
-      <p className="mt-4 border-t border-white/5 pt-3 text-[11px] leading-relaxed text-stone-warm/40">
+      <p className="mt-5 border-t border-white/5 pt-3 text-[11px] leading-relaxed text-stone-warm/40 [overflow-wrap:break-word]">
         {pick(TXT.disclaimer, lang)} · {pick(TXT.once_note, lang)}
-      </p>
-    </div>
-  ) : (
-    <div className="glass-card rounded-3xl p-6 md:p-8">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="mb-1 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
-            {pick(TXT.kicker, lang)}
-          </p>
-          <h3 className="font-serif text-xl italic text-stone-warm md:text-2xl">
-            {pick(TXT.title, lang)}
-          </h3>
-          <p className="mt-2 text-[11px] uppercase tracking-[0.24em] text-gold-light">
-            {pick(TXT.price, lang)}
-          </p>
-        </div>
-        <StatePill state={state} lang={lang} />
-      </div>
-
-      <p className="mt-4 text-sm leading-relaxed text-stone-warm/70">{pick(TXT.pitch, lang)}</p>
-      <ul className="mt-4 space-y-1.5 text-[13px] text-stone-warm/70">
-        {(lang === "zh" ? TXT.bullets.zh : TXT.bullets.en).map((b) => (
-          <li key={b} className="flex gap-2">
-            <span className="text-gold-dust/80">✧</span>
-            <span>{b}</span>
-          </li>
-        ))}
-      </ul>
-      <p className="mt-3 text-[11px] uppercase tracking-[0.28em] text-stone-warm/40">
-        {pick(TXT.time, lang)} · {pick(TXT.once_note, lang)}
-      </p>
-
-      <div className="mt-6">
-        <ActionRow
-          state={state}
-          busy={busy}
-          lang={lang}
-          onUnlock={onUnlock}
-          onGenerate={onGenerate}
-          onOpen={onOpen}
-          onResendVerification={onResendVerification}
-          onBackfillGender={onBackfillGender}
-          resent={resent}
-        />
-      </div>
-
-      <p className="mt-5 border-t border-white/5 pt-4 text-[11px] leading-relaxed text-stone-warm/40">
-        {pick(TXT.disclaimer, lang)}
       </p>
     </div>
   );
@@ -495,13 +459,16 @@ export function PremiumPdfCard({
           chartName={search?.name ?? null}
           onClose={() => {
             setReaderOpen(false);
-            // Restore focus to the trigger for accessibility.
             requestAnimationFrame(() => openerRef.current?.focus());
           }}
         />
       )}
     </>
   );
+}
+
+function isGenderOnly(missing: MissingDetail[]): boolean {
+  return missing.length === 1 && missing[0].system === "ziwei" && missing[0].reason === "gender_missing";
 }
 
 function StatePill({ state, lang }: { state: UiState; lang: "zh" | "en" }) {
@@ -517,8 +484,13 @@ function StatePill({ state, lang }: { state: UiState; lang: "zh" | "en" }) {
     label = pick(TXT.ready_pill, lang);
     cls = "border-gold-dust/60 text-gold-light";
   } else if (state.kind === "systems_incomplete") {
-    label = pick(TXT.systems_incomplete_pill, lang);
-    cls = "border-white/20 text-stone-warm/60";
+    if (isGenderOnly(state.missing)) {
+      label = pick(TXT.systems_incomplete_pill_gender_only, lang);
+      cls = "border-gold-dust/50 text-gold-dust";
+    } else {
+      label = pick(TXT.systems_incomplete_pill_generic, lang);
+      cls = "border-white/20 text-stone-warm/60";
+    }
   } else return null;
   return (
     <span
@@ -539,7 +511,6 @@ function ActionRow({
   onResendVerification,
   onBackfillGender,
   resent,
-  fullWidth = false,
 }: {
   state: UiState;
   busy: boolean;
@@ -550,11 +521,9 @@ function ActionRow({
   onResendVerification: () => void;
   onBackfillGender: (chartId: string, gender: "male" | "female") => void;
   resent: boolean;
-  fullWidth?: boolean;
 }) {
-  const btnBase = `rounded-full bg-gold-dust text-[11px] uppercase tracking-[0.28em] text-obsidian hover:bg-gold-light disabled:opacity-50 min-h-[44px] px-6 py-2.5 ${
-    fullWidth ? "w-full text-center" : ""
-  }`;
+  const btnBase =
+    "w-full rounded-full bg-gold-dust text-[11px] uppercase tracking-[0.28em] text-obsidian hover:bg-gold-light disabled:opacity-50 min-h-[44px] px-6 py-2.5 text-center";
   if (state.kind === "loading") return <p className="text-sm text-stone-warm/50">…</p>;
   if (state.kind === "signed_out") {
     return (
@@ -563,7 +532,7 @@ function ActionRow({
         onClick={() => {
           if (typeof window !== "undefined") window.dispatchEvent(new Event("lod:open-account"));
         }}
-        className={`rounded-full border border-gold-dust/50 px-5 py-2.5 text-[10px] uppercase tracking-[0.28em] text-gold-dust hover:bg-gold-dust/10 min-h-[44px] ${fullWidth ? "w-full" : ""}`}
+        className="w-full min-h-[44px] rounded-full border border-gold-dust/50 px-5 py-2.5 text-[10px] uppercase tracking-[0.28em] text-gold-dust hover:bg-gold-dust/10"
       >
         {pick(TXT.need_auth, lang)}
       </button>
@@ -571,8 +540,8 @@ function ActionRow({
   }
   if (state.kind === "verify_needed") {
     return (
-      <div className={`flex flex-col gap-2 ${fullWidth ? "w-full" : ""}`}>
-        <p className="rounded-2xl border border-nebula-purple/40 bg-nebula-purple/[0.08] p-3 text-[12px] leading-relaxed text-stone-warm/80">
+      <div className="flex w-full flex-col gap-2">
+        <p className="rounded-2xl border border-nebula-purple/40 bg-nebula-purple/[0.08] p-3 text-[12px] leading-relaxed text-stone-warm/80 [overflow-wrap:break-word]">
           {pick(TXT.need_verify, lang)}
           {state.email ? ` · ${state.email}` : ""}
         </p>
@@ -580,7 +549,7 @@ function ActionRow({
           type="button"
           disabled={resent}
           onClick={onResendVerification}
-          className={`rounded-full border border-gold-dust/60 px-5 py-2.5 text-[10px] uppercase tracking-[0.28em] text-gold-light hover:bg-gold-dust/10 disabled:opacity-50 min-h-[44px] ${fullWidth ? "w-full" : ""}`}
+          className="w-full min-h-[44px] rounded-full border border-gold-dust/60 px-5 py-2.5 text-[10px] uppercase tracking-[0.28em] text-gold-light hover:bg-gold-dust/10 disabled:opacity-50"
         >
           {resent ? pick(TXT.resent_verify, lang) : pick(TXT.resend_verify, lang)}
         </button>
@@ -589,25 +558,27 @@ function ActionRow({
   }
   if (state.kind === "no_chart") return <p className="text-sm text-stone-warm/50">…</p>;
   if (state.kind === "systems_incomplete") {
-    // Special case: only Zi Wei missing AND owner has a chart → offer the
-    // safe gender-backfill dialog. Only chart owner can update.
-    const onlyZiwei = state.missing.length === 1 && state.missing[0] === "ziwei";
-    if (onlyZiwei && state.chartId) {
+    // Only-gender case: owner can fix in-place with two big buttons.
+    if (isGenderOnly(state.missing) && state.chartId) {
       const chartId = state.chartId;
       return (
         <div
-          className={`rounded-2xl border border-gold-dust/25 bg-gold-dust/[0.04] p-3 text-[12px] leading-relaxed text-stone-warm/80 ${fullWidth ? "w-full" : ""}`}
+          role="group"
+          aria-label={pick(TXT.gender_backfill_title, lang)}
+          className="w-full rounded-2xl border border-gold-dust/25 bg-gold-dust/[0.04] p-4 text-[12px] leading-relaxed text-stone-warm/80"
         >
           <p className="mb-2 text-[11px] uppercase tracking-[0.28em] text-gold-dust/80">
             {pick(TXT.gender_backfill_title, lang)}
           </p>
-          <p className="mb-3">{pick(TXT.gender_backfill_body, lang)}</p>
+          <p className="mb-3 [overflow-wrap:break-word]">
+            {pick(TXT.gender_backfill_body, lang)}
+          </p>
           <div role="radiogroup" aria-label={pick(TXT.gender_backfill_title, lang)} className="flex flex-wrap gap-2">
             <button
               type="button"
               disabled={busy}
               onClick={() => onBackfillGender(chartId, "male")}
-              className="min-h-[44px] rounded-full border border-gold-dust/40 px-5 py-2 text-[11px] uppercase tracking-[0.28em] text-gold-light hover:bg-gold-dust/10 disabled:opacity-50"
+              className="min-h-[44px] flex-1 rounded-full border border-gold-dust/40 px-5 py-2 text-[11px] uppercase tracking-[0.28em] text-gold-light hover:bg-gold-dust/10 disabled:opacity-50"
             >
               {pick(TXT.gender_male, lang)}
             </button>
@@ -615,7 +586,7 @@ function ActionRow({
               type="button"
               disabled={busy}
               onClick={() => onBackfillGender(chartId, "female")}
-              className="min-h-[44px] rounded-full border border-gold-dust/40 px-5 py-2 text-[11px] uppercase tracking-[0.28em] text-gold-light hover:bg-gold-dust/10 disabled:opacity-50"
+              className="min-h-[44px] flex-1 rounded-full border border-gold-dust/40 px-5 py-2 text-[11px] uppercase tracking-[0.28em] text-gold-light hover:bg-gold-dust/10 disabled:opacity-50"
             >
               {pick(TXT.gender_female, lang)}
             </button>
@@ -623,17 +594,25 @@ function ActionRow({
         </div>
       );
     }
+    // Generic case — list each missing system with its own reason.
     return (
-      <div
-        className={`rounded-2xl border border-white/10 bg-white/[0.02] p-3 text-[12px] leading-relaxed text-stone-warm/70 ${fullWidth ? "w-full" : ""}`}
-      >
+      <div className="w-full rounded-2xl border border-white/10 bg-white/[0.02] p-4 text-[12px] leading-relaxed text-stone-warm/70">
         <p className="mb-2 text-[11px] uppercase tracking-[0.28em] text-stone-warm/50">
-          {pick(TXT.systems_incomplete_title, lang)}
+          {pick(TXT.systems_incomplete_title_generic, lang)}
         </p>
-        <p className="mb-2">{pick(TXT.systems_incomplete_body, lang)}</p>
-        <ul className="list-disc space-y-1 pl-4">
+        <p className="mb-3 [overflow-wrap:break-word]">
+          {pick(TXT.systems_incomplete_body_generic, lang)}
+        </p>
+        <ul className="space-y-2">
           {state.missing.map((m) => (
-            <li key={m}>{systemDisplayName(m as RequiredSystem, lang)}</li>
+            <li key={m.system} className="rounded-xl border border-white/5 bg-white/[0.02] p-3">
+              <p className="text-[11px] uppercase tracking-[0.24em] text-stone-warm/60">
+                {systemDisplayName(m.system, lang)}
+              </p>
+              <p className="mt-1 text-[12.5px] leading-relaxed text-stone-warm/75 [overflow-wrap:break-word]">
+                {missingReasonMessage(m.reason, lang)}
+              </p>
+            </li>
           ))}
         </ul>
       </div>
@@ -648,9 +627,7 @@ function ActionRow({
   }
   if (state.kind === "order_pending") {
     return (
-      <p
-        className={`rounded-2xl border border-nebula-purple/40 bg-nebula-purple/[0.08] p-3 text-[12px] leading-relaxed text-stone-warm/80 ${fullWidth ? "w-full" : ""}`}
-      >
+      <p className="w-full rounded-2xl border border-nebula-purple/40 bg-nebula-purple/[0.08] p-3 text-[12px] leading-relaxed text-stone-warm/80 [overflow-wrap:break-word]">
         {state.message}
       </p>
     );
@@ -664,19 +641,20 @@ function ActionRow({
   }
   if (state.kind === "failed") {
     return (
-      <div className={`flex flex-wrap items-center gap-3 ${fullWidth ? "w-full" : ""}`}>
+      <div className="flex w-full flex-col gap-2">
         <button type="button" disabled={busy} onClick={onGenerate} className={btnBase}>
           {pick(TXT.cta_retry, lang)}
         </button>
-        <span className="text-[11px] text-stone-warm/50">{pick(TXT.error, lang)}</span>
+        <p className="text-[11px] text-stone-warm/50 [overflow-wrap:break-word]">
+          {pick(TXT.error, lang)}
+          {state.message ? ` · ${state.message}` : ""}
+        </p>
       </div>
     );
   }
   if (state.kind === "generating") {
     return (
-      <div
-        className={`flex items-center gap-3 rounded-full border border-gold-dust/30 px-5 py-2.5 text-[11px] uppercase tracking-[0.32em] text-gold-dust min-h-[44px] ${fullWidth ? "w-full justify-center" : ""}`}
-      >
+      <div className="flex w-full min-h-[44px] items-center justify-center gap-3 rounded-full border border-gold-dust/30 px-5 py-2.5 text-[11px] uppercase tracking-[0.32em] text-gold-dust">
         <span className="inline-block size-2 animate-pulse rounded-full bg-gold-dust" />
         {pick(TXT.busy_generate, lang)}
       </div>
@@ -694,6 +672,12 @@ function ActionRow({
       </button>
     );
   }
-  if (state.kind === "error") return <p className="text-sm text-stone-warm/70">{state.message}</p>;
+  if (state.kind === "error") {
+    return (
+      <p className="w-full text-sm text-stone-warm/70 [overflow-wrap:break-word]">
+        {state.message}
+      </p>
+    );
+  }
   return null;
 }

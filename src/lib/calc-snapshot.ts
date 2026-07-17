@@ -395,6 +395,46 @@ export function missingSystems(snap: CalculationSnapshot): RequiredSystem[] {
   return out;
 }
 
+/** Structured reason per missing system, for precise UI messaging. */
+export type MissingReason =
+  | "gender_missing"
+  | "birthplace_unresolved"
+  | "missing_date_or_time"
+  | "invalid_date_or_time"
+  | "missing_or_invalid_birth_date"
+  | "ephemeris_error"
+  | "ziwei_error"
+  | "compute_failed"
+  | "unknown";
+
+export function missingSystemDetails(
+  snap: CalculationSnapshot,
+): Array<{ system: RequiredSystem; reason: MissingReason }> {
+  const out: Array<{ system: RequiredSystem; reason: MissingReason }> = [];
+  const norm = (r: string | undefined): MissingReason => {
+    switch (r) {
+      case "gender_missing":
+      case "birthplace_unresolved":
+      case "missing_date_or_time":
+      case "invalid_date_or_time":
+      case "missing_or_invalid_birth_date":
+      case "ephemeris_error":
+      case "ziwei_error":
+      case "compute_failed":
+        return r;
+      default:
+        return "unknown";
+    }
+  };
+  if (snap.western.status !== "ok")
+    out.push({ system: "western", reason: norm(snap.western.notes?.[0]) });
+  if (snap.bazi.status !== "ok")
+    out.push({ system: "bazi", reason: "missing_or_invalid_birth_date" });
+  if (snap.vedic.status !== "ok") out.push({ system: "vedic", reason: norm(snap.vedic.reason) });
+  if (snap.ziwei.status !== "ok") out.push({ system: "ziwei", reason: norm(snap.ziwei.reason) });
+  return out;
+}
+
 export function systemDisplayName(sys: RequiredSystem, lang: "en" | "zh"): string {
   const map: Record<RequiredSystem, [string, string]> = {
     western: ["Western astrology", "西方占星"],
@@ -403,4 +443,40 @@ export function systemDisplayName(sys: RequiredSystem, lang: "en" | "zh"): strin
     ziwei: ["Zi Wei Dou Shu", "紫微斗数"],
   };
   return map[sys][lang === "zh" ? 1 : 0];
+}
+
+export function missingReasonMessage(reason: MissingReason, lang: "en" | "zh"): string {
+  const map: Record<MissingReason, [string, string]> = {
+    gender_missing: [
+      "Add birth gender to unlock the Zi Wei calculation.",
+      "补充出生性别即可完成紫微斗数计算。",
+    ],
+    birthplace_unresolved: [
+      "Birthplace could not be located — pick a nearby major city to enable this system.",
+      "无法解析出生地经纬度，请选择邻近的主要城市以启用该体系。",
+    ],
+    missing_date_or_time: [
+      "Add a precise birth time to enable this time-sensitive system.",
+      "请补充准确的出生时间以启用该时辰敏感体系。",
+    ],
+    invalid_date_or_time: [
+      "Birth date or time is invalid — please correct it.",
+      "出生日期或时间无效，请核对后重新提交。",
+    ],
+    missing_or_invalid_birth_date: [
+      "Birth date is missing or invalid.",
+      "出生日期缺失或无效。",
+    ],
+    ephemeris_error: [
+      "Astronomy engine returned no result. You can retry.",
+      "天文引擎暂时未返回结果，可稍后重试。",
+    ],
+    ziwei_error: [
+      "Zi Wei engine failed. You can retry.",
+      "紫微引擎返回失败，可稍后重试。",
+    ],
+    compute_failed: ["Calculation failed. You can retry.", "计算失败，可稍后重试。"],
+    unknown: ["Not available yet.", "暂时不可用。"],
+  };
+  return map[reason][lang === "zh" ? 1 : 0];
 }
