@@ -27,6 +27,13 @@ export const AI_BUDGET_POLICY = {
   report_max_wall_seconds: 900,
 } as const;
 
+export type BudgetLimits = {
+  chapter_max_input_tokens: number;
+  chapter_max_output_tokens: number;
+  report_max_input_tokens: number;
+  report_max_output_tokens: number;
+};
+
 export type BudgetUsage = {
   input_tokens: number;
   output_tokens: number;
