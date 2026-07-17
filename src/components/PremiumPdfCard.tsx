@@ -12,7 +12,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 
 import { useLang } from "@/lib/i18n";
-import { ensureChart } from "@/lib/reports-store.functions";
+import { buildCanonicalChartInput, ensureChart } from "@/lib/reports-store.functions";
 import {
   generatePremiumReport,
   getPremiumStatus,
@@ -34,6 +34,7 @@ type ReportSearchLike = {
   time?: string;
   place?: string;
   gender?: "male" | "female";
+  lang?: "en" | "zh";
 };
 
 const TXT = {
@@ -176,14 +177,15 @@ export function PremiumPdfCard({
         setState({ kind: "legacy_incomplete" });
         return;
       }
+      const canonical = buildCanonicalChartInput(
+        { name: search.name, date: search.date, time: search.time, place: search.place, gender: search.gender ?? undefined, lang: search.lang },
+        lang,
+      );
       const chart = await ensureChart({
         data: {
-          name: search.name,
-          date: search.date,
-          time: search.time,
-          place: search.place,
-          lang,
-          input_snapshot: { ...search, lang, calculation_snapshot: snap },
+          ...canonical,
+          // Enrich the snapshot for audit/debug — hashing ignores it.
+          input_snapshot: { ...canonical.input_snapshot, calculation_snapshot: snap },
         },
       });
       const status = await getPremiumStatus({ data: { chartId: chart.chartId } });
