@@ -555,6 +555,100 @@ export const grantPremiumReportAccess = createServerFn({ method: "POST" })
   });
 
 /* --------------------------------------------------------------------- */
+/* insertTestPremiumOrderFixture — TEST-ONLY fixture helper               */
+/*                                                                        */
+/* Bypasses the admin UI grant path so E2E scripts can unlock a specific  */
+/* (caller_user_id, chart_id) pair without granting the caller admin.     */
+/* Refuses to run unless PREMIUM_TEST_DETERMINISTIC === "1" AND           */
+/* NODE_ENV !== "production". The order is always bound to the           */
+/* authenticated caller's own user_id + a chart they own; the caller     */
+/* cannot mint access for a different user or a chart they do not own.    */
+/* --------------------------------------------------------------------- */
+
+const TestFixtureInput = z.object({
+  chartId: z.string().uuid(),
+  fixtureTag: z
+    .string()
+    .trim()
+    .min(3)
+    .max(120)
+    .regex(/^e2e-/, "fixture tag must start with 'e2e-'"),
+});
+
+export const insertTestPremiumOrderFixture = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => TestFixtureInput.parse(d))
+  .handler(async ({ data, context }) => {
+    if (
+      process.env.PREMIUM_TEST_DETERMINISTIC !== "1" ||
+      process.env.NODE_ENV === "production"
+    ) {
+      throw new Error("test_fixture_disabled");
+    }
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Bind strictly to the authenticated caller's own chart.
+    const { data: chart } = await supabaseAdmin
+      .from("charts")
+      .select("id, user_id")
+      .eq("id", data.chartId)
+      .maybeSingle();
+    if (!chart || chart.user_id !== context.userId) {
+      throw new Error("chart_not_found_for_user");
+    }
+
+    const note = `${data.fixtureTag}:${context.userId.slice(0, 8)}`;
+
+    // Reuse an existing current-version order if present; otherwise insert.
+    const { data: existing } = await supabaseAdmin
+      .from("premium_report_orders")
+      .select("id, status")
+      .eq("user_id", context.userId)
+      .eq("chart_id", data.chartId)
+      .eq("product_version", PREMIUM_PRODUCT_VERSION)
+      .in("status", ["pending", "paid"])
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (existing) {
+      if (existing.status !== "paid") {
+        const { error: upErr } = await supabaseAdmin
+          .from("premium_report_orders")
+          .update({
+            status: "paid",
+            provider: "test_fixture",
+            paid_at: new Date().toISOString(),
+            grant_note: note,
+          })
+          .eq("id", existing.id);
+        if (upErr) throw new Error("order_update_failed");
+      }
+      return { ok: true as const, orderId: existing.id, reused: true };
+    }
+
+    const { data: inserted, error: insErr } = await supabaseAdmin
+      .from("premium_report_orders")
+      .insert({
+        user_id: context.userId,
+        chart_id: data.chartId,
+        product_version: PREMIUM_PRODUCT_VERSION,
+        amount_cents: PREMIUM_PRICE_CENTS,
+        currency: PREMIUM_CURRENCY,
+        status: "paid",
+        provider: "test_fixture",
+        paid_at: new Date().toISOString(),
+        grant_note: note,
+      })
+      .select("id")
+      .single();
+    if (insErr || !inserted) throw new Error("order_create_failed");
+    return { ok: true as const, orderId: inserted.id, reused: false };
+  });
+
+
+
+/* --------------------------------------------------------------------- */
 /* listAdminPremiumOrders — admin only                                    */
 /* --------------------------------------------------------------------- */
 
