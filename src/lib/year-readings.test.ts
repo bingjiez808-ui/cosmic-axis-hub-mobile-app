@@ -1,4 +1,5 @@
-import { describe, it, expect } from "vitest";
+// @ts-expect-error bun:test
+import { describe, it, expect } from "bun:test";
 import type { PremiumFacts } from "./premium-facts";
 import {
   readYear,

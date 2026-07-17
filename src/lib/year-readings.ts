@@ -339,8 +339,10 @@ export function readVedicYear(facts: PremiumFacts, year: number, _age: number, l
 export function readZiweiYear(facts: PremiumFacts, year: number, _age: number, lang: Lang): SystemReading {
   const z = facts.ziwei;
   const hs = z?.horoscope ?? null;
-  const flowYear = hs?.flow_year ?? null;
-  if (!z || !hs || !flowYear || flowYear.year !== year) {
+  // Ziwei snapshot is bound to `as_of_date` — treat only the matching
+  // solar year as available. Any other year is honestly unavailable.
+  const asOfYear = hs ? Number(hs.as_of_date.slice(0, 4)) : null;
+  if (!z || !hs || asOfYear !== year) {
     return {
       system: "ziwei",
       available: false,
@@ -356,14 +358,15 @@ export function readZiweiYear(facts: PremiumFacts, year: number, _age: number, l
         : "Ziwei flow-year only covers current reference year",
     };
   }
-  // Deterministic scoring: sum brightness weights of major stars in the flow-year palace.
-  const bright: Record<string, number> = { 庙: 8, 旺: 6, 得: 3, 平: 0, 陷: -6, 不: -3 };
-  const palace = flowYear.palace;
-  const majorSum = palace.major_stars.reduce((acc, s) => acc + (bright[s.brightness ?? "平"] ?? 0), 0);
+  // Deterministic scoring: weight yearly mutagens (化禄+ / 化权+ / 化科+ / 化忌-).
+  const mutagenDelta: Record<string, number> = { 禄: 8, 权: 6, 科: 4, 忌: -8 };
+  const majorSum = hs.yearly.mutagen.reduce(
+    (acc: number, m: string) => acc + (mutagenDelta[m] ?? 0), 0,
+  );
   const score = clampScore(50 + majorSum);
   const brief = lang === "zh"
-    ? `流年宫 ${palace.name}（主星：${palace.major_stars.map((s) => s.name).join("、") || "无"}）`
-    : `Flow-year palace ${palace.name} (stars: ${palace.major_stars.map((s) => s.name).join(", ") || "none"})`;
+    ? `流年宫 ${hs.yearly.name}（四化：${hs.yearly.mutagen.join("、") || "无"}）`
+    : `Flow-year palace ${hs.yearly.name} (mutagen: ${hs.yearly.mutagen.join(", ") || "none"})`;
   return {
     system: "ziwei",
     available: true,
