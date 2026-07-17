@@ -1406,12 +1406,25 @@ async function recoverStaleChapterLocks(reportId: string, userId: string) {
     .update({
       status: "failed",
       claim_token: null,
+      claimed_at: null,
       error_message: "generation_interrupted",
     } as unknown as never)
     .eq("report_id", reportId)
     .eq("user_id", userId)
     .eq("status", "running")
     .lt("claimed_at", staleBefore);
+  await supabaseAdmin
+    .from("premium_report_chapters")
+    .update({
+      status: "failed",
+      claim_token: null,
+      claimed_at: null,
+      error_message: "generation_interrupted",
+    } as unknown as never)
+    .eq("report_id", reportId)
+    .eq("user_id", userId)
+    .eq("status", "running")
+    .is("claimed_at", null);
 }
 
 function chapterConfidence(refs: Array<{ confidence: string }>): "grounded" | "traditional" | "reflective" {
@@ -2135,6 +2148,11 @@ export const getPremiumReportProgress = createServerFn({ method: "POST" })
 
     const { PREMIUM_V3_CHAPTERS } = await import("./premium-chapters-v3");
     const isZh = (chart.lang ?? "en") === "zh";
+
+    // Progress reads are allowed to repair stale leases so a user who
+    // refreshes after an interrupted serverless request immediately sees a
+    // continuable state instead of being stuck on an old `running` chapter.
+    await recoverStaleChapterLocks((row as { id: string }).id, userId);
 
     const { data: chRows } = await supabase
       .from("premium_report_chapters")
