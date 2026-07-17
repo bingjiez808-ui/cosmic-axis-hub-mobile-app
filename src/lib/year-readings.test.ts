@@ -98,8 +98,8 @@ describe("tenGodOf", () => {
     expect(tenGodOf("丁", "丁")).toBe("比肩");
     expect(tenGodOf("丁", "丙")).toBe("劫财");
     expect(tenGodOf("丁", "戊")).toBe("伤官"); // fire生土, different yin/yang
-    expect(tenGodOf("丁", "庚")).toBe("偏财");
-    expect(tenGodOf("丁", "壬")).toBe("正官");
+    expect(tenGodOf("丁", "庚")).toBe("正财"); // 丁(yin) 克 庚(yang) → 正财
+    expect(tenGodOf("丁", "壬")).toBe("正官"); // 壬(yang) 克 丁(yin) → 正官
   });
 });
 
