@@ -169,7 +169,7 @@ export function chooseGrantAction(orders: OrderRowLite[]): GrantDecision {
 /* --------------------------------------------------------------------- */
 
 export type ExistingReportLite = {
-  status: "pending" | "generating" | "completed" | "failed";
+  status: "pending" | "generating" | "partial" | "completed" | "failed";
   hasContent: boolean;
 } | null;
 
@@ -283,7 +283,7 @@ export type PremiumStatus = {
   } | null;
   report: {
     id: string;
-    status: "pending" | "generating" | "completed" | "failed";
+    status: "pending" | "generating" | "partial" | "completed" | "failed";
     generatedAt: string | null;
     errorMessage: string | null;
   } | null;
@@ -353,7 +353,7 @@ export const getPremiumStatus = createServerFn({ method: "POST" })
       report: reportRow
         ? {
             id: reportRow.id,
-            status: reportRow.status as "pending" | "generating" | "completed" | "failed",
+            status: reportRow.status as "pending" | "generating" | "partial" | "completed" | "failed",
             generatedAt: reportRow.generated_at,
             errorMessage: reportRow.error_message,
           }
@@ -578,7 +578,7 @@ export type AdminOrderRow = {
   paidAt: string | null;
   createdAt: string;
   grantNote: string | null;
-  reportStatus: "pending" | "generating" | "completed" | "failed" | null;
+  reportStatus: "pending" | "generating" | "partial" | "completed" | "failed" | null;
 };
 
 export const listAdminPremiumOrders = createServerFn({ method: "POST" })
@@ -1500,7 +1500,7 @@ export type MyPremiumReportRow = {
     paidAt: string | null;
   } | null;
   report: {
-    status: "pending" | "generating" | "completed" | "failed";
+    status: "pending" | "generating" | "partial" | "completed" | "failed";
     generatedAt: string | null;
   } | null;
 };
@@ -1586,7 +1586,7 @@ export const listPremiumReports = createServerFn({ method: "GET" })
         },
         report: rep
           ? {
-              status: rep.status as "pending" | "generating" | "completed" | "failed",
+              status: rep.status as "pending" | "generating" | "partial" | "completed" | "failed",
               generatedAt: rep.generated_at,
             }
           : null,
