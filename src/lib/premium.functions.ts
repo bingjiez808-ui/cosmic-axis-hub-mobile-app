@@ -1155,6 +1155,12 @@ export type PremiumReportRead = {
   content: PremiumContent | null;
   errorMessage: string | null;
   aiGenerationCount: number;
+  inputHash: string | null;
+  contentHash: string | null;
+  promptVersion: string | null;
+  modelId: string | null;
+  calculationVersion: string | null;
+  tokenUsage: TokenUsage | null;
 };
 
 export const getPremiumReport = createServerFn({ method: "POST" })
@@ -1171,23 +1177,46 @@ export const getPremiumReport = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!chart || chart.user_id !== userId) return null;
 
+    // Default to the ORIGINAL purchased report: order by created_at ASC.
+    // Version upgrades create new rows; the earliest one is what the
+    // buyer originally paid for, so that's what we return by default.
     const { data: row } = await supabase
       .from("premium_pdf_reports")
-      .select("status, content_json, generated_at, error_message, ai_generation_count")
+      .select(
+        "status, content_json, generated_at, error_message, ai_generation_count, input_hash, content_hash, prompt_version, model_id, calculation_version, token_usage",
+      )
       .eq("user_id", userId)
       .eq("chart_id", data.chartId)
       .eq("report_version", PREMIUM_REPORT_VERSION)
+      .order("created_at", { ascending: true })
+      .limit(1)
       .maybeSingle();
     if (!row) return null;
+    const r = row as unknown as {
+      status: string;
+      content_json: unknown;
+      generated_at: string | null;
+      error_message: string | null;
+      ai_generation_count?: number;
+      input_hash: string | null;
+      content_hash: string | null;
+      prompt_version: string | null;
+      model_id: string | null;
+      calculation_version: string | null;
+      token_usage: unknown;
+    };
     return {
-      status: row.status as PremiumReportRead["status"],
-      generatedAt: row.generated_at,
-      content: (row.content_json as unknown as PremiumContent) ?? null,
-      errorMessage: row.error_message,
-      aiGenerationCount:
-        typeof (row as { ai_generation_count?: number }).ai_generation_count === "number"
-          ? (row as { ai_generation_count: number }).ai_generation_count
-          : 0,
+      status: r.status as PremiumReportRead["status"],
+      generatedAt: r.generated_at,
+      content: (r.content_json as PremiumContent) ?? null,
+      errorMessage: r.error_message,
+      aiGenerationCount: typeof r.ai_generation_count === "number" ? r.ai_generation_count : 0,
+      inputHash: r.input_hash ?? null,
+      contentHash: r.content_hash ?? null,
+      promptVersion: r.prompt_version ?? null,
+      modelId: r.model_id ?? null,
+      calculationVersion: r.calculation_version ?? null,
+      tokenUsage: (r.token_usage as TokenUsage | null) ?? null,
     };
   });
 
