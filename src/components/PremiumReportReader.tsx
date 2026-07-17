@@ -18,7 +18,13 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { useLang } from "@/lib/i18n";
-import { getPremiumReport, type PremiumContent } from "@/lib/premium.functions";
+import {
+  generatePremiumReport,
+  getPremiumReport,
+  getPremiumReportProgress,
+  type PremiumContent,
+  type PremiumReportProgress,
+} from "@/lib/premium.functions";
 import type { PremiumFacts, BaZiElement } from "@/lib/premium-facts";
 import {
   computeScrollProgress,
@@ -45,6 +51,18 @@ const TXT = {
   next: { zh: "下一章", en: "Next" },
   position: { zh: "章节", en: "Chapter" },
   drawer_title: { zh: "章节目录", en: "Table of contents" },
+  partial_banner: {
+    zh: "本报告部分章节尚未完成或曾经生成失败，你可以继续生成剩余章节，已完成章节不会重复调用 AI。",
+    en: "Some chapters of this report are still pending or previously failed. You can resume generation; completed chapters won't call AI again.",
+  },
+  continue: { zh: "继续生成", en: "Resume generation" },
+  continuing: { zh: "正在续跑…", en: "Resuming…" },
+  gen_progress: { zh: "已生成", en: "Generated" },
+  badge_completed: { zh: "已完成", en: "Done" },
+  badge_pending: { zh: "待生成", en: "Pending" },
+  badge_running: { zh: "生成中", en: "Running" },
+  badge_failed: { zh: "失败", en: "Failed" },
+  badge_skipped: { zh: "跳过", en: "Skipped" },
 };
 
 function pick<T extends { zh: string; en: string }>(t: T, lang: "zh" | "en"): string {
@@ -80,6 +98,8 @@ export function PremiumReportReader({
   const titleId = useId();
   const drawerTitleId = useId();
   const [content, setContent] = useState<PremiumContent | null>(null);
+  const [progressData, setProgressData] = useState<PremiumReportProgress | null>(null);
+  const [continuing, setContinuing] = useState(false);
   const [errored, setErrored] = useState(false);
   const [active, setActive] = useState<string | null>(null);
   const [tocOpen, setTocOpen] = useState(false);
@@ -88,36 +108,59 @@ export function PremiumReportReader({
   const bodyRef = useRef<HTMLDivElement | null>(null);
   const drawerCloseRef = useRef<HTMLButtonElement | null>(null);
   const tocButtonRef = useRef<HTMLButtonElement | null>(null);
-  // Suppress IntersectionObserver-driven active updates during a
-  // programmatic scroll (Prev/Next/TOC click); it otherwise fights the
-  // intended target while smooth-scroll animates through mid-chapters.
   const suppressObserverRef = useRef(false);
   const suppressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const loadContent = useCallback(async () => {
+    setContent(null);
+    setErrored(false);
+    setProgress(0);
+    try {
+      const [r, p] = await Promise.all([
+        getPremiumReport({ data: { chartId } }),
+        getPremiumReportProgress({ data: { chartId } }),
+      ]);
+      setProgressData(p);
+      if (r?.content) {
+        setContent(r.content);
+        setActive(r.content.chapters[0]?.key ?? null);
+      } else if (r?.status && r.status !== "completed") {
+        // Partial or generating with no persisted content_json yet.
+        setErrored(true);
+      } else {
+        setErrored(true);
+      }
+    } catch {
+      setErrored(true);
+    }
+  }, [chartId]);
 
   // Load content on open.
   useEffect(() => {
     if (!open) return;
-    setContent(null);
-    setErrored(false);
-    setProgress(0);
     let cancel = false;
-    getPremiumReport({ data: { chartId } })
-      .then((r) => {
-        if (cancel) return;
-        if (r?.status === "completed" && r.content) {
-          setContent(r.content);
-          setActive(r.content.chapters[0]?.key ?? null);
-        } else {
-          setErrored(true);
-        }
-      })
-      .catch(() => {
-        if (!cancel) setErrored(true);
-      });
+    void loadContent().then(() => {
+      if (cancel) return;
+    });
     return () => {
       cancel = true;
     };
-  }, [open, chartId]);
+  }, [open, loadContent]);
+
+  const handleContinue = useCallback(async () => {
+    if (continuing) return;
+    setContinuing(true);
+    try {
+      await generatePremiumReport({ data: { chartId } });
+      await loadContent();
+    } catch {
+      // Leave partial state visible; user can retry.
+    } finally {
+      setContinuing(false);
+    }
+  }, [continuing, chartId, loadContent]);
+
+
 
   // Body scroll lock + Escape.
   useEffect(() => {
@@ -365,26 +408,47 @@ export function PremiumReportReader({
                     {pick(TXT.toc, lang)}
                   </p>
                   <ol className="space-y-1.5">
-                    {chapters.map((ch, i) => (
-                      <li key={ch.key}>
-                        <button
-                          type="button"
-                          onClick={() => scrollTo(ch.key, { focusHeading: true })}
-                          aria-current={active === ch.key ? "true" : undefined}
-                          className={`block w-full truncate rounded-md px-2 py-1.5 text-left text-[12.5px] transition-colors ${
-                            active === ch.key
-                              ? "bg-gold-dust/10 text-gold-light"
-                              : "text-stone-warm/70 hover:bg-white/5 hover:text-gold-dust"
-                          }`}
-                        >
-                          <span className="mr-1.5 text-[10px] text-gold-dust/60">
-                            {String(i + 1).padStart(2, "0")}
-                          </span>
-                          {ch.title}
-                        </button>
-                      </li>
-                    ))}
+                    {chapters.map((ch, i) => {
+                      const st = progressData?.chapters.find((p) => p.key === ch.key)?.status;
+                      return (
+                        <li key={ch.key}>
+                          <button
+                            type="button"
+                            onClick={() => scrollTo(ch.key, { focusHeading: true })}
+                            aria-current={active === ch.key ? "true" : undefined}
+                            className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[12.5px] transition-colors ${
+                              active === ch.key
+                                ? "bg-gold-dust/10 text-gold-light"
+                                : "text-stone-warm/70 hover:bg-white/5 hover:text-gold-dust"
+                            }`}
+                          >
+                            <span className="text-[10px] text-gold-dust/60">
+                              {String(i + 1).padStart(2, "0")}
+                            </span>
+                            <span className="min-w-0 flex-1 truncate">{ch.title}</span>
+                            {st && st !== "completed" && (
+                              <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[9px] uppercase tracking-[0.18em] ${
+                                st === "failed"
+                                  ? "bg-red-500/15 text-red-300"
+                                  : st === "running"
+                                    ? "bg-nebula-purple/20 text-nebula-purple"
+                                    : "bg-white/5 text-stone-warm/50"
+                              }`}>
+                                {st === "failed"
+                                  ? pick(TXT.badge_failed, lang)
+                                  : st === "running"
+                                    ? pick(TXT.badge_running, lang)
+                                    : st === "skipped"
+                                      ? pick(TXT.badge_skipped, lang)
+                                      : pick(TXT.badge_pending, lang)}
+                              </span>
+                            )}
+                          </button>
+                        </li>
+                      );
+                    })}
                   </ol>
+
                 </aside>
               )}
 
@@ -418,6 +482,40 @@ export function PremiumReportReader({
                         </p>
                       )}
                     </section>
+
+                    {progressData &&
+                      (progressData.reportStatus === "partial" ||
+                        progressData.reportStatus === "failed" ||
+                        progressData.canContinue) &&
+                      progressData.completedChapters < progressData.totalChapters && (
+                        <section
+                          role="status"
+                          aria-live="polite"
+                          className="mb-8 rounded-2xl border border-nebula-purple/30 bg-nebula-purple/[0.08] p-4 md:p-5"
+                        >
+                          <p className="text-[10px] uppercase tracking-[0.3em] text-nebula-purple/90">
+                            {pick(TXT.gen_progress, lang)} · {progressData.completedChapters}/
+                            {progressData.totalChapters}
+                            {progressData.failedChapters > 0
+                              ? ` · ${pick(TXT.badge_failed, lang)} ${progressData.failedChapters}`
+                              : ""}
+                          </p>
+                          <p className="mt-2 text-[13px] leading-relaxed text-stone-warm/80">
+                            {pick(TXT.partial_banner, lang)}
+                          </p>
+                          {progressData.canContinue && (
+                            <button
+                              type="button"
+                              onClick={handleContinue}
+                              disabled={continuing}
+                              className="mt-3 inline-flex min-h-[44px] items-center rounded-full border border-gold-dust/50 bg-gold-dust/10 px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-gold-light transition-colors hover:bg-gold-dust/20 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              {continuing ? pick(TXT.continuing, lang) : pick(TXT.continue, lang)}
+                            </button>
+                          )}
+                        </section>
+                      )}
+
 
                     {/* Locally-derived facts (v2+). Absent on legacy rows. */}
                     {content.facts && <FactsPanel facts={content.facts} lang={lang} />}

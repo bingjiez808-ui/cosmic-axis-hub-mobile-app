@@ -169,7 +169,7 @@ export function chooseGrantAction(orders: OrderRowLite[]): GrantDecision {
 /* --------------------------------------------------------------------- */
 
 export type ExistingReportLite = {
-  status: "pending" | "generating" | "completed" | "failed";
+  status: "pending" | "generating" | "partial" | "completed" | "failed";
   hasContent: boolean;
 } | null;
 
@@ -283,7 +283,7 @@ export type PremiumStatus = {
   } | null;
   report: {
     id: string;
-    status: "pending" | "generating" | "completed" | "failed";
+    status: "pending" | "generating" | "partial" | "completed" | "failed";
     generatedAt: string | null;
     errorMessage: string | null;
   } | null;
@@ -353,7 +353,7 @@ export const getPremiumStatus = createServerFn({ method: "POST" })
       report: reportRow
         ? {
             id: reportRow.id,
-            status: reportRow.status as "pending" | "generating" | "completed" | "failed",
+            status: reportRow.status as "pending" | "generating" | "partial" | "completed" | "failed",
             generatedAt: reportRow.generated_at,
             errorMessage: reportRow.error_message,
           }
@@ -578,7 +578,7 @@ export type AdminOrderRow = {
   paidAt: string | null;
   createdAt: string;
   grantNote: string | null;
-  reportStatus: "pending" | "generating" | "completed" | "failed" | null;
+  reportStatus: "pending" | "generating" | "partial" | "completed" | "failed" | null;
 };
 
 export const listAdminPremiumOrders = createServerFn({ method: "POST" })
@@ -1000,7 +1000,7 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => StatusInput.parse(d))
   .handler(async ({ data, context }) => {
-    const { userId, claims } = context;
+    const { userId, claims, supabase } = context;
     await assertEmailVerifiedOrAdmin(context);
     enforceRateLimit(`premium-generate:${userId}`, 3, 60_000, "premium report generations");
 
@@ -1145,6 +1145,40 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
 
       const isTestMode = process.env.PREMIUM_TEST_DETERMINISTIC === "1" || !apiKey;
 
+      // Preflight atomic claim: for every chapter still eligible to run
+      // (pending / retriable failed), attempt a CAS claim through the
+      // security-definer `claim_premium_chapter` RPC. Only chapters the
+      // caller wins the claim on are handed to the worker; the rest are
+      // considered held by another worker and left untouched.
+      const claimedKeys = new Set<string>();
+      for (const c of catalogue) {
+        const e = existingByKey.get(c.key);
+        const status = e?.status ?? "pending";
+        if (status === "completed" || status === "skipped") continue;
+        if (status === "failed" && (e?.attempt_count ?? 0) >= 3) continue;
+        const newToken = crypto.randomUUID();
+        try {
+          const { data: won } = await (supabase.rpc as unknown as (
+            fn: string,
+            args: Record<string, unknown>,
+          ) => Promise<{ data: boolean | null; error: unknown }>)(
+            "claim_premium_chapter",
+            {
+              _report_id: row.id,
+              _chapter_key: c.key,
+              _chapter_index: c.index,
+              _new_token: newToken,
+              _lock_ttl_seconds: 300,
+            },
+          );
+          if (won === true) claimedKeys.add(c.key);
+        } catch {
+          // Claim failed — leave the chapter for a future run.
+        }
+      }
+      const claimedCatalog = catalogue.filter((c) => claimedKeys.has(c.key));
+
+
       const provider = async (
         meta: { key: string; index: number },
         outputCap: number,
@@ -1152,7 +1186,6 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
         const catalog = PREMIUM_V3_CHAPTERS.find((c) => c.key === meta.key)!;
         const title = isZh ? catalog.title_zh : catalog.title_en;
         if (isTestMode) {
-          // Deterministic non-AI stub for tests / dev-mode local runs.
           const body = `[${title}] deterministic stub — ${catalog.allowed_facts.join(",") || "no-facts"}`;
           return {
             ok: true as const,
@@ -1187,14 +1220,15 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
           };
         }
       };
-      void chapterOutputCap; // silence unused when test mode elides its use
+      void chapterOutputCap;
 
       const workerReport = await runChapterWorkers({
-        catalog: catalogue,
+        catalog: claimedCatalog,
         rows: rowsForWorker,
         provider,
         initialUsage: priorUsage,
       });
+
 
       // Persist chapter transitions + ledger entries.
       for (const t of workerReport.transitions) {
@@ -1208,10 +1242,12 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
             chapter_index: catalog.index,
             status: "completed",
             attempt_count: (prior?.attempt_count ?? 0) + 1,
-            content_json: { key: t.chapter_key, title: isZh ? catalog.title_zh : catalog.title_en, body: t.body } as unknown as Json,
+            content_json: { key: t.chapter_key, title: isZh ? catalog.title_zh : catalog.title_en, body: t.body, evidence_refs: [] } as unknown as Json,
+            evidence_refs: [] as unknown as Json,
             input_tokens: (prior?.input_tokens ?? 0) + t.input_tokens,
             output_tokens: (prior?.output_tokens ?? 0) + t.output_tokens,
             error_message: null,
+            claim_token: null,
             completed_at: new Date().toISOString(),
           };
           await supabaseAdmin
@@ -1302,8 +1338,14 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
       const budgetStopped =
         workerReport.stopped_reason === "report_input_exhausted" ||
         workerReport.stopped_reason === "report_output_exhausted";
-      const finalStatus: "completed" | "generating" =
-        completedCount >= totalTarget ? "completed" : (budgetStopped ? "completed" : "generating");
+      const finalStatus: "completed" | "partial" | "generating" =
+        completedCount >= totalTarget
+          ? "completed"
+          : budgetStopped
+            ? "partial"
+            : completedCount > 0
+              ? "partial"
+              : "generating";
 
       const content: PremiumContent = {
         meta: {
@@ -1370,7 +1412,7 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
 /* --------------------------------------------------------------------- */
 
 export type PremiumReportRead = {
-  status: "pending" | "generating" | "completed" | "failed";
+  status: "pending" | "generating" | "partial" | "completed" | "failed";
   generatedAt: string | null;
   content: PremiumContent | null;
   errorMessage: string | null;
@@ -1458,7 +1500,7 @@ export type MyPremiumReportRow = {
     paidAt: string | null;
   } | null;
   report: {
-    status: "pending" | "generating" | "completed" | "failed";
+    status: "pending" | "generating" | "partial" | "completed" | "failed";
     generatedAt: string | null;
   } | null;
 };
@@ -1544,7 +1586,7 @@ export const listPremiumReports = createServerFn({ method: "GET" })
         },
         report: rep
           ? {
-              status: rep.status as "pending" | "generating" | "completed" | "failed",
+              status: rep.status as "pending" | "generating" | "partial" | "completed" | "failed",
               generatedAt: rep.generated_at,
             }
           : null,
@@ -1552,8 +1594,121 @@ export const listPremiumReports = createServerFn({ method: "GET" })
     });
   });
 
+/* --------------------------------------------------------------------- */
+/* getPremiumReportProgress — chapter-level status for the reader UI      */
+/* --------------------------------------------------------------------- */
+
+export type ProgressChapter = {
+  key: string;
+  index: number;
+  title: string;
+  status: "pending" | "running" | "completed" | "failed" | "skipped";
+  attemptCount: number;
+  errorMessage: string | null;
+};
+
+export type PremiumReportProgress = {
+  reportStatus: "pending" | "generating" | "partial" | "completed" | "failed" | "none";
+  schemaVersion: "v1" | "v2" | "v3" | null;
+  totalChapters: number;
+  completedChapters: number;
+  failedChapters: number;
+  runningChapters: number;
+  canContinue: boolean;
+  chapters: ProgressChapter[];
+};
+
+export const getPremiumReportProgress = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => StatusInput.parse(d))
+  .handler(async ({ data, context }): Promise<PremiumReportProgress> => {
+    const { supabase, userId } = context;
+    const { data: chart } = await supabase
+      .from("charts")
+      .select("id, user_id, lang")
+      .eq("id", data.chartId)
+      .maybeSingle();
+    const empty: PremiumReportProgress = {
+      reportStatus: "none",
+      schemaVersion: null,
+      totalChapters: 0,
+      completedChapters: 0,
+      failedChapters: 0,
+      runningChapters: 0,
+      canContinue: false,
+      chapters: [],
+    };
+    if (!chart || chart.user_id !== userId) return empty;
+
+    const { data: row } = await supabase
+      .from("premium_pdf_reports")
+      .select("id, status, content_json")
+      .eq("user_id", userId)
+      .eq("chart_id", data.chartId)
+      .eq("report_version", PREMIUM_REPORT_VERSION)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (!row) return empty;
+
+    const contentMeta = (row as { content_json: { meta?: { report_schema_version?: "v1" | "v2" | "v3" } } | null })
+      .content_json?.meta;
+    const schemaVersion = contentMeta?.report_schema_version ?? null;
+
+    const { PREMIUM_V3_CHAPTERS } = await import("./premium-chapters-v3");
+    const isZh = (chart.lang ?? "en") === "zh";
+
+    const { data: chRows } = await supabase
+      .from("premium_report_chapters")
+      .select("chapter_key, chapter_index, status, attempt_count, error_message")
+      .eq("report_id", (row as { id: string }).id)
+      .eq("user_id", userId);
+    const byKey = new Map(
+      ((chRows ?? []) as Array<{
+        chapter_key: string;
+        chapter_index: number;
+        status: string;
+        attempt_count: number;
+        error_message: string | null;
+      }>).map((r) => [r.chapter_key, r]),
+    );
+
+    const chapters: ProgressChapter[] = PREMIUM_V3_CHAPTERS.map((c) => {
+      const r = byKey.get(c.key);
+      return {
+        key: c.key,
+        index: c.index,
+        title: isZh ? c.title_zh : c.title_en,
+        status: (r?.status ?? "pending") as ProgressChapter["status"],
+        attemptCount: r?.attempt_count ?? 0,
+        errorMessage: r?.error_message ?? null,
+      };
+    });
+
+    const completed = chapters.filter((c) => c.status === "completed").length;
+    const failed = chapters.filter((c) => c.status === "failed").length;
+    const running = chapters.filter((c) => c.status === "running").length;
+    const canContinue = chapters.some(
+      (c) =>
+        c.status === "pending" ||
+        (c.status === "failed" && c.attemptCount < 3),
+    );
+
+    return {
+      reportStatus: (row as { status: PremiumReportProgress["reportStatus"] }).status,
+      schemaVersion,
+      totalChapters: chapters.length,
+      completedChapters: completed,
+      failedChapters: failed,
+      runningChapters: running,
+      canContinue,
+      chapters,
+    };
+  });
+
 // Backwards-compat export: legacy callers importing the old symbol are
 // harmless since the file no longer offers PDF UI. Keeping a typed alias
 // avoids accidental client-bundle breakage from stale imports.
 export const generatePremiumPdf = generatePremiumReport;
 export type Json_ = Json; // side-effect: keep Json import referenced
+
