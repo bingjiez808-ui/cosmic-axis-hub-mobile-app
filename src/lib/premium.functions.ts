@@ -1223,8 +1223,8 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
       void chapterOutputCap;
 
       const workerReport = await runChapterWorkers({
-        catalog: catalogue,
-        rows: rowsForWorkerFiltered,
+        catalog: claimedCatalog,
+        rows: rowsForWorker,
         provider,
         initialUsage: priorUsage,
       });
