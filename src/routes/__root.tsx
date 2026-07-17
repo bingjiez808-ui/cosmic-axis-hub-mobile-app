@@ -239,7 +239,7 @@ function SiteNav() {
   const [orbActive, setOrbActive] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => { setHydrated(true); }, []);
-  const avatarUrl = hydrated ? avatarUrl : undefined;
+  const avatarUrl = hydrated ? account?.avatar : undefined;
   const adminLabel = lang === "zh" ? "议政厅" : "Admin";
 
   useEffect(() => {
