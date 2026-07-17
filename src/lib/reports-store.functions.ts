@@ -32,27 +32,91 @@ const ChartInputSchema = z.object({
   date: z.string().max(40).optional(),
   time: z.string().max(20).optional(),
   place: z.string().max(160).optional(),
+  gender: z.enum(["male", "female"]).optional(),
   lang: z.enum(["en", "zh"]).default("en"),
 });
 export type ChartInput = z.infer<typeof ChartInputSchema>;
 
 /**
- * Only the fields that actually influence the reading enter the hash.
- * Display name is intentionally excluded so a user renaming their chart
- * does not blow away a previously generated report.
+ * Canonical field selection for hashing. Display name is excluded so
+ * renames don't invalidate a generated report. Gender is included
+ * because Zi Wei Dou Shu results are gender-dependent — two charts
+ * with the same birth data but different genders MUST NOT collide.
+ * Language is kept in the hash so prompt output in a different
+ * language does not clobber an existing translation.
+ *
+ * Keys are emitted in a fixed order so callers that pass the same
+ * effective input in different object-literal shapes hash identically.
  */
 export function normalizeForHash(input: ChartInput) {
   return {
     date: (input.date ?? "").trim(),
-    time: (input.time ?? "").trim(),
-    place: (input.place ?? "").trim().toLowerCase(),
+    gender: (input.gender ?? "") as "male" | "female" | "",
     lang: input.lang ?? "en",
+    place: (input.place ?? "").trim().toLowerCase(),
+    time: (input.time ?? "").trim(),
   };
 }
 
 export function computeChartHash(input: ChartInput): string {
-  const canonical = JSON.stringify(normalizeForHash(input));
+  const norm = normalizeForHash(input);
+  // Explicit key ordering: alphabetical, so different-shape inputs
+  // (extra keys, undefined values, different literal order) map to
+  // the exact same JSON string.
+  const canonical = JSON.stringify({
+    date: norm.date,
+    gender: norm.gender,
+    lang: norm.lang,
+    place: norm.place,
+    time: norm.time,
+  });
   return bytesToHex(sha256(new TextEncoder().encode(canonical)));
+}
+
+/**
+ * The single source of truth for constructing `ensureChart` payloads
+ * from the URL/search state shared by report.tsx and PremiumPdfCard.
+ *
+ * Both call sites MUST route through this helper — otherwise a lang
+ * flicker between renders (or one caller including `calculation_snapshot`
+ * and the other not) can produce two different `normalized_input_hash`
+ * values for the same user + birth data, splitting the DB into two chart
+ * rows and orphaning premium-unlock state.
+ */
+export function buildCanonicalChartInput(
+  search: {
+    name?: string;
+    date?: string;
+    time?: string;
+    place?: string;
+    gender?: "male" | "female";
+    lang?: "en" | "zh";
+  },
+  fallbackLang: "en" | "zh",
+): ChartInput & { input_snapshot: Record<string, unknown> } {
+  const lang = search.lang ?? fallbackLang ?? "en";
+  const canonical: ChartInput = {
+    name: search.name,
+    date: search.date,
+    time: search.time,
+    place: search.place,
+    gender: search.gender,
+    lang,
+  };
+  // input_snapshot preserves the raw shape for auditing but the hash
+  // ONLY uses the fields normalizeForHash returns, so callers may
+  // safely enrich it (e.g. calculation_snapshot) without hash drift.
+  return {
+    ...canonical,
+    input_snapshot: {
+      name: search.name,
+      date: search.date,
+      time: search.time,
+      place: search.place,
+      gender: search.gender,
+      lang,
+    },
+  };
 }
 
 /* --------------------------------------------------------------------- */
@@ -70,15 +134,18 @@ export const ensureChart = createServerFn({ method: "POST" })
     const hash = computeChartHash(data);
     const { supabase, userId } = context;
 
-    // Non-destructive upsert: if the row already exists for this user we
-    // keep the earlier `name` / snapshot and just return it.
-    const { data: existing } = await supabase
-      .from("charts")
-      .select("id, name")
-      .eq("user_id", userId)
-      .eq("normalized_input_hash", hash)
-      .maybeSingle();
-    if (existing?.id) return { chartId: existing.id, hash, created: false };
+    const lookup = async () => {
+      const { data: row } = await supabase
+        .from("charts")
+        .select("id, name")
+        .eq("user_id", userId)
+        .eq("normalized_input_hash", hash)
+        .maybeSingle();
+      return row?.id ?? null;
+    };
+
+    const existingId = await lookup();
+    if (existingId) return { chartId: existingId, hash, created: false };
 
     const { data: inserted, error } = await supabase
       .from("charts")
@@ -94,8 +161,14 @@ export const ensureChart = createServerFn({ method: "POST" })
       })
       .select("id")
       .single();
-    if (error || !inserted) throw new Error("Failed to save chart");
-    return { chartId: inserted.id, hash, created: true };
+    if (inserted?.id) return { chartId: inserted.id, hash, created: true };
+
+    // Concurrent insert lost the race to the (user_id, normalized_input_hash)
+    // unique index. Re-select to return the winning row — never create a
+    // second orphan chart for the same canonical input.
+    const raced = await lookup();
+    if (raced) return { chartId: raced, hash, created: false };
+    throw new Error(`Failed to save chart${error?.message ? `: ${error.message}` : ""}`);
   });
 
 /* --------------------------------------------------------------------- */
