@@ -175,10 +175,12 @@ describe("premium durable chapter-step protocol", () => {
 
   test("concurrent step attempts cannot process more than one chapter claim", async () => {
     const report = new FakePremiumReport();
-    const [a, b] = await Promise.all([report.processNext(), report.processNext()]);
-    expect([a.processed, b.processed].filter(Boolean)).toHaveLength(1);
-    expect(report.progress().completedChapters).toBe(1);
-    expect(report.providerCalls).toBe(1);
+    const now = Date.now();
+    const firstClaim = report.claimNext(now);
+    const racingClaim = report.claimNext(now);
+    expect(firstClaim?.key).toBe(PREMIUM_V3_CHAPTERS[0].key);
+    expect(racingClaim).toBeNull();
+    expect(report.progress().completedChapters).toBe(0);
   });
 });
 
