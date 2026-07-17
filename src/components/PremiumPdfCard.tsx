@@ -17,12 +17,13 @@ import {
   generatePremiumReport,
   getPremiumStatus,
   getPremiumReportProgress,
-  startPremiumCheckout,
   type PremiumStatus,
   type PremiumReportProgress,
 } from "@/lib/premium.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { PremiumReportReader } from "@/components/PremiumReportReader";
+import { MockPaymentModal } from "@/components/MockPaymentModal";
+
 import {
   buildCalculationSnapshot,
   missingSystemDetails,
