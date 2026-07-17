@@ -33,7 +33,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Json } from "@/integrations/supabase/types";
 import { createLovableAiGatewayProvider } from "./ai-gateway.server";
-import { guardrailsFor, safeMessage } from "./ai-guardrails";
+import { guardrailsFor, safeMessage, sanitizeAuditMessage } from "./ai-guardrails";
 import { enforceRateLimit } from "./rate-limit.server";
 import { isEmailVerified, assertEmailVerifiedOrAdmin } from "./reports-store.functions";
 import { buildCalculationSnapshot, missingSystems, type CalculationSnapshot } from "./calc-snapshot";
@@ -1395,7 +1395,7 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
               chapter_index: catalog.index,
               status: "failed",
               attempt_count: (prior?.attempt_count ?? 0) + 1,
-              error_message: t.error.slice(0, 400),
+              error_message: sanitizeAuditMessage(t.error),
               input_tokens: (prior?.input_tokens ?? 0) + t.input_tokens,
               output_tokens: (prior?.output_tokens ?? 0) + t.output_tokens,
             } as unknown as never, { onConflict: "report_id,chapter_key" });
@@ -1528,7 +1528,7 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
         .from("premium_pdf_reports")
         .update({
           status: "failed",
-          error_message: safeMessage(err, "premium_generation_failed").slice(0, 400),
+          error_message: sanitizeAuditMessage(safeMessage(err, "premium_generation_failed")),
         })
         .eq("id", row.id)
         .eq("user_id", userId);
