@@ -1395,7 +1395,7 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
               chapter_index: catalog.index,
               status: "failed",
               attempt_count: (prior?.attempt_count ?? 0) + 1,
-              error_message: t.error.slice(0, 400),
+              error_message: sanitizeAuditMessage(t.error),
               input_tokens: (prior?.input_tokens ?? 0) + t.input_tokens,
               output_tokens: (prior?.output_tokens ?? 0) + t.output_tokens,
             } as unknown as never, { onConflict: "report_id,chapter_key" });
