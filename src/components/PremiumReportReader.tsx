@@ -408,26 +408,47 @@ export function PremiumReportReader({
                     {pick(TXT.toc, lang)}
                   </p>
                   <ol className="space-y-1.5">
-                    {chapters.map((ch, i) => (
-                      <li key={ch.key}>
-                        <button
-                          type="button"
-                          onClick={() => scrollTo(ch.key, { focusHeading: true })}
-                          aria-current={active === ch.key ? "true" : undefined}
-                          className={`block w-full truncate rounded-md px-2 py-1.5 text-left text-[12.5px] transition-colors ${
-                            active === ch.key
-                              ? "bg-gold-dust/10 text-gold-light"
-                              : "text-stone-warm/70 hover:bg-white/5 hover:text-gold-dust"
-                          }`}
-                        >
-                          <span className="mr-1.5 text-[10px] text-gold-dust/60">
-                            {String(i + 1).padStart(2, "0")}
-                          </span>
-                          {ch.title}
-                        </button>
-                      </li>
-                    ))}
+                    {chapters.map((ch, i) => {
+                      const st = progressData?.chapters.find((p) => p.key === ch.key)?.status;
+                      return (
+                        <li key={ch.key}>
+                          <button
+                            type="button"
+                            onClick={() => scrollTo(ch.key, { focusHeading: true })}
+                            aria-current={active === ch.key ? "true" : undefined}
+                            className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[12.5px] transition-colors ${
+                              active === ch.key
+                                ? "bg-gold-dust/10 text-gold-light"
+                                : "text-stone-warm/70 hover:bg-white/5 hover:text-gold-dust"
+                            }`}
+                          >
+                            <span className="text-[10px] text-gold-dust/60">
+                              {String(i + 1).padStart(2, "0")}
+                            </span>
+                            <span className="min-w-0 flex-1 truncate">{ch.title}</span>
+                            {st && st !== "completed" && (
+                              <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[9px] uppercase tracking-[0.18em] ${
+                                st === "failed"
+                                  ? "bg-red-500/15 text-red-300"
+                                  : st === "running"
+                                    ? "bg-nebula-purple/20 text-nebula-purple"
+                                    : "bg-white/5 text-stone-warm/50"
+                              }`}>
+                                {st === "failed"
+                                  ? pick(TXT.badge_failed, lang)
+                                  : st === "running"
+                                    ? pick(TXT.badge_running, lang)
+                                    : st === "skipped"
+                                      ? pick(TXT.badge_skipped, lang)
+                                      : pick(TXT.badge_pending, lang)}
+                              </span>
+                            )}
+                          </button>
+                        </li>
+                      );
+                    })}
                   </ol>
+
                 </aside>
               )}
 
