@@ -67,7 +67,7 @@ export const PREMIUM_PROMPT_VERSION = "v2";
 // changes. v1 = 19 body-only chapters (legacy). v2 = 19 chapters + a
 // structured `facts` object grounded in the local calc snapshot.
 // Old rows keep serving their v1 content; the reader is tolerant of both.
-export const PREMIUM_REPORT_SCHEMA_VERSION = "v2";
+export const PREMIUM_REPORT_SCHEMA_VERSION = "v3";
 export const PREMIUM_PRICE_CENTS = 7900;
 export const PREMIUM_CURRENCY = "CNY";
 
