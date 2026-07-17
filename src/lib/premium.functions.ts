@@ -36,7 +36,17 @@ import { createLovableAiGatewayProvider } from "./ai-gateway.server";
 import { guardrailsFor, safeMessage } from "./ai-guardrails";
 import { enforceRateLimit } from "./rate-limit.server";
 import { isEmailVerified, assertEmailVerifiedOrAdmin } from "./reports-store.functions";
-import { buildCalculationSnapshot, missingSystems } from "./calc-snapshot";
+import { buildCalculationSnapshot, missingSystems, type CalculationSnapshot } from "./calc-snapshot";
+import {
+  buildEngineInput,
+  computeContentHash,
+  makeCacheKey,
+  DEFAULT_VERSIONS,
+  READING_MODEL_ID,
+  type CacheKey,
+  type EngineChartFacts,
+  type TokenUsage,
+} from "./reading-engine";
 
 // Canonical product identity.
 export const PREMIUM_PRODUCT_VERSION = "premium_deep_report_v1";
