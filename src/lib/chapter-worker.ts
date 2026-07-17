@@ -70,12 +70,19 @@ export type WorkerReport = {
  *     stop with `report_*_exhausted`.
  *   - The caller must persist `transitions` in order.
  */
+export type BudgetPolicy = {
+  chapter_max_input_tokens: number;
+  chapter_max_output_tokens: number;
+  report_max_input_tokens: number;
+  report_max_output_tokens: number;
+};
+
 export async function runChapterWorkers(opts: {
   catalog: WorkerChapterMeta[];
   rows: ChapterRow[];
   provider: WorkerProvider;
   initialUsage?: BudgetUsage;
-  policy?: typeof AI_BUDGET_POLICY;
+  policy?: BudgetPolicy;
 }): Promise<WorkerReport> {
   const rowsByKey = new Map(opts.rows.map((r) => [r.chapter_key, r]));
   const usage: BudgetUsage = {
