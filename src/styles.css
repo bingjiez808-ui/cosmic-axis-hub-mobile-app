@@ -86,6 +86,8 @@
     color: var(--color-foreground);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
     /* Fluid base font: 15px on tight phones → 16px on ≥400px viewports. */
     font-size: clamp(15px, 0.9rem + 0.25vw, 16.5px);
     /* Prevent stray decorative absolute elements from producing horizontal scroll on mobile. */
@@ -93,6 +95,12 @@
     /* Respect notches / safe areas on iOS. */
     padding-left: env(safe-area-inset-left);
     padding-right: env(safe-area-inset-right);
+  }
+  :lang(zh),
+  html[lang="zh"],
+  html[lang^="zh-"] {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC",
+      "Hiragino Sans GB", "Microsoft YaHei", "Source Han Sans SC", sans-serif;
   }
   /* Prevent iOS Safari from auto-zooming form inputs (font-size ≥ 16px). */
   input, select, textarea {
@@ -238,6 +246,19 @@
 @utility text-fluid-hero {
   font-size: clamp(2.25rem, 4vw + 1.6rem, 5.5rem);
   line-height: 1.05;
+}
+/* CJK-tuned hero: keeps two-line rhythm on iPhone-class widths, prevents
+   orphan single-character wraps by pairing with block-span segmentation. */
+@utility text-fluid-hero-zh {
+  font-size: clamp(1.75rem, 8.4vw, 5.25rem);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  word-break: keep-all;
+  overflow-wrap: normal;
+}
+@utility hero-zh-line {
+  display: block;
+  white-space: nowrap;
 }
 @utility text-fluid-h1 {
   font-size: clamp(1.875rem, 3vw + 1.1rem, 3.75rem);

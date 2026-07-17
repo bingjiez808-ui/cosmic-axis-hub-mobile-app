@@ -342,12 +342,13 @@ function FocusComparison() {
 }
 
 function LandingPage() {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const [openTradition, setOpenTradition] = useState<TraditionId | null>(null);
+  const isZh = lang === "zh";
   return (
     <>
       {/* ─────────── HERO ─────────── */}
-      <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-4 pt-24 text-center">
+      <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-5 pt-24 text-center sm:px-6">
         <div className="pointer-events-none absolute h-[820px] w-[820px] rounded-full border border-white/5 animate-slow-rotate" />
         <div className="pointer-events-none absolute h-[600px] w-[600px] rounded-full border border-gold-dust/10 animate-slow-rotate-reverse" />
         <div className="pointer-events-none absolute h-[380px] w-[380px] rounded-full border border-nebula-purple/20 animate-slow-rotate" />
@@ -367,12 +368,18 @@ function LandingPage() {
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1.2, delay: 0.2, ease: [0.32, 0.72, 0, 1] }}
-          className="relative z-10 max-w-5xl font-serif text-fluid-hero text-stone-warm"
+          data-testid="hero-h1"
+          className={`relative z-10 max-w-5xl font-serif text-stone-warm ${
+            isZh ? "text-fluid-hero-zh" : "text-fluid-hero"
+          }`}
         >
-          {t.hero_h1_a}
-          <br />
-          <span className="italic gold-gradient-text">{t.hero_h1_b}</span>
+          <span className={isZh ? "hero-zh-line" : "block"}>{t.hero_h1_a}</span>
+          <span className={`italic gold-gradient-text ${isZh ? "hero-zh-line" : "block"}`}>
+            {t.hero_h1_b}
+          </span>
+
         </motion.h1>
+
 
         <motion.p
           initial={{ opacity: 0 }}
