@@ -9,9 +9,9 @@
  *   1. RLS owner isolation — owner A can read their own premium report,
  *      chapters, and ai_usage_ledger rows; user B is filtered to 0 rows
  *      on all three tables even with a valid JWT.
- *   2. claim_premium_chapter — owner (JWT user_id === report.user_id)
- *      may claim; non-owner authenticated caller is refused with
- *      `not_report_owner`.
+ *   2. claim_premium_chapter — direct browser RPC is not executable by
+ *      authenticated users; service-role server code calls
+ *      claim_premium_chapter_for_user with an explicit owner id.
  *   3. Two concurrent claims on the same fresh chapter → exactly one
  *      returns `true` (CAS lock via `claim_token`).
  *   4. Expired lock is reclaimable via TTL parameter.
@@ -201,7 +201,7 @@ suite("premium-e2e — live Supabase", () => {
     expect(lg ?? []).toEqual([]);
   });
 
-  test("claim_premium_chapter — non-owner refused with not_report_owner", async () => {
+  test("claim_premium_chapter — direct authenticated RPC is denied", async () => {
     const c = asUser(ctx.jwtB);
     // Seed a claimable row on user A's report for B to try.
     await ctx.admin.from("premium_report_chapters").upsert(
@@ -224,14 +224,14 @@ suite("premium-e2e — live Supabase", () => {
       } as never,
     );
     expect(error).not.toBeNull();
-    expect(error?.message ?? "").toMatch(/not_report_owner|not_authenticated/);
+    expect((error?.message ?? "") + (error?.code ?? "")).toMatch(/permission denied|42501/i);
   });
 
-  test("claim_premium_chapter — owner claims successfully", async () => {
-    const c = asUser(ctx.jwtA);
-    const { data, error } = await c.rpc(
-      "claim_premium_chapter" as never,
+  test("claim_premium_chapter_for_user — server-side owner claim succeeds", async () => {
+    const { data, error } = await ctx.admin.rpc(
+      "claim_premium_chapter_for_user" as never,
       {
+        _user_id: ctx.userA.id,
         _report_id: ctx.reportId,
         _chapter_key: "opening",
         _chapter_index: 0,
@@ -256,11 +256,11 @@ suite("premium-e2e — live Supabase", () => {
       { onConflict: "report_id,chapter_key" },
     );
 
-    const c = asUser(ctx.jwtA);
     const call = () =>
-      c.rpc(
-        "claim_premium_chapter" as never,
+      ctx.admin.rpc(
+        "claim_premium_chapter_for_user" as never,
         {
+          _user_id: ctx.userA.id,
           _report_id: ctx.reportId,
           _chapter_key: "conc",
           _chapter_index: 91,
@@ -289,10 +289,10 @@ suite("premium-e2e — live Supabase", () => {
       { onConflict: "report_id,chapter_key" },
     );
 
-    const c = asUser(ctx.jwtA);
-    const { data, error } = await c.rpc(
-      "claim_premium_chapter" as never,
+    const { data, error } = await ctx.admin.rpc(
+      "claim_premium_chapter_for_user" as never,
       {
+        _user_id: ctx.userA.id,
         _report_id: ctx.reportId,
         _chapter_key: "exp",
         _chapter_index: 92,
