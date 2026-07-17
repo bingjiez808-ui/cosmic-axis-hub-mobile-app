@@ -163,27 +163,41 @@ suite("premium-e2e — live Supabase", () => {
       global: { headers: { Authorization: `Bearer ${jwt}` } },
     });
 
-  test("Data API — no authenticated grants on premium_pdf_reports", async () => {
+  test("RLS — owner A can read own premium_pdf_reports rows", async () => {
     const c = asUser(ctx.jwtA);
-    const { data, error } = await c.from("premium_pdf_reports").select("id").limit(1);
-    expect(data ?? []).toEqual([]);
-    // Either PostgREST returns 401/403 or the RLS+grant produces 42501.
-    expect(error).not.toBeNull();
+    const { data, error } = await c
+      .from("premium_pdf_reports")
+      .select("id, user_id")
+      .eq("id", ctx.reportId)
+      .maybeSingle();
+    expect(error).toBeNull();
+    expect(data?.id).toBe(ctx.reportId);
+    expect(data?.user_id).toBe(ctx.userA.id);
   });
 
-  test("Data API — no authenticated grants on premium_report_chapters", async () => {
-    const c = asUser(ctx.jwtA);
-    const { error } = await c
+  test("RLS — user B cannot read user A's premium_pdf_reports row", async () => {
+    const c = asUser(ctx.jwtB);
+    const { data, error } = await c
+      .from("premium_pdf_reports")
+      .select("id")
+      .eq("id", ctx.reportId)
+      .maybeSingle();
+    expect(error).toBeNull();
+    expect(data).toBeNull();
+  });
+
+  test("RLS — user B cannot read user A's chapters or ledger rows", async () => {
+    const c = asUser(ctx.jwtB);
+    const { data: ch } = await c
       .from("premium_report_chapters")
       .select("id")
       .eq("report_id", ctx.reportId);
-    expect(error).not.toBeNull();
-  });
-
-  test("Data API — no authenticated grants on ai_usage_ledger", async () => {
-    const c = asUser(ctx.jwtA);
-    const { error } = await c.from("ai_usage_ledger").select("id").limit(1);
-    expect(error).not.toBeNull();
+    expect(ch ?? []).toEqual([]);
+    const { data: lg } = await c
+      .from("ai_usage_ledger")
+      .select("id")
+      .eq("report_id", ctx.reportId);
+    expect(lg ?? []).toEqual([]);
   });
 
   test("claim_premium_chapter — non-owner refused with not_report_owner", async () => {
