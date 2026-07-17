@@ -1176,12 +1176,8 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
           // Claim failed — leave the chapter for a future run.
         }
       }
-      const rowsForWorkerFiltered = rowsForWorker.map((r) =>
-        claimedKeys.has(r.chapter_key)
-          ? r
-          : { ...r, status: r.status === "pending" || r.status === "failed" ? ("completed" as const) : r.status }
-              // Trick: mark unclaimed rows as terminal so worker skips them.
-      );
+      const claimedCatalog = catalogue.filter((c) => claimedKeys.has(c.key));
+
 
       const provider = async (
         meta: { key: string; index: number },
