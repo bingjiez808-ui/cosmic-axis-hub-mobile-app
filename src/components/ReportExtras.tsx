@@ -715,25 +715,38 @@ function YearByYearChart({
         {years.map((y, i) => {
           const isHover = hovered === i;
           return (
-            <li
-              key={y.age}
-              onMouseEnter={() => setHovered(i)}
-              onFocus={() => setHovered(i)}
-              className={`flex items-baseline gap-3 rounded-md border-b border-white/5 px-2 py-1 transition-colors ${
-                isHover ? "bg-gold-dust/[0.08] text-gold-light" : y.isNow ? "text-gold-light" : y.isPast ? "text-stone-warm/70" : "text-stone-warm/50"
-              }`}
-            >
-              <span className="w-14 shrink-0 font-serif tabular-nums">
-                {y.age} {lang === "zh" ? "岁" : ""}
-              </span>
-              <span className="flex-1">{y.theme}</span>
-              <span className="text-[10px] tabular-nums text-stone-warm/45">{y.score}</span>
+            <li key={y.age}>
+              <button
+                type="button"
+                data-testid={`year-row-${y.age}`}
+                onClick={(e) => openYearAt(i, e.currentTarget)}
+                onMouseEnter={() => setHovered(i)}
+                onFocus={() => setHovered(i)}
+                className={`flex w-full items-baseline gap-3 rounded-md border-b border-white/5 px-2 py-1 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold-dust/60 ${
+                  isHover ? "bg-gold-dust/[0.08] text-gold-light" : y.isNow ? "text-gold-light" : y.isPast ? "text-stone-warm/70" : "text-stone-warm/50"
+                }`}
+              >
+                <span className="w-14 shrink-0 font-serif tabular-nums">
+                  {y.age} {lang === "zh" ? "岁" : ""}
+                </span>
+                <span className="flex-1 [overflow-wrap:break-word]">{y.theme}</span>
+                <span className="text-[10px] tabular-nums text-stone-warm/45">{y.score}</span>
+              </button>
             </li>
           );
         })}
       </ul>
+
+      <YearInsightModal
+        open={openYear != null}
+        point={openYear}
+        lang={lang}
+        onClose={() => setOpenYear(null)}
+        returnFocus={openerRef.current}
+      />
     </div>
   );
+
 }
 
 
