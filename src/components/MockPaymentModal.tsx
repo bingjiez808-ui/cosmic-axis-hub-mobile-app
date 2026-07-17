@@ -97,12 +97,18 @@ const METHOD_ACCENT: Record<Method, string> = {
   unionpay: "from-rose-400/40 to-rose-600/20 text-rose-200",
 };
 
-function isProduction(): boolean {
-  // Vite replaces this at build time. Preview/dev builds evaluate to false.
+function isMockPaymentEnabled(): boolean {
+  // Explicit switch (default "mock"). Lovable preview builds set
+  // import.meta.env.PROD=true but must still allow the simulated
+  // cashier — do NOT gate on PROD/NODE_ENV here.
   try {
-    return Boolean(import.meta.env?.PROD);
+    const mode = String(
+      (import.meta as unknown as { env?: Record<string, string | undefined> })
+        .env?.VITE_PAYMENT_MODE ?? "mock",
+    ).toLowerCase();
+    return mode === "mock";
   } catch {
-    return false;
+    return true;
   }
 }
 
