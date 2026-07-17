@@ -98,6 +98,8 @@ export function PremiumReportReader({
   const titleId = useId();
   const drawerTitleId = useId();
   const [content, setContent] = useState<PremiumContent | null>(null);
+  const [progressData, setProgressData] = useState<PremiumReportProgress | null>(null);
+  const [continuing, setContinuing] = useState(false);
   const [errored, setErrored] = useState(false);
   const [active, setActive] = useState<string | null>(null);
   const [tocOpen, setTocOpen] = useState(false);
@@ -106,33 +108,58 @@ export function PremiumReportReader({
   const bodyRef = useRef<HTMLDivElement | null>(null);
   const drawerCloseRef = useRef<HTMLButtonElement | null>(null);
   const tocButtonRef = useRef<HTMLButtonElement | null>(null);
-  // Suppress IntersectionObserver-driven active updates during a
-  // programmatic scroll (Prev/Next/TOC click); it otherwise fights the
-  // intended target while smooth-scroll animates through mid-chapters.
   const suppressObserverRef = useRef(false);
   const suppressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const loadContent = useCallback(async () => {
+    setContent(null);
+    setErrored(false);
+    setProgress(0);
+    try {
+      const [r, p] = await Promise.all([
+        getPremiumReport({ data: { chartId } }),
+        getPremiumReportProgress({ data: { chartId } }),
+      ]);
+      setProgressData(p);
+      if (r?.content) {
+        setContent(r.content);
+        setActive(r.content.chapters[0]?.key ?? null);
+      } else if (r?.status && r.status !== "completed") {
+        // Partial or generating with no persisted content_json yet.
+        setErrored(true);
+      } else {
+        setErrored(true);
+      }
+    } catch {
+      setErrored(true);
+    }
+  }, [chartId]);
 
   // Load content on open.
   useEffect(() => {
     if (!open) return;
-    setContent(null);
-    setErrored(false);
-    setProgress(0);
     let cancel = false;
-    getPremiumReport({ data: { chartId } })
-      .then((r) => {
-        if (cancel) return;
-        if (r?.status === "completed" && r.content) {
-          setContent(r.content);
-          setActive(r.content.chapters[0]?.key ?? null);
-        } else {
-          setErrored(true);
-        }
-      })
-      .catch(() => {
-        if (!cancel) setErrored(true);
-      });
+    void loadContent().then(() => {
+      if (cancel) return;
+    });
     return () => {
+      cancel = true;
+    };
+  }, [open, loadContent]);
+
+  const handleContinue = useCallback(async () => {
+    if (continuing) return;
+    setContinuing(true);
+    try {
+      await generatePremiumReport({ data: { chartId } });
+      await loadContent();
+    } catch {
+      // Leave partial state visible; user can retry.
+    } finally {
+      setContinuing(false);
+    }
+  }, [continuing, chartId, loadContent]);
+
       cancel = true;
     };
   }, [open, chartId]);
