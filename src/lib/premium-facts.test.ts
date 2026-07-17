@@ -111,8 +111,9 @@ describe("buildPremiumFacts + resolveFactsPath — AI cannot invent fields", () 
   const snap = buildCalculationSnapshot(NANJING);
   const facts = buildPremiumFacts(snap);
 
-  test("version is pinned", () => {
+  test("version is pinned to v3", () => {
     expect(facts.version).toBe(PREMIUM_FACTS_VERSION);
+    expect(PREMIUM_FACTS_VERSION).toBe("premium_facts_v3");
   });
 
   test("evidence paths that DO exist resolve; fabricated ones return undefined", () => {
@@ -125,12 +126,43 @@ describe("buildPremiumFacts + resolveFactsPath — AI cannot invent fields", () 
     expect(resolveFactsPath(facts, "bazi.da_yun_luck_pillars")).toBeUndefined();
   });
 
-  test("unavailable list is stable — the reader shows exactly these as honest gaps", () => {
-    expect(new Set(facts.unavailable)).toEqual(new Set(HONESTLY_UNAVAILABLE_MODULES));
+  test("v3 evidence paths that DO exist resolve", () => {
+    // BaZi luck pillars (from lunar-javascript getYun).
+    const luck = resolveFactsPath(facts, "bazi.luck.pillars") as unknown[] | undefined;
+    expect(Array.isArray(luck)).toBe(true);
+    expect(luck!.length).toBeGreaterThan(0);
+    // Vedic Mahadasha timeline.
+    const md = resolveFactsPath(facts, "vedic.mahadasha") as unknown[] | undefined;
+    expect(Array.isArray(md)).toBe(true);
+    expect(md!.length).toBeGreaterThan(0);
+    // Western planets (9 luminaries).
+    const planets = resolveFactsPath(facts, "western.planets") as unknown[] | undefined;
+    expect(Array.isArray(planets)).toBe(true);
+    expect(planets!.length).toBe(9);
+  });
+
+  test("Ziwei horoscope is null without asOfDate; populated with asOfDate", () => {
+    expect(facts.ziwei?.horoscope).toBeNull();
+    const withDate = buildPremiumFacts(snap, { asOfDate: "2026-01-01" });
+    expect(withDate.ziwei?.horoscope).not.toBeNull();
+    expect(withDate.ziwei?.horoscope?.decadal.age_range.length).toBe(2);
+  });
+
+  test("Vedic current MD/AD/PD only surfaces with asOfDate", () => {
+    expect(facts.vedic?.current).toBeNull();
+    const withDate = buildPremiumFacts(snap, { asOfDate: "2026-01-01" });
+    expect(withDate.vedic?.current?.mahadasha_lord).toMatch(/^(Ketu|Venus|Sun|Moon|Mars|Rahu|Jupiter|Saturn|Mercury)$/);
+  });
+
+  test("unavailable list is stable — reader shows exactly these as honest gaps", () => {
+    const expected = new Set<string>(HONESTLY_UNAVAILABLE_MODULES);
+    for (const item of facts.unavailable) expected.delete(item);
+    // Additional runtime-detected items (e.g. pratyantar_validation_failed)
+    // are allowed on top; core list should always be included.
+    expect(expected.size).toBe(0);
   });
 
   test("legacy content_json without `facts` is still readable (shape tolerance)", () => {
-    // Simulate a v1 legacy row: no `facts` key, only chapters.
     const legacy = {
       meta: {
         prompt_version: "v1",
@@ -143,10 +175,9 @@ describe("buildPremiumFacts + resolveFactsPath — AI cannot invent fields", () 
       cover: { title: "…", subtitle: "…" },
       chapters: [{ key: "executive_summary", title: "执行摘要", body: "…" }],
     };
-    // If the reader treats missing `facts` as "just render chapters",
-    // parsing should never blow up. Type-widen intentionally.
     const anyLegacy = legacy as unknown as { facts?: unknown; chapters: unknown[] };
     expect(anyLegacy.facts).toBeUndefined();
     expect(Array.isArray(anyLegacy.chapters)).toBe(true);
   });
 });
+

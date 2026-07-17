@@ -2,30 +2,37 @@
  * Immutable, locally-derived facts for the Premium Deep Reading.
  *
  * The AI narrative layer is ONLY allowed to cite facts that appear in
- * this object. Anything not here (e.g. Zi Wei liu-nian, Vedic sub-dasha
- * pratyantar) is deliberately absent — the reading engine must not
- * invent chart data. The reader UI renders these as a "chart facts"
- * section, visually distinct from AI narrative.
+ * this object. Anything not here (e.g. house cusps, progressions) is
+ * deliberately absent — the reading engine must not invent chart data.
  *
- * Sources:
- *   - BaZi: `lunar-javascript` pillars → local element counts + day
- *     master. Ten-god relationships are computed via the classical
- *     stem-to-stem rule; nothing beyond what the pillars determine.
- *   - Ziwei: whatever `iztro` returned — soul/body/五行局 and the
- *     twelve palaces with their major stars, brightness, and mutagen.
- *     Ten-year 大限 / 流年 are NOT computed here (see report at the
- *     bottom of `PremiumReportReader` — honestly hidden as unavailable).
- *   - Western: tropical Sun + element.
- *   - Vedic: 9-graha placements, Moon nakshatra + pada, and current +
- *     next Vimshottari mahadasha slice (dasha *sub-periods* not wired).
+ * v3 (premium_facts_v3) sources — all deterministic, local:
+ *   - BaZi:    lunar-javascript pillars + `EightChar.getYun(gender)` for
+ *              起运 / 大运 / 流年 (see bazi-luck.ts).
+ *   - Ziwei:   iztro palaces + `chart.horoscope(date)` for 大限 / 流年
+ *              / 流月 (see ziwei-horoscope.ts). Horoscope is time-relative
+ *              and included only when `buildPremiumFacts` is called with
+ *              an explicit `asOfDate`, to keep cache-key inputs stable.
+ *   - Western: 9-planet tropical geocentric longitudes, retrograde flags,
+ *              and major aspects (see western-natal.ts); Ascendant when
+ *              lat/lng resolvable.
+ *   - Vedic:   9-graha sidereal + Moon nakshatra + full Vimshottari with
+ *              Antardasha expansion (see vedic-dasha.ts). Pratyantar is
+ *              populated only for the active AD when `asOfDate` given.
  *
- * The evidence-path helper lets tests and AI-response validators point
- * at exactly which snapshot field backs a claim.
+ * Back-compat: readers of legacy v1/v2 content_json rows must treat any
+ * v3-only field as optional. The version string is bumped so cache keys
+ * incorporating it get a new row; existing paid reports keep their v1/v2
+ * content and their original cache row untouched.
  */
 import type { CalculationSnapshot } from "./calc-snapshot";
 import type { ZiweiChart, ZiweiPalace } from "./ziwei";
+import { computeBaZiLuck, type BaZiLuck } from "./bazi-luck";
+import { computeZiweiHoroscope, type ZiweiHoroscope } from "./ziwei-horoscope";
+import { computeWesternChart, type WesternAspect, type WesternPlanet, type WesternAscendant } from "./western-natal";
+import { expandVimshottari, currentDashaTriple, type DashaExpansion } from "./vedic-dasha";
+import { localBirthToUTC } from "./city-geo";
 
-export const PREMIUM_FACTS_VERSION = "premium_facts_v1";
+export const PREMIUM_FACTS_VERSION = "premium_facts_v3";
 
 /* ---------- BaZi element counts ---------- */
 
@@ -42,15 +49,13 @@ const BRANCH_ELEMENT: Record<string, BaZiElement> = {
   申: "metal", 酉: "metal", 戌: "earth", 亥: "water",
 };
 export type BaZiElement = "wood" | "fire" | "earth" | "metal" | "water";
-const ELEMENTS: BaZiElement[] = ["wood", "fire", "earth", "metal", "water"];
 
 /** Classical ten-god (十神) — day-master relative role of each other stem. */
 const YIN_STEMS = new Set(["乙", "丁", "己", "辛", "癸"]);
 const TEN_GOD_TABLE: Record<
   BaZiElement,
-  Record<BaZiElement, [string, string]> // [same-yang-yin ten-god, opposite]
+  Record<BaZiElement, [string, string]>
 > = {
-  //   [same-polarity 十神, opposite-polarity 十神]
   wood:  { wood: ["比肩", "劫财"], fire:  ["食神", "伤官"], earth: ["偏财", "正财"], metal: ["七杀", "正官"], water: ["偏印", "正印"] },
   fire:  { fire: ["比肩", "劫财"], earth: ["食神", "伤官"], metal: ["偏财", "正财"], water: ["七杀", "正官"], wood:  ["偏印", "正印"] },
   earth: { earth:["比肩", "劫财"], metal: ["食神", "伤官"], water: ["偏财", "正财"], wood:  ["七杀", "正官"], fire:  ["偏印", "正印"] },
@@ -76,13 +81,16 @@ export type BaZiFacts = {
   ten_gods: Array<{ pillar: "year" | "month" | "hour"; stem: string; label: string | null }>;
   element_counts: Record<BaZiElement, number>;
   zodiac: { zh: string; en: string } | null;
-  /** Provenance — every claim in AI narrative must map back here. */
+  /** v3: 起运 + 大运柱 + 流年 (from lunar-javascript EightChar.getYun). */
+  luck: BaZiLuck | null;
   evidence_paths: {
     year_pillar: "bazi.pillars.year";
     month_pillar: "bazi.pillars.month";
     day_pillar: "bazi.pillars.day";
     hour_pillar: "bazi.pillars.hour";
     day_master: "bazi.day_master";
+    luck_pillars: "bazi.luck.pillars";
+    luck_start: "bazi.luck.start";
   };
 };
 
@@ -101,15 +109,27 @@ export type ZiweiFacts = {
     major_stars: Array<{ name: string; brightness: string | null; mutagen: string | null }>;
     minor_stars: string[];
   }>;
+  /** v3: 大限 / 流年 / 流月 — populated only when asOfDate is provided. */
+  horoscope: ZiweiHoroscope | null;
   evidence_paths: {
     soul_palace: `ziwei.palaces[${number}]`;
     five_elements_class: "ziwei.five_elements_class";
+    horoscope: "ziwei.horoscope";
   };
 };
 
 export type WesternFacts = {
   sun: { sign_en: string; sign_zh: string; element: "fire" | "earth" | "air" | "water" };
-  evidence_paths: { sun: "western.sun" };
+  /** v3: 9 luminaries + major aspects + Ascendant (when lat/lng resolvable). */
+  planets: WesternPlanet[];
+  aspects: WesternAspect[];
+  ascendant: WesternAscendant | null;
+  evidence_paths: {
+    sun: "western.sun";
+    planets: "western.planets";
+    aspects: "western.aspects";
+    ascendant: "western.ascendant";
+  };
 };
 
 export type VedicFacts = {
@@ -117,9 +137,21 @@ export type VedicFacts = {
   moon: { sign: number; nakshatra_en: string; nakshatra_zh: string; pada: number };
   vimshottari_current: { lord: string; startISO: string; endISO: string } | null;
   vimshottari_next: { lord: string; startISO: string; endISO: string } | null;
+  /** v3: full Mahadasha timeline with Antardasha per MD (Pratyantar for the active AD only). */
+  mahadasha: DashaExpansion["mahadasha"];
+  /** v3: currently-active MD / AD / PD triple, when `asOfDate` provided. */
+  current: null | {
+    mahadasha_lord: string;
+    antardasha_lord: string | null;
+    pratyantar_lord: string | null;
+    as_of_date: string;
+  };
+  /** Whether Pratyantar level passed 120-year / sub-period validation. */
+  pratyantar_available: boolean;
   evidence_paths: {
-    moon: "vedic.chart.moon";
-    dasha: "vedic.chart.vimshottari";
+    moon: "vedic.moon";
+    dasha: "vedic.mahadasha";
+    current: "vedic.current";
   };
 };
 
@@ -129,16 +161,26 @@ export type PremiumFacts = {
   ziwei: ZiweiFacts | null;
   western: WesternFacts | null;
   vedic: VedicFacts | null;
-  /**
-   * Which analytical modules are honestly NOT yet wired locally.
-   * The AI narrative MUST NOT claim to interpret any of these.
-   */
+  /** Modules honestly NOT wired locally — never invented by AI. */
   unavailable: string[];
 };
 
 /* ---------- Derivation ---------- */
 
-export function deriveBaziFacts(snap: CalculationSnapshot): BaZiFacts | null {
+export type BuildFactsOptions = {
+  /**
+   * When provided (YYYY-MM-DD), enables time-relative facts:
+   *   - Ziwei horoscope (大限/流年/流月)
+   *   - Vedic Pratyantar for the currently-active AD
+   *   - Vedic `current` MD/AD/PD triple
+   * When omitted, cache-key inputs stay stable across days.
+   */
+  asOfDate?: string | null;
+};
+
+export function deriveBaziFacts(
+  snap: CalculationSnapshot,
+): BaZiFacts | null {
   if (snap.bazi.status !== "ok" || !snap.bazi.pillars) return null;
   const p = snap.bazi.pillars;
   const dm = snap.bazi.day_master;
@@ -168,25 +210,50 @@ export function deriveBaziFacts(snap: CalculationSnapshot): BaZiFacts | null {
       tenGods.push({ pillar, stem, label });
     }
   }
+  // v3: compute 起运 + 大运 + 流年 from lunar-javascript. Requires gender.
+  let luck: BaZiLuck | null = null;
+  const gender = snap.ziwei.chart?.gender ?? null; // gender only present via ziwei snapshot
+  if (snap.input.date && snap.input.time && gender) {
+    luck = computeBaZiLuck({
+      date: snap.input.date,
+      time: snap.input.time,
+      gender,
+    });
+  }
   return {
     pillars: p,
     day_master: dm,
     ten_gods: tenGods,
     element_counts: counts,
     zodiac: snap.bazi.zodiac,
+    luck,
     evidence_paths: {
       year_pillar: "bazi.pillars.year",
       month_pillar: "bazi.pillars.month",
       day_pillar: "bazi.pillars.day",
       hour_pillar: "bazi.pillars.hour",
       day_master: "bazi.day_master",
+      luck_pillars: "bazi.luck.pillars",
+      luck_start: "bazi.luck.start",
     },
   };
 }
 
-export function deriveZiweiFacts(snap: CalculationSnapshot): ZiweiFacts | null {
+export function deriveZiweiFacts(
+  snap: CalculationSnapshot,
+  opts: BuildFactsOptions = {},
+): ZiweiFacts | null {
   if (snap.ziwei.status !== "ok" || !snap.ziwei.chart) return null;
   const c: ZiweiChart = snap.ziwei.chart;
+  let horoscope: ZiweiHoroscope | null = null;
+  if (opts.asOfDate && snap.input.date && snap.input.time) {
+    horoscope = computeZiweiHoroscope({
+      birth_solar_date: snap.input.date,
+      birth_time: snap.input.time,
+      gender: c.gender,
+      as_of_date: opts.asOfDate,
+    });
+  }
   return {
     soul: c.soul,
     body: c.body,
@@ -202,30 +269,75 @@ export function deriveZiweiFacts(snap: CalculationSnapshot): ZiweiFacts | null {
       major_stars: p.major_stars,
       minor_stars: p.minor_stars,
     })),
+    horoscope,
     evidence_paths: {
       soul_palace: `ziwei.palaces[${c.soul_palace_index}]` as const,
       five_elements_class: "ziwei.five_elements_class",
+      horoscope: "ziwei.horoscope",
     },
   };
 }
 
 export function deriveWesternFacts(snap: CalculationSnapshot): WesternFacts | null {
   if (snap.western.status !== "ok" || !snap.western.sun) return null;
+  // v3: compute 9-planet tropical natal + aspects when date+time+geo allow.
+  let planets: WesternPlanet[] = [];
+  let aspects: WesternAspect[] = [];
+  let ascendant: WesternAscendant | null = null;
+  if (snap.input.date && snap.input.time && snap.geo) {
+    const utc = localBirthToUTC(snap.input.date, snap.input.time, snap.geo.tz);
+    if (utc) {
+      const chart = computeWesternChart({ utc, lat: snap.geo.lat, lng: snap.geo.lng });
+      if (chart) {
+        planets = chart.planets;
+        aspects = chart.aspects;
+        ascendant = chart.ascendant;
+      }
+    }
+  }
   return {
     sun: {
       sign_en: snap.western.sun.sign_en,
       sign_zh: snap.western.sun.sign_zh,
       element: snap.western.sun.element,
     },
-    evidence_paths: { sun: "western.sun" },
+    planets,
+    aspects,
+    ascendant,
+    evidence_paths: {
+      sun: "western.sun",
+      planets: "western.planets",
+      aspects: "western.aspects",
+      ascendant: "western.ascendant",
+    },
   };
 }
 
-export function deriveVedicFacts(snap: CalculationSnapshot): VedicFacts | null {
+export function deriveVedicFacts(
+  snap: CalculationSnapshot,
+  opts: BuildFactsOptions = {},
+): VedicFacts | null {
   if (snap.vedic.status !== "ok" || !snap.vedic.chart) return null;
   const c = snap.vedic.chart;
   const dasha = c.vimshottari ?? [];
   const moonPlanet = c.planets.find((p) => p.key === "moon");
+
+  // v3: expand Antardasha for every MD; PD for the AD active at asOfDate.
+  const anchor = opts.asOfDate ? new Date(opts.asOfDate + "T12:00:00Z") : new Date(dasha[0]?.start ?? Date.now());
+  const expansion = expandVimshottari(dasha, anchor);
+  let current: VedicFacts["current"] = null;
+  if (opts.asOfDate) {
+    const triple = currentDashaTriple(expansion, anchor);
+    if (triple.mahadasha) {
+      current = {
+        mahadasha_lord: triple.mahadasha.lord,
+        antardasha_lord: triple.antardasha?.lord ?? null,
+        pratyantar_lord: triple.pratyantar?.lord ?? null,
+        as_of_date: opts.asOfDate,
+      };
+    }
+  }
+
   return {
     ascendant_sign: c.ascendant?.sign ?? null,
     moon: {
@@ -240,37 +352,57 @@ export function deriveVedicFacts(snap: CalculationSnapshot): VedicFacts | null {
     vimshottari_next: dasha[1]
       ? { lord: dasha[1].lord, startISO: dasha[1].start, endISO: dasha[1].end }
       : null,
-    evidence_paths: { moon: "vedic.chart.moon", dasha: "vedic.chart.vimshottari" },
-  };
-}
-
-/** Modules that are honestly NOT wired locally — never invented by AI. */
-export const HONESTLY_UNAVAILABLE_MODULES = [
-  "ziwei_da_xian_10year",
-  "ziwei_liu_nian",
-  "ziwei_liu_yue",
-  "vedic_antardasha",
-  "vedic_pratyantar",
-  "bazi_da_yun_luck_pillars",
-] as const;
-
-export function buildPremiumFacts(snap: CalculationSnapshot): PremiumFacts {
-  return {
-    version: PREMIUM_FACTS_VERSION,
-    bazi: deriveBaziFacts(snap),
-    ziwei: deriveZiweiFacts(snap),
-    western: deriveWesternFacts(snap),
-    vedic: deriveVedicFacts(snap),
-    unavailable: [...HONESTLY_UNAVAILABLE_MODULES],
+    mahadasha: expansion.mahadasha,
+    current,
+    pratyantar_available: expansion.pratyantar_available,
+    evidence_paths: {
+      moon: "vedic.moon",
+      dasha: "vedic.mahadasha",
+      current: "vedic.current",
+    },
   };
 }
 
 /**
- * Given a dotted/bracketed path (e.g. "bazi.pillars.day",
- * "ziwei.palaces[0].major_stars[1].name"), resolve it against
- * a facts object. Returns undefined when the path does not exist.
- * Used by tests and AI-output validators to prove that every claim
- * cites an existing field.
+ * Modules honestly not wired locally in v3. AI narrative must NOT claim
+ * to interpret any of these. Zi Wei 流日/流时 and BaZi 流月/流日 are
+ * beyond the libraries' surfaced APIs; Western house cusps require a
+ * house-system implementation we haven't audited.
+ */
+export const HONESTLY_UNAVAILABLE_MODULES = [
+  "ziwei_liu_ri",
+  "ziwei_liu_shi",
+  "bazi_liu_yue",
+  "bazi_liu_ri",
+  "bazi_liu_shi",
+  "western_house_cusps",
+  "western_progressions",
+  "western_transits",
+] as const;
+
+export function buildPremiumFacts(
+  snap: CalculationSnapshot,
+  opts: BuildFactsOptions = {},
+): PremiumFacts {
+  const vedic = deriveVedicFacts(snap, opts);
+  const unavailable: string[] = [...HONESTLY_UNAVAILABLE_MODULES];
+  // If Pratyantar level failed validation, honestly disclose it.
+  if (vedic && !vedic.pratyantar_available) unavailable.push("vedic_pratyantar_validation_failed");
+  return {
+    version: PREMIUM_FACTS_VERSION,
+    bazi: deriveBaziFacts(snap),
+    ziwei: deriveZiweiFacts(snap, opts),
+    western: deriveWesternFacts(snap),
+    vedic,
+    unavailable,
+  };
+}
+
+/**
+ * Resolve a dotted/bracketed evidence path (e.g. "bazi.pillars.day",
+ * "ziwei.palaces[0].major_stars[1].name") against a facts object.
+ * Undefined result → the path does not exist and any AI claim citing
+ * it must be rejected.
  */
 export function resolveFactsPath(facts: PremiumFacts, path: string): unknown {
   const tokens = path.split(/[.[\]]/).filter(Boolean);
