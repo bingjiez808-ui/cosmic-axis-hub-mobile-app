@@ -855,27 +855,62 @@ async function generateChapter(
   webReport: string,
   isZh: boolean,
   apiKey: string,
-  opts: { allowedFacts?: readonly string[]; targetCharsZh?: readonly [number, number]; maxOutputTokens?: number } = {},
-): Promise<{ text: string; usage: TokenUsage | null }> {
+  opts: {
+    allowedFacts?: readonly string[];
+    targetCharsZh?: readonly [number, number];
+    maxOutputTokens?: number;
+  } = {},
+): Promise<{
+  text: string;
+  evidence_refs: Array<{ path: string; module: string; confidence: string }>;
+  usage: TokenUsage | null;
+}> {
+  const { parseChapterJson } = await import("./chapter-json-schema");
   const gateway = createLovableAiGatewayProvider(apiKey);
   const guardrails = guardrailsFor(isZh ? "zh" : "en");
-  const allowedHint = opts.allowedFacts && opts.allowedFacts.length > 0
-    ? (isZh ? `本章仅可引用事实模块：${opts.allowedFacts.join("、")}。` : `Only cite fact modules: ${opts.allowedFacts.join(", ")}.`)
-    : (isZh ? "本章不引用命盘事实模块。" : "This chapter does not cite chart facts.");
+  const allowedHint =
+    opts.allowedFacts && opts.allowedFacts.length > 0
+      ? isZh
+        ? `本章仅可引用事实模块：${opts.allowedFacts.join("、")}。`
+        : `Only cite fact modules: ${opts.allowedFacts.join(", ")}.`
+      : isZh
+        ? "本章不引用命盘事实模块，evidence_refs 必须为空数组。"
+        : "This chapter does not cite chart facts; evidence_refs MUST be an empty array.";
   const lenHint = opts.targetCharsZh
-    ? (isZh ? `目标字数：${opts.targetCharsZh[0]}-${opts.targetCharsZh[1]} 汉字。` : `Target length: ${opts.targetCharsZh[0]}-${opts.targetCharsZh[1]} Chinese characters (or equivalent).`)
+    ? isZh
+      ? `目标字数：${opts.targetCharsZh[0]}-${opts.targetCharsZh[1]} 汉字。`
+      : `Target length: ${opts.targetCharsZh[0]}-${opts.targetCharsZh[1]} Chinese characters (or equivalent).`
     : "";
+
+  const jsonRules = isZh
+    ? `严格输出规范：只回复一个 JSON 对象，形如
+{"body":"…纯文本正文，段落之间用\\n\\n分隔…","evidence_refs":[{"path":"bazi.pillars.day","module":"bazi","confidence":"grounded"}]}
+- body 只能是段落纯文本，无 Markdown 标题或代码块。
+- evidence_refs.path 必须精确对应 FACTS JSON 中真实存在的字段（点/方括号路径），不得编造。
+- module 只能是 bazi | bazi_luck | ziwei | ziwei_horoscope | western | western_aspects | vedic | vedic_dasha。
+- confidence 只能是 grounded（本地计算可直接证实）| traditional（经典理论推论）| reflective（提示式反思）。
+- 不允许除 body / evidence_refs 之外的任何键；不允许附加解释文字或 Markdown 代码块外的内容。`
+    : `Strict output contract: reply with a SINGLE JSON object only:
+{"body":"…plain-text paragraphs separated by \\n\\n…","evidence_refs":[{"path":"bazi.pillars.day","module":"bazi","confidence":"grounded"}]}
+- body is plain text only (no Markdown headers or fences).
+- evidence_refs.path must correspond exactly to a real field in the FACTS JSON (dot / bracket path); never invent.
+- module ∈ bazi | bazi_luck | ziwei | ziwei_horoscope | western | western_aspects | vedic | vedic_dasha.
+- confidence ∈ grounded (directly verifiable from local calc) | traditional (classical inference) | reflective (prompt-style).
+- No other keys, no prose outside the JSON object, no code fences.`;
+
   const system = isZh
     ? `你是命运图书馆资深占星与命理长者。撰写一份高级 AI 深度报告的一个章节，只在站内网页中阅读。
 
 事实纪律（不可违反）：
 - 你只能引用下面 FACTS JSON 中真实存在的字段。
-- FACTS.unavailable 里列出的模块本地尚未计算，禁止编造；如需提到，只能诚实说明"暂未提供"。
+- FACTS.unavailable 里列出的模块本地尚未计算，禁止编造。
 - 跨体系结论至少援引两个不同体系的事实；矛盾要展示，不强行统一。
 - 不给医疗诊断、灾祸预言或收益保证；用"倾向 / 窗口 / 可能"等谨慎措辞。
-- 输出纯文本段落，不要 Markdown 标题或代码块。段落之间用一个空行分隔。
 ${allowedHint}
 ${lenHint}
+
+${jsonRules}
+
 ${guardrails}`
     : `You are a senior elder of the Library of Destiny writing one chapter of a premium deep reading delivered inside the web app.
 
@@ -884,9 +919,11 @@ Fact discipline (non-negotiable):
 - Modules listed in FACTS.unavailable are NOT computed locally — do not fabricate.
 - Any cross-tradition conclusion must be backed by facts from at least two different traditions.
 - No medical diagnoses, guaranteed misfortune, or financial promises.
-- Output plain-text paragraphs (no Markdown headers or code fences). Separate paragraphs with one blank line.
 ${allowedHint}
 ${lenHint}
+
+${jsonRules}
+
 ${guardrails}`;
 
   const prompt = `${isZh ? "章节" : "Chapter"}: ${title} (${key})
@@ -908,14 +945,32 @@ ${webReport.slice(0, 3000)}
     temperature: 0,
     ...(opts.maxOutputTokens ? { maxOutputTokens: opts.maxOutputTokens } : {}),
   });
-  const u = (result as unknown as { usage?: { inputTokens?: number; outputTokens?: number; promptTokens?: number; completionTokens?: number } }).usage;
+  const u = (
+    result as unknown as {
+      usage?: {
+        inputTokens?: number;
+        outputTokens?: number;
+        promptTokens?: number;
+        completionTokens?: number;
+      };
+    }
+  ).usage;
   const usage: TokenUsage | null = u
     ? {
         input_tokens: u.inputTokens ?? u.promptTokens ?? 0,
         output_tokens: u.outputTokens ?? u.completionTokens ?? 0,
       }
     : null;
-  return { text: result.text.trim().slice(0, 12000), usage };
+  const parsed = parseChapterJson(result.text);
+  if (!parsed.ok) {
+    // Bubble up as a provider error → chapter is marked failed and retried.
+    throw new Error(`chapter_json_invalid:${parsed.error}`);
+  }
+  return {
+    text: parsed.value.body.trim().slice(0, 20000),
+    evidence_refs: parsed.value.evidence_refs,
+    usage,
+  };
 }
 
 
