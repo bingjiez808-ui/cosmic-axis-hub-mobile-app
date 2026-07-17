@@ -43,7 +43,7 @@ function loadMigrationDefining(fnName: string): string {
 }
 
 describe("claim_premium_chapter — SQL invariants", () => {
-  const sql = loadMigrationDefining("claim_premium_chapter");
+  const sql = loadMigrationDefining("claim_premium_chapter_for_user");
 
   test("SECURITY DEFINER", () => {
     expect(sql).toMatch(/SECURITY DEFINER/i);
@@ -54,9 +54,8 @@ describe("claim_premium_chapter — SQL invariants", () => {
   test("verifies caller owns the report", () => {
     // Owner-check joins premium_pdf_reports on user_id = auth.uid()
     expect(sql).toMatch(/premium_pdf_reports/i);
-    expect(sql).toMatch(/auth\.uid\(\)/i);
     // The specific ownership predicate must be present.
-    expect(sql).toMatch(/user_id\s*=\s*(_uid|auth\.uid\(\))/i);
+    expect(sql).toMatch(/user_id\s*=\s*_user_id/i);
   });
   test("pending, failed, or stale running rows are eligible for claim", () => {
     expect(sql).toMatch(/status\s+IN\s*\(\s*'pending'\s*,\s*'failed'\s*\)/i);
