@@ -759,7 +759,13 @@ export const listAdminChartsForUser = createServerFn({ method: "POST" })
 /* Deep-report content generation                                         */
 /* --------------------------------------------------------------------- */
 
-export type PremiumChapter = { key: string; title: string; body: string };
+export type PremiumChapter = {
+  key: string;
+  title: string;
+  body: string;
+  /** v3+: structured evidence references. Optional on legacy v1/v2 rows. */
+  evidence_refs?: Array<{ path: string; module: string; confidence: string }>;
+};
 export type PremiumContent = {
   meta: {
     prompt_version: string;
