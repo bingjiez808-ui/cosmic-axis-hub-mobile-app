@@ -142,6 +142,7 @@ export async function runChapterWorkers(opts: {
         kind: "completed",
         chapter_key: meta.key,
         body: result.body,
+        evidence_refs: result.evidence_refs ?? [],
         input_tokens: u.input_tokens,
         output_tokens: u.output_tokens,
       });
