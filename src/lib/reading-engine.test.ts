@@ -11,7 +11,8 @@
  *   5. Bumping any of prompt_version / model_id / report_version /
  *      calculation_version produces a new cache key (no accidental reuse).
  */
-import { describe, it, expect } from "vitest";
+// @ts-expect-error — bun:test is Bun's built-in runner.
+import { describe, it, expect } from "bun:test";
 
 import type { CalculationSnapshot } from "./calc-snapshot";
 import {
