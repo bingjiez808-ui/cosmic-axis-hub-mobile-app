@@ -51,6 +51,18 @@ const TXT = {
   next: { zh: "下一章", en: "Next" },
   position: { zh: "章节", en: "Chapter" },
   drawer_title: { zh: "章节目录", en: "Table of contents" },
+  partial_banner: {
+    zh: "本报告部分章节尚未完成或曾经生成失败，你可以继续生成剩余章节，已完成章节不会重复调用 AI。",
+    en: "Some chapters of this report are still pending or previously failed. You can resume generation; completed chapters won't call AI again.",
+  },
+  continue: { zh: "继续生成", en: "Resume generation" },
+  continuing: { zh: "正在续跑…", en: "Resuming…" },
+  gen_progress: { zh: "已生成", en: "Generated" },
+  badge_completed: { zh: "已完成", en: "Done" },
+  badge_pending: { zh: "待生成", en: "Pending" },
+  badge_running: { zh: "生成中", en: "Running" },
+  badge_failed: { zh: "失败", en: "Failed" },
+  badge_skipped: { zh: "跳过", en: "Skipped" },
 };
 
 function pick<T extends { zh: string; en: string }>(t: T, lang: "zh" | "en"): string {
