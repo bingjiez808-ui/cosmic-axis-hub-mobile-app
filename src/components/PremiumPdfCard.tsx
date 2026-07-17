@@ -515,9 +515,16 @@ function PrimaryAction({
 
   if (state.kind === "partial" || state.kind === "failed") {
     return (
-      <button type="button" disabled={busy} onClick={onGenerate} className={btnPrimary}>
-        {pick(TXT.cta_continue, lang)}
-      </button>
+      <div className="flex w-full flex-col gap-2">
+        {state.kind === "failed" && (
+          <p className="rounded-2xl border border-nebula-purple/30 bg-nebula-purple/[0.06] p-3 text-[12px] leading-relaxed text-stone-warm/75 [overflow-wrap:break-word]">
+            {pick(TXT.failed_hint, lang)}
+          </p>
+        )}
+        <button type="button" disabled={busy} onClick={onGenerate} className={btnPrimary}>
+          {pick(TXT.cta_continue, lang)}
+        </button>
+      </div>
     );
   }
 
