@@ -684,8 +684,14 @@ export type PremiumMockPaymentMethod =
  */
 export function isMockPaymentAllowedFor(env: {
   NODE_ENV?: string | undefined;
+  PAYMENT_MODE?: string | undefined;
 }): boolean {
-  return env.NODE_ENV !== "production";
+  // Explicit switch: PAYMENT_MODE=mock (default) enables the simulated
+  // cashier. Anything else (e.g. "live", "off") disables it. NODE_ENV is
+  // deliberately NOT consulted — Lovable preview builds evaluate to
+  // production but must still be able to run the mock flow.
+  const mode = (env.PAYMENT_MODE ?? "mock").toLowerCase();
+  return mode === "mock";
 }
 
 const MockPayInput = z.object({
