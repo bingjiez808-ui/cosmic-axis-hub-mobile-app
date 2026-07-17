@@ -14,6 +14,62 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_usage_ledger: {
+        Row: {
+          chapter_key: string | null
+          created_at: string
+          error_code: string | null
+          estimated_credits: number | null
+          id: string
+          input_tokens: number
+          model_id: string
+          operation: string
+          output_tokens: number
+          provider: string
+          report_id: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          chapter_key?: string | null
+          created_at?: string
+          error_code?: string | null
+          estimated_credits?: number | null
+          id?: string
+          input_tokens?: number
+          model_id: string
+          operation: string
+          output_tokens?: number
+          provider?: string
+          report_id?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          chapter_key?: string | null
+          created_at?: string
+          error_code?: string | null
+          estimated_credits?: number | null
+          id?: string
+          input_tokens?: number
+          model_id?: string
+          operation?: string
+          output_tokens?: number
+          provider?: string
+          report_id?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_usage_ledger_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "premium_pdf_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       charts: {
         Row: {
           birth_date: string | null
@@ -227,6 +283,74 @@ export type Database = {
             columns: ["source_report_id"]
             isOneToOne: false
             referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      premium_report_chapters: {
+        Row: {
+          attempt_count: number
+          chapter_index: number
+          chapter_key: string
+          claim_token: string | null
+          claimed_at: string | null
+          completed_at: string | null
+          content_json: Json | null
+          created_at: string
+          error_message: string | null
+          evidence_refs: Json | null
+          id: string
+          input_tokens: number
+          output_tokens: number
+          report_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attempt_count?: number
+          chapter_index: number
+          chapter_key: string
+          claim_token?: string | null
+          claimed_at?: string | null
+          completed_at?: string | null
+          content_json?: Json | null
+          created_at?: string
+          error_message?: string | null
+          evidence_refs?: Json | null
+          id?: string
+          input_tokens?: number
+          output_tokens?: number
+          report_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attempt_count?: number
+          chapter_index?: number
+          chapter_key?: string
+          claim_token?: string | null
+          claimed_at?: string | null
+          completed_at?: string | null
+          content_json?: Json | null
+          created_at?: string
+          error_message?: string | null
+          evidence_refs?: Json | null
+          id?: string
+          input_tokens?: number
+          output_tokens?: number
+          report_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "premium_report_chapters_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "premium_pdf_reports"
             referencedColumns: ["id"]
           },
         ]
@@ -486,7 +610,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      admin_ai_usage_summary: {
+        Args: { _since?: string }
+        Returns: {
+          call_count: number
+          last_call: string
+          report_id: string
+          total_credits: number
+          total_input_tokens: number
+          total_output_tokens: number
+          user_id: string
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "user"
