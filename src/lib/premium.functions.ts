@@ -965,6 +965,13 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
         chapters,
       };
 
+      // ai_generation_count is bumped ONLY here — the didStart branch is
+      // the sole path that actually called the AI provider. Cached
+      // completions, concurrent losers (didStart=false), and reopen
+      // reads never reach this update, so the counter accurately
+      // reflects real provider invocations. Non-atomic assignment is
+      // safe because the unique index on (user_id, chart_id,
+      // report_version) makes the didStart winner the sole writer.
       await supabaseAdmin
         .from("premium_pdf_reports")
         .update({
@@ -974,6 +981,7 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
           provider: "lovable-ai-gateway",
           generated_at: new Date().toISOString(),
           error_message: null,
+          ai_generation_count: 1,
         })
         .eq("id", row.id)
         .eq("user_id", userId);
