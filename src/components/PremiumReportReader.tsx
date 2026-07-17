@@ -770,7 +770,7 @@ function ZiweiFactBlock({ ziwei, lang }: { ziwei: NonNullable<PremiumFacts["ziwe
         <span className="text-stone-warm/50">{pick(FACTS_TXT.lunar, lang)}: {ziwei.lunar_date || "—"}</span>
       </div>
 
-      <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
         {ziwei.palaces.map((p) => {
           const isSoul = p.index === ziwei.soul_palace_index;
           const majors = p.major_stars;
