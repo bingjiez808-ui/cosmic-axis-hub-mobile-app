@@ -647,6 +647,145 @@ export const insertTestPremiumOrderFixture = createServerFn({ method: "POST" })
   });
 
 
+/* --------------------------------------------------------------------- */
+/* Mock payment (simulated checkout) — NON-PRODUCTION ONLY               */
+/*                                                                        */
+/* The real Chinese payment channels (WeChat Pay / Alipay / UnionPay)     */
+/* and international Visa acquiring are NOT wired. The premium ¥79 unlock */
+/* uses a simulated cashier modal on preview/dev so we can validate the   */
+/* end-to-end user journey without collecting real bank-card data,        */
+/* creating real merchant transactions, or contacting any PSP API.        */
+/*                                                                        */
+/* Rules baked in here:                                                   */
+/*   1) Absolutely refused when NODE_ENV === "production".                */
+/*   2) Auth required; order is bound to the caller's own user_id and     */
+/*      a chart_id the caller actually owns.                              */
+/*   3) Same (user_id, chart_id, current product_version) can only ever   */
+/*      have one active order — a second mock click is idempotent and     */
+/*      simply reports `reused: true` for the existing paid row.          */
+/*   4) provider is stored as `mock_wechat` / `mock_alipay` / `mock_visa` */
+/*      / `mock_unionpay` so real merchant reconciliation always ignores  */
+/*      these rows.                                                       */
+/* --------------------------------------------------------------------- */
+
+export const PREMIUM_MOCK_PAYMENT_METHODS = [
+  "wechat",
+  "alipay",
+  "visa",
+  "unionpay",
+] as const;
+export type PremiumMockPaymentMethod =
+  (typeof PREMIUM_MOCK_PAYMENT_METHODS)[number];
+
+/**
+ * Pure helper: does the current server runtime allow mock (simulated)
+ * payment? Extracted for unit tests so we can assert the production
+ * kill-switch without needing a real Supabase client.
+ */
+export function isMockPaymentAllowedFor(env: {
+  NODE_ENV?: string | undefined;
+}): boolean {
+  return env.NODE_ENV !== "production";
+}
+
+const MockPayInput = z.object({
+  chartId: z.string().uuid(),
+  method: z.enum(PREMIUM_MOCK_PAYMENT_METHODS),
+});
+
+export type MockPaymentOutcome = {
+  ok: true;
+  orderId: string;
+  reused: boolean;
+  provider: `mock_${PremiumMockPaymentMethod}`;
+};
+
+export const simulateMockPremiumPayment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => MockPayInput.parse(d))
+  .handler(async ({ data, context }): Promise<MockPaymentOutcome> => {
+    if (!isMockPaymentAllowedFor(process.env)) {
+      throw new Error("mock_payment_disabled_in_production");
+    }
+    const { userId } = context;
+    await assertEmailVerifiedOrAdmin(context);
+    enforceRateLimit(`premium-mock-pay:${userId}`, 12, 60_000, "mock payments");
+
+    const chart = await loadChartOwnedBy(userId, data.chartId); // throws chart_not_found on mismatch
+    assertSystemsComplete(chart);
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const provider = `mock_${data.method}` as MockPaymentOutcome["provider"];
+    const note = `mock-${data.method}:${userId.slice(0, 8)}`;
+
+    // Legacy paid buyer already fully unlocked — never mint a second row.
+    const { data: legacyPaid } = await supabaseAdmin
+      .from("premium_report_orders")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("chart_id", data.chartId)
+      .in("product_version", PREMIUM_LEGACY_PRODUCT_VERSIONS as unknown as string[])
+      .eq("status", "paid")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (legacyPaid)
+      return { ok: true, orderId: legacyPaid.id, reused: true, provider };
+
+    // Reuse the caller's current-version order (pending or paid). Only
+    // ONE active order per (user, chart, product_version) is allowed —
+    // enforced by DB unique index. Repeated mock clicks or method
+    // switches converge to the same order id.
+    const { data: existing } = await supabaseAdmin
+      .from("premium_report_orders")
+      .select("id, status")
+      .eq("user_id", userId)
+      .eq("chart_id", data.chartId)
+      .eq("product_version", PREMIUM_PRODUCT_VERSION)
+      .in("status", ["pending", "paid"])
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (existing) {
+      if (existing.status === "paid") {
+        return { ok: true, orderId: existing.id, reused: true, provider };
+      }
+      const { error: upErr } = await supabaseAdmin
+        .from("premium_report_orders")
+        .update({
+          status: "paid",
+          provider,
+          paid_at: new Date().toISOString(),
+          grant_note: note,
+        })
+        .eq("id", existing.id);
+      if (upErr) throw new Error("order_update_failed");
+      return { ok: true, orderId: existing.id, reused: false, provider };
+    }
+
+    const { data: inserted, error: insErr } = await supabaseAdmin
+      .from("premium_report_orders")
+      .insert({
+        user_id: userId,
+        chart_id: data.chartId,
+        product_version: PREMIUM_PRODUCT_VERSION,
+        amount_cents: PREMIUM_PRICE_CENTS,
+        currency: PREMIUM_CURRENCY,
+        status: "paid",
+        provider,
+        paid_at: new Date().toISOString(),
+        grant_note: note,
+      })
+      .select("id")
+      .single();
+    if (insErr || !inserted) throw new Error("order_create_failed");
+    return { ok: true, orderId: inserted.id, reused: false, provider };
+  });
+
+
+
+
 
 /* --------------------------------------------------------------------- */
 /* listAdminPremiumOrders — admin only                                    */

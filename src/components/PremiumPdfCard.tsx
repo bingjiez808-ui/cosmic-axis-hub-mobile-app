@@ -17,12 +17,13 @@ import {
   generatePremiumReport,
   getPremiumStatus,
   getPremiumReportProgress,
-  startPremiumCheckout,
   type PremiumStatus,
   type PremiumReportProgress,
 } from "@/lib/premium.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { PremiumReportReader } from "@/components/PremiumReportReader";
+import { MockPaymentModal } from "@/components/MockPaymentModal";
+
 import {
   buildCalculationSnapshot,
   missingSystemDetails,
@@ -131,6 +132,8 @@ export function PremiumPdfCard({
   const [progress, setProgress] = useState<PremiumReportProgress | null>(null);
   const [busy, setBusy] = useState(false);
   const [readerOpen, setReaderOpen] = useState(false);
+  const [payOpen, setPayOpen] = useState(false);
+
   const [resent, setResent] = useState(false);
   const openerRef = useRef<HTMLButtonElement | null>(null);
   const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -247,25 +250,21 @@ export function PremiumPdfCard({
     } catch { /* best-effort */ }
   };
 
-  const onUnlock = async () => {
+  const onUnlock = () => {
     if (state.kind !== "locked") return;
+    setPayOpen(true);
+  };
+
+  const onMockPaymentSuccess = async () => {
+    setPayOpen(false);
     setBusy(true);
     try {
-      const outcome = await startPremiumCheckout({ data: { chartId: state.chartId } });
-      if (outcome.kind === "already_paid") await refresh();
-      else setState({ kind: "order_pending", chartId: state.chartId });
-    } catch (err) {
-      const code = extractErrorCode(err);
-      if (code === "email_not_verified") {
-        const { data: sess } = await supabase.auth.getSession();
-        setState({ kind: "verify_needed", email: sess.session?.user?.email ?? null });
-      } else {
-        setState({ kind: "error", message: pick(TXT.error, lang) });
-      }
+      await refresh();
     } finally {
       setBusy(false);
     }
   };
+
 
   const onGenerate = async () => {
     if (state.kind !== "paid_no_report" && state.kind !== "partial" && state.kind !== "failed") return;
@@ -403,7 +402,16 @@ export function PremiumPdfCard({
           }}
         />
       )}
+
+      <MockPaymentModal
+        open={payOpen}
+        chartId={state.kind === "locked" ? state.chartId : null}
+        lang={lang}
+        onClose={() => setPayOpen(false)}
+        onSuccess={onMockPaymentSuccess}
+      />
     </>
+
   );
 }
 
