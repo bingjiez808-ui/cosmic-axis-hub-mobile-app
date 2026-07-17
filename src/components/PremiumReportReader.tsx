@@ -483,6 +483,40 @@ export function PremiumReportReader({
                       )}
                     </section>
 
+                    {progressData &&
+                      (progressData.reportStatus === "partial" ||
+                        progressData.reportStatus === "failed" ||
+                        progressData.canContinue) &&
+                      progressData.completedChapters < progressData.totalChapters && (
+                        <section
+                          role="status"
+                          aria-live="polite"
+                          className="mb-8 rounded-2xl border border-nebula-purple/30 bg-nebula-purple/[0.08] p-4 md:p-5"
+                        >
+                          <p className="text-[10px] uppercase tracking-[0.3em] text-nebula-purple/90">
+                            {pick(TXT.gen_progress, lang)} · {progressData.completedChapters}/
+                            {progressData.totalChapters}
+                            {progressData.failedChapters > 0
+                              ? ` · ${pick(TXT.badge_failed, lang)} ${progressData.failedChapters}`
+                              : ""}
+                          </p>
+                          <p className="mt-2 text-[13px] leading-relaxed text-stone-warm/80">
+                            {pick(TXT.partial_banner, lang)}
+                          </p>
+                          {progressData.canContinue && (
+                            <button
+                              type="button"
+                              onClick={handleContinue}
+                              disabled={continuing}
+                              className="mt-3 inline-flex min-h-[44px] items-center rounded-full border border-gold-dust/50 bg-gold-dust/10 px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-gold-light transition-colors hover:bg-gold-dust/20 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              {continuing ? pick(TXT.continuing, lang) : pick(TXT.continue, lang)}
+                            </button>
+                          )}
+                        </section>
+                      )}
+
+
                     {/* Locally-derived facts (v2+). Absent on legacy rows. */}
                     {content.facts && <FactsPanel facts={content.facts} lang={lang} />}
 
