@@ -7,6 +7,7 @@
  * browser wrap a single character onto its own line. English keeps the
  * same block-span structure so both languages share one layout contract.
  */
+// @ts-expect-error — bun:test is Bun's built-in runner, no npm types shipped.
 import { describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
