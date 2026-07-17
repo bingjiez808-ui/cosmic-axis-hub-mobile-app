@@ -33,7 +33,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Json } from "@/integrations/supabase/types";
 import { createLovableAiGatewayProvider } from "./ai-gateway.server";
-import { guardrailsFor, safeMessage } from "./ai-guardrails";
+import { guardrailsFor, safeMessage, sanitizeAuditMessage } from "./ai-guardrails";
 import { enforceRateLimit } from "./rate-limit.server";
 import { isEmailVerified, assertEmailVerifiedOrAdmin } from "./reports-store.functions";
 import { buildCalculationSnapshot, missingSystems, type CalculationSnapshot } from "./calc-snapshot";
