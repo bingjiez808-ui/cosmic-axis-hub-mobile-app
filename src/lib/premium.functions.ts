@@ -1242,10 +1242,12 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
             chapter_index: catalog.index,
             status: "completed",
             attempt_count: (prior?.attempt_count ?? 0) + 1,
-            content_json: { key: t.chapter_key, title: isZh ? catalog.title_zh : catalog.title_en, body: t.body } as unknown as Json,
+            content_json: { key: t.chapter_key, title: isZh ? catalog.title_zh : catalog.title_en, body: t.body, evidence_refs: [] } as unknown as Json,
+            evidence_refs: [] as unknown as Json,
             input_tokens: (prior?.input_tokens ?? 0) + t.input_tokens,
             output_tokens: (prior?.output_tokens ?? 0) + t.output_tokens,
             error_message: null,
+            claim_token: null,
             completed_at: new Date().toISOString(),
           };
           await supabaseAdmin
