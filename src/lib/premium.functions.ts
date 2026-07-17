@@ -988,20 +988,48 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!order) throw new Error("order_not_paid");
 
-    // 3. Cached completed row → return as-is, do NOT call AI again.
-    const { data: existing } = await supabaseAdmin
+    // 3. Compute the versioned cache key from the local calc snapshot.
+    //    Cache lookup checks all four version pins + input_hash + owner
+    //    + chart; a hit short-circuits and NEVER calls the provider.
+    const engineInput = buildEngineInputForChart(chart);
+    const cacheKey = await makeCacheKey(userId, data.chartId, engineInput);
+
+    const { data: cached } = await supabaseAdmin
       .from("premium_pdf_reports")
       .select("id, status, content_json")
       .eq("user_id", userId)
       .eq("chart_id", data.chartId)
-      .eq("report_version", PREMIUM_REPORT_VERSION)
+      .eq("report_version", cacheKey.report_version)
+      .eq("input_hash", cacheKey.input_hash)
+      .eq("prompt_version", cacheKey.prompt_version)
+      .eq("model_id", cacheKey.model_id)
+      .eq("calculation_version", cacheKey.calculation_version)
       .maybeSingle();
-    if (existing?.status === "completed" && existing.content_json) {
-      return { reportId: existing.id, status: "completed" as const };
+    if (cached?.status === "completed" && cached.content_json) {
+      return { reportId: cached.id, status: "completed" as const };
     }
 
-    // 4. Atomic claim (unique index on user_id, chart_id, report_version).
-    const { row, didStart } = await beginPremiumReportRow(userId, data.chartId, order.id);
+    // Backwards-compat: legacy row without input_hash for this
+    // (user, chart, report_version). Return it as-is; never overwrite.
+    const { data: legacy } = await supabaseAdmin
+      .from("premium_pdf_reports")
+      .select("id, status, content_json")
+      .eq("user_id", userId)
+      .eq("chart_id", data.chartId)
+      .eq("report_version", cacheKey.report_version)
+      .is("input_hash", null)
+      .maybeSingle();
+    if (legacy?.status === "completed" && legacy.content_json) {
+      return { reportId: legacy.id, status: "completed" as const };
+    }
+
+    // 4. Atomic claim (unique index on user_id, chart_id, report_version, input_hash).
+    const { row, didStart } = await beginPremiumReportRow(
+      userId,
+      data.chartId,
+      order.id,
+      cacheKey,
+    );
     if (!didStart) {
       return {
         reportId: row.id,
@@ -1037,11 +1065,20 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
         .join("\n");
 
       const chapters: PremiumChapter[] = [];
+      let totalInput = 0;
+      let totalOutput = 0;
+      let anyUsage = false;
       for (const key of CHAPTER_KEYS) {
         const title = titles[key];
         let body = "";
         try {
-          body = await generateChapter(key, title, chartFacts, webReportText, isZh, apiKey);
+          const out = await generateChapter(key, title, chartFacts, webReportText, isZh, apiKey);
+          body = out.text;
+          if (out.usage) {
+            anyUsage = true;
+            totalInput += out.usage.input_tokens;
+            totalOutput += out.usage.output_tokens;
+          }
         } catch (err) {
           body = isZh
             ? `本章生成暂时不可用（${safeMessage(err, "AI error")}）。可稍后重试。`
@@ -1052,8 +1089,8 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
 
       const content: PremiumContent = {
         meta: {
-          prompt_version: PREMIUM_PROMPT_VERSION,
-          report_version: PREMIUM_REPORT_VERSION,
+          prompt_version: cacheKey.prompt_version,
+          report_version: cacheKey.report_version,
           generated_at: new Date().toISOString(),
           lang: isZh ? "zh" : "en",
           chart_name: chart.name ?? null,
@@ -1065,20 +1102,27 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
         },
         chapters,
       };
+      const contentHash = await computeContentHash(content);
+      const tokenUsage: TokenUsage | null = anyUsage
+        ? { input_tokens: totalInput, output_tokens: totalOutput }
+        : null;
 
       // ai_generation_count is bumped ONLY here — the didStart branch is
       // the sole path that actually called the AI provider. Cached
       // completions, concurrent losers (didStart=false), and reopen
       // reads never reach this update, so the counter accurately
-      // reflects real provider invocations. Non-atomic assignment is
-      // safe because the unique index on (user_id, chart_id,
-      // report_version) makes the didStart winner the sole writer.
+      // reflects real provider invocations.
       await supabaseAdmin
         .from("premium_pdf_reports")
         .update({
           status: "completed",
           content_json: content as unknown as never,
-          model: "google/gemini-2.5-flash",
+          content_hash: contentHash,
+          token_usage: (tokenUsage as unknown as Json) ?? null,
+          model: cacheKey.model_id,
+          model_id: cacheKey.model_id,
+          calculation_version: cacheKey.calculation_version,
+          prompt_version: cacheKey.prompt_version,
           provider: "lovable-ai-gateway",
           generated_at: new Date().toISOString(),
           error_message: null,
