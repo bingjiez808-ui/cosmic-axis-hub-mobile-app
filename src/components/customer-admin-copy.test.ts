@@ -64,10 +64,13 @@ describe("Customer surfaces do not funnel users to an admin", () => {
 
 describe("PremiumPdfCard folds pending intents into the ¥79 CTA", () => {
   const SRC = readFileSync("src/components/PremiumPdfCard.tsx", "utf8");
-  test("no order_pending state, no provider_pending copy left", () => {
-    expect(SRC).not.toContain("order_pending");
-    expect(SRC).not.toContain("provider_pending");
+  test("no order_pending state, no admin-contact copy left", () => {
+    // Type union no longer contains an order_pending variant.
+    expect(SRC).not.toMatch(/kind:\s*"order_pending"/);
+    // No user-visible copy pointing at an admin.
     expect(SRC).not.toContain("联系管理员");
     expect(SRC).not.toMatch(/contact\s+an?\s+admin/i);
+    expect(SRC).not.toMatch(/provider_pending\s*:/);
   });
+
 });
