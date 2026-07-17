@@ -67,7 +67,7 @@ export const PREMIUM_PROMPT_VERSION = "v2";
 // changes. v1 = 19 body-only chapters (legacy). v2 = 19 chapters + a
 // structured `facts` object grounded in the local calc snapshot.
 // Old rows keep serving their v1 content; the reader is tolerant of both.
-export const PREMIUM_REPORT_SCHEMA_VERSION = "v2";
+export const PREMIUM_REPORT_SCHEMA_VERSION = "v3";
 export const PREMIUM_PRICE_CENTS = 7900;
 export const PREMIUM_CURRENCY = "CNY";
 
@@ -765,7 +765,7 @@ export type PremiumContent = {
     prompt_version: string;
     report_version: string;
     /** Content-schema version: "v1" (legacy body-only) or "v2" (facts + body). */
-    report_schema_version?: "v1" | "v2";
+    report_schema_version?: "v1" | "v2" | "v3";
     generated_at: string;
     lang: "en" | "zh";
     chart_name: string | null;
@@ -848,36 +848,45 @@ const DISCLAIMER_ZH =
   "本报告仅供文化娱乐与自我反思，不构成医疗、法律、投资或人生决策建议；不包含任何疾病诊断、灾祸预言或收益保证。";
 
 async function generateChapter(
-  key: (typeof CHAPTER_KEYS)[number],
+  key: string,
   title: string,
   chartFacts: string,
   factsJson: string,
   webReport: string,
   isZh: boolean,
   apiKey: string,
+  opts: { allowedFacts?: readonly string[]; targetCharsZh?: readonly [number, number]; maxOutputTokens?: number } = {},
 ): Promise<{ text: string; usage: TokenUsage | null }> {
   const gateway = createLovableAiGatewayProvider(apiKey);
   const guardrails = guardrailsFor(isZh ? "zh" : "en");
+  const allowedHint = opts.allowedFacts && opts.allowedFacts.length > 0
+    ? (isZh ? `本章仅可引用事实模块：${opts.allowedFacts.join("、")}。` : `Only cite fact modules: ${opts.allowedFacts.join(", ")}.`)
+    : (isZh ? "本章不引用命盘事实模块。" : "This chapter does not cite chart facts.");
+  const lenHint = opts.targetCharsZh
+    ? (isZh ? `目标字数：${opts.targetCharsZh[0]}-${opts.targetCharsZh[1]} 汉字。` : `Target length: ${opts.targetCharsZh[0]}-${opts.targetCharsZh[1]} Chinese characters (or equivalent).`)
+    : "";
   const system = isZh
     ? `你是命运图书馆资深占星与命理长者。撰写一份高级 AI 深度报告的一个章节，只在站内网页中阅读。
 
 事实纪律（不可违反）：
-- 你只能引用下面 FACTS JSON 中真实存在的字段（四柱、日主、十神、五行分布、命宫/身宫/五行局、十二宫、主星与四化、Nakshatra、Vimshottari 等）。
-- FACTS.unavailable 里列出的模块（如 紫微大限、流年、流月；Vedic antardasha、pratyantar；八字大运）本地尚未计算，禁止编造具体内容；如需提到，只能诚实说明"暂未提供"。
+- 你只能引用下面 FACTS JSON 中真实存在的字段。
+- FACTS.unavailable 里列出的模块本地尚未计算，禁止编造；如需提到，只能诚实说明"暂未提供"。
 - 跨体系结论至少援引两个不同体系的事实；矛盾要展示，不强行统一。
 - 不给医疗诊断、灾祸预言或收益保证；用"倾向 / 窗口 / 可能"等谨慎措辞。
 - 输出纯文本段落，不要 Markdown 标题或代码块。段落之间用一个空行分隔。
-- 长度约 500-900 汉字。
+${allowedHint}
+${lenHint}
 ${guardrails}`
     : `You are a senior elder of the Library of Destiny writing one chapter of a premium deep reading delivered inside the web app.
 
 Fact discipline (non-negotiable):
-- You may only cite fields that actually appear in the FACTS JSON below (four pillars, day master, ten gods, element counts, soul/body palace, 五行局, twelve palaces, major stars & 四化, Nakshatra, Vimshottari, etc.).
-- Modules listed in FACTS.unavailable (Zi Wei 大限/流年/流月, Vedic antardasha/pratyantar, BaZi 大运) are NOT computed locally — do not fabricate them. If they are relevant, honestly state "not yet available".
-- Any cross-tradition conclusion must be backed by facts from at least two different traditions. Show disagreements — do not force consensus.
-- No medical diagnoses, no guaranteed misfortune, no financial promises — use "tendency / window / possible".
+- You may only cite fields that actually appear in the FACTS JSON below.
+- Modules listed in FACTS.unavailable are NOT computed locally — do not fabricate.
+- Any cross-tradition conclusion must be backed by facts from at least two different traditions.
+- No medical diagnoses, guaranteed misfortune, or financial promises.
 - Output plain-text paragraphs (no Markdown headers or code fences). Separate paragraphs with one blank line.
-- Length ~ 400-700 words.
+${allowedHint}
+${lenHint}
 ${guardrails}`;
 
   const prompt = `${isZh ? "章节" : "Chapter"}: ${title} (${key})
@@ -897,6 +906,7 @@ ${webReport.slice(0, 3000)}
     system,
     prompt,
     temperature: 0,
+    ...(opts.maxOutputTokens ? { maxOutputTokens: opts.maxOutputTokens } : {}),
   });
   const u = (result as unknown as { usage?: { inputTokens?: number; outputTokens?: number; promptTokens?: number; completionTokens?: number } }).usage;
   const usage: TokenUsage | null = u
@@ -905,8 +915,9 @@ ${webReport.slice(0, 3000)}
         output_tokens: u.outputTokens ?? u.completionTokens ?? 0,
       }
     : null;
-  return { text: result.text.trim().slice(0, 8000), usage };
+  return { text: result.text.trim().slice(0, 12000), usage };
 }
+
 
 /**
  * Insert (or claim) the single generating row for a given cache key.
@@ -1053,18 +1064,17 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
       order.id,
       cacheKey,
     );
-    if (!didStart) {
-      return {
-        reportId: row.id,
-        status: row.status as "pending" | "generating" | "completed" | "failed",
-      };
+    // Whether we won the initial insert or attached to an existing row,
+    // we may still need to RESUME chapter work when the row was left
+    // in "generating" / "failed" from a previous invocation. Only a
+    // fully "completed" row short-circuits without provider calls.
+    if (!didStart && row.status === "completed" && row.content_json) {
+      return { reportId: row.id, status: "completed" as const };
     }
 
     try {
       const apiKey = process.env.LOVABLE_API_KEY;
-      if (!apiKey) throw new Error("ai_gateway_not_configured");
       const isZh = (chart.lang ?? "en") === "zh";
-      const titles = isZh ? CHAPTER_TITLES_ZH : CHAPTER_TITLES_EN;
 
       const { data: webReport } = await supabaseAdmin
         .from("reports")
@@ -1088,34 +1098,212 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
         .join("\n");
 
       // Local immutable facts derived from the same snapshot used by the
-      // cache key. This is the ONLY chart data the AI is allowed to cite;
-      // the system prompt makes that explicit.
+      // cache key. This is the ONLY chart data the AI is allowed to cite.
       const { buildPremiumFacts } = await import("./premium-facts");
       const facts = buildPremiumFacts(engineInput.snapshot);
       const factsJson = JSON.stringify(facts, null, 2).slice(0, 12000);
 
-      const chapters: PremiumChapter[] = [];
-      let totalInput = 0;
-      let totalOutput = 0;
-      let anyUsage = false;
-      for (const key of CHAPTER_KEYS) {
-        const title = titles[key];
-        let body = "";
-        try {
-          const out = await generateChapter(key, title, chartFacts, factsJson, webReportText, isZh, apiKey);
-          body = out.text;
-          if (out.usage) {
-            anyUsage = true;
-            totalInput += out.usage.input_tokens;
-            totalOutput += out.usage.output_tokens;
-          }
-        } catch (err) {
-          body = isZh
-            ? `本章生成暂时不可用（${safeMessage(err, "AI error")}）。可稍后重试。`
-            : `This chapter is temporarily unavailable (${safeMessage(err, "AI error")}). Retry later.`;
+      // v3 24-chapter catalogue.
+      const { PREMIUM_V3_CHAPTERS } = await import("./premium-chapters-v3");
+      const { runChapterWorkers } = await import("./chapter-worker");
+      const { AI_BUDGET_POLICY, chapterOutputCap } = await import("./budget-policy");
+
+      // Load existing per-chapter rows for this report — resume basis.
+      const { data: existingChapters } = await supabaseAdmin
+        .from("premium_report_chapters")
+        .select("chapter_key, chapter_index, status, attempt_count, claim_token, content_json, input_tokens, output_tokens")
+        .eq("report_id", row.id)
+        .eq("user_id", userId);
+      type ChRow = {
+        chapter_key: string; chapter_index: number; status: string;
+        attempt_count: number; claim_token: string | null;
+        content_json: unknown; input_tokens: number; output_tokens: number;
+      };
+      const existing = (existingChapters ?? []) as ChRow[];
+      const existingByKey = new Map(existing.map((c) => [c.chapter_key, c]));
+
+      // Aggregate budget already spent on prior attempts.
+      const priorUsage = existing.reduce(
+        (a, c) => ({
+          input_tokens: a.input_tokens + (c.input_tokens ?? 0),
+          output_tokens: a.output_tokens + (c.output_tokens ?? 0),
+        }),
+        { input_tokens: 0, output_tokens: 0 },
+      );
+
+      const catalogue = PREMIUM_V3_CHAPTERS.map((c) => ({ key: c.key, index: c.index }));
+      const rowsForWorker = catalogue.map((c) => {
+        const e = existingByKey.get(c.key);
+        return {
+          chapter_key: c.key,
+          chapter_index: c.index,
+          status: (e?.status ?? "pending") as "pending" | "running" | "completed" | "failed" | "skipped",
+          attempt_count: e?.attempt_count ?? 0,
+          claim_token: e?.claim_token ?? null,
+        };
+      });
+
+      const isTestMode = process.env.PREMIUM_TEST_DETERMINISTIC === "1" || !apiKey;
+
+      const provider = async (
+        meta: { key: string; index: number },
+        outputCap: number,
+      ) => {
+        const catalog = PREMIUM_V3_CHAPTERS.find((c) => c.key === meta.key)!;
+        const title = isZh ? catalog.title_zh : catalog.title_en;
+        if (isTestMode) {
+          // Deterministic non-AI stub for tests / dev-mode local runs.
+          const body = `[${title}] deterministic stub — ${catalog.allowed_facts.join(",") || "no-facts"}`;
+          return {
+            ok: true as const,
+            body,
+            usage: { input_tokens: 100, output_tokens: 200 },
+          };
         }
-        chapters.push({ key, title, body });
+        try {
+          const out = await generateChapter(
+            meta.key,
+            title,
+            chartFacts,
+            factsJson,
+            webReportText,
+            isZh,
+            apiKey!,
+            {
+              allowedFacts: catalog.allowed_facts,
+              targetCharsZh: catalog.target_chars_zh,
+              maxOutputTokens: outputCap,
+            },
+          );
+          return {
+            ok: true as const,
+            body: out.text,
+            usage: out.usage ?? { input_tokens: 0, output_tokens: 0 },
+          };
+        } catch (err) {
+          return {
+            ok: false as const,
+            error: safeMessage(err, "chapter_provider_error"),
+          };
+        }
+      };
+      void chapterOutputCap; // silence unused when test mode elides its use
+
+      const workerReport = await runChapterWorkers({
+        catalog: catalogue,
+        rows: rowsForWorker,
+        provider,
+        initialUsage: priorUsage,
+      });
+
+      // Persist chapter transitions + ledger entries.
+      for (const t of workerReport.transitions) {
+        const catalog = PREMIUM_V3_CHAPTERS.find((c) => c.key === t.chapter_key)!;
+        const prior = existingByKey.get(t.chapter_key);
+        if (t.kind === "completed") {
+          const upsert = {
+            report_id: row.id,
+            user_id: userId,
+            chapter_key: t.chapter_key,
+            chapter_index: catalog.index,
+            status: "completed",
+            attempt_count: (prior?.attempt_count ?? 0) + 1,
+            content_json: { key: t.chapter_key, title: isZh ? catalog.title_zh : catalog.title_en, body: t.body } as unknown as Json,
+            input_tokens: (prior?.input_tokens ?? 0) + t.input_tokens,
+            output_tokens: (prior?.output_tokens ?? 0) + t.output_tokens,
+            error_message: null,
+            completed_at: new Date().toISOString(),
+          };
+          await supabaseAdmin
+            .from("premium_report_chapters")
+            .upsert(upsert as unknown as never, { onConflict: "report_id,chapter_key" });
+          await supabaseAdmin.from("ai_usage_ledger").insert({
+            user_id: userId,
+            report_id: row.id,
+            chapter_key: t.chapter_key,
+            operation: "chapter_generate",
+            model_id: cacheKey.model_id,
+            provider: isTestMode ? "deterministic-stub" : "lovable-ai-gateway",
+            input_tokens: t.input_tokens,
+            output_tokens: t.output_tokens,
+            status: "ok",
+          } as unknown as never);
+        } else if (t.kind === "failed") {
+          await supabaseAdmin
+            .from("premium_report_chapters")
+            .upsert({
+              report_id: row.id,
+              user_id: userId,
+              chapter_key: t.chapter_key,
+              chapter_index: catalog.index,
+              status: "failed",
+              attempt_count: (prior?.attempt_count ?? 0) + 1,
+              error_message: t.error.slice(0, 400),
+              input_tokens: (prior?.input_tokens ?? 0) + t.input_tokens,
+              output_tokens: (prior?.output_tokens ?? 0) + t.output_tokens,
+            } as unknown as never, { onConflict: "report_id,chapter_key" });
+          await supabaseAdmin.from("ai_usage_ledger").insert({
+            user_id: userId,
+            report_id: row.id,
+            chapter_key: t.chapter_key,
+            operation: "chapter_generate",
+            model_id: cacheKey.model_id,
+            provider: isTestMode ? "deterministic-stub" : "lovable-ai-gateway",
+            input_tokens: t.input_tokens,
+            output_tokens: t.output_tokens,
+            status: "error",
+            error_code: t.error.slice(0, 120),
+          } as unknown as never);
+        } else if (t.kind === "skipped_budget") {
+          await supabaseAdmin.from("ai_usage_ledger").insert({
+            user_id: userId,
+            report_id: row.id,
+            chapter_key: t.chapter_key,
+            operation: "chapter_generate",
+            model_id: cacheKey.model_id,
+            provider: isTestMode ? "deterministic-stub" : "lovable-ai-gateway",
+            input_tokens: 0,
+            output_tokens: 0,
+            status: "budget_stopped",
+            error_code: t.reason,
+          } as unknown as never);
+        }
       }
+
+      // Re-fetch chapter rows to build content_json from the full picture.
+      const { data: allChapters } = await supabaseAdmin
+        .from("premium_report_chapters")
+        .select("chapter_key, chapter_index, status, content_json")
+        .eq("report_id", row.id)
+        .eq("user_id", userId)
+        .order("chapter_index", { ascending: true });
+      const chapterList: PremiumChapter[] = [];
+      for (const c of PREMIUM_V3_CHAPTERS) {
+        const rec = (allChapters ?? []).find((x) => x.chapter_key === c.key) as
+          | { chapter_key: string; status: string; content_json: unknown }
+          | undefined;
+        const title = isZh ? c.title_zh : c.title_en;
+        if (rec?.status === "completed" && rec.content_json) {
+          const cj = rec.content_json as { body?: string };
+          chapterList.push({ key: c.key, title, body: cj.body ?? "" });
+        } else {
+          chapterList.push({
+            key: c.key,
+            title,
+            body: isZh
+              ? "本章尚未生成或暂时不可用，稍后可继续生成。"
+              : "This chapter has not been generated yet. It can be resumed later.",
+          });
+        }
+      }
+
+      const completedCount = (allChapters ?? []).filter((c) => c.status === "completed").length;
+      const totalTarget = PREMIUM_V3_CHAPTERS.length;
+      const budgetStopped =
+        workerReport.stopped_reason === "report_input_exhausted" ||
+        workerReport.stopped_reason === "report_output_exhausted";
+      const finalStatus: "completed" | "generating" =
+        completedCount >= totalTarget ? "completed" : (budgetStopped ? "completed" : "generating");
 
       const content: PremiumContent = {
         meta: {
@@ -1132,22 +1320,21 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
           subtitle: chart.name ?? (isZh ? "私人命盘解读" : "Personal chart reading"),
         },
         facts,
-        chapters,
+        chapters: chapterList,
       };
       const contentHash = await computeContentHash(content);
-      const tokenUsage: TokenUsage | null = anyUsage
-        ? { input_tokens: totalInput, output_tokens: totalOutput }
-        : null;
+      const tokenUsage: TokenUsage = {
+        input_tokens: priorUsage.input_tokens + workerReport.usage.input_tokens - priorUsage.input_tokens,
+        output_tokens: priorUsage.output_tokens + workerReport.usage.output_tokens - priorUsage.output_tokens,
+      };
+      // workerReport.usage already includes priorUsage as initialUsage,
+      // so the final ledger sums match ai_usage_ledger.
+      void AI_BUDGET_POLICY;
 
-      // ai_generation_count is bumped ONLY here — the didStart branch is
-      // the sole path that actually called the AI provider. Cached
-      // completions, concurrent losers (didStart=false), and reopen
-      // reads never reach this update, so the counter accurately
-      // reflects real provider invocations.
       await supabaseAdmin
         .from("premium_pdf_reports")
         .update({
-          status: "completed",
+          status: finalStatus,
           content_json: content as unknown as never,
           content_hash: contentHash,
           token_usage: (tokenUsage as unknown as Json) ?? null,
@@ -1155,15 +1342,15 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
           model_id: cacheKey.model_id,
           calculation_version: cacheKey.calculation_version,
           prompt_version: cacheKey.prompt_version,
-          provider: "lovable-ai-gateway",
+          provider: isTestMode ? "deterministic-stub" : "lovable-ai-gateway",
           generated_at: new Date().toISOString(),
-          error_message: null,
-          ai_generation_count: 1,
+          error_message: budgetStopped ? `budget_stopped:${workerReport.stopped_reason}` : null,
+          ai_generation_count: (existing.length > 0 ? undefined : 1),
         })
         .eq("id", row.id)
         .eq("user_id", userId);
 
-      return { reportId: row.id, status: "completed" as const };
+      return { reportId: row.id, status: finalStatus };
     } catch (err) {
       await supabaseAdmin
         .from("premium_pdf_reports")
@@ -1176,6 +1363,7 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
       throw new Error(safeMessage(err, "premium_generation_failed"));
     }
   });
+
 
 /* --------------------------------------------------------------------- */
 /* getPremiumReport — owner-only content read                             */
