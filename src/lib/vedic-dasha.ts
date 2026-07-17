@@ -116,19 +116,17 @@ function expandAntardasha(md: VimshottariMahadasha): Antardasha[] {
 function expandPratyantar(ad: Antardasha): Pratyantar[] {
   const adStartMs = new Date(ad.start).getTime();
   const adEndMs = new Date(ad.end).getTime();
-  const fullAdYears = (DASHA_YEARS[ad.lord] * DASHA_YEARS[ad.lord]) / 120; // for full AD only; scaled below
-  const actualAdYears = (adEndMs - adStartMs) / MS_PER_YEAR;
-  // If AD is a full one, scale factor = 1; otherwise proportional.
-  const scale = fullAdYears > 0 ? actualAdYears / fullAdYears : 1;
+  const adWallMs = adEndMs - adStartMs;
+  const EPS = 1e-9;
 
   const out: Pratyantar[] = [];
   let cursorMs = adStartMs;
   for (let step = 0; step < DASHA_ORDER.length; step++) {
     const lord = shiftDasha(ad.lord, step);
-    const fullPdYears = (DASHA_YEARS[lord] * DASHA_YEARS[ad.lord]) / 120;
-    const pdYears = fullPdYears * scale;
-    const nextMs = Math.min(adEndMs, cursorMs + pdYears * MS_PER_YEAR);
-    if (nextMs <= cursorMs) break;
+    // PD occupies (Y_pd / 120) of the parent AD's wall-clock duration.
+    const pdMs = (DASHA_YEARS[lord] / 120) * adWallMs;
+    const nextMs = step === DASHA_ORDER.length - 1 ? adEndMs : cursorMs + pdMs;
+    if (nextMs - cursorMs < EPS) break;
     out.push({
       lord,
       start: new Date(cursorMs).toISOString(),
@@ -136,7 +134,7 @@ function expandPratyantar(ad: Antardasha): Pratyantar[] {
       years: (nextMs - cursorMs) / MS_PER_YEAR,
     });
     cursorMs = nextMs;
-    if (cursorMs >= adEndMs) break;
+    if (cursorMs >= adEndMs - EPS) break;
   }
   return out;
 }
