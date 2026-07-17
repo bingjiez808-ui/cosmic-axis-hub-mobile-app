@@ -1435,8 +1435,16 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
           | undefined;
         const title = isZh ? c.title_zh : c.title_en;
         if (rec?.status === "completed" && rec.content_json) {
-          const cj = rec.content_json as { body?: string };
-          chapterList.push({ key: c.key, title, body: cj.body ?? "" });
+          const cj = rec.content_json as {
+            body?: string;
+            evidence_refs?: Array<{ path: string; module: string; confidence: string }>;
+          };
+          chapterList.push({
+            key: c.key,
+            title,
+            body: cj.body ?? "",
+            evidence_refs: cj.evidence_refs ?? [],
+          });
         } else {
           chapterList.push({
             key: c.key,
@@ -1444,6 +1452,7 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
             body: isZh
               ? "本章尚未生成或暂时不可用，稍后可继续生成。"
               : "This chapter has not been generated yet. It can be resumed later.",
+            evidence_refs: [],
           });
         }
       }
