@@ -95,20 +95,16 @@ mock.module("@/lib/premium.functions", () => ({
   },
 }));
 
-// Mock reader-nav helpers used by the reader (preserve other exports).
-const realReaderNav = await import("@/lib/reader-nav");
-mock.module("@/lib/reader-nav", () => ({
-  ...realReaderNav,
-  computeScrollProgress: () => 0,
-  formatAuditLine: () => "audit",
-  neighborChapters: () => ({ prev: null, next: null }),
-}));
-
-// The i18n hook expects a provider — supply a minimal override, preserve rest.
+// Preserve real i18n exports; supply a lightweight useLang that doesn't
+// require a <LanguageProvider>.
 const realI18n = await import("@/lib/i18n");
 mock.module("@/lib/i18n", () => ({
   ...realI18n,
-  useLang: () => ({ lang: "en" as const, setLang: () => {}, t: (realI18n as unknown as { DICTS?: Record<string, unknown> }).DICTS?.en ?? {} }),
+  useLang: () => ({
+    lang: "en" as const,
+    setLang: () => {},
+    t: (realI18n as unknown as { DICTS?: Record<string, unknown> }).DICTS?.en ?? {},
+  }),
 }));
 
 // The i18n hook expects a provider — supply a minimal one via mock.
