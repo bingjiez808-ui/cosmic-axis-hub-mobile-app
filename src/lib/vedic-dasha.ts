@@ -76,9 +76,11 @@ function expandAntardasha(md: VimshottariMahadasha): Antardasha[] {
   const fullMdYears = DASHA_YEARS[md.lord];
   const mdActualYears = (mdEndMs - mdStartMs) / MS_PER_YEAR;
   const elapsedYears = Math.max(0, fullMdYears - mdActualYears);
+  const mdEndYearsFull = elapsedYears + mdActualYears;
+  const EPS = 1e-9;
 
   const out: Antardasha[] = [];
-  let cursorYears = 0;         // full-clock years since MD would have begun
+  let cursorYears = 0;
   for (let step = 0; step < DASHA_ORDER.length * 2; step++) {
     const lord = shiftDasha(md.lord, step);
     const fullAdYears = (DASHA_YEARS[lord] * fullMdYears) / 120;
@@ -86,13 +88,10 @@ function expandAntardasha(md: VimshottariMahadasha): Antardasha[] {
     const adEndYears = cursorYears + fullAdYears;
     cursorYears = adEndYears;
 
-    // Skip AD fully before elapsed birth-window inside this MD.
-    if (adEndYears <= elapsedYears) continue;
-
-    // Convert AD boundaries to real timestamps inside the MD.
+    if (adEndYears <= elapsedYears + EPS) continue;
     const adRealStartYears = Math.max(adStartYears, elapsedYears);
-    const adRealEndYears = Math.min(adEndYears, elapsedYears + mdActualYears);
-    if (adRealEndYears <= adRealStartYears) continue;
+    const adRealEndYears = Math.min(adEndYears, mdEndYearsFull);
+    if (adRealEndYears - adRealStartYears < EPS) continue;
 
     const adStartMs = mdStartMs + (adRealStartYears - elapsedYears) * MS_PER_YEAR;
     const adEndMs = mdStartMs + (adRealEndYears - elapsedYears) * MS_PER_YEAR;
@@ -103,7 +102,7 @@ function expandAntardasha(md: VimshottariMahadasha): Antardasha[] {
       years: (adEndMs - adStartMs) / MS_PER_YEAR,
       pratyantar: [],
     });
-    if (adEndYears >= elapsedYears + mdActualYears) break;
+    if (adEndYears >= mdEndYearsFull - EPS) break;
   }
   return out;
 }
