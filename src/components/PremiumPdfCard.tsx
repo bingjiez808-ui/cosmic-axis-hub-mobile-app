@@ -555,13 +555,8 @@ function PrimaryAction({
     );
   }
 
-  if (state.kind === "order_pending") {
-    return (
-      <p className="w-full rounded-2xl border border-nebula-purple/40 bg-nebula-purple/[0.08] p-3 text-[12px] leading-relaxed text-stone-warm/80 [overflow-wrap:break-word]">
-        {pick(TXT.provider_pending, lang)}
-      </p>
-    );
-  }
+
+
 
   if (state.kind === "paid_no_report") {
     return (
