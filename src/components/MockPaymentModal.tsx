@@ -338,10 +338,10 @@ export function MockPaymentModal({
               type="button"
               data-testid="mock-payment-confirm"
               onClick={onConfirm}
-              disabled={busy || prod || !chartId}
+              disabled={busy || disabled || !chartId}
               className="w-full min-h-[48px] flex-1 rounded-full bg-gold-dust px-5 py-3 text-[12px] uppercase tracking-[0.28em] text-obsidian hover:bg-gold-light disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {prod
+              {disabled
                 ? pick(T.disabled_prod, lang)
                 : busy
                   ? pick(T.processing, lang)
