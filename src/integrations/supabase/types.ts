@@ -622,6 +622,16 @@ export type Database = {
           user_id: string
         }[]
       }
+      claim_premium_chapter: {
+        Args: {
+          _chapter_index: number
+          _chapter_key: string
+          _lock_ttl_seconds?: number
+          _new_token: string
+          _report_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "user"
