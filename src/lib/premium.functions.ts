@@ -765,7 +765,7 @@ export type PremiumContent = {
     prompt_version: string;
     report_version: string;
     /** Content-schema version: "v1" (legacy body-only) or "v2" (facts + body). */
-    report_schema_version?: "v1" | "v2";
+    report_schema_version?: "v1" | "v2" | "v3";
     generated_at: string;
     lang: "en" | "zh";
     chart_name: string | null;
