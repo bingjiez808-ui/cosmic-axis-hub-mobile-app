@@ -1412,7 +1412,7 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
 /* --------------------------------------------------------------------- */
 
 export type PremiumReportRead = {
-  status: "pending" | "generating" | "completed" | "failed";
+  status: "pending" | "generating" | "partial" | "completed" | "failed";
   generatedAt: string | null;
   content: PremiumContent | null;
   errorMessage: string | null;
