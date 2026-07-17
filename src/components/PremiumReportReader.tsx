@@ -230,17 +230,23 @@ export function PremiumReportReader({
                   </p>
                 )}
                 {content && (
-                  <article className="mx-auto max-w-2xl">
+                  <article className="mx-auto max-w-3xl">
                     {/* Cover / summary */}
                     <section className="mb-8 border-b border-white/5 pb-6">
                       <p className="text-[10px] uppercase tracking-[0.36em] text-gold-dust/70">
                         {pick(TXT.meta, lang)} · {fmtDate(content.meta.generated_at, lang)}
+                        {content.meta.report_schema_version
+                          ? ` · schema ${content.meta.report_schema_version}`
+                          : ""}
                       </p>
                       <h1 className="mt-2 font-serif text-2xl italic text-stone-warm md:text-3xl">
                         {content.cover.title}
                       </h1>
                       <p className="mt-1 text-sm text-stone-warm/70">{content.cover.subtitle}</p>
                     </section>
+
+                    {/* Locally-derived facts (v2+). Absent on legacy rows. */}
+                    {content.facts && <FactsPanel facts={content.facts} lang={lang} />}
 
                     {content.chapters.map((ch, i) => (
                       <section
@@ -254,7 +260,7 @@ export function PremiumReportReader({
                         <h3 className="mt-1 font-serif text-xl italic text-gold-light md:text-2xl">
                           {ch.title}
                         </h3>
-                        <div className="mt-3 space-y-4 text-[15px] leading-relaxed text-stone-warm/85">
+                        <div className="mt-3 space-y-4 text-[15px] leading-[1.75] text-stone-warm/85 [overflow-wrap:break-word]">
                           {ch.body.split(/\n\s*\n/).map((para, k) => (
                             <p key={k}>{para.trim()}</p>
                           ))}
