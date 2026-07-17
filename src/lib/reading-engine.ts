@@ -36,7 +36,11 @@ import { CALCULATION_VERSION } from "./calc-snapshot";
 /* Version pins — bump one → new cache key, old rows untouched.       */
 /* ------------------------------------------------------------------ */
 
-export const READING_PROMPT_VERSION = "reading_prompt_v1.0.0";
+// v1.0.0 = 19 body-only chapters
+// v2.0.0 = 19 chapters + locally-derived facts (BaZi pillars/ten-gods/
+// element counts, Ziwei 12 palaces w/ brightness+mutagen, Western/Vedic
+// facts). New key → new row; old buyers keep their v1 report.
+export const READING_PROMPT_VERSION = "reading_prompt_v2.0.0";
 export const READING_REPORT_VERSION = "premium_pdf_v1"; // matches premium_pdf_reports.report_version
 export const READING_MODEL_ID = "google/gemini-2.5-flash";
 /** Gemini's supported minimum (0 = deterministic). */

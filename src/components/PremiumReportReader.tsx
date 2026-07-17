@@ -19,6 +19,7 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
 
 import { useLang } from "@/lib/i18n";
 import { getPremiumReport, type PremiumContent } from "@/lib/premium.functions";
+import type { PremiumFacts, BaZiElement } from "@/lib/premium-facts";
 
 const TXT = {
   loading: { zh: "正在打开完整报告…", en: "Opening your full reading…" },
@@ -230,17 +231,23 @@ export function PremiumReportReader({
                   </p>
                 )}
                 {content && (
-                  <article className="mx-auto max-w-2xl">
+                  <article className="mx-auto max-w-3xl">
                     {/* Cover / summary */}
                     <section className="mb-8 border-b border-white/5 pb-6">
                       <p className="text-[10px] uppercase tracking-[0.36em] text-gold-dust/70">
                         {pick(TXT.meta, lang)} · {fmtDate(content.meta.generated_at, lang)}
+                        {content.meta.report_schema_version
+                          ? ` · schema ${content.meta.report_schema_version}`
+                          : ""}
                       </p>
                       <h1 className="mt-2 font-serif text-2xl italic text-stone-warm md:text-3xl">
                         {content.cover.title}
                       </h1>
                       <p className="mt-1 text-sm text-stone-warm/70">{content.cover.subtitle}</p>
                     </section>
+
+                    {/* Locally-derived facts (v2+). Absent on legacy rows. */}
+                    {content.facts && <FactsPanel facts={content.facts} lang={lang} />}
 
                     {content.chapters.map((ch, i) => (
                       <section
@@ -254,7 +261,7 @@ export function PremiumReportReader({
                         <h3 className="mt-1 font-serif text-xl italic text-gold-light md:text-2xl">
                           {ch.title}
                         </h3>
-                        <div className="mt-3 space-y-4 text-[15px] leading-relaxed text-stone-warm/85">
+                        <div className="mt-3 space-y-4 text-[15px] leading-[1.75] text-stone-warm/85 [overflow-wrap:break-word]">
                           {ch.body.split(/\n\s*\n/).map((para, k) => (
                             <p key={k}>{para.trim()}</p>
                           ))}
@@ -301,5 +308,309 @@ export function PremiumReportReader({
         </motion.div>
       )}
     </AnimatePresence>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* FactsPanel — locally-derived chart facts. Visually distinct from   */
+/* AI narrative so the user knows what's calculator ground truth      */
+/* versus what's synthesized interpretation.                          */
+/* ------------------------------------------------------------------ */
+
+const ELEMENT_META: Record<BaZiElement, { zh: string; en: string; bar: string; dot: string }> = {
+  wood:  { zh: "木", en: "Wood",  bar: "bg-emerald-400/70", dot: "bg-emerald-400" },
+  fire:  { zh: "火", en: "Fire",  bar: "bg-red-400/70",     dot: "bg-red-400" },
+  earth: { zh: "土", en: "Earth", bar: "bg-amber-400/70",   dot: "bg-amber-400" },
+  metal: { zh: "金", en: "Metal", bar: "bg-slate-300/70",   dot: "bg-slate-300" },
+  water: { zh: "水", en: "Water", bar: "bg-sky-400/70",     dot: "bg-sky-400" },
+};
+
+const FACTS_TXT = {
+  section_facts: { zh: "命盘事实 · 排盘数据", en: "Chart facts · calculator output" },
+  section_note: {
+    zh: "以下由本地天文引擎 / lunar-javascript / iztro 直接生成，AI 只能引用不能改写。",
+    en: "Emitted directly by the local astronomy engine / lunar-javascript / iztro. AI narrative may cite these values but never invent new ones.",
+  },
+  bazi: { zh: "八字四柱", en: "BaZi · Four Pillars" },
+  pillar_year: { zh: "年柱", en: "Year" },
+  pillar_month: { zh: "月柱", en: "Month" },
+  pillar_day: { zh: "日柱 · 日主", en: "Day · self" },
+  pillar_hour: { zh: "时柱", en: "Hour" },
+  ten_gods: { zh: "十神（相对日主）", en: "Ten gods (vs day master)" },
+  elements: { zh: "五行分布（干+支）", en: "Five-element distribution (stems + branches)" },
+  zodiac: { zh: "生肖", en: "Zodiac" },
+  ziwei: { zh: "紫微斗数 · 十二宫", en: "Zi Wei Dou Shu · Twelve Palaces" },
+  soul: { zh: "命宫主星", en: "Soul palace" },
+  body: { zh: "身宫主星", en: "Body palace" },
+  fiveClass: { zh: "五行局", en: "Five-elements class" },
+  lunar: { zh: "农历", en: "Lunar" },
+  major_stars_empty: { zh: "空宫", en: "(empty palace)" },
+  western: { zh: "西方占星 · 太阳", en: "Western · Sun" },
+  vedic: { zh: "印度占星 · 月亮与大运", en: "Vedic · Moon & Mahadasha" },
+  moon: { zh: "月亮 Nakshatra", en: "Moon Nakshatra" },
+  dasha_now: { zh: "当前大运（Vimshottari 主运）", en: "Current mahadasha" },
+  dasha_next: { zh: "下一大运", en: "Next mahadasha" },
+  unavailable: {
+    zh: "以下模块本地尚未接入真实计算器，AI 已被禁止编造：",
+    en: "The following modules are not yet wired locally — the AI is forbidden from inventing them:",
+  },
+};
+
+const UNAVAILABLE_LABELS: Record<string, { zh: string; en: string }> = {
+  ziwei_da_xian_10year: { zh: "紫微 · 十年大限", en: "Zi Wei · 10-year 大限" },
+  ziwei_liu_nian:       { zh: "紫微 · 流年",       en: "Zi Wei · annual 流年" },
+  ziwei_liu_yue:        { zh: "紫微 · 流月",       en: "Zi Wei · monthly 流月" },
+  vedic_antardasha:     { zh: "Vedic · Antardasha", en: "Vedic · Antardasha (sub-period)" },
+  vedic_pratyantar:     { zh: "Vedic · Pratyantar", en: "Vedic · Pratyantar" },
+  bazi_da_yun_luck_pillars: { zh: "八字 · 大运（流年柱）", en: "BaZi · 10-year 大运" },
+};
+
+function FactsPanel({ facts, lang }: { facts: PremiumFacts; lang: "zh" | "en" }) {
+  return (
+    <section
+      data-ch="__facts"
+      aria-label={pick(FACTS_TXT.section_facts, lang)}
+      className="mb-10 rounded-3xl border border-gold-dust/25 bg-gold-dust/[0.03] p-5 md:p-6"
+    >
+      <p className="text-[10px] uppercase tracking-[0.36em] text-gold-dust/80">
+        {pick(FACTS_TXT.section_facts, lang)}
+      </p>
+      <p className="mt-1 text-[12px] leading-relaxed text-stone-warm/60 [overflow-wrap:break-word]">
+        {pick(FACTS_TXT.section_note, lang)}
+      </p>
+
+      {facts.bazi && <BaZiFactBlock bazi={facts.bazi} lang={lang} />}
+      {facts.ziwei && <ZiweiFactBlock ziwei={facts.ziwei} lang={lang} />}
+      {(facts.western || facts.vedic) && (
+        <div className="mt-6 grid gap-4 md:grid-cols-2">
+          {facts.western && <WesternFactBlock western={facts.western} lang={lang} />}
+          {facts.vedic && <VedicFactBlock vedic={facts.vedic} lang={lang} />}
+        </div>
+      )}
+
+      {facts.unavailable.length > 0 && (
+        <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.02] p-3 text-[12px] text-stone-warm/60">
+          <p className="mb-2 text-[10px] uppercase tracking-[0.28em] text-stone-warm/50">
+            {pick(FACTS_TXT.unavailable, lang)}
+          </p>
+          <ul className="flex flex-wrap gap-2">
+            {facts.unavailable.map((k) => {
+              const lbl = UNAVAILABLE_LABELS[k];
+              return (
+                <li
+                  key={k}
+                  className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-[11px] text-stone-warm/60"
+                >
+                  {lbl ? pick(lbl, lang) : k}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function BaZiFactBlock({ bazi, lang }: { bazi: NonNullable<PremiumFacts["bazi"]>; lang: "zh" | "en" }) {
+  const total =
+    (Object.values(bazi.element_counts) as number[]).reduce((a, b) => a + b, 0) || 1;
+  const pillars: Array<{ key: keyof typeof bazi.pillars; label: { zh: string; en: string } }> = [
+    { key: "year",  label: FACTS_TXT.pillar_year },
+    { key: "month", label: FACTS_TXT.pillar_month },
+    { key: "day",   label: FACTS_TXT.pillar_day },
+    { key: "hour",  label: FACTS_TXT.pillar_hour },
+  ];
+  const dm = bazi.day_master;
+  const tenGodFor = (pillar: "year" | "month" | "hour") =>
+    bazi.ten_gods.find((t) => t.pillar === pillar)?.label ?? null;
+  return (
+    <div className="mt-5">
+      <h4 className="mb-3 font-serif text-base italic text-gold-light">
+        {pick(FACTS_TXT.bazi, lang)}
+      </h4>
+      <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+        {pillars.map(({ key, label }) => {
+          const gz = bazi.pillars[key];
+          const isDay = key === "day";
+          const tg = key !== "day" ? tenGodFor(key) : null;
+          return (
+            <div
+              key={key}
+              className={`min-w-0 rounded-2xl border p-3 ${
+                isDay
+                  ? "border-gold-dust/50 bg-gold-dust/[0.06]"
+                  : "border-white/10 bg-white/[0.02]"
+              }`}
+            >
+              <p className="text-[10px] uppercase tracking-[0.28em] text-stone-warm/50">
+                {pick(label, lang)}
+              </p>
+              <p className={`mt-1 font-serif text-2xl ${isDay ? "text-gold-light" : "text-stone-warm"}`}>
+                {gz ?? "—"}
+              </p>
+              {tg && (
+                <p className="mt-1 text-[11px] text-stone-warm/60">
+                  {lang === "zh" ? "十神" : "Ten god"}: {tg}
+                </p>
+              )}
+              {isDay && dm && (
+                <p className="mt-1 text-[11px] text-stone-warm/60">
+                  {lang === "zh" ? ELEMENT_META[dm.element].zh : ELEMENT_META[dm.element].en}
+                </p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mt-4">
+        <p className="mb-2 text-[10px] uppercase tracking-[0.28em] text-stone-warm/50">
+          {pick(FACTS_TXT.elements, lang)}
+        </p>
+        <div className="flex h-3 w-full overflow-hidden rounded-full border border-white/10">
+          {(Object.keys(ELEMENT_META) as BaZiElement[]).map((el) => {
+            const v = bazi.element_counts[el] ?? 0;
+            const pct = (v / total) * 100;
+            if (pct <= 0) return null;
+            return (
+              <div
+                key={el}
+                className={`${ELEMENT_META[el].bar} h-full`}
+                style={{ width: `${pct}%` }}
+                aria-label={`${lang === "zh" ? ELEMENT_META[el].zh : ELEMENT_META[el].en} ${v}`}
+              />
+            );
+          })}
+        </div>
+        <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-stone-warm/70">
+          {(Object.keys(ELEMENT_META) as BaZiElement[]).map((el) => (
+            <li key={el} className="flex items-center gap-1.5">
+              <span className={`inline-block size-2 rounded-full ${ELEMENT_META[el].dot}`} />
+              <span>{lang === "zh" ? ELEMENT_META[el].zh : ELEMENT_META[el].en}</span>
+              <span className="text-stone-warm/50">· {bazi.element_counts[el] ?? 0}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {bazi.zodiac && (
+        <p className="mt-3 text-[11.5px] text-stone-warm/70">
+          {pick(FACTS_TXT.zodiac, lang)}: {lang === "zh" ? bazi.zodiac.zh : bazi.zodiac.en}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function ZiweiFactBlock({ ziwei, lang }: { ziwei: NonNullable<PremiumFacts["ziwei"]>; lang: "zh" | "en" }) {
+  return (
+    <div className="mt-6">
+      <h4 className="mb-2 font-serif text-base italic text-gold-light">
+        {pick(FACTS_TXT.ziwei, lang)}
+      </h4>
+      <div className="mb-3 flex flex-wrap gap-x-4 gap-y-1 text-[11.5px] text-stone-warm/70">
+        <span>{pick(FACTS_TXT.soul, lang)}: <span className="text-gold-light">{ziwei.soul || "—"}</span></span>
+        <span>{pick(FACTS_TXT.body, lang)}: <span className="text-gold-light">{ziwei.body || "—"}</span></span>
+        <span>{pick(FACTS_TXT.fiveClass, lang)}: <span className="text-gold-light">{ziwei.five_elements_class || "—"}</span></span>
+        <span className="text-stone-warm/50">{pick(FACTS_TXT.lunar, lang)}: {ziwei.lunar_date || "—"}</span>
+      </div>
+
+      <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {ziwei.palaces.map((p) => {
+          const isSoul = p.index === ziwei.soul_palace_index;
+          const majors = p.major_stars;
+          return (
+            <li
+              key={p.index}
+              className={`min-w-0 rounded-2xl border p-3 ${
+                isSoul
+                  ? "border-gold-dust/60 bg-gold-dust/[0.06]"
+                  : p.is_body_palace
+                  ? "border-nebula-purple/40 bg-nebula-purple/[0.05]"
+                  : "border-white/10 bg-white/[0.02]"
+              }`}
+            >
+              <div className="flex items-baseline justify-between gap-2">
+                <p className="text-[13px] text-stone-warm">
+                  <span className="text-gold-light">{p.name}</span>
+                  {isSoul && <span className="ml-1 text-[10px] text-gold-dust/80">· 命宫</span>}
+                  {p.is_body_palace && !isSoul && (
+                    <span className="ml-1 text-[10px] text-nebula-purple">· 身宫</span>
+                  )}
+                </p>
+                <p className="shrink-0 text-[10px] tracking-[0.2em] text-stone-warm/50">
+                  {p.heavenly_stem}{p.earthly_branch}
+                </p>
+              </div>
+              {majors.length === 0 ? (
+                <p className="mt-1 text-[11.5px] text-stone-warm/40">
+                  {pick(FACTS_TXT.major_stars_empty, lang)}
+                </p>
+              ) : (
+                <ul className="mt-1 flex flex-wrap gap-1">
+                  {majors.map((s) => (
+                    <li
+                      key={s.name}
+                      className="rounded-full border border-white/10 bg-white/[0.03] px-2 py-0.5 text-[11px] text-stone-warm/85"
+                    >
+                      {s.name}
+                      {s.brightness && (
+                        <span className="ml-0.5 text-[9px] text-stone-warm/50">·{s.brightness}</span>
+                      )}
+                      {s.mutagen && (
+                        <span className="ml-0.5 text-[9px] text-gold-dust">·{s.mutagen}</span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {p.minor_stars.length > 0 && (
+                <p className="mt-1 text-[10.5px] text-stone-warm/45 [overflow-wrap:break-word]">
+                  {p.minor_stars.join(" · ")}
+                </p>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+function WesternFactBlock({ western, lang }: { western: NonNullable<PremiumFacts["western"]>; lang: "zh" | "en" }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-3 text-[12.5px] text-stone-warm/75">
+      <p className="mb-1 text-[10px] uppercase tracking-[0.28em] text-stone-warm/50">
+        {pick(FACTS_TXT.western, lang)}
+      </p>
+      <p>
+        {lang === "zh" ? western.sun.sign_zh : western.sun.sign_en} · {western.sun.element}
+      </p>
+    </div>
+  );
+}
+
+function VedicFactBlock({ vedic, lang }: { vedic: NonNullable<PremiumFacts["vedic"]>; lang: "zh" | "en" }) {
+  const fmt = (iso: string) => (iso ? iso.slice(0, 10) : "—");
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-3 text-[12.5px] text-stone-warm/75">
+      <p className="mb-1 text-[10px] uppercase tracking-[0.28em] text-stone-warm/50">
+        {pick(FACTS_TXT.vedic, lang)}
+      </p>
+      <p>
+        {pick(FACTS_TXT.moon, lang)}: {lang === "zh" ? vedic.moon.nakshatra_zh : vedic.moon.nakshatra_en} · pada {vedic.moon.pada}
+      </p>
+      {vedic.vimshottari_current && (
+        <p className="mt-1">
+          {pick(FACTS_TXT.dasha_now, lang)}: {vedic.vimshottari_current.lord} · {fmt(vedic.vimshottari_current.startISO)} → {fmt(vedic.vimshottari_current.endISO)}
+        </p>
+      )}
+      {vedic.vimshottari_next && (
+        <p className="mt-0.5 text-stone-warm/60">
+          {pick(FACTS_TXT.dasha_next, lang)}: {vedic.vimshottari_next.lord} · {fmt(vedic.vimshottari_next.startISO)}
+        </p>
+      )}
+    </div>
   );
 }

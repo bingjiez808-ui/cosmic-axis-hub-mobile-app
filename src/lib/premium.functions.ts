@@ -62,7 +62,12 @@ export const PREMIUM_ALL_PRODUCT_VERSIONS = [
 // historic paid buyers keep seeing their generated report without a
 // forced regeneration.
 export const PREMIUM_REPORT_VERSION = "premium_pdf_v1";
-export const PREMIUM_PROMPT_VERSION = "v1";
+export const PREMIUM_PROMPT_VERSION = "v2";
+// Content schema version — bumped when the shape of content_json
+// changes. v1 = 19 body-only chapters (legacy). v2 = 19 chapters + a
+// structured `facts` object grounded in the local calc snapshot.
+// Old rows keep serving their v1 content; the reader is tolerant of both.
+export const PREMIUM_REPORT_SCHEMA_VERSION = "v2";
 export const PREMIUM_PRICE_CENTS = 7900;
 export const PREMIUM_CURRENCY = "CNY";
 
@@ -759,12 +764,16 @@ export type PremiumContent = {
   meta: {
     prompt_version: string;
     report_version: string;
+    /** Content-schema version: "v1" (legacy body-only) or "v2" (facts + body). */
+    report_schema_version?: "v1" | "v2";
     generated_at: string;
     lang: "en" | "zh";
     chart_name: string | null;
     disclaimer: string;
   };
   cover: { title: string; subtitle: string };
+  /** Locally-derived, immutable facts. Absent on legacy v1 rows. */
+  facts?: import("./premium-facts").PremiumFacts;
   chapters: PremiumChapter[];
 };
 
@@ -842,6 +851,7 @@ async function generateChapter(
   key: (typeof CHAPTER_KEYS)[number],
   title: string,
   chartFacts: string,
+  factsJson: string,
   webReport: string,
   isZh: boolean,
   apiKey: string,
@@ -850,13 +860,21 @@ async function generateChapter(
   const guardrails = guardrailsFor(isZh ? "zh" : "en");
   const system = isZh
     ? `你是命运图书馆资深占星与命理长者。撰写一份高级 AI 深度报告的一个章节，只在站内网页中阅读。
-- 只使用来访者的真实命盘事实与已有网页报告作为依据；不使用另一个人的模板。
-- 不给医疗诊断、灾祸预言或收益保证；用「倾向 / 窗口 / 可能」等谨慎措辞。
+
+事实纪律（不可违反）：
+- 你只能引用下面 FACTS JSON 中真实存在的字段（四柱、日主、十神、五行分布、命宫/身宫/五行局、十二宫、主星与四化、Nakshatra、Vimshottari 等）。
+- FACTS.unavailable 里列出的模块（如 紫微大限、流年、流月；Vedic antardasha、pratyantar；八字大运）本地尚未计算，禁止编造具体内容；如需提到，只能诚实说明"暂未提供"。
+- 跨体系结论至少援引两个不同体系的事实；矛盾要展示，不强行统一。
+- 不给医疗诊断、灾祸预言或收益保证；用"倾向 / 窗口 / 可能"等谨慎措辞。
 - 输出纯文本段落，不要 Markdown 标题或代码块。段落之间用一个空行分隔。
 - 长度约 500-900 汉字。
 ${guardrails}`
     : `You are a senior elder of the Library of Destiny writing one chapter of a premium deep reading delivered inside the web app.
-- Anchor every claim in the visitor's real chart facts and the existing web report; never generic templates.
+
+Fact discipline (non-negotiable):
+- You may only cite fields that actually appear in the FACTS JSON below (four pillars, day master, ten gods, element counts, soul/body palace, 五行局, twelve palaces, major stars & 四化, Nakshatra, Vimshottari, etc.).
+- Modules listed in FACTS.unavailable (Zi Wei 大限/流年/流月, Vedic antardasha/pratyantar, BaZi 大运) are NOT computed locally — do not fabricate them. If they are relevant, honestly state "not yet available".
+- Any cross-tradition conclusion must be backed by facts from at least two different traditions. Show disagreements — do not force consensus.
 - No medical diagnoses, no guaranteed misfortune, no financial promises — use "tendency / window / possible".
 - Output plain-text paragraphs (no Markdown headers or code fences). Separate paragraphs with one blank line.
 - Length ~ 400-700 words.
@@ -867,8 +885,11 @@ ${guardrails}`;
 ${isZh ? "来访者命盘事实" : "Chart facts"}:
 ${chartFacts || (isZh ? "（未提供）" : "(not provided)")}
 
+FACTS (JSON — ONLY source of chart data you may cite):
+${factsJson}
+
 ${isZh ? "现有网页报告摘要（可参考不要复述）" : "Existing web report (reference, do not copy verbatim)"}:
-${webReport.slice(0, 4000)}
+${webReport.slice(0, 3000)}
 `;
 
   const result = await generateText({
@@ -1066,6 +1087,13 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
         .filter(Boolean)
         .join("\n");
 
+      // Local immutable facts derived from the same snapshot used by the
+      // cache key. This is the ONLY chart data the AI is allowed to cite;
+      // the system prompt makes that explicit.
+      const { buildPremiumFacts } = await import("./premium-facts");
+      const facts = buildPremiumFacts(engineInput.snapshot);
+      const factsJson = JSON.stringify(facts, null, 2).slice(0, 12000);
+
       const chapters: PremiumChapter[] = [];
       let totalInput = 0;
       let totalOutput = 0;
@@ -1074,7 +1102,7 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
         const title = titles[key];
         let body = "";
         try {
-          const out = await generateChapter(key, title, chartFacts, webReportText, isZh, apiKey);
+          const out = await generateChapter(key, title, chartFacts, factsJson, webReportText, isZh, apiKey);
           body = out.text;
           if (out.usage) {
             anyUsage = true;
@@ -1093,6 +1121,7 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
         meta: {
           prompt_version: cacheKey.prompt_version,
           report_version: cacheKey.report_version,
+          report_schema_version: PREMIUM_REPORT_SCHEMA_VERSION,
           generated_at: new Date().toISOString(),
           lang: isZh ? "zh" : "en",
           chart_name: chart.name ?? null,
@@ -1102,6 +1131,7 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
           title: isZh ? "命运图书馆 · 高级 AI 深度报告" : "Library of Destiny — Premium Deep Reading",
           subtitle: chart.name ?? (isZh ? "私人命盘解读" : "Personal chart reading"),
         },
+        facts,
         chapters,
       };
       const contentHash = await computeContentHash(content);
