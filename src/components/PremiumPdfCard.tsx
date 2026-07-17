@@ -12,7 +12,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 
 import { useLang } from "@/lib/i18n";
-import { ensureChart } from "@/lib/reports-store.functions";
+import { buildCanonicalChartInput, ensureChart } from "@/lib/reports-store.functions";
 import {
   generatePremiumReport,
   getPremiumStatus,
@@ -34,6 +34,7 @@ type ReportSearchLike = {
   time?: string;
   place?: string;
   gender?: "male" | "female";
+  lang?: "en" | "zh";
 };
 
 const TXT = {
