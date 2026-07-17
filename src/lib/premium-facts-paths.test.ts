@@ -42,15 +42,17 @@ describe("deep evidence paths across four systems", () => {
     expect((value as string).length).toBeGreaterThan(0);
   });
 
-  test("bazi — luck pillar element / start age is resolvable", () => {
-    expect(resolveFactsPath(facts, "bazi.luck.pillars[0].pillar")).toEqual(
+  test("bazi — luck pillar gan_zhi / nominal_start_age is resolvable", () => {
+    expect(resolveFactsPath(facts, "bazi.luck.pillars[0].gan_zhi")).toEqual(
       expect.any(String),
     );
-    expect(typeof resolveFactsPath(facts, "bazi.luck.start.age")).toBe("number");
+    expect(typeof resolveFactsPath(facts, "bazi.luck.start.nominal_start_age")).toBe(
+      "number",
+    );
   });
 
-  test("western — first aspect orb and planet longitude are numbers", () => {
-    const planet0Lng = resolveFactsPath(facts, "western.planets[0].longitude");
+  test("western — first aspect orb and planet trop_lon are numbers", () => {
+    const planet0Lng = resolveFactsPath(facts, "western.planets[0].trop_lon");
     expect(typeof planet0Lng).toBe("number");
     // Aspects may be empty for some fixtures — only assert shape when present.
     const aspect0Orb = resolveFactsPath(facts, "western.aspects[0].orb");
