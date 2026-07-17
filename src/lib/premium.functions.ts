@@ -1087,6 +1087,13 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
         .filter(Boolean)
         .join("\n");
 
+      // Local immutable facts derived from the same snapshot used by the
+      // cache key. This is the ONLY chart data the AI is allowed to cite;
+      // the system prompt makes that explicit.
+      const { buildPremiumFacts } = await import("./premium-facts");
+      const facts = buildPremiumFacts(engineInput.snapshot);
+      const factsJson = JSON.stringify(facts, null, 2).slice(0, 12000);
+
       const chapters: PremiumChapter[] = [];
       let totalInput = 0;
       let totalOutput = 0;
@@ -1095,7 +1102,7 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
         const title = titles[key];
         let body = "";
         try {
-          const out = await generateChapter(key, title, chartFacts, webReportText, isZh, apiKey);
+          const out = await generateChapter(key, title, chartFacts, factsJson, webReportText, isZh, apiKey);
           body = out.text;
           if (out.usage) {
             anyUsage = true;
@@ -1114,6 +1121,7 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
         meta: {
           prompt_version: cacheKey.prompt_version,
           report_version: cacheKey.report_version,
+          report_schema_version: PREMIUM_REPORT_SCHEMA_VERSION,
           generated_at: new Date().toISOString(),
           lang: isZh ? "zh" : "en",
           chart_name: chart.name ?? null,
@@ -1123,6 +1131,7 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
           title: isZh ? "命运图书馆 · 高级 AI 深度报告" : "Library of Destiny — Premium Deep Reading",
           subtitle: chart.name ?? (isZh ? "私人命盘解读" : "Personal chart reading"),
         },
+        facts,
         chapters,
       };
       const contentHash = await computeContentHash(content);
