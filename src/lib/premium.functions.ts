@@ -1145,6 +1145,44 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
 
       const isTestMode = process.env.PREMIUM_TEST_DETERMINISTIC === "1" || !apiKey;
 
+      // Preflight atomic claim: for every chapter still eligible to run
+      // (pending / retriable failed), attempt a CAS claim through the
+      // security-definer `claim_premium_chapter` RPC. Only chapters the
+      // caller wins the claim on are handed to the worker; the rest are
+      // considered held by another worker and left untouched.
+      const claimedKeys = new Set<string>();
+      for (const c of catalogue) {
+        const e = existingByKey.get(c.key);
+        const status = e?.status ?? "pending";
+        if (status === "completed" || status === "skipped") continue;
+        if (status === "failed" && (e?.attempt_count ?? 0) >= 3) continue;
+        const newToken = crypto.randomUUID();
+        try {
+          const { data: won } = await (supabase.rpc as unknown as (
+            fn: string,
+            args: Record<string, unknown>,
+          ) => Promise<{ data: boolean | null; error: unknown }>)(
+            "claim_premium_chapter",
+            {
+              _report_id: row.id,
+              _chapter_key: c.key,
+              _chapter_index: c.index,
+              _new_token: newToken,
+              _lock_ttl_seconds: 300,
+            },
+          );
+          if (won === true) claimedKeys.add(c.key);
+        } catch {
+          // Claim failed — leave the chapter for a future run.
+        }
+      }
+      const rowsForWorkerFiltered = rowsForWorker.map((r) =>
+        claimedKeys.has(r.chapter_key)
+          ? r
+          : { ...r, status: r.status === "pending" || r.status === "failed" ? ("completed" as const) : r.status }
+              // Trick: mark unclaimed rows as terminal so worker skips them.
+      );
+
       const provider = async (
         meta: { key: string; index: number },
         outputCap: number,
@@ -1152,7 +1190,6 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
         const catalog = PREMIUM_V3_CHAPTERS.find((c) => c.key === meta.key)!;
         const title = isZh ? catalog.title_zh : catalog.title_en;
         if (isTestMode) {
-          // Deterministic non-AI stub for tests / dev-mode local runs.
           const body = `[${title}] deterministic stub — ${catalog.allowed_facts.join(",") || "no-facts"}`;
           return {
             ok: true as const,
@@ -1187,14 +1224,15 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
           };
         }
       };
-      void chapterOutputCap; // silence unused when test mode elides its use
+      void chapterOutputCap;
 
       const workerReport = await runChapterWorkers({
         catalog: catalogue,
-        rows: rowsForWorker,
+        rows: rowsForWorkerFiltered,
         provider,
         initialUsage: priorUsage,
       });
+
 
       // Persist chapter transitions + ledger entries.
       for (const t of workerReport.transitions) {
