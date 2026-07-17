@@ -1528,7 +1528,7 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
         .from("premium_pdf_reports")
         .update({
           status: "failed",
-          error_message: safeMessage(err, "premium_generation_failed").slice(0, 400),
+          error_message: sanitizeAuditMessage(safeMessage(err, "premium_generation_failed")),
         })
         .eq("id", row.id)
         .eq("user_id", userId);
