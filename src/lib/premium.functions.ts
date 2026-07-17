@@ -848,36 +848,45 @@ const DISCLAIMER_ZH =
   "本报告仅供文化娱乐与自我反思，不构成医疗、法律、投资或人生决策建议；不包含任何疾病诊断、灾祸预言或收益保证。";
 
 async function generateChapter(
-  key: (typeof CHAPTER_KEYS)[number],
+  key: string,
   title: string,
   chartFacts: string,
   factsJson: string,
   webReport: string,
   isZh: boolean,
   apiKey: string,
+  opts: { allowedFacts?: readonly string[]; targetCharsZh?: readonly [number, number]; maxOutputTokens?: number } = {},
 ): Promise<{ text: string; usage: TokenUsage | null }> {
   const gateway = createLovableAiGatewayProvider(apiKey);
   const guardrails = guardrailsFor(isZh ? "zh" : "en");
+  const allowedHint = opts.allowedFacts && opts.allowedFacts.length > 0
+    ? (isZh ? `本章仅可引用事实模块：${opts.allowedFacts.join("、")}。` : `Only cite fact modules: ${opts.allowedFacts.join(", ")}.`)
+    : (isZh ? "本章不引用命盘事实模块。" : "This chapter does not cite chart facts.");
+  const lenHint = opts.targetCharsZh
+    ? (isZh ? `目标字数：${opts.targetCharsZh[0]}-${opts.targetCharsZh[1]} 汉字。` : `Target length: ${opts.targetCharsZh[0]}-${opts.targetCharsZh[1]} Chinese characters (or equivalent).`)
+    : "";
   const system = isZh
     ? `你是命运图书馆资深占星与命理长者。撰写一份高级 AI 深度报告的一个章节，只在站内网页中阅读。
 
 事实纪律（不可违反）：
-- 你只能引用下面 FACTS JSON 中真实存在的字段（四柱、日主、十神、五行分布、命宫/身宫/五行局、十二宫、主星与四化、Nakshatra、Vimshottari 等）。
-- FACTS.unavailable 里列出的模块（如 紫微大限、流年、流月；Vedic antardasha、pratyantar；八字大运）本地尚未计算，禁止编造具体内容；如需提到，只能诚实说明"暂未提供"。
+- 你只能引用下面 FACTS JSON 中真实存在的字段。
+- FACTS.unavailable 里列出的模块本地尚未计算，禁止编造；如需提到，只能诚实说明"暂未提供"。
 - 跨体系结论至少援引两个不同体系的事实；矛盾要展示，不强行统一。
 - 不给医疗诊断、灾祸预言或收益保证；用"倾向 / 窗口 / 可能"等谨慎措辞。
 - 输出纯文本段落，不要 Markdown 标题或代码块。段落之间用一个空行分隔。
-- 长度约 500-900 汉字。
+${allowedHint}
+${lenHint}
 ${guardrails}`
     : `You are a senior elder of the Library of Destiny writing one chapter of a premium deep reading delivered inside the web app.
 
 Fact discipline (non-negotiable):
-- You may only cite fields that actually appear in the FACTS JSON below (four pillars, day master, ten gods, element counts, soul/body palace, 五行局, twelve palaces, major stars & 四化, Nakshatra, Vimshottari, etc.).
-- Modules listed in FACTS.unavailable (Zi Wei 大限/流年/流月, Vedic antardasha/pratyantar, BaZi 大运) are NOT computed locally — do not fabricate them. If they are relevant, honestly state "not yet available".
-- Any cross-tradition conclusion must be backed by facts from at least two different traditions. Show disagreements — do not force consensus.
-- No medical diagnoses, no guaranteed misfortune, no financial promises — use "tendency / window / possible".
+- You may only cite fields that actually appear in the FACTS JSON below.
+- Modules listed in FACTS.unavailable are NOT computed locally — do not fabricate.
+- Any cross-tradition conclusion must be backed by facts from at least two different traditions.
+- No medical diagnoses, guaranteed misfortune, or financial promises.
 - Output plain-text paragraphs (no Markdown headers or code fences). Separate paragraphs with one blank line.
-- Length ~ 400-700 words.
+${allowedHint}
+${lenHint}
 ${guardrails}`;
 
   const prompt = `${isZh ? "章节" : "Chapter"}: ${title} (${key})
@@ -897,6 +906,7 @@ ${webReport.slice(0, 3000)}
     system,
     prompt,
     temperature: 0,
+    ...(opts.maxOutputTokens ? { maxOutputTokens: opts.maxOutputTokens } : {}),
   });
   const u = (result as unknown as { usage?: { inputTokens?: number; outputTokens?: number; promptTokens?: number; completionTokens?: number } }).usage;
   const usage: TokenUsage | null = u
@@ -905,8 +915,9 @@ ${webReport.slice(0, 3000)}
         output_tokens: u.outputTokens ?? u.completionTokens ?? 0,
       }
     : null;
-  return { text: result.text.trim().slice(0, 8000), usage };
+  return { text: result.text.trim().slice(0, 12000), usage };
 }
+
 
 /**
  * Insert (or claim) the single generating row for a given cache key.
