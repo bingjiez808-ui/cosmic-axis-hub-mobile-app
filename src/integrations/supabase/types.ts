@@ -137,13 +137,17 @@ export type Database = {
       premium_pdf_reports: {
         Row: {
           ai_generation_count: number
+          calculation_version: string | null
           chart_id: string
+          content_hash: string | null
           content_json: Json | null
           created_at: string
           error_message: string | null
           generated_at: string | null
           id: string
+          input_hash: string | null
           model: string | null
+          model_id: string | null
           order_id: string | null
           pdf_storage_path: string | null
           prompt_version: string
@@ -151,18 +155,23 @@ export type Database = {
           report_version: string
           source_report_id: string | null
           status: string
+          token_usage: Json | null
           updated_at: string
           user_id: string
         }
         Insert: {
           ai_generation_count?: number
+          calculation_version?: string | null
           chart_id: string
+          content_hash?: string | null
           content_json?: Json | null
           created_at?: string
           error_message?: string | null
           generated_at?: string | null
           id?: string
+          input_hash?: string | null
           model?: string | null
+          model_id?: string | null
           order_id?: string | null
           pdf_storage_path?: string | null
           prompt_version?: string
@@ -170,18 +179,23 @@ export type Database = {
           report_version?: string
           source_report_id?: string | null
           status?: string
+          token_usage?: Json | null
           updated_at?: string
           user_id: string
         }
         Update: {
           ai_generation_count?: number
+          calculation_version?: string | null
           chart_id?: string
+          content_hash?: string | null
           content_json?: Json | null
           created_at?: string
           error_message?: string | null
           generated_at?: string | null
           id?: string
+          input_hash?: string | null
           model?: string | null
+          model_id?: string | null
           order_id?: string | null
           pdf_storage_path?: string | null
           prompt_version?: string
@@ -189,6 +203,7 @@ export type Database = {
           report_version?: string
           source_report_id?: string | null
           status?: string
+          token_usage?: Json | null
           updated_at?: string
           user_id?: string
         }

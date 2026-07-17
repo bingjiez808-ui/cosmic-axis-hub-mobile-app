@@ -36,7 +36,17 @@ import { createLovableAiGatewayProvider } from "./ai-gateway.server";
 import { guardrailsFor, safeMessage } from "./ai-guardrails";
 import { enforceRateLimit } from "./rate-limit.server";
 import { isEmailVerified, assertEmailVerifiedOrAdmin } from "./reports-store.functions";
-import { buildCalculationSnapshot, missingSystems } from "./calc-snapshot";
+import { buildCalculationSnapshot, missingSystems, type CalculationSnapshot } from "./calc-snapshot";
+import {
+  buildEngineInput,
+  computeContentHash,
+  makeCacheKey,
+  DEFAULT_VERSIONS,
+  READING_MODEL_ID,
+  type CacheKey,
+  type EngineChartFacts,
+  type TokenUsage,
+} from "./reading-engine";
 
 // Canonical product identity.
 export const PREMIUM_PRODUCT_VERSION = "premium_deep_report_v1";
@@ -315,6 +325,8 @@ export const getPremiumStatus = createServerFn({ method: "POST" })
       .eq("user_id", userId)
       .eq("chart_id", data.chartId)
       .eq("report_version", PREMIUM_REPORT_VERSION)
+      .order("created_at", { ascending: true })
+      .limit(1)
       .maybeSingle();
 
     return {
@@ -833,7 +845,7 @@ async function generateChapter(
   webReport: string,
   isZh: boolean,
   apiKey: string,
-): Promise<string> {
+): Promise<{ text: string; usage: TokenUsage | null }> {
   const gateway = createLovableAiGatewayProvider(apiKey);
   const guardrails = guardrailsFor(isZh ? "zh" : "en");
   const system = isZh
@@ -859,15 +871,34 @@ ${isZh ? "现有网页报告摘要（可参考不要复述）" : "Existing web r
 ${webReport.slice(0, 4000)}
 `;
 
-  const { text } = await generateText({
-    model: gateway("google/gemini-2.5-flash"),
+  const result = await generateText({
+    model: gateway(READING_MODEL_ID),
     system,
     prompt,
+    temperature: 0,
   });
-  return text.trim().slice(0, 8000);
+  const u = (result as unknown as { usage?: { inputTokens?: number; outputTokens?: number; promptTokens?: number; completionTokens?: number } }).usage;
+  const usage: TokenUsage | null = u
+    ? {
+        input_tokens: u.inputTokens ?? u.promptTokens ?? 0,
+        output_tokens: u.outputTokens ?? u.completionTokens ?? 0,
+      }
+    : null;
+  return { text: result.text.trim().slice(0, 8000), usage };
 }
 
-async function beginPremiumReportRow(userId: string, chartId: string, orderId: string) {
+/**
+ * Insert (or claim) the single generating row for a given cache key.
+ * The unique index (user_id, chart_id, report_version, input_hash)
+ * makes only ONE caller the `didStart` winner; every concurrent loser
+ * gets the existing row and MUST NOT call the AI provider.
+ */
+async function beginPremiumReportRow(
+  userId: string,
+  chartId: string,
+  orderId: string,
+  cacheKey: CacheKey,
+) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
   const { data: inserted, error } = await supabaseAdmin
@@ -876,8 +907,11 @@ async function beginPremiumReportRow(userId: string, chartId: string, orderId: s
       user_id: userId,
       chart_id: chartId,
       order_id: orderId,
-      report_version: PREMIUM_REPORT_VERSION,
-      prompt_version: PREMIUM_PROMPT_VERSION,
+      report_version: cacheKey.report_version,
+      prompt_version: cacheKey.prompt_version,
+      model_id: cacheKey.model_id,
+      calculation_version: cacheKey.calculation_version,
+      input_hash: cacheKey.input_hash,
       status: "generating",
     })
     .select("id, status, content_json")
@@ -889,10 +923,45 @@ async function beginPremiumReportRow(userId: string, chartId: string, orderId: s
     .select("id, status, content_json")
     .eq("user_id", userId)
     .eq("chart_id", chartId)
-    .eq("report_version", PREMIUM_REPORT_VERSION)
+    .eq("report_version", cacheKey.report_version)
+    .eq("input_hash", cacheKey.input_hash)
     .maybeSingle();
   if (!existing) throw new Error("premium_row_lookup_failed");
   return { row: existing, didStart: false };
+}
+
+/**
+ * Build the engine input for a chart. `generated_at` on the snapshot
+ * is stripped so the input_hash is deterministic across time — only
+ * the actual chart facts + versions may influence the cache key.
+ */
+function buildEngineInputForChart(chart: {
+  name: string | null;
+  birth_date: string | null;
+  birth_time: string | null;
+  birth_place: string | null;
+  lang: string | null;
+  input_snapshot?: unknown;
+}) {
+  const gender = extractGender(chart.input_snapshot);
+  const snapshot: CalculationSnapshot = buildCalculationSnapshot({
+    date: chart.birth_date ?? null,
+    time: chart.birth_time ?? null,
+    place: chart.birth_place ?? null,
+    lang: (chart.lang as "en" | "zh") ?? "en",
+    gender,
+  });
+  // Strip volatile timestamp so the hash is stable across regenerations.
+  const stableSnapshot: CalculationSnapshot = { ...snapshot, generated_at: "" };
+  const chartFacts: EngineChartFacts = {
+    name: chart.name ?? null,
+    birth_date: chart.birth_date ?? null,
+    birth_time: chart.birth_time ?? null,
+    birth_place: chart.birth_place ?? null,
+    lang: (chart.lang as "en" | "zh") ?? "en",
+    gender,
+  };
+  return buildEngineInput(chartFacts, stableSnapshot, DEFAULT_VERSIONS);
 }
 
 export const generatePremiumReport = createServerFn({ method: "POST" })
@@ -921,20 +990,48 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!order) throw new Error("order_not_paid");
 
-    // 3. Cached completed row → return as-is, do NOT call AI again.
-    const { data: existing } = await supabaseAdmin
+    // 3. Compute the versioned cache key from the local calc snapshot.
+    //    Cache lookup checks all four version pins + input_hash + owner
+    //    + chart; a hit short-circuits and NEVER calls the provider.
+    const engineInput = buildEngineInputForChart(chart);
+    const cacheKey = await makeCacheKey(userId, data.chartId, engineInput);
+
+    const { data: cached } = await supabaseAdmin
       .from("premium_pdf_reports")
       .select("id, status, content_json")
       .eq("user_id", userId)
       .eq("chart_id", data.chartId)
-      .eq("report_version", PREMIUM_REPORT_VERSION)
+      .eq("report_version", cacheKey.report_version)
+      .eq("input_hash", cacheKey.input_hash)
+      .eq("prompt_version", cacheKey.prompt_version)
+      .eq("model_id", cacheKey.model_id)
+      .eq("calculation_version", cacheKey.calculation_version)
       .maybeSingle();
-    if (existing?.status === "completed" && existing.content_json) {
-      return { reportId: existing.id, status: "completed" as const };
+    if (cached?.status === "completed" && cached.content_json) {
+      return { reportId: cached.id, status: "completed" as const };
     }
 
-    // 4. Atomic claim (unique index on user_id, chart_id, report_version).
-    const { row, didStart } = await beginPremiumReportRow(userId, data.chartId, order.id);
+    // Backwards-compat: legacy row without input_hash for this
+    // (user, chart, report_version). Return it as-is; never overwrite.
+    const { data: legacy } = await supabaseAdmin
+      .from("premium_pdf_reports")
+      .select("id, status, content_json")
+      .eq("user_id", userId)
+      .eq("chart_id", data.chartId)
+      .eq("report_version", cacheKey.report_version)
+      .is("input_hash", null)
+      .maybeSingle();
+    if (legacy?.status === "completed" && legacy.content_json) {
+      return { reportId: legacy.id, status: "completed" as const };
+    }
+
+    // 4. Atomic claim (unique index on user_id, chart_id, report_version, input_hash).
+    const { row, didStart } = await beginPremiumReportRow(
+      userId,
+      data.chartId,
+      order.id,
+      cacheKey,
+    );
     if (!didStart) {
       return {
         reportId: row.id,
@@ -970,11 +1067,20 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
         .join("\n");
 
       const chapters: PremiumChapter[] = [];
+      let totalInput = 0;
+      let totalOutput = 0;
+      let anyUsage = false;
       for (const key of CHAPTER_KEYS) {
         const title = titles[key];
         let body = "";
         try {
-          body = await generateChapter(key, title, chartFacts, webReportText, isZh, apiKey);
+          const out = await generateChapter(key, title, chartFacts, webReportText, isZh, apiKey);
+          body = out.text;
+          if (out.usage) {
+            anyUsage = true;
+            totalInput += out.usage.input_tokens;
+            totalOutput += out.usage.output_tokens;
+          }
         } catch (err) {
           body = isZh
             ? `本章生成暂时不可用（${safeMessage(err, "AI error")}）。可稍后重试。`
@@ -985,8 +1091,8 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
 
       const content: PremiumContent = {
         meta: {
-          prompt_version: PREMIUM_PROMPT_VERSION,
-          report_version: PREMIUM_REPORT_VERSION,
+          prompt_version: cacheKey.prompt_version,
+          report_version: cacheKey.report_version,
           generated_at: new Date().toISOString(),
           lang: isZh ? "zh" : "en",
           chart_name: chart.name ?? null,
@@ -998,20 +1104,27 @@ export const generatePremiumReport = createServerFn({ method: "POST" })
         },
         chapters,
       };
+      const contentHash = await computeContentHash(content);
+      const tokenUsage: TokenUsage | null = anyUsage
+        ? { input_tokens: totalInput, output_tokens: totalOutput }
+        : null;
 
       // ai_generation_count is bumped ONLY here — the didStart branch is
       // the sole path that actually called the AI provider. Cached
       // completions, concurrent losers (didStart=false), and reopen
       // reads never reach this update, so the counter accurately
-      // reflects real provider invocations. Non-atomic assignment is
-      // safe because the unique index on (user_id, chart_id,
-      // report_version) makes the didStart winner the sole writer.
+      // reflects real provider invocations.
       await supabaseAdmin
         .from("premium_pdf_reports")
         .update({
           status: "completed",
           content_json: content as unknown as never,
-          model: "google/gemini-2.5-flash",
+          content_hash: contentHash,
+          token_usage: (tokenUsage as unknown as Json) ?? null,
+          model: cacheKey.model_id,
+          model_id: cacheKey.model_id,
+          calculation_version: cacheKey.calculation_version,
+          prompt_version: cacheKey.prompt_version,
           provider: "lovable-ai-gateway",
           generated_at: new Date().toISOString(),
           error_message: null,
@@ -1044,6 +1157,12 @@ export type PremiumReportRead = {
   content: PremiumContent | null;
   errorMessage: string | null;
   aiGenerationCount: number;
+  inputHash: string | null;
+  contentHash: string | null;
+  promptVersion: string | null;
+  modelId: string | null;
+  calculationVersion: string | null;
+  tokenUsage: TokenUsage | null;
 };
 
 export const getPremiumReport = createServerFn({ method: "POST" })
@@ -1060,23 +1179,46 @@ export const getPremiumReport = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!chart || chart.user_id !== userId) return null;
 
+    // Default to the ORIGINAL purchased report: order by created_at ASC.
+    // Version upgrades create new rows; the earliest one is what the
+    // buyer originally paid for, so that's what we return by default.
     const { data: row } = await supabase
       .from("premium_pdf_reports")
-      .select("status, content_json, generated_at, error_message, ai_generation_count")
+      .select(
+        "status, content_json, generated_at, error_message, ai_generation_count, input_hash, content_hash, prompt_version, model_id, calculation_version, token_usage",
+      )
       .eq("user_id", userId)
       .eq("chart_id", data.chartId)
       .eq("report_version", PREMIUM_REPORT_VERSION)
+      .order("created_at", { ascending: true })
+      .limit(1)
       .maybeSingle();
     if (!row) return null;
+    const r = row as unknown as {
+      status: string;
+      content_json: unknown;
+      generated_at: string | null;
+      error_message: string | null;
+      ai_generation_count?: number;
+      input_hash: string | null;
+      content_hash: string | null;
+      prompt_version: string | null;
+      model_id: string | null;
+      calculation_version: string | null;
+      token_usage: unknown;
+    };
     return {
-      status: row.status as PremiumReportRead["status"],
-      generatedAt: row.generated_at,
-      content: (row.content_json as unknown as PremiumContent) ?? null,
-      errorMessage: row.error_message,
-      aiGenerationCount:
-        typeof (row as { ai_generation_count?: number }).ai_generation_count === "number"
-          ? (row as { ai_generation_count: number }).ai_generation_count
-          : 0,
+      status: r.status as PremiumReportRead["status"],
+      generatedAt: r.generated_at,
+      content: (r.content_json as PremiumContent) ?? null,
+      errorMessage: r.error_message,
+      aiGenerationCount: typeof r.ai_generation_count === "number" ? r.ai_generation_count : 0,
+      inputHash: r.input_hash ?? null,
+      contentHash: r.content_hash ?? null,
+      promptVersion: r.prompt_version ?? null,
+      modelId: r.model_id ?? null,
+      calculationVersion: r.calculation_version ?? null,
+      tokenUsage: (r.token_usage as TokenUsage | null) ?? null,
     };
   });
 
