@@ -26,8 +26,19 @@ import {
 
 export type WorkerChapterMeta = { key: string; index: number };
 
+export type ProviderEvidenceRef = {
+  path: string;
+  module: string;
+  confidence: string;
+};
+
 export type ProviderResult =
-  | { ok: true; body: string; usage: { input_tokens: number; output_tokens: number } }
+  | {
+      ok: true;
+      body: string;
+      evidence_refs?: ProviderEvidenceRef[];
+      usage: { input_tokens: number; output_tokens: number };
+    }
   | { ok: false; error: string; usage?: { input_tokens: number; output_tokens: number } };
 
 export type WorkerProvider = (
@@ -40,6 +51,7 @@ export type ChapterTransition =
       kind: "completed";
       chapter_key: string;
       body: string;
+      evidence_refs: ProviderEvidenceRef[];
       input_tokens: number;
       output_tokens: number;
     }
