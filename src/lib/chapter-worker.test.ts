@@ -107,4 +107,49 @@ describe("runChapterWorkers", () => {
     const b = await runChapterWorkers({ catalog: CATALOG, rows: [], provider });
     expect(JSON.stringify(a.transitions)).toBe(JSON.stringify(b.transitions));
   });
+
+  test("resume after interruption: 2nd pass only calls chapters not yet completed; completed count of calls stays zero", async () => {
+    // 1st pass: only 'a' completes (provider fails on 'b','c').
+    const firstCalls: string[] = [];
+    const partialProvider: WorkerProvider = async (m) => {
+      firstCalls.push(m.key);
+      if (m.key === "a") {
+        return { ok: true, body: "A", usage: { input_tokens: 10, output_tokens: 20 } };
+      }
+      return { ok: false, error: "sim-fail", usage: { input_tokens: 5, output_tokens: 0 } };
+    };
+    const first = await runChapterWorkers({ catalog: CATALOG, rows: [], provider: partialProvider });
+    expect(firstCalls).toEqual(["a", "b", "c"]);
+    const firstCompleted = first.transitions.find(
+      (t) => t.chapter_key === "a" && t.kind === "completed",
+    ) as Extract<(typeof first.transitions)[number], { kind: "completed" }>;
+    expect(firstCompleted.body).toBe("A");
+
+    // Feed the 1st-pass results back in as persisted rows and re-run.
+    const rowsAfter: ChapterRow[] = [
+      row("a", "completed", 1),
+      row("b", "failed", 1),
+      row("c", "failed", 1),
+    ];
+    const secondCalls: string[] = [];
+    const secondProvider: WorkerProvider = async (m) => {
+      secondCalls.push(m.key);
+      return { ok: true, body: `body:${m.key}`, usage: { input_tokens: 8, output_tokens: 16 } };
+    };
+    const second = await runChapterWorkers({
+      catalog: CATALOG,
+      rows: rowsAfter,
+      provider: secondProvider,
+    });
+    // Only the previously-failed chapters are attempted; 'a' is not touched.
+    expect(secondCalls).toEqual(["b", "c"]);
+    // The completed 'a' transition must NOT appear in the 2nd pass output.
+    expect(second.transitions.some((t) => t.chapter_key === "a")).toBe(false);
+    // The re-run produced two new completed transitions with the expected bodies.
+    const bDone = second.transitions.find((t) => t.chapter_key === "b");
+    const cDone = second.transitions.find((t) => t.chapter_key === "c");
+    expect(bDone?.kind).toBe("completed");
+    expect(cDone?.kind).toBe("completed");
+    if (bDone && bDone.kind === "completed") expect(bDone.body).toBe("body:b");
+  });
 });
