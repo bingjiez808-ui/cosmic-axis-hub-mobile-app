@@ -225,19 +225,20 @@ export function deriveVedicFacts(snap: CalculationSnapshot): VedicFacts | null {
   if (snap.vedic.status !== "ok" || !snap.vedic.chart) return null;
   const c = snap.vedic.chart;
   const dasha = c.vimshottari ?? [];
+  const moonPlanet = c.planets.find((p) => p.key === "moon");
   return {
     ascendant_sign: c.ascendant?.sign ?? null,
     moon: {
-      sign: c.moon.sign,
+      sign: moonPlanet?.sign ?? -1,
       nakshatra_en: c.moon.nakshatra_en,
       nakshatra_zh: c.moon.nakshatra_zh,
       pada: c.moon.pada,
     },
     vimshottari_current: dasha[0]
-      ? { lord: dasha[0].lord, startISO: dasha[0].startISO, endISO: dasha[0].endISO }
+      ? { lord: dasha[0].lord, startISO: dasha[0].start, endISO: dasha[0].end }
       : null,
     vimshottari_next: dasha[1]
-      ? { lord: dasha[1].lord, startISO: dasha[1].startISO, endISO: dasha[1].endISO }
+      ? { lord: dasha[1].lord, startISO: dasha[1].start, endISO: dasha[1].end }
       : null,
     evidence_paths: { moon: "vedic.chart.moon", dasha: "vedic.chart.vimshottari" },
   };
