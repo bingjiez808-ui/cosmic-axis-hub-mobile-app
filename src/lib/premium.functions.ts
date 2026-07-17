@@ -764,12 +764,16 @@ export type PremiumContent = {
   meta: {
     prompt_version: string;
     report_version: string;
+    /** Content-schema version: "v1" (legacy body-only) or "v2" (facts + body). */
+    report_schema_version?: "v1" | "v2";
     generated_at: string;
     lang: "en" | "zh";
     chart_name: string | null;
     disclaimer: string;
   };
   cover: { title: string; subtitle: string };
+  /** Locally-derived, immutable facts. Absent on legacy v1 rows. */
+  facts?: import("./premium-facts").PremiumFacts;
   chapters: PremiumChapter[];
 };
 
