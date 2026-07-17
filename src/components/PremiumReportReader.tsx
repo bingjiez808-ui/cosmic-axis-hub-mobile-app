@@ -19,6 +19,7 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
 
 import { useLang } from "@/lib/i18n";
 import { getPremiumReport, type PremiumContent } from "@/lib/premium.functions";
+import type { PremiumFacts, BaZiElement } from "@/lib/premium-facts";
 
 const TXT = {
   loading: { zh: "正在打开完整报告…", en: "Opening your full reading…" },
