@@ -55,7 +55,11 @@ const fakeContent = {
   chapters: fakeChapters,
 };
 
+// Preserve all real exports (other test files import this module) and
+// only override the four functions the reader actually calls.
+const realPremium = await import("@/lib/premium.functions");
 mock.module("@/lib/premium.functions", () => ({
+  ...realPremium,
   generatePremiumReport: async () => {
     callCount.generate += 1;
     return { reportId: "rep-1", status: "completed" as const };
@@ -89,8 +93,6 @@ mock.module("@/lib/premium.functions", () => ({
       })),
     };
   },
-  // Types referenced by the reader — need to exist at import time.
-  PREMIUM_REPORT_VERSION: "premium_pdf_v1",
 }));
 
 // Mock reader-nav helpers used by the reader.
