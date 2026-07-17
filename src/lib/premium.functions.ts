@@ -1594,8 +1594,121 @@ export const listPremiumReports = createServerFn({ method: "GET" })
     });
   });
 
+/* --------------------------------------------------------------------- */
+/* getPremiumReportProgress — chapter-level status for the reader UI      */
+/* --------------------------------------------------------------------- */
+
+export type ProgressChapter = {
+  key: string;
+  index: number;
+  title: string;
+  status: "pending" | "running" | "completed" | "failed" | "skipped";
+  attemptCount: number;
+  errorMessage: string | null;
+};
+
+export type PremiumReportProgress = {
+  reportStatus: "pending" | "generating" | "partial" | "completed" | "failed" | "none";
+  schemaVersion: "v1" | "v2" | "v3" | null;
+  totalChapters: number;
+  completedChapters: number;
+  failedChapters: number;
+  runningChapters: number;
+  canContinue: boolean;
+  chapters: ProgressChapter[];
+};
+
+export const getPremiumReportProgress = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => StatusInput.parse(d))
+  .handler(async ({ data, context }): Promise<PremiumReportProgress> => {
+    const { supabase, userId } = context;
+    const { data: chart } = await supabase
+      .from("charts")
+      .select("id, user_id, lang")
+      .eq("id", data.chartId)
+      .maybeSingle();
+    const empty: PremiumReportProgress = {
+      reportStatus: "none",
+      schemaVersion: null,
+      totalChapters: 0,
+      completedChapters: 0,
+      failedChapters: 0,
+      runningChapters: 0,
+      canContinue: false,
+      chapters: [],
+    };
+    if (!chart || chart.user_id !== userId) return empty;
+
+    const { data: row } = await supabase
+      .from("premium_pdf_reports")
+      .select("id, status, content_json")
+      .eq("user_id", userId)
+      .eq("chart_id", data.chartId)
+      .eq("report_version", PREMIUM_REPORT_VERSION)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (!row) return empty;
+
+    const contentMeta = (row as { content_json: { meta?: { report_schema_version?: "v1" | "v2" | "v3" } } | null })
+      .content_json?.meta;
+    const schemaVersion = contentMeta?.report_schema_version ?? null;
+
+    const { PREMIUM_V3_CHAPTERS } = await import("./premium-chapters-v3");
+    const isZh = (chart.lang ?? "en") === "zh";
+
+    const { data: chRows } = await supabase
+      .from("premium_report_chapters")
+      .select("chapter_key, chapter_index, status, attempt_count, error_message")
+      .eq("report_id", (row as { id: string }).id)
+      .eq("user_id", userId);
+    const byKey = new Map(
+      ((chRows ?? []) as Array<{
+        chapter_key: string;
+        chapter_index: number;
+        status: string;
+        attempt_count: number;
+        error_message: string | null;
+      }>).map((r) => [r.chapter_key, r]),
+    );
+
+    const chapters: ProgressChapter[] = PREMIUM_V3_CHAPTERS.map((c) => {
+      const r = byKey.get(c.key);
+      return {
+        key: c.key,
+        index: c.index,
+        title: isZh ? c.title_zh : c.title_en,
+        status: (r?.status ?? "pending") as ProgressChapter["status"],
+        attemptCount: r?.attempt_count ?? 0,
+        errorMessage: r?.error_message ?? null,
+      };
+    });
+
+    const completed = chapters.filter((c) => c.status === "completed").length;
+    const failed = chapters.filter((c) => c.status === "failed").length;
+    const running = chapters.filter((c) => c.status === "running").length;
+    const canContinue = chapters.some(
+      (c) =>
+        c.status === "pending" ||
+        (c.status === "failed" && c.attemptCount < 3),
+    );
+
+    return {
+      reportStatus: (row as { status: PremiumReportProgress["reportStatus"] }).status,
+      schemaVersion,
+      totalChapters: chapters.length,
+      completedChapters: completed,
+      failedChapters: failed,
+      runningChapters: running,
+      canContinue,
+      chapters,
+    };
+  });
+
 // Backwards-compat export: legacy callers importing the old symbol are
 // harmless since the file no longer offers PDF UI. Keeping a typed alias
 // avoids accidental client-bundle breakage from stale imports.
 export const generatePremiumPdf = generatePremiumReport;
 export type Json_ = Json; // side-effect: keep Json import referenced
+
