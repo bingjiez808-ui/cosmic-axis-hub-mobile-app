@@ -215,7 +215,7 @@ export const getYearReadings = createServerFn({ method: "GET" })
         select: (s: string) => {
           eq: (c: string, v: string) => {
             eq: (c: string, v: string) => {
-              order: (c: string, o: { ascending: boolean }) => Promise<{ data: unknown[] | null }>;
+              order: (c: string, o: { ascending: boolean }) => Promise<{ data: Array<Record<string, unknown>> | null }>;
             };
           };
         };
@@ -227,5 +227,5 @@ export const getYearReadings = createServerFn({ method: "GET" })
       .eq("chart_id", data.chartId)
       .eq("lang", data.lang)
       .order("year", { ascending: true });
-    return { rows: ((rows ?? []) as unknown) as Array<Record<string, unknown>> };
+    return { rows: JSON.parse(JSON.stringify(rows ?? [])) as Array<Record<string, unknown>> };
   });
