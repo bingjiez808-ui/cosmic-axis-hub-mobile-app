@@ -679,6 +679,7 @@ function ReportPage() {
           },
         });
         chartId = res.chartId;
+        setReportChartId(chartId);
       } catch {
         if (stale()) return;
         setAiError("chart_save_failed");
