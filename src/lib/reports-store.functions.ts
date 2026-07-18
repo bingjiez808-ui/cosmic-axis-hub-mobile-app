@@ -490,7 +490,7 @@ export const deleteChart = createServerFn({ method: "POST" })
       await supabase
         .from("year_readings_v1")
         .delete()
-        .eq("user_id", userId)
+        .eq("owner_id", userId)
         .eq("chart_id", data.chartId);
       return { ok: true as const, scope: "reports_only" as const };
     }
