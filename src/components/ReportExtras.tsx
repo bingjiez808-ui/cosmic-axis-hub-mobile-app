@@ -214,9 +214,11 @@ function birthSeed(birthISO?: string): number {
 export function LifeTimeline({
   birthISO,
   search,
+  chartId,
 }: {
   birthISO?: string;
   search?: ReportSearchLike;
+  chartId?: string | null;
 }) {
   const { lang, t } = useLang();
   const li = lang === "zh" ? 1 : 0;
