@@ -110,7 +110,7 @@ type UiState =
   | { kind: "generating"; chartId: string }
   | { kind: "partial"; chartId: string }
   | { kind: "ready"; chartId: string }
-  | { kind: "failed"; chartId: string }
+  | { kind: "failed"; chartId: string; detail?: string }
   | { kind: "error"; message: string };
 
 function extractErrorCode(err: unknown): string {
@@ -270,8 +270,13 @@ export function PremiumPdfCard({
           if (opts.openWhenDone) setReaderOpen(true);
           return;
         }
+        if (step.message === "prep_error") {
+          setState({ kind: "failed", chartId, detail: step.error });
+          return;
+        }
         if (step.message === "interrupted") {
           await refresh();
+          setState((prev) => prev.kind === "failed" ? { ...prev, detail: step.error ?? prev.detail } : prev);
           if (!step.shouldContinue) return;
           await new Promise((resolve) => window.setTimeout(resolve, 1800));
           continue;
@@ -301,8 +306,9 @@ export function PremiumPdfCard({
         }
       }
       await refresh();
-    } catch {
-      setState({ kind: "failed", chartId });
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err ?? "");
+      setState({ kind: "failed", chartId, detail });
     } finally {
       setBusy(false);
       stepLoopActive.current = false;
@@ -588,6 +594,11 @@ function PrimaryAction({
         {state.kind === "failed" && (
           <p className="rounded-2xl border border-nebula-purple/30 bg-nebula-purple/[0.06] p-3 text-[12px] leading-relaxed text-stone-warm/75 [overflow-wrap:break-word]">
             {pick(TXT.failed_hint, lang)}
+            {state.detail ? (
+              <span className="mt-1 block text-[11px] text-stone-warm/55">
+                {lang === "zh" ? "错误：" : "Error: "}{state.detail}
+              </span>
+            ) : null}
           </p>
         )}
         <button type="button" disabled={busy} onClick={onGenerate} className={btnPrimary}>

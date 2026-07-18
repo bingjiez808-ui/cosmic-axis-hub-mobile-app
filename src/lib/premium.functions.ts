@@ -1380,7 +1380,8 @@ export type PremiumChapterStepResult = {
   totalChapters: number;
   currentChapterKey: string | null;
   currentChapterTitle: string | null;
-  message: "completed" | "processed" | "no_claim" | "active_lease" | "interrupted";
+  message: "completed" | "processed" | "no_claim" | "active_lease" | "interrupted" | "prep_error";
+  error?: string;
 };
 
 function countValidPremiumContentChapters(content: unknown): number {
@@ -1755,6 +1756,7 @@ export const processNextPremiumChapter = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => StepInput.parse(d))
   .handler(async ({ data, context }): Promise<PremiumChapterStepResult> => {
     const { userId } = context;
+    try {
     await assertEmailVerifiedOrAdmin(context);
     enforceRateLimit(`premium-step:${userId}`, 80, 60_000, "premium chapter steps");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -2054,7 +2056,36 @@ export const processNextPremiumChapter = createServerFn({ method: "POST" })
         };
       }
     }
+    } catch (err) {
+      const msg = safeMessage(err, "chapter_step_error");
+      console.error("[premium] processNextPremiumChapter failed", { reportId: data.reportId, userId, err: msg });
+      try {
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        await supabaseAdmin
+          .from("premium_pdf_reports")
+          .update({ error_message: sanitizeAuditMessage(msg) } as unknown as never)
+          .eq("id", data.reportId)
+          .eq("user_id", userId)
+          .neq("status", "completed");
+      } catch { /* best-effort */ }
+      const { PREMIUM_V3_CHAPTERS } = await import("./premium-chapters-v3");
+      return {
+        reportId: data.reportId,
+        status: "partial",
+        processed: false,
+        providerCalled: false,
+        processedChapters: 0,
+        shouldContinue: false,
+        completedChapters: 0,
+        totalChapters: PREMIUM_V3_CHAPTERS.length,
+        currentChapterKey: null,
+        currentChapterTitle: null,
+        message: "prep_error",
+        error: sanitizeAuditMessage(msg),
+      };
+    }
   });
+
 
 
 /* --------------------------------------------------------------------- */
