@@ -105,7 +105,7 @@ const ZIWEI_FULL = {
 
 const WESTERN_FULL = {
   ascendant: 100, ascendant_sign: "Cancer" as const, midheaven: null,
-  natal_planets: [
+  planets: [
     { name: "Sun" as const, longitude: 220, sign: "Scorpio" as const, retrograde: false },
     { name: "Moon" as const, longitude: 50, sign: "Taurus" as const, retrograde: false },
     { name: "Jupiter" as const, longitude: 100, sign: "Cancer" as const, retrograde: false },
@@ -119,9 +119,10 @@ const WESTERN_FULL = {
     aspects: [
       { transit: "Jupiter" as const, natal: "Sun" as const, type: "trine" as const, orb: 0.5 },
       { transit: "Saturn" as const, natal: "Moon" as const, type: "trine" as const, orb: 1.2 },
+      { transit: "Jupiter" as const, natal: "Moon" as const, type: "sextile" as const, orb: 2.0 },
     ],
   }],
-  evidence_paths: { ascendant: "western.ascendant", natal_planets: "western.natal_planets",
+  evidence_paths: { ascendant: "western.ascendant", natal_planets: "western.planets",
     annual_transits: "western.annual_transits" },
 } as unknown as PremiumFacts["western"];
 
