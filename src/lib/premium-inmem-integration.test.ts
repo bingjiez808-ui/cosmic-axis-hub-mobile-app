@@ -213,7 +213,8 @@ describe("premium in-memory integration — 5 scenarios under 10s total", () => 
   test("2) 7 → 24 refresh-resume: prior 7 hashes preserved, provider only runs for the remaining 17", async () => {
     const r = new FakePremiumReport();
     // Force only 7 chapters in the first drain via a tight budget.
-    const first = await r.drain({ softBudgetMs: 7 });
+    // Cap the first drain to 7 chapters to simulate the client backing off.
+    const first = await r.drain({ maxChapters: 7 });
     expect(first.completedChapters).toBe(7);
     expect(first.shouldContinue).toBe(true);
     const preservedHashes = r.chapters.slice(0, 7).map((c) => c.contentHash);
