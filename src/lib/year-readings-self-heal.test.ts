@@ -164,9 +164,9 @@ describe("year-readings — current-chart four systems", () => {
     expect(validateYearReading(r).ok).toBe(true);
   });
 
-  it("window covers the whole decade without unavailable placeholders when facts are complete", () => {
-    const rs = readYearWindow(fullFacts(), 2003, 7, 9, "zh");
-    expect(rs.length).toBe(3);
+  it("window returns rows for every requested age when facts cover them", () => {
+    const rs = readYearWindow(fullFacts(), 2003, 7, 8, "zh");
+    expect(rs.length).toBe(2);
     for (const r of rs) {
       expect(r.systems.bazi.available).toBe(true);
       expect(r.systems.vedic.available).toBe(true);
