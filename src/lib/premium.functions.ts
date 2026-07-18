@@ -2207,8 +2207,8 @@ export const getPremiumReportProgress = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!row) return empty;
 
-    const contentMeta = (row as { content_json: { meta?: { report_schema_version?: "v1" | "v2" | "v3" } } | null })
-      .content_json?.meta;
+    const rowContent = (row as { content_json: { meta?: { report_schema_version?: "v1" | "v2" | "v3" } } | null }).content_json;
+    const contentMeta = rowContent?.meta;
     const schemaVersion = contentMeta?.report_schema_version ?? null;
 
     const { PREMIUM_V3_CHAPTERS } = await import("./premium-chapters-v3");
@@ -2246,7 +2246,11 @@ export const getPremiumReportProgress = createServerFn({ method: "POST" })
       };
     });
 
-    const completed = chapters.filter((c) => c.status === "completed").length;
+    const contentChapterCount = countValidPremiumContentChapters(rowContent);
+    const completed = Math.max(
+      chapters.filter((c) => c.status === "completed").length,
+      contentChapterCount >= PREMIUM_V3_CHAPTERS.length ? PREMIUM_V3_CHAPTERS.length : 0,
+    );
     const failed = chapters.filter((c) => c.status === "failed").length;
     const running = chapters.filter((c) => c.status === "running").length;
     const canContinue = chapters.some(
@@ -2256,7 +2260,9 @@ export const getPremiumReportProgress = createServerFn({ method: "POST" })
     );
 
     return {
-      reportStatus: (row as { status: PremiumReportProgress["reportStatus"] }).status,
+      reportStatus: contentChapterCount >= PREMIUM_V3_CHAPTERS.length
+        ? "completed"
+        : (row as { status: PremiumReportProgress["reportStatus"] }).status,
       schemaVersion,
       totalChapters: chapters.length,
       completedChapters: completed,
