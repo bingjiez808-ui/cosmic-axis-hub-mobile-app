@@ -110,7 +110,7 @@ type UiState =
   | { kind: "generating"; chartId: string }
   | { kind: "partial"; chartId: string }
   | { kind: "ready"; chartId: string }
-  | { kind: "failed"; chartId: string }
+  | { kind: "failed"; chartId: string; detail?: string }
   | { kind: "error"; message: string };
 
 function extractErrorCode(err: unknown): string {
