@@ -91,6 +91,31 @@ function splitParagraphs(text: string, groupSize = 2): string[] {
   return out;
 }
 
+function textFromUnknown(value: unknown, lang: "en" | "zh"): string {
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  if (Array.isArray(value)) {
+    return textFromUnknown(value[lang === "zh" ? 1 : 0] ?? value[0], lang);
+  }
+  if (value && typeof value === "object") {
+    const r = value as Record<string, unknown>;
+    const candidates = lang === "zh"
+      ? [r.zh, r.cn, r.chinese, r.plain, r.text, r.synthesis, r.headline, r.summary, r.en]
+      : [r.en, r.plain, r.text, r.synthesis, r.headline, r.summary, r.zh, r.cn];
+    for (const c of candidates) {
+      const s = textFromUnknown(c, lang).trim();
+      if (s) return s;
+    }
+  }
+  return "";
+}
+
+function textArrayFromUnknown(value: unknown, lang: "en" | "zh"): string[] {
+  if (Array.isArray(value)) return value.map((v) => textFromUnknown(v, lang)).filter(Boolean);
+  const s = textFromUnknown(value, lang);
+  return s ? [s] : [];
+}
+
 import {
   ChartZoomModal,
   FiveElements,
@@ -866,8 +891,9 @@ function ReportPage() {
   }, [aiState, navigate]);
 
   const isAwaitingPersonalized = !!search.date && aiState === "loading" && !ai?.summary;
-  const summary = ai?.summary
-    ? ai.summary
+  const summaryText = textFromUnknown(ai?.summary, lang);
+  const summary = summaryText
+    ? summaryText
     : isAwaitingPersonalized
       ? lang === "zh"
         ? "智者正在依据你的出生日期、时辰、农历、八字与行星落位生成专属解读……"
@@ -936,7 +962,9 @@ function ReportPage() {
   // AI hydrates can contradict the visitor's actual chart.
   const aiByKey = useMemo(() => {
     const m = new Map<string, ReportAI["dimensions"][number]>();
-    ai?.dimensions.forEach((d) => m.set(d.key, d));
+    ai?.dimensions.forEach((d) => {
+      if (d && typeof d.key === "string") m.set(d.key, d);
+    });
     return m;
   }, [ai]);
   const displayed = useMemo(
@@ -952,28 +980,43 @@ function ReportPage() {
           { tradition: ["Zi Wei", "紫微"], note: snapshotEvidence.ziwei },
         ];
         if (!p) return { ...d, evidence: fallbackEvidence };
+        const pAny = p as unknown as Record<string, unknown>;
+        const headline = textFromUnknown(pAny.headline, lang);
+        const synthesis = textFromUnknown(pAny.synthesis, lang);
+        const plain = textFromUnknown(pAny.plain, lang);
+        const evidence = Array.isArray(pAny.evidence) ? pAny.evidence : [];
+        const details = Array.isArray(pAny.details) ? pAny.details : [];
         return {
           ...d,
-          headline: [p.headline, p.headline] as [string, string],
-          synthesis: [p.synthesis, p.synthesis] as [string, string],
-          plain: [p.plain, p.plain] as [string, string],
+          headline: [headline || d.headline[0], headline || d.headline[1]] as [string, string],
+          synthesis: [synthesis || d.synthesis[0], synthesis || d.synthesis[1]] as [string, string],
+          plain: [plain || d.plain[0], plain || d.plain[1]] as [string, string],
           evidence:
-            p.evidence.length >= 4
-              ? p.evidence.slice(0, 4).map((e) => ({
-                  tradition: [e.tradition, e.tradition] as [string, string],
-                  note: [e.note, e.note] as [string, string],
-                }))
+            evidence.length >= 4
+              ? evidence.slice(0, 4).map((e) => {
+                  const er = e as Record<string, unknown>;
+                  const tradition = textFromUnknown(er.tradition, lang);
+                  const note = textFromUnknown(er.note, lang);
+                  return {
+                    tradition: [tradition, tradition] as [string, string],
+                    note: [note, note] as [string, string],
+                  };
+                })
               : fallbackEvidence,
           details:
-            p.details.length > 0
-              ? p.details.map((b) => ({
-                  label: [b.label, b.label] as [string, string],
-                  items: b.items.map((it) => [it, it] as [string, string]),
-                }))
+            details.length > 0
+              ? details.map((b) => {
+                  const br = b as Record<string, unknown>;
+                  const label = textFromUnknown(br.label, lang);
+                  return {
+                    label: [label, label] as [string, string],
+                    items: textArrayFromUnknown(br.items, lang).map((it) => [it, it] as [string, string]),
+                  };
+                })
               : d.details,
         };
       }),
-    [aiByKey, snapshotEvidence],
+    [aiByKey, snapshotEvidence, lang],
   );
 
 

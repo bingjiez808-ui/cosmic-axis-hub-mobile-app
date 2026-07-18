@@ -255,7 +255,7 @@ export function PremiumPdfCard({
       }
 
       let idleLoops = 0;
-      for (let i = 0; i < 32; i += 1) {
+      for (let i = 0; i < 12; i += 1) {
         const step = await Promise.race([
           processNextPremiumChapter({ data: { reportId } }),
           new Promise<never>((_, reject) => {
@@ -271,7 +271,22 @@ export function PremiumPdfCard({
           return;
         }
         if (step.message === "interrupted") {
-          setState({ kind: "failed", chartId });
+          await refresh();
+          if (!step.shouldContinue) return;
+          await new Promise((resolve) => window.setTimeout(resolve, 1800));
+          continue;
+        }
+        if (step.shouldContinue && step.processed) {
+          idleLoops = 0;
+          await new Promise((resolve) => window.setTimeout(resolve, 400));
+          continue;
+        }
+        if (step.shouldContinue && step.message === "active_lease") {
+          await new Promise((resolve) => window.setTimeout(resolve, 2500));
+          continue;
+        }
+        if (!step.shouldContinue && step.processed) {
+          await refresh();
           return;
         }
         if (!step.processed) {

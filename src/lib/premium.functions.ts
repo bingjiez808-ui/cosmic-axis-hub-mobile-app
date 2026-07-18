@@ -344,9 +344,7 @@ export const getPremiumStatus = createServerFn({ method: "POST" })
       | "pending" | "generating" | "partial" | "completed" | "failed"
       | undefined;
     if (reportRow && reportStatus !== "completed") {
-      const cj = reportRow.content_json as { chapters?: unknown[] } | null;
-      const chapters = Array.isArray(cj?.chapters) ? cj!.chapters! : [];
-      if (chapters.length >= 24) reportStatus = "completed";
+      if (countValidPremiumContentChapters(reportRow.content_json) >= 24) reportStatus = "completed";
     }
 
     return {
@@ -1370,12 +1368,23 @@ export type PremiumChapterStepResult = {
   status: PremiumReportStatus;
   processed: boolean;
   providerCalled: boolean;
+  processedChapters?: number;
+  shouldContinue?: boolean;
   completedChapters: number;
   totalChapters: number;
   currentChapterKey: string | null;
   currentChapterTitle: string | null;
   message: "completed" | "processed" | "no_claim" | "active_lease" | "interrupted";
 };
+
+function countValidPremiumContentChapters(content: unknown): number {
+  const chapters = (content as { chapters?: unknown[] } | null)?.chapters;
+  if (!Array.isArray(chapters)) return 0;
+  return chapters.filter((chapter) => {
+    const c = chapter as { key?: unknown; body?: unknown };
+    return typeof c.key === "string" && typeof c.body === "string" && c.body.trim().length > 0;
+  }).length;
+}
 
 const StepInput = z.object({ reportId: z.string().uuid() });
 
@@ -1658,12 +1667,21 @@ export const processNextPremiumChapter = createServerFn({ method: "POST" })
       .eq("user_id", userId)
       .maybeSingle();
     if (!report) throw new Error("report_not_found");
-    if (report.status === "completed" && report.content_json) {
+    if (report.content_json && countValidPremiumContentChapters(report.content_json) >= PREMIUM_V3_CHAPTERS.length) {
+      if (report.status !== "completed") {
+        await supabaseAdmin
+          .from("premium_pdf_reports")
+          .update({ status: "completed", error_message: null, generated_at: new Date().toISOString() } as unknown as never)
+          .eq("id", report.id)
+          .eq("user_id", userId);
+      }
       return {
         reportId: report.id,
         status: "completed",
         processed: false,
         providerCalled: false,
+        processedChapters: 0,
+        shouldContinue: false,
         completedChapters: PREMIUM_V3_CHAPTERS.length,
         totalChapters: PREMIUM_V3_CHAPTERS.length,
         currentChapterKey: null,
@@ -1692,79 +1710,10 @@ export const processNextPremiumChapter = createServerFn({ method: "POST" })
     const providerName = isTestMode ? "deterministic-stub" : "lovable-ai-gateway";
     if (!isTestMode && !apiKey) throw new Error("provider_unavailable");
 
-    const { data: rowsRaw } = await supabaseAdmin
-      .from("premium_report_chapters")
-      .select("chapter_key, chapter_index, status, attempt_count, claim_token, claimed_at, content_json, evidence_refs, input_tokens, output_tokens, error_message")
-      .eq("report_id", report.id)
-      .eq("user_id", userId)
-      .order("chapter_index", { ascending: true });
-    const rows = (rowsRaw ?? []) as ChapterDbRow[];
-    const active = rows.find((r) => r.status === "running");
-    const completedBefore = rows.filter((r) => r.status === "completed").length;
-    if (active) {
-      const meta = PREMIUM_V3_CHAPTERS.find((c) => c.key === active.chapter_key);
-      return {
-        reportId: report.id,
-        status: "generating",
-        processed: false,
-        providerCalled: false,
-        completedChapters: completedBefore,
-        totalChapters: PREMIUM_V3_CHAPTERS.length,
-        currentChapterKey: active.chapter_key,
-        currentChapterTitle: meta ? (isZh ? meta.title_zh : meta.title_en) : null,
-        message: "active_lease",
-      };
-    }
-
-    const nextMeta = PREMIUM_V3_CHAPTERS.find((c) => {
-      const r = rows.find((row) => row.chapter_key === c.key);
-      return !r || r.status === "pending" || (r.status === "failed" && r.attempt_count < MAX_CHAPTER_ATTEMPTS);
-    });
-    if (!nextMeta) {
-      const { buildPremiumFacts } = await import("./premium-facts");
-      const facts = buildPremiumFacts(engineInput.snapshot);
-      const aggregate = await buildAggregateReport({ reportId: report.id, userId, chart, cacheKey, facts, provider: providerName });
-      return {
-        reportId: report.id,
-        status: aggregate.status,
-        processed: false,
-        providerCalled: false,
-        completedChapters: aggregate.completedChapters,
-        totalChapters: aggregate.totalChapters,
-        currentChapterKey: null,
-        currentChapterTitle: null,
-        message: aggregate.status === "completed" ? "completed" : "no_claim",
-      };
-    }
-
-    const claimToken = crypto.randomUUID();
     const rpc = supabaseAdmin.rpc as unknown as (
       fn: string,
       args: Record<string, unknown>,
     ) => Promise<{ data: boolean | null; error: { message?: string } | null }>;
-    const { data: won, error: claimError } = await rpc("claim_premium_chapter_for_user", {
-      _user_id: userId,
-      _report_id: report.id,
-      _chapter_key: nextMeta.key,
-      _chapter_index: nextMeta.index,
-      _new_token: claimToken,
-      _lock_ttl_seconds: CHAPTER_LEASE_SECONDS,
-    });
-    if (claimError || won !== true) {
-      return {
-        reportId: report.id,
-        status: "generating",
-        processed: false,
-        providerCalled: false,
-        completedChapters: completedBefore,
-        totalChapters: PREMIUM_V3_CHAPTERS.length,
-        currentChapterKey: nextMeta.key,
-        currentChapterTitle: isZh ? nextMeta.title_zh : nextMeta.title_en,
-        message: "no_claim",
-      };
-    }
-
-    const prior = rows.find((r) => r.chapter_key === nextMeta.key);
     const { buildPremiumFacts } = await import("./premium-facts");
     const { validateChapterAgainstFacts } = await import("./chapter-json-schema");
     const facts = buildPremiumFacts(engineInput.snapshot);
@@ -1785,51 +1734,202 @@ export const processNextPremiumChapter = createServerFn({ method: "POST" })
       chart.birth_place && `${isZh ? "出生地点" : "Birth place"}: ${chart.birth_place}`,
     ].filter(Boolean).join("\n");
 
-    const title = isZh ? nextMeta.title_zh : nextMeta.title_en;
-    let body = "";
-    let refs: EvidenceRef[] = [];
-    let usage: TokenUsage = { input_tokens: 0, output_tokens: 0 };
-    let providerError: string | null = null;
-    try {
-      if (isTestMode) {
-        body = deterministicChapterBody(nextMeta, title, isZh);
-        refs = deterministicEvidenceRefs(nextMeta);
-        usage = { input_tokens: 100, output_tokens: 200 };
-      } else {
-        const { chapterOutputCap } = await import("./budget-policy");
-        const spent = rows.reduce(
-          (sum, r) => ({ input_tokens: sum.input_tokens + (r.input_tokens ?? 0), output_tokens: sum.output_tokens + (r.output_tokens ?? 0) }),
-          { input_tokens: 0, output_tokens: 0 },
-        );
-        const out = await generateChapter(nextMeta.key, title, chartFacts, factsJson, webReportText, isZh, apiKey!, {
-          allowedFacts: nextMeta.allowed_facts,
-          targetCharsZh: nextMeta.target_chars_zh,
-          maxOutputTokens: chapterOutputCap(spent),
-        });
-        body = out.text;
-        refs = out.evidence_refs as EvidenceRef[];
-        usage = out.usage ?? usage;
-      }
-      const issues = validateChapterAgainstFacts({ meta: nextMeta, facts, chapter: { body, evidence_refs: refs } });
-      if (issues.length > 0) providerError = `validation:${issues.slice(0, 3).map((i) => i.problem).join("|")}`;
-    } catch (err) {
-      providerError = safeMessage(err, "chapter_provider_error");
-    }
+    const deadline = Date.now() + (isTestMode ? 55_000 : 45_000);
+    let processedChapters = 0;
+    let providerCalled = false;
 
-    if (providerError) {
+    while (true) {
+      await recoverStaleChapterLocks(report.id, userId);
+      const { data: rowsRaw } = await supabaseAdmin
+        .from("premium_report_chapters")
+        .select("chapter_key, chapter_index, status, attempt_count, claim_token, claimed_at, content_json, evidence_refs, input_tokens, output_tokens, error_message")
+        .eq("report_id", report.id)
+        .eq("user_id", userId)
+        .order("chapter_index", { ascending: true });
+      const rows = (rowsRaw ?? []) as ChapterDbRow[];
+      const active = rows.find((r) => r.status === "running");
+      const completedBefore = rows.filter((r) => r.status === "completed").length;
+      if (active) {
+        const meta = PREMIUM_V3_CHAPTERS.find((c) => c.key === active.chapter_key);
+        return {
+          reportId: report.id,
+          status: "generating",
+          processed: processedChapters > 0,
+          providerCalled,
+          processedChapters,
+          shouldContinue: true,
+          completedChapters: completedBefore,
+          totalChapters: PREMIUM_V3_CHAPTERS.length,
+          currentChapterKey: active.chapter_key,
+          currentChapterTitle: meta ? (isZh ? meta.title_zh : meta.title_en) : null,
+          message: "active_lease",
+        };
+      }
+
+      const nextMeta = PREMIUM_V3_CHAPTERS.find((c) => {
+        const r = rows.find((row) => row.chapter_key === c.key);
+        return !r || r.status === "pending" || (r.status === "failed" && r.attempt_count < MAX_CHAPTER_ATTEMPTS);
+      });
+      if (!nextMeta) {
+        const aggregate = await buildAggregateReport({ reportId: report.id, userId, chart, cacheKey, facts, provider: providerName });
+        return {
+          reportId: report.id,
+          status: aggregate.status,
+          processed: processedChapters > 0,
+          providerCalled,
+          processedChapters,
+          shouldContinue: false,
+          completedChapters: aggregate.completedChapters,
+          totalChapters: aggregate.totalChapters,
+          currentChapterKey: null,
+          currentChapterTitle: null,
+          message: aggregate.status === "completed" ? "completed" : "no_claim",
+        };
+      }
+
+      if (Date.now() >= deadline && processedChapters > 0) {
+        return {
+          reportId: report.id,
+          status: "generating",
+          processed: true,
+          providerCalled,
+          processedChapters,
+          shouldContinue: true,
+          completedChapters: completedBefore,
+          totalChapters: PREMIUM_V3_CHAPTERS.length,
+          currentChapterKey: nextMeta.key,
+          currentChapterTitle: isZh ? nextMeta.title_zh : nextMeta.title_en,
+          message: "processed",
+        };
+      }
+
+      const claimToken = crypto.randomUUID();
+      const { data: won, error: claimError } = await rpc("claim_premium_chapter_for_user", {
+        _user_id: userId,
+        _report_id: report.id,
+        _chapter_key: nextMeta.key,
+        _chapter_index: nextMeta.index,
+        _new_token: claimToken,
+        _lock_ttl_seconds: CHAPTER_LEASE_SECONDS,
+      });
+      if (claimError || won !== true) {
+        return {
+          reportId: report.id,
+          status: "generating",
+          processed: processedChapters > 0,
+          providerCalled,
+          processedChapters,
+          shouldContinue: true,
+          completedChapters: completedBefore,
+          totalChapters: PREMIUM_V3_CHAPTERS.length,
+          currentChapterKey: nextMeta.key,
+          currentChapterTitle: isZh ? nextMeta.title_zh : nextMeta.title_en,
+          message: "no_claim",
+        };
+      }
+
+      const prior = rows.find((r) => r.chapter_key === nextMeta.key);
+      const title = isZh ? nextMeta.title_zh : nextMeta.title_en;
+      let body = "";
+      let refs: EvidenceRef[] = [];
+      let usage: TokenUsage = { input_tokens: 0, output_tokens: 0 };
+      let providerError: string | null = null;
+      try {
+        providerCalled = true;
+        if (isTestMode) {
+          body = deterministicChapterBody(nextMeta, title, isZh);
+          refs = deterministicEvidenceRefs(nextMeta);
+          usage = { input_tokens: 100, output_tokens: 200 };
+        } else {
+          const { chapterOutputCap } = await import("./budget-policy");
+          const spent = rows.reduce(
+            (sum, r) => ({ input_tokens: sum.input_tokens + (r.input_tokens ?? 0), output_tokens: sum.output_tokens + (r.output_tokens ?? 0) }),
+            { input_tokens: 0, output_tokens: 0 },
+          );
+          const out = await generateChapter(nextMeta.key, title, chartFacts, factsJson, webReportText, isZh, apiKey!, {
+            allowedFacts: nextMeta.allowed_facts,
+            targetCharsZh: nextMeta.target_chars_zh,
+            maxOutputTokens: chapterOutputCap(spent),
+          });
+          body = out.text;
+          refs = out.evidence_refs as EvidenceRef[];
+          usage = out.usage ?? usage;
+        }
+        const issues = validateChapterAgainstFacts({ meta: nextMeta, facts, chapter: { body, evidence_refs: refs } });
+        if (issues.length > 0) providerError = `validation:${issues.slice(0, 3).map((i) => i.problem).join("|")}`;
+      } catch (err) {
+        providerError = safeMessage(err, "chapter_provider_error");
+      }
+
+      if (providerError) {
+        await supabaseAdmin
+          .from("premium_report_chapters")
+          .update({
+            status: "failed",
+            claim_token: null,
+            error_message: sanitizeAuditMessage(providerError),
+            input_tokens: (prior?.input_tokens ?? 0) + usage.input_tokens,
+            output_tokens: (prior?.output_tokens ?? 0) + usage.output_tokens,
+          } as unknown as never)
+          .eq("report_id", report.id)
+          .eq("user_id", userId)
+          .eq("chapter_key", nextMeta.key)
+          .eq("claim_token", claimToken);
+        await supabaseAdmin.from("ai_usage_ledger").insert({
+          user_id: userId,
+          report_id: report.id,
+          chapter_key: nextMeta.key,
+          operation: "chapter_generate",
+          model_id: cacheKey.model_id,
+          provider: providerName,
+          input_tokens: usage.input_tokens,
+          output_tokens: usage.output_tokens,
+          status: "error",
+          error_code: providerError.slice(0, 120),
+        } as unknown as never);
+        const aggregate = await buildAggregateReport({ reportId: report.id, userId, chart, cacheKey, facts, provider: providerName, forceErrorMessage: "generation_interrupted" });
+        return {
+          reportId: report.id,
+          status: aggregate.status,
+          processed: true,
+          providerCalled: true,
+          processedChapters,
+          shouldContinue: aggregate.status === "generating",
+          completedChapters: aggregate.completedChapters,
+          totalChapters: aggregate.totalChapters,
+          currentChapterKey: nextMeta.key,
+          currentChapterTitle: title,
+          message: "interrupted",
+        };
+      }
+
+      const chapterContent = {
+        key: nextMeta.key,
+        title,
+        body,
+        evidence_refs: refs,
+        confidence: chapterConfidence(refs),
+      };
+      const chapterHash = await computeContentHash(chapterContent);
       await supabaseAdmin
         .from("premium_report_chapters")
         .update({
-          status: "failed",
-          claim_token: null,
-          error_message: sanitizeAuditMessage(providerError),
+          status: "completed",
+          content_json: chapterContent as unknown as Json,
+          evidence_refs: refs as unknown as Json,
+          confidence: chapterContent.confidence,
+          content_hash: chapterHash,
           input_tokens: (prior?.input_tokens ?? 0) + usage.input_tokens,
           output_tokens: (prior?.output_tokens ?? 0) + usage.output_tokens,
+          error_message: null,
+          claim_token: null,
+          completed_at: new Date().toISOString(),
         } as unknown as never)
         .eq("report_id", report.id)
         .eq("user_id", userId)
         .eq("chapter_key", nextMeta.key)
-        .eq("claim_token", claimToken);
+        .eq("claim_token", claimToken)
+        .neq("status", "completed");
       await supabaseAdmin.from("ai_usage_ledger").insert({
         user_id: userId,
         report_id: report.id,
@@ -1839,77 +1939,27 @@ export const processNextPremiumChapter = createServerFn({ method: "POST" })
         provider: providerName,
         input_tokens: usage.input_tokens,
         output_tokens: usage.output_tokens,
-        status: "error",
-        error_code: providerError.slice(0, 120),
+        status: "ok",
       } as unknown as never);
-      const aggregate = await buildAggregateReport({ reportId: report.id, userId, chart, cacheKey, facts, provider: providerName, forceErrorMessage: "generation_interrupted" });
-      return {
-        reportId: report.id,
-        status: aggregate.status,
-        processed: true,
-        providerCalled: true,
-        completedChapters: aggregate.completedChapters,
-        totalChapters: aggregate.totalChapters,
-        currentChapterKey: nextMeta.key,
-        currentChapterTitle: title,
-        message: "interrupted",
-      };
-    }
+      processedChapters += 1;
 
-    const chapterContent = {
-      key: nextMeta.key,
-      title,
-      body,
-      evidence_refs: refs,
-      confidence: chapterConfidence(refs),
-    };
-    const chapterHash = await computeContentHash(chapterContent);
-    await supabaseAdmin
-      .from("premium_report_chapters")
-      .update({
-        status: "completed",
-        content_json: chapterContent as unknown as Json,
-        evidence_refs: refs as unknown as Json,
-        confidence: chapterContent.confidence,
-        content_hash: chapterHash,
-        input_tokens: (prior?.input_tokens ?? 0) + usage.input_tokens,
-        output_tokens: (prior?.output_tokens ?? 0) + usage.output_tokens,
-        error_message: null,
-        claim_token: null,
-        completed_at: new Date().toISOString(),
-      } as unknown as never)
-      .eq("report_id", report.id)
-      .eq("user_id", userId)
-      .eq("chapter_key", nextMeta.key)
-      .eq("claim_token", claimToken);
-    await supabaseAdmin.from("ai_usage_ledger").insert({
-      user_id: userId,
-      report_id: report.id,
-      chapter_key: nextMeta.key,
-      operation: "chapter_generate",
-      model_id: cacheKey.model_id,
-      provider: providerName,
-      input_tokens: usage.input_tokens,
-      output_tokens: usage.output_tokens,
-      status: "ok",
-    } as unknown as never);
-    const aggregate = await buildAggregateReport({ reportId: report.id, userId, chart, cacheKey, facts, provider: providerName });
-    const next = PREMIUM_V3_CHAPTERS.find((c) => {
-      if (c.key === nextMeta.key) return false;
-      const r = rows.find((row) => row.chapter_key === c.key);
-      return !r || r.status === "pending" || (r.status === "failed" && r.attempt_count < MAX_CHAPTER_ATTEMPTS);
-    });
-    return {
-      reportId: report.id,
-      status: aggregate.status,
-      processed: true,
-      providerCalled: true,
-      completedChapters: aggregate.completedChapters,
-      totalChapters: aggregate.totalChapters,
-      currentChapterKey: next?.key ?? null,
-      currentChapterTitle: next ? (isZh ? next.title_zh : next.title_en) : null,
-      message: aggregate.status === "completed" ? "completed" : "processed",
-    };
+      const aggregate = await buildAggregateReport({ reportId: report.id, userId, chart, cacheKey, facts, provider: providerName });
+      if (aggregate.status === "completed") {
+        return {
+          reportId: report.id,
+          status: "completed",
+          processed: true,
+          providerCalled,
+          processedChapters,
+          shouldContinue: false,
+          completedChapters: aggregate.completedChapters,
+          totalChapters: aggregate.totalChapters,
+          currentChapterKey: null,
+          currentChapterTitle: null,
+          message: "completed",
+        };
+      }
+    }
   });
 
 
@@ -2157,8 +2207,8 @@ export const getPremiumReportProgress = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!row) return empty;
 
-    const contentMeta = (row as { content_json: { meta?: { report_schema_version?: "v1" | "v2" | "v3" } } | null })
-      .content_json?.meta;
+    const rowContent = (row as { content_json: { meta?: { report_schema_version?: "v1" | "v2" | "v3" } } | null }).content_json;
+    const contentMeta = rowContent?.meta;
     const schemaVersion = contentMeta?.report_schema_version ?? null;
 
     const { PREMIUM_V3_CHAPTERS } = await import("./premium-chapters-v3");
@@ -2196,7 +2246,11 @@ export const getPremiumReportProgress = createServerFn({ method: "POST" })
       };
     });
 
-    const completed = chapters.filter((c) => c.status === "completed").length;
+    const contentChapterCount = countValidPremiumContentChapters(rowContent);
+    const completed = Math.max(
+      chapters.filter((c) => c.status === "completed").length,
+      contentChapterCount >= PREMIUM_V3_CHAPTERS.length ? PREMIUM_V3_CHAPTERS.length : 0,
+    );
     const failed = chapters.filter((c) => c.status === "failed").length;
     const running = chapters.filter((c) => c.status === "running").length;
     const canContinue = chapters.some(
@@ -2206,7 +2260,9 @@ export const getPremiumReportProgress = createServerFn({ method: "POST" })
     );
 
     return {
-      reportStatus: (row as { status: PremiumReportProgress["reportStatus"] }).status,
+      reportStatus: contentChapterCount >= PREMIUM_V3_CHAPTERS.length
+        ? "completed"
+        : (row as { status: PremiumReportProgress["reportStatus"] }).status,
       schemaVersion,
       totalChapters: chapters.length,
       completedChapters: completed,
