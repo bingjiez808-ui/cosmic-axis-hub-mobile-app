@@ -133,6 +133,41 @@ export const ensureYearReadings = createServerFn({ method: "POST" })
     const facts = buildPremiumFacts(snapshot, { ziweiYears, transitYears });
     const factsHash = hashFactsForYearReading(facts);
 
+    // Self-heal: drop any persisted year_readings_v1 rows for this chart
+    // that were computed under an old skill_version, calculation_version,
+    // or facts_hash. Without this, stale rows would linger indefinitely
+    // and the deterministic re-computation below could not replace them
+    // (the row's UNIQUE key includes these version columns, so the
+    // upsert would simply insert a new row alongside stale ones).
+    try {
+      const del = supabase as unknown as {
+        from: (t: string) => {
+          delete: () => {
+            eq: (c: string, v: string) => {
+              eq: (c: string, v: string) => {
+                or: (expr: string) => Promise<{ error: unknown }>;
+              };
+            };
+          };
+        };
+      };
+      await del
+        .from("year_readings_v1")
+        .delete()
+        .eq("owner_id", userId)
+        .eq("chart_id", data.chartId)
+        .or(
+          [
+            `skill_version.neq.${YEAR_READING_SKILL_VERSION}`,
+            `calculation_version.neq.${YEAR_READING_CALC_VERSION}`,
+            `facts_hash.neq.${factsHash}`,
+          ].join(","),
+        );
+    } catch {
+      /* non-fatal — stale rows will simply be ignored by the read below */
+    }
+
+
     // Read cached rows for this exact (chart, facts_hash, skill, calc, lang, year range).
     const readClient = supabase as unknown as {
       from: (t: string) => {
