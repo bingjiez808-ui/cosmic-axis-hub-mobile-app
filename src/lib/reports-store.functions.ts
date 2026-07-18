@@ -441,6 +441,70 @@ export const updateChartGender = createServerFn({ method: "POST" })
   });
 
 /* --------------------------------------------------------------------- */
+/* deleteChart — owner-only destructive action.                          */
+/*                                                                       */
+/* scope="chart"        → deletes the chart row; FK ON DELETE CASCADE    */
+/*                        removes reports, premium_pdf_reports,          */
+/*                        premium_report_orders, premium_report_chapters,*/
+/*                        year_readings_v1 automatically.                */
+/* scope="reports_only" → keep the chart row (birth facts) but delete    */
+/*                        every child that consumes AI budget            */
+/*                        (reports + premium_pdf_reports +               */
+/*                        year_readings_v1). premium_report_orders are   */
+/*                        RETAINED de-identified for financial audit.    */
+/*                                                                       */
+/* Uses context.supabase (RLS as the user) — no service_role — so        */
+/* Postgres enforces owner scope. Ownership pre-check gives a stable     */
+/* non-identifying error before any writes.                              */
+/* --------------------------------------------------------------------- */
+
+const DeleteChartInput = z.object({
+  chartId: z.string().uuid(),
+  scope: z.enum(["chart", "reports_only"]),
+});
+
+export const deleteChart = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => DeleteChartInput.parse(data))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: existing } = await supabase
+      .from("charts")
+      .select("id")
+      .eq("id", data.chartId)
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (!existing) throw new Error("chart_not_found");
+
+    if (data.scope === "reports_only") {
+      await supabase
+        .from("premium_pdf_reports")
+        .delete()
+        .eq("user_id", userId)
+        .eq("chart_id", data.chartId);
+      await supabase
+        .from("reports")
+        .delete()
+        .eq("user_id", userId)
+        .eq("chart_id", data.chartId);
+      await supabase
+        .from("year_readings_v1")
+        .delete()
+        .eq("user_id", userId)
+        .eq("chart_id", data.chartId);
+      return { ok: true as const, scope: "reports_only" as const };
+    }
+
+    const { error } = await supabase
+      .from("charts")
+      .delete()
+      .eq("id", data.chartId)
+      .eq("user_id", userId);
+    if (error) throw new Error("chart_delete_failed");
+    return { ok: true as const, scope: "chart" as const };
+  });
+
+/* --------------------------------------------------------------------- */
 /* Email-verified guard                                                  */
 /* --------------------------------------------------------------------- */
 
