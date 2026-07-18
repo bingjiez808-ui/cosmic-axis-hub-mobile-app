@@ -428,6 +428,7 @@ export function LifeTimeline({
                   lang={lang}
                   birthISO={birthISO}
                   aiYears={aiDecade?.years}
+                  chartId={chartId ?? null}
                 />
               </>
             )}
