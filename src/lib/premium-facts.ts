@@ -382,9 +382,7 @@ export function deriveWesternFacts(
     },
   };
 }
-    },
-  };
-}
+
 
 export function deriveVedicFacts(
   snap: CalculationSnapshot,
