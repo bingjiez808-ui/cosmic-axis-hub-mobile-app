@@ -618,13 +618,16 @@ export async function assertEmailVerifiedOrAdmin(context: {
       };
     };
   };
-  const { data } = await sb
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", context.userId)
-    .eq("role", "admin")
-    .maybeSingle();
-  if (data) return;
+  try {
+    const { data } = await sb
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", context.userId)
+      .eq("role", "admin")
+      .maybeSingle();
+    if (data) return;
+  } catch { /* fall through */ }
+
   // Fallback: some JWT shapes (server-minted sessions, older tokens) omit
   // the verification claim entirely even though the account IS verified in
   // auth.users. Consult the Auth admin REST endpoint as the source of truth
