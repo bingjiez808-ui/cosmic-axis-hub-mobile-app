@@ -112,6 +112,160 @@ export type Database = {
         }
         Relationships: []
       }
+      community_comments: {
+        Row: {
+          author_house_key: string
+          author_title: string
+          body_text: string
+          created_at: string
+          deleted_at: string | null
+          id: string
+          parent_id: string | null
+          post_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          author_house_key: string
+          author_title: string
+          body_text: string
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          parent_id?: string | null
+          post_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          author_house_key?: string
+          author_title?: string
+          body_text?: string
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          parent_id?: string | null
+          post_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "community_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "community_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_likes: {
+        Row: {
+          comment_id: string | null
+          created_at: string
+          id: string
+          post_id: string | null
+          user_id: string
+        }
+        Insert: {
+          comment_id?: string | null
+          created_at?: string
+          id?: string
+          post_id?: string | null
+          user_id: string
+        }
+        Update: {
+          comment_id?: string | null
+          created_at?: string
+          id?: string
+          post_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_likes_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "community_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_likes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "community_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_likes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_posts: {
+        Row: {
+          author_house_key: string
+          author_title: string
+          body_text: string
+          created_at: string
+          deleted_at: string | null
+          facet: string
+          id: string
+          image_paths: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          author_house_key: string
+          author_title: string
+          body_text: string
+          created_at?: string
+          deleted_at?: string | null
+          facet: string
+          id?: string
+          image_paths?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          author_house_key?: string
+          author_title?: string
+          body_text?: string
+          created_at?: string
+          deleted_at?: string | null
+          facet?: string
+          id?: string
+          image_paths?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_posts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       phone_otps: {
         Row: {
           attempts: number
@@ -723,6 +877,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      community_email_verified: { Args: never; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "user"
