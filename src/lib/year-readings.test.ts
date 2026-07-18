@@ -139,7 +139,56 @@ describe("readYear availability", () => {
   });
 });
 
-/* ---------------- Determinism ---------------- */
+/* ---------------- Ziwei multi-year snapshots ---------------- */
+
+describe("readZiweiYear — multi-year horoscope_years", () => {
+  const mkHoroscope = (year: number, mutagen: string[]) => ({
+    source: "iztro@2.5.8 horoscope()",
+    as_of_date: `${year}-05-01`,
+    solar_date: `${year}-05-01`,
+    lunar_date: "",
+    decadal: { index: 0, name: "命宫", heavenly_stem: "甲", earthly_branch: "子",
+      palace_names: [], mutagen: [], age_range: [0, 9] as [number, number] },
+    yearly: { index: 0, name: `${year}年命宫`, heavenly_stem: "甲", earthly_branch: "子",
+      palace_names: [], mutagen, sui_qian_12: [], jiang_qian_12: [] },
+    monthly: { index: 0, name: "月宫", heavenly_stem: "甲", earthly_branch: "子",
+      palace_names: [], mutagen: [] },
+  });
+  const ZIWEI_MULTI = {
+    soul: "紫微", body: "天府", five_elements_class: "水二局", lunar_date: "",
+    soul_palace_index: 0,
+    palaces: [], horoscope: null,
+    horoscope_years: [
+      mkHoroscope(1990, ["禄"]),
+      mkHoroscope(1991, ["忌"]),
+      mkHoroscope(1992, []),
+    ],
+    evidence_paths: {
+      soul_palace: "ziwei.palaces[0]" as const,
+      five_elements_class: "ziwei.five_elements_class" as const,
+      horoscope: "ziwei.horoscope" as const,
+      horoscope_years: "ziwei.horoscope_years" as const,
+    },
+  } as unknown as PremiumFacts["ziwei"];
+
+  it("finds the matching year snapshot and scores above 50 when 化禄", () => {
+    const r = readYear(baseFacts({ ziwei: ZIWEI_MULTI }), 1990, 7, "zh");
+    expect(r.systems.ziwei.available).toBe(true);
+    expect(r.systems.ziwei.score! > 50).toBe(true);
+    expect(r.systems.ziwei.evidence_refs[0]).toContain("horoscope_years[0]");
+  });
+  it("scores below 50 for 化忌 year", () => {
+    const r = readYear(baseFacts({ ziwei: ZIWEI_MULTI }), 1991, 8, "zh");
+    expect(r.systems.ziwei.available).toBe(true);
+    expect(r.systems.ziwei.score! < 50).toBe(true);
+  });
+  it("year outside snapshot window → unavailable, honest reason", () => {
+    const r = readYear(baseFacts({ ziwei: ZIWEI_MULTI }), 2050, 67, "zh");
+    expect(r.systems.ziwei.available).toBe(false);
+    expect(r.systems.ziwei.reason_unavailable).toBeTruthy();
+  });
+});
+
 
 describe("determinism", () => {
   it("same facts, same year → identical content_hash", () => {

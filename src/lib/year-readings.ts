@@ -15,8 +15,8 @@
  */
 import type { PremiumFacts } from "./premium-facts";
 
-export const YEAR_READING_SKILL_VERSION = "year-reading@1.0.0";
-export const YEAR_READING_CALC_VERSION = "calc@1.0.0";
+export const YEAR_READING_SKILL_VERSION = "year-reading@1.1.0";
+export const YEAR_READING_CALC_VERSION = "calc@1.1.0";
 
 export type Lang = "zh" | "en";
 export type Direction = "up" | "stable" | "down";
@@ -338,11 +338,23 @@ export function readVedicYear(facts: PremiumFacts, year: number, _age: number, l
 
 export function readZiweiYear(facts: PremiumFacts, year: number, _age: number, lang: Lang): SystemReading {
   const z = facts.ziwei;
-  const hs = z?.horoscope ?? null;
-  // Ziwei snapshot is bound to `as_of_date` — treat only the matching
-  // solar year as available. Any other year is honestly unavailable.
-  const asOfYear = hs ? Number(hs.as_of_date.slice(0, 4)) : null;
-  if (!z || !hs || asOfYear !== year) {
+  // Prefer multi-year `horoscope_years[]` (v3.1). Fall back to the
+  // single-year `horoscope` when only one snapshot exists (v3 cache).
+  let hs = null as null | NonNullable<typeof z>["horoscope"];
+  let evidencePath = "ziwei.horoscope.yearly";
+  if (z?.horoscope_years && z.horoscope_years.length > 0) {
+    const match = z.horoscope_years.find((h) => Number(h.as_of_date.slice(0, 4)) === year);
+    if (match) {
+      hs = match;
+      const idx = z.horoscope_years.indexOf(match);
+      evidencePath = `ziwei.horoscope_years[${idx}].yearly`;
+    }
+  }
+  if (!hs && z?.horoscope) {
+    const asOfYear = Number(z.horoscope.as_of_date.slice(0, 4));
+    if (asOfYear === year) hs = z.horoscope;
+  }
+  if (!z || !hs) {
     return {
       system: "ziwei",
       available: false,
@@ -354,8 +366,8 @@ export function readZiweiYear(facts: PremiumFacts, year: number, _age: number, l
       opportunity: "",
       caution: "",
       reason_unavailable: lang === "zh"
-        ? "紫微流年仅覆盖当前基准年"
-        : "Ziwei flow-year only covers current reference year",
+        ? "紫微流年快照未覆盖该年"
+        : "Ziwei flow-year snapshot does not cover this year",
     };
   }
   // Deterministic scoring: weight yearly mutagens (化禄+ / 化权+ / 化科+ / 化忌-).
@@ -373,7 +385,7 @@ export function readZiweiYear(facts: PremiumFacts, year: number, _age: number, l
     score,
     direction: directionFromScore(score),
     confidence: hs.yearly.mutagen.length > 0 ? "high" : "mid",
-    evidence_refs: ["ziwei.horoscope.yearly"],
+    evidence_refs: [evidencePath],
     brief,
     opportunity: lang === "zh" ? "顺势承接宫主星能量" : "align with palace star energy",
     caution: lang === "zh" ? "避开宫内煞星影响" : "note maleficence in same palace",
