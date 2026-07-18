@@ -18,6 +18,14 @@ import { scoreAnnualTransit } from "./western-transits";
 
 export const YEAR_READING_SKILL_VERSION = "year-reading@1.2.0";
 export const YEAR_READING_CALC_VERSION = "calc@1.2.0";
+/**
+ * FACTS_VERSION — canonical version tag for the deterministic year-reading
+ * facts contract. Bumping this (or bumping PREMIUM_FACTS_VERSION which it
+ * mirrors semantically) invalidates cached rows in `year_readings_v1`;
+ * `ensureYearReadings` drops rows whose skill/calc version does not match
+ * this value and rebuilds them from the calculator.
+ */
+export const FACTS_VERSION = YEAR_READING_CALC_VERSION;
 
 export type Lang = "zh" | "en";
 export type Direction = "up" | "stable" | "down";
