@@ -199,6 +199,13 @@ export type BuildFactsOptions = {
    * date. Used by the year-reading engine to produce per-year 流年 facts.
    */
   ziweiYears?: string[] | null;
+  /**
+   * v3.1: List of calendar years for which to compute deterministic
+   * Western annual-transit charts. When provided AND the natal chart
+   * is resolvable, `WesternFacts.annual_transits` is populated with one
+   * entry per year (birthday-anchored 12:00 UTC samples).
+   */
+  transitYears?: number[] | null;
 };
 
 export function deriveBaziFacts(
