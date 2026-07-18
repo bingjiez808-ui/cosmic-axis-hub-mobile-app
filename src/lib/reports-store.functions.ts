@@ -627,21 +627,31 @@ export async function assertEmailVerifiedOrAdmin(context: {
   if (data) return;
   // Fallback: some JWT shapes (server-minted sessions, older tokens) omit
   // the verification claim entirely even though the account IS verified in
-  // auth.users. Consult the admin API as the source of truth before
-  // rejecting a legitimate paying user.
+  // auth.users. Consult the Auth admin REST endpoint as the source of truth
+  // before rejecting a legitimate paying user.
   try {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: u } = await supabaseAdmin.auth.admin.getUserById(context.userId);
-    const user = u?.user as { email_confirmed_at?: string | null; confirmed_at?: string | null; app_metadata?: { provider?: string; providers?: string[] } } | null;
-    if (user) {
-      if (user.email_confirmed_at || user.confirmed_at) return;
-      const provs = new Set<string>([
-        ...(user.app_metadata?.provider ? [user.app_metadata.provider] : []),
-        ...(user.app_metadata?.providers ?? []),
-      ]);
-      if ([...provs].some((p) => p !== "email" && p !== "phone")) return;
+    const url = process.env.SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (url && key) {
+      const res = await fetch(`${url}/auth/v1/admin/users/${context.userId}`, {
+        headers: { apikey: key, Authorization: `Bearer ${key}` },
+      });
+      if (res.ok) {
+        const user = (await res.json()) as {
+          email_confirmed_at?: string | null;
+          confirmed_at?: string | null;
+          app_metadata?: { provider?: string; providers?: string[] };
+        };
+        if (user.email_confirmed_at || user.confirmed_at) return;
+        const provs = new Set<string>([
+          ...(user.app_metadata?.provider ? [user.app_metadata.provider] : []),
+          ...(user.app_metadata?.providers ?? []),
+        ]);
+        if ([...provs].some((p) => p !== "email" && p !== "phone")) return;
+      }
     }
   } catch { /* fall through to reject */ }
   throw new Error("email_not_verified");
 }
+
 
