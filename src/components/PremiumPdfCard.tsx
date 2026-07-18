@@ -270,8 +270,13 @@ export function PremiumPdfCard({
           if (opts.openWhenDone) setReaderOpen(true);
           return;
         }
+        if (step.message === "prep_error") {
+          setState({ kind: "failed", chartId, detail: step.error });
+          return;
+        }
         if (step.message === "interrupted") {
           await refresh();
+          setState((prev) => prev.kind === "failed" ? { ...prev, detail: step.error ?? prev.detail } : prev);
           if (!step.shouldContinue) return;
           await new Promise((resolve) => window.setTimeout(resolve, 1800));
           continue;
@@ -301,8 +306,9 @@ export function PremiumPdfCard({
         }
       }
       await refresh();
-    } catch {
-      setState({ kind: "failed", chartId });
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err ?? "");
+      setState({ kind: "failed", chartId, detail });
     } finally {
       setBusy(false);
       stepLoopActive.current = false;
