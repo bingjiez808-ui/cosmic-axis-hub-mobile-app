@@ -1365,7 +1365,7 @@ function ReportPage() {
 
       {/* Life Timeline — 大运 */}
       <div className="mt-24">
-        <LifeTimeline birthISO={search.date} search={search} />
+        <LifeTimeline birthISO={search.date} search={search} chartId={reportChartId} />
       </div>
 
       {/* Key life events verification */}
