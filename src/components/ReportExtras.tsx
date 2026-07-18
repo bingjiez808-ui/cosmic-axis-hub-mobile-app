@@ -52,7 +52,8 @@ import {
 } from "@/lib/report-input";
 import { OUTLOOK_AI_VERSION } from "@/lib/ai-cache-version";
 import { computeEnergyRange } from "@/lib/energy-score";
-import { YearInsightModal, type YearInsightPoint } from "@/components/YearInsightModal";
+import { YearInsightModal, type YearInsightPoint, type YearInsightSystem } from "@/components/YearInsightModal";
+import { ensureYearReadings } from "@/lib/year-readings.functions";
 
 
 
