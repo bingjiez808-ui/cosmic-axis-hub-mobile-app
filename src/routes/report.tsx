@@ -637,6 +637,7 @@ function ReportPage() {
   const [aiState, setAiState] = useState<"idle" | "loading" | "ready" | "error" | "needs-auth" | "needs-verify">("idle");
   const [aiError, setAiError] = useState<string | null>(null);
   const [aiProgress, setAiProgress] = useState({ done: 0, total: 0 });
+  const [reportChartId, setReportChartId] = useState<string | null>(null);
   const latestReqRef = useRef(0);
   const { updateReadingAI } = useAccount();
   const navigate = useNavigate();
