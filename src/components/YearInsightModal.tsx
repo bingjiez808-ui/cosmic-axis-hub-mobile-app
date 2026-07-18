@@ -20,6 +20,19 @@ import { AnimatePresence, motion } from "framer-motion";
 
 import type { Lang } from "@/lib/i18n";
 
+export type YearInsightSystem = {
+  name: "bazi" | "ziwei" | "vedic" | "western";
+  available: boolean;
+  score: number | null;
+  direction: "up" | "stable" | "down" | null;
+  confidence: "reference_only" | "low" | "mid" | "high";
+  brief: string;
+  opportunity: string;
+  caution: string;
+  evidenceRefs: string[];
+  reasonUnavailable?: string;
+};
+
 export type YearInsightPoint = {
   age: number;
   score: number | null;
@@ -30,12 +43,20 @@ export type YearInsightPoint = {
   /** Optional saved evidence refs (already-generated premium chapter). */
   evidenceRefs?: string[];
   /** Confidence tier for the year insight surface. */
-  confidence?: "reference" | "low" | "mid" | "high";
+  confidence?: "reference" | "low" | "mid" | "high" | "reference_only";
   /** True when the surface is falling back to the reference pool because
    *  the report has not been generated / is missing this year. */
   reference?: boolean;
   /** Calendar year, if the caller can compute it. */
   year?: number | null;
+  /** Per-system deterministic readings (from year_readings_v1). */
+  systems?: YearInsightSystem[];
+  /** Names of unavailable systems. */
+  unavailableSystems?: string[];
+  /** Composite interpretation from the deterministic engine. */
+  interpretation?: { brief: string; opportunity: string; caution: string };
+  /** Composite advice from the deterministic engine. */
+  advice?: { suggestion: string; boundary: string };
 };
 
 const T = {
@@ -62,6 +83,7 @@ const T = {
   },
   conf: {
     reference: { zh: "参考级", en: "Reference" },
+    reference_only: { zh: "参考级", en: "Reference" },
     low: { zh: "低置信", en: "Low" },
     mid: { zh: "中置信", en: "Medium" },
     high: { zh: "高置信", en: "High" },
@@ -249,33 +271,119 @@ export function YearInsightModal({
                 </p>
               </section>
 
-              {bands && (
-                <>
-                  <section className="mt-5">
-                    <p className="text-[10.5px] uppercase tracking-[0.28em] text-gold-dust/70">
-                      {pick(T.opportunity, lang)}
-                    </p>
-                    <p className="mt-1 text-[13px] leading-relaxed text-stone-warm/80 [overflow-wrap:break-word]">
-                      {bands.opportunity}
-                    </p>
-                  </section>
-                  <section className="mt-5">
-                    <p className="text-[10.5px] uppercase tracking-[0.28em] text-gold-dust/70">
-                      {pick(T.watch, lang)}
-                    </p>
-                    <p className="mt-1 text-[13px] leading-relaxed text-stone-warm/80 [overflow-wrap:break-word]">
-                      {bands.watch}
-                    </p>
-                  </section>
-                  <section className="mt-5">
-                    <p className="text-[10.5px] uppercase tracking-[0.28em] text-gold-dust/70">
-                      {pick(T.suggestion, lang)}
-                    </p>
-                    <p className="mt-1 text-[13px] leading-relaxed text-stone-warm/80 [overflow-wrap:break-word]">
-                      {bands.suggestion}
-                    </p>
-                  </section>
-                </>
+              {(() => {
+                const opp = point.interpretation?.opportunity || bands?.opportunity;
+                const wat = point.interpretation?.caution || bands?.watch;
+                const sug = point.advice?.suggestion || bands?.suggestion;
+                return (
+                  <>
+                    {opp && (
+                      <section className="mt-5">
+                        <p className="text-[10.5px] uppercase tracking-[0.28em] text-gold-dust/70">
+                          {pick(T.opportunity, lang)}
+                        </p>
+                        <p className="mt-1 text-[13px] leading-relaxed text-stone-warm/80 [overflow-wrap:break-word]">
+                          {opp}
+                        </p>
+                      </section>
+                    )}
+                    {wat && (
+                      <section className="mt-5">
+                        <p className="text-[10.5px] uppercase tracking-[0.28em] text-gold-dust/70">
+                          {pick(T.watch, lang)}
+                        </p>
+                        <p className="mt-1 text-[13px] leading-relaxed text-stone-warm/80 [overflow-wrap:break-word]">
+                          {wat}
+                        </p>
+                      </section>
+                    )}
+                    {sug && (
+                      <section className="mt-5">
+                        <p className="text-[10.5px] uppercase tracking-[0.28em] text-gold-dust/70">
+                          {pick(T.suggestion, lang)}
+                        </p>
+                        <p className="mt-1 text-[13px] leading-relaxed text-stone-warm/80 [overflow-wrap:break-word]">
+                          {sug}
+                        </p>
+                      </section>
+                    )}
+                  </>
+                );
+              })()}
+
+              {point.systems && point.systems.length > 0 && (
+                <section className="mt-6" data-testid="year-insight-systems">
+                  <p className="text-[10.5px] uppercase tracking-[0.28em] text-gold-dust/70">
+                    {lang === "zh" ? "四体系细节" : "Systems breakdown"}
+                  </p>
+                  <ul className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    {point.systems.map((s) => {
+                      const zhLabel: Record<string, string> = {
+                        bazi: "八字", ziwei: "紫微", vedic: "印度", western: "西方",
+                      };
+                      const enLabel: Record<string, string> = {
+                        bazi: "BaZi", ziwei: "Ziwei", vedic: "Vedic", western: "Western",
+                      };
+                      const name = (lang === "zh" ? zhLabel : enLabel)[s.name] ?? s.name;
+                      return (
+                        <li
+                          key={s.name}
+                          data-testid={`year-insight-system-${s.name}`}
+                          className={`rounded-2xl border p-3 ${
+                            s.available
+                              ? "border-gold-dust/25 bg-gold-dust/[0.04]"
+                              : "border-white/10 bg-white/[0.02]"
+                          }`}
+                        >
+                          <div className="flex items-baseline justify-between gap-2">
+                            <span className="text-[11px] uppercase tracking-[0.24em] text-stone-warm/70">
+                              {name}
+                            </span>
+                            {s.available ? (
+                              <span className="font-serif text-lg italic text-gold-light tabular-nums">
+                                {s.score}
+                              </span>
+                            ) : (
+                              <span className="text-[10px] uppercase tracking-[0.22em] text-stone-warm/45">
+                                {lang === "zh" ? "不可用" : "N/A"}
+                              </span>
+                            )}
+                          </div>
+                          {s.available ? (
+                            <>
+                              <p className="mt-1 text-[12px] leading-relaxed text-stone-warm/80 [overflow-wrap:break-word]">
+                                {s.brief}
+                              </p>
+                              {s.opportunity && (
+                                <p className="mt-1 text-[11.5px] leading-relaxed text-stone-warm/70 [overflow-wrap:break-word]">
+                                  ↑ {s.opportunity}
+                                </p>
+                              )}
+                              {s.caution && (
+                                <p className="mt-0.5 text-[11.5px] leading-relaxed text-stone-warm/60 [overflow-wrap:break-word]">
+                                  ⚠ {s.caution}
+                                </p>
+                              )}
+                              <p className="mt-1 text-[10px] uppercase tracking-[0.22em] text-stone-warm/40">
+                                {pick(T.conf[s.confidence] ?? T.conf.reference, lang)}
+                              </p>
+                            </>
+                          ) : (
+                            <p className="mt-1 text-[11.5px] leading-relaxed text-stone-warm/55 [overflow-wrap:break-word]">
+                              {s.reasonUnavailable || (lang === "zh" ? "该年无可用事实。" : "No available facts for this year.")}
+                            </p>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </section>
+              )}
+
+              {point.advice?.boundary && (
+                <p className="mt-4 text-[10.5px] leading-relaxed text-stone-warm/50 [overflow-wrap:break-word]">
+                  {point.advice.boundary}
+                </p>
               )}
 
               {point.facts && point.facts.length > 0 && (

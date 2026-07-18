@@ -52,7 +52,8 @@ import {
 } from "@/lib/report-input";
 import { OUTLOOK_AI_VERSION } from "@/lib/ai-cache-version";
 import { computeEnergyRange } from "@/lib/energy-score";
-import { YearInsightModal, type YearInsightPoint } from "@/components/YearInsightModal";
+import { YearInsightModal, type YearInsightPoint, type YearInsightSystem } from "@/components/YearInsightModal";
+import { ensureYearReadings } from "@/lib/year-readings.functions";
 
 
 
@@ -214,9 +215,11 @@ function birthSeed(birthISO?: string): number {
 export function LifeTimeline({
   birthISO,
   search,
+  chartId,
 }: {
   birthISO?: string;
   search?: ReportSearchLike;
+  chartId?: string | null;
 }) {
   const { lang, t } = useLang();
   const li = lang === "zh" ? 1 : 0;
@@ -426,6 +429,7 @@ export function LifeTimeline({
                   lang={lang}
                   birthISO={birthISO}
                   aiYears={aiDecade?.years}
+                  chartId={chartId ?? null}
                 />
               </>
             )}
@@ -458,6 +462,7 @@ function YearByYearChart({
   lang,
   birthISO,
   aiYears,
+  chartId,
 }: {
   from: number;
   to: number;
@@ -465,6 +470,7 @@ function YearByYearChart({
   lang: Lang;
   birthISO?: string;
   aiYears?: { age: number; intensity: number; theme: string }[];
+  chartId?: string | null;
 }) {
   const range = computeEnergyRange(birthISO, from, to);
   const themesEn = [
@@ -501,10 +507,90 @@ function YearByYearChart({
     return Number.isNaN(d.getTime()) ? null : d.getFullYear();
   }, [birthISO]);
 
+  type EngineSystem = {
+    system: "bazi" | "ziwei" | "vedic" | "western";
+    available: boolean; score: number | null;
+    direction: "up" | "stable" | "down" | null;
+    confidence: "reference_only" | "low" | "mid" | "high";
+    brief: string; opportunity: string; caution: string;
+    evidence_refs: string[]; reason_unavailable?: string;
+  };
+  type EngineRow = {
+    year: number; age: number;
+    systems: { bazi: EngineSystem; ziwei: EngineSystem; vedic: EngineSystem; western: EngineSystem };
+    composite_score: number | null;
+    composite_direction: "up" | "stable" | "down" | null;
+    composite_confidence: "reference_only" | "low" | "mid" | "high";
+    unavailable_systems: string[];
+    interpretation: { brief: string; opportunity: string; caution: string };
+    advice: { suggestion: string; boundary: string };
+    evidence_refs: string[];
+  };
+  const [engineByAge, setEngineByAge] = useState<Map<number, EngineRow>>(new Map());
+  const [, setEngineState] = useState<"idle" | "loading" | "ready" | "error">("idle");
+
+  useEffect(() => {
+    if (!chartId) {
+      setEngineByAge(new Map());
+      setEngineState("idle");
+      return;
+    }
+    let cancelled = false;
+    setEngineState("loading");
+    (async () => {
+      try {
+        const res = await ensureYearReadings({
+          data: { chartId, fromAge: from, toAge: to, lang },
+        });
+        if (cancelled) return;
+        const m = new Map<number, EngineRow>();
+        for (const r of (res.rows ?? []) as unknown as EngineRow[]) {
+          m.set(r.age, r);
+        }
+        setEngineByAge(m);
+        setEngineState("ready");
+      } catch {
+        if (!cancelled) setEngineState("error");
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [chartId, from, to, lang]);
+
   const openYearAt = (i: number, opener: HTMLElement | null) => {
     const p = years[i];
     if (!p) return;
     openerRef.current = opener;
+    const engineRow = engineByAge.get(p.age);
+    if (engineRow) {
+      const sysArr: YearInsightSystem[] = (["bazi", "ziwei", "vedic", "western"] as const).map((k) => {
+        const s = engineRow.systems[k];
+        return {
+          name: k,
+          available: s.available,
+          score: s.score,
+          direction: s.direction,
+          confidence: s.confidence,
+          brief: s.brief,
+          opportunity: s.opportunity,
+          caution: s.caution,
+          evidenceRefs: s.evidence_refs,
+          reasonUnavailable: s.reason_unavailable,
+        };
+      });
+      setOpenYear({
+        age: p.age,
+        score: engineRow.composite_score,
+        theme: p.theme,
+        year: engineRow.year,
+        confidence: engineRow.composite_confidence,
+        reference: engineRow.composite_confidence === "reference_only",
+        systems: sysArr,
+        unavailableSystems: engineRow.unavailable_systems,
+        interpretation: engineRow.interpretation,
+        advice: engineRow.advice,
+      });
+      return;
+    }
     setOpenYear({
       age: p.age,
       score: p.score,
@@ -534,12 +620,15 @@ function YearByYearChart({
 
   const years = range.map((p, i) => {
     const aiTheme = aiYears?.find((y) => y.age === p.age)?.theme?.trim();
+    const engineRow = engineByAge.get(p.age);
+    const engineScore = engineRow?.composite_score;
     return {
       age: p.age,
-      score: p.score,
+      score: typeof engineScore === "number" ? engineScore : p.score,
       theme: aiTheme || pool[i % pool.length],
       isNow: age != null && age === p.age,
       isPast: age != null && age > p.age,
+      fromEngine: engineRow != null && typeof engineScore === "number",
     };
   });
 

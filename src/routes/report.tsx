@@ -637,6 +637,7 @@ function ReportPage() {
   const [aiState, setAiState] = useState<"idle" | "loading" | "ready" | "error" | "needs-auth" | "needs-verify">("idle");
   const [aiError, setAiError] = useState<string | null>(null);
   const [aiProgress, setAiProgress] = useState({ done: 0, total: 0 });
+  const [reportChartId, setReportChartId] = useState<string | null>(null);
   const latestReqRef = useRef(0);
   const { updateReadingAI } = useAccount();
   const navigate = useNavigate();
@@ -678,6 +679,7 @@ function ReportPage() {
           },
         });
         chartId = res.chartId;
+        setReportChartId(chartId);
       } catch {
         if (stale()) return;
         setAiError("chart_save_failed");
@@ -1363,7 +1365,7 @@ function ReportPage() {
 
       {/* Life Timeline — 大运 */}
       <div className="mt-24">
-        <LifeTimeline birthISO={search.date} search={search} />
+        <LifeTimeline birthISO={search.date} search={search} chartId={reportChartId} />
       </div>
 
       {/* Key life events verification */}
