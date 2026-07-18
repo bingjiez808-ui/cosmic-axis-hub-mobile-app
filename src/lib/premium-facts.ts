@@ -263,6 +263,24 @@ export function deriveZiweiFacts(
       as_of_date: opts.asOfDate,
     });
   }
+  let horoscope_years: ZiweiHoroscope[] | undefined;
+  if (opts.ziweiYears && opts.ziweiYears.length > 0 && snap.input.date && snap.input.time) {
+    const out: ZiweiHoroscope[] = [];
+    const seen = new Set<string>();
+    for (const asOf of opts.ziweiYears) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(asOf)) continue;
+      if (seen.has(asOf)) continue;
+      seen.add(asOf);
+      const h = computeZiweiHoroscope({
+        birth_solar_date: snap.input.date,
+        birth_time: snap.input.time,
+        gender: c.gender,
+        as_of_date: asOf,
+      });
+      if (h) out.push(h);
+    }
+    if (out.length > 0) horoscope_years = out;
+  }
   return {
     soul: c.soul,
     body: c.body,
@@ -279,10 +297,12 @@ export function deriveZiweiFacts(
       minor_stars: p.minor_stars,
     })),
     horoscope,
+    horoscope_years,
     evidence_paths: {
       soul_palace: `ziwei.palaces[${c.soul_palace_index}]` as const,
       five_elements_class: "ziwei.five_elements_class",
       horoscope: "ziwei.horoscope",
+      horoscope_years: "ziwei.horoscope_years",
     },
   };
 }
