@@ -314,10 +314,19 @@ function MyChartsSection({ open, onClose, lang, rows, setRows }: {
   const loading = rows === null;
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("");
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const [confirm, setConfirm] = useState<{ id: string; scope: "chart" | "reports_only" } | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
 
-  // Parent (AccountModal) already loads rows and shares them here for dedup.
-  // Kept as a no-op effect for future reactivity to `open`.
   useEffect(() => { if (!open) return; }, [open]);
+
+  useEffect(() => {
+    if (!menuOpenId) return;
+    const onDoc = () => setMenuOpenId(null);
+    document.addEventListener("click", onDoc);
+    return () => document.removeEventListener("click", onDoc);
+  }, [menuOpenId]);
 
   const heading = lang === "zh" ? "我的命盘与报告" : "My charts & reports";
   const empty = lang === "zh"
@@ -333,6 +342,28 @@ function MyChartsSection({ open, onClose, lang, rows, setRows }: {
     } catch { /* ignore */ }
     setEditingId(null);
   }
+
+  async function performDelete() {
+    if (!confirm) return;
+    setDeleting(true);
+    try {
+      const res = await deleteChart({ data: { chartId: confirm.id, scope: confirm.scope } });
+      if (res.scope === "chart") {
+        setRows(rows ? rows.filter((r) => r.id !== confirm.id) : rows);
+        setFeedback(lang === "zh" ? "命盘及关联数据已删除" : "Chart and related data deleted");
+      } else {
+        setRows(rows ? rows.map((r) => (r.id === confirm.id ? { ...r, reports: [] } : r)) : rows);
+        setFeedback(lang === "zh" ? "报告与逐年解读已清除，命盘保留" : "Reports cleared; chart kept");
+      }
+      setConfirm(null);
+    } catch {
+      setFeedback(lang === "zh" ? "删除失败，请稍后再试" : "Delete failed, please retry");
+    } finally {
+      setDeleting(false);
+      setTimeout(() => setFeedback(null), 3200);
+    }
+  }
+
 
   return (
     <div>
