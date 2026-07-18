@@ -461,6 +461,7 @@ function YearByYearChart({
   lang,
   birthISO,
   aiYears,
+  chartId,
 }: {
   from: number;
   to: number;
@@ -468,6 +469,7 @@ function YearByYearChart({
   lang: Lang;
   birthISO?: string;
   aiYears?: { age: number; intensity: number; theme: string }[];
+  chartId?: string | null;
 }) {
   const range = computeEnergyRange(birthISO, from, to);
   const themesEn = [
