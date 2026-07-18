@@ -1667,12 +1667,21 @@ export const processNextPremiumChapter = createServerFn({ method: "POST" })
       .eq("user_id", userId)
       .maybeSingle();
     if (!report) throw new Error("report_not_found");
-    if (report.status === "completed" && report.content_json) {
+    if (report.content_json && countValidPremiumContentChapters(report.content_json) >= PREMIUM_V3_CHAPTERS.length) {
+      if (report.status !== "completed") {
+        await supabaseAdmin
+          .from("premium_pdf_reports")
+          .update({ status: "completed", error_message: null, generated_at: new Date().toISOString() } as unknown as never)
+          .eq("id", report.id)
+          .eq("user_id", userId);
+      }
       return {
         reportId: report.id,
         status: "completed",
         processed: false,
         providerCalled: false,
+        processedChapters: 0,
+        shouldContinue: false,
         completedChapters: PREMIUM_V3_CHAPTERS.length,
         totalChapters: PREMIUM_V3_CHAPTERS.length,
         currentChapterKey: null,
