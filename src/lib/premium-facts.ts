@@ -111,10 +111,19 @@ export type ZiweiFacts = {
   }>;
   /** v3: 大限 / 流年 / 流月 — populated only when asOfDate is provided. */
   horoscope: ZiweiHoroscope | null;
+  /**
+   * v3.1: Multi-year Zi Wei horoscope snapshots — one entry per calendar
+   * year in the year-reading window. Populated when `opts.ziweiYears` is
+   * passed to `buildPremiumFacts`. Each entry is a full `ZiweiHoroscope`
+   * anchored on a birthday-in-year sample date. The single-year
+   * `horoscope` field above is preserved for v3 cache compat.
+   */
+  horoscope_years?: ZiweiHoroscope[];
   evidence_paths: {
     soul_palace: `ziwei.palaces[${number}]`;
     five_elements_class: "ziwei.five_elements_class";
     horoscope: "ziwei.horoscope";
+    horoscope_years: "ziwei.horoscope_years";
   };
 };
 
