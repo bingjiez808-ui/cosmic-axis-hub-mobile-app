@@ -14,6 +14,7 @@
  * no guaranteed-wealth wording. See ./year-readings.test.ts.
  */
 import type { PremiumFacts } from "./premium-facts";
+import { scoreAnnualTransit } from "./western-transits";
 
 export const YEAR_READING_SKILL_VERSION = "year-reading@1.2.0";
 export const YEAR_READING_CALC_VERSION = "calc@1.2.0";
@@ -413,9 +414,6 @@ export function readWesternYear(facts: PremiumFacts, year: number, _age: number,
     };
   }
   // Deterministic scoring — see western-transits.scoreAnnualTransit.
-  // Import lazily to keep the module graph small at load time.
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { scoreAnnualTransit } = require("./western-transits") as typeof import("./western-transits");
   const { score, positive_hits, negative_hits } = scoreAnnualTransit(entry);
   const direction: Direction = score >= 60 ? "up" : score <= 40 ? "down" : "stable";
   const confidence: Confidence =
