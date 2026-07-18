@@ -1819,10 +1819,17 @@ export const processNextPremiumChapter = createServerFn({ method: "POST" })
     const providerName = isTestMode ? "deterministic-stub" : "lovable-ai-gateway";
     if (!isTestMode && !apiKey) throw new Error("provider_unavailable");
 
-    const rpc = supabaseAdmin.rpc as unknown as (
+    // NOTE: SupabaseClient.rpc uses `this.rest` internally, so it MUST be
+    // invoked as a method on the client — never destructured or assigned to
+    // a bare variable. Doing so drops `this` under strict mode and produces
+    // "Cannot read properties of undefined (reading 'rest')".
+    const rpc = (
       fn: string,
       args: Record<string, unknown>,
-    ) => Promise<{ data: boolean | null; error: { message?: string } | null }>;
+    ): Promise<{ data: boolean | null; error: { message?: string } | null }> =>
+      (supabaseAdmin.rpc as unknown as (f: string, a: Record<string, unknown>) => Promise<{ data: boolean | null; error: { message?: string } | null }>)
+        .call(supabaseAdmin, fn, args);
+
     stage = "import-buildPremiumFacts";
     const { buildPremiumFacts } = await import("./premium-facts");
     const { validateChapterAgainstFacts } = await import("./chapter-json-schema");
