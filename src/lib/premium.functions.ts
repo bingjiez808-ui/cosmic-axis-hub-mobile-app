@@ -1380,7 +1380,8 @@ export type PremiumChapterStepResult = {
   totalChapters: number;
   currentChapterKey: string | null;
   currentChapterTitle: string | null;
-  message: "completed" | "processed" | "no_claim" | "active_lease" | "interrupted";
+  message: "completed" | "processed" | "no_claim" | "active_lease" | "interrupted" | "prep_error";
+  error?: string;
 };
 
 function countValidPremiumContentChapters(content: unknown): number {
