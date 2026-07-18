@@ -1756,6 +1756,7 @@ export const processNextPremiumChapter = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => StepInput.parse(d))
   .handler(async ({ data, context }): Promise<PremiumChapterStepResult> => {
     const { userId } = context;
+    try {
     await assertEmailVerifiedOrAdmin(context);
     enforceRateLimit(`premium-step:${userId}`, 80, 60_000, "premium chapter steps");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
