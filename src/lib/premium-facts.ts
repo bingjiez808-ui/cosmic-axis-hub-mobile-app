@@ -29,6 +29,7 @@ import type { ZiweiChart, ZiweiPalace } from "./ziwei";
 import { computeBaZiLuck, type BaZiLuck } from "./bazi-luck";
 import { computeZiweiHoroscope, type ZiweiHoroscope } from "./ziwei-horoscope";
 import { computeWesternChart, type WesternAspect, type WesternPlanet, type WesternAscendant } from "./western-natal";
+import { computeAnnualTransit } from "./western-transits";
 import { expandVimshottari, currentDashaTriple, type DashaExpansion } from "./vedic-dasha";
 import { localBirthToUTC } from "./city-geo";
 
