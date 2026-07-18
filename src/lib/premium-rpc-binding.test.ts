@@ -7,6 +7,7 @@
  * The production `processNextPremiumChapter` must invoke rpc bound to
  * the client. This test guards the call-site shape.
  */
+// @ts-expect-error bun:test
 import { describe, it, expect } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
