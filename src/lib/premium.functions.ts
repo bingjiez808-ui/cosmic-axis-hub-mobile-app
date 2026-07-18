@@ -2077,7 +2077,8 @@ export const processNextPremiumChapter = createServerFn({ method: "POST" })
     } catch (err) {
       const msg = safeMessage(err, "chapter_step_error");
       const stack = err instanceof Error ? err.stack : undefined;
-      console.error("[premium] processNextPremiumChapter failed", { reportId: data.reportId, userId, err: msg, stack });
+      console.error("[premium] processNextPremiumChapter failed", { reportId: data.reportId, userId, stage, err: msg, stack });
+
 
       try {
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
