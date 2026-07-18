@@ -1,10 +1,21 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useAccount } from "@/lib/account";
+import {
+  createCommunityComment,
+  createCommunityPost,
+  deleteCommunityComment,
+  deleteCommunityPost,
+  listCommunityPosts,
+  toggleCommunityLike,
+  type CommunityPost,
+} from "@/lib/community.functions";
 import { useLang } from "@/lib/i18n";
 import { useSupabaseSession } from "@/lib/session";
+import { supabase } from "@/integrations/supabase/client";
 
 /**
  * 同门 · Guild of Souls — the community share space.
@@ -121,11 +132,13 @@ function buildIdentity(seed: string) {
 type Comment = {
   id: string;
   createdAt: number;
+  userId?: string;
   authorId: string;
   authorTitle: string;
   authorHouseKey: string;
   text: string;
   hearts?: number;
+  likedByMe?: boolean;
   parentId?: string; // replying to another comment
 };
 
@@ -145,12 +158,16 @@ type Notif = {
 type Post = {
   id: string;
   createdAt: number;
+  userId?: string;
   authorId: string;
   authorTitle: string;
   authorHouseKey: string;
   facet: string; // "vocation" | "love" | ...
   text: string;
   hearts: number;
+  likedByMe?: boolean;
+  imageUrls?: string[];
+  imagePaths?: string[];
   comments?: Comment[];
 };
 
@@ -311,6 +328,63 @@ function AvatarGlyph({
   );
 }
 
+type SelectedImage = {
+  id: string;
+  file: File;
+  preview: string;
+  progress: number;
+  path?: string;
+  error?: string;
+};
+
+async function compressCommunityImage(file: File): Promise<File> {
+  if (!/^image\/(jpeg|png|webp)$/.test(file.type)) throw new Error("invalid_type");
+  if (file.size > 5 * 1024 * 1024) throw new Error("too_large");
+  const bitmap = await createImageBitmap(file);
+  const maxSide = 1800;
+  const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+  canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("canvas_unavailable");
+  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+  const blob = await new Promise<Blob>((resolve, reject) =>
+    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("compress_failed"))), "image/webp", 0.82),
+  );
+  return new File([blob], `${file.name.replace(/\.[^.]+$/, "")}.webp`, { type: "image/webp" });
+}
+
+function cloudPostToPost(p: CommunityPost): Post {
+  return {
+    id: p.id,
+    createdAt: p.createdAt,
+    userId: p.userId,
+    authorId: p.userId,
+    authorTitle: p.authorTitle,
+    authorHouseKey: p.authorHouseKey,
+    facet: p.facet,
+    text: p.text,
+    hearts: p.hearts,
+    likedByMe: p.likedByMe,
+    imageUrls: p.imageUrls,
+    imagePaths: p.imagePaths,
+    comments: p.comments.map((c) => ({
+      id: c.id,
+      createdAt: c.createdAt,
+      userId: c.userId,
+      authorId: c.userId,
+      authorTitle: c.authorTitle,
+      authorHouseKey: c.authorHouseKey,
+      text: c.text,
+      hearts: c.hearts,
+      likedByMe: c.likedByMe,
+      parentId: c.parentId ?? undefined,
+    })),
+  };
+}
+
 function CommunityPage() {
   const { lang } = useLang();
   const { session, loading: sessionLoading } = useSupabaseSession();
@@ -353,41 +427,42 @@ function CommunityPage() {
 
   // Feed
   const [posts, setPosts] = useState<Post[]>(SEED_POSTS);
-  useEffect(() => {
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [feedLoading, setFeedLoading] = useState(true);
+  const [feedBusy, setFeedBusy] = useState(false);
+  const [feedError, setFeedError] = useState<string | null>(null);
+  const [selectedImages, setSelectedImages] = useState<SelectedImage[]>([]);
+  const imageInputRef = useRef<HTMLInputElement | null>(null);
+  const listPostsFn = useServerFn(listCommunityPosts);
+  const createPostFn = useServerFn(createCommunityPost);
+  const createCommentFn = useServerFn(createCommunityComment);
+  const toggleLikeFn = useServerFn(toggleCommunityLike);
+  const deletePostFn = useServerFn(deleteCommunityPost);
+  const deleteCommentFn = useServerFn(deleteCommunityComment);
+  const sessionUserId = session?.user.id ?? null;
+  const canWrite = Boolean(session?.user);
+
+  const loadFeed = async (cursor?: string | null) => {
+    setFeedError(null);
+    if (!cursor) setFeedLoading(true);
     try {
-      const raw = localStorage.getItem(FEED_KEY);
-      let base: Post[] = SEED_POSTS;
-      if (raw) {
-        const parsed = JSON.parse(raw) as Post[];
-        if (Array.isArray(parsed) && parsed.length) base = [...parsed, ...SEED_POSTS];
-      }
-      // Merge extra comments from localStorage keyed per postId.
-      const rawC = localStorage.getItem(COMMENTS_KEY);
-      if (rawC) {
-        const cmap = JSON.parse(rawC) as Record<string, Comment[]>;
-        base = base.map((p) => {
-          const extra = cmap[p.id];
-          if (!extra || !extra.length) return p;
-          return { ...p, comments: [...(p.comments ?? []), ...extra] };
-        });
-      }
-      setPosts(base);
-    } catch {}
-  }, []);
-  const persist = (list: Post[]) => {
-    // Only persist non-seed posts.
-    const own = list.filter((p) => !p.id.startsWith("seed-"));
-    try { localStorage.setItem(FEED_KEY, JSON.stringify(own)); } catch {}
-  };
-  const persistComments = (list: Post[]) => {
-    // Persist ONLY user-added comments (skip seed ones by id prefix "sc-").
-    const cmap: Record<string, Comment[]> = {};
-    for (const p of list) {
-      const extra = (p.comments ?? []).filter((c) => !c.id.startsWith("sc-"));
-      if (extra.length) cmap[p.id] = extra;
+      const res = await listPostsFn({ data: { cursor: cursor ?? null, limit: 12 } });
+      const cloud = res.posts.map(cloudPostToPost);
+      setPosts((current) => (cursor ? [...current, ...cloud] : [...cloud, ...SEED_POSTS]));
+      setNextCursor(res.nextCursor);
+    } catch {
+      setFeedError(lang === "zh" ? "同门墙读取失败，请稍后重试。" : "The community wall could not be loaded.");
+      if (!cursor) setPosts(SEED_POSTS);
+    } finally {
+      setFeedLoading(false);
     }
-    try { localStorage.setItem(COMMENTS_KEY, JSON.stringify(cmap)); } catch {}
   };
+
+  useEffect(() => {
+    void loadFeed(null);
+  }, [sessionUserId, lang]);
+
+  useEffect(() => () => selectedImages.forEach((img) => URL.revokeObjectURL(img.preview)), [selectedImages]);
 
   const [facet, setFacet] = useState<string>(FACETS[0].key);
   const [draft, setDraft] = useState("");
@@ -450,162 +525,145 @@ function CommunityPage() {
     ["Softly holding this with you.", "轻轻地与你一同承接这句话。"],
     ["The library heard you.", "图书馆听见你了。"],
   ];
-  const scheduleAmbientEcho = (postId: string, targetKind: "post" | "comment", commentId?: string) => {
-    const delay = 2600 + Math.floor(Math.random() * 4400);
-    window.setTimeout(() => {
-      const author = AMBIENT_AUTHORS[Math.floor(Math.random() * AMBIENT_AUTHORS.length)];
-      const ident = buildIdentity(author.seed);
-      const actorTitle = lang === "zh" ? author.title[1] : author.title[0];
-      // 55% -> heart, 45% -> reply
-      const isHeart = Math.random() < 0.55;
-      if (isHeart) {
-        if (targetKind === "post") {
-          setPosts((list) => {
-            const next = list.map((p) => (p.id === postId ? { ...p, hearts: p.hearts + 1 } : p));
-            persist(next);
-            return next;
-          });
-          pushNotif({
-            kind: "heart",
-            postId,
-            actorTitle,
-            actorHouseKey: author.houseKey,
-            actorHue: ident.hue,
-            snippet: lang === "zh" ? "点亮了你的分享" : "lit your share",
-          });
-        } else if (commentId) {
-          setPosts((list) => {
-            const next = list.map((p) =>
-              p.id !== postId
-                ? p
-                : {
-                    ...p,
-                    comments: (p.comments ?? []).map((c) =>
-                      c.id === commentId ? { ...c, hearts: (c.hearts ?? 0) + 1 } : c,
-                    ),
-                  },
-            );
-            persistComments(next);
-            return next;
-          });
-          pushNotif({
-            kind: "heart-comment",
-            postId,
-            commentId,
-            actorTitle,
-            actorHouseKey: author.houseKey,
-            actorHue: ident.hue,
-            snippet: lang === "zh" ? "点亮了你的回声" : "lit your echo",
-          });
-        }
-      } else {
-        const line = AMBIENT_REPLIES[Math.floor(Math.random() * AMBIENT_REPLIES.length)];
-        const text = lang === "zh" ? line[1] : line[0];
-        const newComment: Comment = {
-          id: `c-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-          createdAt: Date.now(),
-          authorId: author.seed,
-          authorTitle,
-          authorHouseKey: author.houseKey,
-          text,
-          hearts: 0,
-          parentId: targetKind === "comment" ? commentId : undefined,
-        };
-        setPosts((list) => {
-          const next = list.map((p) =>
-            p.id === postId ? { ...p, comments: [...(p.comments ?? []), newComment] } : p,
-          );
-          persistComments(next);
-          return next;
-        });
-        setOpenComments((s) => ({ ...s, [postId]: true }));
-        pushNotif({
-          kind: targetKind === "comment" ? "reply" : "comment",
-          postId,
-          commentId: newComment.id,
-          actorTitle,
-          actorHouseKey: author.houseKey,
-          actorHue: ident.hue,
-          snippet: text,
-        });
+  const onPickImages = async (files: FileList | null) => {
+    if (!files) return;
+    const picked = Array.from(files).slice(0, 4 - selectedImages.length);
+    const next: SelectedImage[] = [];
+    for (const file of picked) {
+      try {
+        if (!/^image\/(jpeg|png|webp)$/.test(file.type)) throw new Error("type");
+        if (file.size > 5 * 1024 * 1024) throw new Error("size");
+        next.push({ id: crypto.randomUUID(), file, preview: URL.createObjectURL(file), progress: 0 });
+      } catch {
+        setFeedError(lang === "zh" ? "图片仅支持 JPG/PNG/WEBP，单张不超过 5MB。" : "Images must be JPG, PNG, or WEBP and no larger than 5MB each.");
       }
-    }, delay);
+    }
+    setSelectedImages((imgs) => [...imgs, ...next].slice(0, 4));
+    if (imageInputRef.current) imageInputRef.current.value = "";
   };
 
-  const submit = () => {
-    if (!draft.trim()) return;
-    const p: Post = {
-      id: `p-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-      createdAt: Date.now(),
-      authorId: myAuthorId,
-      authorTitle,
-      authorHouseKey,
-      facet,
-      text: draft.trim().slice(0, 500),
-      hearts: 0,
-      comments: [],
-    };
-    const next = [p, ...posts];
-    setPosts(next);
-    persist(next);
-    setDraft("");
-    // Simulate ambient reception
-    scheduleAmbientEcho(p.id, "post");
-  };
-
-  const heart = (id: string) => {
-    setPosts((list) => {
-      const next = list.map((p) => (p.id === id ? { ...p, hearts: p.hearts + 1 } : p));
-      persist(next);
-      return next;
+  const removeSelectedImage = (id: string) => {
+    setSelectedImages((imgs) => {
+      const img = imgs.find((i) => i.id === id);
+      if (img) URL.revokeObjectURL(img.preview);
+      return imgs.filter((i) => i.id !== id);
     });
   };
 
-  const heartComment = (postId: string, commentId: string) => {
-    setPosts((list) => {
-      const next = list.map((p) =>
-        p.id !== postId
-          ? p
-          : {
-              ...p,
-              comments: (p.comments ?? []).map((c) =>
-                c.id === commentId ? { ...c, hearts: (c.hearts ?? 0) + 1 } : c,
-              ),
-            },
-      );
-      persistComments(next);
-      return next;
-    });
+  const uploadSelectedImages = async () => {
+    if (!sessionUserId) return [];
+    const paths: string[] = [];
+    for (const img of selectedImages) {
+      setSelectedImages((imgs) => imgs.map((i) => (i.id === img.id ? { ...i, progress: 20 } : i)));
+      const file = await compressCommunityImage(img.file);
+      setSelectedImages((imgs) => imgs.map((i) => (i.id === img.id ? { ...i, progress: 55 } : i)));
+      const path = `${sessionUserId}/${crypto.randomUUID()}.webp`;
+      const { error } = await supabase.storage.from("community").upload(path, file, {
+        contentType: "image/webp",
+        upsert: false,
+      });
+      if (error) throw error;
+      paths.push(path);
+      setSelectedImages((imgs) => imgs.map((i) => (i.id === img.id ? { ...i, path, progress: 100 } : i)));
+    }
+    return paths;
   };
 
-  const submitComment = (postId: string, parentId?: string) => {
+  const submit = async () => {
+    if (!draft.trim() || feedBusy) return;
+    if (!session) {
+      window.location.href = "/auth?redirect=/community&mode=login";
+      return;
+    }
+    setFeedBusy(true);
+    setFeedError(null);
+    try {
+      const imagePaths = await uploadSelectedImages();
+      const cloud = await createPostFn({
+        data: {
+          facet,
+          bodyText: draft.trim(),
+          authorTitle,
+          authorHouseKey,
+          imagePaths,
+        },
+      });
+      setPosts((list) => [cloudPostToPost(cloud), ...list.filter((p) => !p.id.startsWith("seed-") || list.length < 3), ...SEED_POSTS]);
+      setDraft("");
+      selectedImages.forEach((img) => URL.revokeObjectURL(img.preview));
+      setSelectedImages([]);
+    } catch (err) {
+      const msg = err instanceof Error && err.message.includes("email_not_verified")
+        ? lang === "zh" ? "请先完成邮箱验证后再发布。" : "Please verify your email before posting."
+        : lang === "zh" ? "发布失败，请稍后重试。" : "Post failed. Please try again.";
+      setFeedError(msg);
+    } finally {
+      setFeedBusy(false);
+    }
+  };
+
+  const heart = async (id: string) => {
+    const post = posts.find((p) => p.id === id);
+    if (!post || post.id.startsWith("seed-")) {
+      setPosts((list) => list.map((p) => (p.id === id ? { ...p, hearts: p.hearts + 1 } : p)));
+      return;
+    }
+    if (!session) return;
+    setPosts((list) => list.map((p) => (p.id === id ? { ...p, hearts: Math.max(0, p.hearts + (p.likedByMe ? -1 : 1)), likedByMe: !p.likedByMe } : p)));
+    try { await toggleLikeFn({ data: { postId: id } }); } catch { void loadFeed(null); }
+  };
+
+  const heartComment = async (postId: string, commentId: string) => {
+    const post = posts.find((p) => p.id === postId);
+    const comment = post?.comments?.find((c) => c.id === commentId);
+    if (!comment || comment.id.startsWith("sc-") || comment.id.startsWith("c-")) {
+      setPosts((list) => list.map((p) => p.id !== postId ? p : { ...p, comments: (p.comments ?? []).map((c) => c.id === commentId ? { ...c, hearts: (c.hearts ?? 0) + 1 } : c) }));
+      return;
+    }
+    if (!session) return;
+    setPosts((list) => list.map((p) => p.id !== postId ? p : { ...p, comments: (p.comments ?? []).map((c) => c.id === commentId ? { ...c, hearts: Math.max(0, (c.hearts ?? 0) + (c.likedByMe ? -1 : 1)), likedByMe: !c.likedByMe } : c) }));
+    try { await toggleLikeFn({ data: { commentId } }); } catch { void loadFeed(null); }
+  };
+
+  const submitComment = async (postId: string, parentId?: string) => {
     const draftKey = parentId ? `${postId}:${parentId}` : postId;
     const src = parentId ? replyDraft : commentDraft;
     const setSrc = parentId ? setReplyDraft : setCommentDraft;
     const text = (src[draftKey] || "").trim();
-    if (!text) return;
-    const c: Comment = {
-      id: `c-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-      createdAt: Date.now(),
-      authorId: myAuthorId,
-      authorTitle,
-      authorHouseKey,
-      text: text.slice(0, 280),
-      hearts: 0,
-      parentId,
-    };
-    setPosts((list) => {
-      const next = list.map((p) =>
-        p.id === postId ? { ...p, comments: [...(p.comments ?? []), c] } : p,
-      );
-      persistComments(next);
-      return next;
-    });
-    setSrc((s) => ({ ...s, [draftKey]: "" }));
-    setOpenComments((s) => ({ ...s, [postId]: true }));
-    if (parentId) setReplyOpen((s) => ({ ...s, [`${postId}:${parentId}`]: false }));
-    // Ambient echo back on the user's comment/reply
-    scheduleAmbientEcho(postId, "comment", c.id);
+    if (!text || feedBusy) return;
+    if (!session) {
+      window.location.href = "/auth?redirect=/community&mode=login";
+      return;
+    }
+    setFeedBusy(true);
+    setFeedError(null);
+    try {
+      const c = await createCommentFn({ data: { postId, parentId: parentId ?? null, bodyText: text, authorTitle, authorHouseKey } });
+      const local: Comment = { id: c.id, createdAt: c.createdAt, userId: c.userId, authorId: c.userId, authorTitle: c.authorTitle, authorHouseKey: c.authorHouseKey, text: c.text, hearts: c.hearts, likedByMe: c.likedByMe, parentId: c.parentId ?? undefined };
+      setPosts((list) => list.map((p) => p.id === postId ? { ...p, comments: [...(p.comments ?? []), local] } : p));
+      setSrc((s) => ({ ...s, [draftKey]: "" }));
+      setOpenComments((s) => ({ ...s, [postId]: true }));
+      if (parentId) setReplyOpen((s) => ({ ...s, [`${postId}:${parentId}`]: false }));
+    } catch (err) {
+      const msg = err instanceof Error && err.message.includes("email_not_verified")
+        ? lang === "zh" ? "请先完成邮箱验证后再回应。" : "Please verify your email before replying."
+        : lang === "zh" ? "回应失败，请稍后重试。" : "Reply failed. Please try again.";
+      setFeedError(msg);
+    } finally {
+      setFeedBusy(false);
+    }
+  };
+
+  const removePost = async (id: string) => {
+    if (!session) return;
+    setPosts((list) => list.filter((p) => p.id !== id));
+    try { await deletePostFn({ data: { id } }); } catch { void loadFeed(null); }
+  };
+
+  const removeComment = async (postId: string, id: string) => {
+    if (!session) return;
+    setPosts((list) => list.map((p) => p.id === postId ? { ...p, comments: (p.comments ?? []).filter((c) => c.id !== id) } : p));
+    try { await deleteCommentFn({ data: { id } }); } catch { void loadFeed(null); }
   };
 
 
@@ -1023,36 +1081,84 @@ function CommunityPage() {
             value={draft}
             onChange={(e) => setDraft(e.target.value.slice(0, 500))}
             rows={3}
+            disabled={!canWrite || feedBusy}
             placeholder={
               lang === "zh"
-                ? "用一两句话，说出这一面的你 —— 世界值得听。"
-                : "In one or two lines, name this facet of you — the world deserves it."
+                ? canWrite ? "用一两句话，说出这一面的你 —— 世界值得听。" : "登录并验证邮箱后即可发布。"
+                : canWrite ? "In one or two lines, name this facet of you — the world deserves it." : "Sign in and verify your email to post."
             }
-            className="w-full resize-none rounded-2xl border border-white/10 bg-obsidian/40 p-4 text-sm text-stone-warm placeholder:text-stone-warm/30 focus:border-gold-dust/40 focus:outline-none"
+            className="w-full resize-none rounded-2xl border border-white/10 bg-obsidian/40 p-4 text-sm text-stone-warm placeholder:text-stone-warm/30 focus:border-gold-dust/40 focus:outline-none disabled:opacity-50"
           />
-          <div className="mt-3 flex items-center justify-between text-[11px] text-stone-warm/40">
+          {selectedImages.length > 0 && (
+            <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {selectedImages.map((img) => (
+                <div key={img.id} className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]">
+                  <img src={img.preview} alt="" className="aspect-square w-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => removeSelectedImage(img.id)}
+                    className="absolute right-2 top-2 grid size-7 place-items-center rounded-full bg-obsidian/80 text-[10px] text-stone-warm"
+                    aria-label={lang === "zh" ? "移除图片" : "Remove image"}
+                  >
+                    ✕
+                  </button>
+                  {img.progress > 0 && (
+                    <div className="absolute inset-x-0 bottom-0 h-1 bg-white/10">
+                      <div className="h-full bg-gold-dust transition-[width]" style={{ width: `${img.progress}%` }} />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+          {feedError && <p className="mt-3 text-[12px] text-gold-light/80">{feedError}</p>}
+          <div className="mt-3 flex flex-col gap-3 text-[11px] text-stone-warm/40 sm:flex-row sm:items-center sm:justify-between">
             <span>
               {lang === "zh"
                 ? `以「${travelerTitle} ${travelerId}」· ${house.name[li]} 之名发布`
                 : `Posting as ${travelerTitle} ${travelerId} · ${house.name[li]}`}
             </span>
-            <button
-              type="button"
-              onClick={submit}
-              disabled={!draft.trim()}
-              className="rounded-full bg-gold-dust px-6 py-2 text-[10px] uppercase tracking-[0.32em] text-obsidian transition-colors hover:bg-gold-light disabled:bg-gold-dust/40 disabled:text-obsidian/40"
-            >
-              {lang === "zh" ? "点亮 · 发布" : "Light · Post"}
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                ref={imageInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                multiple
+                className="hidden"
+                onChange={(e) => void onPickImages(e.currentTarget.files)}
+              />
+              <button
+                type="button"
+                onClick={() => imageInputRef.current?.click()}
+                disabled={!canWrite || feedBusy || selectedImages.length >= 4}
+                className="rounded-full border border-white/10 px-4 py-2 text-[10px] uppercase tracking-[0.28em] text-stone-warm/60 transition-colors hover:border-gold-dust/40 hover:text-gold-dust disabled:opacity-40"
+              >
+                {lang === "zh" ? "图片" : "Images"} · {selectedImages.length}/4
+              </button>
+              <button
+                type="button"
+                onClick={() => void submit()}
+                disabled={!draft.trim() || feedBusy || !canWrite}
+                className="rounded-full bg-gold-dust px-6 py-2 text-[10px] uppercase tracking-[0.32em] text-obsidian transition-colors hover:bg-gold-light disabled:bg-gold-dust/40 disabled:text-obsidian/40"
+              >
+                {feedBusy ? (lang === "zh" ? "发布中…" : "Posting…") : lang === "zh" ? "点亮 · 发布" : "Light · Post"}
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Feed */}
         <div className="space-y-4">
+          {feedLoading && (
+            <div className="glass-card rounded-2xl p-5 text-center text-[12px] uppercase tracking-[0.28em] text-stone-warm/45">
+              {lang === "zh" ? "读取同门墙…" : "Loading the wall…"}
+            </div>
+          )}
           {posts.map((p) => {
             const h = houseByKey(p.authorHouseKey);
             const authorSeed = p.authorId;
             const authorId = buildIdentity(authorSeed);
+            const mine = Boolean(sessionUserId && p.userId === sessionUserId);
             return (
               <motion.article
                 key={p.id}
@@ -1075,15 +1181,38 @@ function CommunityPage() {
                     <span className="text-[10px] uppercase tracking-[0.24em] text-stone-warm/40">
                       · {facetLabel(p.facet)} · {timeAgo(p.createdAt)}
                     </span>
+                    {mine && (
+                      <button
+                        type="button"
+                        onClick={() => void removePost(p.id)}
+                        className="text-[10px] uppercase tracking-[0.24em] text-stone-warm/35 hover:text-gold-dust"
+                      >
+                        {lang === "zh" ? "删除" : "Delete"}
+                      </button>
+                    )}
                   </div>
                   <p className="font-serif text-base leading-relaxed text-stone-warm/85">
                     {p.text}
                   </p>
+                  {p.imageUrls && p.imageUrls.length > 0 && (
+                    <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                      {p.imageUrls.map((url, idx) => (
+                        <img
+                          key={`${p.id}-${idx}`}
+                          src={url}
+                          alt=""
+                          loading="lazy"
+                          decoding="async"
+                          className="aspect-square w-full rounded-xl border border-white/10 object-cover"
+                        />
+                      ))}
+                    </div>
+                  )}
                   <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-stone-warm/50 sm:gap-4">
                     <button
                       type="button"
-                      onClick={() => heart(p.id)}
-                      className="flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5 uppercase tracking-[0.28em] transition-colors hover:border-gold-dust/40 hover:text-gold-dust active:scale-95"
+                      onClick={() => void heart(p.id)}
+                      className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 uppercase tracking-[0.28em] transition-colors hover:border-gold-dust/40 hover:text-gold-dust active:scale-95 ${p.likedByMe ? "border-gold-dust/50 text-gold-dust" : "border-white/10"}`}
                     >
                       <span aria-hidden>✦</span>
                       <span>{p.hearts}</span>
@@ -1146,12 +1275,21 @@ function CommunityPage() {
                                 <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.24em] text-stone-warm/45">
                                   <button
                                     type="button"
-                                    onClick={() => heartComment(p.id, c.id)}
-                                    className="flex items-center gap-1 rounded-full border border-white/5 px-2 py-1 transition-colors hover:border-gold-dust/40 hover:text-gold-dust active:scale-95"
+                                    onClick={() => void heartComment(p.id, c.id)}
+                                    className={`flex items-center gap-1 rounded-full border px-2 py-1 transition-colors hover:border-gold-dust/40 hover:text-gold-dust active:scale-95 ${c.likedByMe ? "border-gold-dust/40 text-gold-dust" : "border-white/5"}`}
                                   >
                                     <span aria-hidden>✦</span>
                                     <span>{c.hearts ?? 0}</span>
                                   </button>
+                                  {sessionUserId && c.userId === sessionUserId && (
+                                    <button
+                                      type="button"
+                                      onClick={() => void removeComment(p.id, c.id)}
+                                      className="rounded-full border border-white/5 px-2 py-1 transition-colors hover:border-gold-dust/40 hover:text-gold-dust active:scale-95"
+                                    >
+                                      {lang === "zh" ? "删除" : "Delete"}
+                                    </button>
+                                  )}
                                   {depth === 0 && (
                                     <button
                                       type="button"
@@ -1193,7 +1331,7 @@ function CommunityPage() {
                                     <button
                                       type="button"
                                       onClick={() => submitComment(p.id, c.id)}
-                                      disabled={!(replyDraft[replyKey] || "").trim()}
+                                      disabled={!(replyDraft[replyKey] || "").trim() || !canWrite || feedBusy}
                                       className="shrink-0 rounded-full border border-gold-dust/40 px-3 py-2 text-[10px] uppercase tracking-[0.28em] text-gold-dust transition-colors hover:bg-gold-dust/10 disabled:opacity-40 sm:py-1.5"
                                     >
                                       {lang === "zh" ? "回复" : "Reply"}
@@ -1257,7 +1395,7 @@ function CommunityPage() {
                     <button
                       type="button"
                       onClick={() => submitComment(p.id)}
-                      disabled={!(commentDraft[p.id] || "").trim()}
+                      disabled={!(commentDraft[p.id] || "").trim() || !canWrite || feedBusy}
                       className="shrink-0 rounded-full border border-gold-dust/40 px-4 py-2 text-[10px] uppercase tracking-[0.28em] text-gold-dust transition-colors hover:bg-gold-dust/10 disabled:opacity-40 sm:py-1.5"
                     >
                       {lang === "zh" ? "回声" : "Echo"}
@@ -1269,6 +1407,18 @@ function CommunityPage() {
             );
           })}
         </div>
+        {nextCursor && (
+          <div className="mt-6 flex justify-center">
+            <button
+              type="button"
+              onClick={() => void loadFeed(nextCursor)}
+              disabled={feedLoading}
+              className="rounded-full border border-gold-dust/40 px-6 py-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust transition-colors hover:bg-gold-dust/10 disabled:opacity-40"
+            >
+              {lang === "zh" ? "加载更多" : "Load more"}
+            </button>
+          </div>
+        )}
       </section>
     </div>
   );

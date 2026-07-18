@@ -336,15 +336,21 @@ export const getPremiumStatus = createServerFn({ method: "POST" })
       .maybeSingle();
 
     // Auto-heal: legacy or interrupted rows whose content_json already
-    // contains a full 24-chapter payload should read as "completed"
-    // even if the DB status column was left as generating/partial due
-    // to an earlier crash. This is READ-ONLY promotion; the DB row is
-    // not mutated here and no AI is ever re-invoked.
+    // contains a full 24-chapter payload should be promoted to completed
+    // without re-invoking AI. This repairs old partial rows where chapter
+    // checkpoints were marked failed despite a complete aggregate payload.
     let reportStatus = reportRow?.status as
       | "pending" | "generating" | "partial" | "completed" | "failed"
       | undefined;
     if (reportRow && reportStatus !== "completed") {
-      if (countValidPremiumContentChapters(reportRow.content_json) >= 24) reportStatus = "completed";
+      if (countValidPremiumContentChapters(reportRow.content_json) >= 24) {
+        await repairCompletedReportFromContent({
+          reportId: reportRow.id,
+          userId,
+          content: reportRow.content_json,
+        });
+        reportStatus = "completed";
+      }
     }
 
     return {
@@ -1386,6 +1392,94 @@ function countValidPremiumContentChapters(content: unknown): number {
   }).length;
 }
 
+function extractValidPremiumContentChapters(content: unknown): PremiumChapter[] {
+  const chapters = (content as { chapters?: unknown[] } | null)?.chapters;
+  if (!Array.isArray(chapters)) return [];
+  return chapters.filter((chapter): chapter is PremiumChapter => {
+    const c = chapter as PremiumChapter;
+    return typeof c.key === "string" && typeof c.body === "string" && c.body.trim().length > 0;
+  });
+}
+
+async function repairCompletedReportFromContent(opts: {
+  reportId: string;
+  userId: string;
+  content: unknown;
+}) {
+  const { PREMIUM_V3_CHAPTERS } = await import("./premium-chapters-v3");
+  const validChapters = extractValidPremiumContentChapters(opts.content);
+  if (validChapters.length < PREMIUM_V3_CHAPTERS.length) return false;
+
+  const byKey = new Map(validChapters.map((chapter) => [chapter.key, chapter]));
+  const content = opts.content as PremiumContent;
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const completedAt = new Date().toISOString();
+
+  for (const meta of PREMIUM_V3_CHAPTERS) {
+    const chapter = byKey.get(meta.key);
+    if (!chapter) continue;
+    const normalizedChapter: PremiumChapter = {
+      key: meta.key,
+      title: chapter.title || meta.title_en,
+      body: chapter.body,
+      evidence_refs: chapter.evidence_refs ?? [],
+      confidence: chapter.confidence ?? chapterConfidence(chapter.evidence_refs ?? []),
+    };
+    const chapterHash = await computeContentHash(normalizedChapter);
+    await supabaseAdmin
+      .from("premium_report_chapters")
+      .upsert({
+        report_id: opts.reportId,
+        user_id: opts.userId,
+        chapter_key: meta.key,
+        chapter_index: meta.index,
+        status: "completed",
+        content_json: normalizedChapter as unknown as Json,
+        evidence_refs: normalizedChapter.evidence_refs as unknown as Json,
+        confidence: normalizedChapter.confidence,
+        content_hash: chapterHash,
+        claim_token: null,
+        claimed_at: null,
+        completed_at: completedAt,
+        error_message: null,
+      } as unknown as never, {
+        onConflict: "report_id,chapter_key",
+        ignoreDuplicates: true,
+      });
+    await supabaseAdmin
+      .from("premium_report_chapters")
+      .update({
+        status: "completed",
+        content_json: normalizedChapter as unknown as Json,
+        evidence_refs: normalizedChapter.evidence_refs as unknown as Json,
+        confidence: normalizedChapter.confidence,
+        content_hash: chapterHash,
+        claim_token: null,
+        claimed_at: null,
+        completed_at: completedAt,
+        error_message: null,
+      } as unknown as never)
+      .eq("report_id", opts.reportId)
+      .eq("user_id", opts.userId)
+      .eq("chapter_key", meta.key)
+      .neq("status", "completed");
+  }
+
+  const contentHash = await computeContentHash(content);
+  await supabaseAdmin
+    .from("premium_pdf_reports")
+    .update({
+      status: "completed",
+      content_hash: contentHash,
+      generated_at: completedAt,
+      error_message: null,
+    } as unknown as never)
+    .eq("id", opts.reportId)
+    .eq("user_id", opts.userId)
+    .neq("status", "completed");
+  return true;
+}
+
 const StepInput = z.object({ reportId: z.string().uuid() });
 
 async function assertPaidOrder(userId: string, chartId: string) {
@@ -1611,7 +1705,10 @@ async function startPremiumReportState(userId: string, chartId: string): Promise
     .eq("model_id", cacheKey.model_id)
     .eq("calculation_version", cacheKey.calculation_version)
     .maybeSingle();
-  if (cached?.status === "completed" && cached.content_json) {
+  if (cached?.content_json && countValidPremiumContentChapters(cached.content_json) >= 24) {
+    if (cached.status !== "completed") {
+      await repairCompletedReportFromContent({ reportId: cached.id, userId, content: cached.content_json });
+    }
     return { reportId: cached.id, status: "completed" };
   }
 
@@ -1623,7 +1720,10 @@ async function startPremiumReportState(userId: string, chartId: string): Promise
     .eq("report_version", cacheKey.report_version)
     .is("input_hash", null)
     .maybeSingle();
-  if (legacy?.status === "completed" && legacy.content_json) {
+  if (legacy?.content_json && countValidPremiumContentChapters(legacy.content_json) >= 24) {
+    if (legacy.status !== "completed") {
+      await repairCompletedReportFromContent({ reportId: legacy.id, userId, content: legacy.content_json });
+    }
     return { reportId: legacy.id, status: "completed" };
   }
 
@@ -1668,13 +1768,7 @@ export const processNextPremiumChapter = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!report) throw new Error("report_not_found");
     if (report.content_json && countValidPremiumContentChapters(report.content_json) >= PREMIUM_V3_CHAPTERS.length) {
-      if (report.status !== "completed") {
-        await supabaseAdmin
-          .from("premium_pdf_reports")
-          .update({ status: "completed", error_message: null, generated_at: new Date().toISOString() } as unknown as never)
-          .eq("id", report.id)
-          .eq("user_id", userId);
-      }
+      await repairCompletedReportFromContent({ reportId: report.id, userId, content: report.content_json });
       return {
         reportId: report.id,
         status: "completed",
@@ -2001,7 +2095,7 @@ export const getPremiumReport = createServerFn({ method: "POST" })
     const { data: row } = await supabase
       .from("premium_pdf_reports")
       .select(
-        "status, content_json, generated_at, error_message, ai_generation_count, input_hash, content_hash, prompt_version, model_id, calculation_version, token_usage",
+        "id, status, content_json, generated_at, error_message, ai_generation_count, input_hash, content_hash, prompt_version, model_id, calculation_version, token_usage",
       )
       .eq("user_id", userId)
       .eq("chart_id", data.chartId)
@@ -2023,9 +2117,20 @@ export const getPremiumReport = createServerFn({ method: "POST" })
       calculation_version: string | null;
       token_usage: unknown;
     };
+    let status = r.status as PremiumReportRead["status"];
+    let generatedAt = r.generated_at;
+    if (r.content_json && status !== "completed" && countValidPremiumContentChapters(r.content_json) >= 24) {
+      await repairCompletedReportFromContent({
+        reportId: (row as { id: string }).id,
+        userId,
+        content: r.content_json,
+      });
+      status = "completed";
+      generatedAt = generatedAt ?? new Date().toISOString();
+    }
     return {
-      status: r.status as PremiumReportRead["status"],
-      generatedAt: r.generated_at,
+      status,
+      generatedAt,
       content: (r.content_json as PremiumContent) ?? null,
       errorMessage: r.error_message,
       aiGenerationCount: typeof r.ai_generation_count === "number" ? r.ai_generation_count : 0,
@@ -2218,6 +2323,14 @@ export const getPremiumReportProgress = createServerFn({ method: "POST" })
     // refreshes after an interrupted serverless request immediately sees a
     // continuable state instead of being stuck on an old `running` chapter.
     await recoverStaleChapterLocks((row as { id: string }).id, userId);
+    const contentChapterCount = countValidPremiumContentChapters(rowContent);
+    if (contentChapterCount >= PREMIUM_V3_CHAPTERS.length) {
+      await repairCompletedReportFromContent({
+        reportId: (row as { id: string }).id,
+        userId,
+        content: rowContent,
+      });
+    }
 
     const { data: chRows } = await supabase
       .from("premium_report_chapters")
@@ -2246,7 +2359,6 @@ export const getPremiumReportProgress = createServerFn({ method: "POST" })
       };
     });
 
-    const contentChapterCount = countValidPremiumContentChapters(rowContent);
     const completed = Math.max(
       chapters.filter((c) => c.status === "completed").length,
       contentChapterCount >= PREMIUM_V3_CHAPTERS.length ? PREMIUM_V3_CHAPTERS.length : 0,
