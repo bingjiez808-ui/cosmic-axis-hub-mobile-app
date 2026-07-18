@@ -149,12 +149,13 @@ class FakePremiumReport {
    * loop that claims + completes chapters within a soft deadline, and
    * returns shouldContinue when work remains for the next request.
    */
-  async drain(opts: { now?: number; softBudgetMs?: number } = {}): Promise<DrainResult> {
+  async drain(opts: { now?: number; softBudgetMs?: number; maxChapters?: number } = {}): Promise<DrainResult> {
     const softBudgetMs = opts.softBudgetMs ?? 5_000;
+    const maxChapters = opts.maxChapters ?? Infinity;
     const started = opts.now ?? Date.now();
     let processed = 0;
-    while (this.completedCount() < TOTAL_CHAPTERS) {
-      const now = (opts.now ?? Date.now()) + processed; // deterministic tick
+    while (this.completedCount() < TOTAL_CHAPTERS && processed < maxChapters) {
+      const now = (opts.now ?? Date.now()) + processed;
       if ((now - started) >= softBudgetMs) break;
       const row = this.claimNext(now);
       if (!row) break;
