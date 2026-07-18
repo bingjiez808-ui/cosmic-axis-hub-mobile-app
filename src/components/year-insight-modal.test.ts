@@ -11,8 +11,6 @@ if (typeof globalThis.document === "undefined") {
   GlobalRegistrator.register({ url: "http://localhost/", width: 1024, height: 768 });
 }
 
-// @ts-expect-error — bun:test is Bun's built-in runner.
-import { afterEach, describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import React from "react";
 import { createRoot, type Root } from "react-dom/client";
