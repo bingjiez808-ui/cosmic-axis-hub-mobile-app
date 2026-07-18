@@ -1756,12 +1756,16 @@ export const processNextPremiumChapter = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => StepInput.parse(d))
   .handler(async ({ data, context }): Promise<PremiumChapterStepResult> => {
     const { userId } = context;
+    let stage = "start";
     try {
+    stage = "assertEmailVerifiedOrAdmin";
     await assertEmailVerifiedOrAdmin(context);
     enforceRateLimit(`premium-step:${userId}`, 80, 60_000, "premium chapter steps");
+    stage = "import-supabaseAdmin";
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { PREMIUM_V3_CHAPTERS } = await import("./premium-chapters-v3");
 
+    stage = "select-report";
     const { data: report } = await supabaseAdmin
       .from("premium_pdf_reports")
       .select("id, user_id, chart_id, status, content_json, input_hash")
@@ -1770,6 +1774,7 @@ export const processNextPremiumChapter = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!report) throw new Error("report_not_found");
     if (report.content_json && countValidPremiumContentChapters(report.content_json) >= PREMIUM_V3_CHAPTERS.length) {
+      stage = "repairCompletedReportFromContent";
       await repairCompletedReportFromContent({ reportId: report.id, userId, content: report.content_json });
       return {
         reportId: report.id,
@@ -1786,11 +1791,17 @@ export const processNextPremiumChapter = createServerFn({ method: "POST" })
       };
     }
 
+    stage = "loadChartOwnedBy";
     const chart = await loadChartOwnedBy(userId, report.chart_id);
+    stage = "assertSystemsComplete";
     assertSystemsComplete(chart);
+    stage = "assertPaidOrder";
     await assertPaidOrder(userId, report.chart_id);
+    stage = "ensurePendingChapterRows";
     await ensurePendingChapterRows(report.id, userId);
+    stage = "recoverStaleChapterLocks";
     await recoverStaleChapterLocks(report.id, userId);
+    stage = "update-report-generating";
     await supabaseAdmin
       .from("premium_pdf_reports")
       .update({ status: "generating", error_message: null } as unknown as never)
@@ -1798,7 +1809,9 @@ export const processNextPremiumChapter = createServerFn({ method: "POST" })
       .eq("user_id", userId)
       .neq("status", "completed");
 
+    stage = "buildEngineInputForChart";
     const engineInput = buildEngineInputForChart(chart);
+    stage = "makeCacheKey";
     const cacheKey = await makeCacheKey(userId, report.chart_id, engineInput);
     const isZh = (chart.lang ?? "en") === "zh";
     const apiKey = process.env.LOVABLE_API_KEY;
@@ -1806,14 +1819,24 @@ export const processNextPremiumChapter = createServerFn({ method: "POST" })
     const providerName = isTestMode ? "deterministic-stub" : "lovable-ai-gateway";
     if (!isTestMode && !apiKey) throw new Error("provider_unavailable");
 
-    const rpc = supabaseAdmin.rpc as unknown as (
+    // NOTE: SupabaseClient.rpc uses `this.rest` internally, so it MUST be
+    // invoked as a method on the client — never destructured or assigned to
+    // a bare variable. Doing so drops `this` under strict mode and produces
+    // "Cannot read properties of undefined (reading 'rest')".
+    const rpc = (
       fn: string,
       args: Record<string, unknown>,
-    ) => Promise<{ data: boolean | null; error: { message?: string } | null }>;
+    ): Promise<{ data: boolean | null; error: { message?: string } | null }> =>
+      (supabaseAdmin.rpc as unknown as (f: string, a: Record<string, unknown>) => Promise<{ data: boolean | null; error: { message?: string } | null }>)
+        .call(supabaseAdmin, fn, args);
+
+    stage = "import-buildPremiumFacts";
     const { buildPremiumFacts } = await import("./premium-facts");
     const { validateChapterAgainstFacts } = await import("./chapter-json-schema");
+    stage = "buildPremiumFacts";
     const facts = buildPremiumFacts(engineInput.snapshot);
     const factsJson = JSON.stringify(facts, null, 2).slice(0, 12000);
+    stage = "select-webReport";
     const { data: webReport } = await supabaseAdmin
       .from("reports")
       .select("report_json")
@@ -1834,7 +1857,9 @@ export const processNextPremiumChapter = createServerFn({ method: "POST" })
     let processedChapters = 0;
     let providerCalled = false;
 
+    stage = "drain-loop";
     while (true) {
+
       await recoverStaleChapterLocks(report.id, userId);
       const { data: rowsRaw } = await supabaseAdmin
         .from("premium_report_chapters")
@@ -2058,7 +2083,10 @@ export const processNextPremiumChapter = createServerFn({ method: "POST" })
     }
     } catch (err) {
       const msg = safeMessage(err, "chapter_step_error");
-      console.error("[premium] processNextPremiumChapter failed", { reportId: data.reportId, userId, err: msg });
+      const stack = err instanceof Error ? err.stack : undefined;
+      console.error("[premium] processNextPremiumChapter failed", { reportId: data.reportId, userId, stage, err: msg, stack });
+
+
       try {
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         await supabaseAdmin
