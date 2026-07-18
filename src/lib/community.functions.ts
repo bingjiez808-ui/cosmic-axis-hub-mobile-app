@@ -112,15 +112,29 @@ async function hydratePosts(rawPosts: unknown[], viewerId: string | null): Promi
   if (posts.length === 0) return [];
   const ids = posts.map((p) => p.id);
   const sb = createPublicClient() as unknown as { from: (t: string) => any };
-  const [{ data: comments }, { data: likes }] = await Promise.all([
+  const [{ data: comments }, { data: postLikesRaw }] = await Promise.all([
     sb
       .from("community_comments")
       .select("id, post_id, parent_id, user_id, body_text, author_title, author_house_key, created_at")
       .in("post_id", ids)
       .order("created_at", { ascending: true }),
-    sb.from("community_likes").select("user_id, post_id, comment_id").or(`post_id.in.(${ids.join(",")})`),
+    sb.from("community_likes").select("user_id, post_id, comment_id").in("post_id", ids),
   ]);
-  const allLikes = (likes ?? []) as Array<{ user_id: string; post_id: string | null; comment_id: string | null }>;
+  const typedComments = (comments ?? []) as Array<{
+    id: string;
+    post_id: string;
+    parent_id: string | null;
+    user_id: string;
+    body_text: string;
+    author_title: string;
+    author_house_key: string;
+    created_at: string;
+  }>;
+  const commentIds = typedComments.map((c) => c.id);
+  const { data: commentLikesRaw } = commentIds.length > 0
+    ? await sb.from("community_likes").select("user_id, post_id, comment_id").in("comment_id", commentIds)
+    : { data: [] };
+  const allLikes = [...(postLikesRaw ?? []), ...(commentLikesRaw ?? [])] as Array<{ user_id: string; post_id: string | null; comment_id: string | null }>;
   const postLikes = new Map<string, number>();
   const commentLikes = new Map<string, number>();
   const likedPost = new Set<string>();
@@ -136,16 +150,7 @@ async function hydratePosts(rawPosts: unknown[], viewerId: string | null): Promi
     }
   }
   const commentsByPost = new Map<string, CommunityComment[]>();
-  for (const c of (comments ?? []) as Array<{
-    id: string;
-    post_id: string;
-    parent_id: string | null;
-    user_id: string;
-    body_text: string;
-    author_title: string;
-    author_house_key: string;
-    created_at: string;
-  }>) {
+  for (const c of typedComments) {
     const item: CommunityComment = {
       id: c.id,
       postId: c.post_id,
