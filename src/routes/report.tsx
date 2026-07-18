@@ -998,9 +998,10 @@ function ReportPage() {
                   const tradition = textFromUnknown(er.tradition, lang);
                   const note = textFromUnknown(er.note, lang);
                   return {
-                  tradition: [tradition, tradition] as [string, string],
-                  note: [note, note] as [string, string],
-                }))
+                    tradition: [tradition, tradition] as [string, string],
+                    note: [note, note] as [string, string],
+                  };
+                })
               : fallbackEvidence,
           details:
             details.length > 0
@@ -1008,9 +1009,10 @@ function ReportPage() {
                   const br = b as Record<string, unknown>;
                   const label = textFromUnknown(br.label, lang);
                   return {
-                  label: [label, label] as [string, string],
-                  items: textArrayFromUnknown(br.items, lang).map((it) => [it, it] as [string, string]),
-                }))
+                    label: [label, label] as [string, string],
+                    items: textArrayFromUnknown(br.items, lang).map((it) => [it, it] as [string, string]),
+                  };
+                })
               : d.details,
         };
       }),
