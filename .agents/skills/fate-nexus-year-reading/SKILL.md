@@ -20,12 +20,14 @@ Whenever the app needs a per-year insight for a user's chart (life timeline dots
 
 ## Systems
 
-| System  | Available when                                                             | Evidence refs                                                       |
-| ------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| BaZi    | `bazi.day_master` + `bazi.luck.pillars` covers the target age              | `bazi.luck.pillars[i]`, `bazi.luck.pillars[i].liu_nian[j]`          |
-| Ziwei   | `ziwei.horoscope.flow_year.year === year` (single reference year snapshot) | `ziwei.horoscope.flow_year`                                         |
-| Vedic   | `vedic.mahadasha` covers the target year                                   | `vedic.mahadasha[i]`, `vedic.mahadasha[i].antardasha[j]`            |
-| Western | Never available in current build (no transit engine)                       | —                                                                   |
+| System  | Available when                                                                                  | Evidence refs                                                       |
+| ------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| BaZi    | `bazi.day_master` + `bazi.luck.pillars` covers the target age                                   | `bazi.luck.pillars[i]`, `bazi.luck.pillars[i].liu_nian[j]`          |
+| Ziwei   | `ziwei.horoscope_years[]` contains a snapshot matching the target year (v3.1+ multi-year facts) | `ziwei.horoscope_years[k].flow_year`                                |
+| Vedic   | `vedic.mahadasha` covers the target year                                                        | `vedic.mahadasha[i]`, `vedic.mahadasha[i].antardasha[j]`            |
+| Western | `western.annual_transits[]` has an entry for the target year (v3.1+ birthday-anchored samples)  | `western.annual_transits[k].planets`, `western.annual_transits[k].aspects` |
+
+Western scoring is deterministic: aspects between transit planets and the natal Sun/Moon are weighted (outer trine/sextile +4, outer square/opposition −4, inner planets half-weight, Jupiter/Saturn conjunctions ±2). Score clamps to [0,100] centered at 50. Same natal + year → identical output (see `western-transits.test.ts`).
 
 Any system that cannot supply its evidence refs is set `available: false` with a `reason_unavailable`. It contributes 0 to the composite and does not carry a score.
 

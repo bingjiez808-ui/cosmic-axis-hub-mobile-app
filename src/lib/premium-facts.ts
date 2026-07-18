@@ -29,6 +29,7 @@ import type { ZiweiChart, ZiweiPalace } from "./ziwei";
 import { computeBaZiLuck, type BaZiLuck } from "./bazi-luck";
 import { computeZiweiHoroscope, type ZiweiHoroscope } from "./ziwei-horoscope";
 import { computeWesternChart, type WesternAspect, type WesternPlanet, type WesternAscendant } from "./western-natal";
+import { computeAnnualTransit } from "./western-transits";
 import { expandVimshottari, currentDashaTriple, type DashaExpansion } from "./vedic-dasha";
 import { localBirthToUTC } from "./city-geo";
 
@@ -133,11 +134,19 @@ export type WesternFacts = {
   planets: WesternPlanet[];
   aspects: WesternAspect[];
   ascendant: WesternAscendant | null;
+  /**
+   * v3.1: One annual-transit snapshot per year in the reading window.
+   * Populated when `opts.transitYears` is supplied to `buildPremiumFacts`.
+   * Each entry is a fixed birthday-anchored 12:00 UTC sample against the
+   * natal frame. Empty when the natal chart is not available.
+   */
+  annual_transits?: import("./western-transits").WesternAnnualTransit[];
   evidence_paths: {
     sun: "western.sun";
     planets: "western.planets";
     aspects: "western.aspects";
     ascendant: "western.ascendant";
+    annual_transits: "western.annual_transits";
   };
 };
 
@@ -191,6 +200,13 @@ export type BuildFactsOptions = {
    * date. Used by the year-reading engine to produce per-year 流年 facts.
    */
   ziweiYears?: string[] | null;
+  /**
+   * v3.1: List of calendar years for which to compute deterministic
+   * Western annual-transit charts. When provided AND the natal chart
+   * is resolvable, `WesternFacts.annual_transits` is populated with one
+   * entry per year (birthday-anchored 12:00 UTC samples).
+   */
+  transitYears?: number[] | null;
 };
 
 export function deriveBaziFacts(
@@ -313,7 +329,10 @@ export function deriveZiweiFacts(
   };
 }
 
-export function deriveWesternFacts(snap: CalculationSnapshot): WesternFacts | null {
+export function deriveWesternFacts(
+  snap: CalculationSnapshot,
+  opts: BuildFactsOptions = {},
+): WesternFacts | null {
   if (snap.western.status !== "ok" || !snap.western.sun) return null;
   // v3: compute 9-planet tropical natal + aspects when date+time+geo allow.
   let planets: WesternPlanet[] = [];
@@ -330,6 +349,21 @@ export function deriveWesternFacts(snap: CalculationSnapshot): WesternFacts | nu
       }
     }
   }
+  // v3.1: annual transits — birthday-anchored samples against natal frame.
+  let annual_transits: import("./western-transits").WesternAnnualTransit[] = [];
+  if (planets.length && snap.input.date && Array.isArray(opts.transitYears) && opts.transitYears.length) {
+    const uniq = Array.from(new Set(opts.transitYears.filter((y) => Number.isFinite(y)))).sort((a, b) => a - b);
+    for (let i = 0; i < uniq.length; i += 1) {
+      const entry = computeAnnualTransit({
+        natal: planets,
+        natalAscendantLon: ascendant?.trop_lon ?? null,
+        birthDateISO: snap.input.date,
+        year: uniq[i],
+        arrayIndex: i,
+      });
+      if (entry) annual_transits.push(entry);
+    }
+  }
   return {
     sun: {
       sign_en: snap.western.sun.sign_en,
@@ -339,14 +373,17 @@ export function deriveWesternFacts(snap: CalculationSnapshot): WesternFacts | nu
     planets,
     aspects,
     ascendant,
+    annual_transits,
     evidence_paths: {
       sun: "western.sun",
       planets: "western.planets",
       aspects: "western.aspects",
       ascendant: "western.ascendant",
+      annual_transits: "western.annual_transits",
     },
   };
 }
+
 
 export function deriveVedicFacts(
   snap: CalculationSnapshot,
@@ -427,7 +464,7 @@ export function buildPremiumFacts(
     version: PREMIUM_FACTS_VERSION,
     bazi: deriveBaziFacts(snap),
     ziwei: deriveZiweiFacts(snap, opts),
-    western: deriveWesternFacts(snap),
+    western: deriveWesternFacts(snap, opts),
     vedic,
     unavailable,
   };

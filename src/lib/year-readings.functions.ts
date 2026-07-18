@@ -123,12 +123,14 @@ export const ensureYearReadings = createServerFn({ method: "POST" })
     // window so the Ziwei engine yields a per-year 流年 snapshot.
     const bMonthDay = birthISO.slice(5, 10); // MM-DD
     const ziweiYears: string[] = [];
+    const transitYears: number[] = [];
     for (let a = data.fromAge; a <= data.toAge; a += 1) {
       const y = birthYear + a;
       if (y < 1900 || y > 2200) continue;
       ziweiYears.push(`${y}-${bMonthDay}`);
+      transitYears.push(y);
     }
-    const facts = buildPremiumFacts(snapshot, { ziweiYears });
+    const facts = buildPremiumFacts(snapshot, { ziweiYears, transitYears });
     const factsHash = hashFactsForYearReading(facts);
 
     // Read cached rows for this exact (chart, facts_hash, skill, calc, lang, year range).
