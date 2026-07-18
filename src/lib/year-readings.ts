@@ -446,8 +446,8 @@ export function readWesternYear(facts: PremiumFacts, year: number, _age: number,
     brief,
     opportunity,
     caution,
-    reason_unavailable: null,
   };
+
 }
 
 
