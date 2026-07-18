@@ -83,6 +83,7 @@ const T = {
   },
   conf: {
     reference: { zh: "参考级", en: "Reference" },
+    reference_only: { zh: "参考级", en: "Reference" },
     low: { zh: "低置信", en: "Low" },
     mid: { zh: "中置信", en: "Medium" },
     high: { zh: "高置信", en: "High" },
