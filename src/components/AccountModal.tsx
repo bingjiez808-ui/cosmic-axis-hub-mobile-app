@@ -6,7 +6,7 @@ import { useAccount, type Plan } from "@/lib/account";
 import { useLang, type Lang } from "@/lib/i18n";
 import { useSupabaseSession } from "@/lib/session";
 import { TAROT_LIMITS, tarotRemaining } from "@/lib/tarot-quota";
-import { listUserCharts, renameChart, computeChartHash, type ChartRow } from "@/lib/reports-store.functions";
+import { listUserCharts, renameChart, deleteChart, computeChartHash, type ChartRow } from "@/lib/reports-store.functions";
 import { listPremiumReports, type MyPremiumReportRow } from "@/lib/premium.functions";
 import { PremiumReportReader } from "@/components/PremiumReportReader";
 
