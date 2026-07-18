@@ -620,12 +620,15 @@ function YearByYearChart({
 
   const years = range.map((p, i) => {
     const aiTheme = aiYears?.find((y) => y.age === p.age)?.theme?.trim();
+    const engineRow = engineByAge.get(p.age);
+    const engineScore = engineRow?.composite_score;
     return {
       age: p.age,
-      score: p.score,
+      score: typeof engineScore === "number" ? engineScore : p.score,
       theme: aiTheme || pool[i % pool.length],
       isNow: age != null && age === p.age,
       isPast: age != null && age > p.age,
+      fromEngine: engineRow != null && typeof engineScore === "number",
     };
   });
 
