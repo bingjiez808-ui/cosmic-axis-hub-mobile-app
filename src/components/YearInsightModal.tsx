@@ -20,6 +20,19 @@ import { AnimatePresence, motion } from "framer-motion";
 
 import type { Lang } from "@/lib/i18n";
 
+export type YearInsightSystem = {
+  name: "bazi" | "ziwei" | "vedic" | "western";
+  available: boolean;
+  score: number | null;
+  direction: "up" | "stable" | "down" | null;
+  confidence: "reference_only" | "low" | "mid" | "high";
+  brief: string;
+  opportunity: string;
+  caution: string;
+  evidenceRefs: string[];
+  reasonUnavailable?: string;
+};
+
 export type YearInsightPoint = {
   age: number;
   score: number | null;
@@ -30,12 +43,20 @@ export type YearInsightPoint = {
   /** Optional saved evidence refs (already-generated premium chapter). */
   evidenceRefs?: string[];
   /** Confidence tier for the year insight surface. */
-  confidence?: "reference" | "low" | "mid" | "high";
+  confidence?: "reference" | "low" | "mid" | "high" | "reference_only";
   /** True when the surface is falling back to the reference pool because
    *  the report has not been generated / is missing this year. */
   reference?: boolean;
   /** Calendar year, if the caller can compute it. */
   year?: number | null;
+  /** Per-system deterministic readings (from year_readings_v1). */
+  systems?: YearInsightSystem[];
+  /** Names of unavailable systems. */
+  unavailableSystems?: string[];
+  /** Composite interpretation from the deterministic engine. */
+  interpretation?: { brief: string; opportunity: string; caution: string };
+  /** Composite advice from the deterministic engine. */
+  advice?: { suggestion: string; boundary: string };
 };
 
 const T = {
