@@ -319,7 +319,7 @@ export function PremiumPdfCard({
   // server request processes at most one chapter; refresh resumes safely.
   useEffect(() => {
     const chartId =
-      state.kind === "generating" || state.kind === "partial" || state.kind === "ready"
+      state.kind === "generating" || state.kind === "partial" || state.kind === "ready" || state.kind === "paid_no_report"
         ? state.chartId
         : null;
     if (!chartId) {
@@ -327,8 +327,13 @@ export function PremiumPdfCard({
       return;
     }
     void refreshProgress(chartId);
-    if (state.kind === "generating" || state.kind === "partial") {
-      void driveGeneration(chartId, activeReportId, { openWhenDone: false });
+    // Server-side drain guardian: whenever the user is paid but the
+    // report is not yet completed, auto-drive drain without requiring
+    // a click. Covers cold reloads on paid_no_report, generating and
+    // partial. Auto-opens the Reader on 24/24 so the user never has
+    // to click twice.
+    if (state.kind === "generating" || state.kind === "partial" || state.kind === "paid_no_report") {
+      void driveGeneration(chartId, activeReportId, { openWhenDone: true });
     }
     clearPoll();
     pollTimer.current = setTimeout(async () => {
