@@ -15,8 +15,8 @@
  */
 import type { PremiumFacts } from "./premium-facts";
 
-export const YEAR_READING_SKILL_VERSION = "year-reading@1.1.0";
-export const YEAR_READING_CALC_VERSION = "calc@1.1.0";
+export const YEAR_READING_SKILL_VERSION = "year-reading@1.2.0";
+export const YEAR_READING_CALC_VERSION = "calc@1.2.0";
 
 export type Lang = "zh" | "en";
 export type Direction = "up" | "stable" | "down";
