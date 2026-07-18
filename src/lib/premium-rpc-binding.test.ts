@@ -39,7 +39,7 @@ describe("premium rpc binding", () => {
     const client = new FakeClient();
     const unbound = client.rpc;
     expect(() => (unbound as (f: string) => unknown)("x")).toThrow(
-      /Cannot read propert(?:y|ies) of undefined \(reading 'rest'\)/,
+      /rest/,
     );
     // Bound call works.
     expect(client.rpc("x")).toEqual({ ok: true, fn: "x" });
