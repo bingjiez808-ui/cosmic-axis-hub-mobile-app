@@ -383,6 +383,54 @@ export const listUserCharts = createServerFn({ method: "GET" })
     return charts.map((c) => ({ ...c, reports: byChart.get(c.id) ?? [] }));
   });
 
+const GetChartByIdInput = z.object({ chartId: z.string().uuid() });
+
+export type ChartByIdRow = {
+  id: string;
+  name: string | null;
+  birth_date: string | null;
+  birth_time: string | null;
+  birth_place: string | null;
+  lang: "en" | "zh";
+  gender: "male" | "female" | null;
+  input_snapshot: Json | null;
+};
+
+/**
+ * Authoritative chart lookup by id, scoped to the caller via RLS.
+ * Lets the client rehydrate fields (gender, timezone) that the URL
+ * does not carry. Returns null when the row does not exist or belongs
+ * to another user — never throws for a missing row.
+ */
+export const getChartById = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => GetChartByIdInput.parse(data))
+  .handler(async ({ data, context }): Promise<ChartByIdRow | null> => {
+    const { supabase, userId } = context;
+    const { data: row } = await supabase
+      .from("charts")
+      .select("id, name, birth_date, birth_time, birth_place, lang, input_snapshot")
+      .eq("user_id", userId)
+      .eq("id", data.chartId)
+      .maybeSingle();
+    if (!row) return null;
+    const snap = (row.input_snapshot ?? {}) as Record<string, unknown>;
+    const genderRaw = snap.gender;
+    const gender: "male" | "female" | null =
+      genderRaw === "male" || genderRaw === "female" ? genderRaw : null;
+    return {
+      id: row.id,
+      name: row.name,
+      birth_date: row.birth_date,
+      birth_time: row.birth_time,
+      birth_place: row.birth_place,
+      lang: (row.lang === "zh" ? "zh" : "en") as "en" | "zh",
+      gender,
+      input_snapshot: (row.input_snapshot ?? null) as Json | null,
+    };
+  });
+
+
 const RenameChartInput = z.object({
   chartId: z.string().uuid(),
   name: z.string().trim().min(1).max(120),
@@ -570,12 +618,43 @@ export async function assertEmailVerifiedOrAdmin(context: {
       };
     };
   };
-  const { data } = await sb
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", context.userId)
-    .eq("role", "admin")
-    .maybeSingle();
-  if (data) return;
+  try {
+    const { data } = await sb
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", context.userId)
+      .eq("role", "admin")
+      .maybeSingle();
+    if (data) return;
+  } catch { /* fall through */ }
+
+  // Fallback: some JWT shapes (server-minted sessions, older tokens) omit
+  // the verification claim entirely even though the account IS verified in
+  // auth.users. Consult the Auth admin REST endpoint as the source of truth
+  // before rejecting a legitimate paying user.
+  try {
+    const url = process.env.SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (url && key) {
+      const res = await fetch(`${url}/auth/v1/admin/users/${context.userId}`, {
+        headers: { apikey: key, Authorization: `Bearer ${key}` },
+      });
+      if (res.ok) {
+        const user = (await res.json()) as {
+          email_confirmed_at?: string | null;
+          confirmed_at?: string | null;
+          app_metadata?: { provider?: string; providers?: string[] };
+        };
+        if (user.email_confirmed_at || user.confirmed_at) return;
+        const provs = new Set<string>([
+          ...(user.app_metadata?.provider ? [user.app_metadata.provider] : []),
+          ...(user.app_metadata?.providers ?? []),
+        ]);
+        if ([...provs].some((p) => p !== "email" && p !== "phone")) return;
+      }
+    }
+  } catch { /* fall through to reject */ }
   throw new Error("email_not_verified");
 }
+
+

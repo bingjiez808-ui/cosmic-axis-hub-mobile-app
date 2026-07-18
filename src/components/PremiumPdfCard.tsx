@@ -12,7 +12,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 
 import { useLang } from "@/lib/i18n";
-import { buildCanonicalChartInput, ensureChart } from "@/lib/reports-store.functions";
+import { buildCanonicalChartInput, ensureChart, getChartById } from "@/lib/reports-store.functions";
 import {
   generatePremiumReport,
   processNextPremiumChapter,
@@ -37,7 +37,10 @@ type ReportSearchLike = {
   place?: string;
   gender?: "male" | "female";
   lang?: "en" | "zh";
+  readingId?: string;
 };
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const TXT = {
   kicker: { zh: "¥79 · 一次解锁", en: "¥79 · one-time unlock" },
@@ -171,12 +174,38 @@ export function PremiumPdfCard({
     if (!search?.date) return;
     try {
       const { data: sess } = await supabase.auth.getSession();
+
+      // Authoritative hydration: if the URL carries a persisted chartId
+      // (readingId), fetch the DB row and merge its fields — the URL
+      // never carries gender/timezone, so relying on `search` alone
+      // would misdiagnose a fully-paid chart as "incomplete".
+      let hydrated: ReportSearchLike = { ...search };
+      let persistedChartId: string | null = null;
+      const rid = (search.readingId ?? "").trim();
+      if (sess.session && rid && UUID_RE.test(rid)) {
+        try {
+          const row = await getChartById({ data: { chartId: rid } });
+          if (row) {
+            persistedChartId = row.id;
+            hydrated = {
+              ...hydrated,
+              name: hydrated.name ?? row.name ?? undefined,
+              date: hydrated.date ?? row.birth_date ?? undefined,
+              time: hydrated.time ?? row.birth_time ?? undefined,
+              place: hydrated.place ?? row.birth_place ?? undefined,
+              gender: hydrated.gender ?? row.gender ?? undefined,
+              lang: hydrated.lang ?? row.lang,
+            };
+          }
+        } catch { /* fall through to URL-only path */ }
+      }
+
       const snap = buildCalculationSnapshot({
-        date: search.date,
-        time: search.time,
-        place: search.place,
+        date: hydrated.date,
+        time: hydrated.time,
+        place: hydrated.place,
         lang,
-        gender: search.gender ?? null,
+        gender: hydrated.gender ?? null,
       });
       const missing = missingSystemDetails(snap);
       if (!sess.session) {
@@ -187,24 +216,31 @@ export function PremiumPdfCard({
         setState({ kind: "signed_out" });
         return;
       }
-      if (missing.length > 0) {
-        setState({ kind: "legacy_incomplete" });
-        return;
+
+      // When a persisted chart already exists for the caller, trust it
+      // as the completeness authority — the server-side facts builder
+      // will surface `systems_incomplete` if data is truly missing.
+      let chartId = persistedChartId;
+      if (!chartId) {
+        if (missing.length > 0) {
+          setState({ kind: "legacy_incomplete" });
+          return;
+        }
+        const canonical = buildCanonicalChartInput(
+          { name: hydrated.name, date: hydrated.date, time: hydrated.time, place: hydrated.place, gender: hydrated.gender ?? undefined, lang: hydrated.lang },
+          lang,
+        );
+        const chart = await ensureChart({
+          data: {
+            ...canonical,
+            input_snapshot: { ...canonical.input_snapshot, calculation_snapshot: snap },
+          },
+        });
+        chartId = chart.chartId;
       }
-      const canonical = buildCanonicalChartInput(
-        { name: search.name, date: search.date, time: search.time, place: search.place, gender: search.gender ?? undefined, lang: search.lang },
-        lang,
-      );
-      const chart = await ensureChart({
-        data: {
-          ...canonical,
-          // Enrich the snapshot for audit/debug — hashing ignores it.
-          input_snapshot: { ...canonical.input_snapshot, calculation_snapshot: snap },
-        },
-      });
-      const status = await getPremiumStatus({ data: { chartId: chart.chartId } });
+      const status = await getPremiumStatus({ data: { chartId } });
       setActiveReportId(status.report?.id ?? null);
-      setState(applyStatus(chart.chartId, status));
+      setState(applyStatus(chartId, status));
     } catch (err) {
       const code = extractErrorCode(err);
       if (code === "systems_incomplete") {
@@ -217,6 +253,7 @@ export function PremiumPdfCard({
       }
     }
   }, [search, lang, applyStatus]);
+
 
   const refreshProgress = useCallback(async (chartId: string) => {
     try {
