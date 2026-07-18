@@ -392,22 +392,64 @@ export function readZiweiYear(facts: PremiumFacts, year: number, _age: number, l
   };
 }
 
-export function readWesternYear(_facts: PremiumFacts, _year: number, _age: number, lang: Lang): SystemReading {
-  // Western transits require an ephemeris the calculator does not currently
-  // include — honestly unavailable. No fabricated houses / aspects.
+export function readWesternYear(facts: PremiumFacts, year: number, _age: number, lang: Lang): SystemReading {
+  const w = facts.western;
+  const transits = w?.annual_transits ?? [];
+  const entry = transits.find((t) => t.year === year);
+  if (!w || !entry || !w.planets.length) {
+    return {
+      system: "western",
+      available: false,
+      score: null,
+      direction: null,
+      confidence: "reference_only",
+      evidence_refs: [],
+      brief: lang === "zh"
+        ? "本命九星或年度行运数据不足，无法给出可靠评分。"
+        : "Insufficient natal planets or annual transits for a reliable score.",
+      opportunity: "",
+      caution: "",
+      reason_unavailable: lang === "zh" ? "本地缺少年度行运数据" : "no annual-transit data available",
+    };
+  }
+  // Deterministic scoring — see western-transits.scoreAnnualTransit.
+  // Import lazily to keep the module graph small at load time.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { scoreAnnualTransit } = require("./western-transits") as typeof import("./western-transits");
+  const { score, positive_hits, negative_hits } = scoreAnnualTransit(entry);
+  const direction: Direction = score >= 60 ? "up" : score <= 40 ? "down" : "stable";
+  const confidence: Confidence =
+    entry.aspects.length >= 6 ? "high" : entry.aspects.length >= 3 ? "mid" : "low";
+  const idx = transits.indexOf(entry);
+  const evidence_refs = [
+    `western.annual_transits[${idx}].planets`,
+    `western.annual_transits[${idx}].aspects`,
+  ];
+  const posLabels = positive_hits.slice(0, 2).map((a) => `${a.transit}-${a.kind}-${a.natal}`);
+  const negLabels = negative_hits.slice(0, 2).map((a) => `${a.transit}-${a.kind}-${a.natal}`);
+  const brief = lang === "zh"
+    ? `本年行运共形成 ${entry.aspects.length} 个主相位。`
+    : `Annual transits form ${entry.aspects.length} major aspects this year.`;
+  const opportunity = posLabels.length
+    ? (lang === "zh" ? `留意有利相位：${posLabels.join("、")}。` : `Favorable aspects: ${posLabels.join(", ")}.`)
+    : (lang === "zh" ? "无显著吉相位。" : "No prominent supportive aspects.");
+  const caution = negLabels.length
+    ? (lang === "zh" ? `注意紧张相位：${negLabels.join("、")}。` : `Tense aspects to watch: ${negLabels.join(", ")}.`)
+    : (lang === "zh" ? "无显著紧张相位。" : "No prominent tense aspects.");
   return {
     system: "western",
-    available: false,
-    score: null,
-    direction: null,
-    confidence: "reference_only",
-    evidence_refs: [],
-    brief: lang === "zh" ? "西方占星年度行运计算未在本地提供。" : "Western transits not available locally.",
-    opportunity: "",
-    caution: "",
-    reason_unavailable: lang === "zh" ? "缺少行运/推运引擎" : "no local transit engine",
+    available: true,
+    score,
+    direction,
+    confidence,
+    evidence_refs,
+    brief,
+    opportunity,
+    caution,
+    reason_unavailable: null,
   };
 }
+
 
 /* ---------------- Aggregate ---------------- */
 
