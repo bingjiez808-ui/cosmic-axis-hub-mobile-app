@@ -140,6 +140,42 @@ describe("YearInsightModal — behavior", () => {
     );
     expect(document.querySelector('[data-testid="year-insight-modal"]')).toBeNull();
   });
+
+  test("renders per-system cards when systems array provided", async () => {
+    await mount(
+      React.createElement(YearInsightModal, {
+        open: true,
+        lang: "zh",
+        point: {
+          age: 36,
+          score: 62,
+          theme: "steady",
+          year: 2026,
+          confidence: "mid",
+          systems: [
+            { name: "bazi", available: true, score: 68, direction: "up", confidence: "high",
+              brief: "大运丁卯 · 流年庚午", opportunity: "同伴合作", caution: "边界模糊", evidenceRefs: ["bazi.luck.pillars[0]"] },
+            { name: "vedic", available: true, score: 58, direction: "stable", confidence: "mid",
+              brief: "Mahadasha Jupiter", opportunity: "expansion", caution: "over-confidence", evidenceRefs: ["vedic.mahadasha[0]"] },
+            { name: "ziwei", available: false, score: null, direction: null, confidence: "reference_only",
+              brief: "", opportunity: "", caution: "", evidenceRefs: [], reasonUnavailable: "紫微流年仅覆盖当前基准年" },
+            { name: "western", available: false, score: null, direction: null, confidence: "reference_only",
+              brief: "", opportunity: "", caution: "", evidenceRefs: [], reasonUnavailable: "缺少行运/推运引擎" },
+          ],
+          interpretation: { brief: "b", opportunity: "机会：同伴合作", caution: "留意边界" },
+          advice: { suggestion: "顺势推进有把握之事。", boundary: "本内容不构成健康/投资建议。" },
+        },
+        onClose: () => undefined,
+      }),
+    );
+    expect(document.querySelector('[data-testid="year-insight-systems"]')).toBeTruthy();
+    expect(document.querySelector('[data-testid="year-insight-system-bazi"]')).toBeTruthy();
+    expect(document.querySelector('[data-testid="year-insight-system-western"]')).toBeTruthy();
+    const txt = document.body.textContent ?? "";
+    expect(txt).toContain("八字");
+    expect(txt).toContain("紫微流年仅覆盖当前基准年");
+    expect(txt).toContain("顺势推进有把握之事");
+  });
 });
 
 describe("YearInsightModal — source-level safety invariants", () => {
