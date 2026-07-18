@@ -6,7 +6,7 @@ import { useAccount, type Plan } from "@/lib/account";
 import { useLang, type Lang } from "@/lib/i18n";
 import { useSupabaseSession } from "@/lib/session";
 import { TAROT_LIMITS, tarotRemaining } from "@/lib/tarot-quota";
-import { listUserCharts, renameChart, computeChartHash, type ChartRow } from "@/lib/reports-store.functions";
+import { listUserCharts, renameChart, deleteChart, computeChartHash, type ChartRow } from "@/lib/reports-store.functions";
 import { listPremiumReports, type MyPremiumReportRow } from "@/lib/premium.functions";
 import { PremiumReportReader } from "@/components/PremiumReportReader";
 
@@ -314,10 +314,19 @@ function MyChartsSection({ open, onClose, lang, rows, setRows }: {
   const loading = rows === null;
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("");
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const [confirm, setConfirm] = useState<{ id: string; scope: "chart" | "reports_only" } | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
 
-  // Parent (AccountModal) already loads rows and shares them here for dedup.
-  // Kept as a no-op effect for future reactivity to `open`.
   useEffect(() => { if (!open) return; }, [open]);
+
+  useEffect(() => {
+    if (!menuOpenId) return;
+    const onDoc = () => setMenuOpenId(null);
+    document.addEventListener("click", onDoc);
+    return () => document.removeEventListener("click", onDoc);
+  }, [menuOpenId]);
 
   const heading = lang === "zh" ? "我的命盘与报告" : "My charts & reports";
   const empty = lang === "zh"
@@ -333,6 +342,28 @@ function MyChartsSection({ open, onClose, lang, rows, setRows }: {
     } catch { /* ignore */ }
     setEditingId(null);
   }
+
+  async function performDelete() {
+    if (!confirm) return;
+    setDeleting(true);
+    try {
+      const res = await deleteChart({ data: { chartId: confirm.id, scope: confirm.scope } });
+      if (res.scope === "chart") {
+        setRows(rows ? rows.filter((r) => r.id !== confirm.id) : rows);
+        setFeedback(lang === "zh" ? "命盘及关联数据已删除" : "Chart and related data deleted");
+      } else {
+        setRows(rows ? rows.map((r) => (r.id === confirm.id ? { ...r, reports: [] } : r)) : rows);
+        setFeedback(lang === "zh" ? "报告与逐年解读已清除，命盘保留" : "Reports cleared; chart kept");
+      }
+      setConfirm(null);
+    } catch {
+      setFeedback(lang === "zh" ? "删除失败，请稍后再试" : "Delete failed, please retry");
+    } finally {
+      setDeleting(false);
+      setTimeout(() => setFeedback(null), 3200);
+    }
+  }
+
 
   return (
     <div>
@@ -386,19 +417,122 @@ function MyChartsSection({ open, onClose, lang, rows, setRows }: {
                       {hasReport ? "" : ` · ${lang === "zh" ? "尚未生成" : "not yet generated"}`}
                     </p>
                   </div>
-                  <Link
-                    to="/report"
-                    search={q}
-                    onClick={onClose}
-                    className="flex-none rounded-full border border-gold-dust/40 px-3 py-1.5 text-[10px] uppercase tracking-[0.28em] text-gold-dust hover:bg-gold-dust/10"
-                  >
-                    {lang === "zh" ? "打开报告" : "Open"}
-                  </Link>
+                  <div className="flex flex-none items-center gap-1.5">
+                    <Link
+                      to="/report"
+                      search={q}
+                      onClick={onClose}
+                      className="rounded-full border border-gold-dust/40 px-3 py-1.5 text-[10px] uppercase tracking-[0.28em] text-gold-dust hover:bg-gold-dust/10"
+                    >
+                      {lang === "zh" ? "打开" : "Open"}
+                    </Link>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        aria-label={lang === "zh" ? "更多操作" : "More actions"}
+                        aria-haspopup="menu"
+                        aria-expanded={menuOpenId === r.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setMenuOpenId(menuOpenId === r.id ? null : r.id);
+                        }}
+                        className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 text-stone-warm/70 hover:border-gold-dust/50 hover:text-gold-light focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-dust"
+                      >
+                        <span aria-hidden className="text-lg leading-none">⋯</span>
+                      </button>
+                      {menuOpenId === r.id && (
+                        <div
+                          role="menu"
+                          onClick={(e) => e.stopPropagation()}
+                          className="absolute right-0 top-full z-30 mt-2 w-60 overflow-hidden rounded-xl border border-white/10 bg-obsidian/95 shadow-xl backdrop-blur"
+                        >
+                          <button
+                            type="button"
+                            role="menuitem"
+                            onClick={() => {
+                              setMenuOpenId(null);
+                              setConfirm({ id: r.id, scope: "reports_only" });
+                            }}
+                            className="block w-full px-4 py-3 text-left text-[12px] tracking-normal text-stone-warm/80 hover:bg-white/[0.04]"
+                          >
+                            {lang === "zh" ? "仅删除报告，保留命盘" : "Delete reports, keep chart"}
+                          </button>
+                          <button
+                            type="button"
+                            role="menuitem"
+                            onClick={() => {
+                              setMenuOpenId(null);
+                              setConfirm({ id: r.id, scope: "chart" });
+                            }}
+                            className="block w-full px-4 py-3 text-left text-[12px] tracking-normal text-red-200/90 hover:bg-red-500/10"
+                          >
+                            {lang === "zh" ? "删除此命盘及关联数据" : "Delete chart and related data"}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </li>
             );
           })}
         </ul>
+      )}
+      {feedback && (
+        <p className="mt-3 text-[11px] tracking-normal text-gold-light/80" role="status">
+          {feedback}
+        </p>
+      )}
+      {confirm && (
+        <div
+          className="fixed inset-0 z-[60] flex items-end justify-center bg-black/70 p-4 sm:items-center"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => !deleting && setConfirm(null)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md rounded-2xl border border-white/10 bg-obsidian/95 p-5 shadow-2xl"
+          >
+            <h3 className="font-serif text-lg text-stone-warm">
+              {confirm.scope === "chart"
+                ? lang === "zh" ? "确认删除此命盘？" : "Delete this chart?"
+                : lang === "zh" ? "确认清除报告？" : "Clear reports?"}
+            </h3>
+            <p className="mt-2 text-[13px] leading-relaxed text-stone-warm/75">
+              {confirm.scope === "chart"
+                ? lang === "zh"
+                  ? "命盘将连同其报告、逐年解读、对话记录一并永久删除，无法恢复。为保留财务审计所需的最少订单信息将被去标识化保留。"
+                  : "The chart, its reports, year-by-year readings, and conversations will be permanently removed. A minimal, de-identified order record is retained for financial audit."
+                : lang === "zh"
+                  ? "将清除该命盘的所有报告与逐年解读，命盘本身与出生资料保留。已完成的付费订单在此模式下不删除，用于审计。"
+                  : "All reports and year-by-year readings for this chart will be cleared; the chart itself is kept. Paid orders remain for audit."}
+            </p>
+            <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={() => setConfirm(null)}
+                className="rounded-full border border-white/15 px-4 py-2 text-[11px] uppercase tracking-[0.28em] text-stone-warm/80 hover:border-white/30 disabled:opacity-50"
+              >
+                {lang === "zh" ? "取消" : "Cancel"}
+              </button>
+              <button
+                type="button"
+                disabled={deleting}
+                autoFocus
+                onClick={performDelete}
+                className="rounded-full border border-red-400/50 bg-red-500/10 px-4 py-2 text-[11px] uppercase tracking-[0.28em] text-red-200 hover:bg-red-500/20 disabled:opacity-60"
+              >
+                {deleting
+                  ? (lang === "zh" ? "处理中…" : "Working…")
+                  : confirm.scope === "chart"
+                    ? (lang === "zh" ? "永久删除" : "Delete permanently")
+                    : (lang === "zh" ? "清除报告" : "Clear reports")}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
