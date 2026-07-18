@@ -344,9 +344,7 @@ export const getPremiumStatus = createServerFn({ method: "POST" })
       | "pending" | "generating" | "partial" | "completed" | "failed"
       | undefined;
     if (reportRow && reportStatus !== "completed") {
-      const cj = reportRow.content_json as { chapters?: unknown[] } | null;
-      const chapters = Array.isArray(cj?.chapters) ? cj!.chapters! : [];
-      if (chapters.length >= 24) reportStatus = "completed";
+      if (countValidPremiumContentChapters(reportRow.content_json) >= 24) reportStatus = "completed";
     }
 
     return {
