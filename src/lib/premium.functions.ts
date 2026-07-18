@@ -1370,12 +1370,23 @@ export type PremiumChapterStepResult = {
   status: PremiumReportStatus;
   processed: boolean;
   providerCalled: boolean;
+  processedChapters?: number;
+  shouldContinue?: boolean;
   completedChapters: number;
   totalChapters: number;
   currentChapterKey: string | null;
   currentChapterTitle: string | null;
   message: "completed" | "processed" | "no_claim" | "active_lease" | "interrupted";
 };
+
+function countValidPremiumContentChapters(content: unknown): number {
+  const chapters = (content as { chapters?: unknown[] } | null)?.chapters;
+  if (!Array.isArray(chapters)) return 0;
+  return chapters.filter((chapter) => {
+    const c = chapter as { key?: unknown; body?: unknown };
+    return typeof c.key === "string" && typeof c.body === "string" && c.body.trim().length > 0;
+  }).length;
+}
 
 const StepInput = z.object({ reportId: z.string().uuid() });
 
