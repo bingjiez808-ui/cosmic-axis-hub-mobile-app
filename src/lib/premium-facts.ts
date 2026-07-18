@@ -185,6 +185,12 @@ export type BuildFactsOptions = {
    * When omitted, cache-key inputs stay stable across days.
    */
   asOfDate?: string | null;
+  /**
+   * v3.1: List of birthday-anchored YYYY-MM-DD dates. When provided the
+   * Ziwei derivation returns a `horoscope_years[]` array, one entry per
+   * date. Used by the year-reading engine to produce per-year 流年 facts.
+   */
+  ziweiYears?: string[] | null;
 };
 
 export function deriveBaziFacts(
