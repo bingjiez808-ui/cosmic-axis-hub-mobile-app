@@ -328,7 +328,10 @@ export function deriveZiweiFacts(
   };
 }
 
-export function deriveWesternFacts(snap: CalculationSnapshot): WesternFacts | null {
+export function deriveWesternFacts(
+  snap: CalculationSnapshot,
+  opts: BuildFactsOptions = {},
+): WesternFacts | null {
   if (snap.western.status !== "ok" || !snap.western.sun) return null;
   // v3: compute 9-planet tropical natal + aspects when date+time+geo allow.
   let planets: WesternPlanet[] = [];
@@ -345,6 +348,21 @@ export function deriveWesternFacts(snap: CalculationSnapshot): WesternFacts | nu
       }
     }
   }
+  // v3.1: annual transits — birthday-anchored samples against natal frame.
+  let annual_transits: import("./western-transits").WesternAnnualTransit[] = [];
+  if (planets.length && snap.input.date && Array.isArray(opts.transitYears) && opts.transitYears.length) {
+    const uniq = Array.from(new Set(opts.transitYears.filter((y) => Number.isFinite(y)))).sort((a, b) => a - b);
+    for (let i = 0; i < uniq.length; i += 1) {
+      const entry = computeAnnualTransit({
+        natal: planets,
+        natalAscendantLon: ascendant?.trop_lon ?? null,
+        birthDateISO: snap.input.date,
+        year: uniq[i],
+        arrayIndex: i,
+      });
+      if (entry) annual_transits.push(entry);
+    }
+  }
   return {
     sun: {
       sign_en: snap.western.sun.sign_en,
@@ -354,11 +372,16 @@ export function deriveWesternFacts(snap: CalculationSnapshot): WesternFacts | nu
     planets,
     aspects,
     ascendant,
+    annual_transits,
     evidence_paths: {
       sun: "western.sun",
       planets: "western.planets",
       aspects: "western.aspects",
       ascendant: "western.ascendant",
+      annual_transits: "western.annual_transits",
+    },
+  };
+}
     },
   };
 }
