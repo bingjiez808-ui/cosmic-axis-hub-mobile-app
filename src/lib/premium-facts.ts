@@ -464,7 +464,7 @@ export function buildPremiumFacts(
     version: PREMIUM_FACTS_VERSION,
     bazi: deriveBaziFacts(snap),
     ziwei: deriveZiweiFacts(snap, opts),
-    western: deriveWesternFacts(snap),
+    western: deriveWesternFacts(snap, opts),
     vedic,
     unavailable,
   };
