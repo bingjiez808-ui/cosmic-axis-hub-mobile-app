@@ -527,7 +527,7 @@ function YearByYearChart({
     evidence_refs: string[];
   };
   const [engineByAge, setEngineByAge] = useState<Map<number, EngineRow>>(new Map());
-  const [engineState, setEngineState] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [, setEngineState] = useState<"idle" | "loading" | "ready" | "error">("idle");
 
   useEffect(() => {
     if (!chartId) {
