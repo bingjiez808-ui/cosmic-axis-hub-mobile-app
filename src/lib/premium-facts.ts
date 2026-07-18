@@ -133,11 +133,19 @@ export type WesternFacts = {
   planets: WesternPlanet[];
   aspects: WesternAspect[];
   ascendant: WesternAscendant | null;
+  /**
+   * v3.1: One annual-transit snapshot per year in the reading window.
+   * Populated when `opts.transitYears` is supplied to `buildPremiumFacts`.
+   * Each entry is a fixed birthday-anchored 12:00 UTC sample against the
+   * natal frame. Empty when the natal chart is not available.
+   */
+  annual_transits?: import("./western-transits").WesternAnnualTransit[];
   evidence_paths: {
     sun: "western.sun";
     planets: "western.planets";
     aspects: "western.aspects";
     ascendant: "western.ascendant";
+    annual_transits: "western.annual_transits";
   };
 };
 
