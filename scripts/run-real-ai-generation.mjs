@@ -108,7 +108,38 @@ function guardrails(lang) {
     : "Never fabricate facts, houses, or transits; use tentative language; not medical/financial/legal advice.";
 }
 
-async function generateChapterReal(meta, title, chartFacts, factsJson, webReport, isZh, opts) {
+// Enumerate every dot/bracket path in facts that has a non-null leaf-adjacent value.
+// The validator uses resolveFactsPath which accepts intermediate objects too,
+// so we return paths for every scalar/array/object node.
+function enumerateFactsPaths(root, prefix = "", out = []) {
+  if (root === null || root === undefined) return out;
+  if (Array.isArray(root)) {
+    root.forEach((v, i) => enumerateFactsPaths(v, `${prefix}[${i}]`, out));
+    if (prefix) out.push(prefix);
+    return out;
+  }
+  if (typeof root === "object") {
+    for (const [k, v] of Object.entries(root)) {
+      const p = prefix ? `${prefix}.${k}` : k;
+      enumerateFactsPaths(v, p, out);
+    }
+    if (prefix) out.push(prefix);
+    return out;
+  }
+  if (prefix) out.push(prefix);
+  return out;
+}
+
+function pathsForModules(allPaths, allowed) {
+  if (!allowed || allowed.length === 0) return [];
+  const set = new Set(allowed);
+  return allPaths.filter((p) => {
+    const root = p.split(/[.[]/)[0];
+    return set.has(root);
+  });
+}
+
+async function generateChapterReal(meta, title, chartFacts, factsJson, allowedPaths, webReport, isZh, opts) {
   const gateway = createLovableAiGatewayProvider(process.env.LOVABLE_API_KEY);
   const allowedHint =
     opts.allowedFacts && opts.allowedFacts.length > 0
@@ -123,24 +154,32 @@ async function generateChapterReal(meta, title, chartFacts, factsJson, webReport
       ? `目标字数：${opts.targetCharsZh[0]}-${opts.targetCharsZh[1]} 汉字。`
       : `Target length: ${opts.targetCharsZh[0]}-${opts.targetCharsZh[1]} Chinese characters (or equivalent).`
     : "";
+  // Trim the allowed paths list so the prompt stays tractable but still exhaustive
+  // for chapters that need cross-tradition citations.
+  const pathsForPrompt = allowedPaths.slice(0, 220);
+  const pathsBlock = pathsForPrompt.length > 0
+    ? (isZh
+        ? `本章 evidence_refs.path 必须从以下真实存在的路径中选取（不得改写、缩写或组合）：\n${pathsForPrompt.map((p) => `- ${p}`).join("\n")}`
+        : `evidence_refs.path MUST be chosen verbatim from the following existing paths (no renaming or combining):\n${pathsForPrompt.map((p) => `- ${p}`).join("\n")}`)
+    : "";
   const jsonRules = isZh
     ? `严格输出规范：只回复一个 JSON 对象，形如
-{"body":"…纯文本正文，段落之间用\\n\\n分隔…","evidence_refs":[{"path":"bazi.pillars.day","module":"bazi","confidence":"grounded"}]}
+{"body":"…纯文本正文，段落之间用\\n\\n分隔…","evidence_refs":[{"path":"bazi.pillars.day.pillar","module":"bazi","confidence":"grounded"}]}
 - body 只能是段落纯文本，无 Markdown 标题或代码块。
-- evidence_refs.path 必须精确对应 FACTS JSON 中真实存在的字段（点/方括号路径），不得编造。
+- evidence_refs.path 必须严格出现在下方"允许路径"列表内，不得编造、改名或组合。
 - module 只能是 bazi | bazi_luck | ziwei | ziwei_horoscope | western | western_aspects | vedic | vedic_dasha。
 - confidence 只能是 grounded | traditional | reflective。
-- 不允许除 body / evidence_refs 之外的任何键；不允许附加解释文字或 Markdown 代码块外的内容。`
-    : `Strict output contract: reply with a SINGLE JSON object only. body plain text, evidence_refs paths must exist in FACTS JSON.`;
+- 不允许除 body / evidence_refs 之外的任何键；不允许附加解释文字或代码块。`
+    : `Strict output contract: reply with a SINGLE JSON object only. body is plain text. evidence_refs.path MUST appear verbatim in the allowed-paths list below.`;
   const system = isZh
-    ? `你是命运图书馆资深占星与命理长者。撰写一份高级 AI 深度报告的一个章节。事实纪律：只能引用 FACTS JSON 中真实存在的字段；unavailable 模块禁止编造；跨体系结论至少援引两个不同体系；不给医疗/收益/灾祸承诺。
+    ? `你是命运图书馆资深占星与命理长者。撰写一份高级 AI 深度报告的一个章节。事实纪律：只能引用 FACTS JSON 中真实存在的路径（见下方允许列表）；unavailable 模块禁止编造；跨体系结论至少援引两个不同体系；不给医疗/收益/灾祸承诺。
 ${allowedHint}
 ${lenHint}
 
 ${jsonRules}
 
 ${guardrails("zh")}`
-    : `Senior elder writing one premium chapter. Only cite FACTS JSON fields; do not fabricate. Cross-tradition claims need ≥2 traditions. No medical/financial/misfortune promises.
+    : `Senior elder writing one premium chapter. Cite only paths from the allowed list; do not fabricate. Cross-tradition claims need ≥2 traditions. No medical/financial/misfortune promises.
 ${allowedHint}
 ${lenHint}
 
@@ -155,8 +194,10 @@ ${chartFacts || "(none)"}
 FACTS (JSON — the ONLY source of chart data you may cite):
 ${factsJson}
 
+${pathsBlock}
+
 Existing web report (reference, do not copy verbatim):
-${webReport.slice(0, 3000)}`;
+${webReport.slice(0, 2000)}`;
 
   const result = await generateText({
     model: gateway(READING_MODEL_ID),
