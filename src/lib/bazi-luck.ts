@@ -69,8 +69,55 @@ export type BaZiLuck = {
   pillars: BaZiLuckPillar[];
 };
 
-/** Modules that BaZi cannot yet resolve locally from lunar-javascript. */
-export const BAZI_UNAVAILABLE = ["bazi_liu_yue", "bazi_liu_ri", "bazi_liu_shi"] as const;
+/**
+ * v4: 流月 / 流日 / 流时 — deterministic transient ganzhi for a target moment.
+ * All values come straight out of `lunar-javascript`; when `asOfTime` is
+ * omitted we skip `liu_shi` (hour pillar needs a real clock time).
+ */
+export type BaZiTransient = {
+  source: string;
+  as_of_date: string;
+  as_of_time: string | null;
+  /** Solar year ganzhi at the target moment (流年). */
+  liu_nian: string;
+  /** Solar month ganzhi at the target moment (流月, boundary-safe: uses solar terms). */
+  liu_yue: string;
+  /** Day ganzhi at the target moment (流日). */
+  liu_ri: string;
+  /** Hour ganzhi at the target moment (流时) — null when as_of_time is omitted. */
+  liu_shi: string | null;
+};
+
+export function computeBaZiTransient(opts: {
+  asOfDate: string;
+  asOfTime?: string | null;
+}): BaZiTransient | null {
+  const dm = opts.asOfDate.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (!dm) return null;
+  const [, y, mo, d] = dm;
+  let hh = 12, mm = 0;
+  const hasTime = !!opts.asOfTime && /^(\d{1,2}):(\d{2})$/.test(opts.asOfTime);
+  if (hasTime) {
+    const tm = opts.asOfTime!.match(/^(\d{1,2}):(\d{2})$/)!;
+    hh = +tm[1]; mm = +tm[2];
+  }
+  try {
+    const solar = Solar.fromYmdHms(+y, +mo, +d, hh, mm, 0);
+    const lunar = solar.getLunar();
+    return {
+      source: "lunar-javascript@1.7.7 (solar-term month, ganzhi day/hour)",
+      as_of_date: opts.asOfDate,
+      as_of_time: hasTime ? opts.asOfTime! : null,
+      liu_nian: lunar.getYearInGanZhi(),
+      liu_yue: lunar.getMonthInGanZhi(),
+      liu_ri: lunar.getDayInGanZhi(),
+      liu_shi: hasTime ? lunar.getTimeInGanZhi() : null,
+    };
+  } catch (e) {
+    console.warn("bazi transient compute failed", e);
+    return null;
+  }
+}
 
 type YunLike = {
   getStartSolar: () => { toYmd: () => string; getYear: () => number; getMonth: () => number; getDay: () => number };
