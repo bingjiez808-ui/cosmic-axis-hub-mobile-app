@@ -38,6 +38,7 @@ import { enforceRateLimit } from "./rate-limit.server";
 import { isEmailVerified, assertEmailVerifiedOrAdmin } from "./reports-store.functions";
 import { buildCalculationSnapshot, missingSystems, type CalculationSnapshot } from "./calc-snapshot";
 import type { EvidenceRef, V3ChapterMeta } from "./premium-chapters-v3";
+import { PREMIUM_REPORT_REVISION } from "./premium-chapters-v3";
 import {
   buildEngineInput,
   computeContentHash,
@@ -1345,7 +1346,11 @@ function buildEngineInputForChart(chart: {
     lang: (chart.lang as "en" | "zh") ?? "en",
     gender,
   };
-  return buildEngineInput(chartFacts, stableSnapshot, DEFAULT_VERSIONS);
+  // Premium reports override prompt_version with the manifest revision so
+  // that bumping the revision creates a NEW premium_pdf_reports row (via the
+  // unique input_hash) and old completed rows stay immutable.
+  const versions = { ...DEFAULT_VERSIONS, prompt_version: PREMIUM_REPORT_REVISION };
+  return buildEngineInput(chartFacts, stableSnapshot, versions);
 }
 
 type PremiumReportStatus = "pending" | "generating" | "partial" | "completed" | "failed";
@@ -1554,31 +1559,76 @@ function chapterConfidence(refs: Array<{ confidence: string }>): "grounded" | "t
 
 function deterministicEvidenceRefs(meta: V3ChapterMeta): EvidenceRef[] {
   if (meta.allowed_facts.length === 0) return [];
-  if (meta.kind === "cross") {
-    return [
-      { path: "bazi.pillars.day", module: "bazi", confidence: "grounded" },
-      { path: "western.sun", module: "western", confidence: "grounded" },
-    ];
+  const pool: EvidenceRef[] = [
+    { path: "bazi.pillars.day", module: "bazi", confidence: "grounded" },
+    { path: "bazi.pillars.year", module: "bazi", confidence: "grounded" },
+    { path: "ziwei.five_elements_class", module: "ziwei", confidence: "grounded" },
+    { path: "ziwei.palaces[0]", module: "ziwei", confidence: "traditional" },
+    { path: "western.sun", module: "western", confidence: "grounded" },
+    { path: "western.moon", module: "western", confidence: "grounded" },
+    { path: "vedic.moon", module: "vedic", confidence: "grounded" },
+    { path: "bazi_luck.current", module: "bazi_luck", confidence: "grounded" },
+    { path: "ziwei_horoscope.year", module: "ziwei_horoscope", confidence: "grounded" },
+    { path: "vedic_dasha.current", module: "vedic_dasha", confidence: "grounded" },
+    { path: "western_aspects.list[0]", module: "western_aspects", confidence: "grounded" },
+  ];
+  const allowed = pool.filter((r) => meta.allowed_facts.includes(r.module));
+  const minRefs = meta.min_evidence_refs ?? (meta.kind === "cross" ? 2 : 1);
+  const minVar = meta.min_module_variety ?? (meta.kind === "cross" ? 2 : 0);
+  const picks: EvidenceRef[] = [];
+  const seenModules = new Set<string>();
+  for (const r of allowed) {
+    if (!seenModules.has(r.module)) { picks.push(r); seenModules.add(r.module); }
+    if (picks.length >= Math.max(minRefs, minVar) && seenModules.size >= minVar) break;
   }
-  const mod = meta.allowed_facts[0];
-  const pathByModule: Record<string, string> = {
-    bazi: "bazi.pillars.day",
-    bazi_luck: "bazi.pillars.day",
-    ziwei: "ziwei.five_elements_class",
-    ziwei_horoscope: "ziwei.five_elements_class",
-    western: "western.sun",
-    western_aspects: "western.sun",
-    vedic: "vedic.moon",
-    vedic_dasha: "vedic.moon",
-  };
-  return [{ path: pathByModule[mod] ?? "western.sun", module: mod, confidence: "grounded" }];
+  for (const r of allowed) {
+    if (picks.length >= Math.max(minRefs, minVar)) break;
+    if (!picks.includes(r)) picks.push(r);
+  }
+  if (picks.length === 0 && allowed.length > 0) picks.push(allowed[0]);
+  return picks;
 }
 
 function deterministicChapterBody(meta: V3ChapterMeta, title: string, isZh: boolean) {
-  if (isZh) {
-    return `${title}\n\n这是测试模式生成的稳定章节内容，用于验证高级 AI 综合报告的保存、续跑与阅读流程。章节只引用本地已计算的命盘事实，不调用真实 AI，不产生额外费用。\n\n本章键为 ${meta.key}，序号为 ${meta.index + 1}。`;
+  const parts: string[] = [];
+  parts.push(title);
+  parts.push("");
+  parts.push(
+    isZh
+      ? `本章为测试模式下的确定性内容，仅解释本地事实（章节键 ${meta.key}，序号 ${meta.index + 1}）。不调用任何真实 AI，也不产生费用。`
+      : `Deterministic test-mode content explaining local facts only (chapter ${meta.key}, order ${meta.index + 1}). No live AI call, no charge.`,
+  );
+  if (meta.required_sections?.length) {
+    for (const sec of meta.required_sections) {
+      const marker = isZh ? sec.marker_zh : sec.marker_en;
+      parts.push("");
+      parts.push(`## ${marker}`);
+      parts.push(
+        isZh
+          ? `围绕「${marker}」，结合命盘事实给出现实表现、条件反证与建议；置信度依据 evidence_refs 计算。`
+          : `Around "${marker}", combine chart facts to give real-world signs, counter-evidence, and suggestions; confidence follows evidence_refs.`,
+      );
+    }
   }
-  return `${title}\n\nThis deterministic test chapter validates the premium report save, resume, and reader flow. It cites only locally computed chart facts, calls no live AI, and creates no real charge.\n\nChapter key: ${meta.key}; order: ${meta.index + 1}.`;
+  if (meta.required_tables?.length) {
+    for (const tab of meta.required_tables) {
+      const t = isZh ? tab.title_zh : tab.title_en;
+      parts.push("");
+      parts.push(`### ${t}`);
+      if (isZh) {
+        parts.push("| 维度 | 表现 | 条件 | 建议 |");
+        parts.push("| --- | --- | --- | --- |");
+        parts.push("| 主线 | 由事实推导的稳定倾向 | 需要满足的现实条件 | 立即可行的一步 |");
+        parts.push("| 变量 | 受行运影响的波动区间 | 触发/减弱的条件 | 观察指标 |");
+      } else {
+        parts.push("| Dimension | Pattern | Condition | Suggestion |");
+        parts.push("| --- | --- | --- | --- |");
+        parts.push("| Main | Stable tendency from facts | Real-world precondition | Immediate step |");
+        parts.push("| Variable | Range shaped by transits | Trigger / dampener | Observation metric |");
+      }
+    }
+  }
+  return parts.join("\n");
 }
 
 async function buildAggregateReport(opts: {
