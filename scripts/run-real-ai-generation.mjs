@@ -151,17 +151,86 @@ function enumerateFactsPaths(root, prefix = "", out = []) {
   return out;
 }
 
+// Map a facts-tree path to the *most specific* allowed module tag.
+function classifyPathModule(path) {
+  if (path.startsWith("bazi.luck")) return "bazi_luck";
+  if (path.startsWith("bazi.")) return "bazi";
+  if (path === "bazi") return "bazi";
+  if (path.startsWith("ziwei.horoscope")) return "ziwei_horoscope";
+  if (path.startsWith("ziwei.")) return "ziwei";
+  if (path === "ziwei") return "ziwei";
+  if (path.startsWith("western.aspects")) return "western_aspects";
+  if (path.startsWith("western.")) return "western";
+  if (path === "western") return "western";
+  if (path.startsWith("vedic.mahadasha") || path.startsWith("vedic.dasha")) return "vedic_dasha";
+  if (path.startsWith("vedic.")) return "vedic";
+  if (path === "vedic") return "vedic";
+  return null;
+}
+
 function pathsForModules(allPaths, allowed) {
   if (!allowed || allowed.length === 0) return [];
   const set = new Set(allowed);
-  return allPaths.filter((p) => {
-    const root = p.split(/[.[]/)[0];
-    return set.has(root);
-  });
+  return allPaths.filter((p) => set.has(classifyPathModule(p)));
+}
+
+// Deterministic evidence-ref chooser: for a given chapter meta, pick real
+// paths from `facts` (values are non-null after resolveFactsPath) split
+// across the meta.allowed_facts modules. For cross chapters, guarantees
+// ≥2 distinct modules. Purely deterministic; never mutates facts.
+function chooseDeterministicRefs(meta, facts, allFactsPaths) {
+  const allowed = meta.allowed_facts ?? [];
+  if (allowed.length === 0) return [];
+
+  // Group real (resolvable, non-null, path-shape valid) paths by module.
+  const PATH_SHAPE = /^[a-z_][a-z0-9_]*(?:\.[a-z_][a-z0-9_]*|\[\d+\])*$/i;
+  const byModule = new Map();
+  for (const p of allFactsPaths) {
+    if (!PATH_SHAPE.test(p)) continue;
+    const mod = classifyPathModule(p);
+    if (!mod || !allowed.includes(mod)) continue;
+    const v = resolveFactsPath(facts, p);
+    if (v === null || v === undefined) continue;
+    // Prefer scalar-leaf paths (string/number/boolean) for cleaner citations.
+    const isScalar = typeof v === "string" || typeof v === "number" || typeof v === "boolean";
+    if (!isScalar) continue;
+    if (!byModule.has(mod)) byModule.set(mod, []);
+    byModule.get(mod).push(p);
+  }
+  // Deterministic stable order: sort each module's list.
+  for (const list of byModule.values()) list.sort();
+
+  const minRefs = meta.min_evidence_refs ?? (meta.kind === "cross" ? 2 : 1);
+  const isCross = meta.kind === "cross";
+  const modulesPresent = allowed.filter((m) => byModule.has(m));
+
+  const refs = [];
+  if (isCross) {
+    // Pick one from each of the first 2+ distinct modules, then round-robin.
+    for (const mod of modulesPresent.slice(0, Math.max(2, minRefs))) {
+      const list = byModule.get(mod);
+      if (list && list.length > 0) {
+        refs.push({ path: list[0], module: mod, confidence: "grounded" });
+      }
+    }
+  }
+  // Fill to minRefs (or minRefs+1) by round-robin across modules.
+  let idx = 0;
+  while (refs.length < Math.max(minRefs, isCross ? 3 : 2) && modulesPresent.length > 0) {
+    const mod = modulesPresent[idx % modulesPresent.length];
+    const list = byModule.get(mod) ?? [];
+    const used = new Set(refs.filter((r) => r.module === mod).map((r) => r.path));
+    const next = list.find((p) => !used.has(p));
+    if (next) refs.push({ path: next, module: mod, confidence: "grounded" });
+    idx += 1;
+    if (idx > 32) break; // safety
+  }
+  return refs;
 }
 
 async function generateChapterReal(meta, title, chartFacts, factsJson, allowedPaths, webReport, isZh, opts) {
   const gateway = createLovableAiGatewayProvider(process.env.LOVABLE_API_KEY);
+  const modelId = opts.modelId || READING_MODEL_ID;
   const allowedHint =
     opts.allowedFacts && opts.allowedFacts.length > 0
       ? isZh
@@ -175,33 +244,27 @@ async function generateChapterReal(meta, title, chartFacts, factsJson, allowedPa
       ? `目标字数：${opts.targetCharsZh[0]}-${opts.targetCharsZh[1]} 汉字。`
       : `Target length: ${opts.targetCharsZh[0]}-${opts.targetCharsZh[1]} Chinese characters (or equivalent).`
     : "";
-  // Trim the allowed paths list so the prompt stays tractable but still exhaustive
-  // for chapters that need cross-tradition citations.
   const pathsForPrompt = allowedPaths.slice(0, 220);
   const pathsBlock = pathsForPrompt.length > 0
     ? (isZh
-        ? `本章 evidence_refs.path 必须从以下真实存在的路径中选取（不得改写、缩写或组合）：\n${pathsForPrompt.map((p) => `- ${p}`).join("\n")}`
-        : `evidence_refs.path MUST be chosen verbatim from the following existing paths (no renaming or combining):\n${pathsForPrompt.map((p) => `- ${p}`).join("\n")}`)
+        ? `本章可引用以下真实存在的路径（服务端将对最终 evidence_refs 做确定性校正，请只描述由这些路径体现的事实，不必强求完美列出）：\n${pathsForPrompt.map((p) => `- ${p}`).join("\n")}`
+        : `Allowed paths (server post-corrects evidence_refs deterministically):\n${pathsForPrompt.map((p) => `- ${p}`).join("\n")}`)
     : "";
   const jsonRules = isZh
-    ? `严格输出规范：只回复一个 JSON 对象，形如
-{"body":"…纯文本正文，段落之间用\\n\\n分隔…","evidence_refs":[{"path":"bazi.pillars.day.pillar","module":"bazi","confidence":"grounded"}]}
-- body 只能是段落纯文本，无 Markdown 标题或代码块。
-- evidence_refs.path 必须严格出现在下方"允许路径"列表内，不得编造、改名或组合。
-- evidence_refs 数组最多 4 条，且路径格式必须完全匹配 /^[a-z_][a-z0-9_]*(?:\\.[a-z_][a-z0-9_]*|\\[\\d+\\])*$/i（点分或方括号索引，不含空格或连字符）。对于跨体系章节（kind=cross），evidence_refs 必须来自至少两个不同 module。禁止使用不在允许模块列表内的 module 值。以下是本章允许的 module 列表，evidence_refs 中的每个 module 值必须完全属于此列表，不得出现其它值。
-- module 只能是 bazi | bazi_luck | ziwei | ziwei_horoscope | western | western_aspects | vedic | vedic_dasha。
-- confidence 只能是 grounded | traditional | reflective。
-- 不允许除 body / evidence_refs 之外的任何键；不允许附加解释文字或代码块。`
-    : `Strict output contract: reply with a SINGLE JSON object only. body is plain text. evidence_refs.path MUST appear verbatim in the allowed-paths list below.`;
+    ? `严格输出规范：只回复一个 JSON 对象 {"body":"…","evidence_refs":[]}
+- body 段落纯文本，段间用两个换行分隔；无 Markdown 标题或代码块。
+- evidence_refs 数组可以留空（服务端会以真实路径补齐）；若列出，module 只能是允许列表内值。
+- 不允许除 body / evidence_refs 之外的任何键。`
+    : `Reply with a single JSON object {"body":"…","evidence_refs":[]}. Body is plain paragraphs. evidence_refs MAY be empty; server corrects them.`;
   const system = isZh
-    ? `你是命运图书馆资深占星与命理长者。撰写一份高级 AI 深度报告的一个章节。事实纪律：只能引用 FACTS JSON 中真实存在的路径（见下方允许列表）；unavailable 模块禁止编造；跨体系结论至少援引两个不同体系；不给医疗/收益/灾祸承诺。
+    ? `你是命运图书馆资深占星与命理长者。撰写一份高级 AI 深度报告的一个章节。事实纪律：所有对命盘的具体描述必须与 FACTS JSON 一致；不得编造宫头/流运/相位；跨体系结论至少讨论两个不同体系；不给医疗/收益/灾祸承诺。
 ${allowedHint}
 ${lenHint}
 
 ${jsonRules}
 
 ${guardrails("zh")}`
-    : `Senior elder writing one premium chapter. Cite only paths from the allowed list; do not fabricate. Cross-tradition claims need ≥2 traditions. No medical/financial/misfortune promises.
+    : `Senior elder writing one premium chapter. Every chart-specific claim must align with FACTS. Cross-tradition chapters must discuss ≥2 traditions. No medical/financial/misfortune promises.
 ${allowedHint}
 ${lenHint}
 
@@ -221,13 +284,17 @@ ${pathsBlock}
 Existing web report (reference, do not copy verbatim):
 ${webReport.slice(0, 2000)}`;
 
-  const result = await generateText({
-    model: gateway(READING_MODEL_ID),
+  const isOpenAi = modelId.startsWith("openai/");
+  const genOpts = {
+    model: gateway(modelId),
     system,
     prompt,
-    temperature: 0,
     ...(opts.maxOutputTokens ? { maxOutputTokens: opts.maxOutputTokens } : {}),
-  });
+  };
+  // OpenAI reasoning models reject `temperature`; other providers accept 0.
+  if (!isOpenAi) genOpts.temperature = 0;
+
+  const result = await generateText(genOpts);
   const u = result.usage;
   const usage = u
     ? {
@@ -241,8 +308,10 @@ ${webReport.slice(0, 2000)}`;
     text: parsed.value.body.trim().slice(0, 20000),
     evidence_refs: parsed.value.evidence_refs,
     usage,
+    modelUsed: modelId,
   };
 }
+
 
 // --- main ---------------------------------------------------------------
 
