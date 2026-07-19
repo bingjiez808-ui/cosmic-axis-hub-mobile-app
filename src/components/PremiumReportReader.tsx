@@ -16,6 +16,7 @@
  */
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 import { useLang } from "@/lib/i18n";
 import {
@@ -313,7 +314,12 @@ export function PremiumReportReader({
         ? `— / ${chapters.length}`
         : "";
 
-  return (
+  // Portal to document.body so ancestor transforms (framer-motion in
+  // AccountModal etc.) can't create a containing block that squashes our
+  // fixed-position reader. Only render on the client.
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
@@ -688,7 +694,8 @@ export function PremiumReportReader({
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }
 
@@ -769,26 +776,11 @@ function FactsPanel({ facts, lang }: { facts: PremiumFacts; lang: "zh" | "en" })
         </div>
       )}
 
-      {facts.unavailable.length > 0 && (
-        <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.02] p-3 text-[12px] text-stone-warm/60">
-          <p className="mb-2 text-[10px] uppercase tracking-[0.28em] text-stone-warm/50">
-            {pick(FACTS_TXT.unavailable, lang)}
-          </p>
-          <ul className="flex flex-wrap gap-2">
-            {facts.unavailable.map((k) => {
-              const lbl = UNAVAILABLE_LABELS[k];
-              return (
-                <li
-                  key={k}
-                  className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-[11px] text-stone-warm/60"
-                >
-                  {lbl ? pick(lbl, lang) : k}
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      )}
+      {/* Diagnostic "unavailable modules" chips are hidden from customer
+          view — they leak internal engine terminology. Kept in facts for
+          admin diagnostics only. Customer-facing note: current report
+          uses whole-sign houses. */}
+
     </section>
   );
 }
