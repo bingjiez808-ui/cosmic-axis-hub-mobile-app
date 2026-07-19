@@ -543,8 +543,6 @@ async function main() {
     stats.totalOutputTokens += usage.output_tokens;
 
 
-    stats.totalInputTokens += usage.input_tokens;
-    stats.totalOutputTokens += usage.output_tokens;
 
     if (providerError) {
       console.log(`[fail ${String(meta.index + 1).padStart(2, "0")}/24] ${meta.key}: ${providerError.slice(0, 200)}`);
