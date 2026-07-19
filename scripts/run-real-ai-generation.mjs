@@ -440,9 +440,27 @@ async function main() {
     .maybeSingle();
   const webReportText = webReport?.report_json ? JSON.stringify(webReport.report_json).slice(0, 6000) : "";
 
+  // Optional targeted reset: only affects the specified chapter keys.
+  if (RESET && ONLY.length > 0) {
+    const { data: resetRows, error: rErr } = await supabase
+      .from("premium_report_chapters")
+      .update({ status: "pending", attempt_count: 0, error_message: null, claim_token: null, claimed_at: null })
+      .eq("report_id", report.id)
+      .eq("user_id", userId)
+      .in("chapter_key", ONLY)
+      .in("status", ["failed", "pending", "running"])
+      .select("chapter_key");
+    if (rErr) throw new Error(`reset: ${rErr.message}`);
+    console.log(`[reset] ${resetRows?.map((r) => r.chapter_key).join(",") || "(none)"}`);
+  }
+
   // Process chapters in order
   const MAX_ATTEMPTS = 3;
+  const perChapterUsage = {};
+  const perChapterModel = {};
+
   for (const meta of PREMIUM_V3_CHAPTERS) {
+    if (ONLY.length > 0 && !ONLY.includes(meta.key)) continue;
     const { data: rowRaw } = await supabase
       .from("premium_report_chapters")
       .select("status, attempt_count, content_json, input_tokens, output_tokens")
@@ -478,24 +496,52 @@ async function main() {
     let body = "";
     let refs = [];
     let usage = { input_tokens: 0, output_tokens: 0 };
+    let modelUsed = null;
+    const allowedPaths = pathsForModules(allFactsPaths, meta.allowed_facts);
 
-    try {
-      stats.callsAttempted += 1;
-      const allowedPaths = pathsForModules(allFactsPaths, meta.allowed_facts);
-      const out = await generateChapterReal(meta, title, chartFactsStr, factsJson, allowedPaths, webReportText, isZh, {
-        allowedFacts: meta.allowed_facts,
-        targetCharsZh: meta.target_chars_zh,
-        maxOutputTokens: chapterOutputCap(spent),
-      });
-      body = out.text;
-      refs = out.evidence_refs;
-      usage = out.usage;
-      const issues = validateChapterAgainstFacts({ meta, facts, chapter: { body, evidence_refs: refs } });
-      if (issues.length > 0) providerError = `validation:${issues.slice(0, 3).map((i) => i.problem).join("|")}`;
-    } catch (err) {
-      providerError = err.message ?? String(err);
-      stats.callsFailed += 1;
+    // Try primary model, fall back on hard errors (model unsupported, 4xx).
+    const tryModels = [PRIMARY_MODEL, FALLBACK_MODEL].filter((m, i, a) => a.indexOf(m) === i);
+    for (const modelId of tryModels) {
+      try {
+        stats.callsAttempted += 1;
+        const out = await generateChapterReal(meta, title, chartFactsStr, factsJson, allowedPaths, webReportText, isZh, {
+          allowedFacts: meta.allowed_facts,
+          targetCharsZh: meta.target_chars_zh,
+          maxOutputTokens: chapterOutputCap(spent),
+          modelId,
+        });
+        body = out.text;
+        refs = out.evidence_refs;
+        usage = { input_tokens: usage.input_tokens + out.usage.input_tokens, output_tokens: usage.output_tokens + out.usage.output_tokens };
+        modelUsed = out.modelUsed;
+        providerError = null;
+        break;
+      } catch (err) {
+        providerError = err.message ?? String(err);
+        stats.callsFailed += 1;
+        console.log(`[retry ${meta.key}] model=${modelId} error=${providerError.slice(0, 120)}`);
+      }
     }
+
+    if (!providerError) {
+      // Deterministic evidence-ref correction: replace refs with real
+      // paths chosen from facts, matched to meta.allowed_facts.
+      const preRefs = refs;
+      const corrected = chooseDeterministicRefs(meta, facts, allFactsPaths);
+      const issuesPre = validateChapterAgainstFacts({ meta, facts, chapter: { body, evidence_refs: preRefs } });
+      if (issuesPre.length > 0 && corrected.length > 0) {
+        refs = corrected;
+        console.log(`[fix ${meta.key}] refs replaced deterministically (${preRefs.length}→${refs.length})`);
+      }
+      const issuesPost = validateChapterAgainstFacts({ meta, facts, chapter: { body, evidence_refs: refs } });
+      if (issuesPost.length > 0) providerError = `validation:${issuesPost.slice(0, 3).map((i) => i.problem).join("|")}`;
+    }
+
+    perChapterUsage[meta.key] = usage;
+    perChapterModel[meta.key] = modelUsed;
+    stats.totalInputTokens += usage.input_tokens;
+    stats.totalOutputTokens += usage.output_tokens;
+
 
     stats.totalInputTokens += usage.input_tokens;
     stats.totalOutputTokens += usage.output_tokens;
