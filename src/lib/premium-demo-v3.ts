@@ -65,22 +65,30 @@ export const PREMIUM_V3_DEMO_SAMPLE: V3ReportContent = {
     subtitle: "DEMO SAMPLE — NOT A REAL USER",
   },
   chapters: PREMIUM_V3_CHAPTERS.map((meta) => {
-    const body = REPRESENTATIVE_BODIES[meta.key] ?? shortPlaceholder(meta.title_zh);
-    const evidence_refs =
-      meta.allowed_facts.length === 0
-        ? []
-        : meta.kind === "cross"
-          ? [
-              { path: "bazi.pillars.day", module: "bazi" as const, confidence: "grounded" as const },
-              { path: "ziwei.palaces[0].main_stars", module: "ziwei" as const, confidence: "grounded" as const },
-            ]
-          : meta.kind === "system"
-            ? [
-                { path: `${meta.allowed_facts[0]}.summary`, module: meta.allowed_facts[0], confidence: "grounded" as const },
-              ]
-            : [
-                { path: `${meta.allowed_facts[0]}.summary`, module: meta.allowed_facts[0], confidence: "traditional" as const },
-              ];
+    const modulePool = [
+      { path: "bazi.pillars.day", module: "bazi" as const, confidence: "grounded" as const },
+      { path: "bazi.pillars.year", module: "bazi" as const, confidence: "grounded" as const },
+      { path: "ziwei.palaces[0].main_stars", module: "ziwei" as const, confidence: "grounded" as const },
+      { path: "western.sun", module: "western" as const, confidence: "grounded" as const },
+      { path: "western.moon", module: "western" as const, confidence: "grounded" as const },
+      { path: "vedic.moon", module: "vedic" as const, confidence: "grounded" as const },
+      { path: "bazi_luck.current", module: "bazi_luck" as const, confidence: "grounded" as const },
+      { path: "ziwei_horoscope.year", module: "ziwei_horoscope" as const, confidence: "grounded" as const },
+      { path: "vedic_dasha.current", module: "vedic_dasha" as const, confidence: "grounded" as const },
+      { path: "western_aspects.list[0]", module: "western_aspects" as const, confidence: "grounded" as const },
+      { path: "western_aspects.list[1]", module: "western_aspects" as const, confidence: "grounded" as const },
+    ];
+    const allowed = meta.allowed_facts.length === 0 ? [] : modulePool.filter((r) => meta.allowed_facts.includes(r.module));
+    const minRefs = Math.max(meta.min_evidence_refs ?? 0, meta.min_module_variety ?? 0, meta.kind === "cross" ? 2 : meta.allowed_facts.length > 0 ? 1 : 0);
+    const picks: typeof modulePool = [];
+    const seen = new Set<string>();
+    for (const r of allowed) if (!seen.has(r.module)) { picks.push(r); seen.add(r.module); }
+    for (const r of allowed) { if (picks.length >= minRefs) break; if (!picks.includes(r)) picks.push(r); }
+    const evidence_refs = picks;
+    const secBody = (meta.required_sections ?? []).map((s) => `## ${s.marker_zh}\n围绕「${s.marker_zh}」展开的示例段落，用以支撑事实解释。`).join("\n\n");
+    const tabBody = (meta.required_tables ?? []).map((t) => `### ${t.title_zh}\n| 维度 | 表现 | 建议 |\n| --- | --- | --- |\n| 主线 | 由事实推导 | 立即可行的一步 |`).join("\n\n");
+    const bodyBase = REPRESENTATIVE_BODIES[meta.key] ?? shortPlaceholder(meta.title_zh);
+    const body = [bodyBase, secBody, tabBody].filter(Boolean).join("\n\n");
     return { key: meta.key, title: meta.title_zh, body, evidence_refs };
   }),
   budget: {
