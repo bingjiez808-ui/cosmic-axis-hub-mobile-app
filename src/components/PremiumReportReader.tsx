@@ -405,7 +405,7 @@ export function PremiumReportReader({
             <div className="flex min-h-0 flex-1">
               {/* Sidebar TOC (desktop) */}
               {content && (
-                <aside className="hidden w-64 flex-none overflow-y-auto border-r border-white/5 px-5 py-6 md:block">
+                <aside className="hidden w-[280px] flex-none overflow-y-auto overflow-x-hidden border-r border-white/5 px-5 py-6 md:block">
                   <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/60">
                     {pick(TXT.toc, lang)}
                   </p>
