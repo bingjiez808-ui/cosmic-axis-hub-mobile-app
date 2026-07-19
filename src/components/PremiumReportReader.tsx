@@ -29,7 +29,6 @@ import {
 import type { PremiumFacts, BaZiElement } from "@/lib/premium-facts";
 import {
   computeScrollProgress,
-  formatAuditLine,
   neighborChapters,
 } from "@/lib/reader-nav";
 
@@ -291,34 +290,6 @@ export function PremiumReportReader({
       : chapters.length > 0
         ? `— / ${chapters.length}`
         : "";
-  const auditLine = content
-    ? formatAuditLine(
-        {
-          generated_at: content.meta.generated_at,
-          report_schema_version: content.meta.report_schema_version ?? null,
-          prompt_version: content.meta.prompt_version,
-          model_id: null,
-          calculation_version: null,
-        },
-        lang,
-      )
-    : "";
-  // Full audit line (schema/prompt/model/calc) is rendered below the
-  // cover so it's honest but never intrusive; header keeps only the
-  // date to avoid clutter.
-  const fullAuditLine = content
-    ? formatAuditLine(
-        {
-          generated_at: content.meta.generated_at,
-          report_schema_version: content.meta.report_schema_version ?? null,
-          prompt_version: content.meta.prompt_version,
-          model_id: (content.meta as { model_id?: string | null }).model_id ?? null,
-          calculation_version:
-            (content.meta as { calculation_version?: string | null }).calculation_version ?? null,
-        },
-        lang,
-      )
-    : "";
 
   return (
     <AnimatePresence>
@@ -327,7 +298,7 @@ export function PremiumReportReader({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[80] flex items-stretch bg-obsidian/85 backdrop-blur-md"
+          className="fixed inset-0 z-[80] flex items-stretch justify-center overflow-hidden bg-obsidian/85 backdrop-blur-md md:items-center"
           onClick={onClose}
         >
           <motion.div
@@ -339,12 +310,12 @@ export function PremiumReportReader({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 24, scale: 0.98 }}
             transition={{ duration: 0.35, ease: [0.32, 0.72, 0, 1] }}
-            className="relative m-0 flex h-[100dvh] w-full flex-col bg-obsidian text-stone-warm focus:outline-none md:m-4 md:h-[calc(100dvh-2rem)] md:rounded-3xl md:border md:border-gold-dust/20 md:shadow-2xl"
+            className="relative m-0 flex h-[100dvh] w-full flex-col overflow-hidden bg-obsidian text-stone-warm focus:outline-none md:m-4 md:h-[92dvh] md:w-full md:max-w-[1320px] md:min-w-0 md:rounded-3xl md:border md:border-gold-dust/20 md:shadow-2xl"
             onClick={(e) => e.stopPropagation()}
             tabIndex={-1}
           >
-            {/* Fixed top bar */}
-            <header className="relative flex flex-none items-center gap-3 border-b border-white/5 px-4 py-3 md:px-8 md:py-4">
+            {/* Sticky compact top bar (title + date + close). Progress bar sits at the bottom edge. */}
+            <header className="relative flex flex-none items-center gap-3 border-b border-white/5 bg-obsidian/95 px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur md:px-6 md:py-3">
               <button
                 ref={tocButtonRef}
                 type="button"
@@ -367,21 +338,15 @@ export function PremiumReportReader({
                   {heading || (lang === "zh" ? "高级 AI 深度报告" : "Premium AI Deep Reading")}
                 </h2>
               </div>
-              {positionLabel && (
-                <p
-                  aria-live="polite"
-                  className="hidden shrink-0 text-[10px] uppercase tracking-[0.28em] text-stone-warm/50 md:block"
-                >
-                  {pick(TXT.position, lang)} {positionLabel}
+              {content?.meta.generated_at && (
+                <p className="hidden shrink-0 text-[10px] uppercase tracking-[0.28em] text-stone-warm/45 md:block">
+                  {pick(TXT.meta, lang)} · {fmtDate(content.meta.generated_at, lang)}
                 </p>
               )}
-              <p className="hidden text-[10px] uppercase tracking-[0.28em] text-stone-warm/40 md:block">
-                {auditLine}
-              </p>
               <button
                 type="button"
                 onClick={onClose}
-                className="min-h-[44px] rounded-full border border-white/10 px-3 py-1.5 text-[10px] uppercase tracking-[0.28em] text-stone-warm/70 hover:border-gold-dust/40 hover:text-gold-dust"
+                className="min-h-[44px] shrink-0 rounded-full border border-white/10 px-3 py-1.5 text-[10px] uppercase tracking-[0.28em] text-stone-warm/70 hover:border-gold-dust/40 hover:text-gold-dust"
                 aria-label={pick(TXT.close, lang)}
               >
                 {pick(TXT.close, lang)} ✕
@@ -411,7 +376,7 @@ export function PremiumReportReader({
             <div className="flex min-h-0 flex-1">
               {/* Sidebar TOC (desktop) */}
               {content && (
-                <aside className="hidden w-64 flex-none overflow-y-auto border-r border-white/5 px-5 py-6 md:block">
+                <aside className="hidden w-[280px] flex-none overflow-y-auto overflow-x-hidden border-r border-white/5 px-5 py-6 md:block">
                   <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/60">
                     {pick(TXT.toc, lang)}
                   </p>
@@ -460,10 +425,10 @@ export function PremiumReportReader({
                 </aside>
               )}
 
-              {/* Article */}
+              {/* Article — single scroll container */}
               <div
                 ref={bodyRef}
-                className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-5 py-6 md:px-10 md:py-10"
+                className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-5 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] md:px-10 md:py-10"
               >
                 {!content && !errored && (
                   <p className="text-center text-sm text-stone-warm/60">{pick(TXT.loading, lang)}</p>
@@ -474,21 +439,20 @@ export function PremiumReportReader({
                   </p>
                 )}
                 {content && (
-                  <article className="mx-auto max-w-3xl">
-                    {/* Cover / summary */}
+                  <article
+                    className="mx-auto w-full max-w-[68ch] text-[16px] leading-[1.8] md:text-[17px]"
+                  >
+                    {/* Cover / summary — customer view, no schema/prompt strings */}
                     <section className="mb-8 border-b border-white/5 pb-6">
                       <p className="text-[10px] uppercase tracking-[0.36em] text-gold-dust/70">
-                        {pick(TXT.meta, lang)} · {auditLine || "—"}
+                        {pick(TXT.meta, lang)} · {fmtDate(content.meta.generated_at, lang)}
                       </p>
-                      <h1 className="mt-2 font-serif text-2xl italic text-stone-warm md:text-3xl">
+                      <h1 className="mt-2 font-serif text-[clamp(1.5rem,4.5vw,2rem)] italic text-stone-warm">
                         {content.cover.title}
                       </h1>
-                      <p className="mt-1 text-sm text-stone-warm/70">{content.cover.subtitle}</p>
-                      {fullAuditLine && fullAuditLine !== auditLine && (
-                        <p className="mt-3 text-[10.5px] leading-relaxed text-stone-warm/40 [overflow-wrap:break-word]">
-                          {fullAuditLine}
-                        </p>
-                      )}
+                      <p className="mt-1 text-[14px] leading-relaxed text-stone-warm/70 md:text-[15px]">
+                        {content.cover.subtitle}
+                      </p>
                     </section>
 
                     {progressData &&
@@ -524,91 +488,95 @@ export function PremiumReportReader({
                         </section>
                       )}
 
-
                     {/* Locally-derived facts (v2+). Absent on legacy rows. */}
                     {content.facts && <FactsPanel facts={content.facts} lang={lang} />}
 
-                    {chapters.map((ch, i) => {
-                      const { prev, next } = neighborChapters(chapters, ch.key);
-                      return (
-                        <section
-                          key={ch.key}
-                          data-ch={ch.key}
-                          className="mb-10 scroll-mt-24"
+                    {chapters.map((ch, i) => (
+                      <section
+                        key={ch.key}
+                        data-ch={ch.key}
+                        className="mb-10 scroll-mt-24"
+                      >
+                        <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+                          {String(i + 1).padStart(2, "0")} / {String(chapters.length).padStart(2, "0")}
+                        </p>
+                        <h3
+                          data-ch-heading
+                          className="mt-1 font-serif text-[clamp(1.25rem,3.5vw,1.6rem)] italic text-gold-light outline-none focus-visible:ring-2 focus-visible:ring-gold-dust/60"
                         >
-                          <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
-                            {String(i + 1).padStart(2, "0")} / {String(chapters.length).padStart(2, "0")}
-                          </p>
-                          <h3
-                            data-ch-heading
-                            className="mt-1 font-serif text-xl italic text-gold-light outline-none focus-visible:ring-2 focus-visible:ring-gold-dust/60 md:text-2xl"
-                          >
-                            {ch.title}
-                          </h3>
-                          <div className="mt-3 space-y-4 text-[15px] leading-[1.75] text-stone-warm/85 [overflow-wrap:break-word]">
-                            {ch.body.split(/\n\s*\n/).map((para, k) => (
-                              <p key={k}>{para.trim()}</p>
-                            ))}
-                          </div>
-                          {ch.evidence_refs && ch.evidence_refs.length > 0 && (
-                            <details className="mt-4 rounded-2xl border border-white/10 bg-white/[0.02] px-3 py-2 text-[12px] text-stone-warm/75">
-                              <summary className="cursor-pointer select-none list-none text-[10px] uppercase tracking-[0.28em] text-gold-dust/70 [&::-webkit-details-marker]:hidden">
-                                {lang === "zh" ? "证据溯源" : "Evidence"} · {ch.evidence_refs.length}
-                              </summary>
-                              <ul className="mt-2 space-y-1.5">
-                                {ch.evidence_refs.map((r, k) => (
-                                  <li key={k} className="flex flex-wrap items-center gap-2 [overflow-wrap:anywhere]">
-                                    <code className="rounded bg-white/[0.04] px-1.5 py-0.5 text-[11px] text-stone-warm/80">
-                                      {r.path}
-                                    </code>
-                                    <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.2em] text-stone-warm/60">
-                                      {r.module}
-                                    </span>
-                                    <span
-                                      className={`rounded-full px-2 py-0.5 text-[10px] uppercase tracking-[0.2em] ${
-                                        r.confidence === "grounded"
-                                          ? "bg-emerald-500/15 text-emerald-300"
-                                          : r.confidence === "traditional"
-                                            ? "bg-amber-500/15 text-amber-200"
-                                            : "bg-nebula-purple/15 text-nebula-purple"
-                                      }`}
-                                    >
-                                      {r.confidence}
-                                    </span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </details>
-                          )}
+                          {ch.title}
+                        </h3>
+                        <div className="mt-3 space-y-4 text-stone-warm/85 [overflow-wrap:break-word]">
+                          {ch.body.split(/\n\s*\n/).map((para, k) => (
+                            <p key={k}>{para.trim()}</p>
+                          ))}
+                        </div>
+                        {ch.evidence_refs && ch.evidence_refs.length > 0 && (
+                          <details className="mt-4 rounded-2xl border border-white/10 bg-white/[0.02] px-3 py-2 text-[12px] text-stone-warm/75">
+                            <summary className="cursor-pointer select-none list-none text-[10px] uppercase tracking-[0.28em] text-gold-dust/70 [&::-webkit-details-marker]:hidden">
+                              {lang === "zh" ? "证据溯源" : "Evidence"} · {ch.evidence_refs.length}
+                            </summary>
+                            <ul className="mt-2 space-y-1.5">
+                              {ch.evidence_refs.map((r, k) => (
+                                <li key={k} className="flex flex-wrap items-center gap-2 [overflow-wrap:anywhere]">
+                                  <code className="rounded bg-white/[0.04] px-1.5 py-0.5 text-[11px] text-stone-warm/80">
+                                    {r.path}
+                                  </code>
+                                  <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.2em] text-stone-warm/60">
+                                    {r.module}
+                                  </span>
+                                  <span
+                                    className={`rounded-full px-2 py-0.5 text-[10px] uppercase tracking-[0.2em] ${
+                                      r.confidence === "grounded"
+                                        ? "bg-emerald-500/15 text-emerald-300"
+                                        : r.confidence === "traditional"
+                                          ? "bg-amber-500/15 text-amber-200"
+                                          : "bg-nebula-purple/15 text-nebula-purple"
+                                    }`}
+                                  >
+                                    {r.confidence}
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                          </details>
+                        )}
+                      </section>
+                    ))}
 
-                          {/* Prev/Next chapter nav */}
-                          <nav
-                            aria-label={pick(TXT.jump, lang)}
-                            className="mt-6 flex items-center justify-between gap-3 border-t border-white/5 pt-4"
+                    {/* Single navigation block at the article footer.
+                        Jumps back/forward relative to the currently active
+                        chapter (from the IntersectionObserver). Not stacked
+                        per-chapter. */}
+                    {chapters.length > 0 && (() => {
+                      const { prev, next } = neighborChapters(chapters, active);
+                      return (
+                        <nav
+                          aria-label={pick(TXT.jump, lang)}
+                          className="mt-8 flex items-center justify-between gap-3 border-t border-white/5 pt-5"
+                        >
+                          <button
+                            type="button"
+                            disabled={!prev}
+                            onClick={() => prev && scrollTo(prev, { focusHeading: true })}
+                            className="min-h-[44px] rounded-full border border-white/10 px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-stone-warm/75 transition-colors hover:border-gold-dust/40 hover:text-gold-dust disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:border-white/10 disabled:hover:text-stone-warm/75"
                           >
-                            <button
-                              type="button"
-                              disabled={!prev}
-                              onClick={() => prev && scrollTo(prev, { focusHeading: true })}
-                              className="min-h-[44px] rounded-full border border-white/10 px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-stone-warm/75 transition-colors hover:border-gold-dust/40 hover:text-gold-dust disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:border-white/10 disabled:hover:text-stone-warm/75"
-                            >
-                              ← {pick(TXT.prev, lang)}
-                            </button>
-                            <p className="text-[10px] uppercase tracking-[0.28em] text-stone-warm/40">
-                              {i + 1} / {chapters.length}
-                            </p>
-                            <button
-                              type="button"
-                              disabled={!next}
-                              onClick={() => next && scrollTo(next, { focusHeading: true })}
-                              className="min-h-[44px] rounded-full border border-white/10 px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-stone-warm/75 transition-colors hover:border-gold-dust/40 hover:text-gold-dust disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:border-white/10 disabled:hover:text-stone-warm/75"
-                            >
-                              {pick(TXT.next, lang)} →
-                            </button>
-                          </nav>
-                        </section>
+                            ← {pick(TXT.prev, lang)}
+                          </button>
+                          <p className="text-[10px] uppercase tracking-[0.28em] text-stone-warm/40">
+                            {positionLabel || `— / ${chapters.length}`}
+                          </p>
+                          <button
+                            type="button"
+                            disabled={!next}
+                            onClick={() => next && scrollTo(next, { focusHeading: true })}
+                            className="min-h-[44px] rounded-full border border-white/10 px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-stone-warm/75 transition-colors hover:border-gold-dust/40 hover:text-gold-dust disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:border-white/10 disabled:hover:text-stone-warm/75"
+                          >
+                            {pick(TXT.next, lang)} →
+                          </button>
+                        </nav>
                       );
-                    })}
+                    })()}
 
                     <footer className="mt-12 border-t border-white/5 pt-6 text-[11px] leading-relaxed text-stone-warm/50">
                       {content.meta.disclaimer || pick(TXT.cover_note, lang)}
@@ -616,6 +584,7 @@ export function PremiumReportReader({
                   </article>
                 )}
               </div>
+
 
               {/* Mobile TOC drawer */}
               <AnimatePresence>
