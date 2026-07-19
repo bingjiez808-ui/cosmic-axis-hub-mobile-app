@@ -222,6 +222,13 @@ export type BuildFactsOptions = {
    */
   asOfDate?: string | null;
   /**
+   * v4: Optional HH:MM anchor for hour-level facts (bazi 流时, ziwei 流时).
+   * When omitted, hourly modules are populated only where a sensible
+   * fallback exists (e.g. Ziwei falls back to the birth time index for
+   * daily continuity; BaZi 流时 stays null).
+   */
+  asOfTime?: string | null;
+  /**
    * v3.1: List of birthday-anchored YYYY-MM-DD dates. When provided the
    * Ziwei derivation returns a `horoscope_years[]` array, one entry per
    * date. Used by the year-reading engine to produce per-year 流年 facts.
