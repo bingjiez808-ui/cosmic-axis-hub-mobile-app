@@ -1,6 +1,6 @@
 /**
  * Revision-pinned in-memory integration test for the current manifest
- * (PREMIUM_REPORT_REVISION = "premium_v3_rev_2026_07").
+ * (PREMIUM_REPORT_REVISION = "premium_v3_rev_2026_07_real_ai").
  *
  * Scenarios (deterministic provider, pure in-memory fake tables):
  *   1) 0 → 24 uses the current revision; every persisted chapter carries it.
@@ -197,7 +197,7 @@ afterAll(() => clearTimeout(watchdog));
 
 describe(`premium revision integration — pinned to ${PREMIUM_REPORT_REVISION}`, () => {
   test("revision constant hasn't drifted", () => {
-    expect(PREMIUM_REPORT_REVISION).toBe("premium_v3_rev_2026_07");
+    expect(PREMIUM_REPORT_REVISION).toBe("premium_v3_rev_2026_07_real_ai");
     expect(PREMIUM_V3_CHAPTERS.length).toBe(24);
   });
 

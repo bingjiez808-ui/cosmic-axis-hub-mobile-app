@@ -116,7 +116,7 @@ describe("premium-chapters-v3 — validator", () => {
 
 describe("premium-chapters-v3 — revision & manifest immutability", () => {
   it("exports a pinned PREMIUM_REPORT_REVISION", () => {
-    expect(PREMIUM_REPORT_REVISION).toBe("premium_v3_rev_2026_07");
+    expect(PREMIUM_REPORT_REVISION).toBe("premium_v3_rev_2026_07_real_ai");
   });
   it("manifest chapter keys are pinned in order", () => {
     expect(PREMIUM_V3_CHAPTERS.map((c) => c.key)).toEqual([
