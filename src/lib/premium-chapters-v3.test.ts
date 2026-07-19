@@ -62,7 +62,16 @@ const baseContent = (overrides: Partial<V3ReportContent["chapters"][number]>[] =
       { path: "western_aspects.list[1]", module: "western_aspects", confidence: "grounded" },
     ];
     const allowedRefs = c.allowed_facts.length === 0 ? [] : modulePool.filter((r) => c.allowed_facts.includes(r.module));
-    const refs = c.allowed_facts.length === 0 ? [] : allowedRefs.slice(0, Math.max(1, minRefs));
+    const picks: typeof modulePool = [];
+    const seenModules = new Set<string>();
+    for (const r of allowedRefs) {
+      if (!seenModules.has(r.module)) { picks.push(r); seenModules.add(r.module); }
+    }
+    for (const r of allowedRefs) {
+      if (picks.length >= Math.max(1, minRefs)) break;
+      if (!picks.includes(r)) picks.push(r);
+    }
+    const refs = c.allowed_facts.length === 0 ? [] : picks.slice(0, Math.max(minRefs, picks.length));
     return { key: c.key, title: c.title_zh, body, evidence_refs: refs, ...overrides[i] };
   }),
   budget: { total_input_tokens: 0, total_output_tokens: 0, stopped_reason: null },
