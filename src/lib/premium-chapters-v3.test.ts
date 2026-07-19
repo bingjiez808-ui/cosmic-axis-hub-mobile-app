@@ -98,3 +98,68 @@ describe("premium-chapters-v3 — validator", () => {
     expect(validateV3Content(c).some((i) => i.problem.startsWith("bad_evidence_path"))).toBe(true);
   });
 });
+
+describe("premium-chapters-v3 — revision & manifest immutability", () => {
+  it("exports a pinned PREMIUM_REPORT_REVISION", () => {
+    expect(PREMIUM_REPORT_REVISION).toBe("premium_v3_rev_2026_07");
+  });
+  it("manifest chapter keys are pinned in order", () => {
+    expect(PREMIUM_V3_CHAPTERS.map((c) => c.key)).toEqual([
+      "cover_letter","executive_summary","chart_map",
+      "western_natal","western_aspects","vedic_natal","vedic_dasha",
+      "bazi_pillars","bazi_ten_gods","bazi_luck",
+      "ziwei_palaces","ziwei_horoscope",
+      "convergence","tensions",
+      "character","vocation","wealth","relationships","family","health","mission",
+      "year_ahead","windows","methodology",
+    ]);
+  });
+  it("vocation/wealth/relationships/mission carry required sections and tables", () => {
+    const keys = ["vocation","wealth","relationships","mission"];
+    for (const k of keys) {
+      const m = PREMIUM_V3_CHAPTERS.find((c) => c.key === k)!;
+      expect((m.required_sections ?? []).length).toBeGreaterThanOrEqual(3);
+      expect((m.required_tables ?? []).length).toBeGreaterThanOrEqual(1);
+      expect(m.min_module_variety ?? 0).toBeGreaterThanOrEqual(2);
+    }
+  });
+});
+
+describe("premium-chapters-v3 — extended validator", () => {
+  it("flags missing required section", () => {
+    const c = baseContent();
+    const vocationIdx = PREMIUM_V3_CHAPTERS.findIndex((x) => x.key === "vocation");
+    c.chapters[vocationIdx].body = "只有一段正文，没有必需的板块。";
+    const issues = validateV3Content(c);
+    expect(issues.some((i) => i.chapter_key === "vocation" && i.problem.startsWith("missing_section:"))).toBe(true);
+  });
+  it("flags missing required table", () => {
+    const c = baseContent();
+    const idx = PREMIUM_V3_CHAPTERS.findIndex((x) => x.key === "wealth");
+    // Keep required sections but strip the table title.
+    const meta = PREMIUM_V3_CHAPTERS[idx];
+    c.chapters[idx].body = (meta.required_sections ?? []).map((s) => `## ${s.marker_zh}`).join("\n\n") + "\n（此处未包含对照表）";
+    const issues = validateV3Content(c);
+    expect(issues.some((i) => i.chapter_key === "wealth" && i.problem.startsWith("missing_table:"))).toBe(true);
+  });
+  it("flags insufficient module variety on life chapters", () => {
+    const c = baseContent();
+    const idx = PREMIUM_V3_CHAPTERS.findIndex((x) => x.key === "vocation");
+    c.chapters[idx].evidence_refs = [
+      { path: "bazi.pillars.day", module: "bazi", confidence: "grounded" },
+      { path: "bazi.pillars.year", module: "bazi", confidence: "grounded" },
+    ];
+    const issues = validateV3Content(c);
+    expect(issues.some((i) => i.chapter_key === "vocation" && i.problem.startsWith("insufficient_module_variety"))).toBe(true);
+  });
+  it("flags insufficient evidence refs", () => {
+    const c = baseContent();
+    const idx = PREMIUM_V3_CHAPTERS.findIndex((x) => x.key === "relationships");
+    c.chapters[idx].evidence_refs = [
+      { path: "bazi.pillars.day", module: "bazi", confidence: "grounded" },
+    ];
+    const issues = validateV3Content(c);
+    expect(issues.some((i) => i.chapter_key === "relationships" && i.problem.startsWith("insufficient_evidence_refs"))).toBe(true);
+  });
+});
+
