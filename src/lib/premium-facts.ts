@@ -142,6 +142,14 @@ export type ZiweiFacts = {
   };
 };
 
+export type WesternProgression = {
+  as_of_date: string;
+  age_years: number;
+  planets: WesternPlanet[];
+  aspects: WesternAspect[];
+  ascendant: WesternAscendant | null;
+};
+
 export type WesternFacts = {
   sun: { sign_en: string; sign_zh: string; element: "fire" | "earth" | "air" | "water" };
   /** v3: 9 luminaries + major aspects + Ascendant (when lat/lng resolvable). */
@@ -151,18 +159,23 @@ export type WesternFacts = {
   /**
    * v3.1: One annual-transit snapshot per year in the reading window.
    * Populated when `opts.transitYears` is supplied to `buildPremiumFacts`.
-   * Each entry is a fixed birthday-anchored 12:00 UTC sample against the
-   * natal frame. Empty when the natal chart is not available.
    */
   annual_transits?: import("./western-transits").WesternAnnualTransit[];
+  /** v4: Whole-Sign 12 house cusps — deterministic from Ascendant. */
+  houses_whole_sign: WholeSignHouse[] | null;
+  /** v4: Secondary progression (1 day = 1 year) at asOfDate — planets only. */
+  progression: WesternProgression | null;
   evidence_paths: {
     sun: "western.sun";
     planets: "western.planets";
     aspects: "western.aspects";
     ascendant: "western.ascendant";
     annual_transits: "western.annual_transits";
+    houses_whole_sign: "western.houses_whole_sign";
+    progression: "western.progression";
   };
 };
+
 
 export type VedicFacts = {
   ascendant_sign: number | null;
