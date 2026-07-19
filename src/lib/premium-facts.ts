@@ -93,6 +93,8 @@ export type BaZiFacts = {
   zodiac: { zh: string; en: string } | null;
   /** v3: 起运 + 大运柱 + 流年 (from lunar-javascript EightChar.getYun). */
   luck: BaZiLuck | null;
+  /** v4: 流月/流日/流时 for a target moment — populated only with asOfDate. */
+  transient: BaZiTransient | null;
   evidence_paths: {
     year_pillar: "bazi.pillars.year";
     month_pillar: "bazi.pillars.month";
@@ -101,8 +103,11 @@ export type BaZiFacts = {
     day_master: "bazi.day_master";
     luck_pillars: "bazi.luck.pillars";
     luck_start: "bazi.luck.start";
+    transient: "bazi.transient";
   };
 };
+
+
 
 export type ZiweiFacts = {
   soul: string;
