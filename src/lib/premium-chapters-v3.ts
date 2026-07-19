@@ -14,12 +14,28 @@
 export const PREMIUM_REPORT_SCHEMA_V3 = "v3";
 
 /**
+ * Skill identity — the codified premium-report contract lives at
+ * skills/fate-nexus-premium-report/. When the SKILL.md contract,
+ * chapter-manifest, evidence contract, or token/cache policy changes
+ * in a way that affects generated output, bump PREMIUM_SKILL_VERSION
+ * and PREMIUM_REPORT_REVISION together. The revision string is what
+ * flows into the canonical engine input (see premium.functions.ts) —
+ * completed rows keyed on the old revision stay immutable.
+ */
+export const PREMIUM_SKILL_ID = "fate-nexus-premium-report";
+export const PREMIUM_SKILL_VERSION = "1.0.0";
+export const PREMIUM_MANIFEST_VERSION = "2026-07";
+
+/**
  * Manifest revision tag. Bumping this creates a NEW premium_pdf_reports
  * row (input_hash changes because prompt_version is part of the canonical
  * engine input). Old completed rows keep their existing content_json and
  * are never overwritten — the reader picks up the newest row per chart.
+ * Composes {skill_version, manifest_version, run-mode}. The contract test
+ * in premium-chapters-v3.test.ts enforces the format.
  */
 export const PREMIUM_REPORT_REVISION = "premium_v3_rev_2026_07_real_ai";
+
 
 export type FactModule =
   | "bazi"
