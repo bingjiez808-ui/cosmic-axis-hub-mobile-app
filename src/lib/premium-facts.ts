@@ -512,20 +512,15 @@ export function deriveVedicFacts(
 }
 
 /**
- * Modules honestly not wired locally in v3. AI narrative must NOT claim
- * to interpret any of these. Zi Wei 流日/流时 and BaZi 流月/流日 are
- * beyond the libraries' surfaced APIs; Western house cusps require a
- * house-system implementation we haven't audited.
+ * Modules honestly not wired locally in v4. AI narrative must NOT claim
+ * to interpret any of these. v4 promoted Ziwei 流日/流时, BaZi 流月/流日/流时,
+ * Western Whole-Sign houses, secondary progressions, and annual transits
+ * from unavailable → available. Quadrant house systems (Placidus, Koch)
+ * remain out of scope.
  */
 export const HONESTLY_UNAVAILABLE_MODULES = [
-  "ziwei_liu_ri",
-  "ziwei_liu_shi",
-  "bazi_liu_yue",
-  "bazi_liu_ri",
-  "bazi_liu_shi",
-  "western_house_cusps",
-  "western_progressions",
-  "western_transits",
+  "western_house_placidus",
+  "western_house_koch",
 ] as const;
 
 export function buildPremiumFacts(
@@ -534,17 +529,17 @@ export function buildPremiumFacts(
 ): PremiumFacts {
   const vedic = deriveVedicFacts(snap, opts);
   const unavailable: string[] = [...HONESTLY_UNAVAILABLE_MODULES];
-  // If Pratyantar level failed validation, honestly disclose it.
   if (vedic && !vedic.pratyantar_available) unavailable.push("vedic_pratyantar_validation_failed");
   return {
     version: PREMIUM_FACTS_VERSION,
-    bazi: deriveBaziFacts(snap),
+    bazi: deriveBaziFacts(snap, opts),
     ziwei: deriveZiweiFacts(snap, opts),
     western: deriveWesternFacts(snap, opts),
     vedic,
     unavailable,
   };
 }
+
 
 /**
  * Resolve a dotted/bracketed evidence path (e.g. "bazi.pillars.day",
