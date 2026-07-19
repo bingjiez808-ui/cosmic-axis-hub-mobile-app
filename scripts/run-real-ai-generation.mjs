@@ -662,6 +662,8 @@ async function main() {
     console.log(`[partial] ${chapters.length}/${PREMIUM_V3_CHAPTERS.length}`);
   }
 
+  stats.perChapterUsage = perChapterUsage;
+  stats.perChapterModel = perChapterModel;
   return stats;
 }
 
