@@ -88,20 +88,35 @@ export function PremiumReportReader({
   chartId,
   chartName,
   onClose,
+  injectedContent,
+  injectedProgress,
 }: {
   open: boolean;
   chartId: string;
   chartName: string | null;
   onClose: () => void;
+  /**
+   * Test / DEV harness escape hatch. When set, the reader renders this
+   * content directly and never calls the server. Only surfaced from
+   * `src/routes/dev.reader-harness.tsx`, which is gated behind
+   * `import.meta.env.DEV`. Production users never reach a code path
+   * that sets these props.
+   */
+  injectedContent?: PremiumContent | null;
+  injectedProgress?: PremiumReportProgress | null;
 }) {
   const { lang } = useLang();
   const titleId = useId();
   const drawerTitleId = useId();
-  const [content, setContent] = useState<PremiumContent | null>(null);
-  const [progressData, setProgressData] = useState<PremiumReportProgress | null>(null);
+  const [content, setContent] = useState<PremiumContent | null>(injectedContent ?? null);
+  const [progressData, setProgressData] = useState<PremiumReportProgress | null>(
+    injectedProgress ?? null,
+  );
   const [continuing, setContinuing] = useState(false);
   const [errored, setErrored] = useState(false);
-  const [active, setActive] = useState<string | null>(null);
+  const [active, setActive] = useState<string | null>(
+    injectedContent?.chapters[0]?.key ?? null,
+  );
   const [tocOpen, setTocOpen] = useState(false);
   const [progress, setProgress] = useState(0);
   const dialogRef = useRef<HTMLDivElement | null>(null);
@@ -112,6 +127,12 @@ export function PremiumReportReader({
   const suppressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const loadContent = useCallback(async () => {
+    if (injectedContent) {
+      setContent(injectedContent);
+      setProgressData(injectedProgress ?? null);
+      setActive(injectedContent.chapters[0]?.key ?? null);
+      return;
+    }
     setContent(null);
     setErrored(false);
     setProgress(0);
@@ -133,7 +154,7 @@ export function PremiumReportReader({
     } catch {
       setErrored(true);
     }
-  }, [chartId]);
+  }, [chartId, injectedContent, injectedProgress]);
 
   // Load content on open.
   useEffect(() => {
@@ -146,6 +167,7 @@ export function PremiumReportReader({
       cancel = true;
     };
   }, [open, loadContent]);
+
 
   const handleContinue = useCallback(async () => {
     if (continuing) return;
