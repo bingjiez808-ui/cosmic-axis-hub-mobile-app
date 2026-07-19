@@ -24,6 +24,7 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthIndexRouteImport } from './routes/auth.index'
+import { Route as DevReaderHarnessRouteImport } from './routes/dev.reader-harness'
 import { Route as DevDemoPremiumRouteImport } from './routes/dev.demo-premium'
 import { Route as AuthResetRouteImport } from './routes/auth.reset'
 import { Route as ApiGenerateAvatarRouteImport } from './routes/api/generate-avatar'
@@ -107,6 +108,11 @@ const AuthIndexRoute = AuthIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthRoute,
 } as any)
+const DevReaderHarnessRoute = DevReaderHarnessRouteImport.update({
+  id: '/dev/reader-harness',
+  path: '/dev/reader-harness',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DevDemoPremiumRoute = DevDemoPremiumRouteImport.update({
   id: '/dev/demo-premium',
   path: '/dev/demo-premium',
@@ -171,6 +177,7 @@ export interface FileRoutesByFullPath {
   '/api/generate-avatar': typeof ApiGenerateAvatarRoute
   '/auth/reset': typeof AuthResetRoute
   '/dev/demo-premium': typeof DevDemoPremiumRoute
+  '/dev/reader-harness': typeof DevReaderHarnessRoute
   '/auth/': typeof AuthIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -194,6 +201,7 @@ export interface FileRoutesByTo {
   '/api/generate-avatar': typeof ApiGenerateAvatarRoute
   '/auth/reset': typeof AuthResetRoute
   '/dev/demo-premium': typeof DevDemoPremiumRoute
+  '/dev/reader-harness': typeof DevReaderHarnessRoute
   '/auth': typeof AuthIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -220,6 +228,7 @@ export interface FileRoutesById {
   '/api/generate-avatar': typeof ApiGenerateAvatarRoute
   '/auth/reset': typeof AuthResetRoute
   '/dev/demo-premium': typeof DevDemoPremiumRoute
+  '/dev/reader-harness': typeof DevReaderHarnessRoute
   '/auth/': typeof AuthIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -246,6 +255,7 @@ export interface FileRouteTypes {
     | '/api/generate-avatar'
     | '/auth/reset'
     | '/dev/demo-premium'
+    | '/dev/reader-harness'
     | '/auth/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -269,6 +279,7 @@ export interface FileRouteTypes {
     | '/api/generate-avatar'
     | '/auth/reset'
     | '/dev/demo-premium'
+    | '/dev/reader-harness'
     | '/auth'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -294,6 +305,7 @@ export interface FileRouteTypes {
     | '/api/generate-avatar'
     | '/auth/reset'
     | '/dev/demo-premium'
+    | '/dev/reader-harness'
     | '/auth/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -318,6 +330,7 @@ export interface RootRouteChildren {
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   ApiGenerateAvatarRoute: typeof ApiGenerateAvatarRoute
   DevDemoPremiumRoute: typeof DevDemoPremiumRoute
+  DevReaderHarnessRoute: typeof DevReaderHarnessRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
 }
@@ -429,6 +442,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthIndexRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/dev/reader-harness': {
+      id: '/dev/reader-harness'
+      path: '/dev/reader-harness'
+      fullPath: '/dev/reader-harness'
+      preLoaderRoute: typeof DevReaderHarnessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dev/demo-premium': {
       id: '/dev/demo-premium'
       path: '/dev/demo-premium'
@@ -531,6 +551,7 @@ const rootRouteChildren: RootRouteChildren = {
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   ApiGenerateAvatarRoute: ApiGenerateAvatarRoute,
   DevDemoPremiumRoute: DevDemoPremiumRoute,
+  DevReaderHarnessRoute: DevReaderHarnessRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
 }
