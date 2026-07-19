@@ -291,34 +291,6 @@ export function PremiumReportReader({
       : chapters.length > 0
         ? `— / ${chapters.length}`
         : "";
-  const auditLine = content
-    ? formatAuditLine(
-        {
-          generated_at: content.meta.generated_at,
-          report_schema_version: content.meta.report_schema_version ?? null,
-          prompt_version: content.meta.prompt_version,
-          model_id: null,
-          calculation_version: null,
-        },
-        lang,
-      )
-    : "";
-  // Full audit line (schema/prompt/model/calc) is rendered below the
-  // cover so it's honest but never intrusive; header keeps only the
-  // date to avoid clutter.
-  const fullAuditLine = content
-    ? formatAuditLine(
-        {
-          generated_at: content.meta.generated_at,
-          report_schema_version: content.meta.report_schema_version ?? null,
-          prompt_version: content.meta.prompt_version,
-          model_id: (content.meta as { model_id?: string | null }).model_id ?? null,
-          calculation_version:
-            (content.meta as { calculation_version?: string | null }).calculation_version ?? null,
-        },
-        lang,
-      )
-    : "";
 
   return (
     <AnimatePresence>
