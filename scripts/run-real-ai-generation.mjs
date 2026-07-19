@@ -390,7 +390,8 @@ async function main() {
 
     try {
       stats.callsAttempted += 1;
-      const out = await generateChapterReal(meta, title, chartFactsStr, factsJson, webReportText, isZh, {
+      const allowedPaths = pathsForModules(allFactsPaths, meta.allowed_facts);
+      const out = await generateChapterReal(meta, title, chartFactsStr, factsJson, allowedPaths, webReportText, isZh, {
         allowedFacts: meta.allowed_facts,
         targetCharsZh: meta.target_chars_zh,
         maxOutputTokens: chapterOutputCap(spent),
