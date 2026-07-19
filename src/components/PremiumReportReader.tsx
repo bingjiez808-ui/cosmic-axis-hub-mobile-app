@@ -694,7 +694,8 @@ export function PremiumReportReader({
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }
 
