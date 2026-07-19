@@ -314,7 +314,12 @@ export function PremiumReportReader({
         ? `— / ${chapters.length}`
         : "";
 
-  return (
+  // Portal to document.body so ancestor transforms (framer-motion in
+  // AccountModal etc.) can't create a containing block that squashes our
+  // fixed-position reader. Only render on the client.
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
