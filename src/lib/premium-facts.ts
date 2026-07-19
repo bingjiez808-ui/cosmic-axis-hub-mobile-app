@@ -407,6 +407,35 @@ export function deriveWesternFacts(
       if (entry) annual_transits.push(entry);
     }
   }
+  // v4: Whole-Sign houses (deterministic from Ascendant sign).
+  const houses_whole_sign = ascendant ? computeWholeSignHouses(ascendant.sign) : null;
+  // v4: Secondary progression (1 day = 1 year) at asOfDate.
+  let progression: WesternProgression | null = null;
+  if (planets.length && opts.asOfDate && snap.input.date && snap.input.time && snap.geo) {
+    const natalUtc = localBirthToUTC(snap.input.date, snap.input.time, snap.geo.tz);
+    const asOfMatch = opts.asOfDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (natalUtc && asOfMatch) {
+      const asOfUtc = new Date(`${opts.asOfDate}T12:00:00Z`);
+      const ageYears = (asOfUtc.getTime() - natalUtc.getTime()) / (365.2422 * 86_400_000);
+      if (Number.isFinite(ageYears) && ageYears >= 0) {
+        const prog = computeSecondaryProgression({
+          natal_utc: natalUtc,
+          age_years: ageYears,
+          lat: snap.geo.lat,
+          lng: snap.geo.lng,
+        });
+        if (prog) {
+          progression = {
+            as_of_date: opts.asOfDate,
+            age_years: ageYears,
+            planets: prog.planets,
+            aspects: prog.aspects,
+            ascendant: prog.ascendant,
+          };
+        }
+      }
+    }
+  }
   return {
     sun: {
       sign_en: snap.western.sun.sign_en,
@@ -417,12 +446,16 @@ export function deriveWesternFacts(
     aspects,
     ascendant,
     annual_transits,
+    houses_whole_sign,
+    progression,
     evidence_paths: {
       sun: "western.sun",
       planets: "western.planets",
       aspects: "western.aspects",
       ascendant: "western.ascendant",
       annual_transits: "western.annual_transits",
+      houses_whole_sign: "western.houses_whole_sign",
+      progression: "western.progression",
     },
   };
 }
