@@ -38,6 +38,7 @@ import { enforceRateLimit } from "./rate-limit.server";
 import { isEmailVerified, assertEmailVerifiedOrAdmin } from "./reports-store.functions";
 import { buildCalculationSnapshot, missingSystems, type CalculationSnapshot } from "./calc-snapshot";
 import type { EvidenceRef, V3ChapterMeta } from "./premium-chapters-v3";
+import { PREMIUM_REPORT_REVISION } from "./premium-chapters-v3";
 import {
   buildEngineInput,
   computeContentHash,
