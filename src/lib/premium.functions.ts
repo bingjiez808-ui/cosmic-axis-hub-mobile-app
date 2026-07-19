@@ -1345,7 +1345,11 @@ function buildEngineInputForChart(chart: {
     lang: (chart.lang as "en" | "zh") ?? "en",
     gender,
   };
-  return buildEngineInput(chartFacts, stableSnapshot, DEFAULT_VERSIONS);
+  // Premium reports override prompt_version with the manifest revision so
+  // that bumping the revision creates a NEW premium_pdf_reports row (via the
+  // unique input_hash) and old completed rows stay immutable.
+  const versions = { ...DEFAULT_VERSIONS, prompt_version: PREMIUM_REPORT_REVISION };
+  return buildEngineInput(chartFacts, stableSnapshot, versions);
 }
 
 type PremiumReportStatus = "pending" | "generating" | "partial" | "completed" | "failed";
