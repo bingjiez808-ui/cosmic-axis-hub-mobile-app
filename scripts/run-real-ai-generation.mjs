@@ -525,7 +525,7 @@ async function main() {
         const out = await generateChapterReal(meta, title, chartFactsStr, factsJson, allowedPaths, webReportText, isZh, {
           allowedFacts: meta.allowed_facts,
           targetCharsZh: meta.target_chars_zh,
-          maxOutputTokens: chapterOutputCap(spent),
+          maxOutputTokens: SKIP_OUTPUT_CAP ? undefined : chapterOutputCap(spent),
           modelId,
         });
         body = out.text;
