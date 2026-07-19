@@ -26,14 +26,23 @@
  */
 import type { CalculationSnapshot } from "./calc-snapshot";
 import type { ZiweiChart, ZiweiPalace } from "./ziwei";
-import { computeBaZiLuck, type BaZiLuck } from "./bazi-luck";
+import { computeBaZiLuck, computeBaZiTransient, type BaZiLuck, type BaZiTransient } from "./bazi-luck";
 import { computeZiweiHoroscope, type ZiweiHoroscope } from "./ziwei-horoscope";
-import { computeWesternChart, type WesternAspect, type WesternPlanet, type WesternAscendant } from "./western-natal";
+import {
+  computeWesternChart,
+  computeWholeSignHouses,
+  computeSecondaryProgression,
+  type WesternAspect,
+  type WesternPlanet,
+  type WesternAscendant,
+  type WholeSignHouse,
+} from "./western-natal";
 import { computeAnnualTransit } from "./western-transits";
 import { expandVimshottari, currentDashaTriple, type DashaExpansion } from "./vedic-dasha";
 import { localBirthToUTC } from "./city-geo";
 
-export const PREMIUM_FACTS_VERSION = "premium_facts_v3";
+export const PREMIUM_FACTS_VERSION = "premium_facts_v4";
+
 
 /* ---------- BaZi element counts ---------- */
 
@@ -84,6 +93,8 @@ export type BaZiFacts = {
   zodiac: { zh: string; en: string } | null;
   /** v3: 起运 + 大运柱 + 流年 (from lunar-javascript EightChar.getYun). */
   luck: BaZiLuck | null;
+  /** v4: 流月/流日/流时 for a target moment — populated only with asOfDate. */
+  transient: BaZiTransient | null;
   evidence_paths: {
     year_pillar: "bazi.pillars.year";
     month_pillar: "bazi.pillars.month";
@@ -92,8 +103,11 @@ export type BaZiFacts = {
     day_master: "bazi.day_master";
     luck_pillars: "bazi.luck.pillars";
     luck_start: "bazi.luck.start";
+    transient: "bazi.transient";
   };
 };
+
+
 
 export type ZiweiFacts = {
   soul: string;
@@ -128,6 +142,14 @@ export type ZiweiFacts = {
   };
 };
 
+export type WesternProgression = {
+  as_of_date: string;
+  age_years: number;
+  planets: WesternPlanet[];
+  aspects: WesternAspect[];
+  ascendant: WesternAscendant | null;
+};
+
 export type WesternFacts = {
   sun: { sign_en: string; sign_zh: string; element: "fire" | "earth" | "air" | "water" };
   /** v3: 9 luminaries + major aspects + Ascendant (when lat/lng resolvable). */
@@ -137,18 +159,23 @@ export type WesternFacts = {
   /**
    * v3.1: One annual-transit snapshot per year in the reading window.
    * Populated when `opts.transitYears` is supplied to `buildPremiumFacts`.
-   * Each entry is a fixed birthday-anchored 12:00 UTC sample against the
-   * natal frame. Empty when the natal chart is not available.
    */
   annual_transits?: import("./western-transits").WesternAnnualTransit[];
+  /** v4: Whole-Sign 12 house cusps — deterministic from Ascendant. */
+  houses_whole_sign: WholeSignHouse[] | null;
+  /** v4: Secondary progression (1 day = 1 year) at asOfDate — planets only. */
+  progression: WesternProgression | null;
   evidence_paths: {
     sun: "western.sun";
     planets: "western.planets";
     aspects: "western.aspects";
     ascendant: "western.ascendant";
     annual_transits: "western.annual_transits";
+    houses_whole_sign: "western.houses_whole_sign";
+    progression: "western.progression";
   };
 };
+
 
 export type VedicFacts = {
   ascendant_sign: number | null;
@@ -195,6 +222,13 @@ export type BuildFactsOptions = {
    */
   asOfDate?: string | null;
   /**
+   * v4: Optional HH:MM anchor for hour-level facts (bazi 流时, ziwei 流时).
+   * When omitted, hourly modules are populated only where a sensible
+   * fallback exists (e.g. Ziwei falls back to the birth time index for
+   * daily continuity; BaZi 流时 stays null).
+   */
+  asOfTime?: string | null;
+  /**
    * v3.1: List of birthday-anchored YYYY-MM-DD dates. When provided the
    * Ziwei derivation returns a `horoscope_years[]` array, one entry per
    * date. Used by the year-reading engine to produce per-year 流年 facts.
@@ -211,6 +245,7 @@ export type BuildFactsOptions = {
 
 export function deriveBaziFacts(
   snap: CalculationSnapshot,
+  opts: BuildFactsOptions = {},
 ): BaZiFacts | null {
   if (snap.bazi.status !== "ok" || !snap.bazi.pillars) return null;
   const p = snap.bazi.pillars;
@@ -243,7 +278,7 @@ export function deriveBaziFacts(
   }
   // v3: compute 起运 + 大运 + 流年 from lunar-javascript. Requires gender.
   let luck: BaZiLuck | null = null;
-  const gender = snap.ziwei.chart?.gender ?? null; // gender only present via ziwei snapshot
+  const gender = snap.ziwei.chart?.gender ?? null;
   if (snap.input.date && snap.input.time && gender) {
     luck = computeBaZiLuck({
       date: snap.input.date,
@@ -251,6 +286,10 @@ export function deriveBaziFacts(
       gender,
     });
   }
+  // v4: transient 流月/流日/流时 for asOfDate.
+  const transient = opts.asOfDate
+    ? computeBaZiTransient({ asOfDate: opts.asOfDate, asOfTime: opts.asOfTime ?? null })
+    : null;
   return {
     pillars: p,
     day_master: dm,
@@ -258,6 +297,7 @@ export function deriveBaziFacts(
     element_counts: counts,
     zodiac: snap.bazi.zodiac,
     luck,
+    transient,
     evidence_paths: {
       year_pillar: "bazi.pillars.year",
       month_pillar: "bazi.pillars.month",
@@ -266,9 +306,11 @@ export function deriveBaziFacts(
       day_master: "bazi.day_master",
       luck_pillars: "bazi.luck.pillars",
       luck_start: "bazi.luck.start",
+      transient: "bazi.transient",
     },
   };
 }
+
 
 export function deriveZiweiFacts(
   snap: CalculationSnapshot,
@@ -283,6 +325,7 @@ export function deriveZiweiFacts(
       birth_time: snap.input.time,
       gender: c.gender,
       as_of_date: opts.asOfDate,
+      as_of_time: opts.asOfTime ?? null,
     });
   }
   let horoscope_years: ZiweiHoroscope[] | undefined;
@@ -364,6 +407,35 @@ export function deriveWesternFacts(
       if (entry) annual_transits.push(entry);
     }
   }
+  // v4: Whole-Sign houses (deterministic from Ascendant sign).
+  const houses_whole_sign = ascendant ? computeWholeSignHouses(ascendant.sign) : null;
+  // v4: Secondary progression (1 day = 1 year) at asOfDate.
+  let progression: WesternProgression | null = null;
+  if (planets.length && opts.asOfDate && snap.input.date && snap.input.time && snap.geo) {
+    const natalUtc = localBirthToUTC(snap.input.date, snap.input.time, snap.geo.tz);
+    const asOfMatch = opts.asOfDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (natalUtc && asOfMatch) {
+      const asOfUtc = new Date(`${opts.asOfDate}T12:00:00Z`);
+      const ageYears = (asOfUtc.getTime() - natalUtc.getTime()) / (365.2422 * 86_400_000);
+      if (Number.isFinite(ageYears) && ageYears >= 0) {
+        const prog = computeSecondaryProgression({
+          natal_utc: natalUtc,
+          age_years: ageYears,
+          lat: snap.geo.lat,
+          lng: snap.geo.lng,
+        });
+        if (prog) {
+          progression = {
+            as_of_date: opts.asOfDate,
+            age_years: ageYears,
+            planets: prog.planets,
+            aspects: prog.aspects,
+            ascendant: prog.ascendant,
+          };
+        }
+      }
+    }
+  }
   return {
     sun: {
       sign_en: snap.western.sun.sign_en,
@@ -374,12 +446,16 @@ export function deriveWesternFacts(
     aspects,
     ascendant,
     annual_transits,
+    houses_whole_sign,
+    progression,
     evidence_paths: {
       sun: "western.sun",
       planets: "western.planets",
       aspects: "western.aspects",
       ascendant: "western.ascendant",
       annual_transits: "western.annual_transits",
+      houses_whole_sign: "western.houses_whole_sign",
+      progression: "western.progression",
     },
   };
 }
@@ -436,20 +512,15 @@ export function deriveVedicFacts(
 }
 
 /**
- * Modules honestly not wired locally in v3. AI narrative must NOT claim
- * to interpret any of these. Zi Wei 流日/流时 and BaZi 流月/流日 are
- * beyond the libraries' surfaced APIs; Western house cusps require a
- * house-system implementation we haven't audited.
+ * Modules honestly not wired locally in v4. AI narrative must NOT claim
+ * to interpret any of these. v4 promoted Ziwei 流日/流时, BaZi 流月/流日/流时,
+ * Western Whole-Sign houses, secondary progressions, and annual transits
+ * from unavailable → available. Quadrant house systems (Placidus, Koch)
+ * remain out of scope.
  */
 export const HONESTLY_UNAVAILABLE_MODULES = [
-  "ziwei_liu_ri",
-  "ziwei_liu_shi",
-  "bazi_liu_yue",
-  "bazi_liu_ri",
-  "bazi_liu_shi",
-  "western_house_cusps",
-  "western_progressions",
-  "western_transits",
+  "western_house_placidus",
+  "western_house_koch",
 ] as const;
 
 export function buildPremiumFacts(
@@ -458,17 +529,17 @@ export function buildPremiumFacts(
 ): PremiumFacts {
   const vedic = deriveVedicFacts(snap, opts);
   const unavailable: string[] = [...HONESTLY_UNAVAILABLE_MODULES];
-  // If Pratyantar level failed validation, honestly disclose it.
   if (vedic && !vedic.pratyantar_available) unavailable.push("vedic_pratyantar_validation_failed");
   return {
     version: PREMIUM_FACTS_VERSION,
-    bazi: deriveBaziFacts(snap),
+    bazi: deriveBaziFacts(snap, opts),
     ziwei: deriveZiweiFacts(snap, opts),
     western: deriveWesternFacts(snap, opts),
     vedic,
     unavailable,
   };
 }
+
 
 /**
  * Resolve a dotted/bracketed evidence path (e.g. "bazi.pillars.day",

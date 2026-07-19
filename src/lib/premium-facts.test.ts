@@ -111,9 +111,9 @@ describe("buildPremiumFacts + resolveFactsPath — AI cannot invent fields", () 
   const snap = buildCalculationSnapshot(NANJING);
   const facts = buildPremiumFacts(snap);
 
-  test("version is pinned to v3", () => {
+  test("version is pinned to v4", () => {
     expect(facts.version).toBe(PREMIUM_FACTS_VERSION);
-    expect(PREMIUM_FACTS_VERSION).toBe("premium_facts_v3");
+    expect(PREMIUM_FACTS_VERSION).toBe("premium_facts_v4");
   });
 
   test("evidence paths that DO exist resolve; fabricated ones return undefined", () => {

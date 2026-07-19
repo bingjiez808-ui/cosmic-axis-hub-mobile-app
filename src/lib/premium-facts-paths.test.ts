@@ -62,15 +62,36 @@ describe("deep evidence paths across four systems", () => {
     if (adLord !== undefined) expect(typeof adLord).toBe("string");
   });
 
-  test("unavailable list still names every documented gap", () => {
+  test("unavailable list still names every documented gap (v4: quadrant house systems only)", () => {
     for (const key of [
-      "ziwei_liu_ri",
-      "bazi_liu_yue",
-      "western_house_cusps",
-      "western_progressions",
+      "western_house_placidus",
+      "western_house_koch",
     ]) {
       expect(facts.unavailable).toContain(key);
     }
+    // v4 promoted these from unavailable → available; ensure they are NOT
+    // in the list (else the reader would falsely hide real facts).
+    for (const promoted of [
+      "ziwei_liu_ri", "ziwei_liu_shi",
+      "bazi_liu_yue", "bazi_liu_ri", "bazi_liu_shi",
+      "western_house_cusps", "western_progressions", "western_transits",
+    ]) {
+      expect(facts.unavailable).not.toContain(promoted);
+    }
+  });
+
+  test("v4 promoted facts resolve for the reference chart", () => {
+    // BaZi transient (with asOfDate).
+    expect(typeof resolveFactsPath(facts, "bazi.transient.liu_nian")).toBe("string");
+    expect(typeof resolveFactsPath(facts, "bazi.transient.liu_yue")).toBe("string");
+    expect(typeof resolveFactsPath(facts, "bazi.transient.liu_ri")).toBe("string");
+    // Ziwei daily.
+    expect(resolveFactsPath(facts, "ziwei.horoscope.daily")).not.toBeUndefined();
+    // Western Whole-Sign houses and progression.
+    const houses = resolveFactsPath(facts, "western.houses_whole_sign") as unknown[] | null;
+    expect(Array.isArray(houses)).toBe(true);
+    expect((houses as unknown[]).length).toBe(12);
+    expect(resolveFactsPath(facts, "western.progression.planets")).not.toBeUndefined();
   });
 });
 

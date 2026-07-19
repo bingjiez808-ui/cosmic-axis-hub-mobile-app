@@ -16,8 +16,8 @@
 import type { PremiumFacts } from "./premium-facts";
 import { scoreAnnualTransit } from "./western-transits";
 
-export const YEAR_READING_SKILL_VERSION = "year-reading@1.2.0";
-export const YEAR_READING_CALC_VERSION = "calc@1.2.0";
+export const YEAR_READING_SKILL_VERSION = "year-reading@1.3.0";
+export const YEAR_READING_CALC_VERSION = "calc@1.3.0";
 /**
  * FACTS_VERSION — canonical version tag for the deterministic year-reading
  * facts contract. Bumping this (or bumping PREMIUM_FACTS_VERSION which it
