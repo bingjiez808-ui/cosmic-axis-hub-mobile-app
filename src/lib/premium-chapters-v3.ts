@@ -227,6 +227,33 @@ export function validateV3Content(content: V3ReportContent): ValidationIssue[] {
       const hasGrounded = ch.evidence_refs.some((r) => r.confidence === "grounded");
       if (!hasGrounded) issues.push({ chapter_key: ch.key, problem: "system_chapter_needs_grounded" });
     }
+    const lang = content.meta?.lang === "en" ? "en" : "zh";
+    const body = typeof ch.body === "string" ? ch.body : "";
+    if (meta.required_sections?.length) {
+      for (const sec of meta.required_sections) {
+        const marker = lang === "en" ? sec.marker_en : sec.marker_zh;
+        if (!body.includes(marker)) {
+          issues.push({ chapter_key: ch.key, problem: `missing_section:${sec.key}` });
+        }
+      }
+    }
+    if (meta.required_tables?.length) {
+      for (const tab of meta.required_tables) {
+        const title = lang === "en" ? tab.title_en : tab.title_zh;
+        if (!body.includes(title) || !body.includes("|")) {
+          issues.push({ chapter_key: ch.key, problem: `missing_table:${tab.key}` });
+        }
+      }
+    }
+    const uniqueModules = new Set(ch.evidence_refs.map((r) => r.module)).size;
+    const minVar = meta.min_module_variety ?? (meta.kind === "cross" ? 2 : 0);
+    if (minVar > 0 && uniqueModules < minVar) {
+      issues.push({ chapter_key: ch.key, problem: `insufficient_module_variety:${uniqueModules}/${minVar}` });
+    }
+    const minRefs = meta.min_evidence_refs ?? (meta.allowed_facts.length > 0 ? 1 : 0);
+    if (minRefs > 0 && ch.evidence_refs.length < minRefs) {
+      issues.push({ chapter_key: ch.key, problem: `insufficient_evidence_refs:${ch.evidence_refs.length}/${minRefs}` });
+    }
   }
   return issues;
 }
