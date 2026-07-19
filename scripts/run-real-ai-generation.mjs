@@ -305,10 +305,31 @@ ${webReport.slice(0, 2000)}`;
       }
     : { input_tokens: 0, output_tokens: 0 };
   const parsed = parseChapterJson(result.text);
-  if (!parsed.ok) throw new Error(`chapter_json_invalid:${parsed.error}`);
+  let body;
+  let evidence_refs;
+  if (parsed.ok) {
+    body = parsed.value.body;
+    evidence_refs = parsed.value.evidence_refs;
+  } else {
+    // Lenient fallback: extract body only. Server-side deterministic
+    // ref correction fills evidence_refs from facts, so a malformed
+    // refs array is recoverable as long as body is present.
+    const { extractJsonObject } = await import("../src/lib/chapter-json-schema.ts");
+    const raw = extractJsonObject(result.text);
+    let bodyOnly = null;
+    if (raw) {
+      try {
+        const obj = JSON.parse(raw);
+        if (obj && typeof obj.body === "string" && obj.body.trim().length > 0) bodyOnly = obj.body;
+      } catch {}
+    }
+    if (!bodyOnly) throw new Error(`chapter_json_invalid:${parsed.error}`);
+    body = bodyOnly;
+    evidence_refs = []; // will be replaced deterministically
+  }
   return {
-    text: parsed.value.body.trim().slice(0, 20000),
-    evidence_refs: parsed.value.evidence_refs,
+    text: body.trim().slice(0, 20000),
+    evidence_refs,
     usage,
     modelUsed: modelId,
   };
