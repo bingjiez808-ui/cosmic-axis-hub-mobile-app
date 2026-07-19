@@ -330,6 +330,8 @@ async function main() {
   // Build facts + web report context (real AI needs both)
   const facts = buildPremiumFacts(engineInput.snapshot);
   const factsJson = JSON.stringify(facts, null, 2).slice(0, 12000);
+  const allFactsPaths = enumerateFactsPaths(facts);
+  console.log(`[cfg] enumerated ${allFactsPaths.length} evidence paths`);
   const chartFactsStr = [
     chart.name && `${isZh ? "姓名" : "Name"}: ${chart.name}`,
     chart.birth_date && `${isZh ? "阳历生日" : "Solar birth"}: ${chart.birth_date}`,
