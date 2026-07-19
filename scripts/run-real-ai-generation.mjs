@@ -167,6 +167,7 @@ async function generateChapterReal(meta, title, chartFacts, factsJson, allowedPa
 {"body":"…纯文本正文，段落之间用\\n\\n分隔…","evidence_refs":[{"path":"bazi.pillars.day.pillar","module":"bazi","confidence":"grounded"}]}
 - body 只能是段落纯文本，无 Markdown 标题或代码块。
 - evidence_refs.path 必须严格出现在下方"允许路径"列表内，不得编造、改名或组合。
+- evidence_refs 数组最多 6 条，且路径格式必须完全匹配 /^[a-z_][a-z0-9_]*(?:\\.[a-z_][a-z0-9_]*|\\[\\d+\\])*$/i（点分或方括号索引，不含空格或连字符）。
 - module 只能是 bazi | bazi_luck | ziwei | ziwei_horoscope | western | western_aspects | vedic | vedic_dasha。
 - confidence 只能是 grounded | traditional | reflective。
 - 不允许除 body / evidence_refs 之外的任何键；不允许附加解释文字或代码块。`
