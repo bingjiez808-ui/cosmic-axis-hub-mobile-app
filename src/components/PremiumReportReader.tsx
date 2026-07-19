@@ -29,7 +29,6 @@ import {
 import type { PremiumFacts, BaZiElement } from "@/lib/premium-facts";
 import {
   computeScrollProgress,
-  formatAuditLine,
   neighborChapters,
 } from "@/lib/reader-nav";
 
