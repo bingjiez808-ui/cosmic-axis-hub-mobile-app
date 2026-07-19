@@ -327,7 +327,7 @@ export function PremiumReportReader({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[80] flex items-stretch bg-obsidian/85 backdrop-blur-md"
+          className="fixed inset-0 z-[80] flex items-stretch justify-center overflow-hidden bg-obsidian/85 backdrop-blur-md md:items-center"
           onClick={onClose}
         >
           <motion.div
@@ -339,7 +339,7 @@ export function PremiumReportReader({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 24, scale: 0.98 }}
             transition={{ duration: 0.35, ease: [0.32, 0.72, 0, 1] }}
-            className="relative m-0 flex h-[100dvh] w-full flex-col bg-obsidian text-stone-warm focus:outline-none md:m-4 md:h-[calc(100dvh-2rem)] md:rounded-3xl md:border md:border-gold-dust/20 md:shadow-2xl"
+            className="relative m-0 flex h-[100dvh] w-full flex-col overflow-hidden bg-obsidian text-stone-warm focus:outline-none md:m-4 md:h-[92dvh] md:w-full md:max-w-[1320px] md:min-w-0 md:rounded-3xl md:border md:border-gold-dust/20 md:shadow-2xl"
             onClick={(e) => e.stopPropagation()}
             tabIndex={-1}
           >
