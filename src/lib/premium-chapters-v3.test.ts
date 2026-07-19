@@ -47,13 +47,19 @@ const baseContent = (overrides: Partial<V3ReportContent["chapters"][number]>[] =
     const minRefs = Math.max(c.min_evidence_refs ?? 0, c.min_module_variety ?? 0, c.kind === "cross" ? 2 : 1);
     const modulePool: Array<{ path: string; module: FactModule; confidence: ConfidenceTier }> = [
       { path: "bazi.pillars.day", module: "bazi", confidence: "grounded" },
+      { path: "bazi.pillars.year", module: "bazi", confidence: "grounded" },
       { path: "ziwei.palaces[0]", module: "ziwei", confidence: "grounded" },
+      { path: "ziwei.five_elements_class", module: "ziwei", confidence: "traditional" },
       { path: "western.sun", module: "western", confidence: "grounded" },
+      { path: "western.moon", module: "western", confidence: "grounded" },
+      { path: "western.asc", module: "western", confidence: "grounded" },
       { path: "vedic.moon", module: "vedic", confidence: "grounded" },
+      { path: "vedic.sun", module: "vedic", confidence: "grounded" },
       { path: "bazi_luck.current", module: "bazi_luck", confidence: "grounded" },
       { path: "ziwei_horoscope.year", module: "ziwei_horoscope", confidence: "grounded" },
       { path: "vedic_dasha.current", module: "vedic_dasha", confidence: "grounded" },
       { path: "western_aspects.list[0]", module: "western_aspects", confidence: "grounded" },
+      { path: "western_aspects.list[1]", module: "western_aspects", confidence: "grounded" },
     ];
     const allowedRefs = c.allowed_facts.length === 0 ? [] : modulePool.filter((r) => c.allowed_facts.includes(r.module));
     const refs = c.allowed_facts.length === 0 ? [] : allowedRefs.slice(0, Math.max(1, minRefs));
