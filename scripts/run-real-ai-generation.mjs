@@ -604,7 +604,7 @@ async function main() {
       report_id: report.id,
       chapter_key: meta.key,
       operation: "chapter_generate",
-      model_id: READING_MODEL_ID,
+      model_id: modelUsed || PRIMARY_MODEL,
       provider: "lovable-ai-gateway",
       input_tokens: usage.input_tokens,
       output_tokens: usage.output_tokens,
