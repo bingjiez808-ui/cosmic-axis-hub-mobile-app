@@ -86,7 +86,7 @@ const content_json = {
 };
 const content_hash = crypto.createHash("sha256").update(JSON.stringify(content_json)).digest("hex");
 
-const client = new Client({ connectionString: process.env.SUPABASE_DB_URL });
+const client = new Client({ connectionString: process.env.SUPABASE_DB_URL, ssl: { rejectUnauthorized: false } });
 await client.connect();
 
 // Look up an existing paid order for this user+chart to satisfy FK if required.
