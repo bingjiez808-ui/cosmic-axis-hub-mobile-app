@@ -646,7 +646,10 @@ async function main() {
       .update({
         status: "completed",
         content_json: content,
-        completed_at: new Date().toISOString(),
+        content_hash: stats.contentHash,
+        generated_at: new Date().toISOString(),
+        provider: "lovable-ai-gateway",
+        model: PRIMARY_MODEL,
         error_message: null,
       })
       .eq("id", report.id);
