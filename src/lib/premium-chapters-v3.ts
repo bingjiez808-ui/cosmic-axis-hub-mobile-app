@@ -13,6 +13,14 @@
 
 export const PREMIUM_REPORT_SCHEMA_V3 = "v3";
 
+/**
+ * Manifest revision tag. Bumping this creates a NEW premium_pdf_reports
+ * row (input_hash changes because prompt_version is part of the canonical
+ * engine input). Old completed rows keep their existing content_json and
+ * are never overwritten — the reader picks up the newest row per chart.
+ */
+export const PREMIUM_REPORT_REVISION = "premium_v3_rev_2026_07";
+
 export type FactModule =
   | "bazi"
   | "bazi_luck"
