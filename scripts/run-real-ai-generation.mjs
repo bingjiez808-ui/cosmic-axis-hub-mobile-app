@@ -291,7 +291,7 @@ ${webReport.slice(0, 2000)}`;
     model: gateway(modelId),
     system,
     prompt,
-    ...(opts.maxOutputTokens ? { maxOutputTokens: opts.maxOutputTokens } : {}),
+    ...(opts.maxOutputTokens && !isOpenAi ? { maxOutputTokens: opts.maxOutputTokens } : {}),
   };
   // OpenAI reasoning models reject `temperature`; other providers accept 0.
   if (!isOpenAi) genOpts.temperature = 0;
