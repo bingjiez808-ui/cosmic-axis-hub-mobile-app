@@ -24,12 +24,33 @@ import {
   parseChapterJson,
   validateChapterAgainstFacts,
 } from "../src/lib/chapter-json-schema.ts";
-import { buildPremiumFacts } from "../src/lib/premium-facts.ts";
+import { buildPremiumFacts, resolveFactsPath } from "../src/lib/premium-facts.ts";
 import { buildCalculationSnapshot } from "../src/lib/calc-snapshot.ts";
 import { chapterOutputCap } from "../src/lib/budget-policy.ts";
 
-const CHART_ID = process.argv[2] || "948474f7-1602-4871-87de-dbcc8d348a15";
-const READING_MODEL_ID = "google/gemini-2.5-flash";
+// --- CLI args -------------------------------------------------------
+const argv = process.argv.slice(2);
+function argVal(name, def) {
+  const i = argv.indexOf(`--${name}`);
+  if (i === -1) return def;
+  return argv[i + 1];
+}
+function argFlag(name) {
+  return argv.includes(`--${name}`);
+}
+const CHART_ID = argVal("chart", "948474f7-1602-4871-87de-dbcc8d348a15");
+const ONLY = (argVal("only", "") || "").split(",").map((s) => s.trim()).filter(Boolean);
+const RESET = argFlag("reset");
+const PRIMARY_MODEL = argVal("model", "openai/gpt-5.5");
+const FALLBACK_MODEL = argVal("fallback", "google/gemini-2.5-pro");
+const READING_MODEL_ID = PRIMARY_MODEL;
+
+// Runtime safety: reset+only requires explicit --i-know flag; prevents accidental
+// mass resets in the future. Only the 3 targeted keys are ever touched.
+if (RESET && ONLY.length === 0) {
+  console.error("[safety] --reset requires --only=<chapter_keys>. Refusing to reset all chapters.");
+  process.exit(2);
+}
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
