@@ -454,10 +454,10 @@ export function PremiumReportReader({
                 </aside>
               )}
 
-              {/* Article */}
+              {/* Article — single scroll container */}
               <div
                 ref={bodyRef}
-                className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-5 py-6 md:px-10 md:py-10"
+                className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-5 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] md:px-10 md:py-10"
               >
                 {!content && !errored && (
                   <p className="text-center text-sm text-stone-warm/60">{pick(TXT.loading, lang)}</p>
@@ -468,21 +468,20 @@ export function PremiumReportReader({
                   </p>
                 )}
                 {content && (
-                  <article className="mx-auto max-w-3xl">
-                    {/* Cover / summary */}
+                  <article
+                    className="mx-auto w-full max-w-[68ch] text-[16px] leading-[1.8] md:text-[17px]"
+                  >
+                    {/* Cover / summary — customer view, no schema/prompt strings */}
                     <section className="mb-8 border-b border-white/5 pb-6">
                       <p className="text-[10px] uppercase tracking-[0.36em] text-gold-dust/70">
-                        {pick(TXT.meta, lang)} · {auditLine || "—"}
+                        {pick(TXT.meta, lang)} · {fmtDate(content.meta.generated_at, lang)}
                       </p>
-                      <h1 className="mt-2 font-serif text-2xl italic text-stone-warm md:text-3xl">
+                      <h1 className="mt-2 font-serif text-[clamp(1.5rem,4.5vw,2rem)] italic text-stone-warm">
                         {content.cover.title}
                       </h1>
-                      <p className="mt-1 text-sm text-stone-warm/70">{content.cover.subtitle}</p>
-                      {fullAuditLine && fullAuditLine !== auditLine && (
-                        <p className="mt-3 text-[10.5px] leading-relaxed text-stone-warm/40 [overflow-wrap:break-word]">
-                          {fullAuditLine}
-                        </p>
-                      )}
+                      <p className="mt-1 text-[14px] leading-relaxed text-stone-warm/70 md:text-[15px]">
+                        {content.cover.subtitle}
+                      </p>
                     </section>
 
                     {progressData &&
@@ -518,91 +517,95 @@ export function PremiumReportReader({
                         </section>
                       )}
 
-
                     {/* Locally-derived facts (v2+). Absent on legacy rows. */}
                     {content.facts && <FactsPanel facts={content.facts} lang={lang} />}
 
-                    {chapters.map((ch, i) => {
-                      const { prev, next } = neighborChapters(chapters, ch.key);
-                      return (
-                        <section
-                          key={ch.key}
-                          data-ch={ch.key}
-                          className="mb-10 scroll-mt-24"
+                    {chapters.map((ch, i) => (
+                      <section
+                        key={ch.key}
+                        data-ch={ch.key}
+                        className="mb-10 scroll-mt-24"
+                      >
+                        <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+                          {String(i + 1).padStart(2, "0")} / {String(chapters.length).padStart(2, "0")}
+                        </p>
+                        <h3
+                          data-ch-heading
+                          className="mt-1 font-serif text-[clamp(1.25rem,3.5vw,1.6rem)] italic text-gold-light outline-none focus-visible:ring-2 focus-visible:ring-gold-dust/60"
                         >
-                          <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
-                            {String(i + 1).padStart(2, "0")} / {String(chapters.length).padStart(2, "0")}
-                          </p>
-                          <h3
-                            data-ch-heading
-                            className="mt-1 font-serif text-xl italic text-gold-light outline-none focus-visible:ring-2 focus-visible:ring-gold-dust/60 md:text-2xl"
-                          >
-                            {ch.title}
-                          </h3>
-                          <div className="mt-3 space-y-4 text-[15px] leading-[1.75] text-stone-warm/85 [overflow-wrap:break-word]">
-                            {ch.body.split(/\n\s*\n/).map((para, k) => (
-                              <p key={k}>{para.trim()}</p>
-                            ))}
-                          </div>
-                          {ch.evidence_refs && ch.evidence_refs.length > 0 && (
-                            <details className="mt-4 rounded-2xl border border-white/10 bg-white/[0.02] px-3 py-2 text-[12px] text-stone-warm/75">
-                              <summary className="cursor-pointer select-none list-none text-[10px] uppercase tracking-[0.28em] text-gold-dust/70 [&::-webkit-details-marker]:hidden">
-                                {lang === "zh" ? "证据溯源" : "Evidence"} · {ch.evidence_refs.length}
-                              </summary>
-                              <ul className="mt-2 space-y-1.5">
-                                {ch.evidence_refs.map((r, k) => (
-                                  <li key={k} className="flex flex-wrap items-center gap-2 [overflow-wrap:anywhere]">
-                                    <code className="rounded bg-white/[0.04] px-1.5 py-0.5 text-[11px] text-stone-warm/80">
-                                      {r.path}
-                                    </code>
-                                    <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.2em] text-stone-warm/60">
-                                      {r.module}
-                                    </span>
-                                    <span
-                                      className={`rounded-full px-2 py-0.5 text-[10px] uppercase tracking-[0.2em] ${
-                                        r.confidence === "grounded"
-                                          ? "bg-emerald-500/15 text-emerald-300"
-                                          : r.confidence === "traditional"
-                                            ? "bg-amber-500/15 text-amber-200"
-                                            : "bg-nebula-purple/15 text-nebula-purple"
-                                      }`}
-                                    >
-                                      {r.confidence}
-                                    </span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </details>
-                          )}
+                          {ch.title}
+                        </h3>
+                        <div className="mt-3 space-y-4 text-stone-warm/85 [overflow-wrap:break-word]">
+                          {ch.body.split(/\n\s*\n/).map((para, k) => (
+                            <p key={k}>{para.trim()}</p>
+                          ))}
+                        </div>
+                        {ch.evidence_refs && ch.evidence_refs.length > 0 && (
+                          <details className="mt-4 rounded-2xl border border-white/10 bg-white/[0.02] px-3 py-2 text-[12px] text-stone-warm/75">
+                            <summary className="cursor-pointer select-none list-none text-[10px] uppercase tracking-[0.28em] text-gold-dust/70 [&::-webkit-details-marker]:hidden">
+                              {lang === "zh" ? "证据溯源" : "Evidence"} · {ch.evidence_refs.length}
+                            </summary>
+                            <ul className="mt-2 space-y-1.5">
+                              {ch.evidence_refs.map((r, k) => (
+                                <li key={k} className="flex flex-wrap items-center gap-2 [overflow-wrap:anywhere]">
+                                  <code className="rounded bg-white/[0.04] px-1.5 py-0.5 text-[11px] text-stone-warm/80">
+                                    {r.path}
+                                  </code>
+                                  <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.2em] text-stone-warm/60">
+                                    {r.module}
+                                  </span>
+                                  <span
+                                    className={`rounded-full px-2 py-0.5 text-[10px] uppercase tracking-[0.2em] ${
+                                      r.confidence === "grounded"
+                                        ? "bg-emerald-500/15 text-emerald-300"
+                                        : r.confidence === "traditional"
+                                          ? "bg-amber-500/15 text-amber-200"
+                                          : "bg-nebula-purple/15 text-nebula-purple"
+                                    }`}
+                                  >
+                                    {r.confidence}
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                          </details>
+                        )}
+                      </section>
+                    ))}
 
-                          {/* Prev/Next chapter nav */}
-                          <nav
-                            aria-label={pick(TXT.jump, lang)}
-                            className="mt-6 flex items-center justify-between gap-3 border-t border-white/5 pt-4"
+                    {/* Single navigation block at the article footer.
+                        Jumps back/forward relative to the currently active
+                        chapter (from the IntersectionObserver). Not stacked
+                        per-chapter. */}
+                    {chapters.length > 0 && (() => {
+                      const { prev, next } = neighborChapters(chapters, active);
+                      return (
+                        <nav
+                          aria-label={pick(TXT.jump, lang)}
+                          className="mt-8 flex items-center justify-between gap-3 border-t border-white/5 pt-5"
+                        >
+                          <button
+                            type="button"
+                            disabled={!prev}
+                            onClick={() => prev && scrollTo(prev, { focusHeading: true })}
+                            className="min-h-[44px] rounded-full border border-white/10 px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-stone-warm/75 transition-colors hover:border-gold-dust/40 hover:text-gold-dust disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:border-white/10 disabled:hover:text-stone-warm/75"
                           >
-                            <button
-                              type="button"
-                              disabled={!prev}
-                              onClick={() => prev && scrollTo(prev, { focusHeading: true })}
-                              className="min-h-[44px] rounded-full border border-white/10 px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-stone-warm/75 transition-colors hover:border-gold-dust/40 hover:text-gold-dust disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:border-white/10 disabled:hover:text-stone-warm/75"
-                            >
-                              ← {pick(TXT.prev, lang)}
-                            </button>
-                            <p className="text-[10px] uppercase tracking-[0.28em] text-stone-warm/40">
-                              {i + 1} / {chapters.length}
-                            </p>
-                            <button
-                              type="button"
-                              disabled={!next}
-                              onClick={() => next && scrollTo(next, { focusHeading: true })}
-                              className="min-h-[44px] rounded-full border border-white/10 px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-stone-warm/75 transition-colors hover:border-gold-dust/40 hover:text-gold-dust disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:border-white/10 disabled:hover:text-stone-warm/75"
-                            >
-                              {pick(TXT.next, lang)} →
-                            </button>
-                          </nav>
-                        </section>
+                            ← {pick(TXT.prev, lang)}
+                          </button>
+                          <p className="text-[10px] uppercase tracking-[0.28em] text-stone-warm/40">
+                            {positionLabel || `— / ${chapters.length}`}
+                          </p>
+                          <button
+                            type="button"
+                            disabled={!next}
+                            onClick={() => next && scrollTo(next, { focusHeading: true })}
+                            className="min-h-[44px] rounded-full border border-white/10 px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-stone-warm/75 transition-colors hover:border-gold-dust/40 hover:text-gold-dust disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:border-white/10 disabled:hover:text-stone-warm/75"
+                          >
+                            {pick(TXT.next, lang)} →
+                          </button>
+                        </nav>
                       );
-                    })}
+                    })()}
 
                     <footer className="mt-12 border-t border-white/5 pt-6 text-[11px] leading-relaxed text-stone-warm/50">
                       {content.meta.disclaimer || pick(TXT.cover_note, lang)}
@@ -610,6 +613,7 @@ export function PremiumReportReader({
                   </article>
                 )}
               </div>
+
 
               {/* Mobile TOC drawer */}
               <AnimatePresence>
