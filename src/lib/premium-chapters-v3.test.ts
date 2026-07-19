@@ -4,8 +4,11 @@ import {
   PREMIUM_V3_CHAPTERS,
   PREMIUM_V3_TOTAL_TARGET_CHARS_MIN,
   PREMIUM_V3_TOTAL_TARGET_CHARS_MAX,
+  PREMIUM_REPORT_REVISION,
   validateV3Content,
   type V3ReportContent,
+  type FactModule,
+  type ConfidenceTier,
 } from "./premium-chapters-v3";
 
 describe("premium-chapters-v3 — catalog", () => {
