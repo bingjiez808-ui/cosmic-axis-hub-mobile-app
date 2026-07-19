@@ -19,7 +19,7 @@ export const PREMIUM_REPORT_SCHEMA_V3 = "v3";
  * engine input). Old completed rows keep their existing content_json and
  * are never overwritten — the reader picks up the newest row per chart.
  */
-export const PREMIUM_REPORT_REVISION = "premium_v3_rev_2026_07";
+export const PREMIUM_REPORT_REVISION = "premium_v3_rev_2026_07_real_ai";
 
 export type FactModule =
   | "bazi"
