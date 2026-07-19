@@ -358,37 +358,53 @@ async function main() {
   console.log(`[cfg] chart=${CHART_ID} user=${userId} lang=${chart.lang} revision=${PREMIUM_REPORT_REVISION}`);
   console.log(`[cfg] input_hash=${inputHash}`);
 
-  // Ensure/create report row for this revision
-  let { data: report } = await supabase
-    .from("premium_pdf_reports")
-    .select("id, status, content_json, input_hash")
-    .eq("user_id", userId)
-    .eq("chart_id", CHART_ID)
-    .eq("report_version", versions.report_version)
-    .eq("input_hash", inputHash)
-    .maybeSingle();
-
-  if (!report) {
-    const { data: inserted, error } = await supabase
+  // Ensure/create report row for this revision. --report <id> pins an
+  // existing row (used when re-processing failed chapters without
+  // rotating input_hash on model swap).
+  let report;
+  if (REPORT_ID_OVERRIDE) {
+    const { data: pinned, error } = await supabase
       .from("premium_pdf_reports")
-      .insert({
-        user_id: userId,
-        chart_id: CHART_ID,
-        order_id: order.id,
-        report_version: versions.report_version,
-        prompt_version: versions.prompt_version,
-        model_id: versions.model_id,
-        calculation_version: versions.calculation_version,
-        input_hash: inputHash,
-        status: "generating",
-      })
       .select("id, status, content_json, input_hash")
+      .eq("id", REPORT_ID_OVERRIDE)
+      .eq("user_id", userId)
+      .eq("chart_id", CHART_ID)
       .single();
-    if (error) throw new Error(`report_insert: ${error.message}`);
-    report = inserted;
-    console.log(`[row] created ${report.id}`);
+    if (error || !pinned) throw new Error(`report_pinned_lookup: ${error?.message ?? "not_found"}`);
+    report = pinned;
+    console.log(`[row] pinned ${report.id} status=${report.status}`);
   } else {
-    console.log(`[row] existing ${report.id} status=${report.status}`);
+    const { data: existing } = await supabase
+      .from("premium_pdf_reports")
+      .select("id, status, content_json, input_hash")
+      .eq("user_id", userId)
+      .eq("chart_id", CHART_ID)
+      .eq("report_version", versions.report_version)
+      .eq("input_hash", inputHash)
+      .maybeSingle();
+    report = existing;
+    if (!report) {
+      const { data: inserted, error } = await supabase
+        .from("premium_pdf_reports")
+        .insert({
+          user_id: userId,
+          chart_id: CHART_ID,
+          order_id: order.id,
+          report_version: versions.report_version,
+          prompt_version: versions.prompt_version,
+          model_id: versions.model_id,
+          calculation_version: versions.calculation_version,
+          input_hash: inputHash,
+          status: "generating",
+        })
+        .select("id, status, content_json, input_hash")
+        .single();
+      if (error) throw new Error(`report_insert: ${error.message}`);
+      report = inserted;
+      console.log(`[row] created ${report.id}`);
+    } else {
+      console.log(`[row] existing ${report.id} status=${report.status}`);
+    }
   }
   stats.reportId = report.id;
 
