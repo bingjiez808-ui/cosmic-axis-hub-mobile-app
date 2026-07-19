@@ -238,6 +238,7 @@ export type BuildFactsOptions = {
 
 export function deriveBaziFacts(
   snap: CalculationSnapshot,
+  opts: BuildFactsOptions = {},
 ): BaZiFacts | null {
   if (snap.bazi.status !== "ok" || !snap.bazi.pillars) return null;
   const p = snap.bazi.pillars;
@@ -270,7 +271,7 @@ export function deriveBaziFacts(
   }
   // v3: compute 起运 + 大运 + 流年 from lunar-javascript. Requires gender.
   let luck: BaZiLuck | null = null;
-  const gender = snap.ziwei.chart?.gender ?? null; // gender only present via ziwei snapshot
+  const gender = snap.ziwei.chart?.gender ?? null;
   if (snap.input.date && snap.input.time && gender) {
     luck = computeBaZiLuck({
       date: snap.input.date,
@@ -278,6 +279,10 @@ export function deriveBaziFacts(
       gender,
     });
   }
+  // v4: transient 流月/流日/流时 for asOfDate.
+  const transient = opts.asOfDate
+    ? computeBaZiTransient({ asOfDate: opts.asOfDate, asOfTime: opts.asOfTime ?? null })
+    : null;
   return {
     pillars: p,
     day_master: dm,
@@ -285,6 +290,7 @@ export function deriveBaziFacts(
     element_counts: counts,
     zodiac: snap.bazi.zodiac,
     luck,
+    transient,
     evidence_paths: {
       year_pillar: "bazi.pillars.year",
       month_pillar: "bazi.pillars.month",
@@ -293,9 +299,11 @@ export function deriveBaziFacts(
       day_master: "bazi.day_master",
       luck_pillars: "bazi.luck.pillars",
       luck_start: "bazi.luck.start",
+      transient: "bazi.transient",
     },
   };
 }
+
 
 export function deriveZiweiFacts(
   snap: CalculationSnapshot,
