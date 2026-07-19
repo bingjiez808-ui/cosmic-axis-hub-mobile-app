@@ -343,8 +343,8 @@ export function PremiumReportReader({
             onClick={(e) => e.stopPropagation()}
             tabIndex={-1}
           >
-            {/* Fixed top bar */}
-            <header className="relative flex flex-none items-center gap-3 border-b border-white/5 px-4 py-3 md:px-8 md:py-4">
+            {/* Sticky compact top bar (title + date + close). Progress bar sits at the bottom edge. */}
+            <header className="relative flex flex-none items-center gap-3 border-b border-white/5 bg-obsidian/95 px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur md:px-6 md:py-3">
               <button
                 ref={tocButtonRef}
                 type="button"
@@ -367,21 +367,15 @@ export function PremiumReportReader({
                   {heading || (lang === "zh" ? "高级 AI 深度报告" : "Premium AI Deep Reading")}
                 </h2>
               </div>
-              {positionLabel && (
-                <p
-                  aria-live="polite"
-                  className="hidden shrink-0 text-[10px] uppercase tracking-[0.28em] text-stone-warm/50 md:block"
-                >
-                  {pick(TXT.position, lang)} {positionLabel}
+              {content?.meta.generated_at && (
+                <p className="hidden shrink-0 text-[10px] uppercase tracking-[0.28em] text-stone-warm/45 md:block">
+                  {pick(TXT.meta, lang)} · {fmtDate(content.meta.generated_at, lang)}
                 </p>
               )}
-              <p className="hidden text-[10px] uppercase tracking-[0.28em] text-stone-warm/40 md:block">
-                {auditLine}
-              </p>
               <button
                 type="button"
                 onClick={onClose}
-                className="min-h-[44px] rounded-full border border-white/10 px-3 py-1.5 text-[10px] uppercase tracking-[0.28em] text-stone-warm/70 hover:border-gold-dust/40 hover:text-gold-dust"
+                className="min-h-[44px] shrink-0 rounded-full border border-white/10 px-3 py-1.5 text-[10px] uppercase tracking-[0.28em] text-stone-warm/70 hover:border-gold-dust/40 hover:text-gold-dust"
                 aria-label={pick(TXT.close, lang)}
               >
                 {pick(TXT.close, lang)} ✕
