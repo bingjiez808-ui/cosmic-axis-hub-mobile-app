@@ -960,6 +960,11 @@ function WesternFactBlock({ western, lang }: { western: NonNullable<PremiumFacts
       <p>
         {lang === "zh" ? western.sun.sign_zh : western.sun.sign_en} · {western.sun.element}
       </p>
+      <p className="mt-2 text-[11px] leading-relaxed text-stone-warm/55">
+        {lang === "zh"
+          ? "本报告的西方宫位采用整宫制（Whole Sign）：以上升星座为第一宫起点，每宫恰好一个星座。"
+          : "This report uses the Whole Sign house system for Western astrology: house 1 starts at the Ascendant sign and each house is exactly one sign wide."}
+      </p>
     </div>
   );
 }
