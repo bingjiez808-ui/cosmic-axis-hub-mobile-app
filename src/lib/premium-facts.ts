@@ -26,14 +26,23 @@
  */
 import type { CalculationSnapshot } from "./calc-snapshot";
 import type { ZiweiChart, ZiweiPalace } from "./ziwei";
-import { computeBaZiLuck, type BaZiLuck } from "./bazi-luck";
+import { computeBaZiLuck, computeBaZiTransient, type BaZiLuck, type BaZiTransient } from "./bazi-luck";
 import { computeZiweiHoroscope, type ZiweiHoroscope } from "./ziwei-horoscope";
-import { computeWesternChart, type WesternAspect, type WesternPlanet, type WesternAscendant } from "./western-natal";
+import {
+  computeWesternChart,
+  computeWholeSignHouses,
+  computeSecondaryProgression,
+  type WesternAspect,
+  type WesternPlanet,
+  type WesternAscendant,
+  type WholeSignHouse,
+} from "./western-natal";
 import { computeAnnualTransit } from "./western-transits";
 import { expandVimshottari, currentDashaTriple, type DashaExpansion } from "./vedic-dasha";
 import { localBirthToUTC } from "./city-geo";
 
-export const PREMIUM_FACTS_VERSION = "premium_facts_v3";
+export const PREMIUM_FACTS_VERSION = "premium_facts_v4";
+
 
 /* ---------- BaZi element counts ---------- */
 
