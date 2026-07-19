@@ -35,23 +35,27 @@ const baseContent = (overrides: Partial<V3ReportContent["chapters"][number]>[] =
     disclaimer: "…",
   },
   cover: { title: "test", subtitle: "test" },
-  chapters: PREMIUM_V3_CHAPTERS.map((c, i) => ({
-    key: c.key,
-    title: c.title_zh,
-    body: "占位正文，内容仅供事实校验测试使用。",
-    evidence_refs:
-      c.allowed_facts.length === 0
-        ? []
-        : c.kind === "cross"
-          ? [
-              { path: "bazi.pillars.day", module: "bazi", confidence: "grounded" },
-              { path: "ziwei.palaces[0]", module: "ziwei", confidence: "grounded" },
-            ]
-          : c.kind === "system"
-            ? [{ path: `${c.allowed_facts[0]}.something`, module: c.allowed_facts[0], confidence: "grounded" }]
-            : [{ path: `${c.allowed_facts[0]}.something`, module: c.allowed_facts[0], confidence: "traditional" }],
-    ...overrides[i],
-  })),
+  chapters: PREMIUM_V3_CHAPTERS.map((c, i) => {
+    const secBody = (c.required_sections ?? []).map((s) => `## ${s.marker_zh}\n内容占位`).join("\n\n");
+    const tabBody = (c.required_tables ?? [])
+      .map((t) => `### ${t.title_zh}\n| a | b |\n| --- | --- |\n| 1 | 2 |`)
+      .join("\n\n");
+    const body = `占位正文，内容仅供事实校验测试使用。\n${secBody}\n${tabBody}`;
+    const minRefs = Math.max(c.min_evidence_refs ?? 0, c.min_module_variety ?? 0, c.kind === "cross" ? 2 : 1);
+    const modulePool: Array<{ path: string; module: FactModule; confidence: ConfidenceTier }> = [
+      { path: "bazi.pillars.day", module: "bazi", confidence: "grounded" },
+      { path: "ziwei.palaces[0]", module: "ziwei", confidence: "grounded" },
+      { path: "western.sun", module: "western", confidence: "grounded" },
+      { path: "vedic.moon", module: "vedic", confidence: "grounded" },
+      { path: "bazi_luck.current", module: "bazi_luck", confidence: "grounded" },
+      { path: "ziwei_horoscope.year", module: "ziwei_horoscope", confidence: "grounded" },
+      { path: "vedic_dasha.current", module: "vedic_dasha", confidence: "grounded" },
+      { path: "western_aspects.list[0]", module: "western_aspects", confidence: "grounded" },
+    ];
+    const allowedRefs = c.allowed_facts.length === 0 ? [] : modulePool.filter((r) => c.allowed_facts.includes(r.module));
+    const refs = c.allowed_facts.length === 0 ? [] : allowedRefs.slice(0, Math.max(1, minRefs));
+    return { key: c.key, title: c.title_zh, body, evidence_refs: refs, ...overrides[i] };
+  }),
   budget: { total_input_tokens: 0, total_output_tokens: 0, stopped_reason: null },
 });
 
