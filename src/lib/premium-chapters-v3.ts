@@ -44,7 +44,43 @@ export type V3ChapterMeta = {
   allowed_facts: FactModule[];
   /** Whether the chapter is a "cover / methodology" scaffold or a body chapter. */
   kind: "cover" | "system" | "cross" | "life" | "timing" | "closing";
+  /** Named sections whose header markers MUST appear in the chapter body. */
+  required_sections?: { key: string; marker_zh: string; marker_en: string }[];
+  /** Named tables (markdown pipe tables) whose title MUST appear in the body. */
+  required_tables?: { key: string; title_zh: string; title_en: string }[];
+  /** Minimum unique fact modules referenced. Defaults to 1 (system) / 2 (cross). */
+  min_module_variety?: number;
+  /** Minimum evidence_refs count. Defaults to 1 when allowed_facts is non-empty. */
+  min_evidence_refs?: number;
 };
+
+const VOCATION_SECTIONS = [
+  { key: "industries", marker_zh: "适合行业族群", marker_en: "Industry Fit" },
+  { key: "roles", marker_zh: "岗位职能", marker_en: "Role Profile" },
+  { key: "environment", marker_zh: "工作环境", marker_en: "Work Environment" },
+  { key: "founding_vs_employed", marker_zh: "创业与就业条件", marker_en: "Founding vs. Employment" },
+  { key: "skills", marker_zh: "关键技能", marker_en: "Key Skills" },
+  { key: "avoid_patterns", marker_zh: "不适合模式", marker_en: "Patterns to Avoid" },
+];
+const RELATIONSHIP_SECTIONS = [
+  { key: "needs", marker_zh: "关系需求", marker_en: "Relationship Needs" },
+  { key: "partner_traits", marker_zh: "适合伴侣特质", marker_en: "Partner Traits" },
+  { key: "conflict", marker_zh: "冲突模式", marker_en: "Conflict Patterns" },
+  { key: "readiness", marker_zh: "婚恋准备", marker_en: "Readiness" },
+  { key: "windows", marker_zh: "条件式时间窗口", marker_en: "Conditional Windows" },
+];
+const WEALTH_SECTIONS = [
+  { key: "sources", marker_zh: "财富来源", marker_en: "Wealth Sources" },
+  { key: "risks", marker_zh: "风险模式", marker_en: "Risk Patterns" },
+  { key: "accumulation", marker_zh: "积累策略", marker_en: "Accumulation Strategy" },
+];
+const MISSION_SECTIONS = [
+  { key: "themes", marker_zh: "核心课题", marker_en: "Core Themes" },
+  { key: "triggers", marker_zh: "触发情境", marker_en: "Triggers" },
+  { key: "avoid", marker_zh: "需避免的问题", marker_en: "Pitfalls to Avoid" },
+  { key: "alternatives", marker_zh: "替代行动", marker_en: "Alternative Actions" },
+  { key: "review", marker_zh: "复盘清单", marker_en: "Review Checklist" },
+];
 
 // 24 chapters × avg ~800 zh chars = ~19k chars, comfortably in the 18k-25k range.
 export const PREMIUM_V3_CHAPTERS: V3ChapterMeta[] = [
