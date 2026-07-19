@@ -325,6 +325,7 @@ export function deriveZiweiFacts(
       birth_time: snap.input.time,
       gender: c.gender,
       as_of_date: opts.asOfDate,
+      as_of_time: opts.asOfTime ?? null,
     });
   }
   let horoscope_years: ZiweiHoroscope[] | undefined;
