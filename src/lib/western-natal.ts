@@ -200,5 +200,58 @@ export function computeWesternChart(opts: {
   }
 }
 
-/** Modules we honestly do not compute locally. */
-export const WESTERN_UNAVAILABLE = ["western_house_cusps", "western_progressions", "western_transits"] as const;
+/**
+ * v4: Whole-Sign house cusps. Given a validated tropical Ascendant, house N
+ * (1..12) begins at 0° of the sign (ascSign + N - 1) mod 12. This is the
+ * classical Hellenistic system — deterministic, requires only the sign
+ * that the Ascendant already resolved to (no latitude-dependent quadrant
+ * math). We deliberately do NOT compute Placidus/Koch cusps.
+ */
+export type WholeSignHouse = {
+  house: number;      // 1..12
+  sign: number;       // 0..11
+  sign_en: string;
+  sign_zh: string;
+  cusp_lon: number;   // 0 / 30 / 60 …
+};
+
+export function computeWholeSignHouses(ascSign: number): WholeSignHouse[] | null {
+  if (!Number.isInteger(ascSign) || ascSign < 0 || ascSign > 11) return null;
+  const houses: WholeSignHouse[] = [];
+  for (let h = 1; h <= 12; h += 1) {
+    const sign = (ascSign + h - 1) % 12;
+    houses.push({
+      house: h,
+      sign,
+      sign_en: SIGN_NAMES[sign].en,
+      sign_zh: SIGN_NAMES[sign].zh,
+      cusp_lon: sign * 30,
+    });
+  }
+  return houses;
+}
+
+/**
+ * v4: Secondary progression (1 day = 1 year). Given the natal UTC and
+ * elapsed years since birth, we advance the natal moment by that many
+ * days on the ephemeris and recompute planets against the same geo
+ * coordinates. Deterministic — same natal + age → identical output.
+ */
+export function computeSecondaryProgression(opts: {
+  natal_utc: Date;
+  age_years: number;
+  lat?: number | null;
+  lng?: number | null;
+}): WesternChart | null {
+  if (!Number.isFinite(opts.age_years) || opts.age_years < 0) return null;
+  const progressedUtc = new Date(opts.natal_utc.getTime() + opts.age_years * 86_400_000);
+  return computeWesternChart({ utc: progressedUtc, lat: opts.lat ?? null, lng: opts.lng ?? null });
+}
+
+/**
+ * Modules we still refuse to compute locally. Whole-Sign houses,
+ * transits, and secondary progressions are now available (v4);
+ * quadrant house systems (Placidus / Koch) remain honestly out of scope.
+ */
+export const WESTERN_UNAVAILABLE = ["western_house_placidus", "western_house_koch"] as const;
+
