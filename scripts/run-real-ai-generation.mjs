@@ -41,8 +41,10 @@ function argFlag(name) {
 const CHART_ID = argVal("chart", "948474f7-1602-4871-87de-dbcc8d348a15");
 const ONLY = (argVal("only", "") || "").split(",").map((s) => s.trim()).filter(Boolean);
 const RESET = argFlag("reset");
-const PRIMARY_MODEL = argVal("model", "openai/gpt-5.5");
-const FALLBACK_MODEL = argVal("fallback", "google/gemini-2.5-pro");
+const PRIMARY_MODEL = argVal("model", "google/gemini-2.5-pro");
+const FALLBACK_MODEL = argVal("fallback", "google/gemini-2.5-flash");
+const REPORT_ID_OVERRIDE = argVal("report", "");
+const SKIP_OUTPUT_CAP = argFlag("no-cap");
 const READING_MODEL_ID = PRIMARY_MODEL;
 
 // Runtime safety: reset+only requires explicit --i-know flag; prevents accidental
