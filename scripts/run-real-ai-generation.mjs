@@ -147,8 +147,8 @@ async function generateChapterReal(meta, title, chartFacts, factsJson, allowedPa
         ? `本章仅可引用事实模块：${opts.allowedFacts.join("、")}。`
         : `Only cite fact modules: ${opts.allowedFacts.join(", ")}.`
       : isZh
-        ? "本章不引用命盘事实模块，evidence_refs 必须为空数组。"
-        : "This chapter does not cite chart facts; evidence_refs MUST be an empty array.";
+        ? "本章不引用命盘事实模块，evidence_refs 必须为空数组。evidence_refs 至多 6 条。"
+        : "This chapter does not cite chart facts; evidence_refs MUST be an empty array (at most 6 refs otherwise).";
   const lenHint = opts.targetCharsZh
     ? isZh
       ? `目标字数：${opts.targetCharsZh[0]}-${opts.targetCharsZh[1]} 汉字。`
