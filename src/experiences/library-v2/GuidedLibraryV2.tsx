@@ -69,7 +69,7 @@ import {
   applyFeedback,
   type FeedbackKind,
 } from "./story/feedback";
-import { DURATION, EASE, STAGGER, TRANSITION } from "./motion/tokens";
+import { DURATION, EASE, OPACITY, STAGGER, TRANSITION } from "./motion/tokens";
 import { useReducedMotion } from "./motion/reduced-motion";
 import {
   logMembership,
@@ -359,6 +359,21 @@ function TopBar({
           <span className="hidden font-mono text-[9px] tracking-[0.3em] text-stone-warm/40 sm:inline">
             {LIBRARY_EXPERIENCE_VERSION}
           </span>
+          {onToggleEntitled && (
+            <button
+              type="button"
+              onClick={() => onToggleEntitled(!entitled)}
+              aria-pressed={!!entitled}
+              title="以已购身份预览：Demo 演示，不涉及真实订单"
+              className={`min-h-11 rounded-full border px-3 text-xs transition ${
+                entitled
+                  ? "border-gold-dust bg-gold-dust/15 text-stone-warm"
+                  : "border-stone-warm/20 text-stone-warm/70 hover:bg-stone-warm/5"
+              }`}
+            >
+              {entitled ? "✓ 已购身份预览" : "以已购身份预览"}
+            </button>
+          )}
           {step !== "gate" && (
             <button
               type="button"
@@ -426,48 +441,132 @@ function UndoToastPortal({
 function Gate({
   onEnter,
   reducedMotion,
+  returning,
 }: {
   onEnter: () => void;
   reducedMotion: boolean;
   returning?: boolean;
 }) {
-
   const [entering, setEntering] = useState(false);
+  const [parallax, setParallax] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  useEffect(() => {
+    if (reducedMotion) return;
+    const onMove = (e: MouseEvent) => {
+      const nx = (e.clientX / window.innerWidth) - 0.5;
+      const ny = (e.clientY / window.innerHeight) - 0.5;
+      setParallax({ x: nx, y: ny });
+    };
+    window.addEventListener("mousemove", onMove, { passive: true });
+    return () => window.removeEventListener("mousemove", onMove);
+  }, [reducedMotion]);
+
   const trigger = () => {
-    if (reducedMotion) return onEnter();
+    if (reducedMotion || returning) {
+      onEnter();
+      return;
+    }
     setEntering(true);
     setTimeout(onEnter, 550);
   };
+
+  const enterDuration = returning ? 0.2 : DURATION.long;
+  const p = reducedMotion ? { x: 0, y: 0 } : parallax;
+
   return (
-    <section className="relative min-h-[70dvh] pt-8 text-center">
+    <section className="relative min-h-[70dvh] overflow-hidden pt-8 text-center">
+      {/* Three layered parallax planes: bookshelf silhouette / star ring / dust. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          transform: `translate3d(${p.x * -14}px, ${p.y * -8}px, 0)`,
+          transition: reducedMotion ? undefined : "transform 220ms ease-out",
+          background:
+            "radial-gradient(ellipse at 50% 85%, oklch(0.22 0.02 60 / 0.55), transparent 65%)",
+        }}
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          transform: `translate3d(${p.x * -28}px, ${p.y * -14}px, 0)`,
+          transition: reducedMotion ? undefined : "transform 320ms ease-out",
+          background:
+            "radial-gradient(circle at 50% 32%, oklch(0.5 0.08 285 / 0.14), transparent 55%)",
+        }}
+      />
       <div
         aria-hidden
         className={`pointer-events-none absolute inset-0 transition-opacity duration-500 ${
           entering ? "opacity-100" : "opacity-40"
         }`}
         style={{
+          transform: `translate3d(${p.x * -46}px, ${p.y * -22}px, 0)`,
+          transition: reducedMotion ? undefined : "transform 500ms ease-out, opacity 500ms",
           background:
             "radial-gradient(ellipse at 50% 30%, oklch(0.28 0.05 85 / 0.35), transparent 60%)",
         }}
       />
-      <p className="relative font-mono text-[10px] tracking-[0.4em] text-gold-dust">
+      {/* Door-crack light on hover/press — expressed via `entering`. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute left-1/2 top-0 h-full w-[3px] -translate-x-1/2 bg-gradient-to-b from-gold-dust/60 via-gold-dust/10 to-transparent"
+        style={{
+          opacity: entering ? 1 : 0,
+          transition: reducedMotion ? undefined : "opacity 420ms",
+          filter: "blur(2px)",
+        }}
+      />
+
+      {returning && (
+        <motion.p
+          initial={reducedMotion ? false : { opacity: 0, y: -4 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={TRANSITION.fadeShort}
+          className="relative mb-2 font-mono text-[10px] tracking-[0.4em] text-gold-dust/80"
+        >
+          WELCOME BACK · 继续上次阅读
+        </motion.p>
+      )}
+      <motion.p
+        initial={reducedMotion ? false : { opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: enterDuration, ease: EASE.standard }}
+        className="relative font-mono text-[10px] tracking-[0.4em] text-gold-dust"
+      >
         THE LIBRARY OF DESTINY
-      </p>
-      <h1 className="relative mx-auto mt-6 max-w-[22ch] font-serif text-4xl leading-[1.25] text-stone-warm sm:text-5xl">
+      </motion.p>
+      <motion.h1
+        initial={reducedMotion ? false : { opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: enterDuration, ease: EASE.standard, delay: returning ? 0 : STAGGER.line }}
+        className="relative mx-auto mt-6 max-w-[22ch] font-serif text-4xl leading-[1.25] text-stone-warm sm:text-5xl"
+      >
         每一种文明，都在追问同一个问题
-      </h1>
-      <p className="relative mx-auto mt-4 max-w-[22ch] font-serif text-3xl text-gold-light sm:text-4xl">
+      </motion.h1>
+      <motion.p
+        initial={reducedMotion ? false : { opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: enterDuration, ease: EASE.standard, delay: returning ? 0 : STAGGER.line * 2 }}
+        className="relative mx-auto mt-4 max-w-[22ch] font-serif text-3xl text-gold-light sm:text-4xl"
+      >
         你，是谁？
-      </p>
+      </motion.p>
       <p className="relative mx-auto mt-6 max-w-[28ch] text-sm text-stone-warm/70">
         西方占星 · 印度占星 · 八字 · 紫微。四种传统，共同读懂同一个你。
       </p>
       <button
         type="button"
         onClick={trigger}
-        className="relative mt-10 inline-flex min-h-12 items-center gap-2 rounded-full bg-gold-dust px-8 py-3 font-serif text-base text-obsidian shadow-[0_0_40px_oklch(0.76_0.11_85/0.35)] hover:bg-gold-light"
+        disabled={entering}
+        className="group relative mt-10 inline-flex min-h-12 items-center gap-2 rounded-full bg-gold-dust px-8 py-3 font-serif text-base text-obsidian shadow-[0_0_40px_oklch(0.76_0.11_85/0.35)] transition hover:bg-gold-light disabled:opacity-70"
       >
-        步入图书馆 →
+        <span
+          aria-hidden
+          className="absolute inset-0 rounded-full ring-2 ring-gold-dust/0 transition group-hover:ring-gold-dust/40"
+        />
+        {returning ? "继续上次阅读 →" : "步入图书馆 →"}
       </button>
       <p className="relative mt-6 text-xs text-stone-warm/45">
         约 2 分钟 · 基础解读免费 · 完全演示体验
@@ -476,6 +575,7 @@ function Gate({
   );
 }
 
+
 // ---------------- 2. Focus ----------------
 const FOCUS_TOPICS: StoryTopic[] = ["career", "love", "wealth", "recent"];
 
@@ -483,13 +583,33 @@ function FocusPick({
   topic,
   onPick,
   onNext,
+  reducedMotion,
 }: {
   topic: StoryTopic | null;
   onPick: (t: StoryTopic) => void;
   onNext: () => void;
   reducedMotion?: boolean;
 }) {
-
+  const gridRef = useRef<HTMLDivElement>(null);
+  const focusIndex = (i: number) => {
+    const btns = gridRef.current?.querySelectorAll<HTMLButtonElement>(
+      "button[data-focus-card]",
+    );
+    if (!btns) return;
+    const wrapped = (i + btns.length) % btns.length;
+    btns[wrapped]?.focus();
+  };
+  const onKey = (e: React.KeyboardEvent<HTMLButtonElement>, idx: number) => {
+    if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+      e.preventDefault();
+      focusIndex(idx + 1);
+    } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+      e.preventDefault();
+      focusIndex(idx - 1);
+    } else if (e.key === "Enter") {
+      // native <button> handles Enter — no-op keeps default behavior.
+    }
+  };
   return (
     <section className="pt-4">
       <p className="font-mono text-[10px] tracking-[0.35em] text-gold-dust">CHAPTER · ONE</p>
@@ -499,16 +619,31 @@ function FocusPick({
       <p className="mt-2 text-sm text-stone-warm/60">
         先选一个你最想被真正回答的问题。之后我们再决定要不要翻到别的章节。
       </p>
-      <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {FOCUS_TOPICS.map((t) => {
+      <div
+        ref={gridRef}
+        role="radiogroup"
+        aria-label="选择你最想被真正回答的问题"
+        className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2"
+      >
+        {FOCUS_TOPICS.map((t, i) => {
           const active = topic === t;
+          const dim = topic !== null && !active;
           return (
-            <button
+            <motion.button
               key={t}
               type="button"
+              data-focus-card
+              role="radio"
+              aria-checked={active}
               onClick={() => onPick(t)}
-              aria-pressed={active}
-              className={`min-h-[132px] rounded-2xl border p-5 text-left transition ${
+              onKeyDown={(e) => onKey(e, i)}
+              initial={false}
+              animate={{
+                opacity: dim ? OPACITY.dim + 0.2 : 1,
+                scale: active ? 1.02 : 1,
+              }}
+              transition={reducedMotion ? { duration: 0 } : TRANSITION.decisiveShort}
+              className={`min-h-[132px] rounded-2xl border p-5 text-left ${
                 active
                   ? "border-gold-dust bg-gold-dust/10 shadow-[0_0_30px_oklch(0.76_0.11_85/0.2)]"
                   : "border-stone-warm/15 hover:border-gold-dust/40"
@@ -520,25 +655,45 @@ function FocusPick({
               <p className="mt-3 font-serif text-lg leading-snug text-stone-warm">
                 {topicQuestion(t)}
               </p>
-            </button>
+              {active && (
+                <motion.p
+                  initial={reducedMotion ? false : { opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={TRANSITION.fadeShort}
+                  className="mt-3 text-xs text-gold-dust/80"
+                >
+                  图书馆将为你寻找与这个问题共振的章节 ✦
+                </motion.p>
+              )}
+            </motion.button>
           );
         })}
       </div>
-      {topic && (
-        <div className="mt-6 rounded-2xl border border-gold-dust/20 bg-gold-dust/5 p-5">
-          <p className="text-sm text-stone-warm/85">{topicPersonal(topic)}</p>
-          <button
-            type="button"
-            onClick={onNext}
-            className="mt-5 inline-flex min-h-12 items-center rounded-full bg-gold-dust px-6 text-obsidian hover:bg-gold-light"
+      <AnimatePresence initial={false}>
+        {topic && (
+          <motion.div
+            key={topic}
+            initial={reducedMotion ? false : { opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={TRANSITION.fadeShort}
+            className="mt-6 rounded-2xl border border-gold-dust/20 bg-gold-dust/5 p-5"
           >
-            开始寻找答案 →
-          </button>
-        </div>
-      )}
+            <p className="text-sm text-stone-warm/85">{topicPersonal(topic)}</p>
+            <button
+              type="button"
+              onClick={onNext}
+              className="mt-5 inline-flex min-h-12 items-center rounded-full bg-gold-dust px-6 text-obsidian hover:bg-gold-light"
+            >
+              开始寻找答案 →
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }
+
 
 // ---------------- 3. Intake ----------------
 function Intake({
@@ -682,6 +837,8 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
 function FirstInsight({
   topic,
   onNext,
+  onFeedback,
+  reducedMotion,
 }: {
   topic: StoryTopic;
   onNext: () => void;
@@ -689,15 +846,33 @@ function FirstInsight({
   weights?: Partial<Record<StoryTopic, number>>;
   reducedMotion?: boolean;
 }) {
-
   const ins = INSIGHT_BY_TOPIC[topic];
   const [openKey, setOpenKey] = useState<"why" | "next" | "when" | null>(null);
+  const [feedback, setFeedback] = useState<FeedbackKind | null>(null);
+  const clickFeedback = (k: FeedbackKind) => {
+    setFeedback(k);
+    onFeedback?.(k);
+    if (k === "want_more") {
+      logMembership("membership_impression", "first_insight_want_more");
+    }
+  };
+  const sentences = ins.headline.split(/(?<=[。！？])/g).filter((s) => s.trim().length);
   return (
     <section className="pt-6">
       <DemoBadge>你的第一条洞察 · 演示样本</DemoBadge>
-      <h2 className="mt-3 font-serif text-2xl leading-relaxed text-stone-warm sm:text-3xl">
-        {ins.headline}
-      </h2>
+      <div className="mt-3">
+        {sentences.map((s, i) => (
+          <motion.p
+            key={i}
+            initial={reducedMotion ? false : { opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: DURATION.short, ease: EASE.standard, delay: i * STAGGER.line }}
+            className="font-serif text-2xl leading-relaxed text-stone-warm sm:text-3xl"
+          >
+            {s}
+          </motion.p>
+        ))}
+      </div>
       <div className="mt-6 grid gap-3 sm:grid-cols-3">
         {(
           [
@@ -713,11 +888,48 @@ function FirstInsight({
             className="min-h-16 rounded-xl border border-stone-warm/15 bg-obsidian/30 p-4 text-left hover:border-gold-dust/40"
           >
             <p className="font-mono text-[10px] tracking-[0.3em] text-gold-dust">
-              {label}
+              📑 {label}
             </p>
             <p className="mt-2 text-sm text-stone-warm/70">展开阅读 →</p>
           </button>
         ))}
+      </div>
+      <div className="mt-8 rounded-xl border border-stone-warm/10 bg-obsidian/30 p-4">
+        <p className="font-mono text-[10px] tracking-[0.3em] text-gold-dust">
+          这段像你吗？
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {(
+            [
+              ["resonant", "像我"],
+              ["not_me", "不太像"],
+              ["want_more", "想继续了解"],
+            ] as [FeedbackKind, string][]
+          ).map(([k, label]) => (
+            <button
+              key={k}
+              type="button"
+              onClick={() => clickFeedback(k)}
+              aria-pressed={feedback === k}
+              className={`min-h-11 rounded-full border px-4 text-sm transition ${
+                feedback === k
+                  ? "border-gold-dust bg-gold-dust/15 text-stone-warm"
+                  : "border-stone-warm/20 text-stone-warm/75 hover:bg-stone-warm/5"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {feedback && (
+          <p className="mt-3 text-xs text-stone-warm/55">
+            {feedback === "resonant"
+              ? "记下了。稍后书架会把和这段共振的章节排在前面。"
+              : feedback === "not_me"
+              ? "记下了。我们会把这段的相关内容稍稍往后排。"
+              : "记下了。为你保留一个更完整的入口——不打断当前阅读。"}
+          </p>
+        )}
       </div>
       <div className="mt-10">
         <button
@@ -752,6 +964,7 @@ function FirstInsight({
   );
 }
 
+
 // ---------------- 5. Shelf ----------------
 function Shelf({
   profile,
@@ -760,6 +973,7 @@ function Shelf({
   onHistory,
   onRecommend,
   onNotes,
+  entitled,
 }: {
   profile: ReaderProfile;
   readBooks: BookRef[];
@@ -780,9 +994,19 @@ function Shelf({
       ? "wealth"
       : "self";
   const primaryBook = bookByRef(primary);
-  const nextRecs = BOOKS.filter(
-    (b) => b.ref !== primary && !readBooks.includes(b.ref),
-  ).slice(0, 2);
+  const topicOrder: Record<StoryTopic, BookRef[]> = {
+    career: ["career", "wealth", "timeline", "premium", "sage", "self", "love"],
+    love: ["love", "self", "timeline", "sage", "premium", "career", "wealth"],
+    wealth: ["wealth", "career", "timeline", "premium", "sage", "self", "love"],
+    recent: ["self", "timeline", "sage", "premium", "career", "love", "wealth"],
+  };
+  const order = profile.topic ? topicOrder[profile.topic] : BOOKS.map((b) => b.ref);
+  const orderedShelf = order
+    .map((r) => BOOKS.find((b) => b.ref === r))
+    .filter((b): b is (typeof BOOKS)[number] => !!b);
+  const nextRecs = orderedShelf
+    .filter((b) => b.ref !== primary && !readBooks.includes(b.ref))
+    .slice(0, 2);
   return (
     <section className="pt-4">
       <p className="font-mono text-[10px] tracking-[0.3em] text-gold-dust">
@@ -833,10 +1057,15 @@ function Shelf({
           </button>
         ))}
       </div>
+      <MembershipBookPreview
+        topic={profile.topic}
+        entitled={!!entitled}
+        slot="shelf_premium_book"
+      />
       <div className="mt-8">
         <p className="font-mono text-[10px] tracking-[0.3em] text-gold-dust">书架全景</p>
         <div className="mt-3 grid gap-2 sm:grid-cols-3">
-          {BOOKS.map((b) => (
+          {orderedShelf.map((b) => (
             <button
               key={b.ref}
               type="button"
@@ -860,6 +1089,119 @@ function Shelf({
     </section>
   );
 }
+
+function MembershipBookPreview({
+  topic,
+  entitled,
+  slot,
+}: {
+  topic: StoryTopic | null;
+  entitled: boolean;
+  slot: string;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const impressionLogged = useRef(false);
+  const [openPreview, setOpenPreview] = useState(false);
+  useEffect(() => {
+    if (impressionLogged.current) return;
+    const node = ref.current;
+    if (!node || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting && !impressionLogged.current) {
+            impressionLogged.current = true;
+            logMembership("membership_impression", slot);
+            io.disconnect();
+          }
+        }
+      },
+      { threshold: 0.4 },
+    );
+    io.observe(node);
+    return () => io.disconnect();
+  }, [slot]);
+
+  const bullets =
+    topic === "career"
+      ? ["你适合被推举的位置", "上一个岔口错过了什么", "未来 24 个月的关键窗口"]
+      : topic === "love"
+      ? ["你重复被吸引的类型", "你真正需要的关系模式", "关系的时间窗口"]
+      : topic === "wealth"
+      ? ["财富在你身上流动的方式", "适合你长期持有的类型", "关键决策的时间点"]
+      : ["四体系合读的整体画像", "近 90 天的主线", "下一步该往哪里走"];
+
+  return (
+    <div
+      ref={ref}
+      className="mt-8 rounded-2xl border border-gold-dust/25 bg-gradient-to-br from-obsidian/60 to-gold-dust/[0.06] p-5"
+    >
+      <p className="font-mono text-[10px] tracking-[0.3em] text-gold-dust">
+        📖 下一页 · 完整深度报告
+      </p>
+      <h3 className="mt-2 font-serif text-xl text-stone-warm">
+        把这段阅读放回你的完整命盘
+      </h3>
+      <ul className="mt-3 space-y-1.5 text-sm text-stone-warm/75">
+        {bullets.map((b) => (
+          <li key={b} className="flex gap-2">
+            <span className="text-gold-dust">·</span>
+            <span>{b}</span>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-4 flex flex-wrap gap-3">
+        {entitled ? (
+          <a
+            href="/report"
+            onClick={() => logMembership("membership_entitled_continue", slot)}
+            className="inline-flex min-h-11 items-center rounded-full bg-gold-dust px-5 text-sm text-obsidian hover:bg-gold-light"
+          >
+            继续阅读 →
+          </a>
+        ) : (
+          <>
+            <a
+              href="/report"
+              onClick={() => logMembership("membership_cta_click", slot)}
+              className="inline-flex min-h-11 items-center rounded-full bg-gold-dust px-5 text-sm text-obsidian hover:bg-gold-light"
+            >
+              解锁完整报告 ¥79
+            </a>
+            <button
+              type="button"
+              onClick={() => {
+                setOpenPreview((v) => !v);
+                logMembership("membership_preview_open", slot);
+              }}
+              className="inline-flex min-h-11 items-center rounded-full border border-stone-warm/25 px-5 text-sm text-stone-warm/85 hover:bg-stone-warm/5"
+            >
+              {openPreview ? "收起目录" : "先看目录"}
+            </button>
+          </>
+        )}
+      </div>
+      {openPreview && !entitled && (
+        <div className="mt-4 rounded-xl border border-stone-warm/10 bg-obsidian/40 p-4 text-sm text-stone-warm/75">
+          <p className="font-mono text-[10px] tracking-[0.3em] text-gold-dust">目录预览</p>
+          <ol className="mt-2 space-y-1 text-xs text-stone-warm/70">
+            <li>第 1 章 · 你的整体画像</li>
+            <li>第 2 章 · 天赋与结构</li>
+            <li>第 3 章 · 事业与位置</li>
+            <li>第 4 章 · 关系模式</li>
+            <li>第 5 章 · 财富格局</li>
+            <li>… 共 24 章 · 完整版本在报告页展开</li>
+          </ol>
+        </div>
+      )}
+      <p className="mt-3 text-xs text-stone-warm/45">
+        Demo 环境仅展示会员书封与目录预览,不会真实扣费。
+      </p>
+    </div>
+  );
+}
+
+
 
 function ShelfLink({
   label,
@@ -1141,35 +1483,84 @@ function Recommendations({
           </button>
         ))}
       </div>
-      <div className="mt-6 space-y-3">
-        {recs.map((r) => (
-          <div
-            key={r.id}
-            className="rounded-2xl border border-stone-warm/15 p-5 hover:border-gold-dust/40"
-          >
-            <p className="font-mono text-[10px] tracking-[0.3em] text-gold-dust">
-              {r.kind === "book" ? "书籍" : r.kind === "figure" ? "人物" : "纸条"}
-            </p>
-            <h3 className="mt-2 font-serif text-lg text-stone-warm">{r.title}</h3>
-            <p className="mt-2 text-xs text-stone-warm/60">为什么推荐给我：{r.reason}</p>
-            {r.kind === "book" && (
-              <button
-                type="button"
-                onClick={() => onOpenBook(r.ref as BookRef)}
-                className="mt-3 min-h-11 rounded-full bg-gold-dust px-4 text-sm text-obsidian hover:bg-gold-light"
-              >
-                打开这一本 →
-              </button>
-            )}
-          </div>
-        ))}
-        {recs.length === 0 && (
-          <p className="text-sm text-stone-warm/60">你已经读完了主线的书；换个主题试试。</p>
-        )}
-      </div>
+      <RecommendationList recs={recs} onOpenBook={onOpenBook} />
+
     </section>
   );
 }
+
+function RecommendationList({
+  recs,
+  onOpenBook,
+}: {
+  recs: ReturnType<typeof recommendNext>;
+  onOpenBook: (ref: BookRef) => void;
+}) {
+  if (recs.length === 0) {
+    return (
+      <p className="mt-6 text-sm text-stone-warm/60">
+        你已经读完了主线的书,换个主题试试。
+      </p>
+    );
+  }
+  return (
+    <div className="mt-6 space-y-3">
+      {recs.map((r) => (
+        <RecommendationCard key={r.id} r={r} onOpenBook={onOpenBook} />
+      ))}
+    </div>
+  );
+}
+
+function RecommendationCard({
+  r,
+  onOpenBook,
+}: {
+  r: ReturnType<typeof recommendNext>[number];
+  onOpenBook: (ref: BookRef) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative rounded-2xl border border-stone-warm/15 p-5 hover:border-gold-dust/40">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="absolute right-4 top-4 min-h-9 rounded-full border border-gold-dust/30 px-3 text-[10px] tracking-[0.2em] text-gold-dust hover:bg-gold-dust/10"
+      >
+        {open ? "收起" : "为什么推荐"}
+      </button>
+      <p className="font-mono text-[10px] tracking-[0.3em] text-gold-dust">
+        {r.kind === "book" ? "书籍" : r.kind === "figure" ? "人物" : "纸条"}
+      </p>
+      <h3 className="mt-2 font-serif text-lg text-stone-warm">{r.title}</h3>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.p
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={TRANSITION.fadeShort}
+            className="mt-3 overflow-hidden rounded-lg border border-gold-dust/20 bg-gold-dust/5 p-3 text-sm text-stone-warm/85"
+          >
+            {r.reason}
+          </motion.p>
+        )}
+      </AnimatePresence>
+      {r.kind === "book" && (
+        <button
+          type="button"
+          onClick={() => onOpenBook(r.ref as BookRef)}
+          className="mt-3 min-h-11 rounded-full bg-gold-dust px-4 text-sm text-obsidian hover:bg-gold-light"
+        >
+          打开这一本 →
+        </button>
+      )}
+    </div>
+  );
+}
+
+
 
 // ---------------- 8. Notes ----------------
 function NotesArea({
