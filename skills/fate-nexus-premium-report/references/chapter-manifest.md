@@ -33,16 +33,36 @@ Legend:
 
 | # | key         | title                              | Target   | AF                          | Var | Refs | Sections / Tables |
 |---|-------------|------------------------------------|----------|-----------------------------|-----|------|-------------------|
-| 3 | `academic`  | 学业与认知 / Academic & Cognition  | 800–1000 | bazi, ziwei, western, vedic | 2   | 3    | § 学习与认知方式 / 学科族群候选 / 常见阻力与反例条件 / 当前周期与学习窗口 · T: 学科族群对照表 |
+| 3 | `academic`  | 学业与认知 / Academic & Cognition  | 800–1000 | bazi, ziwei, western, vedic | 2   | 3    | § **12 sections** (see below) · T: 学科族群对照表 (≥3 rows) |
 
-Voice rules for `academic` (enforced in the study skill prompt):
+Voice rules for `academic` (enforced in the study skill prompt AND the
+shared `src/lib/study-reading.ts` validator — same skill version bump
+propagates through both):
 - No IQ / test-score / admission guarantees. Cognition is described as
-  style, not rank.
-- ≥3 subject-cluster candidates. Each MUST carry evidence_refs and a
-  "how to validate" condition — no naked destiny claim.
-- Age-band adaptation: pre-college → student framing; young adult →
-  continuing-education / re-skilling; midlife+ → knowledge transfer
-  and teaching. Never write school-only prose for a 40+ chart.
+  style, not rank. Chinese and English phrasings are blocked by
+  `BANNED_PATTERNS`.
+- ≥3 `SubjectClusterCandidate` rows. Each carries
+  `{ cluster, suitability, why, evidence_refs, conditions, how_to_validate }` —
+  no naked destiny claim; unconditional claims (empty `conditions`) fail
+  validation.
+- House / MC prose (`第X宫`, `3rd house`, `MC`, `midheaven`) is only
+  allowed when at least one `evidence_ref` under `western` /
+  `western_aspects` carries a matching `.house` / `.mc` fragment.
+- Prose that asserts "四体系一致 / cross-system consensus" must be
+  backed by refs from ≥2 distinct modules.
+- Age-band adaptation: `youth` → student framing; `university` →
+  direction-setting; `adult_transition` → continuing education / knowledge
+  transfer / re-skilling. Voice mismatches fail validation.
+
+### Academic 12-section skeleton
+
+Mirrors `ACADEMIC_SECTIONS` in `premium-chapters-v3.ts` and the
+`sections` map in `study-reading.ts`:
+
+`why_now` · `learning_style` · `subject_clusters` · `four_systems` ·
+`consensus` · `real_life` · `strengths` · `obstacles` · `windows` ·
+`actions` · `questions` · `method_limits`.
+
 
 ## System chapters (one grounded ref required)
 

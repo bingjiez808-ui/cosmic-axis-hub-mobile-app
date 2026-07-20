@@ -102,11 +102,25 @@ const MISSION_SECTIONS = [
   { key: "alternatives", marker_zh: "替代行动", marker_en: "Alternative Actions" },
   { key: "review", marker_zh: "复盘清单", marker_en: "Review Checklist" },
 ];
+/**
+ * 12-section contract for the Academic & Cognition chapter. Mirrors the
+ * guided-domain-reading-v1 study skill (see `src/lib/study-reading.ts`)
+ * so the same slug can be re-rendered by any of: premium chapter worker,
+ * V1 guided domain reading, or V2 panorama domain preview.
+ */
 const ACADEMIC_SECTIONS = [
-  { key: "learning_style", marker_zh: "学习与认知方式", marker_en: "Learning & Cognition Style" },
-  { key: "subject_clusters", marker_zh: "学科族群候选", marker_en: "Subject Cluster Candidates" },
-  { key: "obstacles", marker_zh: "常见阻力与反例条件", marker_en: "Obstacles & Counter-Conditions" },
-  { key: "windows", marker_zh: "当前周期与学习窗口", marker_en: "Current Cycles & Study Windows" },
+  { key: "why_now",          marker_zh: "为什么此刻先读学业与认知", marker_en: "Why Read This Chapter Now" },
+  { key: "learning_style",   marker_zh: "学习与认知方式",           marker_en: "Learning & Cognition Style" },
+  { key: "subject_clusters", marker_zh: "学科族群候选",             marker_en: "Subject Cluster Candidates" },
+  { key: "four_systems",     marker_zh: "四体系独立观察",           marker_en: "Four-System Independent Observations" },
+  { key: "consensus",        marker_zh: "跨体系共识与分歧",         marker_en: "Cross-System Consensus & Divergence" },
+  { key: "real_life",        marker_zh: "现实中的可能表现",         marker_en: "Real-Life Manifestations" },
+  { key: "strengths",        marker_zh: "优势与可利用资源",         marker_en: "Strengths & Available Resources" },
+  { key: "obstacles",        marker_zh: "常见阻力与反例条件",       marker_en: "Obstacles & Counter-Conditions" },
+  { key: "windows",          marker_zh: "当前周期与学习窗口",       marker_en: "Current Cycles & Study Windows" },
+  { key: "actions",          marker_zh: "保留 停止 开始",           marker_en: "Keep · Stop · Start" },
+  { key: "questions",        marker_zh: "三个自我探索问题",         marker_en: "Three Self-Inquiry Questions" },
+  { key: "method_limits",    marker_zh: "方法与限制",               marker_en: "Method & Limits" },
 ];
 
 const YEAR_WINDOWS_SECTIONS = [
