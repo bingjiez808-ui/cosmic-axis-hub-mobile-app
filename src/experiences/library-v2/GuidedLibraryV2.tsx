@@ -4,9 +4,18 @@
  * DEMO ONLY. Fixture data + local persistence. No AI, no payment, no
  * writes to V1 tables. V1 pages (`/`, `/ritual`, `/report`, ...) are
  * completely untouched by this file — nothing here imports from V1.
+ *
+ * Membership CTAs surfaced by this file DO NOT call V1 payment or
+ * entitlement code. They render a preview book and, when the reviewer
+ * flips the "以已购身份预览" switch (or opens with `?entitled=1`), the
+ * CTA morphs to "继续阅读" and links to the real V1 route via
+ * TanStack `<Link>`. Real auth / order lookup happens on that route,
+ * not here.
  */
+import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { Link } from "@tanstack/react-router";
 import { LIBRARY_EXPERIENCE_VERSION } from "./version";
 import {
   BOOKS,
@@ -30,7 +39,6 @@ import {
 } from "./story/state";
 import type {
   BookRef,
-  HistoricalFigure,
   Note,
   NoteAudience,
   ReaderProfile,
@@ -57,6 +65,16 @@ import {
   saveStoryState,
 } from "./story/storage";
 import { readerPublicNickname } from "./story/privacy";
+import {
+  applyFeedback,
+  type FeedbackKind,
+} from "./story/feedback";
+import { DURATION, EASE, STAGGER, TRANSITION } from "./motion/tokens";
+import { useReducedMotion } from "./motion/reduced-motion";
+import {
+  logMembership,
+  useEntitledPreview,
+} from "./membership";
 
 // ---------------- Persistent local actor id (Demo only) ----------------
 const ACTOR_KEY = "lod:library-v2:actor-id";
@@ -69,6 +87,19 @@ function getActorId(): string {
   }
   return id;
 }
+
+/**
+ * Toast contract for the note-detail undo action. Kept in-file (no
+ * external toast dependency) because the V2 demo intentionally
+ * avoids app-wide toast plumbing.
+ */
+interface UndoToast {
+  id: string;
+  label: string;
+  action: () => void;
+  expires_at: number;
+}
+
 
 // ---------------- Root ----------------
 export function GuidedLibraryV2() {
