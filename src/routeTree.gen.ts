@@ -25,6 +25,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthIndexRouteImport } from './routes/auth.index'
 import { Route as DevReaderHarnessRouteImport } from './routes/dev.reader-harness'
+import { Route as DevPanoramaTourRouteImport } from './routes/dev.panorama-tour'
 import { Route as DevGuidedLibraryV2RouteImport } from './routes/dev.guided-library-v2'
 import { Route as DevDemoPremiumRouteImport } from './routes/dev.demo-premium'
 import { Route as AuthResetRouteImport } from './routes/auth.reset'
@@ -114,6 +115,11 @@ const DevReaderHarnessRoute = DevReaderHarnessRouteImport.update({
   path: '/dev/reader-harness',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DevPanoramaTourRoute = DevPanoramaTourRouteImport.update({
+  id: '/dev/panorama-tour',
+  path: '/dev/panorama-tour',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DevGuidedLibraryV2Route = DevGuidedLibraryV2RouteImport.update({
   id: '/dev/guided-library-v2',
   path: '/dev/guided-library-v2',
@@ -184,6 +190,7 @@ export interface FileRoutesByFullPath {
   '/auth/reset': typeof AuthResetRoute
   '/dev/demo-premium': typeof DevDemoPremiumRoute
   '/dev/guided-library-v2': typeof DevGuidedLibraryV2Route
+  '/dev/panorama-tour': typeof DevPanoramaTourRoute
   '/dev/reader-harness': typeof DevReaderHarnessRoute
   '/auth/': typeof AuthIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -209,6 +216,7 @@ export interface FileRoutesByTo {
   '/auth/reset': typeof AuthResetRoute
   '/dev/demo-premium': typeof DevDemoPremiumRoute
   '/dev/guided-library-v2': typeof DevGuidedLibraryV2Route
+  '/dev/panorama-tour': typeof DevPanoramaTourRoute
   '/dev/reader-harness': typeof DevReaderHarnessRoute
   '/auth': typeof AuthIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -237,6 +245,7 @@ export interface FileRoutesById {
   '/auth/reset': typeof AuthResetRoute
   '/dev/demo-premium': typeof DevDemoPremiumRoute
   '/dev/guided-library-v2': typeof DevGuidedLibraryV2Route
+  '/dev/panorama-tour': typeof DevPanoramaTourRoute
   '/dev/reader-harness': typeof DevReaderHarnessRoute
   '/auth/': typeof AuthIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -265,6 +274,7 @@ export interface FileRouteTypes {
     | '/auth/reset'
     | '/dev/demo-premium'
     | '/dev/guided-library-v2'
+    | '/dev/panorama-tour'
     | '/dev/reader-harness'
     | '/auth/'
     | '/.lovable/oauth/consent'
@@ -290,6 +300,7 @@ export interface FileRouteTypes {
     | '/auth/reset'
     | '/dev/demo-premium'
     | '/dev/guided-library-v2'
+    | '/dev/panorama-tour'
     | '/dev/reader-harness'
     | '/auth'
     | '/.lovable/oauth/consent'
@@ -317,6 +328,7 @@ export interface FileRouteTypes {
     | '/auth/reset'
     | '/dev/demo-premium'
     | '/dev/guided-library-v2'
+    | '/dev/panorama-tour'
     | '/dev/reader-harness'
     | '/auth/'
     | '/.lovable/oauth/consent'
@@ -343,6 +355,7 @@ export interface RootRouteChildren {
   ApiGenerateAvatarRoute: typeof ApiGenerateAvatarRoute
   DevDemoPremiumRoute: typeof DevDemoPremiumRoute
   DevGuidedLibraryV2Route: typeof DevGuidedLibraryV2Route
+  DevPanoramaTourRoute: typeof DevPanoramaTourRoute
   DevReaderHarnessRoute: typeof DevReaderHarnessRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -462,6 +475,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DevReaderHarnessRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dev/panorama-tour': {
+      id: '/dev/panorama-tour'
+      path: '/dev/panorama-tour'
+      fullPath: '/dev/panorama-tour'
+      preLoaderRoute: typeof DevPanoramaTourRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dev/guided-library-v2': {
       id: '/dev/guided-library-v2'
       path: '/dev/guided-library-v2'
@@ -572,6 +592,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiGenerateAvatarRoute: ApiGenerateAvatarRoute,
   DevDemoPremiumRoute: DevDemoPremiumRoute,
   DevGuidedLibraryV2Route: DevGuidedLibraryV2Route,
+  DevPanoramaTourRoute: DevPanoramaTourRoute,
   DevReaderHarnessRoute: DevReaderHarnessRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
