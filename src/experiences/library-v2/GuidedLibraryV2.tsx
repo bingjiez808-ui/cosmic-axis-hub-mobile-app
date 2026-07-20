@@ -206,20 +206,24 @@ export function GuidedLibraryV2() {
             {state.step === "focus" && (
               <DestinyMap
                 topic={state.profile.topic}
-                onConfirm={(t, overview) => {
-                  // "全景阅读" is a UX-only choice — matching, shelf ordering
-                  // and recommendations still need a concrete StoryTopic, so
-                  // we safe-map it to "career" (the widest default fixture
-                  // set) and mark the entry in reading_history. Existing
-                  // matchers and recommenders are unchanged.
-                  const underlying: StoryTopic = overview ? "career" : t;
+                onConfirm={(choice) => {
+                  // `overview` is a first-class FocusChoice — never
+                  // silently rewritten to "career". Matching, shelf
+                  // ordering, recommendations and the insight screen
+                  // all branch on this value explicitly, so panoramic
+                  // readers stay panoramic.
+                  const overview = choice === "overview";
                   setState((s) => ({
                     ...s,
-                    profile: { ...s.profile, topic: underlying },
+                    profile: { ...s.profile, topic: choice },
                     reading_history: overview
                       ? [
                           ...s.reading_history,
-                          { kind: "recommendation_clicked", ref: "overview", at: Date.now() },
+                          {
+                            kind: "recommendation_clicked",
+                            ref: "overview",
+                            at: Date.now(),
+                          },
                         ]
                       : s.reading_history,
                     step: "intake_name",
