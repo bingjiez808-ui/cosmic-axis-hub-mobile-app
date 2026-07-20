@@ -397,7 +397,9 @@ function Gate({
 }: {
   onEnter: () => void;
   reducedMotion: boolean;
+  returning?: boolean;
 }) {
+
   const [entering, setEntering] = useState(false);
   const trigger = () => {
     if (reducedMotion) return onEnter();
@@ -453,7 +455,9 @@ function FocusPick({
   topic: StoryTopic | null;
   onPick: (t: StoryTopic) => void;
   onNext: () => void;
+  reducedMotion?: boolean;
 }) {
+
   return (
     <section className="pt-4">
       <p className="font-mono text-[10px] tracking-[0.35em] text-gold-dust">CHAPTER · ONE</p>
@@ -649,7 +653,11 @@ function FirstInsight({
 }: {
   topic: StoryTopic;
   onNext: () => void;
+  onFeedback?: (kind: FeedbackKind) => void;
+  weights?: Partial<Record<StoryTopic, number>>;
+  reducedMotion?: boolean;
 }) {
+
   const ins = INSIGHT_BY_TOPIC[topic];
   const [openKey, setOpenKey] = useState<"why" | "next" | "when" | null>(null);
   return (
@@ -727,7 +735,10 @@ function Shelf({
   onHistory: () => void;
   onRecommend: () => void;
   onNotes: () => void;
+  entitled?: boolean;
+  reducedMotion?: boolean;
 }) {
+
   const primary: BookRef =
     profile.topic === "career"
       ? "career"
@@ -842,7 +853,7 @@ function ShelfLink({
 }
 
 // ---------------- Book reader (Demo, quick/deep) ----------------
-function BookReader({ ref, onBack }: { ref: BookRef; onBack: () => void }) {
+function BookReader({ ref, onBack }: { ref: BookRef; onBack: () => void; entitled?: boolean }) {
   const book = bookByRef(ref);
   const [deep, setDeep] = useState(false);
   return (
@@ -900,7 +911,9 @@ function History({
   onFilter: (f: "all" | "east" | "west" | "different_choice") => void;
   onOpen: (id: string) => void;
   onBack: () => void;
+  reducedMotion?: boolean;
 }) {
+
   const list = matchFigures(profile, filter);
   return (
     <section className="pt-4">
@@ -978,7 +991,9 @@ function FigureDetail({
 }: {
   id: string;
   onBack: () => void;
+  reducedMotion?: boolean;
 }) {
+
   const f = FIGURES.find((x) => x.id === id);
   if (!f) {
     return (
@@ -1057,7 +1072,9 @@ function Recommendations({
   onChangeTopic: (t: StoryTopic) => void;
   onOpenBook: (ref: BookRef) => void;
   onBack: () => void;
+  weights?: Partial<Record<StoryTopic, number>>;
 }) {
+
   const recs = recommendNext(profile, readBookRefs);
   return (
     <section className="pt-4">
@@ -1133,7 +1150,9 @@ function NotesArea({
   actorId: string;
   setState: React.Dispatch<React.SetStateAction<StoryStateV1>>;
   goto: (s: StoryStep) => void;
+  showUndoToast?: (label: string, action: () => void) => void;
 }) {
+
   const [tick, setTick] = useState(0);
   const notes = useMemo(() => {
     const list = listNotes(Date.now());
