@@ -1516,7 +1516,7 @@ function MembershipBookPreview({
   entitled,
   slot,
 }: {
-  topic: StoryTopic | null;
+  topic: FocusChoice | null;
   entitled: boolean;
   slot: string;
 }) {
