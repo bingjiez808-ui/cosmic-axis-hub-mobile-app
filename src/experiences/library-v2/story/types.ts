@@ -50,6 +50,18 @@ export interface StoryStateV1 {
   saved_items: SavedItem[];
   history_filter: HistoryFilter;
   reading_history: ReadingEvent[];
+  /**
+   * Per-topic weight nudged by the "像我 / 不太像 / 想继续了解" buttons
+   * under the first insight. Reweights local recommendation order only.
+   * No AI or facts pipeline is invoked when this changes.
+   */
+  feedback_weights: Partial<Record<StoryTopic, number>>;
+  /**
+   * Set to the wall-clock millis of the *first* gate visit. Missing on
+   * first mount, present on every subsequent one, so the gate can skip
+   * the long ceremony animation and greet returning readers.
+   */
+  first_visit_at: number | null;
 }
 
 export type BookRef =
