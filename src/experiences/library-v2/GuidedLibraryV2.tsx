@@ -1398,6 +1398,11 @@ function Shelf({
   reducedMotion?: boolean;
 }) {
 
+  // Overview readers explicitly asked for a balanced panorama. Their
+  // shelf leads with `self` (foundational chart) and then `timeline`,
+  // followed by the three domain books in the same fixed rotation so
+  // no domain is systematically first. Topical readers keep the
+  // topic-specific ordering below.
   const primary: BookRef =
     profile.topic === "career"
       ? "career"
@@ -1407,11 +1412,14 @@ function Shelf({
       ? "wealth"
       : "self";
   const primaryBook = bookByRef(primary);
-  const topicOrder: Record<StoryTopic, BookRef[]> = {
+  const topicOrder: Record<StoryTopic | "overview", BookRef[]> = {
     career: ["career", "wealth", "timeline", "premium", "sage", "self", "love"],
     love: ["love", "self", "timeline", "sage", "premium", "career", "wealth"],
     wealth: ["wealth", "career", "timeline", "premium", "sage", "self", "love"],
     recent: ["self", "timeline", "sage", "premium", "career", "love", "wealth"],
+    // Balanced panorama: 概览 → 基础命盘 → 时间轴 → 事业/关系/财富 并列，
+    // premium/sage 收尾。事业不排在前面。
+    overview: ["self", "timeline", "career", "love", "wealth", "premium", "sage"],
   };
   const order = profile.topic ? topicOrder[profile.topic] : BOOKS.map((b) => b.ref);
   const orderedShelf = order
