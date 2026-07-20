@@ -1056,10 +1056,15 @@ function Shelf({
           </button>
         ))}
       </div>
+      <MembershipBookPreview
+        topic={profile.topic}
+        entitled={!!entitled}
+        slot="shelf_premium_book"
+      />
       <div className="mt-8">
         <p className="font-mono text-[10px] tracking-[0.3em] text-gold-dust">书架全景</p>
         <div className="mt-3 grid gap-2 sm:grid-cols-3">
-          {BOOKS.map((b) => (
+          {orderedShelf.map((b) => (
             <button
               key={b.ref}
               type="button"
