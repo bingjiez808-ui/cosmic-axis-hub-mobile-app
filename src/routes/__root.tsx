@@ -147,12 +147,33 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const [accOpen, setAccOpen] = useState(false);
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  // V2 preview & isolated harnesses render their own chrome. Suppress the
+  // V1 global nav / footer / library backdrop / sage companion / splash on
+  // any `/dev/*` route so there is only one navigation surface on screen.
+  const isIsolatedPreview = pathname.startsWith("/dev/");
   useEffect(() => {
     const handler = () => setAccOpen(true);
     window.addEventListener("lod:open-account", handler);
     void import("../lib/pwa-register").then(({ registerServiceWorker }) => registerServiceWorker());
     return () => window.removeEventListener("lod:open-account", handler);
   }, []);
+
+  if (isIsolatedPreview) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <LanguageProvider>
+          <AccountProvider>
+            <div className="min-h-screen bg-obsidian text-stone-warm">
+              <main>
+                <Outlet />
+              </main>
+            </div>
+          </AccountProvider>
+        </LanguageProvider>
+      </QueryClientProvider>
+    );
+  }
 
   return (
     <QueryClientProvider client={queryClient}>
