@@ -42,7 +42,7 @@ export interface ReaderProfile {
   birth_time: string; // HH:MM
   time_unknown: boolean;
   place: string;
-  topic: StoryTopic | null;
+  topic: FocusChoice | null;
   matching_opt_in: boolean;
 }
 
