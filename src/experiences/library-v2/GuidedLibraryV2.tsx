@@ -76,6 +76,17 @@ import {
   logMembership,
   useEntitledPreview,
 } from "./membership";
+import {
+  DEMO_DOMAIN_READINGS,
+  DEMO_DOMAIN_SCORES,
+  DEMO_RECOMMENDATION,
+} from "./panorama/fixtures";
+import {
+  GuidedDomainReadingView,
+  PanoramaEntry,
+  PanoramaFull,
+} from "./panorama/PanoramaTour";
+import type { DomainKey } from "./panorama/types";
 
 // ---------------- Persistent local actor id (Demo only) ----------------
 const ACTOR_KEY = "lod:library-v2:actor-id";
@@ -247,6 +258,30 @@ export function GuidedLibraryV2() {
                   }
                   goto(nextIntakeStep(state.step));
                 }}
+              />
+            )}
+            {state.step === "panorama_entry" && (
+              <PanoramaEntryStep
+                state={state}
+                setState={setState}
+                entitled={entitled}
+                reducedMotion={reducedMotion}
+              />
+            )}
+            {state.step === "panorama_reading" && state.panorama?.selected_domain
+              && state.panorama.selected_domain !== "overview" && (
+              <PanoramaReadingStep
+                domain={state.panorama.selected_domain}
+                setState={setState}
+                reducedMotion={reducedMotion}
+              />
+            )}
+            {state.step === "panorama_full" && (
+              <PanoramaFullStep
+                state={state}
+                setState={setState}
+                entitled={entitled}
+                reducedMotion={reducedMotion}
               />
             )}
             {state.step === "first_insight" && state.profile.topic && (
@@ -2642,5 +2677,242 @@ function Drawer({
       </div>
     </div>,
     document.body,
+  );
+}
+
+// ---------------- Panorama Tour step wrappers ----------------
+//
+// These wrappers own the state transitions for the deterministic
+// Panorama Tour and forward props to the pure UI components under
+// `./panorama/`. Kept in this file so all `setState` mutations happen
+// beside the rest of the story chain and stay in scope with `logMembership`.
+
+function PanoramaEntryStep({
+  state,
+  setState,
+  entitled,
+  reducedMotion,
+}: {
+  state: StoryStateV1;
+  setState: React.Dispatch<React.SetStateAction<StoryStateV1>>;
+  entitled: boolean;
+  reducedMotion: boolean;
+}) {
+  const returning = !!state.panorama?.tour_completed_at;
+  const lastPos = state.panorama?.nav_position ?? null;
+  useEffect(() => {
+    logMembership("membership_impression", "panorama_entry");
+  }, []);
+  const pickDomain = (d: DomainKey) => {
+    setState((s) => ({
+      ...s,
+      step: "panorama_reading",
+      panorama: {
+        selected_domain: d,
+        tour_completed_at: s.panorama?.tour_completed_at ?? null,
+        nav_position: s.panorama?.nav_position ?? null,
+      },
+      reading_history: [
+        ...s.reading_history,
+        { kind: "recommendation_clicked", ref: `panorama:${d}`, at: Date.now() },
+      ],
+    }));
+  };
+  const openOverview = () => {
+    setState((s) => ({
+      ...s,
+      step: "panorama_full",
+      panorama: {
+        selected_domain: "overview",
+        tour_completed_at: s.panorama?.tour_completed_at ?? null,
+        nav_position: s.panorama?.nav_position ?? "overview",
+      },
+    }));
+  };
+  const skipToShelf = () => {
+    setState((s) => ({
+      ...s,
+      step: "shelf",
+      panorama: {
+        selected_domain: s.panorama?.selected_domain ?? null,
+        tour_completed_at: Date.now(),
+        nav_position: s.panorama?.nav_position ?? null,
+      },
+    }));
+  };
+  const resumeLast = () => {
+    setState((s) => ({
+      ...s,
+      step: "panorama_full",
+      panorama: {
+        selected_domain: s.panorama?.selected_domain ?? "overview",
+        tour_completed_at: s.panorama?.tour_completed_at ?? null,
+        nav_position: lastPos,
+      },
+    }));
+  };
+  return (
+    <>
+      {returning && lastPos && (
+        <div className="mx-auto mb-4 flex max-w-2xl flex-wrap items-center justify-between gap-3 rounded-lg border border-stone-warm/15 bg-obsidian/50 px-4 py-3 text-sm">
+          <span className="text-stone-warm/70">
+            上次读到：<span className="text-stone-warm">{lastPos}</span>
+          </span>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={resumeLast}
+              className="rounded-full border border-gold-dust/50 px-3 py-1 font-mono text-[10px] tracking-[0.3em] text-gold-dust"
+            >
+              继续阅读
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                setState((s) => ({
+                  ...s,
+                  panorama: {
+                    selected_domain: null,
+                    tour_completed_at: null,
+                    nav_position: null,
+                  },
+                }))
+              }
+              className="rounded-full border border-stone-warm/25 px-3 py-1 font-mono text-[10px] tracking-[0.3em] text-stone-warm/70"
+            >
+              重新打开导览
+            </button>
+          </div>
+        </div>
+      )}
+      <PanoramaEntry
+        scores={DEMO_DOMAIN_SCORES}
+        recommended={DEMO_RECOMMENDATION}
+        onPick={pickDomain}
+        onOverview={openOverview}
+        reducedMotion={reducedMotion}
+      />
+      <div className="mx-auto mt-4 max-w-2xl text-center">
+        <button
+          type="button"
+          onClick={skipToShelf}
+          className="font-mono text-[10px] tracking-[0.4em] text-stone-warm/50 underline decoration-dotted underline-offset-4 hover:text-gold-dust"
+        >
+          跳过导览，直接进入书架 →
+        </button>
+        {!entitled && (
+          <p className="mt-2 text-[10px] text-stone-warm/35">
+            所有分数与推荐均来自确定性事实计算，不构成命运结论。
+          </p>
+        )}
+      </div>
+    </>
+  );
+}
+
+function PanoramaReadingStep({
+  domain,
+  setState,
+  reducedMotion,
+}: {
+  domain: DomainKey;
+  setState: React.Dispatch<React.SetStateAction<StoryStateV1>>;
+  reducedMotion: boolean;
+}) {
+  const [fullOpen, setFullOpen] = useState(false);
+  const reading = DEMO_DOMAIN_READINGS[domain];
+  const score = DEMO_DOMAIN_SCORES.find((s) => s.domain === domain)!;
+  return (
+    <GuidedDomainReadingView
+      reading={reading}
+      score={score}
+      recommendReason={
+        domain === DEMO_RECOMMENDATION.domain ? DEMO_RECOMMENDATION.reason_text : undefined
+      }
+      onBack={() =>
+        setState((s) => ({ ...s, step: "panorama_entry" }))
+      }
+      onFull={() =>
+        setState((s) => ({
+          ...s,
+          step: "panorama_full",
+          panorama: {
+            selected_domain: domain,
+            tour_completed_at: s.panorama?.tour_completed_at ?? null,
+            nav_position: domain,
+          },
+        }))
+      }
+      fullOpen={fullOpen}
+      onExpand={() => setFullOpen(true)}
+      reducedMotion={reducedMotion}
+    />
+  );
+}
+
+function PanoramaFullStep({
+  state,
+  setState,
+  entitled,
+  reducedMotion,
+}: {
+  state: StoryStateV1;
+  setState: React.Dispatch<React.SetStateAction<StoryStateV1>>;
+  entitled: boolean;
+  reducedMotion: boolean;
+}) {
+  const initialAnchor = state.panorama?.nav_position ?? "overview";
+  return (
+    <PanoramaFull
+      scores={DEMO_DOMAIN_SCORES}
+      readings={DEMO_DOMAIN_READINGS}
+      recommended={DEMO_RECOMMENDATION}
+      entitled={entitled}
+      initialAnchor={initialAnchor}
+      onAnchorChange={(id) =>
+        setState((s) => ({
+          ...s,
+          panorama: {
+            selected_domain: s.panorama?.selected_domain ?? "overview",
+            tour_completed_at: s.panorama?.tour_completed_at ?? null,
+            nav_position: id,
+          },
+        }))
+      }
+      onBack={() =>
+        setState((s) => ({
+          ...s,
+          step: "panorama_entry",
+          panorama: {
+            selected_domain: s.panorama?.selected_domain ?? null,
+            tour_completed_at: Date.now(),
+            nav_position: s.panorama?.nav_position ?? null,
+          },
+        }))
+      }
+      onOpenHistory={() =>
+        setState((s) => ({
+          ...s,
+          step: "history",
+          panorama: {
+            selected_domain: s.panorama?.selected_domain ?? "overview",
+            tour_completed_at: Date.now(),
+            nav_position: s.panorama?.nav_position ?? null,
+          },
+        }))
+      }
+      onOpenRecommendations={() =>
+        setState((s) => ({
+          ...s,
+          step: "recommendations",
+          panorama: {
+            selected_domain: s.panorama?.selected_domain ?? "overview",
+            tour_completed_at: Date.now(),
+            nav_position: s.panorama?.nav_position ?? null,
+          },
+        }))
+      }
+      reducedMotion={reducedMotion}
+    />
   );
 }

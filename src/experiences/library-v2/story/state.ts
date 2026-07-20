@@ -35,6 +35,11 @@ export const INITIAL_STORY_STATE: StoryStateV1 = {
   reading_history: [],
   feedback_weights: {},
   first_visit_at: null,
+  panorama: {
+    selected_domain: null,
+    tour_completed_at: null,
+    nav_position: null,
+  },
 };
 
 export const DEMO_PROFILE: ReaderProfile = {
@@ -105,7 +110,11 @@ export function ageBandFromDate(date: string): AgeBand | null {
 export function nextIntakeStep(step: StoryStep): StoryStep {
   if (step === "intake_name") return "intake_birth";
   if (step === "intake_birth") return "intake_place";
-  if (step === "intake_place") return "first_insight";
+  // After the 3-step intake, the reader enters the deterministic Panorama
+  // Tour (four-signal overview → recommended first read). The old direct
+  // path to `first_insight` is preserved as an internal branch off the
+  // panorama for "跳过导览".
+  if (step === "intake_place") return "panorama_entry";
   return step;
 }
 
