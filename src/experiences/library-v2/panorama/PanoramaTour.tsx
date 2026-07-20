@@ -52,18 +52,23 @@ export function PanoramaEntry({ scores, recommended, onPick, onOverview, reduced
         <p className="mt-3 text-sm text-stone-warm/70">先看见四个领域的信号，再决定从哪一页开始阅读。</p>
       </header>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <ul
+        role="list"
+        aria-label="四领域信号卡"
+        className="grid list-none grid-cols-1 gap-4 p-0 md:grid-cols-2 xl:grid-cols-4"
+      >
         {DOMAIN_ORDER.map((d) => {
           const s = scores.find((x) => x.domain === d)!;
           const isRec = recommended.domain === d;
+          const labelId = `panorama-card-${d}-label`;
           return (
-            <motion.button
+            <motion.li
               key={d}
-              type="button"
-              onClick={() => onPick(d)}
+              role="listitem"
               initial={reducedMotion ? false : { opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               whileHover={reducedMotion ? undefined : { y: -2 }}
+              aria-labelledby={labelId}
               className={`group relative overflow-hidden rounded-lg border p-5 text-left transition ${
                 isRec
                   ? "border-gold-dust/70 bg-obsidian/70 shadow-[0_0_0_1px_rgba(212,175,120,0.2)]"
@@ -71,33 +76,60 @@ export function PanoramaEntry({ scores, recommended, onPick, onOverview, reduced
               }`}
             >
               {isRec && (
-                <span className="absolute right-3 top-3 rounded-full border border-gold-dust/50 px-2 py-0.5 font-mono text-[9px] tracking-[0.3em] text-gold-dust">
+                <span
+                  className="absolute right-3 top-3 rounded-full border border-gold-dust/50 px-2 py-0.5 font-mono text-[9px] tracking-[0.3em] text-gold-dust"
+                  aria-hidden="true"
+                >
                   推荐
                 </span>
               )}
               <p className="font-mono text-[10px] tracking-[0.3em] text-stone-warm/50">{BAND_COPY[s.band]} · {CONF_COPY[s.confidence]}</p>
-              <h2 className="mt-2 font-serif text-xl text-stone-warm">{DOMAIN_LABEL[d]}</h2>
+              <h2 id={labelId} className="mt-2 font-serif text-xl text-stone-warm">
+                {DOMAIN_LABEL[d]}
+                {isRec && <span className="sr-only">（推荐首读）</span>}
+              </h2>
               <p className="mt-1 text-xs text-stone-warm/60">{DOMAIN_TAGLINE[d]}</p>
               <div className="mt-4 flex items-end gap-2">
-                <span className="font-serif text-3xl text-gold-dust">{s.score}</span>
-                <span className="pb-1 text-[10px] text-stone-warm/50">/ 100 领域信号</span>
+                <span className="font-serif text-3xl text-gold-dust" aria-label={`领域信号 ${s.score} 分（满分 100）`}>{s.score}</span>
+                <span className="pb-1 text-[10px] text-stone-warm/50" aria-hidden="true">/ 100 领域信号</span>
               </div>
-              <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-stone-warm/10">
+              <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-stone-warm/10" aria-hidden="true">
                 <div className="h-full bg-gold-dust/60" style={{ width: `${s.score}%` }} />
               </div>
-              <div
-                role="button"
-                tabIndex={0}
-                onClick={(e) => { e.stopPropagation(); setOpenSource(d); }}
-                onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); setOpenSource(d); } }}
-                className="mt-4 inline-block cursor-pointer text-[11px] text-gold-dust/80 underline decoration-dotted underline-offset-4 hover:text-gold-dust"
-              >
-                这个分数怎么来的？
+              {/* Two independent, non-nested actions. Neither button
+                  contains the other, and the outer <li> is not a button —
+                  so keyboard Tab visits exactly two focusable stops per
+                  card and Enter/Space only triggers the focused one. */}
+              <div className="mt-5 flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => onPick(d)}
+                  aria-current={isRec ? "true" : undefined}
+                  aria-describedby={labelId}
+                  className={`inline-flex min-h-11 items-center rounded-full px-4 font-mono text-[11px] tracking-[0.3em] transition ${
+                    isRec
+                      ? "bg-gold-dust text-obsidian hover:bg-gold-dust/90"
+                      : "border border-stone-warm/30 text-stone-warm hover:border-gold-dust/50"
+                  }`}
+                >
+                  选择此领域
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOpenSource(d)}
+                  aria-haspopup="dialog"
+                  aria-expanded={openSource === d}
+                  aria-describedby={labelId}
+                  className="inline-flex min-h-11 items-center text-[11px] text-gold-dust/80 underline decoration-dotted underline-offset-4 hover:text-gold-dust"
+                >
+                  这个分数怎么来的？
+                </button>
               </div>
-            </motion.button>
+            </motion.li>
           );
         })}
-      </div>
+      </ul>
+
 
       <div className="rounded-lg border border-gold-dust/30 bg-obsidian/60 p-6">
         <p className="font-mono text-[10px] tracking-[0.4em] text-gold-dust/70">阅读顺序推荐</p>
