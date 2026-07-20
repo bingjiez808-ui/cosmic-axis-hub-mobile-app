@@ -140,3 +140,43 @@ describe("adapter · PremiumFacts → PanoramaFactsInput", () => {
     expect(out.western?.progressions_available).toBe(false);
   });
 });
+
+describe("PanoramaEntry · a11y — no nested interactive controls", () => {
+  it("source file contains no <button> nested inside another <button> and no role=button inside a button-like ancestor", async () => {
+    const fs = await import("node:fs/promises");
+    const src = await fs.readFile(
+      new URL("./PanoramaTour.tsx", import.meta.url),
+      "utf8",
+    );
+
+    // 1. Outer card MUST be a list item, not a button.
+    expect(src).toContain("<motion.li");
+    expect(src).not.toMatch(/<motion\.button[^>]*key=\{d\}/);
+
+    // 2. Regex-scan for any <button ...> whose closing </button> follows
+    //    another <button before closing — a rough but effective guard
+    //    against reintroducing nested <button> elements.
+    const openings = [...src.matchAll(/<button\b/g)].map((m) => m.index!);
+    const closings = [...src.matchAll(/<\/button>/g)].map((m) => m.index!);
+    // Pair them like a stack.
+    const stack: number[] = [];
+    let nested = false;
+    const events = [
+      ...openings.map((i) => ({ i, t: "open" as const })),
+      ...closings.map((i) => ({ i, t: "close" as const })),
+    ].sort((a, b) => a.i - b.i);
+    for (const e of events) {
+      if (e.t === "open") {
+        if (stack.length > 0) nested = true;
+        stack.push(e.i);
+      } else {
+        stack.pop();
+      }
+    }
+    expect(nested).toBe(false);
+
+    // 3. role="button" must not reappear inside PanoramaEntry — the two
+    //    real actions are real <button>s.
+    expect(src).not.toMatch(/role="button"/);
+  });
+});
