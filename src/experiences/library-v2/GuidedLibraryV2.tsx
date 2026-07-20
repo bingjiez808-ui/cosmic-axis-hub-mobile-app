@@ -359,6 +359,21 @@ function TopBar({
           <span className="hidden font-mono text-[9px] tracking-[0.3em] text-stone-warm/40 sm:inline">
             {LIBRARY_EXPERIENCE_VERSION}
           </span>
+          {onToggleEntitled && (
+            <button
+              type="button"
+              onClick={() => onToggleEntitled(!entitled)}
+              aria-pressed={!!entitled}
+              title="以已购身份预览：Demo 演示，不涉及真实订单"
+              className={`min-h-11 rounded-full border px-3 text-xs transition ${
+                entitled
+                  ? "border-gold-dust bg-gold-dust/15 text-stone-warm"
+                  : "border-stone-warm/20 text-stone-warm/70 hover:bg-stone-warm/5"
+              }`}
+            >
+              {entitled ? "✓ 已购身份预览" : "以已购身份预览"}
+            </button>
+          )}
           {step !== "gate" && (
             <button
               type="button"
