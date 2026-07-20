@@ -43,6 +43,7 @@ import type {
   StoryStateV1,
   StoryStep,
   StoryTopic,
+  FocusChoice,
 } from "./story/types";
 import {
   matchFigures,
