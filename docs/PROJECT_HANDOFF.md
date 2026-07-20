@@ -1,6 +1,6 @@
-# Fate Nexus 项目交接文档
+# Fate Nexus 产品与市场协作手册
 
-> 面向新协作者的完整交接。请与代码、迁移文件、Skill 文档、测试同时阅读。
+> 面向市场推广协作者的产品说明、卖点、口径与工作边界。**不是**代码审计文档。
 
 ---
 
@@ -9,532 +9,456 @@
 | 项 | 值 |
 | --- | --- |
 | 生成日期 | 2026-07-20 |
-| 项目名 | Fate Nexus（命运图书馆） |
-| Lovable Project ID | `8dd02eb0-ad23-48d1-858e-b5eb297af57e` |
-| 线上 URL | https://fate-nexus-ai.lovable.app |
-| 预览 URL | https://id-preview--8dd02eb0-ad23-48d1-858e-b5eb297af57e.lovable.app |
+| 产品中文名 | 命运图书馆 |
+| 产品英文名 | Fate Nexus |
+| 线上正式站 | https://fate-nexus-ai.lovable.app |
+| 预览环境 | https://id-preview--8dd02eb0-ad23-48d1-858e-b5eb297af57e.lovable.app |
 | 当前 commit | `60dedb9c39505e2fcb3b9ae2f25d3899a8144efc` |
-| 文档适用范围 | 产品、技术架构、数据、AI 报告链路、迭代历史、遗留风险、上手指南 |
-| 快照来源 | 仓库当前源码 + `supabase/migrations` + `skills/` + Lovable 会话历史 |
-
-> 本文不含任何 secret / token / 密码 / 完整邮箱 / 用户出生资料。指定测试报告仅保留 `report_id`，其它 UUID 已脱敏。
+| 适用读者 | 市场推广、内容运营、社媒、BD、客服 |
+| 特别提示 | 仓库中的 `PRD.md` / `PRODUCT.md` / `README.md` 部分口径已**过时**（例如仍写 ¥99 PDF、手机号 OTP）。**以本文档为准**。 |
 
 ---
 
 ## 2. 30 秒摘要
 
-- **产品是什么**：面向中文用户的自我探索平台。用户输入出生资料，系统用 4 个传统体系（西方占星 / 印度占星 / 八字 / 紫微）做**确定性排盘**，再让 AI 在事实之上生成解读。
-- **现阶段能做什么**：注册登录、开始仪式建盘、免费网页报告、¥79 **模拟支付**解锁 24 章高级报告、个人中心永久重开与删除、长老对话/树洞、生命时间轴、云端社群（同门）。
-- **最重要的未完成事项**：
-  1. **真实支付未接入**（¥79 仍为 mock）；
-  2. `scripts/_reset.mjs` / `scripts/_exhaust.mjs` 一次性人工改库脚本仍在仓库，需审计/删除；
-  3. Placidus/Koch 分宫制、Sentry、App 封装、真实用户规模压测尚未做；
-  4. `PRD.md` / `PRODUCT.md` / `README.md` 与当前实现存在漂移，需重写或标注失效。
+**命运图书馆**是一款面向中文用户的深度自我探索产品。用户输入出生资料，系统用**西方占星 / 印度占星 / 八字 / 紫微斗数**四大传统一次性排盘，再由 AI 在真实排盘事实之上生成解读。
+
+- 免费：网页版基础报告 + 生命时间轴 + 长老对话 + 社区。
+- 付费：**¥79** 一次解锁「高级 AI 综合深度报告」，24 章、约两三万字、永久保存、随时重开、不重复扣费。
+- 定位：**文化探索 · 自我反思**，不是算命、不是预测。
+
+**当前推广限制**：支付仍为**模拟支付**（尚未上线真实微信/支付宝/Visa 通道），因此当前阶段主推**内测/共创/预约**口径，不做「立即购买」大规模广告投放。
 
 ---
 
-## 3. 产品背景与原则
+## 3. 品牌背景与产品哲学
 
-- **四体系合璧**：西方占星（Whole Sign 整宫制）、印度占星（Vimshottari 大限）、八字（四柱十神大运）、紫微斗数（十二宫主星四化）。
-- **定位**：文化探索 / 自我反思，不是命理神断。
-- **免责红线**：**不承诺**医疗诊断、法律建议、投资收益、唯一正缘、必婚年、灾祸预警。所有 AI 输出遵循此边界。
-- **AI 边界**：AI 仅在已计算好的 `PremiumFacts` 之上写解读文字，从不计算星盘/大运/宫位/相位。
+### 3.1 品牌故事
+
+命运图书馆把命理传统当作**人类文明的知识馆藏**：每一种体系都是一整套关于"人如何理解自己"的语言。我们不是要证明谁"更准"，而是把四种语言并排放好，让用户在自我叙事里挑选适合自己的那一句。
+
+### 3.2 差异化：四体系合璧
+
+市面上多数产品只做一个体系（西方星座 / 或八字 / 或塔罗），叙述扁平。命运图书馆的核心壁垒是：
+
+- **同一份出生资料**同时进入 4 套确定性计算引擎；
+- 系统主动指出"这四种语言在你身上**共识**在哪里 / **张力**在哪里"；
+- AI 只解读事实，不发明事实——**AI 永远不算命盘**。
+
+这让报告显著更立体，也是可以持续对外讲的**唯一性叙事**。
+
+### 3.3 产品哲学
+
+1. **文化娱乐 + 自我反思**，不做神断。
+2. **诚实的确定性**：排盘用真实天文/历法计算，同一生日永远得到同一份盘。
+3. **诚实的 AI 边界**：AI 只写解读文字，事实由代码算出。
+4. **一次付费、永久保存**：付费用户随时重开报告不重复扣费。
+5. **克制**：不承诺婚姻、财富、健康、灾祸。
 
 ---
 
-## 4. 当前用户完整链路
+## 4. 目标客群与使用场景
 
+### 4.1 主要人群
+
+| 客群 | 核心需求 | 场景 |
+| --- | --- | --- |
+| 25–40 岁一线/新一线女性 | 自我探索、情感梳理、人生节奏感 | 深夜独处、情绪起伏时 |
+| 泛灵性/心理成长爱好者 | 系统性的自我语言 | 阅读、写日记、冥想 |
+| 命理/占星/八字重度用户 | 想看跨体系一致性 | 与朋友对照讨论 |
+| 内容创作者 | 素材、切片、二次表达 | 小红书 / 抖音 / 播客 |
+| 心理咨询/教练/HR 从业者 | 自我 & 客户理解辅助 | 工作中的参考视角 |
+
+### 4.2 典型使用场景
+
+- **年末/生日**：想一份"关于我这一年 / 关于我这一生"的解读。
+- **人生转折**：换工作、结束一段关系、搬城市。
+- **好友互测**：分享报告截图、比较跨体系画像。
+- **陪伴时刻**：睡前和"长老"聊几句，写树洞。
+
+---
+
+## 5. 完整用户旅程
+
+```text
+[发现]  →  [注册]  →  [开始仪式]  →  [基础报告]  →  [高级报告 ¥79]  →  [永久重开 / 深度使用]
+                                     │
+                                     ├─ 生命时间轴
+                                     ├─ 长老对话 / 树洞
+                                     └─ 同门社区
 ```
-访问首页 (/)
-  → 注册 / 登录 (/auth) —— 邮箱密码 + 邮件验证；Google OAuth；无手机号 OTP
-  → 开始仪式 (/ritual) —— 姓名、公历生日、出生时间、出生地（城市 combobox 转经纬度）、性别（此处强制采集）
-  → 确定性排盘（本地 + 缓存至 charts 表；同 user + 同 canonical_hash 去重）
-  → 免费网页报告 (/report) —— 四传统解读 + 生命时间轴（YearByYearChart）
-      · 点年份 / 折线点 → YearInsightModal（确定性 year_readings_v1）
-      · 长老对话 / 树洞（ElderCompanion）
-  → ¥79 高级报告（PremiumPdfCard）
-      · 未购买 → MockPaymentModal（微信/支付宝/Visa/银联，均为测试支付）
-      · 已购未生成 → 「开始生成完整报告」
-      · 生成中 → 24 章实时进度（当前章节名 + 可安全离开提示）
-      · partial/failed → 「继续生成」
-      · completed → 「查看完整报告」→ PremiumReportReader 全屏 Portal 弹层
-  → 个人中心 AccountModal —— 命盘列表、报告列表、删除命盘/仅报告、永久重开报告
-  → 同门社群 (/community) —— 发帖 / 评论 / 点赞 / 最多 4 张图
-```
+
+| 步骤 | 用户看到 | 价值 | 完成度 | 推广可宣称？ |
+| --- | --- | --- | --- | --- |
+| **首页** | 品牌氛围、四传统入口、开始仪式 CTA | 快速理解产品 | ✅ 上线 | ✅ |
+| **注册 / 登录** | 邮箱 + 密码（含邮件验证），或 Google 一键 | 低门槛 | ✅ 上线 | ⚠️ **邮件送达依赖 Supabase 默认 SMTP，规模化前需接自有邮件通道** |
+| **开始仪式（/ritual）** | 姓名、公历生日、出生时间、出生地、性别 | 一次采集，用于所有体系 | ✅ 上线 | ✅ 强调"仪式感 + 一次输入,四体系可用" |
+| **确定性排盘** | 一份可视化四传统命盘 | 展示"真的算过" | ✅ 上线 | ✅ |
+| **免费网页报告 (/report)** | 四传统解读段落 + 关键要点 | 让用户先尝到味道 | ✅ 上线 | ✅ |
+| **生命时间轴** | 折线能量曲线 + 每年可点开详情弹窗 | 让"命运"具象为可读的年度节奏 | ✅ 上线 | ✅ 可作为社媒切片主力 |
+| **长老对话 / 树洞** | 一位"长老"陪伴对话；写下心事 | 情绪陪伴、留下痕迹 | ✅ 上线 | ✅ |
+| **同门社区 (/community)** | 发帖、评论、点赞、最多 4 张图 | 用户共创、留存 | ✅ 上线 | ✅ 谨慎运营（见 §11） |
+| **¥79 高级报告** | 支付台 → 24 章生成进度 → 全屏阅读器 | 深度长文 + 永久保存 | ✅ 功能完备 · ⚠️ **支付为模拟** | ⚠️ 见 §6 与 §8 |
+| **个人中心 (AccountModal)** | 命盘列表 / 报告列表 / 删除 / 重开 | 永久资产感 | ✅ 上线 | ✅ 强调"一次付费,随时重读" |
 
 ---
 
-## 5. 当前技术架构图
+## 6. 免费 / 付费边界与当前支付真相
+
+### 6.1 边界
+
+| 免费 | 付费 ¥79 |
+| --- | --- |
+| 四传统基础网页解读 | **24 章高级 AI 深度报告** |
+| 生命时间轴（可点年份看详情） | 报告永久保存、随时重开、不再扣费 |
+| 长老对话 / 树洞 | 后续加深章节升级免费重生成 |
+| 社区参与 | — |
+
+### 6.2 支付真相（**内部严守**）
+
+- 支付台 UI 目前展示 **微信 / 支付宝 / Visa / 银联** 四种方式，**均为模拟测试通道**，实际不发生真实扣款。
+- 服务端要求 `PAYMENT_MODE=mock` 才铸造订单，订单号前缀 `mock_*`。
+- **真实微信 / 支付宝 / Visa / 银联 / Apple Pay 均未接入**。
+- 生产上线前必须切换真实通道并完成签约、回调验签、退款、发票、税务流程。
+
+### 6.3 对外可 / 不可宣称
+
+| ✅ 可宣称 | ❌ 不可宣称 |
+| --- | --- |
+| "限量内测 / 早鸟共创" | "已支持微信 / 支付宝 / Visa / Apple Pay" |
+| "预约体验,首批赠深度报告" | "立即购买、全球支付" |
+| "一次 ¥79,永久保留" | "无理由退款、7 天试用"（政策未定） |
+
+---
+
+## 7. 高级 AI 深度报告：核心卖点
+
+### 7.1 内容价值
+
+- **24 章、约两三万字**，覆盖：开篇 / 执行摘要 / 命盘导览 / 西方本命与相位 / 印度本命与大限 / 八字四柱十神大运 / 紫微宫与流曜 / 跨体系共识 / 跨体系张力 / 性格底色 / 事业 / 财富 / 关系 / 家庭 / 健康 / 人生使命 / 未来 12 个月 / 关键窗口 / 方法论与免责声明。
+- 每一章都要求 AI **引用真实事实路径**（例如"八字·日主·丁火"）而不是自由发挥。
+- **一次生成，永久保存**：完成后写入数据库，之后重开一律读缓存,**不再消耗任何 AI 额度**。
+- 中断可续、失败重试（每章最多 3 次），最终交付完整 24 章。
+
+### 7.2 已验证的一份完整报告
+
+- **Report ID**：`274c92fb-7fdd-490c-8991-c2a02ec81f6f`
+- **状态**：24 / 24 章 completed
+- **AI 提供方**：Lovable AI Gateway
+- **主力模型**：Google Gemini 2.5 Flash;最后 3 章升级为 Gemini 2.5 Pro
+- **复开验证**：再次打开时 AI 调用数 = **0**,报告内容哈希不变
+
+> ⚠️ 这是一份**指定测试报告**的通过验证,不等于"我们已经跑过 10 万份"。大规模真实用户压测尚未做,市场投放前需要与开发协商小规模灰度。
+
+### 7.3 推广口径示例
+
+> ✅ "四大传统同时开卷,由 AI 为你写就一部专属的 24 章命运手册,一次读完、永久保存。"
+>
+> ✅ "AI 只解读、不算命——每一个结论都能追溯回真实排盘。"
+>
+> ❌ 禁止:"AI 精准预测你的婚姻年份 / 财富数字 / 疾病风险。"
+
+---
+
+## 8. 品牌调性与推广口径
+
+### 8.1 调性关键词
+
+**古典、克制、温度、图书馆、长夜、烛光、羊皮卷、星图、诚实**。
+
+避免:塑料水晶球、金光闪闪、"大师"、"天机"、恐吓式话术、极端情绪化文案。
+
+### 8.2 推荐宣传口径
+
+- "四种古老语言,一次同时开口"
+- "命运不是判决,是一本可以反复翻阅的书"
+- "AI 只解读,不算命"
+- "一次 ¥79,一份属于你的 24 章手册,永久保存"
+- "写给愿意认真看看自己的人"
+
+### 8.3 **禁止**宣传口径（红线)
+
+以下承诺**绝对不能**出现在任何广告、直播、KOL 稿件、私信话术中:
+
+- ❌ 保证 / 预测**婚姻**、正缘、桃花对象、必婚年
+- ❌ 保证 / 预测**收入**、财富数字、投资回报、股票基金走势
+- ❌ 任何**医疗**判断、疾病诊断、寿命预测
+- ❌ **灾祸**、意外、生死、劫难预警
+- ❌ "唯一正确"、"百分百精准"、"AI 已破解命运"
+- ❌ 用他人真实命盘做营销素材（隐私红线)
+
+以上一旦触发,不仅品牌翻车,还有法律与平台风险。**任何合作方文案必须由品牌方审核后发布。**
+
+---
+
+## 9. 市场卖点、内容选题与转化建议
+
+### 9.1 核心卖点(可拆分为多条内容)
+
+1. **四体系合璧**——市面独一份的横向对照。
+2. **AI 只解读、不算命**——反"AI 玄学"焦虑。
+3. **24 章深度报告**——长内容,便于图文/长视频拆解。
+4. **一次付费永久保存**——反订阅疲劳。
+5. **生命时间轴**——年度节奏可视化,天然社媒素材。
+6. **克制的调性**——差异化于市面上大红大紫的算命号。
+
+### 9.2 内容选题库（示例)
+
+- "同一天出生,四种传统怎么说?"
+- "西方星座 vs 紫微斗数:同一件事的两种语言"
+- "读懂你的大运:未来 10 年在讲什么故事"
+- "跨体系共识/张力：如果四位老师同时坐下来聊你"
+- "命运图书馆书评式:24 章我读到了什么"
+- "长老树洞:凌晨三点写下的那句话"
+
+### 9.3 社媒平台建议
+
+| 平台 | 内容形态 | 主目标 |
+| --- | --- | --- |
+| 小红书 | 图文长笔记 + 报告截图切片 | 主拉新 |
+| 抖音 / 视频号 | 30–90 秒短视频、"命盘解读一分钟" | 广度曝光 |
+| 微博 | 话题运营、KOL 合作 | 事件营销 |
+| 播客 | 深度对谈,一期讲一个体系 | 高价值人群 |
+| 知乎 | 长回答、专栏 | SEO + 信任建立 |
+| 邮件通讯 | 月度"命运图书馆通讯" | 留存(依赖 §17 邮件通道) |
+
+### 9.4 转化漏斗
+
+```text
+曝光 → 首页 → 开始仪式(采集出生资料) → 基础报告(体验) → ¥79 高级报告 → 复访(个人中心)
+```
+
+关键卡点：
+
+- **首页 → 仪式**:出生资料采集是最大流失点,需情感化文案。
+- **基础 → 付费**:必须让用户在基础报告里"看到但吃不够"。
+- **付费 → 复访**:靠"永久保存 + 时间轴年度提醒"。
+
+### 9.5 建议核心指标(与开发共同定义)
+
+- 首页访问 → 完成仪式转化率
+- 完成仪式 → 打开基础报告
+- 打开基础报告 → 打开付费台
+- 付费台打开 → 支付成功(**目前为模拟**)
+- 已付费 → 7 日 / 30 日复访
+- 报告平均阅读章节数
+- 社区周活/发帖量/互动率
+
+### 9.6 用户反馈收集
+
+- 报告完成页 & 阅读器底部放"1 句话反馈"入口。
+- 社区置顶"共创需求征集"帖。
+- 每月一次 5–10 人深访(付费用户优先)。
+- 客服/私信话术模板由品牌 + 开发共同维护。
+
+---
+
+## 10. 版本迭代重点（产品语言)
+
+| 阶段 | 面向用户的变化 | 现状 |
+| --- | --- | --- |
+| 初版上线 | 首页 + 四传统介绍 + 账户 | 已完成 |
+| 认证优化 | 邮箱密码 + 邮件验证 + Google 登录;去除手机号 OTP | 已完成 |
+| 仪式统一 | 性别等基础信息前移到"开始仪式"一次采集 | 已完成 |
+| 命盘管理 | 命盘云端保存、去重、可删除 | 已完成 |
+| 付费重塑 | 从"¥99 PDF"改为**"¥79 网页版永久报告"**,不再导出 PDF | 已完成 |
+| 报告体验 | 全屏阅读器、目录侧栏、移动端抽屉、桌面 1320px | 已完成 |
+| 高级报告引擎 | 24 章逐章生成、断点续跑、失败重试、复开零消耗 | 已完成 |
+| 事实层升级 | 四体系周期与流运更完整 | 已完成 |
+| 真实 AI 演练 | 完整跑通一份 24/24 真实 AI 报告 | 已完成(单份) |
+| 生命时间轴 | 折线 + 点年份看详情弹窗 | 已完成 |
+| 同门社区 | 云端发帖、评论、点赞、图片 | 已完成 |
+| 社区安全强化 | 2026-07-19 修复:社区点赞数据不再对未登录访客开放 | 已完成 |
+
+---
+
+## 11. 当前完成度矩阵（对外沟通口径)
+
+| 模块 | 状态 | 市场是否可主推 |
+| --- | --- | --- |
+| 邮箱 / Google 登录 | ✅ 已上线 | 可,但**邮件送达尚未接自有 SMTP** |
+| 开始仪式 & 命盘管理 | ✅ 已上线 | 可 |
+| 免费基础报告 | ✅ 已上线 | 可 |
+| 生命时间轴 & 年度详情 | ✅ 已上线 | 可(推荐主推) |
+| 长老对话 / 树洞 | ✅ 已上线 | 可 |
+| 同门社区 | ✅ 已上线,基础安全刚修复 | 可,但需先配运营与举报机制 |
+| **¥79 高级报告(功能)** | ✅ 24 章跑通 | 可讲功能,但… |
+| **¥79 支付通道** | ❌ **仅模拟支付** | ❌ 不得对外声称已接入真实支付 |
+| 邮件送达(生产 SMTP) | ⚠️ 依赖 Supabase 默认通道 | 大规模前需替换 |
+| 客户端错误监控(Sentry) | ❌ 未接入 | — |
+| App 封装 / 上架 | ❌ 未做 | ❌ 不得宣称"App 已上线" |
+| 大规模压测与成本控制 | ❌ 未做 | 需灰度 |
+| PRD / README 等旧文档口径 | ⚠️ **部分过时** | 以本手册为准 |
+
+---
+
+## 12. 上线与市场投放前检查清单
+
+**在做任何"付费购买"导向的公开投放前**,以下必须全部 ✅：
+
+- [ ] 真实支付通道(至少微信 + 支付宝)接入完成、回调验签、退款流程跑通
+- [ ] `PAYMENT_MODE=mock` 已在生产环境关闭
+- [ ] 邮件送达替换为自有 SMTP,域名 SPF / DKIM / DMARC 配置到位
+- [ ] 用户协议、隐私政策、退款政策由法务确认(尤其"娱乐用途 / 非医疗投资建议")
+- [ ] 客服话术与红线口径手册发放到所有 KOL 与内部人员
+- [ ] 24 章报告小规模灰度(≥ 20 位真实用户)全部通过
+- [ ] Sentry 或同等错误监控已接
+- [ ] 社区举报 / 屏蔽 / 违规处理流程上线
+- [ ] 出生资料相关的**隐私删除**流程被至少一位真实用户走通
+- [ ] 品牌视觉素材、Logo、宣传主图、KV、备案信息就位
+
+---
+
+## 13. 简化技术架构
+
+> 只保留一张图 + 三段摘要。详细技术细节由开发维护,市场无需掌握。
 
 ```mermaid
-graph TB
-  subgraph Client [浏览器]
-    R[React 19 + TanStack Router]
-    UI[shadcn/ui + Tailwind v4]
-    PWA[Service Worker / manifest]
-  end
-
-  subgraph Edge [Cloudflare Worker · TanStack Start SSR]
-    SF[createServerFn RPC]
-    API[/api/public/* file routes/]
-    MCP[/.mcp/*/]
-  end
-
-  subgraph Compute [确定性计算模块 src/lib]
-    W[western-natal / western-transits]
-    V[vedic / vedic-dasha]
-    B[bazi / bazi-luck]
-    Z[ziwei / ziwei-horoscope]
-    YR[year-readings]
-    PF[premium-facts v4]
-  end
-
-  subgraph AI [Lovable AI Gateway]
-    GEM[google/gemini-2.5-flash · 2.5-pro]
-    CW[chapter-worker · CAS lock · retry ≤3]
-    RDR[PremiumReportReader Portal]
-  end
-
-  subgraph SB [Supabase]
-    Auth[Auth: Email + Google]
-    PG[(Postgres + RLS)]
-    ST[Storage: community images]
-  end
-
-  R --> SF --> Compute
-  SF --> PF --> AI
-  AI --> CW --> PG
-  R --> RDR
-  SF --> Auth
-  SF --> PG
-  R --> ST
+graph LR
+  U[用户浏览器] --> W[网站 / PWA]
+  W --> S[服务端 · Lovable Cloud]
+  S --> C[四体系确定性计算<br/>西方 · 印度 · 八字 · 紫微]
+  C --> F[排盘事实层<br/>PremiumFacts]
+  F --> AI[AI 网关<br/>Gemini 2.5]
+  AI --> DB[(数据库<br/>报告 · 命盘 · 社区)]
+  DB --> W
+  S --> Auth[账户 · 邮箱 / Google]
+  S --> Store[图片存储<br/>社区贴图]
 ```
+
+### 13.1 数据隐私
+
+- 出生资料属**敏感个人信息**,仅本人可读。
+- 数据库层做严格 owner 隔离,AI 请求不发送姓名之外的 PII。
+- 社区图片经签名 URL 分发,单图 ≤ 5MB,单帖 ≤ 4 张。
+- 用户可删除命盘 / 单份报告(账号级注销流程需在上线前跑通一次)。
+
+### 13.2 AI 事实边界
+
+- **AI 从不计算命盘**,四体系全部由代码算出。
+- AI 只写解读文字,并被要求引用真实事实路径。
+- 相同出生资料 + 相同语言,永远得到相同的排盘,不受 AI 版本影响。
+
+### 13.3 当前技术限制
+
+- 西方占星目前采用 **Whole Sign 整宫制**(已在报告中明示);Placidus / Koch 等分宫制尚未接入,不要在物料中承诺"支持任意分宫制"。
+- 报告导出为 PDF / 长图目前未开放(需要外部服务),因此**不要宣称"下载 PDF"**。
+- AI 单份报告的成本、并发上限、失败率在大规模真实用户下的表现尚未压测。
 
 ---
 
-## 6. 数据与安全
+## 14. 下一阶段路线（面向市场沟通)
 
-### 主要表
-
-| 表 | 用途 | 关键 RLS |
+| 优先级 | 事项 | 市场意义 |
 | --- | --- | --- |
-| `charts` | 用户命盘（含 canonical_input_hash 去重） | owner-only |
-| `premium_pdf_reports` | 高级报告主记录（status / content_json / content_hash / revision） | owner-only 读；service_role 写 |
-| `premium_report_chapters` | 24 章逐行（body / evidence_refs / claim_token / attempt_count） | 通过 SECURITY DEFINER RPC 访问 |
-| `premium_report_orders` | ¥79 订单（mock_ 前缀） | owner-only 读；**无客户端写入策略**（仅 service_role） |
-| `year_readings_v1` | 确定性年度解读缓存 | owner-only |
-| `ai_usage_ledger` | 每次 AI 调用的 provider/model/tokens/cost | admin-only 读 |
-| `community_posts` / `community_comments` | 同门社区帖子与评论 | authenticated 读；作者写/删 |
-| `community_likes` | 点赞 | **仅 authenticated 读**（2026-07-19 修复，`anon` 已 REVOKE） |
-| `user_roles` | 角色（admin/user）+ `has_role()` SECURITY DEFINER | 防特权升级 |
-
-### 关键安全机制
-
-- 出生资料（生日/出生地/性别）属**敏感隐私**，仅在 owner 上下文可读；AI prompt 不发送姓名以外的 PII。
-- 章节生成使用 `claim_premium_chapter_for_user` RPC 做 **CAS 锁 + 2 分钟 TTL**。
-- 社区图片走 Supabase Storage 签名 URL；单图 ≤5MB；帖子 ≤4 图。
-- Admin 角色通过 `user_roles` + `has_role()` 校验，不能存于 profile。
-- 2026-07-19 修复：`community_likes` 移除 anon SELECT，防止通过点赞记录反推用户身份。
+| P0 | 接入真实支付(微信 + 支付宝优先) | 才可以做"立即购买"广告 |
+| P0 | 邮件生产 SMTP + 域名认证 | 保证注册、找回密码送达 |
+| P0 | 隐私合规、退款政策、备案 | 广告平台开户前置 |
+| P1 | AI 成本 & 并发压测、灰度扩量 | 保证爆量时不崩 |
+| P1 | 错误监控(Sentry) | 快速响应事故 |
+| P1 | 社区运营机制 + 内容审核 | 支撑 UGC |
+| P2 | App 封装 / iOS · 安卓上架 | 推"命运图书馆 App"心智 |
+| P2 | 会员制或家人/伴侣多命盘套餐 | 二次变现 |
 
 ---
 
-## 7. AI 与计算边界
+## 15. 常见问答（FAQ · 对外话术)
 
-| 场景 | Token 消耗 |
+**Q1 这是算命吗?**
+不是。我们把命理传统当作文化馆藏,提供解读语言,帮助你更好地认识自己。
+
+**Q2 AI 会替代命理师吗?**
+不会。AI 只在真实排盘之上写文字,它不"看事",它"翻译"事。
+
+**Q3 ¥79 之后还会不会再扣费?**
+不会。同一份命盘的高级报告只解锁一次,随时打开都不再消耗。
+
+**Q4 我可以删除我的资料吗?**
+可以。个人中心支持删除命盘与报告;账号级注销通道正在完善。
+
+**Q5 你们能预测我今年会不会结婚 / 发财吗?**
+不能,也不做这件事。我们提供的是"节奏与视角",不是保证。
+
+**Q6 有 App 吗?**
+目前是网页版(可添加到手机主屏幕),原生 App 在规划中。
+
+**Q7 支持微信支付吗?**
+目前处于内测阶段,支付通道正在陆续接入。请关注官方账号获取上线通知。
+
+---
+
+## 16. 术语表
+
+| 术语 | 一句话解释 |
 | --- | --- |
-| 本地确定性计算（排盘、facts、year_readings） | **0** |
-| 查看已完成报告（cache hit，input_hash 命中） | **0** |
-| 首次生成 24 章 | ≈ 300–400k input / 40–60k output |
-| 失败章节重试（最多 3 次） | 仅重跑失败章节 |
-
-- **AI 不计算**：所有星盘/大运/宫位/相位/十神/四化/dasha 由 `src/lib/*` 模块计算。
-- **facts 版本**：`PREMIUM_FACTS_VERSION = "premium_facts_v4"`。
-- **Whole Sign 整宫制**已接入并在文案中显式标注；**Placidus / Koch 未可靠接入**，客户侧不显示相关 raw tag。
-- 章节 prompt 只切入 `allowed_facts` 声明的子树，从不塞整棵事实树或旧的网页报告文本。
+| 命盘 | 由出生资料算出的四体系星象/命理图 |
+| 事实(Facts) | 代码算出的确定性数据,AI 不能修改 |
+| 章节(Chapter) | 高级报告 24 个组成单元中的一个 |
+| 大运 / Dasha | 印度占星 / 八字里的多年阶段 |
+| 四化 | 紫微斗数中禄 / 权 / 科 / 忌四种能量标签 |
+| Whole Sign | 西方占星"整宫制",本项目采用的分宫方式 |
+| 复开零消耗 | 已完成报告再次打开时 AI 调用为 0 |
 
 ---
 
-## 8. 高级报告完整说明
+## 17. 什么时候必须联系开发
 
-### 商品
+市场协作者遇到以下情况**必须**在动作前联系开发/产品:
 
-- 价格 **¥79**，一次解锁 `user_id + chart_id` 组合；模拟支付（微信/支付宝/Visa/银联仅是 UI，无真实结算）。
-- 订单前缀 `mock_*`，服务端要求 `PAYMENT_MODE=mock` 才铸造。
-
-### 24 章 manifest
-
-| kind | 章节 |
-| --- | --- |
-| cover | 开篇 / 执行摘要 / 命盘导览 |
-| system | 西方本命、西方相位、印度本命、Vimshottari、八字四柱、八字十神、八字大运、紫微宫、紫微流曜 |
-| cross | 跨体系共识 / 跨体系张力 |
-| life | 性格 / 事业 / 财富 / 关系 / 家庭 / 健康 / 使命 |
-| timing | 未来 12 月 / 关键窗口 |
-| closing | 方法论与免责声明 |
-
-### 契约
-
-- 输出严格 `{ body, evidence_refs }` JSON，`ChapterJsonSchema` 校验。
-- `evidence_refs`：module 必属该章 `allowed_facts`；path 必在 facts 树中真实存在；服务端 `chooseDeterministicRefs` 做**确定性证据校正**。
-- 每章最多 **3 次**重试；失败入 `ai_usage_ledger`。
-- 预算耗尽 → 报告 `partial`；下次续跑只处理 `pending` / `failed(<3)` / 锁过期。
-- 完成后 `content_hash` 由所有 24 章 body+refs 有序哈希得到；**completed 后不可变**。
-- **复开 0 调用**：`ensurePremiumReportForChart` 直接返回 `content_json`。
-
-### Skill
-
-- 路径：`skills/fate-nexus-premium-report/`
-- `SKILL.md` + `references/{chapter-manifest, evidence-contract, token-cache-policy}.md`
-- 版本常量（`src/lib/premium-chapters-v3.ts`）：
-  - `PREMIUM_SKILL_ID = "fate-nexus-premium-report"`
-  - `PREMIUM_SKILL_VERSION = "1.0.0"`
-  - `PREMIUM_MANIFEST_VERSION = "2026-07"`
-  - `PREMIUM_REPORT_REVISION = "premium_v3_rev_2026_07_real_ai"`
+1. **文案涉及 AI 能力边界** — 涉及"预测"、"精准"、"AI 算命"等表述前。
+2. **对外宣布支付上线** — 无论渠道大小。
+3. **对外宣布 App 上架** — 无论 iOS/安卓。
+4. **上外部推广渠道**(信息流、KOL、直播、CPS) — 需要联合审校物料。
+5. **用户投诉/举报涉及隐私、退款、未成年人、算命误导** — 立刻升级。
+6. **需要真实用户命盘作为素材** — 必须先取得书面授权。
+7. **需要压测流量**(大 V 转发预告、活动预约) — 提前 3 天知会以便扩容与观察。
+8. **数据统计口径变更**(定义"付费用户"、"活跃用户") — 与开发确认取数逻辑。
+9. **需要修改 PRD / README / 官网 About** — 先同步产品口径。
+10. **看到本手册与实际产品不一致** — **一定要说**,以本手册未来版本为准。
 
 ---
 
-## 9. 已验证真实 AI 报告
+## 附录 A · 关键入口 / 页面地图
 
-| 项 | 值 |
-| --- | --- |
-| Report ID | `274c92fb-7fdd-490c-8991-c2a02ec81f6f` |
-| Chart / User / Order | 已脱敏 |
-| 状态 | `completed`（24/24） |
-| Provider | `lovable-ai-gateway` |
-| 主模型 | `google/gemini-2.5-flash` |
-| 最后 3 章升级模型 | `google/gemini-2.5-pro`（convergence / tensions / year_ahead） |
-| content_hash | `f0168293…add216e7` |
-| 最后一轮 tokens | input 26 641 / output 13 416 |
-| 复开验证 | `callsAttempted=0`, hash 不变 ✅ |
+面向市场,只需要知道下面这些路径:
 
-> ⚠️ 这只是**指定测试报告**的通过验证，不代表已完成新用户全链路生产压测。
+| 入口 | 路径 | 用途 |
+| --- | --- | --- |
+| 首页 | `/` | 品牌落地 |
+| 关于 | `/about` | 品牌故事 |
+| 四传统介绍 | `/traditions` | 教育内容 |
+| 注册 / 登录 | `/auth` | 账户 |
+| 开始仪式 | `/ritual` | 采集出生资料 |
+| 基础报告 | `/report` | 免费四体系解读 |
+| 综合视图 | `/synthesis` | 跨体系汇总 |
+| 同门社区 | `/community` | UGC |
+| 隐私政策 | `/privacy` | 合规文案 |
+| 用户协议 | `/terms` | 合规文案 |
+| 账号注销 | `/delete-account` | 隐私出口 |
+| 个人中心 | 首页右上角头像 → AccountModal | 命盘 / 报告管理 |
+| 高级报告入口 | 基础报告页 · "解锁完整报告 ¥79" 卡片 | 付费入口(当前模拟) |
+| 高级报告阅读器 | 完成后点击"查看完整报告" · 全屏弹层 | 深度阅读 |
 
----
+## 附录 B · 内部资料索引(需要时找开发要)
 
-## 10. UI / 响应式进展
+以下文档主要面向开发,市场无需通读,遇到问题时可按名索取:
 
-- **iPhone 孤字**：使用 `text-fluid-hero-zh` 修正窄屏中文标题。
-- **Reader Portal 根因**：Framer Motion 的 `transform` 会建立新的 containing block，导致 `position: fixed` 相对动画父节点定位。解决方案：`createPortal` 挂到 `document.body`。
-- **视口测量**：桌面 1440×900（reader 1320px，侧栏 280px，正文 748px，无横向溢出）；移动 390×844、430×932（100dvh 全屏、目录抽屉、body scroll lock）。
-- 全局树洞小图标（SageAvatar）。
-
----
-
-## 11. 社群 / 同门
-
-- 云端论坛：`community_posts` / `community_comments` / `community_likes`。
-- 图片：Supabase Storage，Signed URL，单张 ≤5MB，JPG/PNG/WEBP，单帖 ≤4 图。
-- 无限滚动加载。
-- 删除权限：作者自删；admin 可全删。
-- 当前限制：作者 UUID 会通过评论/点赞 join 潜在暴露给已认证用户；`community_likes` 已限 authenticated。
-
----
-
-## 12. 版本迭代表
-
-| 阶段 | 目标 | 重点改动 | 验证 | 遗留 |
-| --- | --- | --- | --- | --- |
-| 初版框架 | 首页 / 四传统页 / 账户 | routes + shadcn 主题 | 手工 | PRD 尚新 |
-| 认证重构 | 邮箱密码 + 邮件验证 + Google，淡化手机号 | `/auth`、Supabase Auth 配置 | 手工登录 | 邮件送达需生产验证 |
-| 性别前移 | 移除报告页性别补填 | Ritual 强制采集，报告页仅提示重建 | UI 测试 | — |
-| 命盘存储 | 云端保存、canonical_hash 去重、删除 | `charts` 表 + `AccountModal` | 单元 + E2E | — |
-| ¥99 PDF → ¥79 网页 | 取消 PDF 导出，改为网页内永久报告 | `PremiumPdfCard`、Reader 单栏 | 手工 | 名字仍叫 `PremiumPdfCard` |
-| 报告 UI 重排 | 单栏 1100px、状态感知按钮、无 PDF 字样 | `PremiumPdfCard` 重写 | 视觉回归 | — |
-| 24 章 v3 | manifest、evidence、CAS 锁、ledger、预算、断点 | `premium-chapters-v3` + RPC | 集成测试 | — |
-| facts v4 | 四体系周期扩展（bazi transient / ziwei day / western SP） | `premium-facts.ts` | `premium-facts-v4.test.ts` | Placidus 未接 |
-| Real AI 21/24 → 24/24 | 最后 3 章定向修复 | `chooseDeterministicRefs` + 升级 gemini-pro | Report 274c92fb 完成 | — |
-| Reader Portal | Framer 定位修复；Whole Sign 说明 | `createPortal` | 1440/390/430 视觉 | — |
-| Premium Skill | `fate-nexus-premium-report/` + 385 tests | Skill 三文档 + 契约测试 | 385/385 + tsgo clean | — |
-| 社区安全修复 | community_likes 取消 anon 读取 | RLS + REVOKE | 安全扫描通过 | 全量测试**未在 commit 后重跑** |
+1. `PRD.md` — 早期产品需求文档(**部分口径过时**)
+2. `PRODUCT.md` — 早期产品说明(**部分口径过时**)
+3. `README.md` — 早期开发说明(**部分口径过时**)
+4. `AGENTS.md` — AI Agent 协作说明
+5. `skills/fate-nexus-premium-report/SKILL.md` — 24 章报告契约
+6. `skills/fate-nexus-premium-report/references/chapter-manifest.md` — 24 章目录
+7. `skills/fate-nexus-premium-report/references/evidence-contract.md` — 事实引用规则
+8. `skills/fate-nexus-premium-report/references/token-cache-policy.md` — AI 成本与缓存策略
+9. `supabase/migrations/` — 数据库版本历史
+10. `src/routes/` — 页面路由目录
 
 ---
 
-## 13. 当前仓库文件总览
-
-> 只标出关键业务与生成/一次性文件；shadcn ui 46 个组件不逐项解释。
-
-### 一级
-
-```
-AGENTS.md  PRD.md  PRODUCT.md  README.md   ← ⚠️ 与实现存在漂移
-package.json  bunfig.toml  vite.config.ts  tsconfig.json  components.json
-eslint.config.js  .prettierrc  .prettierignore
-supabase/config.toml   ← 自动生成，勿改项目级设置
-public/{manifest.webmanifest, sw.js, offline.html, robots.txt}
-```
-
-### `src/routes/`（TanStack file-based）
-
-- 页面：`index.tsx`, `about.tsx`, `auth.tsx`, `auth.index.tsx`, `auth.reset.tsx`, `ritual.tsx`, `report.tsx`, `synthesis.tsx`, `traditions.tsx`, `community.tsx`, `privacy.tsx`, `terms.tsx`, `delete-account.tsx`
-- `__root.tsx`（head/meta）
-- `_authenticated/route.tsx`（登录守卫）+ `_authenticated/admin.tsx`
-- **dev/test-only**：`dev.demo-premium.tsx`, `dev.reader-harness.tsx`
-- API：`api/generate-avatar.ts`, `sitemap[.]xml.ts`, `mcp.ts`, `[.mcp]/**`, `[.well-known]/oauth-protected-resource.ts`, `[.]lovable.oauth.consent.tsx`
-- ⚠️ 生成勿改：`src/routeTree.gen.ts`
-
-### `src/components/`
-
-- 业务：`AccountModal.tsx`, `CityCombobox.tsx`, `ElderCompanion.tsx`, `LibrarySplash.tsx`, `MockPaymentModal.tsx`, `PremiumPdfCard.tsx`, `PremiumReportReader.tsx`, `ReportExtras.tsx`, `SageAvatar.tsx`, `TraditionModal.tsx`, `YearInsightModal.tsx`
-- `charts/DestinyCharts.tsx`
-- `ui/` × 46（shadcn 组件，样式定制走 `styles.css`）
-
-### `src/lib/`（核心业务与计算）
-
-- 计算：`western-natal.ts` / `western-transits.ts` / `vedic.ts` / `vedic-dasha.ts` / `bazi.ts?`（含 bazi-luck）/ `ziwei.ts` / `ziwei-horoscope.ts` / `lunar.ts` / `planet-reading.ts` / `energy-score.ts`
-- 报告：`premium-facts.ts` / `premium-chapters-v3.ts` / `premium.functions.ts` / `chapter-json-schema.ts` / `chapter-state.ts` / `chapter-worker.ts` / `budget-policy.ts` / `report-input.ts` / `report.functions.ts` / `reports-store.functions.ts` / `premium-reader-fixture.ts` / `premium-demo-v3.ts`
-- 年度：`year-readings.ts` / `year-readings.functions.ts`
-- 阅读器：`reader-nav.ts`
-- 其它：`account.functions.ts` / `account.tsx` / `admin.functions.ts` / `community.functions.ts` / `elder.functions.ts` / `oracle.functions.ts` / `outlook.functions.ts` / `key-events.functions.ts` / `tarot-*` / `ai-gateway.server.ts` / `ai-guardrails.ts` / `ai-cache-version.ts` / `rate-limit.server.ts` / `session.ts` / `i18n.tsx` / `typography.tsx` / `legal.tsx` / `error-*` / `lovable-error-reporting.ts` / `pwa-register.ts` / `city-geo.ts` / `cities.ts` / `utils.ts` / `mcp/`
-- 测试：与实现同目录 `*.test.ts`
-
-### `src/integrations/supabase/`
-
-- ⚠️ **自动生成勿改**：`client.ts`, `client.server.ts`, `auth-middleware.ts`, `auth-attacher.ts`, `types.ts`
-- 环境：`.env` 中 `VITE_SUPABASE_*` 自动生成
-
-### `scripts/`
-
-| 文件 | 状态 |
-| --- | --- |
-| `run-real-ai-generation.mjs` | ✅ 一次性管理员运行器；需 admin token；生产环境须加保护 |
-| `e2e_premium.mjs` | ✅ E2E 演练 |
-| `_reset.mjs` | ⚠️ **仍在仓库**，一次性把某 report 3 章 failed → pending 重置。应删除或迁入受保护 admin 工具 |
-| `_exhaust.mjs` | ⚠️ **仍在仓库**，把 3 章 `attempt_count` 强制拉满以证明「复开 0 调用」。同上，须删除/审计 |
-| `scripts_e2e_premium.mjs` | 疑似遗留副本，需清理 |
-
-### `skills/fate-nexus-premium-report/`
-
-- `SKILL.md` + `references/chapter-manifest.md` + `references/evidence-contract.md` + `references/token-cache-policy.md`
-
-### `supabase/pending/`
-
-- `20260717_premium_chapters_and_ai_usage.sql` —— 需核实是否已被 `20260717*` 正式 migration 取代；文件名残留不代表未应用。
-
-### 顶层残留
-
-- `tmp_body`, `tmp_repro.ts` —— 调试残留，可删。
-
-### `src/assets/`
-
-`ancient-library-hall.jpg`, `tradition-astrology.jpg`, `tradition-bazi.jpg`, `tradition-jyotish.jpg`, `tradition-ziwei.jpg`, `tree-of-destiny.jpg`
-
----
-
-## 14. 数据库迁移时间线
-
-> 未打开逐个 SQL；仅按文件名与已知上下文归类。**打勾者**表示可从上下文合理推断，**❓** 需打开 SQL 确认。
-
-| 文件名（前缀日期） | 推断用途 |
-| --- | --- |
-| `20260715032632_*` | ❓ 初始 schema（profiles / charts?） |
-| `20260715032718_*` | ❓ RLS / grants |
-| `20260715051446_*` / `_51459_*` / `_52601_*` | ❓ 认证与 owner 隔离 |
-| `20260715055912_*` / `_55939_*` / `_60726_*` / `_65830_*` | ❓ charts 与 canonical_hash 去重 |
-| `20260716032053_*` | ❓ premium 订单 / RLS |
-| `20260716132926_*` / `_141659_*` / `_141753_*` | ❓ premium_pdf_reports 主表与 content_json |
-| `20260717004244_*` / `_012357_*` | ❓ premium_report_chapters 与 CAS RPC |
-| `20260717030250_*` / `_031548_*` / `_031650_*` | ❓ ai_usage_ledger / budget |
-| `20260717073923_*` / `_074039_*` / `_074111_*` / `_074145_*` | ❓ chapter locks / retry 字段 |
-| `20260717081407_*` / `_182527_*` | ❓ community 系列表 |
-| `20260718083434_*` | ❓ year_readings_v1 |
-| `20260719070511_*` | ✅ 社区安全扫描修复（community_likes 取消 anon SELECT + REVOKE） |
-| `supabase/pending/20260717_premium_chapters_and_ai_usage.sql` | ❓ 是否已被上述正式 migration 覆盖，需 diff |
-
-> **行动项**：接手后请对每条 migration 打开 SQL 补充「表 / 策略 / grants」一栏，并合并/删除 `pending/` 文件。
-
----
-
-## 15. 测试与质量
-
-### 最新有证据的运行
-
-- 2026-07-20 之前 skill 提交时：**385 / 385 pass**，`tsgo --noEmit` 0 errors。
-- **社区安全扫描 commit 60dedb9 之后**：全量测试**未再证据化重跑**。接手第一步建议：`bun test` + `tsgo --noEmit`。
-
-### 测试文件分类
-
-| 类别 | 代表 |
-| --- | --- |
-| 计算器单元 | `western-natal.test.ts`, `vedic-dasha.test.ts`, `bazi-luck.test.ts`, `ziwei-horoscope.test.ts`, `western-transits.test.ts`, `energy-score.test.ts`, `lunar` |
-| Facts | `premium-facts.test.ts`, `premium-facts-v4.test.ts`, `premium-facts-paths.test.ts` |
-| 报告契约 | `premium-chapters-v3.test.ts`, `chapter-json-schema.test.ts`, `chapter-state.test.ts`, `chapter-worker.test.ts`, `budget-policy.test.ts`, `canonical-chart-input.test.ts`, `skill-fate-nexus-premium-report.test.ts` |
-| 集成/E2E | `premium-e2e.test.ts`, `premium-inmem-integration.test.ts`, `premium-revision-integration.test.ts`, `premium-step-protocol.test.ts`, `premium-rpc-binding.test.ts`, `premium-sql-invariants.test.ts`, `premium-progress.test.ts`, `premium-cache.test.ts`, `premium-audit.test.ts`, `premium-demo-v3.test.ts`, `premium-generation-mode.test.ts`, `premium-mock-payment.test.ts`, `premium-pricing.test.ts` |
-| 年度 | `year-readings.test.ts`, `year-readings-self-heal.test.ts` |
-| UI | `premium-reader.e2e.test.ts`, `mock-payment-modal.test.ts`, `year-insight-modal.test.ts`, `customer-admin-copy.test.ts`, `hero-typography.test.ts` |
-| 视觉 | `tests/visual/run.py`（Playwright 驱动，Python） |
-
----
-
-## 16. 当前完成度矩阵
-
-| 模块 | 状态 |
-| --- | --- |
-| 邮箱 / Google 登录 | ✅ 已上线（邮件送达依赖 Supabase SMTP，未做生产验证） |
-| 开始仪式 / 命盘去重 | ✅ |
-| 四体系确定性排盘 | ✅ |
-| 网页免费报告 | ✅ |
-| ¥79 高级报告链路 | ✅ 功能完备（**支付为 mock**） |
-| 24 章生成 + 断点续跑 + 复开 0 调用 | ✅ 一次真实 AI 完整通过 |
-| Reader 全屏 Portal | ✅ 1440 / 390 / 430 视觉验证 |
-| Whole Sign 整宫制 | ✅ 客户可见 |
-| Placidus / Koch | ❌ 未可靠接入，raw tag 已在客户端隐藏 |
-| 生命时间轴 + YearInsightModal | ✅ 确定性 |
-| 长老对话 / 树洞 | ✅ |
-| 同门社群（帖子/评论/点赞/图片） | ✅（2026-07-19 已修一处 anon 读取） |
-| MCP 工具 | ✅ Basic |
-| PWA | ✅ Basic |
-| **真实支付** | ❌ 微信 / 支付宝 / Visa / 银联 / Apple Pay 全部为 UI 模拟 |
-| **邮件送达** | ⚠️ 依赖 Supabase 邮件配置 / 额度 / SMTP，需生产验证 |
-| Sentry / APM | ❌ |
-| App 封装 / 上架 | ❌ |
-| 真实用户规模压测 & AI 成本控制 | ❌ |
-| PRD / PRODUCT / README | ⚠️ 已过时（仍写 PDF、¥99、手机 OTP 等） |
-
----
-
-## 17. 已知技术债 / 风险
-
-- **文档漂移**：`PRD.md` / `PRODUCT.md` / `README.md` 未跟上最新迭代（PDF/¥99/手机号 OTP 等）。
-- **脚本残留**：`scripts/_reset.mjs`、`scripts/_exhaust.mjs`、`scripts_e2e_premium.mjs`、`tmp_*` 应删除或迁入受保护 admin 工具。
-- **真实支付**：pricing 逻辑、幂等、退款、发票、税务全未做。
-- **邮件**：Supabase 默认邮件不适合生产量级，需接自有 SMTP。
-- **计算器精度**：Whole Sign 已接入；其它分宫制、月相高级参数、时区历史修正需专家复核。
-- **AI 成本**：单份报告约 ¥0.3 成本，$0.04 USD，未做速率限制与并发上限。
-- **Cloudflare Worker 兼容**：禁止 Node-only 依赖；`nodejs_compat` 下 `child_process` / `sharp` / `puppeteer` 不可用。
-- **隐私删除**：`deleteChart` 只删主表，未主动清理 `year_readings_v1` / `premium_*` 缓存与关联对象（需要 cascade 审计）。
-- **社区 UUID 暴露**：作者 UUID 可能通过 comments/likes join 侧信道暴露给已认证用户。
-- **禁止 silent template fallback**：`deterministicChapterBody` 仅用于 dev harness / 测试；生产必须让校验失败大声报错。
-- **管理员端**：`_authenticated/admin.tsx` 权限校验须以 `has_role()` 为准，禁止用 profile.role。
-
----
-
-## 18. 下一步优先级
-
-### P0（上线阻塞）
-
-1. **接入真实支付**（首推微信/支付宝，其次 Visa via Stripe）。验收：真实订单 → 服务端签名回调 → `premium_report_orders` 落库 → 24 章生成成功；幂等；退款接口。
-2. **删除或加锁 `_reset.mjs` / `_exhaust.mjs`**。验收：仓库不再有可直接跑的删数据/改状态脚本。
-3. **邮件送达**：接自有 SMTP + 域名 SPF/DKIM/DMARC；验收：注册/找回密码送达率 >99%。
-4. **`PRD.md` / `PRODUCT.md` / `README.md` 重写**或**标注失效**。
-5. **全量测试 + tsgo 于当前 commit 再跑一次**并存档结果。
-
-### P1（体验）
-
-6. Sentry 前后端接入；AI 失败/预算耗尽/RPC 错误自动上报。
-7. 生产真实用户全链路压测（10 → 100 → 1000 并发章节）。
-8. 报告导出（PDF/长图）—— 但注意 `sharp/puppeteer` 在 Worker 不可用，需外部服务。
-9. Placidus/Koch 分宫制或明确产品决策仅 Whole Sign。
-10. 社区作者匿名化（`author_pseudonym`）与隐私删除 cascade。
-
-### P2（App）
-
-11. Capacitor / RN 封装；iOS / 安卓上架。
-12. 会员订阅（月/年）与积分体系。
-
----
-
-## 19. 协作者上手指南
-
-### 环境
-
-- Node 20+；`bun` 1.x；`tsgo`（项目自带）。
-- 数据库、AI Gateway 均由 Lovable Cloud 托管，不需自建。
-
-### 安装 & 常用命令
-
-```bash
-bun install
-bun test                      # 全量单元 / 集成
-bunx tsgo --noEmit            # 严格类型
-bun run dev                   # 通过 Lovable preview 或本地 vite
-python tests/visual/run.py    # 视觉回归（Playwright）
-```
-
-### 禁改文件
-
-- `src/routeTree.gen.ts`
-- `src/integrations/supabase/{client,client.server,auth-middleware,auth-attacher,types}.ts`
-- `.env` 中 `VITE_SUPABASE_*`
-- `supabase/config.toml` 项目级设置
-
-### 推荐先读
-
-1. `skills/fate-nexus-premium-report/SKILL.md` + 三个 reference
-2. `src/lib/premium-chapters-v3.ts`（版本常量、24 章 catalog）
-3. `src/lib/premium.functions.ts`（server 编排）
-4. `src/lib/premium-facts.ts`（facts 契约）
-5. `src/lib/chapter-json-schema.ts`（输出校验）
-6. `src/components/PremiumPdfCard.tsx` + `PremiumReportReader.tsx`
-7. `docs/PROJECT_HANDOFF.md`（本文档）
-
-### 安全测试规范
-
-- 使用 `dev.reader-harness` / `dev.demo-premium` 路由（无需登录）。
-- 使用 `premium-reader-fixture.ts` 或 deterministic provider。
-- 测试临时数据必须以 `e2e-` / `fixture-` 前缀命名，`finally` 清理。
-- **禁止**直接对生产数据跑 `_reset.mjs` / `_exhaust.mjs`。
-- 修改 Skill 时必须同步：
-  - `PREMIUM_SKILL_VERSION`（semver）
-  - `PREMIUM_MANIFEST_VERSION`
-  - `PREMIUM_REPORT_REVISION`（不同则新报告写入新行，旧完成报告不可变）
-  - `skills/…/references/chapter-manifest.md` 表格
-  - 契约测试 `premium-chapters-v3.test.ts` / `skill-fate-nexus-premium-report.test.ts`
-
----
-
-## 20. 术语与关键常量
-
-| 术语 | 说明 |
-| --- | --- |
-| Whole Sign | 西方占星整宫制，本项目采用 |
-| Vimshottari | 印度占星 120 年大限周期 |
-| 四化 | 紫微斗数化禄/权/科/忌 |
-| PremiumFacts | 确定性事实树，AI 只读不写 |
-| Chapter | 24 章之一，`premium_report_chapters` 一行 |
-| content_hash | 报告 24 章有序哈希；completed 不可变 |
-| input_hash | canonical facts + facts_version + skill_version + manifest_version + lang + revision |
-| CAS 锁 | `claim_premium_chapter_for_user` RPC，TTL 2 分钟 |
-| deterministic provider | 测试专用假 provider，产出稳定 body |
-
-### 关键常量
-
-```ts
-PREMIUM_FACTS_VERSION       = "premium_facts_v4"
-PREMIUM_SKILL_ID            = "fate-nexus-premium-report"
-PREMIUM_SKILL_VERSION       = "1.0.0"
-PREMIUM_MANIFEST_VERSION    = "2026-07"
-PREMIUM_REPORT_REVISION     = "premium_v3_rev_2026_07_real_ai"
-MAX_CHAPTER_ATTEMPTS        = 3
-CHAPTER_LOCK_TTL_MS         = 2 * 60 * 1000
-```
-
----
-
-## 21. 变更记录与信息来源
-
-- 源代码：commit `60dedb9c39505e2fcb3b9ae2f25d3899a8144efc`。
-- `supabase/migrations/*.sql`（未逐条打开，参考第 14 节）。
-- `skills/fate-nexus-premium-report/**`。
-- `tests/`, `src/**/*.test.ts`。
-- Lovable 会话历史（自 2026-07-15 起）。
-- `PRD.md` / `PRODUCT.md` / `README.md`（已标注可能失效）。
-
-> 本快照截至 **2026-07-20**。此后任何 migration、Skill 版本、AI 模型或报告 revision 变更**必须同步更新本文档**。
-
----
-
-## 交接前核对清单
-
-- [ ] `bun install && bun test` 于当前 commit 通过并存档结果
-- [ ] `bunx tsgo --noEmit` 通过
-- [ ] `scripts/_reset.mjs` 与 `scripts/_exhaust.mjs` 已删除或迁入受保护 admin 工具
-- [ ] `scripts_e2e_premium.mjs` / `tmp_body` / `tmp_repro.ts` 清理
-- [ ] `PRD.md` / `PRODUCT.md` / `README.md` 重写或加失效横幅
-- [ ] `supabase/pending/*.sql` 与已应用 migration diff 后决定去留
-- [ ] 每条 migration SQL 打开审阅并补第 14 节表格
-- [ ] 真实支付接入方案已选型（微信/支付宝/Stripe）
-- [ ] 邮件送达 SMTP 已切换生产
-- [ ] Sentry 前后端接入
-- [ ] 生产环境禁用 `dev.*` 路由与 `PAYMENT_MODE=mock`
-- [ ] 修改任何 Skill 内容后已同步四处版本常量与契约测试
-- [ ] 复开一份已 completed 报告，确认 provider 调用 = 0、hash 不变
+## 版本与信息来源
+
+- 快照日期:**2026-07-20**
+- 参考 commit:`60dedb9c39505e2fcb3b9ae2f25d3899a8144efc`
+- 数据来源:当前仓库源码、`skills/` 文档、Lovable 会话历史
+- 声明:仓库中的 `PRD.md` / `PRODUCT.md` / `README.md` 部分历史口径(如 ¥99 PDF、手机号 OTP、导出 PDF)已过时,**以本文档为准**;下一次改动请同步更新本手册。
