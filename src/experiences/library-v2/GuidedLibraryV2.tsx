@@ -583,13 +583,33 @@ function FocusPick({
   topic,
   onPick,
   onNext,
+  reducedMotion,
 }: {
   topic: StoryTopic | null;
   onPick: (t: StoryTopic) => void;
   onNext: () => void;
   reducedMotion?: boolean;
 }) {
-
+  const gridRef = useRef<HTMLDivElement>(null);
+  const focusIndex = (i: number) => {
+    const btns = gridRef.current?.querySelectorAll<HTMLButtonElement>(
+      "button[data-focus-card]",
+    );
+    if (!btns) return;
+    const wrapped = (i + btns.length) % btns.length;
+    btns[wrapped]?.focus();
+  };
+  const onKey = (e: React.KeyboardEvent<HTMLDivElement>, idx: number) => {
+    if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+      e.preventDefault();
+      focusIndex(idx + 1);
+    } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+      e.preventDefault();
+      focusIndex(idx - 1);
+    } else if (e.key === "Enter") {
+      // native <button> handles Enter — no-op keeps default behavior.
+    }
+  };
   return (
     <section className="pt-4">
       <p className="font-mono text-[10px] tracking-[0.35em] text-gold-dust">CHAPTER · ONE</p>
@@ -599,16 +619,31 @@ function FocusPick({
       <p className="mt-2 text-sm text-stone-warm/60">
         先选一个你最想被真正回答的问题。之后我们再决定要不要翻到别的章节。
       </p>
-      <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {FOCUS_TOPICS.map((t) => {
+      <div
+        ref={gridRef}
+        role="radiogroup"
+        aria-label="选择你最想被真正回答的问题"
+        className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2"
+      >
+        {FOCUS_TOPICS.map((t, i) => {
           const active = topic === t;
+          const dim = topic !== null && !active;
           return (
-            <button
+            <motion.button
               key={t}
               type="button"
+              data-focus-card
+              role="radio"
+              aria-checked={active}
               onClick={() => onPick(t)}
-              aria-pressed={active}
-              className={`min-h-[132px] rounded-2xl border p-5 text-left transition ${
+              onKeyDown={(e) => onKey(e, i)}
+              initial={false}
+              animate={{
+                opacity: dim ? OPACITY.dim + 0.2 : 1,
+                scale: active ? 1.02 : 1,
+              }}
+              transition={reducedMotion ? { duration: 0 } : TRANSITION.decisiveShort}
+              className={`min-h-[132px] rounded-2xl border p-5 text-left ${
                 active
                   ? "border-gold-dust bg-gold-dust/10 shadow-[0_0_30px_oklch(0.76_0.11_85/0.2)]"
                   : "border-stone-warm/15 hover:border-gold-dust/40"
@@ -620,25 +655,45 @@ function FocusPick({
               <p className="mt-3 font-serif text-lg leading-snug text-stone-warm">
                 {topicQuestion(t)}
               </p>
-            </button>
+              {active && (
+                <motion.p
+                  initial={reducedMotion ? false : { opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={TRANSITION.fadeShort}
+                  className="mt-3 text-xs text-gold-dust/80"
+                >
+                  图书馆将为你寻找与这个问题共振的章节 ✦
+                </motion.p>
+              )}
+            </motion.button>
           );
         })}
       </div>
-      {topic && (
-        <div className="mt-6 rounded-2xl border border-gold-dust/20 bg-gold-dust/5 p-5">
-          <p className="text-sm text-stone-warm/85">{topicPersonal(topic)}</p>
-          <button
-            type="button"
-            onClick={onNext}
-            className="mt-5 inline-flex min-h-12 items-center rounded-full bg-gold-dust px-6 text-obsidian hover:bg-gold-light"
+      <AnimatePresence initial={false}>
+        {topic && (
+          <motion.div
+            key={topic}
+            initial={reducedMotion ? false : { opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={TRANSITION.fadeShort}
+            className="mt-6 rounded-2xl border border-gold-dust/20 bg-gold-dust/5 p-5"
           >
-            开始寻找答案 →
-          </button>
-        </div>
-      )}
+            <p className="text-sm text-stone-warm/85">{topicPersonal(topic)}</p>
+            <button
+              type="button"
+              onClick={onNext}
+              className="mt-5 inline-flex min-h-12 items-center rounded-full bg-gold-dust px-6 text-obsidian hover:bg-gold-light"
+            >
+              开始寻找答案 →
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }
+
 
 // ---------------- 3. Intake ----------------
 function Intake({
