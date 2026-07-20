@@ -116,20 +116,27 @@ export function prevIntakeStep(step: StoryStep): StoryStep {
   return step;
 }
 
-export function topicLabel(t: StoryTopic): string {
-  return { career: "事业", love: "情感", wealth: "财富", recent: "近况" }[t];
+export function topicLabel(t: StoryTopic | "overview"): string {
+  return {
+    career: "事业",
+    love: "情感",
+    wealth: "财富",
+    recent: "近况",
+    overview: "全景",
+  }[t];
 }
 
-export function topicQuestion(t: StoryTopic): string {
+export function topicQuestion(t: StoryTopic | "overview"): string {
   return {
     career: "我这一段路，走对了吗？",
     love: "为什么我总是被同一类人吸引？",
     wealth: "我的钱，为什么总是留不住？",
     recent: "最近发生的事，究竟是提醒还是巧合？",
+    overview: "先不选择主题，浏览完整人生地图。",
   }[t];
 }
 
-export function topicPersonal(t: StoryTopic): string {
+export function topicPersonal(t: StoryTopic | "overview"): string {
   return {
     career:
       "接下来这本书会带你看清：你适合被推举的位置、你无法忍受的组织，以及你上一个岔口错过了什么。",
@@ -139,5 +146,7 @@ export function topicPersonal(t: StoryTopic): string {
       "接下来这本书会带你看清：钱在你身上流动的方式、你与风险的真实关系、以及哪一类财富适合你长期持有。",
     recent:
       "接下来这本书会带你先看清：最近这段的主线是什么、你正在被推着做什么决定、以及哪一个信号最值得回应。",
+    overview:
+      "接下来这本书会带你先看四体系的整体画像和你现在所处的时间段，再由你决定往哪一章深入。",
   }[t];
 }

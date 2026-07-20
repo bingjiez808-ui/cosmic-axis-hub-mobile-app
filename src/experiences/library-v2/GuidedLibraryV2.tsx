@@ -43,6 +43,7 @@ import type {
   StoryStateV1,
   StoryStep,
   StoryTopic,
+  FocusChoice,
 } from "./story/types";
 import {
   matchFigures,
@@ -155,7 +156,9 @@ export function GuidedLibraryV2() {
   const onFeedback = (kind: FeedbackKind) => {
     setState((s) => {
       const topic = s.profile.topic;
-      if (!topic) return s;
+      // Overview readers explicitly opted out of a single topic;
+      // never nudge a per-topic feedback weight under panoramic mode.
+      if (!topic || topic === "overview") return s;
       return {
         ...s,
         feedback_weights: applyFeedback(s.feedback_weights, topic, kind),
@@ -203,20 +206,24 @@ export function GuidedLibraryV2() {
             {state.step === "focus" && (
               <DestinyMap
                 topic={state.profile.topic}
-                onConfirm={(t, overview) => {
-                  // "全景阅读" is a UX-only choice — matching, shelf ordering
-                  // and recommendations still need a concrete StoryTopic, so
-                  // we safe-map it to "career" (the widest default fixture
-                  // set) and mark the entry in reading_history. Existing
-                  // matchers and recommenders are unchanged.
-                  const underlying: StoryTopic = overview ? "career" : t;
+                onConfirm={(choice) => {
+                  // `overview` is a first-class FocusChoice — never
+                  // silently rewritten to "career". Matching, shelf
+                  // ordering, recommendations and the insight screen
+                  // all branch on this value explicitly, so panoramic
+                  // readers stay panoramic.
+                  const overview = choice === "overview";
                   setState((s) => ({
                     ...s,
-                    profile: { ...s.profile, topic: underlying },
+                    profile: { ...s.profile, topic: choice },
                     reading_history: overview
                       ? [
                           ...s.reading_history,
-                          { kind: "recommendation_clicked", ref: "overview", at: Date.now() },
+                          {
+                            kind: "recommendation_clicked",
+                            ref: "overview",
+                            at: Date.now(),
+                          },
                         ]
                       : s.reading_history,
                     step: "intake_name",
@@ -745,8 +752,8 @@ function DestinyMap({
   onConfirm,
   reducedMotion,
 }: {
-  topic: StoryTopic | null;
-  onConfirm: (t: StoryTopic, overview: boolean) => void;
+  topic: FocusChoice | null;
+  onConfirm: (t: FocusChoice) => void;
   reducedMotion?: boolean;
 }) {
   // Which node the reader is *previewing* right now (may differ from the
@@ -1010,8 +1017,8 @@ function DestinyMap({
                 type="button"
                 data-preview-primary
                 onClick={() => {
-                  const isOverview = preview === "overview";
-                  onConfirm(isOverview ? "career" : (preview as StoryTopic), isOverview);
+                  if (!preview) return;
+                  onConfirm(preview);
                 }}
                 className="inline-flex min-h-12 items-center justify-center rounded-full bg-gold-dust px-6 text-sm text-obsidian hover:bg-gold-light"
               >
@@ -1243,7 +1250,7 @@ function FirstInsight({
   onFeedback,
   reducedMotion,
 }: {
-  topic: StoryTopic;
+  topic: FocusChoice;
   onNext: () => void;
   onFeedback?: (kind: FeedbackKind) => void;
   weights?: Partial<Record<StoryTopic, number>>;
@@ -1253,6 +1260,9 @@ function FirstInsight({
   const [openKey, setOpenKey] = useState<"why" | "next" | "when" | null>(null);
   const [feedback, setFeedback] = useState<FeedbackKind | null>(null);
   const clickFeedback = (k: FeedbackKind) => {
+    // Overview readers never nudge a per-topic weight; the map's neutrality
+    // is by design and must not be re-introduced through this button set.
+    if (topic === "overview" && k !== "want_more") return;
     setFeedback(k);
     onFeedback?.(k);
     if (k === "want_more") {
@@ -1388,6 +1398,11 @@ function Shelf({
   reducedMotion?: boolean;
 }) {
 
+  // Overview readers explicitly asked for a balanced panorama. Their
+  // shelf leads with `self` (foundational chart) and then `timeline`,
+  // followed by the three domain books in the same fixed rotation so
+  // no domain is systematically first. Topical readers keep the
+  // topic-specific ordering below.
   const primary: BookRef =
     profile.topic === "career"
       ? "career"
@@ -1397,11 +1412,14 @@ function Shelf({
       ? "wealth"
       : "self";
   const primaryBook = bookByRef(primary);
-  const topicOrder: Record<StoryTopic, BookRef[]> = {
+  const topicOrder: Record<StoryTopic | "overview", BookRef[]> = {
     career: ["career", "wealth", "timeline", "premium", "sage", "self", "love"],
     love: ["love", "self", "timeline", "sage", "premium", "career", "wealth"],
     wealth: ["wealth", "career", "timeline", "premium", "sage", "self", "love"],
     recent: ["self", "timeline", "sage", "premium", "career", "love", "wealth"],
+    // Balanced panorama: 概览 → 基础命盘 → 时间轴 → 事业/关系/财富 并列，
+    // premium/sage 收尾。事业不排在前面。
+    overview: ["self", "timeline", "career", "love", "wealth", "premium", "sage"],
   };
   const order = profile.topic ? topicOrder[profile.topic] : BOOKS.map((b) => b.ref);
   const orderedShelf = order
@@ -1498,7 +1516,7 @@ function MembershipBookPreview({
   entitled,
   slot,
 }: {
-  topic: StoryTopic | null;
+  topic: FocusChoice | null;
   entitled: boolean;
   slot: string;
 }) {
@@ -2139,7 +2157,12 @@ function NoteCompose({
   onCancel: () => void;
   onSubmit: () => void;
 }) {
-  const [topic, setTopic] = useState<StoryTopic>(profile.topic ?? "career");
+  // Notes require a concrete StoryTopic (love/career/wealth/recent).
+  // For panoramic readers, default to `recent` — the least directional
+  // bucket — so we don't push panoramic authors into the career bucket.
+  const initialTopic: StoryTopic =
+    profile.topic && profile.topic !== "overview" ? profile.topic : "recent";
+  const [topic, setTopic] = useState<StoryTopic>(initialTopic);
   const [audience, setAudience] = useState<NoteAudience>("similar");
   const [body, setBody] = useState("");
   const [imgUrl, setImgUrl] = useState<string | null>(null);

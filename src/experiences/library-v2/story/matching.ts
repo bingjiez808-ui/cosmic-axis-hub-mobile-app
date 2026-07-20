@@ -9,6 +9,7 @@
 import { FIGURES } from "./fixtures";
 import type {
   AgeBand,
+  FocusChoice,
   HistoricalFigure,
   HistoryFilter,
   Note,
@@ -44,7 +45,14 @@ export function matchFigures(
     return true;
   });
   const scored = items.map((f) => {
-    const topicMatch = topic && f.topics.includes(topic) ? 0 : 1;
+    // Overview / no-topic readers get equal treatment across all topics —
+    // no career/love/wealth bias is introduced by the topic axis.
+    const topicMatch =
+      !topic || topic === "overview"
+        ? 0
+        : f.topics.includes(topic)
+          ? 0
+          : 1;
     const ageGap = ageDistance(profile.age_band, f.age_band);
     // Deterministic tie-breaker by id length + first char code so tests are stable
     const stable = f.id.length + f.id.charCodeAt(0) * 0.001;
@@ -86,13 +94,61 @@ export function matchNotes(
     (n) => n.status === "active" && n.deleted_at === null,
   );
   const topic = profile.topic;
+  const isOverview = !topic || topic === "overview";
   list.sort((a, b) => {
-    const aTopic = topic && a.topic === topic ? 0 : 1;
-    const bTopic = topic && b.topic === topic ? 0 : 1;
-    if (aTopic !== bTopic) return aTopic - bTopic;
+    // Overview readers get a topic-neutral list — no career/love/wealth
+    // bucket is promoted, so sort purely by recency.
+    if (!isOverview) {
+      const aTopic = a.topic === topic ? 0 : 1;
+      const bTopic = b.topic === topic ? 0 : 1;
+      if (aTopic !== bTopic) return aTopic - bTopic;
+    }
     return b.created_at - a.created_at;
   });
   return list;
+}
+
+/**
+ * Balanced panoramic recommendation set. Deliberately omits the four
+ * headline topics (career / love / wealth / recent) as the "primary"
+ * axis so the overview reader is not steered into any single one.
+ * Instead surfaces `self` (foundational chart) and `timeline` first,
+ * followed by an evenly distributed figure. Kept as its own function
+ * so the biased path in `recommendNext` stays readable.
+ */
+function recommendOverview(
+  profile: ReaderProfile,
+  readBookRefs: string[],
+): RecommendedItem[] {
+  const rec: RecommendedItem[] = [];
+  const preferredOrder: string[] = ["self", "timeline"];
+  for (const ref of preferredOrder) {
+    const b = BOOKS.find((x) => x.ref === ref && !readBookRefs.includes(x.ref));
+    if (!b) continue;
+    rec.push({
+      id: `rec-book-${b.ref}`,
+      kind: "book",
+      ref: b.ref,
+      title: b.title,
+      // "overview" is a UI-only focus — attach a StoryTopic so
+      // downstream consumers keep working, but pick `recent` (the
+      // least directional bucket) rather than career/love/wealth.
+      topic: "recent",
+      reason: "全景阅读：先看基础画像和你所在的时间段，再决定往哪一章深入。",
+    });
+  }
+  const fig = matchFigures(profile, "all")[0];
+  if (fig) {
+    rec.push({
+      id: `rec-fig-${fig.id}`,
+      kind: "figure",
+      ref: fig.id,
+      title: `${fig.name} · 走过类似阶段`,
+      reason: `年龄段与你相近（${fig.age_band}）。`,
+      topic: "recent",
+    });
+  }
+  return rec.slice(0, 3);
 }
 
 export function recommendNext(
@@ -100,7 +156,12 @@ export function recommendNext(
   readBookRefs: string[],
   feedbackWeights: Partial<Record<StoryTopic, number>> = {},
 ): RecommendedItem[] {
-  const topic = profile.topic ?? "recent";
+  // Panoramic branch: keep the four topical books off the "primary"
+  // slot and expose `self` + `timeline` instead.
+  if (profile.topic === "overview" || profile.topic === null) {
+    return recommendOverview(profile, readBookRefs);
+  }
+  const topic: StoryTopic = profile.topic;
   const rec: RecommendedItem[] = [];
   // Feedback weights nudge candidate book ordering. Positive weight for
   // the picked topic keeps its book on top; a strongly-negative weight
@@ -142,3 +203,7 @@ export function recommendNext(
 function topicChinese(t: StoryTopic): string {
   return { career: "事业", love: "情感", wealth: "财富", recent: "近况" }[t];
 }
+
+// FocusChoice is re-exported through types.ts — keep the parameter noted
+// so future readers see the intended input shape.
+export type { FocusChoice };

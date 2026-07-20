@@ -7,6 +7,13 @@
  */
 
 export type StoryTopic = "career" | "love" | "wealth" | "recent";
+/**
+ * The reader's chosen entry point on the destiny map. "overview" is a
+ * neutral panoramic reading that never biases toward any single
+ * StoryTopic — matching, shelf ordering, recommendations and the
+ * insight screen must all treat it as its own explicit branch.
+ */
+export type FocusChoice = StoryTopic | "overview";
 export type AgeBand = "18-24" | "25-29" | "30-34" | "35-39" | "40-49" | "50+";
 export type Gender = "female" | "male" | "other" | "";
 
@@ -35,7 +42,7 @@ export interface ReaderProfile {
   birth_time: string; // HH:MM
   time_unknown: boolean;
   place: string;
-  topic: StoryTopic | null;
+  topic: FocusChoice | null;
   matching_opt_in: boolean;
 }
 
