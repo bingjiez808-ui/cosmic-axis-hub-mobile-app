@@ -34,8 +34,6 @@ import {
   nextIntakeStep,
   prevIntakeStep,
   topicLabel,
-  topicPersonal,
-  topicQuestion,
 } from "./story/state";
 import type {
   BookRef,
