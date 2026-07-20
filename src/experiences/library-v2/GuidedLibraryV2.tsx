@@ -1570,6 +1570,7 @@ function NotesArea({
   actorId,
   setState,
   goto,
+  showUndoToast,
 }: {
   state: StoryStateV1;
   actorId: string;
@@ -1612,36 +1613,43 @@ function NotesArea({
           </button>
         </div>
         <div className="mt-8 space-y-3">
-          {notes.map((n) => (
-            <button
-              key={n.id}
-              type="button"
-              onClick={() =>
-                setState((s) => ({ ...s, step: "note_detail", active_note_id: n.id }))
-              }
-              className="w-full rounded-2xl border border-stone-warm/15 p-5 text-left hover:border-gold-dust/40"
-            >
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <p className="font-mono text-[10px] tracking-[0.3em] text-gold-dust">
-                  {topicLabel(n.topic)} · {audienceLabel(n.audience)}
-                </p>
-                <span className="text-[10px] text-stone-warm/40">
-                  {relTime(n.created_at)}
-                </span>
-              </div>
-              <p className="mt-2 line-clamp-3 text-sm text-stone-warm/85">{n.body}</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {n.match_traits.map((t) => (
-                  <span
-                    key={t}
-                    className="rounded-full border border-gold-dust/30 px-2 py-0.5 text-[10px] text-gold-dust"
-                  >
-                    {t}
+          <AnimatePresence initial={false}>
+            {notes.map((n) => (
+              <motion.button
+                layout
+                key={n.id}
+                type="button"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={TRANSITION.fadeShort}
+                onClick={() =>
+                  setState((s) => ({ ...s, step: "note_detail", active_note_id: n.id }))
+                }
+                className="block w-full rounded-2xl border border-stone-warm/15 p-5 text-left hover:border-gold-dust/40"
+              >
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <p className="font-mono text-[10px] tracking-[0.3em] text-gold-dust">
+                    {topicLabel(n.topic)} · {audienceLabel(n.audience)}
+                  </p>
+                  <span className="text-[10px] text-stone-warm/40">
+                    {relTime(n.created_at)}
                   </span>
-                ))}
-              </div>
-            </button>
-          ))}
+                </div>
+                <p className="mt-2 line-clamp-3 break-words text-sm text-stone-warm/85">{n.body}</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {n.match_traits.map((t) => (
+                    <span
+                      key={t}
+                      className="rounded-full border border-gold-dust/30 px-2 py-0.5 text-[10px] text-gold-dust"
+                    >
+                      {t}
+                    </span>
+                  ))}
+                </div>
+              </motion.button>
+            ))}
+          </AnimatePresence>
           {notes.length === 0 && (
             <p className="text-sm text-stone-warm/50">图书馆还没有相关纸条。写第一张？</p>
           )}
@@ -1672,6 +1680,7 @@ function NotesArea({
         profile={state.profile}
         onBack={() => goto("notes")}
         bump={() => setTick((t) => t + 1)}
+        showUndoToast={showUndoToast}
       />
     );
   }
