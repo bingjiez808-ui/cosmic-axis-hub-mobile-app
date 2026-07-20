@@ -50,7 +50,7 @@ export interface ReaderProfile {
 }
 
 export interface StoryStateV1 {
-  version: 1;
+  version: 2;
   step: StoryStep;
   profile: ReaderProfile;
   active_book: BookRef | null;

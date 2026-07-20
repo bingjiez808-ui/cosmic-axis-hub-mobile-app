@@ -161,6 +161,13 @@ export function GuidedLibraryV2() {
     setState((s) => ({
       ...s,
       profile: { ...DEMO_PROFILE, age_band: ageBandFromDate(DEMO_PROFILE.birth_date) },
+      // Demo profile jumps straight to the panorama tour — that's the
+      // "立即体验全景导览" entry point requested by the acceptance flow,
+      // and it's safe because DEMO_PROFILE has a complete intake.
+      step: s.step === "gate" || s.step === "intake_name"
+        || s.step === "intake_birth" || s.step === "intake_place"
+        ? "panorama_entry"
+        : s.step,
     }));
   };
 
@@ -209,40 +216,17 @@ export function GuidedLibraryV2() {
           >
             {state.step === "gate" && (
               <Gate
-                onEnter={() => goto("focus")}
+                onEnter={() => goto("intake_name")}
                 reducedMotion={reducedMotion}
                 returning={returning}
               />
             )}
-            {state.step === "focus" && (
-              <DestinyMap
-                topic={state.profile.topic}
-                onConfirm={(choice) => {
-                  // `overview` is a first-class FocusChoice — never
-                  // silently rewritten to "career". Matching, shelf
-                  // ordering, recommendations and the insight screen
-                  // all branch on this value explicitly, so panoramic
-                  // readers stay panoramic.
-                  const overview = choice === "overview";
-                  setState((s) => ({
-                    ...s,
-                    profile: { ...s.profile, topic: choice },
-                    reading_history: overview
-                      ? [
-                          ...s.reading_history,
-                          {
-                            kind: "recommendation_clicked",
-                            ref: "overview",
-                            at: Date.now(),
-                          },
-                        ]
-                      : s.reading_history,
-                    step: "intake_name",
-                  }));
-                }}
-                reducedMotion={reducedMotion}
-              />
-            )}
+            {/* The `focus` step (old pre-intake destiny picker) is retired.
+                Its five-node map has been folded into `PanoramaEntry`, which
+                is now the first post-intake screen. `loadStoryState`
+                migrates any legacy blob still sitting on step `focus` /
+                `first_insight` forward without asking the reader to clear
+                cache. */}
             {(state.step === "intake_name"
               || state.step === "intake_birth"
               || state.step === "intake_place") && (
