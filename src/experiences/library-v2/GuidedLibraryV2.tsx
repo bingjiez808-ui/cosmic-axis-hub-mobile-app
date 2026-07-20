@@ -599,7 +599,7 @@ function FocusPick({
     const wrapped = (i + btns.length) % btns.length;
     btns[wrapped]?.focus();
   };
-  const onKey = (e: React.KeyboardEvent<HTMLDivElement>, idx: number) => {
+  const onKey = (e: React.KeyboardEvent<HTMLButtonElement>, idx: number) => {
     if (e.key === "ArrowRight" || e.key === "ArrowDown") {
       e.preventDefault();
       focusIndex(idx + 1);
