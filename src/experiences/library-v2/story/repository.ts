@@ -144,6 +144,16 @@ export function softDeleteReply(id: string, actorId: string): boolean {
   return true;
 }
 
+export function restoreReply(id: string, actorId: string): boolean {
+  const list = loadReplies();
+  const idx = list.findIndex((r) => r.id === id);
+  if (idx < 0) return false;
+  if (list[idx].author_id !== actorId) return false;
+  list[idx] = { ...list[idx], deleted_at: null, status: "active" };
+  saveReplies(list);
+  return true;
+}
+
 export function toggleAction(
   actorId: string,
   targetKind: NoteAction["target_kind"],
