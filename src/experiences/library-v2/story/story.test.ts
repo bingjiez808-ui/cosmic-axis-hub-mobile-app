@@ -221,24 +221,21 @@ describe("story · overview (panoramic) has no career bias", () => {
     expect(bookRefs.slice(0, 2)).toEqual(["self", "timeline"]);
   });
 
-  it("overview figure matching does not penalise non-career figures", () => {
+  it("overview figure matching is topic-neutral (identical to no-topic ordering)", () => {
     const overviewProfile: ReaderProfile = {
       ...DEMO_PROFILE,
       topic: "overview",
     };
-    const careerProfile: ReaderProfile = {
+    const noTopicProfile: ReaderProfile = {
       ...DEMO_PROFILE,
-      topic: "career",
+      topic: null,
     };
-    const overviewFirst = matchFigures(overviewProfile, "all").slice(0, 3);
-    const careerFirst = matchFigures(careerProfile, "all").slice(0, 3);
-    // Overview must NOT reproduce the career-first ordering — with the
-    // topic axis zeroed out, ordering falls back to age + deterministic
-    // tie-break, so at least one figure in the top three differs.
-    const sameOrder =
-      overviewFirst.length === careerFirst.length &&
-      overviewFirst.every((f, i) => careerFirst[i]?.id === f.id);
-    expect(sameOrder).toBe(false);
+    const overviewOrder = matchFigures(overviewProfile, "all").map((f) => f.id);
+    const neutralOrder = matchFigures(noTopicProfile, "all").map((f) => f.id);
+    // With no topic bias, overview must match the null-topic ordering
+    // exactly — proving no career/love/wealth topic axis is silently
+    // applied to panoramic readers.
+    expect(overviewOrder).toEqual(neutralOrder);
   });
 
   it("overview note matching is topic-neutral (sorts by recency only)", () => {
