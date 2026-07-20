@@ -4,9 +4,18 @@
  * DEMO ONLY. Fixture data + local persistence. No AI, no payment, no
  * writes to V1 tables. V1 pages (`/`, `/ritual`, `/report`, ...) are
  * completely untouched by this file — nothing here imports from V1.
+ *
+ * Membership CTAs surfaced by this file DO NOT call V1 payment or
+ * entitlement code. They render a preview book and, when the reviewer
+ * flips the "以已购身份预览" switch (or opens with `?entitled=1`), the
+ * CTA morphs to "继续阅读" and links to the real V1 route via
+ * TanStack `<Link>`. Real auth / order lookup happens on that route,
+ * not here.
  */
+import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { Link } from "@tanstack/react-router";
 import { LIBRARY_EXPERIENCE_VERSION } from "./version";
 import {
   BOOKS,
@@ -30,7 +39,6 @@ import {
 } from "./story/state";
 import type {
   BookRef,
-  HistoricalFigure,
   Note,
   NoteAudience,
   ReaderProfile,
@@ -57,6 +65,16 @@ import {
   saveStoryState,
 } from "./story/storage";
 import { readerPublicNickname } from "./story/privacy";
+import {
+  applyFeedback,
+  type FeedbackKind,
+} from "./story/feedback";
+import { DURATION, EASE, STAGGER, TRANSITION } from "./motion/tokens";
+import { useReducedMotion } from "./motion/reduced-motion";
+import {
+  logMembership,
+  useEntitledPreview,
+} from "./membership";
 
 // ---------------- Persistent local actor id (Demo only) ----------------
 const ACTOR_KEY = "lod:library-v2:actor-id";
@@ -70,31 +88,52 @@ function getActorId(): string {
   return id;
 }
 
+/**
+ * Toast contract for the note-detail undo action. Kept in-file (no
+ * external toast dependency) because the V2 demo intentionally
+ * avoids app-wide toast plumbing.
+ */
+interface UndoToast {
+  id: string;
+  label: string;
+  action: () => void;
+  expires_at: number;
+}
+
+
 // ---------------- Root ----------------
 export function GuidedLibraryV2() {
   const [state, setState] = useState<StoryStateV1>(() => ({
     ...INITIAL_STORY_STATE,
   }));
   const [hydrated, setHydrated] = useState(false);
-  const [reducedMotion, setReducedMotion] = useState(false);
+  const reducedMotion = useReducedMotion();
   const actorId = useMemo(() => getActorId(), []);
+  const { entitled, setEntitled } = useEntitledPreview();
+  const [toast, setToast] = useState<UndoToast | null>(null);
 
   useEffect(() => {
     const loaded = loadStoryState();
-    setState(loaded);
+    setState({
+      ...loaded,
+      // Mark first-visit-at on the first mount that persists to storage,
+      // so the gate can shorten its ceremony next time.
+      first_visit_at: loaded.first_visit_at ?? Date.now(),
+    });
     setHydrated(true);
-    if (typeof window !== "undefined") {
-      const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-      setReducedMotion(mq.matches);
-      const h = () => setReducedMotion(mq.matches);
-      mq.addEventListener?.("change", h);
-      return () => mq.removeEventListener?.("change", h);
-    }
   }, []);
 
   useEffect(() => {
     if (hydrated) saveStoryState(state);
   }, [state, hydrated]);
+
+  // Expire the undo toast when its window closes.
+  useEffect(() => {
+    if (!toast) return;
+    const ms = Math.max(0, toast.expires_at - Date.now());
+    const t = window.setTimeout(() => setToast(null), ms);
+    return () => window.clearTimeout(t);
+  }, [toast]);
 
   const patchProfile = (p: Partial<ReaderProfile>) =>
     setState((s) => ({ ...s, profile: { ...s.profile, ...p } }));
@@ -103,7 +142,7 @@ export function GuidedLibraryV2() {
 
   const restart = () => {
     clearStoryState();
-    setState({ ...INITIAL_STORY_STATE });
+    setState({ ...INITIAL_STORY_STATE, first_visit_at: Date.now() });
   };
 
   const useDemoProfile = () => {
@@ -113,6 +152,28 @@ export function GuidedLibraryV2() {
     }));
   };
 
+  const onFeedback = (kind: FeedbackKind) => {
+    setState((s) => {
+      const topic = s.profile.topic;
+      if (!topic) return s;
+      return {
+        ...s,
+        feedback_weights: applyFeedback(s.feedback_weights, topic, kind),
+      };
+    });
+  };
+
+  const showUndoToast = (label: string, action: () => void) => {
+    setToast({
+      id: `t-${Date.now()}`,
+      label,
+      action,
+      expires_at: Date.now() + 10_000,
+    });
+  };
+
+  const returning = !!(state.first_visit_at && Date.now() - state.first_visit_at > 60_000);
+
   return (
     <div className="min-h-[100dvh] bg-obsidian text-stone-warm">
       <TopBar
@@ -120,114 +181,149 @@ export function GuidedLibraryV2() {
         onRestart={restart}
         onDemo={useDemoProfile}
         onHome={() => goto("gate")}
+        entitled={entitled}
+        onToggleEntitled={setEntitled}
       />
       <main className="mx-auto w-full max-w-[1100px] px-5 pb-24 pt-6 sm:px-8">
-        {state.step === "gate" && <Gate onEnter={() => goto("focus")} reducedMotion={reducedMotion} />}
-        {state.step === "focus" && (
-          <FocusPick
-            topic={state.profile.topic}
-            onPick={(t) => patchProfile({ topic: t })}
-            onNext={() => goto("intake_name")}
-          />
-        )}
-        {(state.step === "intake_name"
-          || state.step === "intake_birth"
-          || state.step === "intake_place") && (
-          <Intake
-            step={state.step}
-            profile={state.profile}
-            onChange={patchProfile}
-            onBack={() => goto(prevIntakeStep(state.step))}
-            onNext={() => {
-              if (state.step === "intake_place") {
-                const ab = ageBandFromDate(state.profile.birth_date);
-                patchProfile({ age_band: ab });
-              }
-              goto(nextIntakeStep(state.step));
-            }}
-          />
-        )}
-        {state.step === "first_insight" && state.profile.topic && (
-          <FirstInsight
-            topic={state.profile.topic}
-            onNext={() => goto("shelf")}
-          />
-        )}
-        {state.step === "shelf" && (
-          <Shelf
-            profile={state.profile}
-            readBooks={state.read_books}
-            onOpenBook={(ref) => {
-              setState((s) => ({
-                ...s,
-                step: "book",
-                active_book: ref,
-                read_books: s.read_books.includes(ref)
-                  ? s.read_books
-                  : [...s.read_books, ref],
-                reading_history: [
-                  ...s.reading_history,
-                  { kind: "book_opened", ref, at: Date.now() },
-                ],
-              }));
-            }}
-            onHistory={() => goto("history")}
-            onRecommend={() => goto("recommendations")}
-            onNotes={() => goto("notes")}
-          />
-        )}
-        {state.step === "book" && state.active_book && (
-          <BookReader
-            ref={state.active_book}
-            onBack={() => goto("shelf")}
-          />
-        )}
-        {state.step === "history" && (
-          <History
-            profile={state.profile}
-            filter={state.history_filter}
-            onFilter={(f) => setState((s) => ({ ...s, history_filter: f }))}
-            onOpen={(id) => setState((s) => ({ ...s, step: "figure", active_figure_id: id }))}
-            onBack={() => goto("shelf")}
-          />
-        )}
-        {state.step === "figure" && state.active_figure_id && (
-          <FigureDetail
-            id={state.active_figure_id}
-            onBack={() => goto("history")}
-          />
-        )}
-        {state.step === "recommendations" && (
-          <Recommendations
-            profile={state.profile}
-            readBookRefs={state.read_books}
-            onChangeTopic={(t) => patchProfile({ topic: t })}
-            onOpenBook={(ref) => {
-              setState((s) => ({
-                ...s,
-                step: "book",
-                active_book: ref,
-                read_books: s.read_books.includes(ref) ? s.read_books : [...s.read_books, ref],
-              }));
-            }}
-            onBack={() => goto("shelf")}
-          />
-        )}
-        {(state.step === "notes"
-          || state.step === "note_compose"
-          || state.step === "note_detail") && (
-          <NotesArea
-            state={state}
-            actorId={actorId}
-            setState={setState}
-            goto={goto}
-          />
-        )}
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={state.step}
+            initial={reducedMotion ? false : { opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={reducedMotion ? undefined : { opacity: 0, y: -6 }}
+            transition={TRANSITION.fadeShort}
+          >
+            {state.step === "gate" && (
+              <Gate
+                onEnter={() => goto("focus")}
+                reducedMotion={reducedMotion}
+                returning={returning}
+              />
+            )}
+            {state.step === "focus" && (
+              <FocusPick
+                topic={state.profile.topic}
+                onPick={(t) => patchProfile({ topic: t })}
+                onNext={() => goto("intake_name")}
+                reducedMotion={reducedMotion}
+              />
+            )}
+            {(state.step === "intake_name"
+              || state.step === "intake_birth"
+              || state.step === "intake_place") && (
+              <Intake
+                step={state.step}
+                profile={state.profile}
+                onChange={patchProfile}
+                onBack={() => goto(prevIntakeStep(state.step))}
+                onNext={() => {
+                  if (state.step === "intake_place") {
+                    const ab = ageBandFromDate(state.profile.birth_date);
+                    patchProfile({ age_band: ab });
+                  }
+                  goto(nextIntakeStep(state.step));
+                }}
+              />
+            )}
+            {state.step === "first_insight" && state.profile.topic && (
+              <FirstInsight
+                topic={state.profile.topic}
+                onNext={() => goto("shelf")}
+                onFeedback={onFeedback}
+                weights={state.feedback_weights}
+                reducedMotion={reducedMotion}
+              />
+            )}
+            {state.step === "shelf" && (
+              <Shelf
+                profile={state.profile}
+                readBooks={state.read_books}
+                entitled={entitled}
+                onOpenBook={(ref) => {
+                  setState((s) => ({
+                    ...s,
+                    step: "book",
+                    active_book: ref,
+                    read_books: s.read_books.includes(ref)
+                      ? s.read_books
+                      : [...s.read_books, ref],
+                    reading_history: [
+                      ...s.reading_history,
+                      { kind: "book_opened", ref, at: Date.now() },
+                    ],
+                  }));
+                }}
+                onHistory={() => goto("history")}
+                onRecommend={() => goto("recommendations")}
+                onNotes={() => goto("notes")}
+                reducedMotion={reducedMotion}
+              />
+            )}
+            {state.step === "book" && state.active_book && (
+              <BookReader
+                ref={state.active_book}
+                entitled={entitled}
+                onBack={() => goto("shelf")}
+              />
+            )}
+            {state.step === "history" && (
+              <History
+                profile={state.profile}
+                filter={state.history_filter}
+                onFilter={(f) => setState((s) => ({ ...s, history_filter: f }))}
+                onOpen={(id) => setState((s) => ({ ...s, step: "figure", active_figure_id: id }))}
+                onBack={() => goto("shelf")}
+                reducedMotion={reducedMotion}
+              />
+            )}
+            {state.step === "figure" && state.active_figure_id && (
+              <FigureDetail
+                id={state.active_figure_id}
+                onBack={() => goto("history")}
+                reducedMotion={reducedMotion}
+              />
+            )}
+            {state.step === "recommendations" && (
+              <Recommendations
+                profile={state.profile}
+                readBookRefs={state.read_books}
+                weights={state.feedback_weights}
+                onChangeTopic={(t) => patchProfile({ topic: t })}
+                onOpenBook={(ref) => {
+                  setState((s) => ({
+                    ...s,
+                    step: "book",
+                    active_book: ref,
+                    read_books: s.read_books.includes(ref) ? s.read_books : [...s.read_books, ref],
+                  }));
+                }}
+                onBack={() => goto("shelf")}
+              />
+            )}
+            {(state.step === "notes"
+              || state.step === "note_compose"
+              || state.step === "note_detail") && (
+              <NotesArea
+                state={state}
+                actorId={actorId}
+                setState={setState}
+                goto={goto}
+                showUndoToast={showUndoToast}
+              />
+            )}
+          </motion.div>
+        </AnimatePresence>
       </main>
       <Footer />
+      <UndoToastPortal
+        toast={toast}
+        onDismiss={() => setToast(null)}
+      />
     </div>
   );
 }
+
+
 
 // ---------------- TopBar ----------------
 function TopBar({
@@ -235,12 +331,17 @@ function TopBar({
   onRestart,
   onDemo,
   onHome,
+  entitled,
+  onToggleEntitled,
 }: {
   step: StoryStep;
   onRestart: () => void;
   onDemo: () => void;
   onHome: () => void;
+  entitled?: boolean;
+  onToggleEntitled?: (v: boolean) => void;
 }) {
+
   return (
     <div
       className="sticky top-0 z-30 border-b border-gold-dust/15 bg-obsidian/85 backdrop-blur"
@@ -289,6 +390,38 @@ function Footer() {
   );
 }
 
+function UndoToastPortal({
+  toast,
+  onDismiss,
+}: {
+  toast: UndoToast | null;
+  onDismiss: () => void;
+}) {
+  if (!toast) return null;
+  if (typeof document === "undefined") return null;
+  return createPortal(
+    <div
+      role="status"
+      aria-live="polite"
+      className="fixed bottom-6 left-1/2 z-[80] -translate-x-1/2 rounded-full border border-gold-dust/30 bg-obsidian/95 px-4 py-2 text-xs text-stone-warm shadow-lg backdrop-blur"
+    >
+      <span className="mr-3">{toast.label}</span>
+      <button
+        type="button"
+        onClick={() => {
+          toast.action();
+          onDismiss();
+        }}
+        className="font-mono text-[10px] uppercase tracking-[0.3em] text-gold-dust hover:text-gold-dust/80"
+      >
+        撤销
+      </button>
+    </div>,
+    document.body,
+  );
+}
+
+
 // ---------------- 1. Gate ----------------
 function Gate({
   onEnter,
@@ -296,7 +429,9 @@ function Gate({
 }: {
   onEnter: () => void;
   reducedMotion: boolean;
+  returning?: boolean;
 }) {
+
   const [entering, setEntering] = useState(false);
   const trigger = () => {
     if (reducedMotion) return onEnter();
@@ -352,7 +487,9 @@ function FocusPick({
   topic: StoryTopic | null;
   onPick: (t: StoryTopic) => void;
   onNext: () => void;
+  reducedMotion?: boolean;
 }) {
+
   return (
     <section className="pt-4">
       <p className="font-mono text-[10px] tracking-[0.35em] text-gold-dust">CHAPTER · ONE</p>
@@ -548,7 +685,11 @@ function FirstInsight({
 }: {
   topic: StoryTopic;
   onNext: () => void;
+  onFeedback?: (kind: FeedbackKind) => void;
+  weights?: Partial<Record<StoryTopic, number>>;
+  reducedMotion?: boolean;
 }) {
+
   const ins = INSIGHT_BY_TOPIC[topic];
   const [openKey, setOpenKey] = useState<"why" | "next" | "when" | null>(null);
   return (
@@ -626,7 +767,10 @@ function Shelf({
   onHistory: () => void;
   onRecommend: () => void;
   onNotes: () => void;
+  entitled?: boolean;
+  reducedMotion?: boolean;
 }) {
+
   const primary: BookRef =
     profile.topic === "career"
       ? "career"
@@ -741,7 +885,7 @@ function ShelfLink({
 }
 
 // ---------------- Book reader (Demo, quick/deep) ----------------
-function BookReader({ ref, onBack }: { ref: BookRef; onBack: () => void }) {
+function BookReader({ ref, onBack }: { ref: BookRef; onBack: () => void; entitled?: boolean }) {
   const book = bookByRef(ref);
   const [deep, setDeep] = useState(false);
   return (
@@ -799,7 +943,9 @@ function History({
   onFilter: (f: "all" | "east" | "west" | "different_choice") => void;
   onOpen: (id: string) => void;
   onBack: () => void;
+  reducedMotion?: boolean;
 }) {
+
   const list = matchFigures(profile, filter);
   return (
     <section className="pt-4">
@@ -877,7 +1023,9 @@ function FigureDetail({
 }: {
   id: string;
   onBack: () => void;
+  reducedMotion?: boolean;
 }) {
+
   const f = FIGURES.find((x) => x.id === id);
   if (!f) {
     return (
@@ -956,7 +1104,9 @@ function Recommendations({
   onChangeTopic: (t: StoryTopic) => void;
   onOpenBook: (ref: BookRef) => void;
   onBack: () => void;
+  weights?: Partial<Record<StoryTopic, number>>;
 }) {
+
   const recs = recommendNext(profile, readBookRefs);
   return (
     <section className="pt-4">
@@ -1032,7 +1182,9 @@ function NotesArea({
   actorId: string;
   setState: React.Dispatch<React.SetStateAction<StoryStateV1>>;
   goto: (s: StoryStep) => void;
+  showUndoToast?: (label: string, action: () => void) => void;
 }) {
+
   const [tick, setTick] = useState(0);
   const notes = useMemo(() => {
     const list = listNotes(Date.now());

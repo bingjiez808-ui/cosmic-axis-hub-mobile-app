@@ -33,6 +33,8 @@ export const INITIAL_STORY_STATE: StoryStateV1 = {
   saved_items: [],
   history_filter: "all",
   reading_history: [],
+  feedback_weights: {},
+  first_visit_at: null,
 };
 
 export const DEMO_PROFILE: ReaderProfile = {
