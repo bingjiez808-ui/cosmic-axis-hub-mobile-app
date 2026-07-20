@@ -1017,8 +1017,8 @@ function DestinyMap({
                 type="button"
                 data-preview-primary
                 onClick={() => {
-                  const isOverview = preview === "overview";
-                  onConfirm(isOverview ? "career" : (preview as StoryTopic), isOverview);
+                  if (!preview) return;
+                  onConfirm(preview);
                 }}
                 className="inline-flex min-h-12 items-center justify-center rounded-full bg-gold-dust px-6 text-sm text-obsidian hover:bg-gold-light"
               >
