@@ -993,9 +993,19 @@ function Shelf({
       ? "wealth"
       : "self";
   const primaryBook = bookByRef(primary);
-  const nextRecs = BOOKS.filter(
-    (b) => b.ref !== primary && !readBooks.includes(b.ref),
-  ).slice(0, 2);
+  const topicOrder: Record<StoryTopic, BookRef[]> = {
+    career: ["career", "wealth", "timeline", "premium", "sage", "self", "love"],
+    love: ["love", "self", "timeline", "sage", "premium", "career", "wealth"],
+    wealth: ["wealth", "career", "timeline", "premium", "sage", "self", "love"],
+    recent: ["self", "timeline", "sage", "premium", "career", "love", "wealth"],
+  };
+  const order = profile.topic ? topicOrder[profile.topic] : BOOKS.map((b) => b.ref);
+  const orderedShelf = order
+    .map((r) => BOOKS.find((b) => b.ref === r))
+    .filter((b): b is (typeof BOOKS)[number] => !!b);
+  const nextRecs = orderedShelf
+    .filter((b) => b.ref !== primary && !readBooks.includes(b.ref))
+    .slice(0, 2);
   return (
     <section className="pt-4">
       <p className="font-mono text-[10px] tracking-[0.3em] text-gold-dust">
