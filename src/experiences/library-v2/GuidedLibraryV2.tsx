@@ -1483,32 +1483,8 @@ function Recommendations({
           </button>
         ))}
       </div>
-      <div className="mt-6 space-y-3">
-        {recs.map((r) => (
-          <div
-            key={r.id}
-            className="rounded-2xl border border-stone-warm/15 p-5 hover:border-gold-dust/40"
-          >
-            <p className="font-mono text-[10px] tracking-[0.3em] text-gold-dust">
-              {r.kind === "book" ? "书籍" : r.kind === "figure" ? "人物" : "纸条"}
-            </p>
-            <h3 className="mt-2 font-serif text-lg text-stone-warm">{r.title}</h3>
-            <p className="mt-2 text-xs text-stone-warm/60">为什么推荐给我：{r.reason}</p>
-            {r.kind === "book" && (
-              <button
-                type="button"
-                onClick={() => onOpenBook(r.ref as BookRef)}
-                className="mt-3 min-h-11 rounded-full bg-gold-dust px-4 text-sm text-obsidian hover:bg-gold-light"
-              >
-                打开这一本 →
-              </button>
-            )}
-          </div>
-        ))}
-        {recs.length === 0 && (
-          <p className="text-sm text-stone-warm/60">你已经读完了主线的书；换个主题试试。</p>
-        )}
-      </div>
+      <RecommendationList recs={recs} onOpenBook={onOpenBook} />
+
     </section>
   );
 }
