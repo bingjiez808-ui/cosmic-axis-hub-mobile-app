@@ -973,6 +973,7 @@ function Shelf({
   onHistory,
   onRecommend,
   onNotes,
+  entitled,
 }: {
   profile: ReaderProfile;
   readBooks: BookRef[];
