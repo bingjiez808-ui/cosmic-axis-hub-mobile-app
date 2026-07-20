@@ -38,6 +38,7 @@ const BaseInput = z.object({
 
 export const DIM_KEYS = [
   "character",
+  "academic",
   "vocation",
   "wealth",
   "love",
@@ -50,6 +51,7 @@ export type DimensionKey = (typeof DIM_KEYS)[number];
 
 const DIM_TITLES_EN: Record<DimensionKey, string> = {
   character: "Character",
+  academic: "Academic & Cognition",
   vocation: "Vocation",
   wealth: "Wealth",
   love: "Love & Marriage",
@@ -60,6 +62,7 @@ const DIM_TITLES_EN: Record<DimensionKey, string> = {
 };
 const DIM_TITLES_ZH: Record<DimensionKey, string> = {
   character: "性格特质",
+  academic: "学业与认知",
   vocation: "事业方向",
   wealth: "财富格局",
   love: "情感与婚姻",
@@ -184,8 +187,14 @@ export const generateReportDimension = createServerFn({ method: "POST" })
 
       const missionNote = dimKey === "mission"
         ? isZh
-          ? "这是最后一个维度：合鸣并升华前七维（性格/事业/财富/情感/健康/父母/子女）。"
-          : "This is the final dimension: synthesise and elevate the previous seven dimensions (character / vocation / wealth / love / health / parents / children)."
+          ? "这是最后一个维度：合鸣并升华前八维（性格/学业/事业/财富/情感/健康/父母/子女）。"
+          : "This is the final dimension: synthesise and elevate the previous eight dimensions (character / academic / vocation / wealth / love / health / parents / children)."
+        : "";
+
+      const academicNote = dimKey === "academic"
+        ? isZh
+          ? "学业与认知维度专注于学习方式、可能形成优势的学科族群、以及当前的学习/认知周期。硬性规则：不得断言智商、考试分数或某个专业保证成功；至少给出 3 个「学科族群候选」，每项都需要引用具体命盘事实并给出「如何在现实中验证」的一句话；若来访者年龄已超过传统求学阶段，语气自动适配为「继续教育 / 职业学习 / 知识迁移与经验传承」，不要把他写成学生。"
+          : "The academic dimension is about learning style, subject clusters that may become strengths, and the current cognition/study window. Hard rules: never claim IQ, exam scores, or guaranteed success in a major; give at least 3 subject-cluster candidates, each anchored in a concrete chart fact and paired with a one-sentence 'how to validate in real life'; if the visitor is past traditional schooling age, shift the voice to continuing education, re-skilling, knowledge transfer and mentorship — do not write them as a student."
         : "";
 
       const schema = isZh
@@ -226,7 +235,7 @@ export const generateReportDimension = createServerFn({ method: "POST" })
 ${chartFacts || (isZh ? "（未提供）" : "(not provided)")}
 
 ${isZh ? "需要生成的维度" : "Dimension to generate"}: ${dimKey} · ${dimTitle}
-${missionNote}
+${missionNote}${academicNote}
 
 ${isZh ? "严格输出 JSON（只输出 JSON）" : "Output STRICT JSON only"}:
 ${schema}`;

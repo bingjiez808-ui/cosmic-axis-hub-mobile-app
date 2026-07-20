@@ -354,29 +354,39 @@ export function PanoramaFull({
   scores, readings, recommended, entitled, initialAnchor, onAnchorChange,
   onBack, onOpenHistory, onOpenRecommendations, reducedMotion,
 }: PanoramaFullProps) {
-  const sections: PanoramaFullSection[] = useMemo(() => [
-    { id: "overview", label: "全景摘要",
-      summary: "把学业、事业、情感、财富放在同一张地图上，先看整体走向，再决定翻哪一页。" },
-    ...DOMAIN_ORDER.map<PanoramaFullSection>((d) => ({
-      id: d,
-      label: DOMAIN_LABEL[d],
-      summary: readings[d].sections.opening,
-      v1_route: {
-        to: "/report",
-        label: entitled ? "翻开完整章节 →" : "解锁完整报告 ¥79",
-        requiresEntitlement: !entitled,
-      },
-    })),
-    { id: "timeline", label: "生命时间轴",
-      summary: "确定性大运/流年能量曲线，按年查看每个可观察窗口。",
-      v1_route: { to: "/report", label: entitled ? "打开时间轴 →" : "解锁完整报告 ¥79" } },
-    { id: "history", label: "历史回声",
-      summary: "阅读一位与你此刻情境相似的历史人物，看看不同选择带来的不同代价。",
-      v2_action: { label: "翻到历史回声 →", onClick: onOpenHistory } },
-    { id: "recommendations", label: "推荐下一页",
-      summary: `我们此刻建议你先读：${DOMAIN_LABEL[recommended.domain]}。原因：${recommended.reason_text.split("：").slice(-1)[0]}`,
-      v2_action: { label: "查看推荐 →", onClick: onOpenRecommendations } },
-  ], [readings, recommended, entitled, onOpenHistory, onOpenRecommendations]);
+  const sections: PanoramaFullSection[] = useMemo(() => {
+    // Map V2 domain keys to the V1 synthesis anchors so "翻开完整章节"
+    // deep-links straight into the matching board on /report.
+    const DOMAIN_TO_V1_ANCHOR: Record<DomainKey, string> = {
+      study: "academic",
+      career: "vocation",
+      love: "love",
+      wealth: "wealth",
+    };
+    return [
+      { id: "overview", label: "全景摘要",
+        summary: "把学业、事业、情感、财富放在同一张地图上，先看整体走向，再决定翻哪一页。" },
+      ...DOMAIN_ORDER.map<PanoramaFullSection>((d) => ({
+        id: d,
+        label: DOMAIN_LABEL[d],
+        summary: readings[d].sections.opening,
+        v1_route: {
+          to: `/report#${DOMAIN_TO_V1_ANCHOR[d]}`,
+          label: entitled ? "翻开完整章节 →" : "解锁完整报告 ¥79",
+          requiresEntitlement: !entitled,
+        },
+      })),
+      { id: "timeline", label: "生命时间轴",
+        summary: "确定性大运/流年能量曲线，按年查看每个可观察窗口。",
+        v1_route: { to: "/report#timeline", label: entitled ? "打开时间轴 →" : "解锁完整报告 ¥79" } },
+      { id: "history", label: "历史回声",
+        summary: "阅读一位与你此刻情境相似的历史人物，看看不同选择带来的不同代价。",
+        v2_action: { label: "翻到历史回声 →", onClick: onOpenHistory } },
+      { id: "recommendations", label: "推荐下一页",
+        summary: `我们此刻建议你先读：${DOMAIN_LABEL[recommended.domain]}。原因：${recommended.reason_text.split("：").slice(-1)[0]}`,
+        v2_action: { label: "查看推荐 →", onClick: onOpenRecommendations } },
+    ];
+  }, [readings, recommended, entitled, onOpenHistory, onOpenRecommendations]);
 
   const [active, setActive] = useState<string>(initialAnchor ?? "overview");
   const contentRef = useRef<HTMLDivElement | null>(null);

@@ -197,7 +197,7 @@ afterAll(() => clearTimeout(watchdog));
 
 describe(`premium revision integration — pinned to ${PREMIUM_REPORT_REVISION}`, () => {
   test("revision constant hasn't drifted", () => {
-    expect(PREMIUM_REPORT_REVISION).toBe("premium_v3_rev_2026_07_real_ai");
+    expect(PREMIUM_REPORT_REVISION).toBe("premium_v4_rev_2026_08_academic");
     expect(PREMIUM_V3_CHAPTERS.length).toBe(24);
   });
 
