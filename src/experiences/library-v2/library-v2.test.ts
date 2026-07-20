@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+// @ts-expect-error bun:test
+import { describe, expect, it } from "bun:test";
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import {
