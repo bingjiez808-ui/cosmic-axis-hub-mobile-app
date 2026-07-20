@@ -45,7 +45,14 @@ export function matchFigures(
     return true;
   });
   const scored = items.map((f) => {
-    const topicMatch = topic && f.topics.includes(topic) ? 0 : 1;
+    // Overview / no-topic readers get equal treatment across all topics —
+    // no career/love/wealth bias is introduced by the topic axis.
+    const topicMatch =
+      !topic || topic === "overview"
+        ? 0
+        : f.topics.includes(topic)
+          ? 0
+          : 1;
     const ageGap = ageDistance(profile.age_band, f.age_band);
     // Deterministic tie-breaker by id length + first char code so tests are stable
     const stable = f.id.length + f.id.charCodeAt(0) * 0.001;
