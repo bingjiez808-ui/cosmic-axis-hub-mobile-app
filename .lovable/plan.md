@@ -1,111 +1,116 @@
 
-# 命运图书馆 V2 · 完整可点击 Demo 实施计划
+# 命运全景导览（Guided Panorama Tour）· V2 Demo
 
-范围很大，先给出结构化实施蓝图。批准后一次性交付；未批准前不动代码。
+保留现有 V1 正式站与已完成的 V2 人生地图。新增“仪式完成后”的全景导览流，作为未来 V1 排盘完成的插入点。全部工作只落在 `src/experiences/library-v2/` 与配套文档，不发布、不调用真实 AI。
 
-## 交付边界
-- 全部代码在 `src/experiences/library-v2/`（V1 一行不改）。
-- 预览入口沿用现有 `/dev/guided-library-v2`（保留 preview-guard + noindex + 不入 sitemap）。
-- 不发布，不接真实 AI/支付；Demo 数据用 typed fixture + local repository。
-- 数据库 migration 文件写入 `supabase/pending/` 但**不自动执行**（Demo 通过 fixture repository fallback 运行；这样满足"当前环境不能安全执行 migration 时的双通道"要求）。类型/服务层完整，UI 不直连表。
+## 1. 五领域重排 & 中性文案
 
-## 用户故事链（单一路由，内部状态机 + `localStorage` 持久化）
+- 顺序统一为：`study → career → love → wealth → overview`。
+- `StoryTopic` 扩展新增 `study`；移除 `recent` 作为领域；`recent` 语义并入每个领域的“当前周期”与 overview 的“生命时间轴”。
+- 更新 `types.ts / state.ts / fixtures.ts / matching.ts` 中所有 topic 相关枚举、标签、问题、洞察、书架顺序、推荐逻辑，保持 overview 无 career 偏见。
+- `DestinyMap`：五节点新序，第一个节点 = 学业与认知。文案照单填入。
+- 旧 state 兼容：`recent` → 映射到 `overview`，写迁移函数于 `story/storage.ts`。
 
-```text
-gate  →  focus  →  intake(3)  →  first_insight  →  shelf
-                                                     ↑
-      history_echoes  ⇄  recommendations  ⇄  notes(list/compose/detail/reply)
-```
+## 2. 确定性 domain-score-v1 契约
 
-每屏一个主 CTA；`Esc`/焦点/ARIA/44px 触控/安全区/减动效全部满足。
-
-### 屏级要点
-1. **大门** — 复用现有首屏"每一种文明…你，是谁？步入图书馆"的文字与视觉（V2 内重制，不 import V1），点击后 0.5s 光晕过场（`prefers-reduced-motion` 下退化）。
-2. **主题选择** — 事业/情感/财富/近况；卡片单问句，选择后展开个性化说明 + `开始寻找答案`。
-3. **三步建档** — 昵称+性别 / 生日+时间(可勾"不知道准确时间") / 出生城市（复用 `CityCombobox`）。Demo 内建"使用演示资料"按钮一键填充；写入 V2 本地 store，不写 V1 charts。
-4. **第一条洞察** — 一条演示洞察 + 三抽屉（为什么/怎么做/何时变化），顶部明标"演示数据"。
-5. **书架** — 6 张卡：基础命盘/事业/情感/财富/时间轴/高级报告/智者对话。V2 内均为 Demo 页（不跳 V1 路由，避免真实数据交叉）；每张有确定性 fixture 内容。突出"你正在阅读"+最多 2 条"推荐下一页"。
-6. **历史的回声** — 8 位 fixture 人物（中/西、跨年龄+主题）：处境/选择/结果/代价/迁移经验/来源占位/过度类比警示。匹配 = 年龄段+主题+核心矛盾标签；不显示相似度百分比，只显示"曾面对相似问题"。切换：东方/西方/做出不同选择的人。结尾固定金句。
-7. **推荐** — 本地规则：`age_band × topic × repeated_traits × read/save history` → 至多 3 项，附"为什么推荐给我"。用户可切换首要主题。
-8. **命运纸条** — 列表/详情/撰写/回复：
-   - 撰写：受众模式（同页/对页/经历过/交给图书馆）、主题、正文、可选单图（本地 blob 预览 + mime/大小校验；Demo 不真上传）、隐私提醒。
-   - 详情：结构化回复表单（曾面对/当时选择/代价/如果重来/一个考虑）。
-   - 匹配标签：抽象词（人生阶段相近/责任模式相似/互补视角），**永不显示出生资料**。
-   - 操作：收藏、举报、软删除自己发的内容。
-9. **重开 Demo / 演示资料** — 顶部工具条常驻。
-
-## 数据库设计（migration file 已写，Demo 不依赖执行）
-
-Migration: `supabase/pending/20260720_library_v2.sql`
-
-表（全部 `v2_` 前缀，RLS 打开，`GRANT` 完备）：
-- `v2_reader_profiles(user_id PK, nickname, age_band, interest_topics text[], matching_opt_in bool, chart_ref uuid null, ...)` — 只存派生资料，不复制生辰。
-- `v2_exploration_events(id, user_id, chart_id null, event_type, topic, metadata jsonb, created_at)` — 用户 own read/insert。
-- `v2_historical_figures(id, name, tradition, age_band, topics text[], situation, choice, outcome, cost, transferable, source_title, source_url, warning, status, ...)` — `anon`+`authenticated` 只读 `status='published'`。
-- `v2_recommendations(id, user_id, chart_id null, kind, reference_id, reason_codes text[], state, created_at)` — own only。
-- `v2_notes(id, author_id, topic, body, image_path null, audience_mode, status, created_at, updated_at, deleted_at)` — author 全权；公众读 `status='active' AND deleted_at IS NULL`；`body` 与 `image_path` 不含生辰。
-- `v2_note_match_traits(note_id, traits text[])` — 服务端生成的抽象标签；公众可读（跟随 note 可见性）。
-- `v2_note_replies(id, note_id, author_id, faced, chose, cost, if_again, one_consideration, status, deleted_at, ...)` — 同 notes 规则。
-- `v2_note_actions(id, actor_id, target_kind, target_id, kind unique(actor,target_kind,target_id,kind))` — 收藏/举报。
-- `v2_saved_items(id, user_id, kind, reference_id, created_at)` — own only。
-
-策略要点：
-- 所有含 `author_id/user_id` 表：`auth.uid() = author_id` 才能写；SELECT 仅 own（notes/replies 例外：公共列表读 active 未删）。
-- `v2_historical_figures`：`GRANT SELECT ... TO anon, authenticated`，policy 限 `status='published'`。
-- 原始命盘 JSON、生辰、城市：**从不出现在任何 V2 表**。仅在 `v2_reader_profiles.chart_ref` 存现有受保护 chart 的 uuid（可选、可为空）。
-- 图片：使用现有 `community` 私有 bucket（Demo 里不真传，只保留字段与签名 URL 设计说明）。
-- 硬删除：预留 `v2_purge_deleted_notes(uuid)` 函数（`SECURITY DEFINER`, service_role only）设计说明写在 SKILL/README；migration 内落地空实现骨架。
-
-因当前环境不能保证安全执行，migration 文件仅**写入 pending 目录**，不调用 `supabase--migration`。UI 通过 `src/experiences/library-v2/repository.ts` 抽象数据源：
-- `mode='fixture'`（默认，Demo 用）— 内存 + `localStorage`。
-- `mode='cloud'`（预留）— TanStack server fns 骨架，注释掉未启用。
-
-## 代码结构
+新增 `src/experiences/library-v2/panorama/domain-score.ts`（纯函数）+ 类型 `DomainScoreResult`：
 
 ```
-src/experiences/library-v2/
-  version.ts                  (bump + add MODE='demo')
-  preview-guard.ts            (已有)
-  state.ts                    (扩展状态机)
-  fixtures.ts                 (拆细：books/figures/notes/insights)
-  repository.ts               (统一读写；fixture backend)
-  matching.ts                 (纯函数：age×topic×traits)
-  privacy.ts                  (序列化白名单，剥离生辰)
-  storage.ts                  (localStorage 持久化 + 版本化)
-  types.ts
-  GuidedLibraryV2.tsx         (路由容器 + 状态机)
-  screens/
-    Gate.tsx  FocusPick.tsx  Intake.tsx  FirstInsight.tsx
-    Shelf.tsx  BookReader.tsx
-    HistoryEchoes.tsx  FigureDetail.tsx
-    Recommendations.tsx
-    Notes.tsx  NoteCompose.tsx  NoteDetail.tsx  NoteReply.tsx
-  components/
-    DemoBanner.tsx  Drawer.tsx  ImagePicker.tsx  Chip.tsx ...
-  __tests__/
-    matching.test.ts  privacy.test.ts  storage.test.ts
-    repository.test.ts  state.test.ts (原 library-v2.test.ts 保留并扩展)
-docs/LIBRARY_V2_GUIDED_EXPERIENCE.md  (更新为新链路)
-supabase/pending/20260720_library_v2.sql
+{ domain, score:0-100, band:'high_signal'|'mid_signal'|'insufficient_facts',
+  confidence:'high'|'mid'|'low'|'reference_only',
+  evidence_refs:string[], system_contributions:{ system, contribution, available, reason_codes[] }[],
+  timing_activation:string[], contradiction_flags:string[], missing_facts:string[],
+  calculation_version:'domain-score-v1', calculated_at }
 ```
 
-## 验证
+- 输入：`PremiumFacts`（或 v2 fixture facts）。
+- 引擎：从已有确定性字段（`bazi.day_master/ten_gods`, `ziwei` 宫位星曜, `vedic.mahadasha/nakshatra`, `western` 已接入的行星与相位）派生。加权、归一化，永远 idempotent。
+- 未接入的 facts（西方宫位/推运/Sookshma）→ `available:false + reason_codes`。
+- Demo 提供固定 `DEMO_DOMAIN_SCORES` fixture，UI 标注“演示评分”。
+- 单测：same-facts-same-score、缺失事实降 confidence、overview 不因高分自动倾向 career、五领域独立、score 边界。
 
-- `bun test` 全量 + 新增 V2 单测（匹配/隐私/存储/删除/preview-guard）。
-- `tsgo --noEmit`。
-- Playwright 单次跑通完整链路：大门→主题→建档→洞察→书架→历史→推荐→纸条发布→回复→自删。
-- 视口 1440 / 430 / 390 截图验证无横向溢出。
+推荐算法 `recommendFirstDomain(scores, mapPreviews, feedback)`：综合信号强度 + 极端值 + timing_activation + evidence_completeness + user preview。返回 `{ domain, reason_codes[], natural_language_reason }`。用户手选永远覆盖。
 
-## 报告输出
+## 3. Skill: guided-domain-reading-v1
 
-完成后返回：复用清单（`CityCombobox`、design tokens、Drawer 样式）/ fixture 清单 / migration 路径 / 测试结果（数字）/ 预览 URL / 未验证项。
+创建 `skills/guided-domain-reading/`：
+```
+SKILL.md
+references/{chapter-manifest.md,evidence-contract.md,cache-policy.md}
+```
+- 10 段固定章节 schema（开篇 / 四体系独立观察 / 共识与分歧 / 现实表现 / 优势与资源 / 重复模式与反例 / 当前周期与时间窗口 / 保留-停止-开始 / 自我探索问题 / 方法与限制）。
+- 输入/输出 JSON Schema、evidence validator（拒绝空 refs、拒绝未支持路径）、content hash = `hash(chart_id + facts_hash + domain + score + skill_version)`。
+- checkpoint / 断点续跑思想复用 premium report；本轮 Demo 不接真实 provider，仅提供 typed fixture（4 份短版但结构完整）+ `deterministicDomainReadingFromFixture()`。
+- 契约测试：无证据 fail、未支持字段 fail、缓存命中 provider calls = 0、同输入 idempotent。
+
+## 4. Panorama UI
+
+新增组件族（挂到 `PanoramaTour.tsx`）：
+- `PanoramaEntry` — 标题「你的命运全景已经展开」，四节点星图（复用 DestinyMap 视觉语言，但作为只读信号图，粗细+文字标注）。
+- `SignalSourceDrawer` — 点节点展开「信号从哪里来」，展示 system_contributions 与 evidence_refs（人类可读，无 hash/token）。
+- `RecommendedFirstRead` — 单卡：推荐领域 + 中性理由 + 两个 CTA（`从这里开始` / `我想选择其他路径`）+ 「阅读顺序推荐，不是命运结论」标注。
+- `DomainGuidedReading` — 短版首屏 + 展开完整（10 节）+ 结尾「展开我的完整全景」。
+- `PanoramaFullReader` — 顶部或左侧 sticky 导航：`overview / study / career / love / wealth / timeline / history / recommendations`。桌面左 sticky，移动横向 scrollable tabs（overflow-x-auto + 自动滚到当前项，无横向 body 溢出）。滚动 spy 高亮，`prefers-reduced-motion` 遵守。
+- 各章节短摘要 + 「翻开完整章节」按钮 → 跳 V1 路由（`/report`、`/ritual` 等）或 V2 shelf book，会员位复用现有 `MembershipBookPreview`（entitled 隐藏 CTA）。
+
+## 5. 状态与流程
+
+`StoryStateV1` 扩展：
+```
+domain_scores: DomainScoreResult[] | null
+recommended_domain: { domain, reason_codes, reason_text } | null
+selected_domain: StoryTopic | null
+guided_reading_status: Record<StoryTopic,'idle'|'short'|'full'|'done'>
+overview_nav_position: string | null
+tour_completed_at: number | null
+```
+
+流程改造：
+- `intake_place` 完成 → 进入新 step `panorama_entry`，不再直接 `first_insight`。
+- 旧的 `first_insight` 内容并入 `DomainGuidedReading` 的开篇/短摘要区，避免内容重复。
+- `tour_completed_at` 已存在 → 复访显示「继续上次阅读 / 重新打开全景导览」，不强制导览。
+- 旧 state 缺字段：安全默认 + 迁移。
+
+## 6. V1 集成契约
+
+新增 `docs/PANORAMA_V1_INTEGRATION.md`：
+- 触发点：仪式完成 & 四体系确定性 FACTS 已保存。
+- 需要的输入：`chart_id, user_id, facts_version, PremiumFacts` — 与现有 premium report 契约字段一致。
+- Adapter 接口 `buildDomainScoresFromFacts(facts): DomainScoreResult[]`（V2 实现 stub + 单测；V1 未来实现真实版本）。
+- 复访行为、缓存 key、会员/auth 守卫复用、跳过条件、失败降级。
+- 明确“不发送原始出生资料到社区/埋点”。
+
+## 7. 数据 & Migration
+
+- 缓存表放 `supabase/pending/20260721_panorama_domain_scores.sql`（不执行）：`v2_domain_scores_v1(user_id, chart_id, facts_hash, calculation_version, scores jsonb, created_at)` + RLS + GRANT。
+- 领域导读缓存：追加到同 pending 文件（`v2_domain_readings_v1`）。
+- Demo 仍走 fixture repository。
+
+## 8. 验证
+
+- 单测：`domain-score.test.ts`（8+ 用例）、`guided-domain-reading.test.ts`（契约）、`panorama-flow.test.ts`（state machine：study/overview/entitled 路径）、更新现有 story.test.ts 兼容 `study`。
+- `tsgo` 全通过；`bun test` 全通过。
+- Playwright（headless）：`/dev/guided-library-v2` 建档 → 全景入口 → 展开分数来源 → 接受推荐（study 分支）→ 更换为 overview → 短导读 → 完整导读 → 全景导航跳到 timeline → console error = 0。视口 1440 / 430 / 390 各截一张验证无横向溢出、无孤字、导航不遮挡。
+- 更新 `docs/LIBRARY_V2_GUIDED_EXPERIENCE.md` 章节与流程图。
+
+## 明确不做
+
+- 不改任何 V1 路由/组件。
+- 不 deploy migration、不调用真实 AI provider、不接真实支付。
+- 不引入西方宫位/推运/Sookshma 等尚无 facts 的字段——相关 system_contributions 标 `available:false`。
+- 不宣称成功率/正缘/婚期/彩票收益。
+
+## 技术细节要点
+
+- `StoryTopic` 变为 `'study'|'career'|'love'|'wealth'`；`FocusChoice = StoryTopic | 'overview'` 保持。
+- 所有涉及 `recent` 的枚举、Record、fixture、matching 都要同步迁移；旧 storage 数据 auto-migrate（`recent` → `overview`）。
+- Signal band 的颜色映射必须同时配文字标签（可达性）。
+- 缓存 key：`fnv1a(canonicalJson({chart_id, facts_hash, skill_version, domain, score_hash, lang}))`。
+- Reader UI 复用 `createPortal` + body scroll lock 模式（同 PremiumReportReader）。
 
 ---
 
-## 明确不做（避免误解）
-- 不改 V1 首页与任何 V1 路由。
-- 不执行 migration（文件只放 `supabase/pending/`）。
-- 书架里 6 个模块 Demo 全部 V2 内实现（**不**跳 V1 `/report`、`/ritual`），保证 Demo 数据隔离。
-- 不接真实 AI/支付/图片上传。
-
-如认可此蓝图请回复"继续"，我将一次性交付。若要收敛（例如：书架某些模块直接跳 V1 而不做 Demo 页 / 图片选择器完全省略 / 只做 5 位历史人物），请指出。
+需要你的确认后再进入实施。如果对以下任一项有偏好请指出，否则我按上面默认推进：
+1. 移动端全景导航采用「顶部横向 tabs」而非底部或抽屉。
+2. Domain score 的推荐算法暂不考虑用户历史点击（V2 Demo 仅 preview/feedback），V1 接入时再接入长期行为。
+3. `recent` 完全从 UI 退场（不再是可选主题），旧 state 静默迁移到 `overview`。
