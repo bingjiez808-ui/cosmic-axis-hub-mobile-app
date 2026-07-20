@@ -155,7 +155,9 @@ export function GuidedLibraryV2() {
   const onFeedback = (kind: FeedbackKind) => {
     setState((s) => {
       const topic = s.profile.topic;
-      if (!topic) return s;
+      // Overview readers explicitly opted out of a single topic;
+      // never nudge a per-topic feedback weight under panoramic mode.
+      if (!topic || topic === "overview") return s;
       return {
         ...s,
         feedback_weights: applyFeedback(s.feedback_weights, topic, kind),
