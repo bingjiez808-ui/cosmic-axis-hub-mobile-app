@@ -331,12 +331,17 @@ function TopBar({
   onRestart,
   onDemo,
   onHome,
+  entitled,
+  onToggleEntitled,
 }: {
   step: StoryStep;
   onRestart: () => void;
   onDemo: () => void;
   onHome: () => void;
+  entitled?: boolean;
+  onToggleEntitled?: (v: boolean) => void;
 }) {
+
   return (
     <div
       className="sticky top-0 z-30 border-b border-gold-dust/15 bg-obsidian/85 backdrop-blur"
