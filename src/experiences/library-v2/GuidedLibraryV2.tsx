@@ -441,48 +441,132 @@ function UndoToastPortal({
 function Gate({
   onEnter,
   reducedMotion,
+  returning,
 }: {
   onEnter: () => void;
   reducedMotion: boolean;
   returning?: boolean;
 }) {
-
   const [entering, setEntering] = useState(false);
+  const [parallax, setParallax] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  useEffect(() => {
+    if (reducedMotion) return;
+    const onMove = (e: MouseEvent) => {
+      const nx = (e.clientX / window.innerWidth) - 0.5;
+      const ny = (e.clientY / window.innerHeight) - 0.5;
+      setParallax({ x: nx, y: ny });
+    };
+    window.addEventListener("mousemove", onMove, { passive: true });
+    return () => window.removeEventListener("mousemove", onMove);
+  }, [reducedMotion]);
+
   const trigger = () => {
-    if (reducedMotion) return onEnter();
+    if (reducedMotion || returning) {
+      onEnter();
+      return;
+    }
     setEntering(true);
     setTimeout(onEnter, 550);
   };
+
+  const enterDuration = returning ? 0.2 : DURATION.long;
+  const p = reducedMotion ? { x: 0, y: 0 } : parallax;
+
   return (
-    <section className="relative min-h-[70dvh] pt-8 text-center">
+    <section className="relative min-h-[70dvh] overflow-hidden pt-8 text-center">
+      {/* Three layered parallax planes: bookshelf silhouette / star ring / dust. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          transform: `translate3d(${p.x * -14}px, ${p.y * -8}px, 0)`,
+          transition: reducedMotion ? undefined : "transform 220ms ease-out",
+          background:
+            "radial-gradient(ellipse at 50% 85%, oklch(0.22 0.02 60 / 0.55), transparent 65%)",
+        }}
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          transform: `translate3d(${p.x * -28}px, ${p.y * -14}px, 0)`,
+          transition: reducedMotion ? undefined : "transform 320ms ease-out",
+          background:
+            "radial-gradient(circle at 50% 32%, oklch(0.5 0.08 285 / 0.14), transparent 55%)",
+        }}
+      />
       <div
         aria-hidden
         className={`pointer-events-none absolute inset-0 transition-opacity duration-500 ${
           entering ? "opacity-100" : "opacity-40"
         }`}
         style={{
+          transform: `translate3d(${p.x * -46}px, ${p.y * -22}px, 0)`,
+          transition: reducedMotion ? undefined : "transform 500ms ease-out, opacity 500ms",
           background:
             "radial-gradient(ellipse at 50% 30%, oklch(0.28 0.05 85 / 0.35), transparent 60%)",
         }}
       />
-      <p className="relative font-mono text-[10px] tracking-[0.4em] text-gold-dust">
+      {/* Door-crack light on hover/press — expressed via `entering`. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute left-1/2 top-0 h-full w-[3px] -translate-x-1/2 bg-gradient-to-b from-gold-dust/60 via-gold-dust/10 to-transparent"
+        style={{
+          opacity: entering ? 1 : 0,
+          transition: reducedMotion ? undefined : "opacity 420ms",
+          filter: "blur(2px)",
+        }}
+      />
+
+      {returning && (
+        <motion.p
+          initial={reducedMotion ? false : { opacity: 0, y: -4 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={TRANSITION.fadeShort}
+          className="relative mb-2 font-mono text-[10px] tracking-[0.4em] text-gold-dust/80"
+        >
+          WELCOME BACK · 继续上次阅读
+        </motion.p>
+      )}
+      <motion.p
+        initial={reducedMotion ? false : { opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: enterDuration, ease: EASE.standard }}
+        className="relative font-mono text-[10px] tracking-[0.4em] text-gold-dust"
+      >
         THE LIBRARY OF DESTINY
-      </p>
-      <h1 className="relative mx-auto mt-6 max-w-[22ch] font-serif text-4xl leading-[1.25] text-stone-warm sm:text-5xl">
+      </motion.p>
+      <motion.h1
+        initial={reducedMotion ? false : { opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: enterDuration, ease: EASE.standard, delay: returning ? 0 : STAGGER.line }}
+        className="relative mx-auto mt-6 max-w-[22ch] font-serif text-4xl leading-[1.25] text-stone-warm sm:text-5xl"
+      >
         每一种文明，都在追问同一个问题
-      </h1>
-      <p className="relative mx-auto mt-4 max-w-[22ch] font-serif text-3xl text-gold-light sm:text-4xl">
+      </motion.h1>
+      <motion.p
+        initial={reducedMotion ? false : { opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: enterDuration, ease: EASE.standard, delay: returning ? 0 : STAGGER.line * 2 }}
+        className="relative mx-auto mt-4 max-w-[22ch] font-serif text-3xl text-gold-light sm:text-4xl"
+      >
         你，是谁？
-      </p>
+      </motion.p>
       <p className="relative mx-auto mt-6 max-w-[28ch] text-sm text-stone-warm/70">
         西方占星 · 印度占星 · 八字 · 紫微。四种传统，共同读懂同一个你。
       </p>
       <button
         type="button"
         onClick={trigger}
-        className="relative mt-10 inline-flex min-h-12 items-center gap-2 rounded-full bg-gold-dust px-8 py-3 font-serif text-base text-obsidian shadow-[0_0_40px_oklch(0.76_0.11_85/0.35)] hover:bg-gold-light"
+        disabled={entering}
+        className="group relative mt-10 inline-flex min-h-12 items-center gap-2 rounded-full bg-gold-dust px-8 py-3 font-serif text-base text-obsidian shadow-[0_0_40px_oklch(0.76_0.11_85/0.35)] transition hover:bg-gold-light disabled:opacity-70"
       >
-        步入图书馆 →
+        <span
+          aria-hidden
+          className="absolute inset-0 rounded-full ring-2 ring-gold-dust/0 transition group-hover:ring-gold-dust/40"
+        />
+        {returning ? "继续上次阅读 →" : "步入图书馆 →"}
       </button>
       <p className="relative mt-6 text-xs text-stone-warm/45">
         约 2 分钟 · 基础解读免费 · 完全演示体验
@@ -490,6 +574,7 @@ function Gate({
     </section>
   );
 }
+
 
 // ---------------- 2. Focus ----------------
 const FOCUS_TOPICS: StoryTopic[] = ["career", "love", "wealth", "recent"];
