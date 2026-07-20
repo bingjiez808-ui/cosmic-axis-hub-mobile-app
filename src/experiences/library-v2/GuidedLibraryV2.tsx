@@ -1250,7 +1250,7 @@ function FirstInsight({
   onFeedback,
   reducedMotion,
 }: {
-  topic: StoryTopic;
+  topic: FocusChoice;
   onNext: () => void;
   onFeedback?: (kind: FeedbackKind) => void;
   weights?: Partial<Record<StoryTopic, number>>;
@@ -1260,6 +1260,9 @@ function FirstInsight({
   const [openKey, setOpenKey] = useState<"why" | "next" | "when" | null>(null);
   const [feedback, setFeedback] = useState<FeedbackKind | null>(null);
   const clickFeedback = (k: FeedbackKind) => {
+    // Overview readers never nudge a per-topic weight; the map's neutrality
+    // is by design and must not be re-introduced through this button set.
+    if (topic === "overview" && k !== "want_more") return;
     setFeedback(k);
     onFeedback?.(k);
     if (k === "want_more") {
