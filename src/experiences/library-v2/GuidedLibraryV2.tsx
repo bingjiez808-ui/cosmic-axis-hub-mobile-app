@@ -1334,24 +1334,47 @@ function History({
           </button>
         ))}
       </div>
-      <div className="mt-6 grid gap-3 sm:grid-cols-2">
-        {list.map((f) => (
-          <button
-            key={f.id}
-            type="button"
-            onClick={() => onOpen(f.id)}
-            className="min-h-[132px] rounded-xl border border-stone-warm/15 p-5 text-left hover:border-gold-dust/40"
-          >
-            <p className="font-mono text-[10px] tracking-[0.3em] text-gold-dust">
-              {f.tradition === "east" ? "东方" : "西方"} · {f.age_band}
-            </p>
-            <h3 className="mt-2 font-serif text-xl text-stone-warm">{f.name}</h3>
-            <p className="mt-2 line-clamp-3 text-sm text-stone-warm/70">
-              {f.situation}
-            </p>
-          </button>
-        ))}
+      {/* Selection-path connector: subtle vertical line from active chip
+          to the results grid, letting the eye follow the chosen path. */}
+      <div className="relative mt-2 h-4" aria-hidden>
+        <motion.span
+          layoutId="history-path"
+          className="absolute left-6 top-0 h-full w-px bg-gradient-to-b from-gold-dust/60 to-transparent"
+          transition={TRANSITION.fadeShort}
+        />
       </div>
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.div
+          key={filter}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -4 }}
+          transition={TRANSITION.fadeShort}
+          className="mt-3 grid gap-3 sm:grid-cols-2"
+        >
+          {list.map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              onClick={() => onOpen(f.id)}
+              className="min-h-[132px] rounded-xl border border-stone-warm/15 p-5 text-left transition-colors hover:border-gold-dust/40"
+            >
+              <p className="font-mono text-[10px] tracking-[0.3em] text-gold-dust">
+                {f.tradition === "east" ? "东方" : "西方"} · {f.age_band}
+              </p>
+              <h3 className="mt-2 font-serif text-xl text-stone-warm break-words">{f.name}</h3>
+              <p className="mt-2 line-clamp-3 break-words text-sm text-stone-warm/70">
+                {f.situation}
+              </p>
+            </button>
+          ))}
+          {list.length === 0 && (
+            <p className="text-sm text-stone-warm/50">
+              这个过滤下暂无相似处境的记录。换一个筛选看看？
+            </p>
+          )}
+        </motion.div>
+      </AnimatePresence>
       <div className="mt-10 rounded-2xl border border-gold-dust/25 bg-gold-dust/5 p-6 text-center">
         <p className="mx-auto max-w-[36ch] font-serif text-lg leading-relaxed text-stone-warm">
           {CLOSING_QUOTE}
