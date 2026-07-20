@@ -145,7 +145,18 @@ export function bookByRef(ref: BookRef): BookCard {
   return b;
 }
 
-export const INSIGHT_BY_TOPIC: Record<StoryTopic, Insight> = {
+export const INSIGHT_BY_TOPIC: Record<StoryTopic | "overview", Insight> = {
+  overview: {
+    headline:
+      "你没有先选择一条路径——那也是一个信息：你想要的是全景，而不是被推向某个答案。",
+    why:
+      "四个体系在你身上不会同时说同一件事：西方占星、印度占星、八字、紫微各自看见你不同的一面。全景阅读会把它们并排放好，再由你决定先深入哪一处。",
+    next:
+      "接下来先看『基础命盘 · 你的底色』和『生命时间轴 · 你正在哪一段』；读完后再选择往事业、关系或财富任何一章展开。",
+    when:
+      "全景阅读没有固定的时间窗口——你可以随时切换主题、随时回到地图，之前的阅读会保留在书签里。",
+  },
+
   career: {
     headline:
       "你不是在犹豫，你在等一个『真的值得』的位置——最近一年你把两三个原本可以答应的机会推掉了，那不是错。",
