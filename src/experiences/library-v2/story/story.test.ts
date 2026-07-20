@@ -119,7 +119,7 @@ describe("story · state", () => {
   it("next/prev intake walk in the documented order", () => {
     expect(nextIntakeStep("intake_name")).toBe("intake_birth");
     expect(nextIntakeStep("intake_birth")).toBe("intake_place");
-    expect(nextIntakeStep("intake_place")).toBe("first_insight");
+    expect(nextIntakeStep("intake_place")).toBe("panorama_entry");
     expect(prevIntakeStep("intake_place")).toBe("intake_birth");
     expect(prevIntakeStep("intake_name")).toBe("focus");
   });

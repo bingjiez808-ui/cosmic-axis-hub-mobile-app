@@ -23,6 +23,9 @@ export type StoryStep =
   | "intake_name"
   | "intake_birth"
   | "intake_place"
+  | "panorama_entry"
+  | "panorama_reading"
+  | "panorama_full"
   | "first_insight"
   | "shelf"
   | "book"
@@ -69,6 +72,22 @@ export interface StoryStateV1 {
    * the long ceremony animation and greet returning readers.
    */
   first_visit_at: number | null;
+  /**
+   * Panorama tour sub-state. Optional so blobs written before the tour
+   * shipped still hydrate cleanly under `loadStoryState`'s merge with
+   * `INITIAL_STORY_STATE`. All fields are UX-only; no AI/payment path
+   * reads or writes them.
+   */
+  panorama?: {
+    /** Domain the reader last opened from the panorama entry. */
+    selected_domain: "study" | "career" | "love" | "wealth" | "overview" | null;
+    /** True once the reader has left the tour (either "展开我的完整全景"
+     *  or "跳过导览"), used to greet returning readers. */
+    tour_completed_at: number | null;
+    /** Section id inside the full-panorama sticky nav ("overview",
+     *  "career", "timeline", …). Restored on revisit. */
+    nav_position: string | null;
+  };
 }
 
 export type BookRef =

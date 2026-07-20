@@ -12,7 +12,8 @@
  * instant.
  */
 import { AnimatePresence, motion } from "framer-motion";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "@tanstack/react-router";
 import type { DomainKey, DomainScoreResult, GuidedDomainReading, RecommendedFirstRead } from "./types";
 import { DOMAIN_LABEL, DOMAIN_ORDER, DOMAIN_TAGLINE } from "./types";
 
@@ -285,6 +286,240 @@ function SectionBlock({ title, children }: { title: string; children: React.Reac
     <div>
       <h3 className="font-mono text-[10px] tracking-[0.4em] text-gold-dust/70">{title}</h3>
       <div className="mt-2 text-stone-warm/85">{children}</div>
+    </div>
+  );
+}
+
+/* ------------------------- Full Panorama Reader ---------------------- */
+
+export interface PanoramaFullSection {
+  id: string;
+  label: string;
+  /** Short summary shown before the reader chooses to open a V1 route. */
+  summary: string;
+  /** V1 route to open when the reader taps "翻开完整章节". Null =
+   *  section is self-contained inside V2 (e.g. history-echoes). */
+  v1_route?: { to: string; label: string; requiresEntitlement?: boolean };
+  /** For "history" and "recommendations", the section renders a V2
+   *  in-experience button instead of a V1 route link. */
+  v2_action?: { label: string; onClick: () => void };
+}
+
+interface PanoramaFullProps {
+  scores: DomainScoreResult[];
+  readings: Record<DomainKey, GuidedDomainReading>;
+  recommended: RecommendedFirstRead;
+  entitled: boolean;
+  initialAnchor?: string | null;
+  onAnchorChange?: (id: string) => void;
+  onBack: () => void;
+  onOpenHistory: () => void;
+  onOpenRecommendations: () => void;
+  reducedMotion: boolean;
+}
+
+export function PanoramaFull({
+  scores, readings, recommended, entitled, initialAnchor, onAnchorChange,
+  onBack, onOpenHistory, onOpenRecommendations, reducedMotion,
+}: PanoramaFullProps) {
+  const sections: PanoramaFullSection[] = useMemo(() => [
+    { id: "overview", label: "全景摘要",
+      summary: "把学业、事业、情感、财富放在同一张地图上，先看整体走向，再决定翻哪一页。" },
+    ...DOMAIN_ORDER.map<PanoramaFullSection>((d) => ({
+      id: d,
+      label: DOMAIN_LABEL[d],
+      summary: readings[d].sections.opening,
+      v1_route: {
+        to: "/report",
+        label: entitled ? "翻开完整章节 →" : "解锁完整报告 ¥79",
+        requiresEntitlement: !entitled,
+      },
+    })),
+    { id: "timeline", label: "生命时间轴",
+      summary: "确定性大运/流年能量曲线，按年查看每个可观察窗口。",
+      v1_route: { to: "/report", label: entitled ? "打开时间轴 →" : "解锁完整报告 ¥79" } },
+    { id: "history", label: "历史回声",
+      summary: "阅读一位与你此刻情境相似的历史人物，看看不同选择带来的不同代价。",
+      v2_action: { label: "翻到历史回声 →", onClick: onOpenHistory } },
+    { id: "recommendations", label: "推荐下一页",
+      summary: `我们此刻建议你先读：${DOMAIN_LABEL[recommended.domain]}。原因：${recommended.reason_text.split("：").slice(-1)[0]}`,
+      v2_action: { label: "查看推荐 →", onClick: onOpenRecommendations } },
+  ], [readings, recommended, entitled, onOpenHistory, onOpenRecommendations]);
+
+  const [active, setActive] = useState<string>(initialAnchor ?? "overview");
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
+  const tabsRef = useRef<HTMLDivElement | null>(null);
+  const clickLockRef = useRef(0);
+
+  // Restore initial anchor on mount.
+  useEffect(() => {
+    if (!initialAnchor) return;
+    const el = sectionRefs.current[initialAnchor];
+    if (el) el.scrollIntoView({ behavior: "auto", block: "start" });
+  }, [initialAnchor]);
+
+  // IntersectionObserver-based scroll spy.
+  useEffect(() => {
+    const root = contentRef.current;
+    if (!root) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (Date.now() < clickLockRef.current) return;
+        // Pick the entry with the highest intersection ratio that is visible.
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+        if (visible.length > 0) {
+          const id = (visible[0].target as HTMLElement).dataset.sectionId;
+          if (id && id !== active) {
+            setActive(id);
+            onAnchorChange?.(id);
+          }
+        }
+      },
+      { root, rootMargin: "-30% 0px -60% 0px", threshold: [0, 0.25, 0.5, 0.75, 1] },
+    );
+    for (const s of sections) {
+      const el = sectionRefs.current[s.id];
+      if (el) io.observe(el);
+    }
+    return () => io.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sections.length]);
+
+  // Keep the active tab visible in the mobile scroller.
+  useEffect(() => {
+    const tabsEl = tabsRef.current;
+    if (!tabsEl) return;
+    const btn = tabsEl.querySelector<HTMLButtonElement>(`[data-tab-id="${active}"]`);
+    if (!btn) return;
+    const left = btn.offsetLeft - tabsEl.clientWidth / 2 + btn.clientWidth / 2;
+    tabsEl.scrollTo({ left, behavior: reducedMotion ? "auto" : "smooth" });
+  }, [active, reducedMotion]);
+
+  const scrollToSection = (id: string) => {
+    const el = sectionRefs.current[id];
+    if (!el) return;
+    clickLockRef.current = Date.now() + 700;
+    setActive(id);
+    onAnchorChange?.(id);
+    el.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "start" });
+  };
+
+  return (
+    <div className="flex h-[calc(100dvh-64px)] flex-col md:flex-row">
+      {/* Sidebar (desktop) / horizontal tabs (mobile) */}
+      <nav
+        aria-label="全景阅读导航"
+        className="border-b border-stone-warm/10 bg-obsidian/70 md:w-56 md:shrink-0 md:border-b-0 md:border-r"
+      >
+        <div className="hidden md:block sticky top-0 max-h-[calc(100dvh-64px)] overflow-y-auto p-5">
+          <button
+            type="button"
+            onClick={onBack}
+            className="mb-4 font-mono text-[10px] tracking-[0.4em] text-stone-warm/50 hover:text-gold-dust"
+          >
+            ← 返回全景
+          </button>
+          <ul className="space-y-1">
+            {sections.map((s) => (
+              <li key={s.id}>
+                <button
+                  type="button"
+                  onClick={() => scrollToSection(s.id)}
+                  className={`w-full rounded px-2 py-1.5 text-left text-sm transition ${
+                    active === s.id
+                      ? "bg-gold-dust/15 text-gold-dust"
+                      : "text-stone-warm/70 hover:text-stone-warm"
+                  }`}
+                >
+                  {s.label}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+        {/* Mobile horizontal scroller — never overflows the viewport. */}
+        <div
+          ref={tabsRef}
+          className="flex gap-2 overflow-x-auto px-4 py-3 md:hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          <button
+            type="button"
+            onClick={onBack}
+            className="shrink-0 rounded-full border border-stone-warm/20 px-3 py-1.5 text-[11px] text-stone-warm/60"
+          >
+            ← 返回
+          </button>
+          {sections.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              data-tab-id={s.id}
+              onClick={() => scrollToSection(s.id)}
+              className={`shrink-0 whitespace-nowrap rounded-full border px-3 py-1.5 text-[12px] transition ${
+                active === s.id
+                  ? "border-gold-dust bg-gold-dust/15 text-gold-dust"
+                  : "border-stone-warm/20 text-stone-warm/70"
+              }`}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+      </nav>
+
+      {/* Scrollable content */}
+      <div ref={contentRef} className="min-w-0 flex-1 overflow-y-auto">
+        <div className="mx-auto w-full max-w-2xl px-5 py-8 sm:px-8">
+          {sections.map((s) => {
+            const scoreForSection = DOMAIN_ORDER.find((d) => d === s.id) as DomainKey | undefined;
+            const sc = scoreForSection ? scores.find((x) => x.domain === scoreForSection) : undefined;
+            return (
+              <section
+                key={s.id}
+                ref={(el) => { sectionRefs.current[s.id] = el; }}
+                data-section-id={s.id}
+                className="scroll-mt-6 border-b border-stone-warm/10 py-8 first:pt-2 last:border-b-0"
+              >
+                <p className="font-mono text-[10px] tracking-[0.4em] text-gold-dust/70">
+                  {s.id === "overview" ? "全景 · 摘要" : s.label}
+                </p>
+                <h2 className="mt-2 font-serif text-2xl text-stone-warm">{s.label}</h2>
+                {sc && (
+                  <p className="mt-1 text-[11px] text-stone-warm/50">
+                    领域信号 {sc.score}/100 · {BAND_COPY[sc.band]} · {CONF_COPY[sc.confidence]}
+                  </p>
+                )}
+                <p className="mt-3 text-sm leading-relaxed text-stone-warm/85">{s.summary}</p>
+                <div className="mt-4">
+                  {s.v1_route && (
+                    <Link
+                      to={s.v1_route.to}
+                      className="inline-block rounded-full border border-gold-dust/50 px-4 py-2 font-mono text-[11px] tracking-[0.3em] text-gold-dust hover:bg-gold-dust/10"
+                    >
+                      {s.v1_route.label}
+                    </Link>
+                  )}
+                  {s.v2_action && (
+                    <button
+                      type="button"
+                      onClick={s.v2_action.onClick}
+                      className="inline-block rounded-full border border-gold-dust/50 px-4 py-2 font-mono text-[11px] tracking-[0.3em] text-gold-dust hover:bg-gold-dust/10"
+                    >
+                      {s.v2_action.label}
+                    </button>
+                  )}
+                </div>
+              </section>
+            );
+          })}
+          <p className="mt-6 text-center text-[10px] text-stone-warm/40">
+            全景导览 · deterministic · 不构成医疗、法律或投资建议
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
