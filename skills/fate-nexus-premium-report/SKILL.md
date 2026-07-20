@@ -48,9 +48,9 @@ Constants live in `src/lib/premium-chapters-v3.ts`:
 
 ```ts
 PREMIUM_SKILL_ID       = "fate-nexus-premium-report"
-PREMIUM_SKILL_VERSION  = "1.0.0"
-PREMIUM_MANIFEST_VERSION = "2026-07"
-PREMIUM_REPORT_REVISION = "premium_v3_rev_2026_07_real_ai"
+PREMIUM_SKILL_VERSION  = "1.1.0"
+PREMIUM_MANIFEST_VERSION = "2026-08"
+PREMIUM_REPORT_REVISION = "premium_v4_rev_2026_08_academic"
 ```
 
 `PREMIUM_REPORT_REVISION` is the string that flows into
@@ -118,12 +118,16 @@ Six kinds:
   + Luck, ZiWei Palaces + Horoscope. System chapters need ≥1 grounded ref.
   Western Aspects requires a full aspect table; ≥3 refs.
 - **cross** — `convergence` and `tensions`. ≥2 distinct modules cited.
-- **life** — `character`, `vocation`, `wealth`, `relationships`,
-  `family`, `health`, `mission`. The four heavy chapters
-  (`vocation`, `wealth`, `relationships`, `mission`) require named
-  sections, pipe tables, ≥2 modules, and ≥3 refs.
-- **timing** — `year_ahead` (next 12 months) and `windows` (multi-year
-  key windows). Cite `bazi_luck` / `ziwei_horoscope` / `vedic_dasha` only.
+- **life** — `academic`, `character`, `vocation`, `wealth`,
+  `relationships`, `family`, `health`, `mission`. The heavy chapters
+  (`academic`, `vocation`, `wealth`, `relationships`, `mission`) require
+  named sections, pipe tables, ≥2 modules, and ≥3 refs. `academic`
+  (chapter 03) covers learning style, subject clusters, obstacles, and
+  current study/cognition windows across all four systems; age band
+  drives voice (student vs continuing-education vs experience-transfer).
+- **timing** — `year_and_windows`: next 12 months + multi-year key
+  windows, merged from the pre-v4 `year_ahead` + `windows` pair.
+  Cite `bazi_luck` / `ziwei_horoscope` / `vedic_dasha` only.
 - **closing** — `methodology`. Culture / self-reflection framing;
   no facts.
 
@@ -180,26 +184,26 @@ Cover
 01 写在开篇的话                (cover)
 02 执行摘要                    (cover, cites cross-tradition)
 03 命盘全景导览                (cover, cites cross-tradition)
-04 西方本命盘                  (system, western)
-05 西方相位网                  (system, western + western_aspects, table)
-06 印度本命图                  (system, vedic)
-07 Vimshottari 大限流曜        (system, vedic + vedic_dasha)
-08 八字四柱与日主              (system, bazi)
-09 八字十神与五行              (system, bazi)
-10 八字大运与流年              (system, bazi + bazi_luck)
-11 紫微十二宫与主星            (system, ziwei)
-12 紫微大限流年流月            (system, ziwei + ziwei_horoscope)
-13 跨体系共识                  (cross, ≥2 modules)
-14 跨体系张力与矛盾            (cross, ≥2 modules)
-15 性格底色                    (life)
-16 事业方向与天赋              (life, sections + table)
-17 财富格局                    (life, sections + table)
-18 情感与关系                  (life, sections + table)
-19 家庭与家园                  (life)
-20 健康与活力                  (life)
-21 人生使命                    (life, sections + table)
-22 未来十二个月                (timing)
-23 关键时间窗口                (timing)
+04 学业与认知                  (life, sections + table, ≥2 modules)
+05 西方本命盘                  (system, western)
+06 西方相位网                  (system, western + western_aspects, table)
+07 印度本命图                  (system, vedic)
+08 Vimshottari 大限流曜        (system, vedic + vedic_dasha)
+09 八字四柱与日主              (system, bazi)
+10 八字十神与五行              (system, bazi)
+11 八字大运与流年              (system, bazi + bazi_luck)
+12 紫微十二宫与主星            (system, ziwei)
+13 紫微大限流年流月            (system, ziwei + ziwei_horoscope)
+14 跨体系共识                  (cross, ≥2 modules)
+15 跨体系张力与矛盾            (cross, ≥2 modules)
+16 性格底色                    (life)
+17 事业方向与天赋              (life, sections + table)
+18 财富格局                    (life, sections + table)
+19 情感与关系                  (life, sections + table)
+20 家庭与家园                  (life)
+21 健康与活力                  (life)
+22 人生使命                    (life, sections + table)
+23 未来十二个月与关键窗口      (timing, sections)
 24 方法论与免责声明            (closing)
 ```
 

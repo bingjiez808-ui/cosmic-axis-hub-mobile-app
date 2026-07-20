@@ -90,51 +90,58 @@ describe("premium-chapters-v3 — validator", () => {
 
   it("flags disallowed fact module", () => {
     const c = baseContent();
-    c.chapters[3].evidence_refs = [{ path: "bazi.x", module: "bazi", confidence: "grounded" }]; // western chapter citing bazi
+    const idx = PREMIUM_V3_CHAPTERS.findIndex((x) => x.key === "western_natal");
+    c.chapters[idx].evidence_refs = [{ path: "bazi.x", module: "bazi", confidence: "grounded" }]; // western chapter citing bazi
     expect(validateV3Content(c).some((i) => i.problem.startsWith("disallowed_fact_module"))).toBe(true);
   });
 
   it("flags cross-tradition chapter with <2 modules", () => {
     const c = baseContent();
-    // chapter index 12 is convergence (cross)
-    c.chapters[12].evidence_refs = [{ path: "bazi.x", module: "bazi", confidence: "grounded" }];
+    const idx = PREMIUM_V3_CHAPTERS.findIndex((x) => x.key === "convergence");
+    c.chapters[idx].evidence_refs = [{ path: "bazi.x", module: "bazi", confidence: "grounded" }];
     expect(validateV3Content(c).some((i) => i.problem === "cross_chapter_needs_two_modules")).toBe(true);
   });
 
   it("flags system chapter without any grounded evidence", () => {
     const c = baseContent();
-    c.chapters[3].evidence_refs = [{ path: "western.x", module: "western", confidence: "reflective" }];
+    const idx = PREMIUM_V3_CHAPTERS.findIndex((x) => x.key === "western_natal");
+    c.chapters[idx].evidence_refs = [{ path: "western.x", module: "western", confidence: "reflective" }];
     expect(validateV3Content(c).some((i) => i.problem === "system_chapter_needs_grounded")).toBe(true);
   });
 
   it("flags malformed evidence path", () => {
     const c = baseContent();
-    c.chapters[3].evidence_refs = [{ path: "not a path!!", module: "western", confidence: "grounded" }];
+    const idx = PREMIUM_V3_CHAPTERS.findIndex((x) => x.key === "western_natal");
+    c.chapters[idx].evidence_refs = [{ path: "not a path!!", module: "western", confidence: "grounded" }];
     expect(validateV3Content(c).some((i) => i.problem.startsWith("bad_evidence_path"))).toBe(true);
   });
 });
 
 describe("premium-chapters-v3 — revision & manifest immutability", () => {
   it("exports a pinned PREMIUM_REPORT_REVISION", () => {
-    expect(PREMIUM_REPORT_REVISION).toBe("premium_v3_rev_2026_07_real_ai");
+    expect(PREMIUM_REPORT_REVISION).toBe("premium_v4_rev_2026_08_academic");
   });
-  it("manifest chapter keys are pinned in order", () => {
+  it("manifest chapter keys are pinned in order (v4: academic at 03, year_and_windows merged)", () => {
     expect(PREMIUM_V3_CHAPTERS.map((c) => c.key)).toEqual([
       "cover_letter","executive_summary","chart_map",
+      "academic",
       "western_natal","western_aspects","vedic_natal","vedic_dasha",
       "bazi_pillars","bazi_ten_gods","bazi_luck",
       "ziwei_palaces","ziwei_horoscope",
       "convergence","tensions",
       "character","vocation","wealth","relationships","family","health","mission",
-      "year_ahead","windows","methodology",
+      "year_and_windows","methodology",
     ]);
   });
-  it("vocation/wealth/relationships/mission carry required sections and tables", () => {
-    const keys = ["vocation","wealth","relationships","mission"];
+  it("academic + vocation/wealth/relationships/mission carry required sections and tables", () => {
+    const keys = ["academic","vocation","wealth","relationships","mission"];
     for (const k of keys) {
       const m = PREMIUM_V3_CHAPTERS.find((c) => c.key === k)!;
       expect((m.required_sections ?? []).length).toBeGreaterThanOrEqual(3);
-      expect((m.required_tables ?? []).length).toBeGreaterThanOrEqual(1);
+      if (k !== "mission" ? true : true) {
+        // academic/vocation/wealth/relationships/mission all define a table.
+        expect((m.required_tables ?? []).length).toBeGreaterThanOrEqual(1);
+      }
       expect(m.min_module_variety ?? 0).toBeGreaterThanOrEqual(2);
     }
   });

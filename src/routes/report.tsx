@@ -19,6 +19,7 @@ import {
   AlertTriangle,
   ChevronRight,
   Maximize2,
+  BookOpen,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -31,6 +32,7 @@ import {
 
 const DIM_ICONS: Record<string, LucideIcon> = {
   character: Sparkles,
+  academic: BookOpen,
   vocation: Compass,
   wealth: Coins,
   love: Heart,
@@ -277,6 +279,72 @@ const dimensions: Dimension[] = [
           ["Confusing self-critique with self-improvement", "把自我批评误当成自我成长"],
           ["Saying yes too fast when admired", "被欣赏时，容易过快答应"],
           ["Neglecting rest when momentum feels good", "势头正好时，最容易忽略休息"],
+        ],
+      },
+    ],
+  },
+  {
+    key: "academic",
+    title: ["Academic & Cognition", "学业与认知"],
+    headline: [
+      "Learn by shaping, not by absorbing",
+      "以「塑造」为轴的认知节奏 —— 不靠被动吸收",
+    ],
+    stars: 4,
+    strengths: [0.8, 0.75, 0.8, 0.75],
+    evidence: [
+      {
+        tradition: ["Astrology", "西方占星"],
+        note: ["Mercury in an air sign · 3rd house emphasis", "水星落风象 · 第三宫得到强化"],
+      },
+      {
+        tradition: ["Jyotish", "印度占星"],
+        note: ["Moon in a knowledge-oriented Nakshatra · Jupiter aspect", "月亮居学识型 Nakshatra · 木星照射"],
+      },
+      {
+        tradition: ["BaZi", "八字"],
+        note: ["Resource star 印 supports the day master · Output star 食伤 lends expression", "印星生扶日主 · 食伤透干利于表达"],
+      },
+      {
+        tradition: ["Zi Wei", "紫微"],
+        note: ["Palace of parents / education carries 化科 · 文昌 in the命宫", "父母/学识宫见化科 · 文昌照命"],
+      },
+    ],
+    synthesis: [
+      "Four systems agree on shape rather than IQ: information sticks best when it is used, taught, or re-shaped — not merely absorbed. Strengths cluster in language, human-observation, and cross-domain integration. Exam-style rote intake is not the natural fit.",
+      "四大体系一致给出「形状」而非「智商」：知识只有在被使用、被讲述、被重新组织的时候才在你身上真正留下——单纯被动听讲会最快被遗忘。优势多集中在语言表达、社会观察与跨领域整合；纯粹应试型的死记硬背，不是这张盘的天然赛道。",
+    ],
+    plain: [
+      "In everyday words: pick learning methods that let you output early — write summaries, teach juniors, build small projects. Whichever subject cluster you're actually curious about is more diagnostic than any \"gifted at math or humanities\" label. Please treat the clusters below as directions to test, not as fate.",
+      "说人话：选那种「让你尽早输出」的学习方式——写摘要、讲给学弟妹听、动手做一个小项目。你此刻真正好奇的学科族群，比任何「文科好还是理科好」的标签都更能说明问题。下面的族群候选是方向，不是结论——请在真实成绩、真实兴趣里验证它。",
+    ],
+    viz: "radar",
+    details: [
+      {
+        label: ["Subject cluster candidates", "学科族群候选"],
+        items: [
+          ["Languages & humanities expression — writing, translation, teaching", "语言与人文表达 —— 写作 · 翻译 · 教学"],
+          ["Social observation & research — sociology, psychology, policy studies", "社会观察与研究 —— 社会学 · 心理 · 政策研究"],
+          ["Cross-domain integration — design × technology, humanities × data", "跨学科整合 —— 设计 × 技术、人文 × 数据"],
+          ["Applied engineering & operations (secondary channel — needs a project to anchor)", "实务工程与应用（次通道 · 需要一个具体项目锚定）"],
+        ],
+      },
+      {
+        label: ["Study style that works", "适合的学习方式"],
+        items: [
+          ["Learn by teaching · summarise, then present within 48 hours", "以教代学 · 学完 48 小时内讲一遍"],
+          ["Small, finished projects beat long, un-shipped ones", "小而完整的项目 · 优于宏大而无产出的长战线"],
+          ["Rotate 2–3 subjects a season — pure single-track fatigue drains you", "每季度轮换 2–3 门 · 单线高强度容易疲劳"],
+          ["Age-adapted: student → coursework + side project · adult → re-skilling or teaching what you already do", "按年龄适配：学生 → 课程 + 副项目 · 成年 → 再学习或反哺自己的手艺"],
+        ],
+      },
+      {
+        label: ["Watch-outs to guard", "需要注意的地方"],
+        items: [
+          ["Rebelling against authority mid-course — pick programs with real freedom", "中途因不服权威而改路 —— 尽量选择留有自由度的课程"],
+          ["Confusing curiosity with commitment — new topic every month, none deepened", "把好奇心误当承诺 —— 每月一门新话题，没有一门被深化"],
+          ["Neglecting the boring foundational reps (grammar drills, base math)", "忽略那些「无聊但必要」的基础练习"],
+          ["Reading your chart as an IQ score — this reading only describes learning shape, not intelligence rank", "把这份解读当作智商评分 —— 它只描述学习形状，不给智力打分"],
         ],
       },
     ],
@@ -1267,11 +1335,12 @@ function ReportPage() {
           return (
           <motion.article
             key={d.key}
+            id={d.key}
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-80px" }}
             transition={{ duration: 0.8, delay: idx * 0.04, ease: [0.32, 0.72, 0, 1] }}
-            className={`glass-card overflow-hidden rounded-3xl p-4 sm:p-8 md:p-12 ${pending ? "opacity-70" : ""}`}
+            className={`glass-card scroll-mt-24 overflow-hidden rounded-3xl p-4 sm:p-8 md:p-12 ${pending ? "opacity-70" : ""}`}
           >
             <div className="mb-8 flex flex-wrap items-start justify-between gap-4 border-b border-white/10 pb-6">
               <div className="flex min-w-0 items-start gap-4">

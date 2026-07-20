@@ -21,10 +21,15 @@ export const PREMIUM_REPORT_SCHEMA_V3 = "v3";
  * and PREMIUM_REPORT_REVISION together. The revision string is what
  * flows into the canonical engine input (see premium.functions.ts) —
  * completed rows keyed on the old revision stay immutable.
+ *
+ * v1.1.0 · 2026-08 — Academic & Cognition inserted as chapter 03.
+ * year_ahead + windows losslessly merged into `year_and_windows`
+ * to preserve the 24-chapter contract. All chapters keyed by
+ * stable slug — order changes never invalidate stored chapters.
  */
 export const PREMIUM_SKILL_ID = "fate-nexus-premium-report";
-export const PREMIUM_SKILL_VERSION = "1.0.0";
-export const PREMIUM_MANIFEST_VERSION = "2026-07";
+export const PREMIUM_SKILL_VERSION = "1.1.0";
+export const PREMIUM_MANIFEST_VERSION = "2026-08";
 
 /**
  * Manifest revision tag. Bumping this creates a NEW premium_pdf_reports
@@ -34,7 +39,7 @@ export const PREMIUM_MANIFEST_VERSION = "2026-07";
  * Composes {skill_version, manifest_version, run-mode}. The contract test
  * in premium-chapters-v3.test.ts enforces the format.
  */
-export const PREMIUM_REPORT_REVISION = "premium_v3_rev_2026_07_real_ai";
+export const PREMIUM_REPORT_REVISION = "premium_v4_rev_2026_08_academic";
 
 
 export type FactModule =
@@ -97,65 +102,91 @@ const MISSION_SECTIONS = [
   { key: "alternatives", marker_zh: "替代行动", marker_en: "Alternative Actions" },
   { key: "review", marker_zh: "复盘清单", marker_en: "Review Checklist" },
 ];
+const ACADEMIC_SECTIONS = [
+  { key: "learning_style", marker_zh: "学习与认知方式", marker_en: "Learning & Cognition Style" },
+  { key: "subject_clusters", marker_zh: "学科族群候选", marker_en: "Subject Cluster Candidates" },
+  { key: "obstacles", marker_zh: "常见阻力与反例条件", marker_en: "Obstacles & Counter-Conditions" },
+  { key: "windows", marker_zh: "当前周期与学习窗口", marker_en: "Current Cycles & Study Windows" },
+];
 
-// 24 chapters × avg ~800 zh chars = ~19k chars, comfortably in the 18k-25k range.
+const YEAR_WINDOWS_SECTIONS = [
+  { key: "next_year", marker_zh: "未来十二个月主线", marker_en: "Next Twelve Months" },
+  { key: "windows", marker_zh: "关键时间窗口", marker_en: "Key Time Windows" },
+];
+
+// 24 chapters × avg ~800 zh chars = ~19k chars, comfortably in the 15k-25k range.
+// v4 (2026-08): `academic` inserted at index 3; year_ahead+windows merged into
+// year_and_windows to preserve the 24-chapter contract. Old v3 reports keep
+// their historical chapter list — chapter identity is the stable slug, not index.
 export const PREMIUM_V3_CHAPTERS: V3ChapterMeta[] = [
   { key: "cover_letter", index: 0, title_zh: "写在开篇的话", title_en: "Opening Letter", target_chars_zh: [400, 700], allowed_facts: [], kind: "cover" },
   { key: "executive_summary", index: 1, title_zh: "执行摘要", title_en: "Executive Summary", target_chars_zh: [700, 1100], allowed_facts: ["bazi","ziwei","western","vedic"], kind: "cover" },
   { key: "chart_map", index: 2, title_zh: "命盘全景导览", title_en: "Chart Map", target_chars_zh: [500, 800], allowed_facts: ["bazi","ziwei","western","vedic"], kind: "cover" },
 
-  { key: "western_natal", index: 3, title_zh: "西方本命盘", title_en: "Western Natal", target_chars_zh: [800, 1200], allowed_facts: ["western"], kind: "system" },
   {
-    key: "western_aspects", index: 4, title_zh: "西方相位网", title_en: "Western Aspects",
+    key: "academic", index: 3, title_zh: "学业与认知", title_en: "Academic & Cognition",
+    target_chars_zh: [800, 1000], allowed_facts: ["bazi","ziwei","western","vedic"], kind: "life",
+    required_sections: ACADEMIC_SECTIONS,
+    required_tables: [{ key: "subject_clusters", title_zh: "学科族群对照表", title_en: "Subject Cluster Table" }],
+    min_module_variety: 2, min_evidence_refs: 3,
+  },
+
+  { key: "western_natal", index: 4, title_zh: "西方本命盘", title_en: "Western Natal", target_chars_zh: [800, 1200], allowed_facts: ["western"], kind: "system" },
+  {
+    key: "western_aspects", index: 5, title_zh: "西方相位网", title_en: "Western Aspects",
     target_chars_zh: [900, 1200], allowed_facts: ["western","western_aspects"], kind: "system",
     required_tables: [{ key: "aspects", title_zh: "主要相位对照表", title_en: "Major Aspects Table" }],
     min_evidence_refs: 3,
   },
-  { key: "vedic_natal", index: 5, title_zh: "印度本命图", title_en: "Vedic Natal", target_chars_zh: [800, 1200], allowed_facts: ["vedic"], kind: "system" },
-  { key: "vedic_dasha", index: 6, title_zh: "Vimshottari 大限流曜", title_en: "Vimshottari Dasha", target_chars_zh: [800, 1100], allowed_facts: ["vedic","vedic_dasha"], kind: "system" },
-  { key: "bazi_pillars", index: 7, title_zh: "八字四柱与日主", title_en: "BaZi Four Pillars", target_chars_zh: [900, 1300], allowed_facts: ["bazi"], kind: "system" },
-  { key: "bazi_ten_gods", index: 8, title_zh: "八字十神与五行", title_en: "BaZi Ten Gods & Elements", target_chars_zh: [800, 1100], allowed_facts: ["bazi"], kind: "system" },
-  { key: "bazi_luck", index: 9, title_zh: "八字大运与流年", title_en: "BaZi Luck Cycles", target_chars_zh: [800, 1100], allowed_facts: ["bazi","bazi_luck"], kind: "system" },
-  { key: "ziwei_palaces", index: 10, title_zh: "紫微十二宫与主星", title_en: "Zi Wei Palaces & Stars", target_chars_zh: [900, 1300], allowed_facts: ["ziwei"], kind: "system" },
-  { key: "ziwei_horoscope", index: 11, title_zh: "紫微大限流年流月", title_en: "Zi Wei Horoscope", target_chars_zh: [800, 1100], allowed_facts: ["ziwei","ziwei_horoscope"], kind: "system" },
+  { key: "vedic_natal", index: 6, title_zh: "印度本命图", title_en: "Vedic Natal", target_chars_zh: [800, 1200], allowed_facts: ["vedic"], kind: "system" },
+  { key: "vedic_dasha", index: 7, title_zh: "Vimshottari 大限流曜", title_en: "Vimshottari Dasha", target_chars_zh: [800, 1100], allowed_facts: ["vedic","vedic_dasha"], kind: "system" },
+  { key: "bazi_pillars", index: 8, title_zh: "八字四柱与日主", title_en: "BaZi Four Pillars", target_chars_zh: [900, 1300], allowed_facts: ["bazi"], kind: "system" },
+  { key: "bazi_ten_gods", index: 9, title_zh: "八字十神与五行", title_en: "BaZi Ten Gods & Elements", target_chars_zh: [800, 1100], allowed_facts: ["bazi"], kind: "system" },
+  { key: "bazi_luck", index: 10, title_zh: "八字大运与流年", title_en: "BaZi Luck Cycles", target_chars_zh: [800, 1100], allowed_facts: ["bazi","bazi_luck"], kind: "system" },
+  { key: "ziwei_palaces", index: 11, title_zh: "紫微十二宫与主星", title_en: "Zi Wei Palaces & Stars", target_chars_zh: [900, 1300], allowed_facts: ["ziwei"], kind: "system" },
+  { key: "ziwei_horoscope", index: 12, title_zh: "紫微大限流年流月", title_en: "Zi Wei Horoscope", target_chars_zh: [800, 1100], allowed_facts: ["ziwei","ziwei_horoscope"], kind: "system" },
 
-  { key: "convergence", index: 12, title_zh: "跨体系共识", title_en: "Cross-Tradition Convergence", target_chars_zh: [700, 1000], allowed_facts: ["bazi","ziwei","western","vedic"], kind: "cross" },
-  { key: "tensions", index: 13, title_zh: "跨体系张力与矛盾", title_en: "Cross-Tradition Tensions", target_chars_zh: [600, 900], allowed_facts: ["bazi","ziwei","western","vedic"], kind: "cross" },
+  { key: "convergence", index: 13, title_zh: "跨体系共识", title_en: "Cross-Tradition Convergence", target_chars_zh: [700, 1000], allowed_facts: ["bazi","ziwei","western","vedic"], kind: "cross" },
+  { key: "tensions", index: 14, title_zh: "跨体系张力与矛盾", title_en: "Cross-Tradition Tensions", target_chars_zh: [600, 900], allowed_facts: ["bazi","ziwei","western","vedic"], kind: "cross" },
 
-  { key: "character", index: 14, title_zh: "性格底色", title_en: "Character", target_chars_zh: [700, 1000], allowed_facts: ["bazi","ziwei","western"], kind: "life" },
+  { key: "character", index: 15, title_zh: "性格底色", title_en: "Character", target_chars_zh: [700, 1000], allowed_facts: ["bazi","ziwei","western"], kind: "life" },
   {
-    key: "vocation", index: 15, title_zh: "事业方向与天赋", title_en: "Vocation & Talents",
+    key: "vocation", index: 16, title_zh: "事业方向与天赋", title_en: "Vocation & Talents",
     target_chars_zh: [900, 1300], allowed_facts: ["bazi","ziwei","western","vedic"], kind: "life",
     required_sections: VOCATION_SECTIONS,
     required_tables: [{ key: "vocation_map", title_zh: "事业方向对照表", title_en: "Vocation Direction Table" }],
     min_module_variety: 2, min_evidence_refs: 3,
   },
   {
-    key: "wealth", index: 16, title_zh: "财富格局", title_en: "Wealth",
+    key: "wealth", index: 17, title_zh: "财富格局", title_en: "Wealth",
     target_chars_zh: [700, 1000], allowed_facts: ["bazi","ziwei"], kind: "life",
     required_sections: WEALTH_SECTIONS,
     required_tables: [{ key: "wealth_sources", title_zh: "财富来源对照表", title_en: "Wealth Sources Table" }],
     min_module_variety: 2, min_evidence_refs: 2,
   },
   {
-    key: "relationships", index: 17, title_zh: "情感与关系", title_en: "Love & Relationships",
+    key: "relationships", index: 18, title_zh: "情感与关系", title_en: "Love & Relationships",
     target_chars_zh: [900, 1200], allowed_facts: ["bazi","ziwei","western"], kind: "life",
     required_sections: RELATIONSHIP_SECTIONS,
     required_tables: [{ key: "relationship_windows", title_zh: "关系窗口对照表", title_en: "Relationship Windows Table" }],
     min_module_variety: 2, min_evidence_refs: 3,
   },
-  { key: "family", index: 18, title_zh: "家庭与家园", title_en: "Family & Home", target_chars_zh: [500, 800], allowed_facts: ["bazi","ziwei"], kind: "life" },
-  { key: "health", index: 19, title_zh: "健康与活力", title_en: "Health & Vitality", target_chars_zh: [500, 800], allowed_facts: ["bazi","ziwei"], kind: "life" },
+  { key: "family", index: 19, title_zh: "家庭与家园", title_en: "Family & Home", target_chars_zh: [500, 800], allowed_facts: ["bazi","ziwei"], kind: "life" },
+  { key: "health", index: 20, title_zh: "健康与活力", title_en: "Health & Vitality", target_chars_zh: [500, 800], allowed_facts: ["bazi","ziwei"], kind: "life" },
   {
-    key: "mission", index: 20, title_zh: "人生使命", title_en: "Life Mission",
+    key: "mission", index: 21, title_zh: "人生使命", title_en: "Life Mission",
     target_chars_zh: [700, 1000], allowed_facts: ["ziwei","vedic","western"], kind: "life",
     required_sections: MISSION_SECTIONS,
     required_tables: [{ key: "mission_checklist", title_zh: "课题清单", title_en: "Mission Checklist" }],
     min_module_variety: 2, min_evidence_refs: 3,
   },
 
-  { key: "year_ahead", index: 21, title_zh: "未来十二个月", title_en: "Next Twelve Months", target_chars_zh: [800, 1200], allowed_facts: ["bazi_luck","ziwei_horoscope","vedic_dasha"], kind: "timing" },
-  { key: "windows", index: 22, title_zh: "关键时间窗口", title_en: "Key Time Windows", target_chars_zh: [600, 900], allowed_facts: ["bazi_luck","ziwei_horoscope","vedic_dasha"], kind: "timing" },
+  {
+    key: "year_and_windows", index: 22, title_zh: "未来十二个月与关键窗口", title_en: "Next Twelve Months & Key Windows",
+    target_chars_zh: [900, 1100], allowed_facts: ["bazi_luck","ziwei_horoscope","vedic_dasha"], kind: "timing",
+    required_sections: YEAR_WINDOWS_SECTIONS,
+    min_evidence_refs: 2,
+  },
 
   { key: "methodology", index: 23, title_zh: "方法论与免责声明", title_en: "Methodology & Disclaimers", target_chars_zh: [400, 700], allowed_facts: [], kind: "closing" },
 ];
