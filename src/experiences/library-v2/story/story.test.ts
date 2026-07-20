@@ -116,12 +116,14 @@ describe("story · state", () => {
     expect(ageBandFromYear("1960")).toBe("50+");
   });
 
-  it("next/prev intake walk in the documented order", () => {
+  it("next/prev intake walk in the documented order (v2: gate → intake → panorama_entry)", () => {
     expect(nextIntakeStep("intake_name")).toBe("intake_birth");
     expect(nextIntakeStep("intake_birth")).toBe("intake_place");
     expect(nextIntakeStep("intake_place")).toBe("panorama_entry");
     expect(prevIntakeStep("intake_place")).toBe("intake_birth");
-    expect(prevIntakeStep("intake_name")).toBe("focus");
+    // v2: back from the first intake screen lands on the gate — the old
+    // pre-intake destiny picker (`focus`) has been retired.
+    expect(prevIntakeStep("intake_name")).toBe("gate");
   });
 });
 
@@ -411,5 +413,100 @@ describe("story · books & closing quote", () => {
       const blob = JSON.stringify(b);
       for (const w of forbidden) expect(blob.includes(w)).toBe(false);
     }
+  });
+});
+
+describe("story · storage migration (v1 → v2)", () => {
+  beforeEach(() => clean());
+
+  it("legacy focus step with no intake goes back to intake_name", () => {
+    localStorageBackend["lod:library-v2:story-state:v1"] = JSON.stringify({
+      version: 1,
+      value: {
+        ...INITIAL_STORY_STATE,
+        step: "focus",
+        profile: { ...INITIAL_STORY_STATE.profile, nickname: "" },
+      },
+    });
+    const loaded = loadStoryState();
+    expect(loaded.version).toBe(2);
+    expect(loaded.step).toBe("intake_name");
+  });
+
+  it("legacy focus step with a completed intake jumps forward to panorama_entry", () => {
+    localStorageBackend["lod:library-v2:story-state:v1"] = JSON.stringify({
+      version: 1,
+      value: {
+        ...INITIAL_STORY_STATE,
+        step: "focus",
+        profile: {
+          ...INITIAL_STORY_STATE.profile,
+          nickname: "青灯",
+          birth_date: "1993-04-18",
+          place: "杭州",
+        },
+      },
+    });
+    const loaded = loadStoryState();
+    expect(loaded.version).toBe(2);
+    expect(loaded.step).toBe("panorama_entry");
+    // Nickname / birth date survived the migration — no cache clear needed.
+    expect(loaded.profile.nickname).toBe("青灯");
+  });
+
+  it("legacy first_insight step is folded into the panorama tour", () => {
+    localStorageBackend["lod:library-v2:story-state:v1"] = JSON.stringify({
+      version: 1,
+      value: {
+        ...INITIAL_STORY_STATE,
+        step: "first_insight",
+        profile: DEMO_PROFILE,
+      },
+    });
+    const loaded = loadStoryState();
+    expect(loaded.step).toBe("panorama_entry");
+  });
+
+  it("legacy panorama.selected_domain === 'recent' is normalised to 'overview'", () => {
+    localStorageBackend["lod:library-v2:story-state:v1"] = JSON.stringify({
+      version: 1,
+      value: {
+        ...INITIAL_STORY_STATE,
+        step: "panorama_full",
+        profile: DEMO_PROFILE,
+        panorama: {
+          selected_domain: "recent",
+          tour_completed_at: null,
+          nav_position: null,
+        },
+      },
+    });
+    const loaded = loadStoryState();
+    expect(loaded.panorama?.selected_domain).toBe("overview");
+  });
+
+  it("v2 blob is loaded as-is without touching localStorage again", () => {
+    const fresh = { ...INITIAL_STORY_STATE, step: "shelf" as const };
+    localStorageBackend["lod:library-v2:story-state:v1"] = JSON.stringify({
+      version: 2,
+      value: fresh,
+    });
+    const loaded = loadStoryState();
+    expect(loaded.step).toBe("shelf");
+    expect(loaded.version).toBe(2);
+  });
+});
+
+describe("story · panorama node order", () => {
+  it("PanoramaEntry renders study before career and does not expose a 'recent' node", async () => {
+    // Import lazily so the storage shim above is already installed.
+    const mod = await import("@/experiences/library-v2/panorama/types");
+    expect(mod.DOMAIN_ORDER[0]).toBe("study");
+    expect(mod.DOMAIN_ORDER.indexOf("study")).toBeLessThan(
+      mod.DOMAIN_ORDER.indexOf("career"),
+    );
+    // "recent" is never a valid DomainKey in v2 — the map's timing
+    // node has been folded into each domain and the timeline section.
+    expect((mod.DOMAIN_ORDER as readonly string[]).includes("recent")).toBe(false);
   });
 });

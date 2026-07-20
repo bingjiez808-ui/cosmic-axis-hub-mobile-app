@@ -23,7 +23,7 @@ export const INITIAL_PROFILE: ReaderProfile = {
 };
 
 export const INITIAL_STORY_STATE: StoryStateV1 = {
-  version: 1,
+  version: 2,
   step: "gate",
   profile: INITIAL_PROFILE,
   active_book: null,
@@ -121,7 +121,10 @@ export function nextIntakeStep(step: StoryStep): StoryStep {
 export function prevIntakeStep(step: StoryStep): StoryStep {
   if (step === "intake_place") return "intake_birth";
   if (step === "intake_birth") return "intake_name";
-  if (step === "intake_name") return "focus";
+  // Gate goes directly into intake now — there is no pre-intake topic
+  // picker anymore. The panorama entry (with its explorable domain map)
+  // is the first post-intake screen.
+  if (step === "intake_name") return "gate";
   return step;
 }
 
