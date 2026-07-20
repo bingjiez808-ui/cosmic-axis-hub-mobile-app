@@ -1,6 +1,6 @@
 /**
  * Revision-pinned in-memory integration test for the current manifest
- * (PREMIUM_REPORT_REVISION = "premium_v3_rev_2026_07_real_ai").
+ * (PREMIUM_REPORT_REVISION = "premium_v4_rev_2026_08_academic").
  *
  * Scenarios (deterministic provider, pure in-memory fake tables):
  *   1) 0 → 24 uses the current revision; every persisted chapter carries it.
