@@ -69,7 +69,7 @@ import {
   applyFeedback,
   type FeedbackKind,
 } from "./story/feedback";
-import { DURATION, EASE, STAGGER, TRANSITION } from "./motion/tokens";
+import { DURATION, EASE, OPACITY, STAGGER, TRANSITION } from "./motion/tokens";
 import { useReducedMotion } from "./motion/reduced-motion";
 import {
   logMembership,
