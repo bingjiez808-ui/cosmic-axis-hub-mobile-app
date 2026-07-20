@@ -83,6 +83,17 @@ export function softDeleteNote(id: string, actorId: string): boolean {
   return true;
 }
 
+export function restoreNote(id: string, actorId: string): boolean {
+  const now = Date.now();
+  const notes = loadNotes(now);
+  const idx = notes.findIndex((n) => n.id === id);
+  if (idx < 0) return false;
+  if (notes[idx].author_id !== actorId) return false;
+  notes[idx] = { ...notes[idx], deleted_at: null, status: "active", updated_at: now };
+  saveNotes(notes);
+  return true;
+}
+
 export function listReplies(noteId: string): NoteReply[] {
   return loadReplies().filter(
     (r) => r.note_id === noteId && r.deleted_at === null,
@@ -129,6 +140,16 @@ export function softDeleteReply(id: string, actorId: string): boolean {
   if (idx < 0) return false;
   if (list[idx].author_id !== actorId) return false;
   list[idx] = { ...list[idx], deleted_at: Date.now(), status: "removed" };
+  saveReplies(list);
+  return true;
+}
+
+export function restoreReply(id: string, actorId: string): boolean {
+  const list = loadReplies();
+  const idx = list.findIndex((r) => r.id === id);
+  if (idx < 0) return false;
+  if (list[idx].author_id !== actorId) return false;
+  list[idx] = { ...list[idx], deleted_at: null, status: "active" };
   saveReplies(list);
   return true;
 }

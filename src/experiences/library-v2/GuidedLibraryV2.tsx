@@ -56,6 +56,8 @@ import {
   createReply,
   listNotes,
   listReplies,
+  restoreNote,
+  restoreReply,
   softDeleteNote,
   softDeleteReply,
 } from "./story/repository";
@@ -1332,24 +1334,47 @@ function History({
           </button>
         ))}
       </div>
-      <div className="mt-6 grid gap-3 sm:grid-cols-2">
-        {list.map((f) => (
-          <button
-            key={f.id}
-            type="button"
-            onClick={() => onOpen(f.id)}
-            className="min-h-[132px] rounded-xl border border-stone-warm/15 p-5 text-left hover:border-gold-dust/40"
-          >
-            <p className="font-mono text-[10px] tracking-[0.3em] text-gold-dust">
-              {f.tradition === "east" ? "东方" : "西方"} · {f.age_band}
-            </p>
-            <h3 className="mt-2 font-serif text-xl text-stone-warm">{f.name}</h3>
-            <p className="mt-2 line-clamp-3 text-sm text-stone-warm/70">
-              {f.situation}
-            </p>
-          </button>
-        ))}
+      {/* Selection-path connector: subtle vertical line from active chip
+          to the results grid, letting the eye follow the chosen path. */}
+      <div className="relative mt-2 h-4" aria-hidden>
+        <motion.span
+          layoutId="history-path"
+          className="absolute left-6 top-0 h-full w-px bg-gradient-to-b from-gold-dust/60 to-transparent"
+          transition={TRANSITION.fadeShort}
+        />
       </div>
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.div
+          key={filter}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -4 }}
+          transition={TRANSITION.fadeShort}
+          className="mt-3 grid gap-3 sm:grid-cols-2"
+        >
+          {list.map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              onClick={() => onOpen(f.id)}
+              className="min-h-[132px] rounded-xl border border-stone-warm/15 p-5 text-left transition-colors hover:border-gold-dust/40"
+            >
+              <p className="font-mono text-[10px] tracking-[0.3em] text-gold-dust">
+                {f.tradition === "east" ? "东方" : "西方"} · {f.age_band}
+              </p>
+              <h3 className="mt-2 font-serif text-xl text-stone-warm break-words">{f.name}</h3>
+              <p className="mt-2 line-clamp-3 break-words text-sm text-stone-warm/70">
+                {f.situation}
+              </p>
+            </button>
+          ))}
+          {list.length === 0 && (
+            <p className="text-sm text-stone-warm/50">
+              这个过滤下暂无相似处境的记录。换一个筛选看看？
+            </p>
+          )}
+        </motion.div>
+      </AnimatePresence>
       <div className="mt-10 rounded-2xl border border-gold-dust/25 bg-gold-dust/5 p-6 text-center">
         <p className="mx-auto max-w-[36ch] font-serif text-lg leading-relaxed text-stone-warm">
           {CLOSING_QUOTE}
@@ -1568,6 +1593,7 @@ function NotesArea({
   actorId,
   setState,
   goto,
+  showUndoToast,
 }: {
   state: StoryStateV1;
   actorId: string;
@@ -1610,36 +1636,43 @@ function NotesArea({
           </button>
         </div>
         <div className="mt-8 space-y-3">
-          {notes.map((n) => (
-            <button
-              key={n.id}
-              type="button"
-              onClick={() =>
-                setState((s) => ({ ...s, step: "note_detail", active_note_id: n.id }))
-              }
-              className="w-full rounded-2xl border border-stone-warm/15 p-5 text-left hover:border-gold-dust/40"
-            >
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <p className="font-mono text-[10px] tracking-[0.3em] text-gold-dust">
-                  {topicLabel(n.topic)} · {audienceLabel(n.audience)}
-                </p>
-                <span className="text-[10px] text-stone-warm/40">
-                  {relTime(n.created_at)}
-                </span>
-              </div>
-              <p className="mt-2 line-clamp-3 text-sm text-stone-warm/85">{n.body}</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {n.match_traits.map((t) => (
-                  <span
-                    key={t}
-                    className="rounded-full border border-gold-dust/30 px-2 py-0.5 text-[10px] text-gold-dust"
-                  >
-                    {t}
+          <AnimatePresence initial={false}>
+            {notes.map((n) => (
+              <motion.button
+                layout
+                key={n.id}
+                type="button"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={TRANSITION.fadeShort}
+                onClick={() =>
+                  setState((s) => ({ ...s, step: "note_detail", active_note_id: n.id }))
+                }
+                className="block w-full rounded-2xl border border-stone-warm/15 p-5 text-left hover:border-gold-dust/40"
+              >
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <p className="font-mono text-[10px] tracking-[0.3em] text-gold-dust">
+                    {topicLabel(n.topic)} · {audienceLabel(n.audience)}
+                  </p>
+                  <span className="text-[10px] text-stone-warm/40">
+                    {relTime(n.created_at)}
                   </span>
-                ))}
-              </div>
-            </button>
-          ))}
+                </div>
+                <p className="mt-2 line-clamp-3 break-words text-sm text-stone-warm/85">{n.body}</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {n.match_traits.map((t) => (
+                    <span
+                      key={t}
+                      className="rounded-full border border-gold-dust/30 px-2 py-0.5 text-[10px] text-gold-dust"
+                    >
+                      {t}
+                    </span>
+                  ))}
+                </div>
+              </motion.button>
+            ))}
+          </AnimatePresence>
           {notes.length === 0 && (
             <p className="text-sm text-stone-warm/50">图书馆还没有相关纸条。写第一张？</p>
           )}
@@ -1670,6 +1703,7 @@ function NotesArea({
         profile={state.profile}
         onBack={() => goto("notes")}
         bump={() => setTick((t) => t + 1)}
+        showUndoToast={showUndoToast}
       />
     );
   }
@@ -1848,14 +1882,17 @@ function NoteDetail({
   profile,
   onBack,
   bump,
+  showUndoToast,
 }: {
   noteId: string;
   actorId: string;
   profile: ReaderProfile;
   onBack: () => void;
   bump: () => void;
+  showUndoToast?: (label: string, action: () => void) => void;
 }) {
   const [tick, setTick] = useState(0);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const note = useMemo(() => {
     const all = listNotes(Date.now());
     return all.find((n) => n.id === noteId) ?? null;
@@ -1896,11 +1933,26 @@ function NoteDetail({
     setTick((t) => t + 1);
     bump();
   };
-  const del = () => {
-    if (!confirm("确认收回这张纸条？")) return;
-    softDeleteNote(note.id, actorId);
+  const confirmDelete = () => {
+    setConfirmOpen(false);
+    const noteIdToDelete = note.id;
+    softDeleteNote(noteIdToDelete, actorId);
     bump();
+    showUndoToast?.("已收回纸条", () => {
+      restoreNote(noteIdToDelete, actorId);
+      bump();
+    });
     onBack();
+  };
+  const deleteReply = (replyId: string) => {
+    softDeleteReply(replyId, actorId);
+    setTick((t) => t + 1);
+    bump();
+    showUndoToast?.("已收回回信", () => {
+      restoreReply(replyId, actorId);
+      setTick((t) => t + 1);
+      bump();
+    });
   };
   return (
     <section className="pt-4">
@@ -1920,7 +1972,7 @@ function NoteDetail({
             {relTime(note.created_at)}
           </span>
         </div>
-        <p className="mt-3 whitespace-pre-wrap text-base leading-relaxed text-stone-warm/90">
+        <p className="mt-3 whitespace-pre-wrap break-words text-base leading-relaxed text-stone-warm/90">
           {note.body}
         </p>
         {note.image_data_url && (
@@ -1943,7 +1995,7 @@ function NoteDetail({
         {isOwn && (
           <button
             type="button"
-            onClick={del}
+            onClick={() => setConfirmOpen(true)}
             className="mt-4 min-h-11 rounded-full border border-red-500/40 px-4 text-sm text-red-300 hover:bg-red-500/10"
           >
             收回我的纸条
@@ -1951,32 +2003,40 @@ function NoteDetail({
         )}
       </div>
       <h3 className="mt-8 font-serif text-xl text-stone-warm">读者的回信</h3>
-      <div className="mt-3 space-y-3">
-        {replies.map((r) => (
-          <div key={r.id} className="rounded-xl border border-stone-warm/10 p-4">
-            <p className="font-mono text-[10px] tracking-[0.3em] text-gold-dust">
-              {r.author_nickname} · {relTime(r.created_at)}
-            </p>
-            <ReplyRow k="我曾面对的情况" v={r.faced} />
-            <ReplyRow k="当时的选择" v={r.chose} />
-            <ReplyRow k="代价" v={r.cost} />
-            <ReplyRow k="如果重来" v={r.if_again} />
-            <ReplyRow k="给你的一个考虑" v={r.one_consideration} />
-            {r.author_id === actorId && (
-              <button
-                type="button"
-                onClick={() => {
-                  softDeleteReply(r.id, actorId);
-                  setTick((t) => t + 1);
-                  bump();
-                }}
-                className="mt-2 text-xs text-red-300/80 hover:text-red-300"
-              >
-                收回这条回信
-              </button>
-            )}
-          </div>
-        ))}
+      <div className="relative mt-3 space-y-2">
+        <AnimatePresence initial={false}>
+          {replies.map((r, i) => (
+            <motion.div
+              layout
+              key={r.id}
+              initial={{ opacity: 0, y: 10, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -6, scale: 0.98 }}
+              transition={TRANSITION.fadeShort}
+              // Slight stacked/overlap feel between adjacent replies.
+              style={{ marginTop: i === 0 ? undefined : -6 }}
+              className="rounded-xl border border-stone-warm/10 bg-obsidian/60 p-4 shadow-[0_2px_10px_rgba(0,0,0,0.25)] backdrop-blur"
+            >
+              <p className="font-mono text-[10px] tracking-[0.3em] text-gold-dust">
+                {r.author_nickname} · {relTime(r.created_at)}
+              </p>
+              <ReplyRow k="我曾面对的情况" v={r.faced} />
+              <ReplyRow k="当时的选择" v={r.chose} />
+              <ReplyRow k="代价" v={r.cost} />
+              <ReplyRow k="如果重来" v={r.if_again} />
+              <ReplyRow k="给你的一个考虑" v={r.one_consideration} />
+              {r.author_id === actorId && (
+                <button
+                  type="button"
+                  onClick={() => deleteReply(r.id)}
+                  className="mt-2 text-xs text-red-300/80 hover:text-red-300"
+                >
+                  收回这条回信
+                </button>
+              )}
+            </motion.div>
+          ))}
+        </AnimatePresence>
         {replies.length === 0 && (
           <p className="text-xs text-stone-warm/45">还没有回信。你可以第一个回复。</p>
         )}
@@ -2012,7 +2072,67 @@ function NoteDetail({
           寄出这封回信 →
         </button>
       </div>
+      <ConfirmDialog
+        open={confirmOpen}
+        title="确认收回这张纸条？"
+        body="收回后其他读者将不再看到它。10 秒内你可以撤销这次操作。"
+        confirmLabel="收回"
+        onConfirm={confirmDelete}
+        onCancel={() => setConfirmOpen(false)}
+      />
     </section>
+  );
+}
+
+function ConfirmDialog({
+  open,
+  title,
+  body,
+  confirmLabel,
+  onConfirm,
+  onCancel,
+}: {
+  open: boolean;
+  title: string;
+  body: string;
+  confirmLabel: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  if (!open) return null;
+  if (typeof document === "undefined") return null;
+  return createPortal(
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-[85] flex items-center justify-center bg-obsidian/80 px-4 backdrop-blur-sm"
+      onClick={onCancel}
+    >
+      <div
+        className="w-full max-w-[420px] rounded-2xl border border-gold-dust/30 bg-obsidian p-6 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 className="font-serif text-xl text-stone-warm">{title}</h3>
+        <p className="mt-2 text-sm text-stone-warm/70">{body}</p>
+        <div className="mt-6 flex flex-wrap justify-end gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="min-h-11 rounded-full border border-stone-warm/25 px-5 text-sm text-stone-warm/80 hover:bg-stone-warm/5"
+          >
+            取消
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            className="min-h-11 rounded-full border border-red-500/50 bg-red-500/10 px-5 text-sm text-red-200 hover:bg-red-500/20"
+          >
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body,
   );
 }
 
