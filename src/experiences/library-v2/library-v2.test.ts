@@ -18,6 +18,7 @@ import {
   nextStep,
   prevStep,
 } from "@/experiences/library-v2/state";
+import { isGuidedLibraryV2PreviewAllowed } from "@/experiences/library-v2/preview-guard";
 
 const REPO_ROOT = process.cwd();
 
@@ -140,13 +141,75 @@ describe("library-v2 book content contract", () => {
   });
 });
 
+describe("library-v2 preview guard", () => {
+  it("allows local dev regardless of hostname", () => {
+    expect(
+      isGuidedLibraryV2PreviewAllowed({ hostname: "", isDev: true }),
+    ).toBe(true);
+    expect(
+      isGuidedLibraryV2PreviewAllowed({
+        hostname: "fate-nexus-ai.lovable.app",
+        isDev: true,
+      }),
+    ).toBe(true);
+  });
+
+  it("allows localhost and loopback hosts", () => {
+    for (const host of ["localhost", "127.0.0.1", "::1", "[::1]", "LOCALHOST"]) {
+      expect(
+        isGuidedLibraryV2PreviewAllowed({ hostname: host, isDev: false }),
+      ).toBe(true);
+    }
+  });
+
+  it("allows Lovable id-preview hosts", () => {
+    for (const host of [
+      "id-preview--8dd02eb0-ad23-48d1-858e-b5eb297af57e.lovable.app",
+      "id-preview--foo.lovable.app",
+      "ID-PREVIEW--Bar.Lovable.App",
+    ]) {
+      expect(
+        isGuidedLibraryV2PreviewAllowed({ hostname: host, isDev: false }),
+      ).toBe(true);
+    }
+  });
+
+  it("blocks the production domain and other non-preview hosts", () => {
+    for (const host of [
+      "fate-nexus-ai.lovable.app",
+      "lovable.app",
+      "www.lovable.app",
+      "some-other-app.lovable.app",
+      "example.com",
+      "",
+    ]) {
+      expect(
+        isGuidedLibraryV2PreviewAllowed({ hostname: host, isDev: false }),
+      ).toBe(false);
+    }
+  });
+
+  it("blocks look-alike hosts that only mimic the id-preview prefix", () => {
+    for (const host of [
+      "id-preview--foo.lovable.app.evil.com",
+      "id-preview--foo.example.com",
+      "evil-id-preview--foo.lovable.app",
+      "notid-preview--foo.lovable.app",
+    ]) {
+      expect(
+        isGuidedLibraryV2PreviewAllowed({ hostname: host, isDev: false }),
+      ).toBe(false);
+    }
+  });
+});
+
 describe("library-v2 isolation from V1", () => {
-  it("has a dev-only route that gates on import.meta.env.DEV", () => {
+  it("has a preview-only route that delegates to the guard and stays noindex", () => {
     const src = readFileSync(
       join(REPO_ROOT, "src/routes/dev.guided-library-v2.tsx"),
       "utf8",
     );
-    expect(src).toContain("import.meta.env.DEV");
+    expect(src).toContain("isGuidedLibraryV2PreviewAllowed");
     expect(src).toContain("noindex,nofollow");
   });
 
