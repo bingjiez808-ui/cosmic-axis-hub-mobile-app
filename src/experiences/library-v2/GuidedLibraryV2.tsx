@@ -34,8 +34,6 @@ import {
   nextIntakeStep,
   prevIntakeStep,
   topicLabel,
-  topicPersonal,
-  topicQuestion,
 } from "./story/state";
 import type {
   BookRef,
@@ -203,10 +201,27 @@ export function GuidedLibraryV2() {
               />
             )}
             {state.step === "focus" && (
-              <FocusPick
+              <DestinyMap
                 topic={state.profile.topic}
-                onPick={(t) => patchProfile({ topic: t })}
-                onNext={() => goto("intake_name")}
+                onConfirm={(t, overview) => {
+                  // "全景阅读" is a UX-only choice — matching, shelf ordering
+                  // and recommendations still need a concrete StoryTopic, so
+                  // we safe-map it to "career" (the widest default fixture
+                  // set) and mark the entry in reading_history. Existing
+                  // matchers and recommenders are unchanged.
+                  const underlying: StoryTopic = overview ? "career" : t;
+                  setState((s) => ({
+                    ...s,
+                    profile: { ...s.profile, topic: underlying },
+                    reading_history: overview
+                      ? [
+                          ...s.reading_history,
+                          { kind: "recommendation_clicked", ref: "overview", at: Date.now() },
+                        ]
+                      : s.reading_history,
+                    step: "intake_name",
+                  }));
+                }}
                 reducedMotion={reducedMotion}
               />
             )}
@@ -578,123 +593,509 @@ function Gate({
 }
 
 
-// ---------------- 2. Focus ----------------
 const FOCUS_TOPICS: StoryTopic[] = ["career", "love", "wealth", "recent"];
 
-function FocusPick({
+
+
+
+// ---------------- 2. Destiny Map ----------------
+//
+// A restrained "life map" replaces the four vertical questionnaire cards.
+// Five explorable nodes (four topics + one panoramic entry) fan out from a
+// glowing centre. Clicking a node opens a preview panel that explains what
+// the chapter analyses, what the reader will get, and which V1 modules feed
+// it — no leading questions, no promises. Only confirming from the preview
+// commits a topic and advances the story chain.
+
+type MapChoice = StoryTopic | "overview";
+
+interface MapNodeDef {
+  key: MapChoice;
+  label: string;
+  caption: string;
+  // Desktop absolute position on the 100×62 map (percentages of container).
+  x: number;
+  y: number;
+  // Mobile column horizontal offset (-1 = left, 0 = centre, 1 = right).
+  offset: -1 | 0 | 1;
+  glyph: "compass" | "orbit" | "river" | "moon" | "dome";
+}
+
+const MAP_NODES: MapNodeDef[] = [
+  { key: "overview", label: "全景阅读", caption: "先不选择主题，浏览完整人生地图", x: 50, y: 14, offset: 0, glyph: "dome" },
+  { key: "career", label: "事业与方向", caption: "看见能力、位置与下一步方向", x: 16, y: 44, offset: -1, glyph: "compass" },
+  { key: "love", label: "关系与情感", caption: "理解亲密模式、需要与边界", x: 84, y: 44, offset: 1, glyph: "orbit" },
+  { key: "wealth", label: "财富与资源", caption: "理解积累方式、机会与风险偏好", x: 26, y: 78, offset: -1, glyph: "river" },
+  { key: "recent", label: "当下与变化", caption: "辨认所处阶段与未来时间窗口", x: 74, y: 78, offset: 1, glyph: "moon" },
+];
+
+interface ChapterPreview {
+  analyzes: [string, string, string];
+  gains: [string, string];
+  modules: string[];
+}
+
+const CHAPTER_PREVIEW: Record<MapChoice, ChapterPreview> = {
+  career: {
+    analyzes: [
+      "你更容易发挥优势的工作方式",
+      "适合承担的位置与组织环境",
+      "当前周期更适合积累、调整还是尝试",
+    ],
+    gains: [
+      "一份可验证的优势与风险摘要",
+      "推荐继续阅读的事业章节与可观察的时间窗口",
+    ],
+    modules: ["八字十神与格局解读", "紫微命宫与事业宫解读", "西方占星第十宫与流年"],
+  },
+  love: {
+    analyzes: [
+      "你在亲密关系中稳定出现的需要",
+      "你与他人形成连结与冲突的互动模式",
+      "近期更适合建立边界还是打开对话的窗口",
+    ],
+    gains: [
+      "一份关系需要与互动风格的画像",
+      "推荐继续阅读的情感章节与可观察的时间窗口",
+    ],
+    modules: ["八字日主与配偶宫", "紫微夫妻宫", "西方占星第七宫与金星"],
+  },
+  wealth: {
+    analyzes: [
+      "你获取与保存资源的惯性方式",
+      "你与风险、机会之间的真实距离",
+      "近期更适合关注积累、周转还是投入的时期",
+    ],
+    gains: [
+      "一份资源结构与风险偏好的摘要",
+      "推荐继续阅读的财富章节与可观察的时间窗口",
+    ],
+    modules: ["八字财官印食伤", "紫微财帛宫与福德宫", "西方占星第二宫与第八宫"],
+  },
+  recent: {
+    analyzes: [
+      "你此刻所处的人生阶段与主线",
+      "跨体系反复出现的信号（八字/紫微/西方）",
+      "未来数月中值得观察的窗口",
+    ],
+    gains: [
+      "一份当前阶段的摘要与关注建议",
+      "推荐继续阅读的时间轴章节与可观察的时间窗口",
+    ],
+    modules: ["八字大运流年", "紫微大限与流年", "西方占星次限推进与行运"],
+  },
+  overview: {
+    analyzes: [
+      "四个领域的整体画像与相互影响",
+      "跨体系反复出现的关键信号",
+      "适合你的第一条深入路径建议",
+    ],
+    gains: [
+      "一份人生地图总览",
+      "由你自己决定接下来深入哪一章",
+    ],
+    modules: ["八字全盘概览", "紫微十二宫摘要", "西方占星全宫位摘要"],
+  },
+};
+
+function glyphPath(g: MapNodeDef["glyph"]): React.ReactNode {
+  switch (g) {
+    case "compass":
+      return (
+        <>
+          <circle cx="0" cy="0" r="7" fill="none" strokeWidth="0.6" />
+          <path d="M0 -6 L1.5 0 L0 6 L-1.5 0 Z" strokeWidth="0.5" />
+        </>
+      );
+    case "orbit":
+      return (
+        <>
+          <ellipse cx="-1.6" cy="0" rx="5.5" ry="2.2" fill="none" strokeWidth="0.5" />
+          <ellipse cx="1.6" cy="0" rx="5.5" ry="2.2" fill="none" strokeWidth="0.5" />
+        </>
+      );
+    case "river":
+      return (
+        <path
+          d="M-7 -3 C -3 -3, -3 3, 0 3 C 3 3, 3 -3, 7 -3"
+          fill="none"
+          strokeWidth="0.6"
+        />
+      );
+    case "moon":
+      return (
+        <>
+          <circle cx="0" cy="0" r="6" fill="none" strokeWidth="0.5" />
+          <path d="M-2 -5 A 6 6 0 0 0 -2 5 A 4 5 0 0 1 -2 -5 Z" strokeWidth="0.4" />
+        </>
+      );
+    case "dome":
+      return (
+        <>
+          <path d="M-7 3 A 7 6 0 0 1 7 3" fill="none" strokeWidth="0.6" />
+          <path d="M-7 3 L 7 3" strokeWidth="0.4" />
+          <path d="M0 -3 L0 3" strokeWidth="0.35" />
+        </>
+      );
+  }
+}
+
+function DestinyMap({
   topic,
-  onPick,
-  onNext,
+  onConfirm,
   reducedMotion,
 }: {
   topic: StoryTopic | null;
-  onPick: (t: StoryTopic) => void;
-  onNext: () => void;
+  onConfirm: (t: StoryTopic, overview: boolean) => void;
   reducedMotion?: boolean;
 }) {
-  const gridRef = useRef<HTMLDivElement>(null);
-  const focusIndex = (i: number) => {
-    const btns = gridRef.current?.querySelectorAll<HTMLButtonElement>(
-      "button[data-focus-card]",
-    );
-    if (!btns) return;
-    const wrapped = (i + btns.length) % btns.length;
-    btns[wrapped]?.focus();
+  // Which node the reader is *previewing* right now (may differ from the
+  // committed topic — a reader can peek at a second node before deciding).
+  const [preview, setPreview] = useState<MapChoice | null>(null);
+  // Nodes the reader has looked at at least once — drawn as a bookmark
+  // pip on the map so exploration feels persistent, not lost.
+  const [visited, setVisited] = useState<Set<MapChoice>>(new Set());
+  const previewRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const openPreview = (key: MapChoice) => {
+    setPreview(key);
+    setVisited((s) => {
+      if (s.has(key)) return s;
+      const next = new Set(s);
+      next.add(key);
+      return next;
+    });
+    // Move keyboard focus into the panel for screen-reader / keyboard users.
+    window.setTimeout(() => {
+      previewRef.current?.querySelector<HTMLButtonElement>("[data-preview-primary]")?.focus();
+    }, 60);
   };
-  const onKey = (e: React.KeyboardEvent<HTMLButtonElement>, idx: number) => {
-    if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-      e.preventDefault();
-      focusIndex(idx + 1);
-    } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-      e.preventDefault();
-      focusIndex(idx - 1);
-    } else if (e.key === "Enter") {
-      // native <button> handles Enter — no-op keeps default behavior.
-    }
-  };
+
+  const closePreview = () => setPreview(null);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && preview !== null) {
+        e.preventDefault();
+        closePreview();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [preview]);
+
+  const previewDef = preview ? MAP_NODES.find((n) => n.key === preview) : null;
+  const previewData = preview ? CHAPTER_PREVIEW[preview] : null;
+
   return (
     <section className="pt-4">
-      <p className="font-mono text-[10px] tracking-[0.35em] text-gold-dust">CHAPTER · ONE</p>
-      <h2 className="mt-3 font-serif text-3xl text-stone-warm sm:text-4xl">
-        你的人生，正在翻到哪一章？
-      </h2>
-      <p className="mt-2 text-sm text-stone-warm/60">
-        先选一个你最想被真正回答的问题。之后我们再决定要不要翻到别的章节。
+      <p className="font-mono text-[10px] tracking-[0.35em] text-gold-dust">
+        第 1 页 · 选择阅读路径
       </p>
+      <h2 className="mt-3 font-serif text-3xl leading-tight text-stone-warm sm:text-4xl">
+        选择你的第一条阅读路径
+      </h2>
+      <p className="mt-3 max-w-2xl text-sm leading-relaxed text-stone-warm/65">
+        没有标准答案。你可以从此刻最想理解的领域开始，也可以交给图书馆为你展开全景。
+      </p>
+
+      {/* Desktop map — abstract star-atlas layout */}
       <div
-        ref={gridRef}
-        role="radiogroup"
-        aria-label="选择你最想被真正回答的问题"
-        className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2"
+        ref={containerRef}
+        className="relative mx-auto mt-10 hidden aspect-[16/10] w-full max-w-[900px] sm:block"
+        aria-label="命运地图"
       >
-        {FOCUS_TOPICS.map((t, i) => {
-          const active = topic === t;
-          const dim = topic !== null && !active;
+        {/* Backdrop: layered gradients evoking a dark library dome + star field */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-3xl border border-gold-dust/10">
+          <div
+            aria-hidden
+            className="absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(ellipse at 50% 55%, oklch(0.28 0.03 250 / 0.65), transparent 65%), radial-gradient(ellipse at 50% 100%, oklch(0.22 0.04 60 / 0.35), transparent 60%)",
+            }}
+          />
+          <div
+            aria-hidden
+            className="absolute inset-0 opacity-40"
+            style={{
+              backgroundImage:
+                "radial-gradient(circle at 12% 20%, oklch(0.76 0.11 85 / 0.35) 0 1px, transparent 1.5px), radial-gradient(circle at 78% 12%, oklch(0.76 0.11 85 / 0.3) 0 1px, transparent 1.5px), radial-gradient(circle at 30% 82%, oklch(0.76 0.11 85 / 0.25) 0 1px, transparent 1.5px), radial-gradient(circle at 88% 74%, oklch(0.76 0.11 85 / 0.3) 0 1px, transparent 1.5px), radial-gradient(circle at 55% 30%, oklch(0.76 0.11 85 / 0.2) 0 1px, transparent 1.5px)",
+            }}
+          />
+        </div>
+
+        {/* SVG connectors */}
+        <svg
+          viewBox="0 0 100 62"
+          preserveAspectRatio="none"
+          className="absolute inset-0 h-full w-full"
+          aria-hidden
+        >
+          <defs>
+            <radialGradient id="dm-center-glow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="oklch(0.86 0.11 85)" stopOpacity="0.7" />
+              <stop offset="100%" stopColor="oklch(0.76 0.11 85)" stopOpacity="0" />
+            </radialGradient>
+          </defs>
+          {/* Halo behind centre */}
+          <circle cx="50" cy="50" r="7" fill="url(#dm-center-glow)" />
+          {MAP_NODES.map((n, i) => {
+            const active = preview === n.key || topic === n.key;
+            return (
+              <motion.line
+                key={n.key}
+                x1="50"
+                y1="50"
+                x2={n.x}
+                y2={n.y}
+                stroke="oklch(0.76 0.11 85)"
+                strokeWidth={active ? 0.35 : 0.18}
+                strokeDasharray="0.6 0.9"
+                initial={reducedMotion ? false : { pathLength: 0, opacity: 0 }}
+                animate={{ pathLength: 1, opacity: active ? 0.85 : 0.45 }}
+                transition={{
+                  duration: reducedMotion ? 0 : 0.55,
+                  delay: reducedMotion ? 0 : 0.15 + i * 0.08,
+                  ease: EASE.standard,
+                }}
+              />
+            );
+          })}
+          {/* Centre mark */}
+          <circle cx="50" cy="50" r="1.1" fill="oklch(0.86 0.11 85)" />
+          <circle cx="50" cy="50" r="2.4" fill="none" stroke="oklch(0.76 0.11 85 / 0.55)" strokeWidth="0.2" />
+        </svg>
+
+        {/* Centre label */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+          style={{ transform: "translate(-50%, calc(-50% + 22px))" }}
+        >
+          <p className="font-mono text-[9px] tracking-[0.35em] text-stone-warm/55">
+            此刻的我 · 起点
+          </p>
+        </div>
+
+        {/* Nodes */}
+        {MAP_NODES.map((n, i) => {
+          const active = preview === n.key;
+          const chosen = topic === n.key || (topic !== null && n.key === "overview" && false);
           return (
-            <motion.button
-              key={t}
-              type="button"
-              data-focus-card
-              role="radio"
-              aria-checked={active}
-              onClick={() => onPick(t)}
-              onKeyDown={(e) => onKey(e, i)}
-              initial={false}
-              animate={{
-                opacity: dim ? OPACITY.dim + 0.2 : 1,
-                scale: active ? 1.02 : 1,
+            <MapNodeButton
+              key={n.key}
+              node={n}
+              active={active}
+              chosen={chosen}
+              visited={visited.has(n.key)}
+              onOpen={() => openPreview(n.key)}
+              reducedMotion={reducedMotion}
+              delay={0.35 + i * 0.08}
+              style={{
+                position: "absolute",
+                left: `${n.x}%`,
+                top: `${n.y}%`,
+                transform: "translate(-50%, -50%)",
               }}
-              transition={reducedMotion ? { duration: 0 } : TRANSITION.decisiveShort}
-              className={`min-h-[132px] rounded-2xl border p-5 text-left ${
-                active
-                  ? "border-gold-dust bg-gold-dust/10 shadow-[0_0_30px_oklch(0.76_0.11_85/0.2)]"
-                  : "border-stone-warm/15 hover:border-gold-dust/40"
-              }`}
-            >
-              <p className="font-mono text-[10px] tracking-[0.3em] text-gold-dust">
-                {topicLabel(t).toUpperCase()}
-              </p>
-              <p className="mt-3 font-serif text-lg leading-snug text-stone-warm">
-                {topicQuestion(t)}
-              </p>
-              {active && (
-                <motion.p
-                  initial={reducedMotion ? false : { opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={TRANSITION.fadeShort}
-                  className="mt-3 text-xs text-gold-dust/80"
-                >
-                  图书馆将为你寻找与这个问题共振的章节 ✦
-                </motion.p>
-              )}
-            </motion.button>
+            />
           );
         })}
       </div>
-      <AnimatePresence initial={false}>
-        {topic && (
-          <motion.div
-            key={topic}
-            initial={reducedMotion ? false : { opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            transition={TRANSITION.fadeShort}
-            className="mt-6 rounded-2xl border border-gold-dust/20 bg-gold-dust/5 p-5"
+
+      {/* Mobile vertical journey — S-curve, no horizontal overflow */}
+      <div className="mt-8 flex flex-col gap-3 sm:hidden" role="list" aria-label="命运地图">
+        {MAP_NODES.map((n, i) => (
+          <div
+            key={n.key}
+            role="listitem"
+            className={`flex ${n.offset === -1 ? "justify-start" : n.offset === 1 ? "justify-end" : "justify-center"}`}
           >
-            <p className="text-sm text-stone-warm/85">{topicPersonal(topic)}</p>
-            <button
-              type="button"
-              onClick={onNext}
-              className="mt-5 inline-flex min-h-12 items-center rounded-full bg-gold-dust px-6 text-obsidian hover:bg-gold-light"
-            >
-              开始寻找答案 →
-            </button>
+            <MapNodeButton
+              node={n}
+              active={preview === n.key}
+              chosen={topic === n.key}
+              visited={visited.has(n.key)}
+              onOpen={() => openPreview(n.key)}
+              reducedMotion={reducedMotion}
+              delay={0.05 + i * 0.05}
+              mobile
+            />
+          </div>
+        ))}
+      </div>
+
+      {/* Chapter preview panel */}
+      <AnimatePresence initial={false}>
+        {preview && previewDef && previewData && (
+          <motion.div
+            ref={previewRef}
+            key={preview}
+            role="region"
+            aria-label={`${previewDef.label} · 你将在这一章读到`}
+            initial={reducedMotion ? false : { opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={reducedMotion ? undefined : { opacity: 0, y: 6 }}
+            transition={TRANSITION.fadeMedium}
+            className="mt-8 overflow-hidden rounded-2xl border border-gold-dust/25 bg-gold-dust/[0.04] p-6 shadow-[0_20px_60px_oklch(0.15_0.02_250/0.5)]"
+          >
+            <div className="flex items-baseline justify-between gap-3">
+              <p className="font-mono text-[10px] tracking-[0.35em] text-gold-dust">
+                {previewDef.label.toUpperCase()}
+              </p>
+              <p className="font-mono text-[10px] tracking-[0.25em] text-stone-warm/45">
+                你将在这一章读到
+              </p>
+            </div>
+            <h3 className="mt-3 font-serif text-2xl leading-snug text-stone-warm">
+              {previewDef.caption}
+            </h3>
+
+            <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-3">
+              <div>
+                <p className="font-mono text-[10px] tracking-[0.3em] text-stone-warm/55">
+                  分析什么
+                </p>
+                <ul className="mt-3 space-y-2 text-sm leading-relaxed text-stone-warm/85">
+                  {previewData.analyzes.map((a) => (
+                    <li key={a} className="flex gap-2">
+                      <span aria-hidden className="mt-1.5 inline-block h-1 w-1 shrink-0 rounded-full bg-gold-dust/70" />
+                      <span>{a}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <p className="font-mono text-[10px] tracking-[0.3em] text-stone-warm/55">
+                  你会获得
+                </p>
+                <ul className="mt-3 space-y-2 text-sm leading-relaxed text-stone-warm/85">
+                  {previewData.gains.map((g) => (
+                    <li key={g} className="flex gap-2">
+                      <span aria-hidden className="mt-1.5 inline-block h-1 w-1 shrink-0 rounded-full bg-gold-dust/70" />
+                      <span>{g}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <p className="font-mono text-[10px] tracking-[0.3em] text-stone-warm/55">
+                  使用的解读模块
+                </p>
+                <ul className="mt-3 space-y-2 text-sm leading-relaxed text-stone-warm/85">
+                  {previewData.modules.map((m) => (
+                    <li key={m} className="flex gap-2">
+                      <span aria-hidden className="mt-1.5 inline-block h-1 w-1 shrink-0 rounded-full bg-gold-dust/70" />
+                      <span>{m}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            <p className="mt-6 text-[11px] leading-relaxed text-stone-warm/45">
+              结果用于自我理解，不替代医疗、法律或投资建议。
+            </p>
+
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-end">
+              <button
+                type="button"
+                onClick={closePreview}
+                className="inline-flex min-h-12 items-center justify-center rounded-full border border-stone-warm/25 px-5 text-sm text-stone-warm/80 hover:border-stone-warm/45"
+              >
+                返回地图
+              </button>
+              <button
+                type="button"
+                data-preview-primary
+                onClick={() => {
+                  const isOverview = preview === "overview";
+                  onConfirm(isOverview ? "career" : (preview as StoryTopic), isOverview);
+                }}
+                className="inline-flex min-h-12 items-center justify-center rounded-full bg-gold-dust px-6 text-sm text-obsidian hover:bg-gold-light"
+              >
+                从这一章开始 →
+              </button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
     </section>
   );
 }
+
+function MapNodeButton({
+  node,
+  active,
+  chosen,
+  visited,
+  onOpen,
+  reducedMotion,
+  delay,
+  style,
+  mobile,
+}: {
+  node: MapNodeDef;
+  active: boolean;
+  chosen: boolean;
+  visited: boolean;
+  onOpen: () => void;
+  reducedMotion?: boolean;
+  delay: number;
+  style?: React.CSSProperties;
+  mobile?: boolean;
+}) {
+  return (
+    <motion.button
+      type="button"
+      onClick={onOpen}
+      aria-pressed={active}
+      aria-current={chosen ? "true" : undefined}
+      initial={reducedMotion ? false : { opacity: 0, scale: 0.94 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: reducedMotion ? 0 : 0.35, delay: reducedMotion ? 0 : delay, ease: EASE.standard }}
+      whileHover={reducedMotion ? undefined : { y: -2 }}
+      style={style}
+      className={`group inline-flex ${mobile ? "w-[78%]" : "w-[190px]"} min-h-[44px] items-center gap-3 rounded-2xl border p-3 pr-4 text-left backdrop-blur-sm transition-colors ${
+        active
+          ? "border-gold-dust bg-gold-dust/10 shadow-[0_0_28px_oklch(0.76_0.11_85/0.25)]"
+          : chosen
+            ? "border-gold-dust/60 bg-gold-dust/[0.06]"
+            : "border-stone-warm/15 bg-obsidian/60 hover:border-gold-dust/40"
+      }`}
+    >
+      <span
+        aria-hidden
+        className={`grid h-11 w-11 shrink-0 place-items-center rounded-full border ${
+          active || chosen ? "border-gold-dust/70 bg-gold-dust/10" : "border-stone-warm/20 bg-obsidian/70"
+        }`}
+      >
+        <svg viewBox="-10 -10 20 20" className="h-6 w-6 stroke-gold-dust" fill="none">
+          {glyphPath(node.glyph)}
+        </svg>
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center gap-2">
+          <span className="font-serif text-[15px] leading-tight text-stone-warm">
+            {node.label}
+          </span>
+          {visited && (
+            <span
+              aria-label="已探索"
+              title="已探索"
+              className="inline-block h-1.5 w-1.5 rounded-full bg-gold-dust"
+            />
+          )}
+        </span>
+        <span className="mt-1 block text-[11px] leading-snug text-stone-warm/60">
+          {node.caption}
+        </span>
+      </span>
+    </motion.button>
+  );
+}
+
 
 
 // ---------------- 3. Intake ----------------

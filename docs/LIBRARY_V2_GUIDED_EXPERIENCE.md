@@ -69,7 +69,7 @@ supabase/pending/20260720_library_v2.sql
 
 1. **Gate.** Full-height obsidian panel. Copy: “每一种文明，都在追问同一个问题 / 你，是谁？”, single CTA `步入图书馆`.
    0.55 s golden halo transition; reduced-motion collapses to instant.
-2. **Focus.** Four cards (事业/情感/财富/近况), one strong question each. Selecting one reveals a personalised paragraph + `开始寻找答案`.
+2. **Destiny Map.** Star-atlas layout with five explorable nodes: `overview / career / love / wealth / recent`. Desktop shows a radial map (glowing centre "此刻的我 · 起点" + dashed golden paths); mobile falls back to an S-curve vertical journey. Node captions are neutral (no leading questions, no "注定/必然" language). Clicking a node opens a `ChapterPreviewPanel` describing 分析什么 (3) / 你会获得 (2) / 使用的解读模块, plus the fixed disclaimer "结果用于自我理解，不替代医疗、法律或投资建议". Only the panel's `从这一章开始` commits a topic and advances to intake; `返回地图` closes without losing exploration bookmarks. `overview` is UX-only and safe-maps to `career` for matching, with a `reading_history` marker so downstream shelf/recs are unaffected. Keyboard: Tab through nodes, Enter/Space opens preview, Esc closes; `aria-pressed` on hover-open, `aria-current` on committed topic.
 3. **Intake (three steps).** 昵称+性别 / 出生日期+时间(可勾"不知道准确时间") / 出生城市. Each input is `text-[16px]` so mobile Safari never zooms; every step ≥44px controls; every step lets you go back one step.
 4. **First insight.** One strong Demo insight per topic + three drawers (为什么/怎么做/何时变化). Drawer traps focus, locks body scroll, closes on `Esc`, portals to `document.body`.
 5. **Shelf.** 7 books: `self / career / love / wealth / timeline / premium / sage`. Highlighted `你正在阅读` + up to two `推荐下一页`. Reading a book is Demo (quick + optional deep).
