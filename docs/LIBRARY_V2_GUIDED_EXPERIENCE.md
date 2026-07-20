@@ -1,152 +1,114 @@
-# Guided Library V2 · Isolated Experience
+# Guided Library V2 · Story Chain Demo
 
 - **Version constant:** `LIBRARY_EXPERIENCE_VERSION = "library-v2-guided-2026-07"`
   (see `src/experiences/library-v2/version.ts`)
-- **Preview URL (dev only):** `/dev/guided-library-v2`
-- **Base commit:** `a358a5319c4206bffa62c644ca50720c674b7ed4`
+- **Preview URL (Lovable Preview / Local only):** `/dev/guided-library-v2`
 - **Status:** demo / fixture-only. Not wired to accounts, AI, or payments.
+  V1 (`/`, `/ritual`, `/report`, …) is byte-identical.
 
 ## 1. What this is
 
-Guided Library V2 is a **second, parallel** landing-to-reader experience
-that lives entirely under `src/experiences/library-v2/` and is only
-reachable from the **Lovable Preview / Local-only** route
-`/dev/guided-library-v2`.
+Guided Library V2 is a **second, parallel** landing-to-notes experience
+that lives entirely under `src/experiences/library-v2/`. It is only
+reachable from the DEV / Preview route `/dev/guided-library-v2` after
+the pure guard `isGuidedLibraryV2PreviewAllowed({hostname,isDev})`
+returns `true` (see `preview-guard.ts`). The production Lovable
+subdomain — `fate-nexus-ai.lovable.app` — and every other host renders
+"Not available".
 
-V1 (`/`, `/ritual`, `/report`, and everything else under `src/routes/`)
-is unchanged. V2 does not import V1 business logic, does not read/write
-customer data, and never calls the AI gateway or payment endpoints.
+V2 does not import V1 business logic, does not read/write customer
+data, and never calls the AI gateway or payment endpoints. The route is
+excluded from `src/routes/sitemap[.]xml.ts` and always ships
+`<meta name="robots" content="noindex,nofollow" />`.
 
-## 2. Files
+## 2. Story chain (single route, internal state machine)
 
-| Path | Purpose |
-| ---- | ------- |
-| `src/experiences/library-v2/version.ts` | Frozen version constant + focus type. |
-| `src/experiences/library-v2/fixtures.ts` | Six demo books + focus-ordered recommendations. All copy is fixture. |
-| `src/experiences/library-v2/state.ts` | Pure state helpers for the borrow-card / step machine. |
-| `src/experiences/library-v2/preview-guard.ts` | Pure `isGuidedLibraryV2PreviewAllowed({hostname,isDev})` used by the route. |
-| `src/experiences/library-v2/GuidedLibraryV2.tsx` | Root component: home → borrow card → archive → library → reader. |
-| `src/experiences/library-v2/library-v2.test.ts` | Focus ordering, card machine, book content contract, preview-guard matrix, V1-isolation guards. |
-| `src/routes/dev.guided-library-v2.tsx` | Lovable Preview / Local-only route. Delegates to the guard, ships `robots: noindex,nofollow`. |
-| `docs/LIBRARY_V2_GUIDED_EXPERIENCE.md` | This file. |
+```
+gate  →  focus  →  intake_name  →  intake_birth  →  intake_place
+                              →  first_insight  →  shelf
+                                                       ↕
+                    history  ⇄  figure   recommendations   notes
+                                                            ↕
+                                                    note_compose
+                                                    note_detail
+```
 
-## 3. Production reachability
+Each screen has one primary CTA; `Esc`/focus/ARIA/44px touch/safe-area
+paddings and `prefers-reduced-motion` are all honoured. State persists
+in `localStorage` under `lod:library-v2:story-state:v1` so refresh
+resumes where the reader left off.
 
-- The route file `src/routes/dev.guided-library-v2.tsx` calls
-  `isGuidedLibraryV2PreviewAllowed({ hostname, isDev })` after mount and
-  renders a plain "Not available" screen unless one of these is true:
-  local dev (`import.meta.env.DEV`), `localhost` / `127.0.0.1` / `::1`,
-  or a Lovable id-preview host (`id-preview--*.lovable.app`).
-- The published domain (`fate-nexus-ai.lovable.app`) and every other
-  `*.lovable.app` host (or look-alikes such as
-  `id-preview--x.lovable.app.evil.com`) render "Not available".
-- The route is **not** listed in `src/routes/sitemap[.]xml.ts`.
-- The route ships `<meta name="robots" content="noindex,nofollow" />`.
-- SSR safety: `window` is only read inside `useEffect`; a brief
-  "LOADING PREVIEW…" placeholder covers hydration so V2 never flashes
-  on the production domain.
-- The demo banner and footer both stamp `LIBRARY_EXPERIENCE_VERSION` so
-  any accidental leak is visually obvious.
+## 3. Files
 
-## 4. Guided flow (10 requirement checklist)
+```
+src/experiences/library-v2/
+  version.ts             Frozen version constant.
+  preview-guard.ts       Pure guard (unchanged).
+  GuidedLibraryV2.tsx    Story-chain container + all screens.
+  fixtures.ts            Legacy V1-side helpers kept for the old contract test.
+  state.ts               Legacy card helpers kept for the old contract test.
+  library-v2.test.ts     Original contract tests (still pass).
+  story/
+    types.ts             Story types (Reader / Note / Figure / Insight).
+    state.ts             Pure intake state machine, age-band derivation, copy.
+    fixtures.ts          Books (7), historical figures (8), insights, seed notes.
+    matching.ts          Deterministic matching for figures / notes / recs.
+    privacy.ts           Public payload whitelist + assertNoBirthLeak.
+    storage.ts           Versioned localStorage helpers.
+    repository.ts        Fixture-backed repository (single seam for cloud mode).
+    story.test.ts        Story-chain unit tests.
 
-1. **Home.** Copy: “四种古老传统，共同读懂同一个你 / 从你此刻最关心的问题开始”.
-   CTA “开始认识自己” + hint “约 2 分钟 · 基础解读免费 · 结果可永久保存”.
-   Four themed books (事业 / 情感 / 财富 / 自我) plus **“不确定，让图书馆推荐”**
-   — the picked focus is stored in state and drives book ordering.
-2. **Four-step borrow card.** 称呼 → 出生日期时间 → 地点与性别 → 确认主题.
-   Each step: single-sentence purpose line, `n/4` progress dash, 返回 button,
-   inputs sized `text-[16px]` so mobile Safari does not auto-zoom. The `card`
-   state is shaped to be trivially mapped onto the existing ritual model
-   (name / birth_date / birth_time / place / gender) — no new calculation
-   logic is added here.
-3. **Archive transition.** Four traditions light up in sequence (~700 ms
-   each) then a “正在寻找共同的线索…” beat. Total budget ≤ ~4 s. A visible
-   **跳过动画** button jumps straight through, and
-   `prefers-reduced-motion: reduce` collapses the whole thing to ~400 ms
-   with all four already lit.
-4. **Library overview.** Focus-first recommendation. Six books:
-   《我是谁》《事业与天赋》《情感与关系》《财富与资源》《人生时间轴》《四体系命盘》.
-   Each tile shows icon, one-line verdict, read-minutes, and “打开 →”. The
-   header shows read progress `n / 6` and the next recommended book. All
-   copy is labelled as demo via the sticky top banner and footer strip.
-5. **Reader.** Default = quick read: 一句结论 · 3 关键词 · 现实里的样子 ·
-   一个建议 · 一个注意点. `展开深读` reveals four-system evidence,
-   consensus / tension, an evidence + confidence `<details>` block, and a
-   premium hook line. 事业 additionally renders 行业族群 / 岗位画像 /
-   组织环境; 情感 renders 情感需求 / 伴侣特质 / 冲突模式. The reader
-   does not promise 正缘 / 收益 / 疾病 — the fixture is asserted against
-   a forbidden-terms list in the tests.
-6. **Librarian tour.** Three cards, shown once on first arrival at the
-   library screen. Persisted via `localStorage['lod:library-v2:tour-seen']`.
-   After dismissal the tour collapses to a small ✦ bookmark button that
-   can re-open it. Copy explicitly separates the librarian (“只负责带路”)
-   from the tree-hollow companion (“树洞”).
-7. **Purpose strip.** Six short lines describing 基础报告 / 生命时间轴 /
-   长老对话 / 树洞 / 同门社区 / 高级 24 章. The premium row explicitly
-   reads “24 章 · 一次生成 · 账户内长期保存” and its CTA opens a note
-   card whose primary button is **disabled** with the label
-   `解锁完整报告 ¥79 · 预览禁用`.
-8. **Style.** Dark obsidian + gold-dust palette reused from V1 tokens
-   (`--obsidian`, `--gold-dust`, `--gold-light`, `--stone-warm`). No new
-   colors, no generic-SaaS layout, no big walls of text — every screen is
-   short-form with an obvious next action.
-9. **Viewports.** Container capped at `max-w-[1120px]`; content wraps
-   from 3 columns → 2 → 1 as the viewport narrows. Interactive controls
-   are `min-h-11` (44 px) and inputs are `text-[16px]` on mobile.
-   `env(safe-area-inset-top)` is respected on the top padding. Reduced
-   motion is honoured throughout the archive transition.
-10. **Tests + isolation.** `src/experiences/library-v2/library-v2.test.ts`
-    covers focus ordering, reading progress derivation, one-time tour
-    persistence, quick/deep content shape, forbidden marketing terms,
-    V1-file untouched-ness, and sitemap exclusion.
+supabase/pending/20260720_library_v2.sql
+  Pending migration for the future cloud backend (v2_* tables + RLS
+  + GRANTs + hard-purge scaffold). NOT executed automatically — the
+  Demo runs on the fixture repository. Apply through the migration
+  tool and flip BACKEND_MODE when ready.
+```
 
-## 5. What is still demo
+## 4. Story chain — screen checklist
 
-- Every string in `fixtures.ts` is placeholder copy. None of it is
-  computed from `premium_facts_v4`, western/vedic/bazi/ziwei calculators,
-  or the AI gateway.
-- The borrow card does not persist anywhere — leaving the page resets it.
-- The premium note button is disabled and never fires.
-- The librarian tour and read progress are per-browser (localStorage +
-  in-memory) and not tied to a user account.
+1. **Gate.** Full-height obsidian panel. Copy: “每一种文明，都在追问同一个问题 / 你，是谁？”, single CTA `步入图书馆`.
+   0.55 s golden halo transition; reduced-motion collapses to instant.
+2. **Focus.** Four cards (事业/情感/财富/近况), one strong question each. Selecting one reveals a personalised paragraph + `开始寻找答案`.
+3. **Intake (three steps).** 昵称+性别 / 出生日期+时间(可勾"不知道准确时间") / 出生城市. Each input is `text-[16px]` so mobile Safari never zooms; every step ≥44px controls; every step lets you go back one step.
+4. **First insight.** One strong Demo insight per topic + three drawers (为什么/怎么做/何时变化). Drawer traps focus, locks body scroll, closes on `Esc`, portals to `document.body`.
+5. **Shelf.** 7 books: `self / career / love / wealth / timeline / premium / sage`. Highlighted `你正在阅读` + up to two `推荐下一页`. Reading a book is Demo (quick + optional deep).
+6. **History echoes.** 8 curated fixture figures (mixed east/west, ages 25-49). Filters: 全部 / 东方 / 西方 / 做出不同选择的人. Detail view: 面对什么 / 如何选择 / 带来什么 / 代价 / 可迁移的经验 + 与你的关系(保留/停止/开始) + 来源占位 + 过度类比警示. Closing quote is fixed and required.
+7. **Recommendations.** ≤3 items derived from `age × topic × unread`. Each item shows `为什么推荐给我`. Topic is switchable inline.
+8. **Notes.** Public list scoped to the reader's topic. Compose covers audience mode (`similar / opposite / experienced / librarian`) + topic + body (≤800 chars) + optional single image (local `FileReader` preview, MIME + 5 MB guardrails, **never uploaded** in the Demo). Detail view lists structured replies; readers may reply, self-delete their own notes/replies.
 
-## 6. Switching to V2 as the primary experience
+## 5. Privacy invariants
 
-When V2 is ready to become the real product, do it in **exactly** this
-order to keep a safe rollback:
+- No V2 fixture, matcher, or public payload ever contains raw birth
+  date, birth time, city, gender or chart JSON. `privacy.ts`'s
+  `assertNoBirthLeak` runs on every `create*` call and is exercised in
+  `story.test.ts`.
+- `noteTraitsFor` returns only abstract phrases (`人生阶段相近 / 责任模式相似 / 互补视角 / 走过这段的人 / …`). No probabilities, no "same fate" claim.
+- Historical-figure matching is topic + age-band + tradition only; a `warning` field is required on every figure so the UI can print the过度类比 note.
 
-1. Wire the borrow card `card` state into the existing ritual store
-   (`src/lib/reading-engine.ts` / `src/routes/ritual.tsx`) — replace the
-   fixture handoff with a real `chart_id` lookup.
-2. Replace `DEMO_BOOKS` with a selector that reads
-   `premium_facts_v4` (see `src/lib/premium-facts.ts`) and derives the
-   six quick/deep sections from real, deterministic modules only.
-3. Re-enable the premium note CTA and route it into
-   `MockPaymentModal` / `simulateMockPremiumPayment` (still gated by
-   `PAYMENT_MODE=mock` until real payment lands).
-4. Promote the route: create `src/routes/library.tsx` (or repoint `/`)
-   that imports `GuidedLibraryV2`; keep `src/routes/dev.guided-library-v2.tsx`
-   as the staging surface until parity is confirmed.
-5. Only after the above four steps: add the new URL to
-   `src/routes/sitemap[.]xml.ts` and remove the demo banner + noindex.
+## 6. Cloud migration path
+
+When V2 is ready for production data:
+
+1. Run `supabase/pending/20260720_library_v2.sql` through the migration
+   tool and generate types.
+2. Flip `BACKEND_MODE` in `story/repository.ts` from `'fixture'` and
+   wire the equivalent server functions (`v2.list_notes`,
+   `v2.create_note`, etc.). All UI already routes through the
+   repository seam.
+3. Add a `functionMiddleware`-authenticated wrapper for note-writes;
+   surface public reads through a `TO anon` SELECT path already
+   defined in the migration.
+4. Only after cloud parity: consider promoting `/dev/guided-library-v2`
+   to a real URL (still off the sitemap by default).
 
 ## 7. Rollback
 
-If V2 needs to be pulled at any point:
+Because V1 has no dependency on V2, rollback is:
 
-1. Delete `src/routes/dev.guided-library-v2.tsx`
-   — the auto-generated `src/routeTree.gen.ts` will drop the route on
-   the next build.
-2. Delete `src/experiences/library-v2/` — V1 does not import from it.
-3. Delete `docs/LIBRARY_V2_GUIDED_EXPERIENCE.md`.
-4. Run `bun test` + `tsgo --noEmit`. Because V1 has no dependency on V2,
-   no other file needs to change.
+1. Delete `src/routes/dev.guided-library-v2.tsx`.
+2. Delete `src/experiences/library-v2/`.
+3. Delete `supabase/pending/20260720_library_v2.sql`.
+4. Delete this document.
 
-## 8. Non-goals (explicit)
-
-- Not a redesign of `/report` or the 24-chapter premium reader.
-- Not a replacement for the ritual flow's calculation engine — the
-  borrow-card component is shape-compatible but delegates all math to V1.
-- Not a marketing surface — the demo banner and disabled CTAs are
-  intentional and must stay until step 5 of §6 is executed.
+Nothing else needs to change.
