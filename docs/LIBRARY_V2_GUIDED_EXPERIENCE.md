@@ -10,7 +10,8 @@
 
 Guided Library V2 is a **second, parallel** landing-to-reader experience
 that lives entirely under `src/experiences/library-v2/` and is only
-reachable from the DEV-only preview route `/dev/guided-library-v2`.
+reachable from the **Lovable Preview / Local-only** route
+`/dev/guided-library-v2`.
 
 V1 (`/`, `/ritual`, `/report`, and everything else under `src/routes/`)
 is unchanged. V2 does not import V1 business logic, does not read/write
@@ -23,21 +24,29 @@ customer data, and never calls the AI gateway or payment endpoints.
 | `src/experiences/library-v2/version.ts` | Frozen version constant + focus type. |
 | `src/experiences/library-v2/fixtures.ts` | Six demo books + focus-ordered recommendations. All copy is fixture. |
 | `src/experiences/library-v2/state.ts` | Pure state helpers for the borrow-card / step machine. |
+| `src/experiences/library-v2/preview-guard.ts` | Pure `isGuidedLibraryV2PreviewAllowed({hostname,isDev})` used by the route. |
 | `src/experiences/library-v2/GuidedLibraryV2.tsx` | Root component: home → borrow card → archive → library → reader. |
-| `src/experiences/library-v2/library-v2.test.ts` | Focus ordering, card machine, book content contract, V1-isolation guards. |
-| `src/routes/dev.guided-library-v2.tsx` | Dev-only route, gated on `import.meta.env.DEV`. `robots: noindex,nofollow`. |
+| `src/experiences/library-v2/library-v2.test.ts` | Focus ordering, card machine, book content contract, preview-guard matrix, V1-isolation guards. |
+| `src/routes/dev.guided-library-v2.tsx` | Lovable Preview / Local-only route. Delegates to the guard, ships `robots: noindex,nofollow`. |
 | `docs/LIBRARY_V2_GUIDED_EXPERIENCE.md` | This file. |
 
 ## 3. Production reachability
 
-- The route file `src/routes/dev.guided-library-v2.tsx` renders a plain
-  "Not available" screen whenever `import.meta.env.DEV` is falsy. On the
-  published site this is always false, so the V2 component tree is
-  effectively 404.
+- The route file `src/routes/dev.guided-library-v2.tsx` calls
+  `isGuidedLibraryV2PreviewAllowed({ hostname, isDev })` after mount and
+  renders a plain "Not available" screen unless one of these is true:
+  local dev (`import.meta.env.DEV`), `localhost` / `127.0.0.1` / `::1`,
+  or a Lovable id-preview host (`id-preview--*.lovable.app`).
+- The published domain (`fate-nexus-ai.lovable.app`) and every other
+  `*.lovable.app` host (or look-alikes such as
+  `id-preview--x.lovable.app.evil.com`) render "Not available".
 - The route is **not** listed in `src/routes/sitemap[.]xml.ts`.
 - The route ships `<meta name="robots" content="noindex,nofollow" />`.
+- SSR safety: `window` is only read inside `useEffect`; a brief
+  "LOADING PREVIEW…" placeholder covers hydration so V2 never flashes
+  on the production domain.
 - The demo banner and footer both stamp `LIBRARY_EXPERIENCE_VERSION` so
-  any accidental production leak is visually obvious.
+  any accidental leak is visually obvious.
 
 ## 4. Guided flow (10 requirement checklist)
 
