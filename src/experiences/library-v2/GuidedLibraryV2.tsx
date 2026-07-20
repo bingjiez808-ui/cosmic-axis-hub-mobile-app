@@ -2157,7 +2157,12 @@ function NoteCompose({
   onCancel: () => void;
   onSubmit: () => void;
 }) {
-  const [topic, setTopic] = useState<StoryTopic>(profile.topic ?? "career");
+  // Notes require a concrete StoryTopic (love/career/wealth/recent).
+  // For panoramic readers, default to `recent` — the least directional
+  // bucket — so we don't push panoramic authors into the career bucket.
+  const initialTopic: StoryTopic =
+    profile.topic && profile.topic !== "overview" ? profile.topic : "recent";
+  const [topic, setTopic] = useState<StoryTopic>(initialTopic);
   const [audience, setAudience] = useState<NoteAudience>("similar");
   const [body, setBody] = useState("");
   const [imgUrl, setImgUrl] = useState<string | null>(null);
