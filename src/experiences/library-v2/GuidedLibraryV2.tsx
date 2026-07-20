@@ -747,8 +747,8 @@ function DestinyMap({
   onConfirm,
   reducedMotion,
 }: {
-  topic: StoryTopic | null;
-  onConfirm: (t: StoryTopic, overview: boolean) => void;
+  topic: FocusChoice | null;
+  onConfirm: (t: FocusChoice) => void;
   reducedMotion?: boolean;
 }) {
   // Which node the reader is *previewing* right now (may differ from the
