@@ -390,6 +390,38 @@ function Footer() {
   );
 }
 
+function UndoToastPortal({
+  toast,
+  onDismiss,
+}: {
+  toast: UndoToast | null;
+  onDismiss: () => void;
+}) {
+  if (!toast) return null;
+  if (typeof document === "undefined") return null;
+  return createPortal(
+    <div
+      role="status"
+      aria-live="polite"
+      className="fixed bottom-6 left-1/2 z-[80] -translate-x-1/2 rounded-full border border-gold-dust/30 bg-obsidian/95 px-4 py-2 text-xs text-stone-warm shadow-lg backdrop-blur"
+    >
+      <span className="mr-3">{toast.label}</span>
+      <button
+        type="button"
+        onClick={() => {
+          toast.action();
+          onDismiss();
+        }}
+        className="font-mono text-[10px] uppercase tracking-[0.3em] text-gold-dust hover:text-gold-dust/80"
+      >
+        撤销
+      </button>
+    </div>,
+    document.body,
+  );
+}
+
+
 // ---------------- 1. Gate ----------------
 function Gate({
   onEnter,
