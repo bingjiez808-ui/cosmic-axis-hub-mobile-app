@@ -25,6 +25,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthIndexRouteImport } from './routes/auth.index'
 import { Route as DevReaderHarnessRouteImport } from './routes/dev.reader-harness'
+import { Route as DevGuidedLibraryV2RouteImport } from './routes/dev.guided-library-v2'
 import { Route as DevDemoPremiumRouteImport } from './routes/dev.demo-premium'
 import { Route as AuthResetRouteImport } from './routes/auth.reset'
 import { Route as ApiGenerateAvatarRouteImport } from './routes/api/generate-avatar'
@@ -113,6 +114,11 @@ const DevReaderHarnessRoute = DevReaderHarnessRouteImport.update({
   path: '/dev/reader-harness',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DevGuidedLibraryV2Route = DevGuidedLibraryV2RouteImport.update({
+  id: '/dev/guided-library-v2',
+  path: '/dev/guided-library-v2',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DevDemoPremiumRoute = DevDemoPremiumRouteImport.update({
   id: '/dev/demo-premium',
   path: '/dev/demo-premium',
@@ -177,6 +183,7 @@ export interface FileRoutesByFullPath {
   '/api/generate-avatar': typeof ApiGenerateAvatarRoute
   '/auth/reset': typeof AuthResetRoute
   '/dev/demo-premium': typeof DevDemoPremiumRoute
+  '/dev/guided-library-v2': typeof DevGuidedLibraryV2Route
   '/dev/reader-harness': typeof DevReaderHarnessRoute
   '/auth/': typeof AuthIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -201,6 +208,7 @@ export interface FileRoutesByTo {
   '/api/generate-avatar': typeof ApiGenerateAvatarRoute
   '/auth/reset': typeof AuthResetRoute
   '/dev/demo-premium': typeof DevDemoPremiumRoute
+  '/dev/guided-library-v2': typeof DevGuidedLibraryV2Route
   '/dev/reader-harness': typeof DevReaderHarnessRoute
   '/auth': typeof AuthIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -228,6 +236,7 @@ export interface FileRoutesById {
   '/api/generate-avatar': typeof ApiGenerateAvatarRoute
   '/auth/reset': typeof AuthResetRoute
   '/dev/demo-premium': typeof DevDemoPremiumRoute
+  '/dev/guided-library-v2': typeof DevGuidedLibraryV2Route
   '/dev/reader-harness': typeof DevReaderHarnessRoute
   '/auth/': typeof AuthIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -255,6 +264,7 @@ export interface FileRouteTypes {
     | '/api/generate-avatar'
     | '/auth/reset'
     | '/dev/demo-premium'
+    | '/dev/guided-library-v2'
     | '/dev/reader-harness'
     | '/auth/'
     | '/.lovable/oauth/consent'
@@ -279,6 +289,7 @@ export interface FileRouteTypes {
     | '/api/generate-avatar'
     | '/auth/reset'
     | '/dev/demo-premium'
+    | '/dev/guided-library-v2'
     | '/dev/reader-harness'
     | '/auth'
     | '/.lovable/oauth/consent'
@@ -305,6 +316,7 @@ export interface FileRouteTypes {
     | '/api/generate-avatar'
     | '/auth/reset'
     | '/dev/demo-premium'
+    | '/dev/guided-library-v2'
     | '/dev/reader-harness'
     | '/auth/'
     | '/.lovable/oauth/consent'
@@ -330,6 +342,7 @@ export interface RootRouteChildren {
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   ApiGenerateAvatarRoute: typeof ApiGenerateAvatarRoute
   DevDemoPremiumRoute: typeof DevDemoPremiumRoute
+  DevGuidedLibraryV2Route: typeof DevGuidedLibraryV2Route
   DevReaderHarnessRoute: typeof DevReaderHarnessRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -449,6 +462,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DevReaderHarnessRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dev/guided-library-v2': {
+      id: '/dev/guided-library-v2'
+      path: '/dev/guided-library-v2'
+      fullPath: '/dev/guided-library-v2'
+      preLoaderRoute: typeof DevGuidedLibraryV2RouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dev/demo-premium': {
       id: '/dev/demo-premium'
       path: '/dev/demo-premium'
@@ -551,6 +571,7 @@ const rootRouteChildren: RootRouteChildren = {
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   ApiGenerateAvatarRoute: ApiGenerateAvatarRoute,
   DevDemoPremiumRoute: DevDemoPremiumRoute,
+  DevGuidedLibraryV2Route: DevGuidedLibraryV2Route,
   DevReaderHarnessRoute: DevReaderHarnessRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
