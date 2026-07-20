@@ -9,6 +9,7 @@
 import { FIGURES } from "./fixtures";
 import type {
   AgeBand,
+  FocusChoice,
   HistoricalFigure,
   HistoryFilter,
   Note,
