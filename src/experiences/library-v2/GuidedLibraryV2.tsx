@@ -1489,6 +1489,79 @@ function Recommendations({
   );
 }
 
+function RecommendationList({
+  recs,
+  onOpenBook,
+}: {
+  recs: ReturnType<typeof recommendNext>;
+  onOpenBook: (ref: BookRef) => void;
+}) {
+  if (recs.length === 0) {
+    return (
+      <p className="mt-6 text-sm text-stone-warm/60">
+        你已经读完了主线的书,换个主题试试。
+      </p>
+    );
+  }
+  return (
+    <div className="mt-6 space-y-3">
+      {recs.map((r) => (
+        <RecommendationCard key={r.id} r={r} onOpenBook={onOpenBook} />
+      ))}
+    </div>
+  );
+}
+
+function RecommendationCard({
+  r,
+  onOpenBook,
+}: {
+  r: ReturnType<typeof recommendNext>[number];
+  onOpenBook: (ref: BookRef) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative rounded-2xl border border-stone-warm/15 p-5 hover:border-gold-dust/40">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="absolute right-4 top-4 min-h-9 rounded-full border border-gold-dust/30 px-3 text-[10px] tracking-[0.2em] text-gold-dust hover:bg-gold-dust/10"
+      >
+        {open ? "收起" : "为什么推荐"}
+      </button>
+      <p className="font-mono text-[10px] tracking-[0.3em] text-gold-dust">
+        {r.kind === "book" ? "书籍" : r.kind === "figure" ? "人物" : "纸条"}
+      </p>
+      <h3 className="mt-2 font-serif text-lg text-stone-warm">{r.title}</h3>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.p
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={TRANSITION.fadeShort}
+            className="mt-3 overflow-hidden rounded-lg border border-gold-dust/20 bg-gold-dust/5 p-3 text-sm text-stone-warm/85"
+          >
+            {r.reason}
+          </motion.p>
+        )}
+      </AnimatePresence>
+      {r.kind === "book" && (
+        <button
+          type="button"
+          onClick={() => onOpenBook(r.ref as BookRef)}
+          className="mt-3 min-h-11 rounded-full bg-gold-dust px-4 text-sm text-obsidian hover:bg-gold-light"
+        >
+          打开这一本 →
+        </button>
+      )}
+    </div>
+  );
+}
+
+
+
 // ---------------- 8. Notes ----------------
 function NotesArea({
   state,
