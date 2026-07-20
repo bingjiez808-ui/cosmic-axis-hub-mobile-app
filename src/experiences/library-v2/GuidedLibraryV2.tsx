@@ -1,952 +1,1559 @@
 /**
- * Guided Library V2 — main container.
+ * Guided Library V2 — story-chain container.
  *
- * DEMO ONLY. All copy and evidence in this file are fixtures. This
- * component MUST NOT read/write real user data, call the AI gateway, or
- * touch payment endpoints.
- *
- * The V1 marketing/product surface (/, /ritual, /report, ...) is not
- * imported here — V2 is fully self-contained so V1 stays byte-identical
- * while V2 evolves.
+ * DEMO ONLY. Fixture data + local persistence. No AI, no payment, no
+ * writes to V1 tables. V1 pages (`/`, `/ritual`, `/report`, ...) are
+ * completely untouched by this file — nothing here imports from V1.
  */
-import { useEffect, useMemo, useRef, useState } from "react";
-import { LIBRARY_EXPERIENCE_VERSION, type LibraryFocus } from "./version";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { LIBRARY_EXPERIENCE_VERSION } from "./version";
 import {
-  DEMO_BOOKS,
+  BOOKS,
+  CLOSING_QUOTE,
   DEMO_FIXTURE,
-  FOCUS_CARDS,
-  TRADITIONS,
-  nextBookAfter,
-  recommendedOrderFor,
-  type BookKey,
-  type DemoBook,
-} from "./fixtures";
+  FIGURES,
+  INSIGHT_BY_TOPIC,
+  bookByRef,
+} from "./story/fixtures";
 import {
-  INITIAL_STATE,
-  cardProgress,
-  isCardStepValid,
-  nextStep,
-  prevStep,
-  type BorrowCard,
-  type GuidedState,
-  type Step,
-} from "./state";
+  DEMO_PROFILE,
+  INITIAL_STORY_STATE,
+  ageBandFromDate,
+  intakeProgress,
+  isIntakeStepValid,
+  nextIntakeStep,
+  prevIntakeStep,
+  topicLabel,
+  topicPersonal,
+  topicQuestion,
+} from "./story/state";
+import type {
+  BookRef,
+  HistoricalFigure,
+  Note,
+  NoteAudience,
+  ReaderProfile,
+  StoryStateV1,
+  StoryStep,
+  StoryTopic,
+} from "./story/types";
+import {
+  matchFigures,
+  matchNotes,
+  recommendNext,
+} from "./story/matching";
+import {
+  createNote,
+  createReply,
+  listNotes,
+  listReplies,
+  softDeleteNote,
+  softDeleteReply,
+} from "./story/repository";
+import {
+  clearStoryState,
+  loadStoryState,
+  saveStoryState,
+} from "./story/storage";
+import { readerPublicNickname } from "./story/privacy";
 
-const TOUR_STORAGE_KEY = "lod:library-v2:tour-seen";
+// ---------------- Persistent local actor id (Demo only) ----------------
+const ACTOR_KEY = "lod:library-v2:actor-id";
+function getActorId(): string {
+  if (typeof window === "undefined") return "demo-actor";
+  let id = window.localStorage.getItem(ACTOR_KEY);
+  if (!id) {
+    id = `demo-${Math.random().toString(36).slice(2, 10)}`;
+    window.localStorage.setItem(ACTOR_KEY, id);
+  }
+  return id;
+}
 
-// -----------------------------------------------------------------------
-// Root
-// -----------------------------------------------------------------------
+// ---------------- Root ----------------
 export function GuidedLibraryV2() {
-  const [state, setState] = useState<GuidedState>(() => ({ ...INITIAL_STATE }));
-  const [tourOpen, setTourOpen] = useState(false);
+  const [state, setState] = useState<StoryStateV1>(() => ({
+    ...INITIAL_STORY_STATE,
+  }));
+  const [hydrated, setHydrated] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
+  const actorId = useMemo(() => getActorId(), []);
 
-  // Detect prefers-reduced-motion once. Timeline animations must respect this.
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setReducedMotion(mq.matches);
-    const handler = () => setReducedMotion(mq.matches);
-    mq.addEventListener?.("change", handler);
-    return () => mq.removeEventListener?.("change", handler);
-  }, []);
-
-  // First-time librarian tour: exactly once per browser, then collapse to a
-  // bookmark. Persist in localStorage but load lazily so SSR is stable.
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const seen = window.localStorage.getItem(TOUR_STORAGE_KEY) === "1";
-    if (seen) {
-      setState((s) => ({ ...s, tourSeen: true }));
-    }
-  }, []);
-
-  // Open the tour once when the user lands on the library screen.
-  useEffect(() => {
-    if (state.step === "library" && !state.tourSeen) setTourOpen(true);
-  }, [state.step, state.tourSeen]);
-
-  const dismissTour = () => {
-    setTourOpen(false);
-    setState((s) => ({ ...s, tourSeen: true }));
+    const loaded = loadStoryState();
+    setState(loaded);
+    setHydrated(true);
     if (typeof window !== "undefined") {
-      window.localStorage.setItem(TOUR_STORAGE_KEY, "1");
+      const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+      setReducedMotion(mq.matches);
+      const h = () => setReducedMotion(mq.matches);
+      mq.addEventListener?.("change", h);
+      return () => mq.removeEventListener?.("change", h);
     }
+  }, []);
+
+  useEffect(() => {
+    if (hydrated) saveStoryState(state);
+  }, [state, hydrated]);
+
+  const patchProfile = (p: Partial<ReaderProfile>) =>
+    setState((s) => ({ ...s, profile: { ...s.profile, ...p } }));
+
+  const goto = (step: StoryStep) => setState((s) => ({ ...s, step }));
+
+  const restart = () => {
+    clearStoryState();
+    setState({ ...INITIAL_STORY_STATE });
   };
 
-  const openBook = (key: BookKey) =>
-    setState((s) => ({ ...s, step: "book", activeBook: key, mode: "quick" }));
+  const useDemoProfile = () => {
+    setState((s) => ({
+      ...s,
+      profile: { ...DEMO_PROFILE, age_band: ageBandFromDate(DEMO_PROFILE.birth_date) },
+    }));
+  };
 
   return (
     <div className="min-h-[100dvh] bg-obsidian text-stone-warm">
-      <DemoBanner />
-      <div
-        className="relative mx-auto w-full max-w-[1120px] px-4 pb-24 pt-6 sm:px-6"
-        style={{ paddingTop: "max(1.5rem, env(safe-area-inset-top))" }}
-      >
-        {state.step === "home" && (
-          <HomeStep
-            onPick={(focus) =>
-              setState((s) => ({ ...s, focus, step: "card_name" }))
-            }
+      <TopBar
+        step={state.step}
+        onRestart={restart}
+        onDemo={useDemoProfile}
+        onHome={() => goto("gate")}
+      />
+      <main className="mx-auto w-full max-w-[1100px] px-5 pb-24 pt-6 sm:px-8">
+        {state.step === "gate" && <Gate onEnter={() => goto("focus")} reducedMotion={reducedMotion} />}
+        {state.step === "focus" && (
+          <FocusPick
+            topic={state.profile.topic}
+            onPick={(t) => patchProfile({ topic: t })}
+            onNext={() => goto("intake_name")}
           />
         )}
-
-        {state.step.startsWith("card_") && (
-          <BorrowCardStep
-            state={state}
-            onChange={(card) => setState((s) => ({ ...s, card }))}
-            onNext={() =>
-              setState((s) => ({
-                ...s,
-                step: s.step === "card_confirm" ? "archive" : nextStep(s.step),
-              }))
-            }
-            onBack={() =>
-              setState((s) => ({ ...s, step: prevStep(s.step) }))
-            }
-          />
-        )}
-
-        {state.step === "archive" && (
-          <ArchiveTransition
-            reducedMotion={reducedMotion}
-            onDone={() => setState((s) => ({ ...s, step: "library" }))}
-          />
-        )}
-
-        {state.step === "library" && (
-          <LibraryOverview
-            focus={state.focus!}
-            read={state.read}
-            onOpen={openBook}
-            onOpenPremiumNote={() =>
-              setState((s) => ({ ...s, step: "premium_note" }))
-            }
-            tourSeen={state.tourSeen}
-            onOpenBookmark={() => setTourOpen(true)}
-          />
-        )}
-
-        {state.step === "book" && state.activeBook && (
-          <BookReader
-            book={DEMO_BOOKS.find((b) => b.key === state.activeBook)!}
-            mode={state.mode}
-            onToggleMode={() =>
-              setState((s) => ({ ...s, mode: s.mode === "quick" ? "deep" : "quick" }))
-            }
-            onBack={() =>
-              setState((s) => {
-                const read = new Set(s.read);
-                if (s.activeBook) read.add(s.activeBook);
-                return { ...s, step: "library", read };
-              })
-            }
-            next={
-              state.activeBook && state.focus
-                ? nextBookAfter(state.focus, state.activeBook)
-                : null
-            }
-            onNext={(key) => {
-              setState((s) => {
-                const read = new Set(s.read);
-                if (s.activeBook) read.add(s.activeBook);
-                return { ...s, activeBook: key, mode: "quick", read };
-              });
+        {(state.step === "intake_name"
+          || state.step === "intake_birth"
+          || state.step === "intake_place") && (
+          <Intake
+            step={state.step}
+            profile={state.profile}
+            onChange={patchProfile}
+            onBack={() => goto(prevIntakeStep(state.step))}
+            onNext={() => {
+              if (state.step === "intake_place") {
+                const ab = ageBandFromDate(state.profile.birth_date);
+                patchProfile({ age_band: ab });
+              }
+              goto(nextIntakeStep(state.step));
             }}
           />
         )}
-
-        {state.step === "premium_note" && (
-          <PremiumNote onBack={() => setState((s) => ({ ...s, step: "library" }))} />
+        {state.step === "first_insight" && state.profile.topic && (
+          <FirstInsight
+            topic={state.profile.topic}
+            onNext={() => goto("shelf")}
+          />
         )}
-
-        <FooterMeta />
-      </div>
-
-      {tourOpen && <LibrarianTour onDone={dismissTour} />}
+        {state.step === "shelf" && (
+          <Shelf
+            profile={state.profile}
+            readBooks={state.read_books}
+            onOpenBook={(ref) => {
+              setState((s) => ({
+                ...s,
+                step: "book",
+                active_book: ref,
+                read_books: s.read_books.includes(ref)
+                  ? s.read_books
+                  : [...s.read_books, ref],
+                reading_history: [
+                  ...s.reading_history,
+                  { kind: "book_opened", ref, at: Date.now() },
+                ],
+              }));
+            }}
+            onHistory={() => goto("history")}
+            onRecommend={() => goto("recommendations")}
+            onNotes={() => goto("notes")}
+          />
+        )}
+        {state.step === "book" && state.active_book && (
+          <BookReader
+            ref={state.active_book}
+            onBack={() => goto("shelf")}
+          />
+        )}
+        {state.step === "history" && (
+          <History
+            profile={state.profile}
+            filter={state.history_filter}
+            onFilter={(f) => setState((s) => ({ ...s, history_filter: f }))}
+            onOpen={(id) => setState((s) => ({ ...s, step: "figure", active_figure_id: id }))}
+            onBack={() => goto("shelf")}
+          />
+        )}
+        {state.step === "figure" && state.active_figure_id && (
+          <FigureDetail
+            id={state.active_figure_id}
+            onBack={() => goto("history")}
+          />
+        )}
+        {state.step === "recommendations" && (
+          <Recommendations
+            profile={state.profile}
+            readBookRefs={state.read_books}
+            onChangeTopic={(t) => patchProfile({ topic: t })}
+            onOpenBook={(ref) => {
+              setState((s) => ({
+                ...s,
+                step: "book",
+                active_book: ref,
+                read_books: s.read_books.includes(ref) ? s.read_books : [...s.read_books, ref],
+              }));
+            }}
+            onBack={() => goto("shelf")}
+          />
+        )}
+        {(state.step === "notes"
+          || state.step === "note_compose"
+          || state.step === "note_detail") && (
+          <NotesArea
+            state={state}
+            actorId={actorId}
+            setState={setState}
+            goto={goto}
+          />
+        )}
+      </main>
+      <Footer />
     </div>
   );
 }
 
-// -----------------------------------------------------------------------
-// Demo banner + footer
-// -----------------------------------------------------------------------
-function DemoBanner() {
+// ---------------- TopBar ----------------
+function TopBar({
+  step,
+  onRestart,
+  onDemo,
+  onHome,
+}: {
+  step: StoryStep;
+  onRestart: () => void;
+  onDemo: () => void;
+  onHome: () => void;
+}) {
   return (
     <div
-      role="status"
-      className="sticky top-0 z-40 border-b border-gold-dust/25 bg-obsidian/95 px-4 py-2 text-center text-[11px] tracking-[0.24em] text-gold-dust backdrop-blur-md"
+      className="sticky top-0 z-30 border-b border-gold-dust/15 bg-obsidian/85 backdrop-blur"
+      style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
-      DEMO · {LIBRARY_EXPERIENCE_VERSION}
-      {DEMO_FIXTURE ? " · 演示数据 / fixture" : ""}
-    </div>
-  );
-}
-
-function FooterMeta() {
-  return (
-    <div className="mt-16 border-t border-white/5 pt-6 text-center text-[10px] uppercase tracking-[0.28em] text-stone-warm/40">
-      Guided Library V2 · 仅供预览 · 未连接账户、AI 或支付
-    </div>
-  );
-}
-
-// -----------------------------------------------------------------------
-// Home
-// -----------------------------------------------------------------------
-function HomeStep({ onPick }: { onPick: (f: LibraryFocus) => void }) {
-  return (
-    <section className="grid gap-10 pt-6 sm:pt-12">
-      <header className="max-w-2xl">
-        <p className="font-mono text-[10px] tracking-[0.4em] text-gold-dust">
-          THE LIBRARY OF DESTINY · V2
-        </p>
-        <h1 className="mt-3 font-serif text-[clamp(2rem,5vw,3.25rem)] leading-tight text-stone-warm">
-          四种古老传统，
-          <br className="hidden sm:block" />
-          共同读懂同一个你。
-        </h1>
-        <p className="mt-4 max-w-lg text-base leading-relaxed text-stone-warm/75 sm:text-lg">
-          从你此刻最关心的问题开始。西方占星、印度吠陀、中国八字、紫微斗数
-          汇成同一份阅读。
-        </p>
-        <p className="mt-2 text-xs uppercase tracking-[0.28em] text-stone-warm/45">
-          约 2 分钟 · 基础解读免费 · 结果可永久保存
-        </p>
-      </header>
-
-      <div>
-        <p className="mb-4 text-sm text-stone-warm/60">选择一本你想先翻开的书：</p>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {FOCUS_CARDS.map((f) => (
-            <button
-              key={f.key}
-              type="button"
-              onClick={() => onPick(f.key)}
-              className="group flex min-h-[88px] items-center gap-4 rounded-2xl border border-gold-dust/20 bg-white/[0.02] p-5 text-left transition-all hover:border-gold-dust/60 hover:bg-gold-dust/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-dust"
-            >
-              <span
-                aria-hidden="true"
-                className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-gold-dust/40 text-xl text-gold-dust transition-colors group-hover:bg-gold-dust/10"
-              >
-                {f.glyph}
-              </span>
-              <span className="min-w-0">
-                <span className="block truncate font-serif text-xl text-stone-warm">
-                  {f.title_zh}
-                </span>
-                <span className="mt-0.5 block truncate text-xs tracking-wide text-stone-warm/55">
-                  {f.subtitle_zh}
-                </span>
-              </span>
-            </button>
-          ))}
-        </div>
-
+      <div className="mx-auto flex max-w-[1100px] flex-wrap items-center justify-between gap-2 px-5 py-2.5 sm:px-8">
         <button
           type="button"
-          onClick={() => onPick("unsure")}
-          className="mt-8 inline-flex min-h-11 items-center justify-center rounded-full bg-gold-dust px-7 py-3 text-sm font-medium tracking-widest text-obsidian transition-colors hover:bg-gold-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-dust focus-visible:ring-offset-2 focus-visible:ring-offset-obsidian"
+          onClick={onHome}
+          className="min-h-11 font-mono text-[10px] tracking-[0.35em] text-gold-dust"
         >
-          开始认识自己
+          ✦ 命运图书馆 · DEMO
         </button>
-      </div>
-    </section>
-  );
-}
-
-// -----------------------------------------------------------------------
-// Borrow card (4 steps)
-// -----------------------------------------------------------------------
-function BorrowCardStep({
-  state,
-  onChange,
-  onNext,
-  onBack,
-}: {
-  state: GuidedState;
-  onChange: (card: BorrowCard) => void;
-  onNext: () => void;
-  onBack: () => void;
-}) {
-  const progress = cardProgress(state.step)!;
-  const valid = isCardStepValid(state.step, state.card);
-  const purposeCopy: Record<string, string> = {
-    card_name: "我们只用这个称呼在馆内向你打招呼。",
-    card_birth: "决定四张盘的落点，越准越好；不确定时段可先选大致时段。",
-    card_place: "计算真太阳时与地方分野；性别只影响紫微与部分传统体系。",
-    card_confirm: "确认无误后进入馆藏整理阶段——这是唯一一步无法修改的地方。",
-  };
-
-  return (
-    <section className="grid gap-8 pt-6 sm:pt-10">
-      <header className="grid gap-3">
-        <div className="flex items-center gap-3 text-[11px] uppercase tracking-[0.28em] text-stone-warm/55">
-          <span>借阅证 · {progress.index} / {progress.total}</span>
-          <span className="h-px flex-1 bg-gradient-to-r from-gold-dust/60 to-transparent" />
-        </div>
-        <h2 className="font-serif text-2xl text-stone-warm sm:text-3xl">
-          {state.step === "card_name" && "你想让我们怎么称呼你？"}
-          {state.step === "card_birth" && "你出生的那一刻。"}
-          {state.step === "card_place" && "出生的地方，与你的性别。"}
-          {state.step === "card_confirm" && "确认你的借阅证。"}
-        </h2>
-        <p className="text-sm text-stone-warm/60">{purposeCopy[state.step]}</p>
-      </header>
-
-      <div className="grid gap-4 rounded-2xl border border-gold-dust/20 bg-white/[0.02] p-5 sm:p-7">
-        {state.step === "card_name" && (
-          <label className="block">
-            <span className="mb-2 block text-xs uppercase tracking-[0.24em] text-stone-warm/55">
-              称呼
-            </span>
-            <input
-              type="text"
-              autoComplete="off"
-              value={state.card.name}
-              onChange={(e) => onChange({ ...state.card, name: e.target.value })}
-              placeholder="例如：小溪"
-              className="w-full rounded-xl border border-white/10 bg-obsidian/40 px-4 py-3 text-[16px] text-stone-warm placeholder:text-stone-warm/30 focus:border-gold-dust focus:outline-none"
-            />
-          </label>
-        )}
-
-        {state.step === "card_birth" && (
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="block">
-              <span className="mb-2 block text-xs uppercase tracking-[0.24em] text-stone-warm/55">
-                出生日期
-              </span>
-              <input
-                type="date"
-                value={state.card.birth_date}
-                onChange={(e) => onChange({ ...state.card, birth_date: e.target.value })}
-                className="w-full rounded-xl border border-white/10 bg-obsidian/40 px-4 py-3 text-[16px] text-stone-warm focus:border-gold-dust focus:outline-none"
-              />
-            </label>
-            <label className="block">
-              <span className="mb-2 block text-xs uppercase tracking-[0.24em] text-stone-warm/55">
-                出生时间
-              </span>
-              <input
-                type="time"
-                value={state.card.birth_time}
-                onChange={(e) => onChange({ ...state.card, birth_time: e.target.value })}
-                className="w-full rounded-xl border border-white/10 bg-obsidian/40 px-4 py-3 text-[16px] text-stone-warm focus:border-gold-dust focus:outline-none"
-              />
-            </label>
-          </div>
-        )}
-
-        {state.step === "card_place" && (
-          <div className="grid gap-4">
-            <label className="block">
-              <span className="mb-2 block text-xs uppercase tracking-[0.24em] text-stone-warm/55">
-                出生地点
-              </span>
-              <input
-                type="text"
-                autoComplete="off"
-                value={state.card.place}
-                onChange={(e) => onChange({ ...state.card, place: e.target.value })}
-                placeholder="例如：杭州"
-                className="w-full rounded-xl border border-white/10 bg-obsidian/40 px-4 py-3 text-[16px] text-stone-warm placeholder:text-stone-warm/30 focus:border-gold-dust focus:outline-none"
-              />
-            </label>
-            <fieldset>
-              <legend className="mb-2 text-xs uppercase tracking-[0.24em] text-stone-warm/55">
-                性别 · 仅用于紫微与部分传统
-              </legend>
-              <div className="grid grid-cols-3 gap-2">
-                {(["female", "male", "other"] as const).map((g) => (
-                  <button
-                    key={g}
-                    type="button"
-                    onClick={() => onChange({ ...state.card, gender: g })}
-                    aria-pressed={state.card.gender === g}
-                    className={`min-h-11 rounded-xl border px-3 py-3 text-sm transition-colors ${
-                      state.card.gender === g
-                        ? "border-gold-dust bg-gold-dust/10 text-gold-light"
-                        : "border-white/10 text-stone-warm/70 hover:border-gold-dust/50"
-                    }`}
-                  >
-                    {g === "female" ? "女" : g === "male" ? "男" : "其他"}
-                  </button>
-                ))}
-              </div>
-            </fieldset>
-          </div>
-        )}
-
-        {state.step === "card_confirm" && (
-          <dl className="grid gap-3 text-sm text-stone-warm/85">
-            <ConfirmRow label="称呼" value={state.card.name} />
-            <ConfirmRow
-              label="出生"
-              value={`${state.card.birth_date || "—"} ${state.card.birth_time || ""}`}
-            />
-            <ConfirmRow label="地点" value={state.card.place} />
-            <ConfirmRow
-              label="性别"
-              value={
-                state.card.gender === "female"
-                  ? "女"
-                  : state.card.gender === "male"
-                    ? "男"
-                    : state.card.gender === "other"
-                      ? "其他"
-                      : "—"
-              }
-            />
-          </dl>
-        )}
-      </div>
-
-      <div className="flex items-center justify-between gap-3">
-        <button
-          type="button"
-          onClick={onBack}
-          className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/15 px-5 py-3 text-xs uppercase tracking-[0.24em] text-stone-warm/70 transition-colors hover:border-gold-dust/60 hover:text-gold-dust"
-        >
-          返回
-        </button>
-        <button
-          type="button"
-          onClick={onNext}
-          disabled={!valid}
-          className="inline-flex min-h-11 items-center justify-center rounded-full bg-gold-dust px-7 py-3 text-sm font-medium tracking-widest text-obsidian transition-colors hover:bg-gold-light disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          {state.step === "card_confirm" ? "整理馆藏" : "下一步"}
-        </button>
-      </div>
-    </section>
-  );
-}
-
-function ConfirmRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="grid grid-cols-[minmax(0,5rem)_minmax(0,1fr)] gap-3 border-b border-white/5 pb-2 last:border-none last:pb-0">
-      <dt className="text-xs uppercase tracking-[0.24em] text-stone-warm/50">{label}</dt>
-      <dd className="min-w-0 truncate">{value || "—"}</dd>
-    </div>
-  );
-}
-
-// -----------------------------------------------------------------------
-// Archive transition
-// -----------------------------------------------------------------------
-function ArchiveTransition({
-  reducedMotion,
-  onDone,
-}: {
-  reducedMotion: boolean;
-  onDone: () => void;
-}) {
-  const [lit, setLit] = useState<number>(reducedMotion ? TRADITIONS.length : 0);
-  const doneRef = useRef(false);
-
-  useEffect(() => {
-    if (reducedMotion) {
-      const t = setTimeout(() => {
-        if (!doneRef.current) {
-          doneRef.current = true;
-          onDone();
-        }
-      }, 400);
-      return () => clearTimeout(t);
-    }
-    const timers: ReturnType<typeof setTimeout>[] = [];
-    TRADITIONS.forEach((_, i) => {
-      timers.push(setTimeout(() => setLit(i + 1), 700 * (i + 1)));
-    });
-    timers.push(
-      setTimeout(() => {
-        if (!doneRef.current) {
-          doneRef.current = true;
-          onDone();
-        }
-      }, 3800),
-    );
-    return () => timers.forEach(clearTimeout);
-  }, [reducedMotion, onDone]);
-
-  return (
-    <section className="grid min-h-[60vh] place-items-center pt-6">
-      <div className="w-full max-w-lg text-center">
-        <p className="font-mono text-[10px] uppercase tracking-[0.4em] text-gold-dust">
-          馆藏整理中
-        </p>
-        <h2 className="mt-3 font-serif text-2xl text-stone-warm sm:text-3xl">
-          正在为你合上四本古书。
-        </h2>
-
-        <ul className="mt-8 grid gap-3">
-          {TRADITIONS.map((t, i) => {
-            const on = i < lit;
-            return (
-              <li
-                key={t.key}
-                className={`flex items-center gap-3 rounded-full border px-4 py-3 text-left transition-all ${
-                  on
-                    ? "border-gold-dust/60 bg-gold-dust/10"
-                    : "border-white/10 bg-white/[0.02]"
-                }`}
-              >
-                <span
-                  aria-hidden="true"
-                  className={`h-2 w-2 shrink-0 rounded-full ${
-                    on ? "bg-gold-light shadow-[0_0_10px_var(--gold-dust)]" : "bg-white/20"
-                  }`}
-                />
-                <span className="min-w-0 flex-1 truncate text-sm text-stone-warm/85">
-                  {t.label_zh}
-                </span>
-                <span className="text-[10px] uppercase tracking-[0.24em] text-stone-warm/45">
-                  {t.detail_zh}
-                </span>
-              </li>
-            );
-          })}
-        </ul>
-
-        <p className="mt-6 text-xs text-stone-warm/50">
-          {lit >= TRADITIONS.length ? "正在寻找共同的线索…" : ""}
-        </p>
-
-        <button
-          type="button"
-          onClick={onDone}
-          className="mt-8 inline-flex min-h-11 items-center justify-center rounded-full border border-white/15 px-6 py-3 text-xs uppercase tracking-[0.24em] text-stone-warm/70 hover:border-gold-dust/60 hover:text-gold-dust"
-        >
-          跳过动画
-        </button>
-      </div>
-    </section>
-  );
-}
-
-// -----------------------------------------------------------------------
-// Library overview (6 books)
-// -----------------------------------------------------------------------
-function LibraryOverview({
-  focus,
-  read,
-  onOpen,
-  onOpenPremiumNote,
-  tourSeen,
-  onOpenBookmark,
-}: {
-  focus: LibraryFocus;
-  read: Set<BookKey>;
-  onOpen: (k: BookKey) => void;
-  onOpenPremiumNote: () => void;
-  tourSeen: boolean;
-  onOpenBookmark: () => void;
-}) {
-  const order = useMemo(() => recommendedOrderFor(focus), [focus]);
-  const orderedBooks = order
-    .map((k) => DEMO_BOOKS.find((b) => b.key === k))
-    .filter((b): b is DemoBook => Boolean(b));
-  const featured = orderedBooks[0];
-  const rest = orderedBooks.slice(1);
-  const nextUnread = orderedBooks.find((b) => !read.has(b.key));
-
-  return (
-    <section className="grid gap-10 pt-6 sm:pt-10">
-      <header className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
-        <div className="min-w-0">
-          <p className="font-mono text-[10px] uppercase tracking-[0.4em] text-gold-dust">
-            馆藏总览
-          </p>
-          <h2 className="mt-2 font-serif text-2xl text-stone-warm sm:text-3xl">
-            这是为你准备的书架。
-          </h2>
-          <p className="mt-2 text-sm text-stone-warm/60">
-            已阅读 {read.size} / {orderedBooks.length}
-            {nextUnread ? ` · 下一本推荐《${nextUnread.title_zh}》` : " · 已读完全部演示书"}
-          </p>
-        </div>
-        {tourSeen && (
-          <button
-            type="button"
-            onClick={onOpenBookmark}
-            aria-label="馆员书签"
-            className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-gold-dust/40 text-gold-dust hover:bg-gold-dust/10"
-          >
-            ✦
-          </button>
-        )}
-      </header>
-
-      <FeaturedBook book={featured} onOpen={() => onOpen(featured.key)} read={read.has(featured.key)} />
-
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {rest.map((b) => (
-          <BookTile key={b.key} book={b} read={read.has(b.key)} onOpen={() => onOpen(b.key)} />
-        ))}
-      </div>
-
-      <PurposeStrip onOpenPremiumNote={onOpenPremiumNote} />
-    </section>
-  );
-}
-
-function FeaturedBook({
-  book,
-  onOpen,
-  read,
-}: {
-  book: DemoBook;
-  onOpen: () => void;
-  read: boolean;
-}) {
-  return (
-    <article className="grid gap-4 rounded-3xl border border-gold-dust/30 bg-gradient-to-br from-gold-dust/[0.08] to-transparent p-6 sm:p-8">
-      <div className="flex items-center gap-3 text-[11px] uppercase tracking-[0.28em] text-gold-dust">
-        <span>为你推荐 · 第一本</span>
-        {read && <span className="text-stone-warm/50">已阅读</span>}
-      </div>
-      <h3 className="font-serif text-3xl text-stone-warm sm:text-4xl">
-        <span aria-hidden="true" className="mr-3 text-gold-dust">
-          {book.icon}
-        </span>
-        {book.title_zh}
-      </h3>
-      <p className="max-w-xl text-base text-stone-warm/75 sm:text-lg">{book.quick.verdict}</p>
-      <div className="flex flex-wrap items-center gap-3 pt-2">
-        <button
-          type="button"
-          onClick={onOpen}
-          className="inline-flex min-h-11 items-center justify-center rounded-full bg-gold-dust px-6 py-3 text-sm font-medium tracking-widest text-obsidian hover:bg-gold-light"
-        >
-          翻开这本书
-        </button>
-        <span className="text-xs text-stone-warm/50">约 {book.read_minutes} 分钟</span>
-      </div>
-    </article>
-  );
-}
-
-function BookTile({
-  book,
-  read,
-  onOpen,
-}: {
-  book: DemoBook;
-  read: boolean;
-  onOpen: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onOpen}
-      className="group grid gap-3 rounded-2xl border border-white/10 bg-white/[0.02] p-5 text-left transition-all hover:border-gold-dust/50 hover:bg-gold-dust/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-dust"
-    >
-      <div className="flex items-center gap-3">
-        <span
-          aria-hidden="true"
-          className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-gold-dust/40 text-lg text-gold-dust"
-        >
-          {book.icon}
-        </span>
-        <h3 className="min-w-0 flex-1 truncate font-serif text-lg text-stone-warm">
-          {book.title_zh}
-        </h3>
-        {read && (
-          <span className="shrink-0 rounded-full border border-gold-dust/40 px-2 py-0.5 text-[10px] uppercase tracking-[0.2em] text-gold-dust">
-            已读
+        <div className="flex items-center gap-2">
+          <span className="hidden font-mono text-[9px] tracking-[0.3em] text-stone-warm/40 sm:inline">
+            {LIBRARY_EXPERIENCE_VERSION}
           </span>
-        )}
+          {step !== "gate" && (
+            <button
+              type="button"
+              onClick={onDemo}
+              className="min-h-11 rounded-full border border-gold-dust/30 px-3 text-xs text-stone-warm/80 hover:bg-gold-dust/10"
+            >
+              使用演示资料
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onRestart}
+            className="min-h-11 rounded-full border border-stone-warm/20 px-3 text-xs text-stone-warm/70 hover:bg-stone-warm/5"
+          >
+            重新开始
+          </button>
+        </div>
       </div>
-      <p className="text-sm text-stone-warm/65">{book.quick.verdict}</p>
-      <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.24em] text-stone-warm/45">
-        <span>约 {book.read_minutes} 分钟</span>
-        <span className="text-gold-dust group-hover:text-gold-light">打开 →</span>
-      </div>
-    </button>
-  );
-}
-
-function PurposeStrip({ onOpenPremiumNote }: { onOpenPremiumNote: () => void }) {
-  const items = [
-    { title: "基础报告", body: "覆盖当下最相关的六本书，随时回来续读。" },
-    { title: "生命时间轴", body: "未来 12 个月能量曲线与关键窗口。" },
-    { title: "长老对话", body: "带着一个具体问题，与四位传统的守护者对话。" },
-    { title: "树洞", body: "写下不想说出口的话，只有你自己能看到。" },
-    { title: "同门社区", body: "看别人如何解读自己，找到相似的星群。" },
-    {
-      title: "高级 24 章 · ¥79",
-      body: "一次生成、账户内长期保存；预览环境不触发真实生成或支付。",
-      cta: onOpenPremiumNote,
-    },
-  ];
-  return (
-    <div className="grid gap-3 rounded-2xl border border-white/8 bg-white/[0.02] p-5 sm:p-6">
-      <p className="text-xs uppercase tracking-[0.28em] text-stone-warm/50">馆内还有</p>
-      <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {items.map((it) => (
-          <li key={it.title} className="grid gap-1">
-            <div className="flex items-center gap-2">
-              <span className="font-serif text-sm text-stone-warm">{it.title}</span>
-              {it.cta && (
-                <button
-                  type="button"
-                  onClick={it.cta}
-                  className="text-[10px] uppercase tracking-[0.24em] text-gold-dust hover:text-gold-light"
-                >
-                  了解
-                </button>
-              )}
-            </div>
-            <p className="text-xs text-stone-warm/55">{it.body}</p>
-          </li>
-        ))}
-      </ul>
     </div>
   );
 }
 
-// -----------------------------------------------------------------------
-// Book reader (quick / deep)
-// -----------------------------------------------------------------------
-function BookReader({
-  book,
-  mode,
-  onToggleMode,
-  onBack,
-  next,
-  onNext,
-}: {
-  book: DemoBook;
-  mode: "quick" | "deep";
-  onToggleMode: () => void;
-  onBack: () => void;
-  next: BookKey | null;
-  onNext: (k: BookKey) => void;
-}) {
-  const nextBook = next ? DEMO_BOOKS.find((b) => b.key === next) : null;
+function Footer() {
   return (
-    <section className="grid gap-6 pt-6 sm:pt-8">
-      <header className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
-        <div className="min-w-0">
-          <button
-            type="button"
-            onClick={onBack}
-            className="text-[11px] uppercase tracking-[0.24em] text-stone-warm/60 hover:text-gold-dust"
-          >
-            ← 返回馆藏
-          </button>
-          <h2 className="mt-3 flex items-center gap-3 font-serif text-2xl text-stone-warm sm:text-3xl">
-            <span aria-hidden="true" className="text-gold-dust">{book.icon}</span>
-            <span className="min-w-0 truncate">{book.title_zh}</span>
-          </h2>
-        </div>
-        <button
-          type="button"
-          onClick={onToggleMode}
-          aria-pressed={mode === "deep"}
-          className="shrink-0 rounded-full border border-gold-dust/40 px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-gold-dust hover:bg-gold-dust/10"
-        >
-          {mode === "quick" ? "展开深读" : "回到快读"}
-        </button>
-      </header>
+    <footer className="mx-auto max-w-[1100px] px-5 pb-10 pt-4 text-center font-mono text-[9px] tracking-[0.4em] text-stone-warm/35 sm:px-8">
+      DEMO FIXTURE · NO REAL AI · NO REAL PAYMENT ·{" "}
+      {DEMO_FIXTURE ? LIBRARY_EXPERIENCE_VERSION : ""}
+    </footer>
+  );
+}
 
-      <article className="grid gap-4 rounded-2xl border border-gold-dust/25 bg-white/[0.03] p-6 sm:p-8">
-        <p className="text-lg leading-relaxed text-stone-warm/90 sm:text-xl">
-          {book.quick.verdict}
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {book.quick.keywords.map((k) => (
-            <span
-              key={k}
-              className="rounded-full border border-gold-dust/40 px-3 py-1 text-xs tracking-widest text-gold-dust"
-            >
-              {k}
-            </span>
-          ))}
-        </div>
-        <ReaderRow title="现实里的样子">{book.quick.manifest}</ReaderRow>
-        <ReaderRow title="一个建议">{book.quick.suggestion}</ReaderRow>
-        <ReaderRow title="一个注意点">{book.quick.caution}</ReaderRow>
-      </article>
-
-      {mode === "deep" && (
-        <article className="grid gap-4 rounded-2xl border border-white/10 bg-white/[0.02] p-6 sm:p-8">
-          <h3 className="font-serif text-xl text-stone-warm">四体系依据</h3>
-          <ul className="grid gap-2 text-sm text-stone-warm/80">
-            <li><b className="text-gold-dust">西方 · </b>{book.deep.western}</li>
-            <li><b className="text-gold-dust">印度 · </b>{book.deep.vedic}</li>
-            <li><b className="text-gold-dust">八字 · </b>{book.deep.bazi}</li>
-            <li><b className="text-gold-dust">紫微 · </b>{book.deep.ziwei}</li>
-          </ul>
-          <ReaderRow title="共识">{book.deep.consensus}</ReaderRow>
-          <ReaderRow title="差异">{book.deep.tension}</ReaderRow>
-
-          {book.deep.career_detail && (
-            <div className="grid gap-2 rounded-xl border border-white/10 p-4 text-sm text-stone-warm/80">
-              <p><b className="text-gold-dust">行业族群 · </b>{book.deep.career_detail.industry}</p>
-              <p><b className="text-gold-dust">岗位画像 · </b>{book.deep.career_detail.role}</p>
-              <p><b className="text-gold-dust">组织环境 · </b>{book.deep.career_detail.environment}</p>
-            </div>
-          )}
-          {book.deep.love_detail && (
-            <div className="grid gap-2 rounded-xl border border-white/10 p-4 text-sm text-stone-warm/80">
-              <p><b className="text-gold-dust">情感需求 · </b>{book.deep.love_detail.need}</p>
-              <p><b className="text-gold-dust">伴侣特质 · </b>{book.deep.love_detail.partner}</p>
-              <p><b className="text-gold-dust">冲突模式 · </b>{book.deep.love_detail.conflict}</p>
-            </div>
-          )}
-
-          <details className="rounded-xl border border-white/10 bg-obsidian/40 p-4">
-            <summary className="cursor-pointer text-xs uppercase tracking-[0.24em] text-stone-warm/60">
-              证据与置信度
-            </summary>
-            <ul className="mt-3 grid gap-1 font-mono text-[11px] text-stone-warm/60">
-              {book.deep.evidence.map((e) => (
-                <li key={e}>· {e}</li>
-              ))}
-            </ul>
-            <p className="mt-3 text-[10px] uppercase tracking-[0.24em] text-stone-warm/40">
-              演示置信度：0.72 · 数值为 fixture
-            </p>
-          </details>
-          <p className="text-xs italic text-stone-warm/55">{book.deep.premium_hook}</p>
-        </article>
-      )}
-
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <button
-          type="button"
-          onClick={onBack}
-          className="min-h-11 rounded-full border border-white/15 px-5 py-3 text-xs uppercase tracking-[0.24em] text-stone-warm/70 hover:border-gold-dust/60"
-        >
-          回到书架
-        </button>
-        {nextBook && (
-          <button
-            type="button"
-            onClick={() => onNext(nextBook.key)}
-            className="min-h-11 rounded-full bg-gold-dust px-6 py-3 text-sm tracking-widest text-obsidian hover:bg-gold-light"
-          >
-            下一本：{nextBook.title_zh} →
-          </button>
-        )}
-      </div>
-
-      <p className="text-center text-[10px] uppercase tracking-[0.24em] text-stone-warm/40">
-        文化与自我反思用途 · 不承诺唯一正缘、必然收益、疾病或灾祸
+// ---------------- 1. Gate ----------------
+function Gate({
+  onEnter,
+  reducedMotion,
+}: {
+  onEnter: () => void;
+  reducedMotion: boolean;
+}) {
+  const [entering, setEntering] = useState(false);
+  const trigger = () => {
+    if (reducedMotion) return onEnter();
+    setEntering(true);
+    setTimeout(onEnter, 550);
+  };
+  return (
+    <section className="relative min-h-[70dvh] pt-8 text-center">
+      <div
+        aria-hidden
+        className={`pointer-events-none absolute inset-0 transition-opacity duration-500 ${
+          entering ? "opacity-100" : "opacity-40"
+        }`}
+        style={{
+          background:
+            "radial-gradient(ellipse at 50% 30%, oklch(0.28 0.05 85 / 0.35), transparent 60%)",
+        }}
+      />
+      <p className="relative font-mono text-[10px] tracking-[0.4em] text-gold-dust">
+        THE LIBRARY OF DESTINY
+      </p>
+      <h1 className="relative mx-auto mt-6 max-w-[22ch] font-serif text-4xl leading-[1.25] text-stone-warm sm:text-5xl">
+        每一种文明，都在追问同一个问题
+      </h1>
+      <p className="relative mx-auto mt-4 max-w-[22ch] font-serif text-3xl text-gold-light sm:text-4xl">
+        你，是谁？
+      </p>
+      <p className="relative mx-auto mt-6 max-w-[28ch] text-sm text-stone-warm/70">
+        西方占星 · 印度占星 · 八字 · 紫微。四种传统，共同读懂同一个你。
+      </p>
+      <button
+        type="button"
+        onClick={trigger}
+        className="relative mt-10 inline-flex min-h-12 items-center gap-2 rounded-full bg-gold-dust px-8 py-3 font-serif text-base text-obsidian shadow-[0_0_40px_oklch(0.76_0.11_85/0.35)] hover:bg-gold-light"
+      >
+        步入图书馆 →
+      </button>
+      <p className="relative mt-6 text-xs text-stone-warm/45">
+        约 2 分钟 · 基础解读免费 · 完全演示体验
       </p>
     </section>
   );
 }
 
-function ReaderRow({ title, children }: { title: string; children: React.ReactNode }) {
+// ---------------- 2. Focus ----------------
+const FOCUS_TOPICS: StoryTopic[] = ["career", "love", "wealth", "recent"];
+
+function FocusPick({
+  topic,
+  onPick,
+  onNext,
+}: {
+  topic: StoryTopic | null;
+  onPick: (t: StoryTopic) => void;
+  onNext: () => void;
+}) {
   return (
-    <div className="grid gap-1">
-      <p className="text-[10px] uppercase tracking-[0.24em] text-stone-warm/50">{title}</p>
-      <p className="text-sm text-stone-warm/85 sm:text-base">{children}</p>
-    </div>
+    <section className="pt-4">
+      <p className="font-mono text-[10px] tracking-[0.35em] text-gold-dust">CHAPTER · ONE</p>
+      <h2 className="mt-3 font-serif text-3xl text-stone-warm sm:text-4xl">
+        你的人生，正在翻到哪一章？
+      </h2>
+      <p className="mt-2 text-sm text-stone-warm/60">
+        先选一个你最想被真正回答的问题。之后我们再决定要不要翻到别的章节。
+      </p>
+      <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {FOCUS_TOPICS.map((t) => {
+          const active = topic === t;
+          return (
+            <button
+              key={t}
+              type="button"
+              onClick={() => onPick(t)}
+              aria-pressed={active}
+              className={`min-h-[132px] rounded-2xl border p-5 text-left transition ${
+                active
+                  ? "border-gold-dust bg-gold-dust/10 shadow-[0_0_30px_oklch(0.76_0.11_85/0.2)]"
+                  : "border-stone-warm/15 hover:border-gold-dust/40"
+              }`}
+            >
+              <p className="font-mono text-[10px] tracking-[0.3em] text-gold-dust">
+                {topicLabel(t).toUpperCase()}
+              </p>
+              <p className="mt-3 font-serif text-lg leading-snug text-stone-warm">
+                {topicQuestion(t)}
+              </p>
+            </button>
+          );
+        })}
+      </div>
+      {topic && (
+        <div className="mt-6 rounded-2xl border border-gold-dust/20 bg-gold-dust/5 p-5">
+          <p className="text-sm text-stone-warm/85">{topicPersonal(topic)}</p>
+          <button
+            type="button"
+            onClick={onNext}
+            className="mt-5 inline-flex min-h-12 items-center rounded-full bg-gold-dust px-6 text-obsidian hover:bg-gold-light"
+          >
+            开始寻找答案 →
+          </button>
+        </div>
+      )}
+    </section>
   );
 }
 
-// -----------------------------------------------------------------------
-// Premium note (no real functionality)
-// -----------------------------------------------------------------------
-function PremiumNote({ onBack }: { onBack: () => void }) {
+// ---------------- 3. Intake ----------------
+function Intake({
+  step,
+  profile,
+  onChange,
+  onBack,
+  onNext,
+}: {
+  step: StoryStep;
+  profile: ReaderProfile;
+  onChange: (p: Partial<ReaderProfile>) => void;
+  onBack: () => void;
+  onNext: () => void;
+}) {
+  const progress = intakeProgress(step);
+  const valid = isIntakeStepValid(step, profile);
+  const title = {
+    intake_name: "这本书属于谁",
+    intake_birth: "故事从什么时候开始",
+    intake_place: "你从哪里出发",
+  }[step as "intake_name" | "intake_birth" | "intake_place"];
+  const cta = step === "intake_place" ? "打开我的第一章 →" : "继续 →";
   return (
-    <section className="grid gap-6 pt-8">
-      <button
-        type="button"
-        onClick={onBack}
-        className="justify-self-start text-[11px] uppercase tracking-[0.24em] text-stone-warm/60 hover:text-gold-dust"
-      >
-        ← 返回书架
-      </button>
-      <div className="grid gap-4 rounded-2xl border border-gold-dust/30 bg-white/[0.03] p-6 sm:p-8">
-        <h2 className="font-serif text-2xl text-stone-warm sm:text-3xl">
-          高级 AI 深度报告
-        </h2>
-        <p className="text-sm text-stone-warm/70 sm:text-base">
-          24 章 · 一次生成 · 账户内长期保存。
-        </p>
-        <ul className="grid gap-2 text-sm text-stone-warm/70">
-          <li>· 覆盖事业、情感、财富、时间轴、人生课题等主题的深入展开</li>
-          <li>· 计算模块提供事实，AI 只解释；每章带证据与置信度</li>
-          <li>· 生成后重复打开不再扣费、不再调用 AI</li>
-        </ul>
-        <p className="rounded-xl border border-white/10 bg-obsidian/40 p-4 text-[11px] uppercase tracking-[0.24em] text-stone-warm/55">
-          预览环境说明 · 此按钮不会真实生成、不会发起支付、不会调用 AI。
-        </p>
+    <section className="pt-4">
+      <div className="flex items-center justify-between">
         <button
           type="button"
-          disabled
-          className="min-h-11 cursor-not-allowed rounded-full bg-gold-dust/50 px-6 py-3 text-sm tracking-widest text-obsidian/70"
+          onClick={onBack}
+          className="min-h-11 text-sm text-stone-warm/60 hover:text-stone-warm"
         >
-          解锁完整报告 ¥79 · 预览禁用
+          ← 返回
+        </button>
+        {progress && (
+          <p className="font-mono text-[10px] tracking-[0.3em] text-gold-dust">
+            {progress.index}/{progress.total}
+          </p>
+        )}
+      </div>
+      <h2 className="mt-4 font-serif text-3xl text-stone-warm">{title}</h2>
+      <div className="mt-6 max-w-[520px]">
+        {step === "intake_name" && (
+          <div className="space-y-4">
+            <FieldLabel>你的称呼</FieldLabel>
+            <input
+              value={profile.nickname}
+              onChange={(e) => onChange({ nickname: e.target.value.slice(0, 20) })}
+              placeholder="怎么称呼你"
+              className="w-full rounded-xl border border-stone-warm/15 bg-obsidian/40 px-4 py-3 text-[16px] text-stone-warm outline-none focus:border-gold-dust"
+            />
+            <FieldLabel>性别</FieldLabel>
+            <div className="flex flex-wrap gap-2">
+              {(["female", "male", "other"] as const).map((g) => (
+                <button
+                  key={g}
+                  type="button"
+                  onClick={() => onChange({ gender: g })}
+                  aria-pressed={profile.gender === g}
+                  className={`min-h-11 rounded-full border px-4 text-sm ${
+                    profile.gender === g
+                      ? "border-gold-dust bg-gold-dust/15 text-stone-warm"
+                      : "border-stone-warm/20 text-stone-warm/70"
+                  }`}
+                >
+                  {g === "female" ? "女" : g === "male" ? "男" : "其他 / 不便说明"}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {step === "intake_birth" && (
+          <div className="space-y-4">
+            <FieldLabel>出生日期</FieldLabel>
+            <input
+              type="date"
+              value={profile.birth_date}
+              onChange={(e) => onChange({ birth_date: e.target.value })}
+              className="w-full rounded-xl border border-stone-warm/15 bg-obsidian/40 px-4 py-3 text-[16px] text-stone-warm outline-none focus:border-gold-dust"
+            />
+            <FieldLabel>出生时间</FieldLabel>
+            <input
+              type="time"
+              value={profile.birth_time}
+              disabled={profile.time_unknown}
+              onChange={(e) => onChange({ birth_time: e.target.value })}
+              className="w-full rounded-xl border border-stone-warm/15 bg-obsidian/40 px-4 py-3 text-[16px] text-stone-warm outline-none focus:border-gold-dust disabled:opacity-40"
+            />
+            <label className="flex items-center gap-2 text-sm text-stone-warm/70">
+              <input
+                type="checkbox"
+                checked={profile.time_unknown}
+                onChange={(e) =>
+                  onChange({
+                    time_unknown: e.target.checked,
+                    birth_time: e.target.checked ? "" : profile.birth_time,
+                  })
+                }
+              />
+              不知道准确时间（Demo 会用近似时间）
+            </label>
+          </div>
+        )}
+        {step === "intake_place" && (
+          <div className="space-y-4">
+            <FieldLabel>出生城市</FieldLabel>
+            <input
+              value={profile.place}
+              onChange={(e) => onChange({ place: e.target.value })}
+              placeholder="例如：杭州 / New York"
+              className="w-full rounded-xl border border-stone-warm/15 bg-obsidian/40 px-4 py-3 text-[16px] text-stone-warm outline-none focus:border-gold-dust"
+            />
+            <p className="text-xs text-stone-warm/45">
+              Demo 环境不会把出生城市写入任何公共数据，也不会用于匿名匹配。
+            </p>
+          </div>
+        )}
+      </div>
+      <div className="mt-8 flex flex-wrap gap-3">
+        <button
+          type="button"
+          disabled={!valid}
+          onClick={onNext}
+          className="min-h-12 rounded-full bg-gold-dust px-6 text-obsidian hover:bg-gold-light disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          {cta}
         </button>
       </div>
     </section>
   );
 }
 
-// -----------------------------------------------------------------------
-// Librarian tour (3 steps, one-time)
-// -----------------------------------------------------------------------
-function LibrarianTour({ onDone }: { onDone: () => void }) {
-  const steps = [
-    {
-      title: "我是馆员，只负责带路。",
-      body: "馆员会帮你从一本书跳到下一本；他不会替你解读，也不同于「树洞」。",
-    },
-    {
-      title: "你随时可以换书。",
-      body: "每本书右上角可以切换「快读 / 深读」。快读 1 分钟，深读展开四体系依据。",
-    },
-    {
-      title: "接下来发生的事。",
-      body: "读完这一批书后，你可以打开生命时间轴，或者进入高级 24 章报告。所有内容会留在你的账户里。",
-    },
-  ];
-  const [i, setI] = useState(0);
-  const cur = steps[i];
-  const last = i === steps.length - 1;
-
+function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="馆员导览"
-      className="fixed inset-0 z-50 grid place-items-end bg-obsidian/70 backdrop-blur-sm p-4 sm:place-items-center"
-      onClick={onDone}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="grid w-full max-w-md gap-4 rounded-2xl border border-gold-dust/40 bg-obsidian p-6 shadow-[0_20px_60px_rgba(0,0,0,0.6)]"
-      >
-        <p className="text-[11px] uppercase tracking-[0.28em] text-gold-dust">
-          馆员导览 · {i + 1} / {steps.length}
+    <p className="font-mono text-[10px] tracking-[0.3em] text-gold-dust">
+      {children}
+    </p>
+  );
+}
+
+// ---------------- 4. First insight ----------------
+function FirstInsight({
+  topic,
+  onNext,
+}: {
+  topic: StoryTopic;
+  onNext: () => void;
+}) {
+  const ins = INSIGHT_BY_TOPIC[topic];
+  const [openKey, setOpenKey] = useState<"why" | "next" | "when" | null>(null);
+  return (
+    <section className="pt-6">
+      <DemoBadge>你的第一条洞察 · 演示样本</DemoBadge>
+      <h2 className="mt-3 font-serif text-2xl leading-relaxed text-stone-warm sm:text-3xl">
+        {ins.headline}
+      </h2>
+      <div className="mt-6 grid gap-3 sm:grid-cols-3">
+        {(
+          [
+            ["why", "为什么会这样"],
+            ["next", "接下来怎么做"],
+            ["when", "哪个时间会变化"],
+          ] as const
+        ).map(([k, label]) => (
+          <button
+            key={k}
+            type="button"
+            onClick={() => setOpenKey(k)}
+            className="min-h-16 rounded-xl border border-stone-warm/15 bg-obsidian/30 p-4 text-left hover:border-gold-dust/40"
+          >
+            <p className="font-mono text-[10px] tracking-[0.3em] text-gold-dust">
+              {label}
+            </p>
+            <p className="mt-2 text-sm text-stone-warm/70">展开阅读 →</p>
+          </button>
+        ))}
+      </div>
+      <div className="mt-10">
+        <button
+          type="button"
+          onClick={onNext}
+          className="min-h-12 rounded-full bg-gold-dust px-6 text-obsidian hover:bg-gold-light"
+        >
+          去我的书架 →
+        </button>
+      </div>
+      {openKey && (
+        <Drawer
+          title={
+            openKey === "why"
+              ? "为什么会这样"
+              : openKey === "next"
+              ? "接下来怎么做"
+              : "哪个时间会变化"
+          }
+          onClose={() => setOpenKey(null)}
+        >
+          <p className="text-base leading-relaxed text-stone-warm/85">
+            {ins[openKey]}
+          </p>
+          <p className="mt-6 text-xs text-stone-warm/50">
+            演示数据。真实用户接入时，这一段会由 V1 的确定性事实模块给出，
+            AI 只解释事实，不会替你排盘。
+          </p>
+        </Drawer>
+      )}
+    </section>
+  );
+}
+
+// ---------------- 5. Shelf ----------------
+function Shelf({
+  profile,
+  readBooks,
+  onOpenBook,
+  onHistory,
+  onRecommend,
+  onNotes,
+}: {
+  profile: ReaderProfile;
+  readBooks: BookRef[];
+  onOpenBook: (r: BookRef) => void;
+  onHistory: () => void;
+  onRecommend: () => void;
+  onNotes: () => void;
+}) {
+  const primary: BookRef =
+    profile.topic === "career"
+      ? "career"
+      : profile.topic === "love"
+      ? "love"
+      : profile.topic === "wealth"
+      ? "wealth"
+      : "self";
+  const primaryBook = bookByRef(primary);
+  const nextRecs = BOOKS.filter(
+    (b) => b.ref !== primary && !readBooks.includes(b.ref),
+  ).slice(0, 2);
+  return (
+    <section className="pt-4">
+      <p className="font-mono text-[10px] tracking-[0.3em] text-gold-dust">
+        MY SHELF
+      </p>
+      <h2 className="mt-2 font-serif text-3xl text-stone-warm">
+        欢迎回来，{readerPublicNickname(profile)}
+      </h2>
+      <p className="mt-2 text-sm text-stone-warm/60">
+        你正在阅读的一本书在最上面；下面是我建议你接下来翻的两页。
+      </p>
+      <div className="mt-6 rounded-2xl border border-gold-dust/30 bg-gold-dust/5 p-6">
+        <p className="font-mono text-[10px] tracking-[0.3em] text-gold-dust">
+          你正在阅读
         </p>
-        <h3 className="font-serif text-xl text-stone-warm">{cur.title}</h3>
-        <p className="text-sm text-stone-warm/70">{cur.body}</p>
-        <div className="mt-2 flex items-center justify-between gap-3">
+        <div className="mt-2 flex flex-wrap items-baseline justify-between gap-4">
+          <h3 className="font-serif text-2xl text-stone-warm">
+            {primaryBook.icon} {primaryBook.title}
+          </h3>
+          <span className="text-xs text-stone-warm/50">
+            约 {primaryBook.minutes} 分钟
+          </span>
+        </div>
+        <p className="mt-2 text-sm text-stone-warm/70">{primaryBook.subtitle}</p>
+        <button
+          type="button"
+          onClick={() => onOpenBook(primary)}
+          className="mt-4 inline-flex min-h-11 items-center rounded-full bg-gold-dust px-5 text-sm text-obsidian hover:bg-gold-light"
+        >
+          继续阅读 →
+        </button>
+      </div>
+      <div className="mt-6 grid gap-3 sm:grid-cols-2">
+        {nextRecs.map((b) => (
           <button
+            key={b.ref}
             type="button"
-            onClick={onDone}
-            className="text-[11px] uppercase tracking-[0.24em] text-stone-warm/55 hover:text-gold-dust"
+            onClick={() => onOpenBook(b.ref)}
+            className="rounded-xl border border-stone-warm/15 p-4 text-left hover:border-gold-dust/40"
           >
-            跳过
+            <p className="font-mono text-[10px] tracking-[0.3em] text-gold-dust">
+              推荐下一页
+            </p>
+            <h4 className="mt-2 font-serif text-lg text-stone-warm">
+              {b.icon} {b.title}
+            </h4>
+            <p className="mt-1 text-xs text-stone-warm/60">{b.subtitle}</p>
           </button>
-          <button
-            type="button"
-            onClick={() => (last ? onDone() : setI(i + 1))}
-            className="min-h-11 rounded-full bg-gold-dust px-5 py-2 text-xs uppercase tracking-[0.24em] text-obsidian hover:bg-gold-light"
-          >
-            {last ? "开始阅读" : "下一步"}
-          </button>
+        ))}
+      </div>
+      <div className="mt-8">
+        <p className="font-mono text-[10px] tracking-[0.3em] text-gold-dust">书架全景</p>
+        <div className="mt-3 grid gap-2 sm:grid-cols-3">
+          {BOOKS.map((b) => (
+            <button
+              key={b.ref}
+              type="button"
+              onClick={() => onOpenBook(b.ref)}
+              className="min-h-[64px] rounded-lg border border-stone-warm/10 p-3 text-left hover:border-gold-dust/30"
+            >
+              <span className="mr-2 text-gold-dust">{b.icon}</span>
+              <span className="text-sm text-stone-warm/85">{b.title}</span>
+              {readBooks.includes(b.ref) && (
+                <span className="ml-2 text-[10px] text-gold-dust">已读</span>
+              )}
+            </button>
+          ))}
         </div>
       </div>
-    </div>
+      <div className="mt-10 grid gap-3 sm:grid-cols-3">
+        <ShelfLink label="历史的回声" hint="曾面对相似问题的人" onClick={onHistory} />
+        <ShelfLink label="为你推荐下一页" hint="根据你的选择动态调整" onClick={onRecommend} />
+        <ShelfLink label="命运纸条" hint="向同页者 / 对页者发问" onClick={onNotes} />
+      </div>
+    </section>
+  );
+}
+
+function ShelfLink({
+  label,
+  hint,
+  onClick,
+}: {
+  label: string;
+  hint: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="min-h-[80px] rounded-xl border border-gold-dust/25 bg-obsidian/40 p-4 text-left hover:bg-gold-dust/5"
+    >
+      <p className="font-mono text-[10px] tracking-[0.3em] text-gold-dust">
+        {label} →
+      </p>
+      <p className="mt-2 text-xs text-stone-warm/60">{hint}</p>
+    </button>
+  );
+}
+
+// ---------------- Book reader (Demo, quick/deep) ----------------
+function BookReader({ ref, onBack }: { ref: BookRef; onBack: () => void }) {
+  const book = bookByRef(ref);
+  const [deep, setDeep] = useState(false);
+  return (
+    <section className="pt-4">
+      <button
+        type="button"
+        onClick={onBack}
+        className="min-h-11 text-sm text-stone-warm/60 hover:text-stone-warm"
+      >
+        ← 回到书架
+      </button>
+      <DemoBadge className="mt-3">{book.demo_note}</DemoBadge>
+      <h2 className="mt-3 font-serif text-3xl text-stone-warm">
+        {book.icon} {book.title}
+      </h2>
+      <p className="mt-1 text-sm text-stone-warm/60">
+        {book.subtitle} · 约 {book.minutes} 分钟
+      </p>
+      <div className="mt-6 rounded-2xl border border-gold-dust/20 bg-gold-dust/5 p-5">
+        <p className="font-mono text-[10px] tracking-[0.3em] text-gold-dust">
+          一句结论
+        </p>
+        <p className="mt-2 whitespace-pre-line text-base leading-relaxed text-stone-warm/90">
+          {book.quick}
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={() => setDeep((v) => !v)}
+        className="mt-4 min-h-11 rounded-full border border-gold-dust/40 px-5 text-sm text-stone-warm hover:bg-gold-dust/10"
+      >
+        {deep ? "收起深读" : "展开深读"}
+      </button>
+      {deep && (
+        <div className="mt-4 rounded-2xl border border-stone-warm/10 p-5">
+          <p className="whitespace-pre-line text-sm leading-relaxed text-stone-warm/85">
+            {book.deep}
+          </p>
+        </div>
+      )}
+    </section>
+  );
+}
+
+// ---------------- 6. History echoes ----------------
+function History({
+  profile,
+  filter,
+  onFilter,
+  onOpen,
+  onBack,
+}: {
+  profile: ReaderProfile;
+  filter: "all" | "east" | "west" | "different_choice";
+  onFilter: (f: "all" | "east" | "west" | "different_choice") => void;
+  onOpen: (id: string) => void;
+  onBack: () => void;
+}) {
+  const list = matchFigures(profile, filter);
+  return (
+    <section className="pt-4">
+      <button
+        type="button"
+        onClick={onBack}
+        className="min-h-11 text-sm text-stone-warm/60 hover:text-stone-warm"
+      >
+        ← 回到书架
+      </button>
+      <p className="mt-3 font-mono text-[10px] tracking-[0.3em] text-gold-dust">
+        HISTORY · ECHOES
+      </p>
+      <h2 className="mt-2 font-serif text-3xl text-stone-warm">
+        曾面对相似问题的人
+      </h2>
+      <p className="mt-2 max-w-[52ch] text-sm text-stone-warm/70">
+        你们并不拥有相同的命运，但曾面对相似的问题。这里只匹配"处境"与"人生阶段"，
+        不匹配"同命"，也不显示任何相似度百分比。
+      </p>
+      <div className="mt-6 flex flex-wrap gap-2">
+        {(
+          [
+            ["all", "全部"],
+            ["east", "东方人物"],
+            ["west", "西方人物"],
+            ["different_choice", "做出不同选择的人"],
+          ] as const
+        ).map(([k, label]) => (
+          <button
+            key={k}
+            type="button"
+            onClick={() => onFilter(k)}
+            aria-pressed={filter === k}
+            className={`min-h-11 rounded-full border px-4 text-sm ${
+              filter === k
+                ? "border-gold-dust bg-gold-dust/15"
+                : "border-stone-warm/20 text-stone-warm/70"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <div className="mt-6 grid gap-3 sm:grid-cols-2">
+        {list.map((f) => (
+          <button
+            key={f.id}
+            type="button"
+            onClick={() => onOpen(f.id)}
+            className="min-h-[132px] rounded-xl border border-stone-warm/15 p-5 text-left hover:border-gold-dust/40"
+          >
+            <p className="font-mono text-[10px] tracking-[0.3em] text-gold-dust">
+              {f.tradition === "east" ? "东方" : "西方"} · {f.age_band}
+            </p>
+            <h3 className="mt-2 font-serif text-xl text-stone-warm">{f.name}</h3>
+            <p className="mt-2 line-clamp-3 text-sm text-stone-warm/70">
+              {f.situation}
+            </p>
+          </button>
+        ))}
+      </div>
+      <div className="mt-10 rounded-2xl border border-gold-dust/25 bg-gold-dust/5 p-6 text-center">
+        <p className="mx-auto max-w-[36ch] font-serif text-lg leading-relaxed text-stone-warm">
+          {CLOSING_QUOTE}
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function FigureDetail({
+  id,
+  onBack,
+}: {
+  id: string;
+  onBack: () => void;
+}) {
+  const f = FIGURES.find((x) => x.id === id);
+  if (!f) {
+    return (
+      <div className="pt-6">
+        <p className="text-stone-warm/60">这条记录已经不可见。</p>
+        <button
+          type="button"
+          onClick={onBack}
+          className="mt-4 min-h-11 rounded-full border border-stone-warm/20 px-4 text-sm"
+        >
+          返回
+        </button>
+      </div>
+    );
+  }
+  const rows: [string, string][] = [
+    ["面对什么", f.situation],
+    ["如何选择", f.choice],
+    ["带来什么", f.outcome],
+    ["代价", f.cost],
+    ["可迁移的经验", f.transferable],
+  ];
+  return (
+    <section className="pt-4">
+      <button
+        type="button"
+        onClick={onBack}
+        className="min-h-11 text-sm text-stone-warm/60 hover:text-stone-warm"
+      >
+        ← 返回历史的回声
+      </button>
+      <p className="mt-3 font-mono text-[10px] tracking-[0.3em] text-gold-dust">
+        {f.tradition === "east" ? "东方" : "西方"} · {f.age_band}
+      </p>
+      <h2 className="mt-2 font-serif text-3xl text-stone-warm">{f.name}</h2>
+      <div className="mt-6 space-y-4">
+        {rows.map(([k, v]) => (
+          <div key={k} className="rounded-xl border border-stone-warm/10 p-4">
+            <p className="font-mono text-[10px] tracking-[0.3em] text-gold-dust">
+              {k}
+            </p>
+            <p className="mt-2 text-sm text-stone-warm/85">{v}</p>
+          </div>
+        ))}
+      </div>
+      <div className="mt-6 rounded-xl border border-gold-dust/25 bg-gold-dust/5 p-4">
+        <p className="font-mono text-[10px] tracking-[0.3em] text-gold-dust">
+          与你的关系 · 现在可尝试
+        </p>
+        <ul className="mt-2 space-y-1 text-sm text-stone-warm/85">
+          <li>保留：那些让你区别于同岗位其他人的判断风格。</li>
+          <li>停止：把每一次小失望累积成对整段关系的否认。</li>
+          <li>开始：给下一次决定写一句"我为什么这么选"，只写给自己看。</li>
+        </ul>
+      </div>
+      <div className="mt-6 rounded-xl border border-stone-warm/10 p-4 text-xs text-stone-warm/55">
+        <p>{f.warning}</p>
+        <p className="mt-2">
+          来源占位：{f.source_title} · {f.source_url}
+        </p>
+      </div>
+    </section>
+  );
+}
+
+// ---------------- 7. Recommendations ----------------
+function Recommendations({
+  profile,
+  readBookRefs,
+  onChangeTopic,
+  onOpenBook,
+  onBack,
+}: {
+  profile: ReaderProfile;
+  readBookRefs: BookRef[];
+  onChangeTopic: (t: StoryTopic) => void;
+  onOpenBook: (ref: BookRef) => void;
+  onBack: () => void;
+}) {
+  const recs = recommendNext(profile, readBookRefs);
+  return (
+    <section className="pt-4">
+      <button
+        type="button"
+        onClick={onBack}
+        className="min-h-11 text-sm text-stone-warm/60 hover:text-stone-warm"
+      >
+        ← 回到书架
+      </button>
+      <p className="mt-3 font-mono text-[10px] tracking-[0.3em] text-gold-dust">
+        NEXT PAGE FOR YOU
+      </p>
+      <h2 className="mt-2 font-serif text-3xl text-stone-warm">下一页推荐</h2>
+      <p className="mt-2 text-sm text-stone-warm/60">
+        我更想先看关于：
+      </p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {FOCUS_TOPICS.map((t) => (
+          <button
+            key={t}
+            type="button"
+            onClick={() => onChangeTopic(t)}
+            aria-pressed={profile.topic === t}
+            className={`min-h-11 rounded-full border px-4 text-sm ${
+              profile.topic === t
+                ? "border-gold-dust bg-gold-dust/15"
+                : "border-stone-warm/20 text-stone-warm/70"
+            }`}
+          >
+            {topicLabel(t)}
+          </button>
+        ))}
+      </div>
+      <div className="mt-6 space-y-3">
+        {recs.map((r) => (
+          <div
+            key={r.id}
+            className="rounded-2xl border border-stone-warm/15 p-5 hover:border-gold-dust/40"
+          >
+            <p className="font-mono text-[10px] tracking-[0.3em] text-gold-dust">
+              {r.kind === "book" ? "书籍" : r.kind === "figure" ? "人物" : "纸条"}
+            </p>
+            <h3 className="mt-2 font-serif text-lg text-stone-warm">{r.title}</h3>
+            <p className="mt-2 text-xs text-stone-warm/60">为什么推荐给我：{r.reason}</p>
+            {r.kind === "book" && (
+              <button
+                type="button"
+                onClick={() => onOpenBook(r.ref as BookRef)}
+                className="mt-3 min-h-11 rounded-full bg-gold-dust px-4 text-sm text-obsidian hover:bg-gold-light"
+              >
+                打开这一本 →
+              </button>
+            )}
+          </div>
+        ))}
+        {recs.length === 0 && (
+          <p className="text-sm text-stone-warm/60">你已经读完了主线的书；换个主题试试。</p>
+        )}
+      </div>
+    </section>
+  );
+}
+
+// ---------------- 8. Notes ----------------
+function NotesArea({
+  state,
+  actorId,
+  setState,
+  goto,
+}: {
+  state: StoryStateV1;
+  actorId: string;
+  setState: React.Dispatch<React.SetStateAction<StoryStateV1>>;
+  goto: (s: StoryStep) => void;
+}) {
+  const [tick, setTick] = useState(0);
+  const notes = useMemo(() => {
+    const list = listNotes(Date.now());
+    return matchNotes(list, state.profile);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tick, state.profile.topic]);
+
+  if (state.step === "notes") {
+    return (
+      <section className="pt-4">
+        <button
+          type="button"
+          onClick={() => goto("shelf")}
+          className="min-h-11 text-sm text-stone-warm/60 hover:text-stone-warm"
+        >
+          ← 回到书架
+        </button>
+        <p className="mt-3 font-mono text-[10px] tracking-[0.3em] text-gold-dust">
+          FATE NOTES
+        </p>
+        <h2 className="mt-2 font-serif text-3xl text-stone-warm">命运纸条</h2>
+        <p className="mt-2 max-w-[52ch] text-sm text-stone-warm/70">
+          有些问题，命盘只能照见轮廓。写下一张纸条，让走过相似道路的人，或与你完全不同的人，给你另一种答案。
+        </p>
+        <div className="mt-5 flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={() => goto("note_compose")}
+            className="min-h-12 rounded-full bg-gold-dust px-6 text-obsidian hover:bg-gold-light"
+          >
+            + 写一张新纸条
+          </button>
+        </div>
+        <div className="mt-8 space-y-3">
+          {notes.map((n) => (
+            <button
+              key={n.id}
+              type="button"
+              onClick={() =>
+                setState((s) => ({ ...s, step: "note_detail", active_note_id: n.id }))
+              }
+              className="w-full rounded-2xl border border-stone-warm/15 p-5 text-left hover:border-gold-dust/40"
+            >
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <p className="font-mono text-[10px] tracking-[0.3em] text-gold-dust">
+                  {topicLabel(n.topic)} · {audienceLabel(n.audience)}
+                </p>
+                <span className="text-[10px] text-stone-warm/40">
+                  {relTime(n.created_at)}
+                </span>
+              </div>
+              <p className="mt-2 line-clamp-3 text-sm text-stone-warm/85">{n.body}</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {n.match_traits.map((t) => (
+                  <span
+                    key={t}
+                    className="rounded-full border border-gold-dust/30 px-2 py-0.5 text-[10px] text-gold-dust"
+                  >
+                    {t}
+                  </span>
+                ))}
+              </div>
+            </button>
+          ))}
+          {notes.length === 0 && (
+            <p className="text-sm text-stone-warm/50">图书馆还没有相关纸条。写第一张？</p>
+          )}
+        </div>
+      </section>
+    );
+  }
+
+  if (state.step === "note_compose") {
+    return (
+      <NoteCompose
+        profile={state.profile}
+        actorId={actorId}
+        onCancel={() => goto("notes")}
+        onSubmit={() => {
+          setTick((t) => t + 1);
+          goto("notes");
+        }}
+      />
+    );
+  }
+
+  if (state.step === "note_detail" && state.active_note_id) {
+    return (
+      <NoteDetail
+        noteId={state.active_note_id}
+        actorId={actorId}
+        profile={state.profile}
+        onBack={() => goto("notes")}
+        bump={() => setTick((t) => t + 1)}
+      />
+    );
+  }
+  return null;
+}
+
+function audienceLabel(a: NoteAudience): string {
+  return {
+    similar: "写给同页者",
+    opposite: "写给对页者",
+    experienced: "写给经历过的人",
+    librarian: "交给图书馆",
+  }[a];
+}
+
+function relTime(t: number): string {
+  const s = Math.floor((Date.now() - t) / 1000);
+  if (s < 60) return "刚刚";
+  if (s < 3600) return `${Math.floor(s / 60)} 分钟前`;
+  if (s < 86400) return `${Math.floor(s / 3600)} 小时前`;
+  return `${Math.floor(s / 86400)} 天前`;
+}
+
+function NoteCompose({
+  profile,
+  actorId,
+  onCancel,
+  onSubmit,
+}: {
+  profile: ReaderProfile;
+  actorId: string;
+  onCancel: () => void;
+  onSubmit: () => void;
+}) {
+  const [topic, setTopic] = useState<StoryTopic>(profile.topic ?? "career");
+  const [audience, setAudience] = useState<NoteAudience>("similar");
+  const [body, setBody] = useState("");
+  const [imgUrl, setImgUrl] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    if (!["image/jpeg", "image/png", "image/webp"].includes(f.type)) {
+      setError("仅支持 JPG / PNG / WEBP");
+      return;
+    }
+    if (f.size > 5 * 1024 * 1024) {
+      setError("单张图片不能超过 5MB");
+      return;
+    }
+    const r = new FileReader();
+    r.onload = () => setImgUrl(String(r.result));
+    r.readAsDataURL(f);
+    setError(null);
+  };
+  const submit = () => {
+    if (body.trim().length < 5) {
+      setError("再写多一点，让别人有能回答的地方。");
+      return;
+    }
+    createNote({
+      author_id: actorId,
+      author_nickname: readerPublicNickname(profile),
+      topic,
+      body,
+      image_data_url: imgUrl,
+      audience,
+      age_band: profile.age_band,
+    });
+    onSubmit();
+  };
+  return (
+    <section className="pt-4">
+      <button
+        type="button"
+        onClick={onCancel}
+        className="min-h-11 text-sm text-stone-warm/60 hover:text-stone-warm"
+      >
+        ← 返回纸条列表
+      </button>
+      <h2 className="mt-3 font-serif text-3xl text-stone-warm">写一张纸条</h2>
+      <div className="mt-6 space-y-5">
+        <div>
+          <FieldLabel>关于</FieldLabel>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {FOCUS_TOPICS.map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setTopic(t)}
+                aria-pressed={topic === t}
+                className={`min-h-11 rounded-full border px-4 text-sm ${
+                  topic === t
+                    ? "border-gold-dust bg-gold-dust/15"
+                    : "border-stone-warm/20 text-stone-warm/70"
+                }`}
+              >
+                {topicLabel(t)}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <FieldLabel>希望谁看到</FieldLabel>
+          <div className="mt-2 grid gap-2 sm:grid-cols-2">
+            {(
+              [
+                ["similar", "与我相似的人"],
+                ["opposite", "与我不同的人"],
+                ["experienced", "经历过这件事的人"],
+                ["librarian", "交给图书馆选择"],
+              ] as [NoteAudience, string][]
+            ).map(([k, label]) => (
+              <button
+                key={k}
+                type="button"
+                onClick={() => setAudience(k)}
+                aria-pressed={audience === k}
+                className={`min-h-12 rounded-xl border px-3 text-left text-sm ${
+                  audience === k
+                    ? "border-gold-dust bg-gold-dust/10"
+                    : "border-stone-warm/20 text-stone-warm/70"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <FieldLabel>正文</FieldLabel>
+          <textarea
+            value={body}
+            maxLength={800}
+            onChange={(e) => setBody(e.target.value)}
+            placeholder="请不要写具体的出生日期与出生城市——图书馆不需要这些。"
+            className="mt-2 min-h-[160px] w-full rounded-xl border border-stone-warm/15 bg-obsidian/40 px-4 py-3 text-[16px] text-stone-warm outline-none focus:border-gold-dust"
+          />
+          <p className="mt-1 text-[11px] text-stone-warm/40">{body.length}/800</p>
+        </div>
+        <div>
+          <FieldLabel>可选：附一张图（本地预览 · Demo 不上传）</FieldLabel>
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={onFile}
+            className="mt-2 text-xs text-stone-warm/70"
+          />
+          {imgUrl && (
+            <img
+              src={imgUrl}
+              alt=""
+              className="mt-3 max-h-48 rounded-lg border border-stone-warm/10 object-contain"
+            />
+          )}
+        </div>
+        <p className="text-xs text-stone-warm/50">
+          隐私提醒：你的出生日期、时间、城市与真实姓名不会出现在这张纸条中，也不会用于匹配算法。
+        </p>
+        {error && <p className="text-sm text-red-400/80">{error}</p>}
+        <button
+          type="button"
+          onClick={submit}
+          className="min-h-12 rounded-full bg-gold-dust px-6 text-obsidian hover:bg-gold-light"
+        >
+          将纸条放入图书馆 →
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function NoteDetail({
+  noteId,
+  actorId,
+  profile,
+  onBack,
+  bump,
+}: {
+  noteId: string;
+  actorId: string;
+  profile: ReaderProfile;
+  onBack: () => void;
+  bump: () => void;
+}) {
+  const [tick, setTick] = useState(0);
+  const note = useMemo(() => {
+    const all = listNotes(Date.now());
+    return all.find((n) => n.id === noteId) ?? null;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [noteId, tick]);
+  const replies = useMemo(() => listReplies(noteId), [noteId, tick]);
+  const [reply, setReply] = useState({
+    faced: "",
+    chose: "",
+    cost: "",
+    if_again: "",
+    one_consideration: "",
+  });
+  if (!note) {
+    return (
+      <div className="pt-6">
+        <p className="text-stone-warm/60">这张纸条已被作者收回。</p>
+        <button
+          type="button"
+          onClick={onBack}
+          className="mt-4 min-h-11 rounded-full border border-stone-warm/20 px-4 text-sm"
+        >
+          返回
+        </button>
+      </div>
+    );
+  }
+  const isOwn = note.author_id === actorId;
+  const submitReply = () => {
+    if (reply.faced.trim().length < 2) return;
+    createReply({
+      note_id: note.id,
+      author_id: actorId,
+      author_nickname: readerPublicNickname(profile),
+      ...reply,
+    });
+    setReply({ faced: "", chose: "", cost: "", if_again: "", one_consideration: "" });
+    setTick((t) => t + 1);
+    bump();
+  };
+  const del = () => {
+    if (!confirm("确认收回这张纸条？")) return;
+    softDeleteNote(note.id, actorId);
+    bump();
+    onBack();
+  };
+  return (
+    <section className="pt-4">
+      <button
+        type="button"
+        onClick={onBack}
+        className="min-h-11 text-sm text-stone-warm/60 hover:text-stone-warm"
+      >
+        ← 回到纸条列表
+      </button>
+      <div className="mt-4 rounded-2xl border border-stone-warm/15 p-5">
+        <div className="flex flex-wrap justify-between gap-2">
+          <p className="font-mono text-[10px] tracking-[0.3em] text-gold-dust">
+            {topicLabel(note.topic)} · {audienceLabel(note.audience)}
+          </p>
+          <span className="text-[10px] text-stone-warm/40">
+            {relTime(note.created_at)}
+          </span>
+        </div>
+        <p className="mt-3 whitespace-pre-wrap text-base leading-relaxed text-stone-warm/90">
+          {note.body}
+        </p>
+        {note.image_data_url && (
+          <img
+            src={note.image_data_url}
+            alt=""
+            className="mt-4 max-h-72 rounded-lg border border-stone-warm/10 object-contain"
+          />
+        )}
+        <div className="mt-4 flex flex-wrap gap-2">
+          {note.match_traits.map((t) => (
+            <span
+              key={t}
+              className="rounded-full border border-gold-dust/30 px-2 py-0.5 text-[10px] text-gold-dust"
+            >
+              {t}
+            </span>
+          ))}
+        </div>
+        {isOwn && (
+          <button
+            type="button"
+            onClick={del}
+            className="mt-4 min-h-11 rounded-full border border-red-500/40 px-4 text-sm text-red-300 hover:bg-red-500/10"
+          >
+            收回我的纸条
+          </button>
+        )}
+      </div>
+      <h3 className="mt-8 font-serif text-xl text-stone-warm">读者的回信</h3>
+      <div className="mt-3 space-y-3">
+        {replies.map((r) => (
+          <div key={r.id} className="rounded-xl border border-stone-warm/10 p-4">
+            <p className="font-mono text-[10px] tracking-[0.3em] text-gold-dust">
+              {r.author_nickname} · {relTime(r.created_at)}
+            </p>
+            <ReplyRow k="我曾面对的情况" v={r.faced} />
+            <ReplyRow k="当时的选择" v={r.chose} />
+            <ReplyRow k="代价" v={r.cost} />
+            <ReplyRow k="如果重来" v={r.if_again} />
+            <ReplyRow k="给你的一个考虑" v={r.one_consideration} />
+            {r.author_id === actorId && (
+              <button
+                type="button"
+                onClick={() => {
+                  softDeleteReply(r.id, actorId);
+                  setTick((t) => t + 1);
+                  bump();
+                }}
+                className="mt-2 text-xs text-red-300/80 hover:text-red-300"
+              >
+                收回这条回信
+              </button>
+            )}
+          </div>
+        ))}
+        {replies.length === 0 && (
+          <p className="text-xs text-stone-warm/45">还没有回信。你可以第一个回复。</p>
+        )}
+      </div>
+      <div className="mt-8 rounded-2xl border border-gold-dust/25 bg-gold-dust/5 p-5">
+        <h4 className="font-serif text-lg text-stone-warm">给这张纸条写一封回信</h4>
+        <p className="mt-1 text-xs text-stone-warm/60">
+          回信按下面五行分段填，帮别人真正被回答。
+        </p>
+        {(
+          [
+            ["faced", "我曾面对的情况"],
+            ["chose", "当时的选择"],
+            ["cost", "代价"],
+            ["if_again", "如果重来"],
+            ["one_consideration", "给你的一个考虑"],
+          ] as [keyof typeof reply, string][]
+        ).map(([k, label]) => (
+          <div key={k} className="mt-3">
+            <FieldLabel>{label}</FieldLabel>
+            <textarea
+              value={reply[k]}
+              onChange={(e) => setReply((s) => ({ ...s, [k]: e.target.value }))}
+              className="mt-1 min-h-[64px] w-full rounded-lg border border-stone-warm/15 bg-obsidian/40 px-3 py-2 text-[16px] text-stone-warm outline-none focus:border-gold-dust"
+            />
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={submitReply}
+          className="mt-4 min-h-12 rounded-full bg-gold-dust px-6 text-obsidian hover:bg-gold-light"
+        >
+          寄出这封回信 →
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function ReplyRow({ k, v }: { k: string; v: string }) {
+  if (!v) return null;
+  return (
+    <p className="mt-2 text-sm text-stone-warm/85">
+      <span className="mr-2 font-mono text-[9px] tracking-[0.3em] text-gold-dust">
+        {k}
+      </span>
+      {v}
+    </p>
+  );
+}
+
+// ---------------- Building blocks ----------------
+function DemoBadge({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <p
+      className={`inline-block rounded-full border border-gold-dust/30 bg-gold-dust/5 px-3 py-1 font-mono text-[10px] tracking-[0.3em] text-gold-dust ${className ?? ""}`}
+    >
+      {children}
+    </p>
+  );
+}
+
+function Drawer({
+  title,
+  children,
+  onClose,
+}: {
+  title: string;
+  children: React.ReactNode;
+  onClose: () => void;
+}) {
+  const overlayRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [onClose]);
+  if (typeof document === "undefined") return null;
+  return createPortal(
+    <div
+      ref={overlayRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+      className="fixed inset-0 z-[70] flex items-end justify-center bg-obsidian/80 backdrop-blur-sm sm:items-center"
+      onClick={(e) => {
+        if (e.target === overlayRef.current) onClose();
+      }}
+    >
+      <div className="w-full max-w-[560px] rounded-t-2xl border border-gold-dust/30 bg-obsidian p-6 sm:rounded-2xl">
+        <div className="flex items-center justify-between">
+          <p className="font-mono text-[10px] tracking-[0.3em] text-gold-dust">
+            {title}
+          </p>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="关闭"
+            className="min-h-11 min-w-11 rounded-full border border-stone-warm/20 text-stone-warm/70"
+          >
+            ✕
+          </button>
+        </div>
+        <div className="mt-4">{children}</div>
+      </div>
+    </div>,
+    document.body,
   );
 }
