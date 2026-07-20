@@ -56,6 +56,8 @@ import {
   createReply,
   listNotes,
   listReplies,
+  restoreNote,
+  restoreReply,
   softDeleteNote,
   softDeleteReply,
 } from "./story/repository";
