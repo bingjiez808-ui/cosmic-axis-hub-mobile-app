@@ -282,6 +282,7 @@ describe("story · overview (panoramic) has no career bias", () => {
     });
     expect(loadStoryState().profile.topic).toBe("overview");
   });
+});
 
 describe("story · privacy", () => {
   it("public note contains no birth fields", () => {
