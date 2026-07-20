@@ -184,6 +184,105 @@ describe("story · matching", () => {
   });
 });
 
+describe("story · overview (panoramic) has no career bias", () => {
+  it("overview recommendations lead with self + timeline, never career/love/wealth first", () => {
+    const overviewProfile: ReaderProfile = {
+      ...DEMO_PROFILE,
+      topic: "overview",
+    };
+    const recs = recommendNext(overviewProfile, []);
+    expect(recs.length).toBeGreaterThan(0);
+    // First recommendation must be the neutral foundation book, not
+    // the career/love/wealth headline books.
+    const firstBook = recs.find((r) => r.kind === "book");
+    expect(firstBook).toBeDefined();
+    expect(firstBook!.ref).toBe("self");
+    // Second book slot is `timeline`, still non-directional.
+    const bookRefs = recs.filter((r) => r.kind === "book").map((r) => r.ref);
+    expect(bookRefs.slice(0, 2)).toEqual(["self", "timeline"]);
+    // No overview recommendation may claim `career` as its topic —
+    // that was exactly the bias the panoramic entry is meant to avoid.
+    for (const r of recs) {
+      expect(r.topic).not.toBe("career");
+      expect(r.topic).not.toBe("love");
+      expect(r.topic).not.toBe("wealth");
+    }
+  });
+
+  it("overview feedback weights are ignored — no career weight bump applied", () => {
+    const overviewProfile: ReaderProfile = {
+      ...DEMO_PROFILE,
+      topic: "overview",
+    };
+    // Even a positive career weight must not push a career book into
+    // the panoramic recommendation set.
+    const recs = recommendNext(overviewProfile, [], { career: 4 });
+    const bookRefs = recs.filter((r) => r.kind === "book").map((r) => r.ref);
+    expect(bookRefs.slice(0, 2)).toEqual(["self", "timeline"]);
+  });
+
+  it("overview figure matching does not penalise non-career figures", () => {
+    const overviewProfile: ReaderProfile = {
+      ...DEMO_PROFILE,
+      topic: "overview",
+    };
+    const careerProfile: ReaderProfile = {
+      ...DEMO_PROFILE,
+      topic: "career",
+    };
+    const overviewFirst = matchFigures(overviewProfile, "all").slice(0, 3);
+    const careerFirst = matchFigures(careerProfile, "all").slice(0, 3);
+    // Overview must NOT reproduce the career-first ordering — with the
+    // topic axis zeroed out, ordering falls back to age + deterministic
+    // tie-break, so at least one figure in the top three differs.
+    const sameOrder =
+      overviewFirst.length === careerFirst.length &&
+      overviewFirst.every((f, i) => careerFirst[i]?.id === f.id);
+    expect(sameOrder).toBe(false);
+  });
+
+  it("overview note matching is topic-neutral (sorts by recency only)", () => {
+    const now = Date.now();
+    const notes: Note[] = [
+      {
+        ...seedNotes(now)[0],
+        id: "career-older",
+        topic: "career",
+        created_at: now - 100,
+        status: "active",
+        deleted_at: null,
+      },
+      {
+        ...seedNotes(now)[0],
+        id: "love-newer",
+        topic: "love",
+        created_at: now - 10,
+        status: "active",
+        deleted_at: null,
+      },
+    ];
+    const sorted = matchNotes(notes, { ...DEMO_PROFILE, topic: "overview" });
+    // Under a career-biased profile the older career note wins; under
+    // overview the newer love note wins because topic doesn't matter.
+    expect(sorted[0].id).toBe("love-newer");
+  });
+
+  it("loadStoryState accepts a legacy state with a StoryTopic and does not crash on overview", () => {
+    clean();
+    saveStoryState({
+      ...INITIAL_STORY_STATE,
+      profile: { ...INITIAL_STORY_STATE.profile, topic: "career" },
+    });
+    const restored = loadStoryState();
+    expect(restored.profile.topic).toBe("career");
+    // And overview also roundtrips.
+    saveStoryState({
+      ...INITIAL_STORY_STATE,
+      profile: { ...INITIAL_STORY_STATE.profile, topic: "overview" },
+    });
+    expect(loadStoryState().profile.topic).toBe("overview");
+  });
+
 describe("story · privacy", () => {
   it("public note contains no birth fields", () => {
     const note = createNote({
