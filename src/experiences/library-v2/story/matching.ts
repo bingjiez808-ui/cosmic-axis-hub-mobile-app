@@ -98,12 +98,23 @@ export function matchNotes(
 export function recommendNext(
   profile: ReaderProfile,
   readBookRefs: string[],
+  feedbackWeights: Partial<Record<StoryTopic, number>> = {},
 ): RecommendedItem[] {
   const topic = profile.topic ?? "recent";
   const rec: RecommendedItem[] = [];
-  const primary = BOOKS.filter(
-    (b) => b.topics.includes(topic) && !readBookRefs.includes(b.ref),
-  ).slice(0, 2);
+  // Feedback weights nudge candidate book ordering. Positive weight for
+  // the picked topic keeps its book on top; a strongly-negative weight
+  // ("不太像") demotes it in favour of neighbours.
+  const scored = BOOKS.filter((b) => !readBookRefs.includes(b.ref)).map((b) => {
+    const primary = b.topics.includes(topic) ? 0 : 1;
+    const bump = b.topics.reduce(
+      (acc, t) => acc + (feedbackWeights[t] ?? 0),
+      0,
+    );
+    return { b, score: primary * 10 - bump };
+  });
+  scored.sort((a, b) => a.score - b.score);
+  const primary = scored.slice(0, 2).map((s) => s.b);
   for (const b of primary) {
     rec.push({
       id: `rec-book-${b.ref}`,
