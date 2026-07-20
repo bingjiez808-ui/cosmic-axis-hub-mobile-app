@@ -595,6 +595,9 @@ function Gate({
 }
 
 
+const FOCUS_TOPICS: StoryTopic[] = ["career", "love", "wealth", "recent"];
+
+
 
 
 // ---------------- 2. Destiny Map ----------------
