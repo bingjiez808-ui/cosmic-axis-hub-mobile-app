@@ -1090,6 +1090,119 @@ function Shelf({
   );
 }
 
+function MembershipBookPreview({
+  topic,
+  entitled,
+  slot,
+}: {
+  topic: StoryTopic | null;
+  entitled: boolean;
+  slot: string;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const impressionLogged = useRef(false);
+  const [openPreview, setOpenPreview] = useState(false);
+  useEffect(() => {
+    if (impressionLogged.current) return;
+    const node = ref.current;
+    if (!node || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting && !impressionLogged.current) {
+            impressionLogged.current = true;
+            logMembership("membership_impression", slot);
+            io.disconnect();
+          }
+        }
+      },
+      { threshold: 0.4 },
+    );
+    io.observe(node);
+    return () => io.disconnect();
+  }, [slot]);
+
+  const bullets =
+    topic === "career"
+      ? ["你适合被推举的位置", "上一个岔口错过了什么", "未来 24 个月的关键窗口"]
+      : topic === "love"
+      ? ["你重复被吸引的类型", "你真正需要的关系模式", "关系的时间窗口"]
+      : topic === "wealth"
+      ? ["财富在你身上流动的方式", "适合你长期持有的类型", "关键决策的时间点"]
+      : ["四体系合读的整体画像", "近 90 天的主线", "下一步该往哪里走"];
+
+  return (
+    <div
+      ref={ref}
+      className="mt-8 rounded-2xl border border-gold-dust/25 bg-gradient-to-br from-obsidian/60 to-gold-dust/[0.06] p-5"
+    >
+      <p className="font-mono text-[10px] tracking-[0.3em] text-gold-dust">
+        📖 下一页 · 完整深度报告
+      </p>
+      <h3 className="mt-2 font-serif text-xl text-stone-warm">
+        把这段阅读放回你的完整命盘
+      </h3>
+      <ul className="mt-3 space-y-1.5 text-sm text-stone-warm/75">
+        {bullets.map((b) => (
+          <li key={b} className="flex gap-2">
+            <span className="text-gold-dust">·</span>
+            <span>{b}</span>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-4 flex flex-wrap gap-3">
+        {entitled ? (
+          <a
+            href="/report"
+            onClick={() => logMembership("membership_entitled_continue", slot)}
+            className="inline-flex min-h-11 items-center rounded-full bg-gold-dust px-5 text-sm text-obsidian hover:bg-gold-light"
+          >
+            继续阅读 →
+          </a>
+        ) : (
+          <>
+            <a
+              href="/report"
+              onClick={() => logMembership("membership_cta_click", slot)}
+              className="inline-flex min-h-11 items-center rounded-full bg-gold-dust px-5 text-sm text-obsidian hover:bg-gold-light"
+            >
+              解锁完整报告 ¥79
+            </a>
+            <button
+              type="button"
+              onClick={() => {
+                setOpenPreview((v) => !v);
+                logMembership("membership_preview_open", slot);
+              }}
+              className="inline-flex min-h-11 items-center rounded-full border border-stone-warm/25 px-5 text-sm text-stone-warm/85 hover:bg-stone-warm/5"
+            >
+              {openPreview ? "收起目录" : "先看目录"}
+            </button>
+          </>
+        )}
+      </div>
+      {openPreview && !entitled && (
+        <div className="mt-4 rounded-xl border border-stone-warm/10 bg-obsidian/40 p-4 text-sm text-stone-warm/75">
+          <p className="font-mono text-[10px] tracking-[0.3em] text-gold-dust">目录预览</p>
+          <ol className="mt-2 space-y-1 text-xs text-stone-warm/70">
+            <li>第 1 章 · 你的整体画像</li>
+            <li>第 2 章 · 天赋与结构</li>
+            <li>第 3 章 · 事业与位置</li>
+            <li>第 4 章 · 关系模式</li>
+            <li>第 5 章 · 财富格局</li>
+            <li>… 共 24 章 · 完整版本在报告页展开</li>
+          </ol>
+        </div>
+      )}
+      <p className="mt-3 text-xs text-stone-warm/45">
+        Demo 环境仅展示会员书封与目录预览,不会真实扣费。
+      </p>
+    </div>
+  );
+}
+
+
+
 function ShelfLink({
   label,
   hint,
