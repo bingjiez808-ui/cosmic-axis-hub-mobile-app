@@ -837,6 +837,8 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
 function FirstInsight({
   topic,
   onNext,
+  onFeedback,
+  reducedMotion,
 }: {
   topic: StoryTopic;
   onNext: () => void;
@@ -844,15 +846,33 @@ function FirstInsight({
   weights?: Partial<Record<StoryTopic, number>>;
   reducedMotion?: boolean;
 }) {
-
   const ins = INSIGHT_BY_TOPIC[topic];
   const [openKey, setOpenKey] = useState<"why" | "next" | "when" | null>(null);
+  const [feedback, setFeedback] = useState<FeedbackKind | null>(null);
+  const clickFeedback = (k: FeedbackKind) => {
+    setFeedback(k);
+    onFeedback?.(k);
+    if (k === "want_more") {
+      logMembership("membership_impression", "first_insight_want_more");
+    }
+  };
+  const sentences = ins.headline.split(/(?<=[。！？])/g).filter((s) => s.trim().length);
   return (
     <section className="pt-6">
       <DemoBadge>你的第一条洞察 · 演示样本</DemoBadge>
-      <h2 className="mt-3 font-serif text-2xl leading-relaxed text-stone-warm sm:text-3xl">
-        {ins.headline}
-      </h2>
+      <div className="mt-3">
+        {sentences.map((s, i) => (
+          <motion.p
+            key={i}
+            initial={reducedMotion ? false : { opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: DURATION.short, ease: EASE.standard, delay: i * STAGGER.line }}
+            className="font-serif text-2xl leading-relaxed text-stone-warm sm:text-3xl"
+          >
+            {s}
+          </motion.p>
+        ))}
+      </div>
       <div className="mt-6 grid gap-3 sm:grid-cols-3">
         {(
           [
@@ -868,11 +888,48 @@ function FirstInsight({
             className="min-h-16 rounded-xl border border-stone-warm/15 bg-obsidian/30 p-4 text-left hover:border-gold-dust/40"
           >
             <p className="font-mono text-[10px] tracking-[0.3em] text-gold-dust">
-              {label}
+              📑 {label}
             </p>
             <p className="mt-2 text-sm text-stone-warm/70">展开阅读 →</p>
           </button>
         ))}
+      </div>
+      <div className="mt-8 rounded-xl border border-stone-warm/10 bg-obsidian/30 p-4">
+        <p className="font-mono text-[10px] tracking-[0.3em] text-gold-dust">
+          这段像你吗？
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {(
+            [
+              ["resonant", "像我"],
+              ["not_me", "不太像"],
+              ["want_more", "想继续了解"],
+            ] as [FeedbackKind, string][]
+          ).map(([k, label]) => (
+            <button
+              key={k}
+              type="button"
+              onClick={() => clickFeedback(k)}
+              aria-pressed={feedback === k}
+              className={`min-h-11 rounded-full border px-4 text-sm transition ${
+                feedback === k
+                  ? "border-gold-dust bg-gold-dust/15 text-stone-warm"
+                  : "border-stone-warm/20 text-stone-warm/75 hover:bg-stone-warm/5"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {feedback && (
+          <p className="mt-3 text-xs text-stone-warm/55">
+            {feedback === "resonant"
+              ? "记下了。稍后书架会把和这段共振的章节排在前面。"
+              : feedback === "not_me"
+              ? "记下了。我们会把这段的相关内容稍稍往后排。"
+              : "记下了。为你保留一个更完整的入口——不打断当前阅读。"}
+          </p>
+        )}
       </div>
       <div className="mt-10">
         <button
@@ -906,6 +963,7 @@ function FirstInsight({
     </section>
   );
 }
+
 
 // ---------------- 5. Shelf ----------------
 function Shelf({
