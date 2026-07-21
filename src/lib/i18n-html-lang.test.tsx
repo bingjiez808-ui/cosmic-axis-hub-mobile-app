@@ -107,20 +107,24 @@ describe("LanguageToggle · real DOM interaction", () => {
   it("clicks zh → en → zh and immediately updates context copy, <html lang>, and persistence", async () => {
     localStorage.setItem("lod.lang", "zh");
 
-    function Probe() {
+    function ProbeContent() {
       const { lang } = useLang();
       const d = useDaily();
       return (
-        <LanguageProvider>
+        <>
           <LanguageToggle />
           <p data-testid="lang">{lang}</p>
           <h1>{d.match_kicker}</h1>
           <nav>{d.home_secondary_nav_match}</nav>
-        </LanguageProvider>
+        </>
       );
     }
 
-    await mount(<Probe />);
+    await mount(
+      <LanguageProvider>
+        <ProbeContent />
+      </LanguageProvider>,
+    );
     expect(document.documentElement.getAttribute("lang")).toBe("zh-CN");
     expect(document.body.textContent ?? "").toContain("双人命盘互动 · 演示");
 
