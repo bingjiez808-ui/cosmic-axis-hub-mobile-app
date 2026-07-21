@@ -11,19 +11,20 @@
  * 4. **No success probability**: we never emit "关系成功率 / 结婚率".
  *    Copy calls out "互动适配指数" and a legal disclaimer.
  *
- * The 5 dimensions come from Bagua-style relational categories that
- * appear in both classical bazi 神煞 relationship notes and modern
- * couple/friend literature (Gottman "sound relationship house" adds
- * repair + shared meaning): communication, emotional support, action
- * rhythm, boundary repair, shared growth.
+ * The 5 dimensions are a project-internal decomposition of interaction
+ * quality — communication, emotional support, action rhythm, boundary
+ * repair, shared growth — chosen so each dimension can be scored from
+ * facets we can honestly derive from the chart FACTS. We do NOT claim
+ * any specific external methodology (no Gottman, no classical Bagua
+ * pairing rule) and we do NOT emit success probability.
  *
  * Scores are purely feature-based on the two charts. We do NOT invent
  * astrological compatibility rules — the score derives from four
- * public facets of each side and their signed distance:
- *   • yang (day-master polarity, -1..1)
- *   • pace (bazi 十神 balance, 0..1)
- *   • openness (ziwei self-palace / mercury cluster, 0..1)
- *   • rootedness (earth-branch stability, 0..1)
+ * facets of each side and their signed distance:
+ *   • yang (day-master polarity + Sun element, -1..1)
+ *   • pace (bazi 十神 initiating/receiving + Mercury sign, 0..1)
+ *   • openness (bazi 食伤 + Western Moon/Venus/Mercury aspects, 0..1)
+ *   • rootedness (bazi earth+metal + Sun element, 0..1)
  *
  * Callers pass these four scalars per side. If a side is missing one
  * facet (e.g. no birth time), the engine still returns a score but
