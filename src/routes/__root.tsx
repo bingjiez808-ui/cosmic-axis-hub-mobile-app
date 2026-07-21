@@ -50,13 +50,37 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
 
+  const isAuthRefresh =
+    error?.name === "AuthRefreshFailedError" ||
+    /authentication refresh failed/i.test(error?.message ?? "");
+  // Lang provider isn't in scope for this boundary — detect via <html lang>.
+  const isZh =
+    typeof document !== "undefined" &&
+    (document.documentElement.getAttribute("lang") ?? "en").startsWith("zh");
+
+  const title = isAuthRefresh
+    ? isZh
+      ? "登录状态刷新失败"
+      : "Could not refresh your session"
+    : isZh
+      ? "仪式被中断"
+      : "The ritual was interrupted.";
+  const body = isAuthRefresh
+    ? isZh
+      ? "网络连接不稳定，未能与账户服务通讯。请检查网络后重试；你的登录状态仍然保留。"
+      : "We could not reach the account service — likely a network hiccup. Your session is still valid; please retry."
+    : isZh
+      ? "解读过程中出现意外。你可以再试一次。"
+      : "A disturbance in the reading. You may try again.";
+  const retry = isZh ? "重试" : "Try again";
+  const home = isZh ? "回到首页" : "Return home";
+  const relogin = isZh ? "重新登录" : "Sign in again";
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-obsidian px-4">
       <div className="max-w-md text-center">
-        <h1 className="font-serif text-2xl text-stone-warm">The ritual was interrupted.</h1>
-        <p className="mt-3 text-sm text-muted-foreground">
-          A disturbance in the reading. You may try again.
-        </p>
+        <h1 className="font-serif text-2xl text-stone-warm">{title}</h1>
+        <p className="mt-3 text-sm text-muted-foreground">{body}</p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <button
             onClick={() => {
@@ -65,13 +89,21 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
             }}
             className="rounded-full bg-gold-dust px-6 py-3 text-xs uppercase tracking-widest text-obsidian transition-colors hover:bg-gold-light"
           >
-            Try again
+            {retry}
           </button>
+          {isAuthRefresh && (
+            <a
+              href="/auth?mode=login"
+              className="rounded-full border border-gold-dust/30 px-6 py-3 text-xs uppercase tracking-widest text-gold-dust transition-colors hover:border-gold-dust"
+            >
+              {relogin}
+            </a>
+          )}
           <a
             href="/"
             className="rounded-full border border-gold-dust/30 px-6 py-3 text-xs uppercase tracking-widest text-gold-dust transition-colors hover:border-gold-dust"
           >
-            Return home
+            {home}
           </a>
         </div>
       </div>
