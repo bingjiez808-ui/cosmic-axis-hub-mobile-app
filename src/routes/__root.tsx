@@ -444,6 +444,7 @@ function SiteNav() {
       >
         {[
           { to: "/", label: lang === "zh" ? "首页" : "Home" },
+          ...(session ? [{ to: "/me/home", label: t.nav_today }] : []),
           { to: "/traditions", label: t.nav_traditions },
           { to: "/ritual", label: t.nav_ritual },
           { to: "/community", label: t.nav_community },
