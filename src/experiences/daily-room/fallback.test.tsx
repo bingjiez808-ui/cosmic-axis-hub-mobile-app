@@ -32,6 +32,24 @@ async function mount(el: ReactElement) {
   return host;
 }
 
+function resetLangToEnglish() {
+  document.documentElement.setAttribute("lang", "en");
+  try {
+    window.localStorage.clear();
+    window.localStorage.setItem("lod.lang", "en");
+  } catch {
+    /* ignore */
+  }
+  // The i18n store holds a module-level snapshot that can survive across
+  // test suites; broadcast a language-change event so useSyncExternalStore
+  // re-reads from localStorage on the next render.
+  try {
+    window.dispatchEvent(new Event("lod:lang-change"));
+  } catch {
+    /* ignore */
+  }
+}
+
 afterEach(async () => {
   while (roots.length) {
     const { root, host } = roots.pop()!;
@@ -39,12 +57,7 @@ afterEach(async () => {
     host.remove();
   }
   document.body.innerHTML = "";
-  document.documentElement.setAttribute("lang", "en");
-  try {
-    window.localStorage.clear();
-  } catch {
-    /* ignore */
-  }
+  resetLangToEnglish();
 });
 
 describe("/me/home fallbacks · never blank", () => {
