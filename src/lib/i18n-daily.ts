@@ -328,7 +328,7 @@ const zh: DailyDict = {
     { id: "pause", text: "最近我需要一些空间，晚点再联系。" },
   ],
 
-  match_kicker: "Bilateral Chart Match · Demo",
+  match_kicker: "双人命盘互动 · 演示",
   match_title: "互动适配（双方授权后可见）",
   match_intro: () => [],
   match_intro_plain:
