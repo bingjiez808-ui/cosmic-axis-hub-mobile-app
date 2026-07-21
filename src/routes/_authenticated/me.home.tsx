@@ -212,9 +212,9 @@ function DailyRoomPage() {
           </Link>
         </nav>
 
-        {/* Real chart adapter */}
+        {/* Real chart adapter — manager for primary + others */}
         <section className="mb-6 rounded-xl border border-amber-400/15 bg-black/20 p-4 text-xs">
-          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <div className="uppercase tracking-widest text-amber-200/70">
               {d.section_my_charts}
             </div>
@@ -228,7 +228,9 @@ function DailyRoomPage() {
               <span>{d.today_toggle_membership}</span>
             </label>
           </div>
-          {real.kind === "loading" && <div className="text-amber-200/60">{d.my_charts_loading}</div>}
+          {real.kind === "loading" && (
+            <div className="text-amber-200/60">{d.my_charts_loading}</div>
+          )}
           {real.kind === "anonymous" && (
             <div className="text-amber-200/60">{d.my_charts_anonymous}</div>
           )}
@@ -236,27 +238,13 @@ function DailyRoomPage() {
             <div className="text-rose-300/80">{d.my_charts_error(real.message)}</div>
           )}
           {real.kind === "ready" && (
-            <div>
-              <div className="text-amber-200/80">{d.my_charts_count(real.charts.length)}</div>
-              {real.charts.length === 0 && (
-                <div className="mt-1 text-amber-200/60">{d.my_charts_empty}</div>
-              )}
-              {real.charts.slice(0, 5).map((c) => (
-                <div key={c.id} className="mt-1 text-amber-100/80">
-                  · {c.name ?? d.my_charts_unnamed} · {c.birth_date ?? d.my_charts_missing_date}{" "}
-                  {c.birth_time ?? ""}
-                </div>
-              ))}
-              <div className="mt-2 text-amber-200/50">
-                {d.capabilities_line({
-                  rename: real.canRename,
-                  del: real.canDelete,
-                  setDefault: real.canSetDefault,
-                })}
-              </div>
-            </div>
+            <ChartManager
+              charts={real.charts}
+              onChanged={(charts) => setReal({ ...real, charts })}
+            />
           )}
         </section>
+
 
         {/* Welcome */}
         <header className="mb-8">
