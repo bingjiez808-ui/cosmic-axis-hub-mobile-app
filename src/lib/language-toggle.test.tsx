@@ -62,7 +62,7 @@ describe("LanguageToggle · zh↔en interaction keeps <html lang> in sync", () =
     expect(document.documentElement.getAttribute("lang")).toBe("en");
 
     await act(async () => {
-      latestSetLang!("zh");
+      flushSync(() => latestSetLang!("zh"));
     });
     expect(langSpan()).toBe("zh");
     expect(htmlLangFor("zh")).toBe("zh-CN");
@@ -70,14 +70,14 @@ describe("LanguageToggle · zh↔en interaction keeps <html lang> in sync", () =
     expect(localStorage.getItem("lod.lang")).toBe("zh");
 
     await act(async () => {
-      latestSetLang!("en");
+      flushSync(() => latestSetLang!("en"));
     });
     expect(langSpan()).toBe("en");
     expect(document.documentElement.getAttribute("lang")).toBe("en");
     expect(localStorage.getItem("lod.lang")).toBe("en");
 
     await act(async () => {
-      latestSetLang!("zh");
+      flushSync(() => latestSetLang!("zh"));
     });
     expect(langSpan()).toBe("zh");
     expect(document.documentElement.getAttribute("lang")).toBe("zh-CN");
