@@ -1,19 +1,17 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 
 import {
   createInMemoryFriendsRepo,
   type FriendInvite,
   type Friendship,
 } from "@/lib/friends-repo";
-
-const FLAG_ENABLED =
-  typeof import.meta !== "undefined" &&
-  (import.meta as unknown as { env?: Record<string, string> }).env?.VITE_ENABLE_DAILY_ROOM === "true";
+import { ensureSocialPreviewAllowed } from "@/experiences/daily-room/route-guard";
 
 export const Route = createFileRoute("/_authenticated/me/friends")({
+  head: () => ({ meta: [{ name: "robots", content: "noindex,nofollow" }] }),
   beforeLoad: () => {
-    if (!FLAG_ENABLED) throw redirect({ to: "/" });
+    ensureSocialPreviewAllowed();
   },
   component: FriendsPage,
 });
