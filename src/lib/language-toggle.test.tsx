@@ -8,6 +8,7 @@ if (typeof globalThis.document === "undefined") {
 
 import { act, useEffect } from "react";
 import { createRoot } from "react-dom/client";
+import { flushSync } from "react-dom";
 
 import { LanguageProvider, useLang, htmlLangFor } from "@/lib/i18n";
 
