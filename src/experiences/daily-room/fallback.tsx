@@ -17,6 +17,7 @@
 import { useEffect, useState } from "react";
 
 type FallbackLang = "zh" | "en";
+const HYDRATION_SAFE_INITIAL_LANG: FallbackLang = "en";
 
 function readClientFallbackLang(): FallbackLang {
   if (typeof window === "undefined") return "en";
@@ -33,7 +34,7 @@ function readClientFallbackLang(): FallbackLang {
 function useHydrationSafeFallbackLang(): FallbackLang {
   // Critical: this initializer must stay a constant. It is evaluated during
   // the first client render while React is hydrating the server's English HTML.
-  const [lang, setLang] = useState<FallbackLang>("en");
+  const [lang, setLang] = useState<FallbackLang>(HYDRATION_SAFE_INITIAL_LANG);
 
   useEffect(() => {
     const sync = () => setLang(readClientFallbackLang());
