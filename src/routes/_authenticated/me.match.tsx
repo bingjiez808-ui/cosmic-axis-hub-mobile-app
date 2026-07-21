@@ -349,3 +349,255 @@ function BulletCard({
     </div>
   );
 }
+
+/* ------------------------------------------------------------------ */
+/* RealImportPanel — pick primary + one "other" chart, compute        */
+/* compatibility with the deterministic engine (no AI).               */
+/* ------------------------------------------------------------------ */
+
+type ChartFacetsBundle = {
+  chart: { id: string; name: string | null };
+  facets: { yang?: number; pace?: number; openness?: number; rootedness?: number };
+  evidence_refs: string[];
+  systems: string[];
+  missing_facts: string[];
+};
+
+async function loadChartFacets(chartId: string): Promise<ChartFacetsBundle | null> {
+  const row = await getChartById({ data: { chartId } });
+  if (!row) return null;
+  const snap = buildCalculationSnapshot({
+    date: row.birth_date,
+    time: row.birth_time,
+    place: row.birth_place,
+    lang: row.lang,
+    gender: row.gender,
+  });
+  const facts = buildPremiumFacts(snap);
+  const adapted = adaptFacetsFromFacts(facts);
+  const facets: ChartFacetsBundle["facets"] = {};
+  if (adapted.yang) facets.yang = adapted.yang.value;
+  if (adapted.pace) facets.pace = adapted.pace.value;
+  if (adapted.openness) facets.openness = adapted.openness.value;
+  if (adapted.rootedness) facets.rootedness = adapted.rootedness.value;
+  const refs = new Set<string>();
+  for (const fv of [adapted.yang, adapted.pace, adapted.openness, adapted.rootedness]) {
+    if (!fv) continue;
+    for (const r of fv.evidence_refs) refs.add(r);
+  }
+  return {
+    chart: { id: row.id, name: row.name },
+    facets,
+    evidence_refs: [...refs],
+    systems: adapted.consensus_bodies,
+    missing_facts: adapted.missing_facts,
+  };
+}
+
+function RealImportPanel({
+  mode,
+  setMode,
+  facetLabel,
+}: {
+  mode: CompatResult["mode"];
+  setMode: (m: CompatResult["mode"]) => void;
+  facetLabel: (k: CompatResult["dimensions"][number]["key"]) => string;
+}) {
+  const { lang } = useLang();
+  const d = useDaily();
+  const [charts, setCharts] = useState<ChartRow[] | null>(null);
+  const [loadErr, setLoadErr] = useState<string | null>(null);
+  const [otherId, setOtherId] = useState<string>("");
+  const [consented, setConsented] = useState(false);
+  const [running, setRunning] = useState(false);
+  const [result, setResult] = useState<CompatResult | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const rows = await listUserCharts();
+        if (!cancelled) setCharts(rows);
+      } catch (e) {
+        if (!cancelled) setLoadErr(e instanceof Error ? e.message : "unknown");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const primary = charts?.find((c) => c.is_primary && c.chart_role === "self") ?? null;
+  const others = charts?.filter((c) => c.chart_role === "other") ?? [];
+
+  const runCompat = async () => {
+    if (!primary || !otherId) return;
+    setRunning(true);
+    setResult(null);
+    try {
+      const [a, b] = await Promise.all([
+        loadChartFacets(primary.id),
+        loadChartFacets(otherId),
+      ]);
+      if (!a || !b) throw new Error("chart_not_found");
+      const compat = computeCompatibility({
+        a: { userId: `chart:${a.chart.id}`, chartId: a.chart.id, facets: a.facets },
+        b: { userId: `chart:${b.chart.id}`, chartId: b.chart.id, facets: b.facets },
+        mode,
+        lang,
+      });
+      const refs = aggregateEvidence(
+        {
+          yang: a.facets.yang != null ? { value: a.facets.yang, evidence_refs: [], systems: [] } : null,
+          pace: a.facets.pace != null ? { value: a.facets.pace, evidence_refs: [], systems: [] } : null,
+          openness: a.facets.openness != null ? { value: a.facets.openness, evidence_refs: [], systems: [] } : null,
+          rootedness: a.facets.rootedness != null ? { value: a.facets.rootedness, evidence_refs: [], systems: [] } : null,
+          missing_facts: a.missing_facts,
+          consensus_bodies: a.systems,
+          confidence: 1,
+        },
+        {
+          yang: b.facets.yang != null ? { value: b.facets.yang, evidence_refs: [], systems: [] } : null,
+          pace: b.facets.pace != null ? { value: b.facets.pace, evidence_refs: [], systems: [] } : null,
+          openness: b.facets.openness != null ? { value: b.facets.openness, evidence_refs: [], systems: [] } : null,
+          rootedness: b.facets.rootedness != null ? { value: b.facets.rootedness, evidence_refs: [], systems: [] } : null,
+          missing_facts: b.missing_facts,
+          consensus_bodies: b.systems,
+          confidence: 1,
+        },
+      );
+      const merged: CompatResult = {
+        ...compat,
+        evidence_refs: [...new Set([...(compat.evidence_refs ?? []), ...a.evidence_refs, ...b.evidence_refs])],
+        source_systems: [...new Set([...(compat.source_systems ?? []), ...a.systems, ...b.systems])],
+        cross_system_support: refs.cross_system_support,
+        missing_facts: [...new Set([...(compat.missing_facts ?? []), ...a.missing_facts, ...b.missing_facts])],
+      };
+      setResult(merged);
+    } catch (e) {
+      setLoadErr(e instanceof Error ? e.message : "unknown");
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  return (
+    <section className="mb-6 rounded-xl border border-amber-400/25 bg-black/30 p-5">
+      <div className="text-xs uppercase tracking-widest text-amber-200/70">
+        {d.match_import_title}
+      </div>
+      <p className="mt-2 text-sm text-amber-100/70">{d.match_import_intro}</p>
+
+      {loadErr && (
+        <div className="mt-3 text-xs text-rose-300/80">{d.my_charts_error(loadErr)}</div>
+      )}
+      {charts === null && !loadErr && (
+        <div className="mt-3 text-xs text-amber-200/60">{d.my_charts_loading}</div>
+      )}
+
+      {charts !== null && (
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <div className="rounded-lg border border-amber-400/20 bg-black/40 p-3 text-sm">
+            <div className="text-[11px] uppercase tracking-widest text-amber-200/60">
+              {d.match_import_my_primary_label}
+            </div>
+            {primary ? (
+              <div className="mt-2 text-amber-100">
+                <div className="font-medium">{primary.name ?? d.my_charts_unnamed}</div>
+                <div className="text-[11px] text-amber-200/60">
+                  {primary.birth_date ?? d.my_charts_missing_date} {primary.birth_time ?? ""}
+                  {primary.birth_place ? ` · ${primary.birth_place}` : ""}
+                </div>
+              </div>
+            ) : (
+              <div className="mt-2 space-y-1 text-amber-200/70">
+                <div>{d.match_import_no_primary}</div>
+                <Link to="/me/home" className="text-amber-300 underline hover:text-amber-200">
+                  {d.match_import_go_home}
+                </Link>
+              </div>
+            )}
+          </div>
+
+          <div className="rounded-lg border border-amber-400/20 bg-black/40 p-3 text-sm">
+            <label className="block text-[11px] uppercase tracking-widest text-amber-200/60">
+              {d.match_import_other_label}
+            </label>
+            {others.length === 0 ? (
+              <div className="mt-2 text-amber-200/70">{d.match_import_no_others}</div>
+            ) : (
+              <select
+                value={otherId}
+                onChange={(e) => setOtherId(e.target.value)}
+                className="mt-2 w-full rounded border border-amber-400/25 bg-black/60 px-2 py-1.5 text-amber-100 outline-none focus:border-amber-300"
+              >
+                <option value="">{d.match_import_other_placeholder}</option>
+                {others.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {(c.name ?? d.charts_untitled_other) +
+                      (c.birth_date ? ` · ${c.birth_date}` : "")}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        {(["friendship", "romantic", "family", "work"] as const).map((m) => (
+          <button
+            key={m}
+            type="button"
+            onClick={() => setMode(m)}
+            aria-pressed={mode === m}
+            className={`rounded-full border px-3 py-1.5 text-xs transition ${
+              mode === m
+                ? "border-amber-300 bg-amber-300/10 text-amber-100"
+                : "border-amber-400/20 text-amber-200/70 hover:border-amber-300/60"
+            }`}
+          >
+            {d.match_modes[m]}
+          </button>
+        ))}
+      </div>
+
+      <label className="mt-4 flex items-start gap-2 text-xs text-amber-200/80">
+        <input
+          type="checkbox"
+          checked={consented}
+          onChange={(e) => setConsented(e.target.checked)}
+          className="mt-0.5 h-3 w-3 accent-amber-400"
+        />
+        <span>
+          <span className="text-amber-100">{d.match_import_privacy}：</span>
+          {d.match_import_privacy_ack}
+        </span>
+      </label>
+
+      <div className="mt-4">
+        <button
+          type="button"
+          disabled={!primary || !otherId || !consented || running}
+          onClick={() => void runCompat()}
+          className="rounded-md border border-amber-300 bg-amber-300/10 px-4 py-2 text-sm text-amber-100 hover:bg-amber-300/20 disabled:cursor-not-allowed disabled:opacity-40"
+          data-testid="match-run-real"
+        >
+          {running ? d.match_import_running : d.match_import_run}
+        </button>
+      </div>
+
+      {result && (
+        <div className="mt-6">
+          {result.partial && result.missing_facts && result.missing_facts.length > 0 && (
+            <div className="mb-3 text-xs text-amber-200/70">
+              {d.match_import_partial_note(result.missing_facts.join(", "))}
+            </div>
+          )}
+          <ResultPanel result={result} d={d} facetLabel={facetLabel} />
+        </div>
+      )}
+    </section>
+  );
+}
+
