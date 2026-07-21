@@ -7,6 +7,7 @@ import { listUserCharts, type ChartRow } from "@/lib/reports-store.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { useLang } from "@/lib/i18n";
 import { useDaily, useFormatDate, xlate } from "@/lib/i18n-daily";
+import { formatDailySignal, formatThemeKeyword, formatContradiction, tPhase } from "@/lib/daily-format";
 
 /**
  * /me/home — Today's Reading Room (preview). Fully localized.
@@ -66,24 +67,7 @@ type RealChartAdapterState =
   | { kind: "error"; message: string }
   | { kind: "ready"; charts: ChartRow[]; canDelete: boolean; canRename: boolean; canSetDefault: boolean };
 
-/** Rewrite an engine-emitted contradiction like
- *  `study(70) 与 wealth(35) 分数差 ≥ 20，请以现实情境为准。`
- *  into the current locale using structured re-parsing. Falls back to
- *  the raw string if it doesn't match. */
-function localizeContradiction(
-  raw: string,
-  domainLabel: (k: string) => string,
-  lang: "zh" | "en",
-): string {
-  const m = raw.match(/(\w+)\((\d+)\)\s*[^\d]+?(\w+)\((\d+)\)/);
-  if (!m) return raw;
-  const [, aK, aS, bK, bS] = m;
-  const aL = domainLabel(aK);
-  const bL = domainLabel(bK);
-  return lang === "zh"
-    ? `${aL}（${aS}） 与 ${bL}（${bS}） 分数差 ≥ 20，请以现实情境为准。`
-    : `${aL} (${aS}) vs. ${bL} (${bS}) differ by ≥ 20 — trust the real situation over the reading.`;
-}
+// (contradiction/theme/signal formatting now lives in `@/lib/daily-format`.)
 
 function DailyRoomPage() {
   const { lang } = useLang();
@@ -136,28 +120,17 @@ function DailyRoomPage() {
   const themeKeywords = useMemo(() => {
     if (!score.overall.theme_keywords.length) return d.theme_default_keyword;
     return score.overall.theme_keywords
-      .map((kw) => {
-        // format `new_moon:起始` → phase-name + tail; `retrograde:mercury,venus`
-        // → aspect + planet list
-        const [head, tail] = kw.split(":");
-        if (head === "retrograde") {
-          const planets = (tail ?? "")
-            .split(",")
-            .map((p) => xlate(d.planet, p))
-            .join(" · ");
-          return `${lang === "zh" ? "逆行" : "retrograde"}: ${planets}`;
-        }
-        const phaseName = xlate(d.phase, head);
-        return tail ? `${phaseName} · ${tail}` : phaseName;
-      })
+      .map((kw) => formatThemeKeyword(kw, d, lang))
       .join(" · ");
   }, [score.overall.theme_keywords, d, lang]);
 
-  const phaseName = facts ? xlate(d.phase, facts.moon.phase) : "";
+  const phaseName = facts ? tPhase(d, facts.moon.phase) : "";
   const supportive = score.supportive_signals.length
-    ? score.supportive_signals
-    : d.supportive_demo;
-  const caution = score.caution_signals.length ? score.caution_signals : d.caution_demo;
+    ? score.supportive_signals.map((s) => formatDailySignal(s, d, lang))
+    : [...d.supportive_demo];
+  const caution = score.caution_signals.length
+    ? score.caution_signals.map((s) => formatDailySignal(s, d, lang))
+    : [...d.caution_demo];
 
   return (
     <div className="min-h-screen bg-[#0a0a12] text-amber-50">
@@ -300,7 +273,7 @@ function DailyRoomPage() {
               <div className="mt-4 rounded-md border border-amber-400/20 bg-amber-500/5 p-3 text-xs text-amber-100/80">
                 <div className="mb-1 font-semibold text-amber-200">{d.contradictions_title}</div>
                 {score.contradictions.map((c, i) => (
-                  <div key={i}>{localizeContradiction(c, domainLabel, lang)}</div>
+                  <div key={i}>{formatContradiction(c, d, lang)}</div>
                 ))}
               </div>
             )}
