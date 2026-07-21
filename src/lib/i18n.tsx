@@ -530,6 +530,12 @@ function getServerLanguageSnapshot(): Lang {
 
 function subscribeLanguageStore(onStoreChange: () => void): () => void {
   if (typeof window === "undefined") return () => undefined;
+  if (
+    typeof window.addEventListener !== "function" ||
+    typeof window.removeEventListener !== "function"
+  ) {
+    return () => undefined;
+  }
 
   const notify = () => onStoreChange();
   const onStorage = (event: StorageEvent) => {
@@ -553,7 +559,9 @@ function persistLanguage(lang: Lang): void {
   } catch {}
   syncDocumentLang(lang);
   if (typeof window !== "undefined") {
-    window.dispatchEvent(new CustomEvent(LANGUAGE_CHANGE_EVENT, { detail: lang }));
+    if (typeof window.dispatchEvent === "function" && typeof CustomEvent !== "undefined") {
+      window.dispatchEvent(new CustomEvent(LANGUAGE_CHANGE_EVENT, { detail: lang }));
+    }
   }
 }
 
