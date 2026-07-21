@@ -175,10 +175,12 @@ export type DailyDict = {
   domain: Enum<"study" | "career" | "love" | "wealth">;
   phase: Enum<
     | "new"
+    | "new_moon"
     | "waxing_crescent"
     | "first_quarter"
     | "waxing_gibbous"
     | "full"
+    | "full_moon"
     | "waning_gibbous"
     | "last_quarter"
     | "waning_crescent"
