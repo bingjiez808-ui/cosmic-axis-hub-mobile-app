@@ -341,6 +341,9 @@ function SiteNav() {
           <div className="hidden items-center justify-center gap-4 md:flex md:justify-self-center lg:gap-8">
             <Link to="/traditions" className={linkClass}>{t.nav_traditions}</Link>
             <Link to="/ritual" className={linkClass}>{t.nav_ritual}</Link>
+            {session && (
+              <Link to="/me/home" className={linkClass + " text-gold-dust"}>{t.nav_today}</Link>
+            )}
             <Link to="/community" className={linkClass}>{t.nav_community}</Link>
             <Link to="/about" className={linkClass}>{t.nav_about}</Link>
             {showAdmin && (
