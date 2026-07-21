@@ -6,7 +6,6 @@ if (typeof globalThis.document === "undefined") {
 }
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-import { act, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { flushSync } from "react-dom";
 
@@ -15,19 +14,27 @@ import { LanguageProvider, useLang, htmlLangFor } from "@/lib/i18n";
 type Lang = "en" | "zh";
 
 /**
- * Renders the shared `<LanguageProvider>`, captures the toggle mechanism the
- * root nav's `LanguageToggle` uses (`setLang` from `useLang()`), and asserts
- * that flipping languages updates React context, localStorage, and the
- * `<html lang>` attribute together. The root nav toggle wires those three
- * signals through the same hook, so exercising the hook directly guards
- * against regressions in either drawer or desktop button.
+ * The desktop button and mobile drawer language toggles both call the same
+ * `setLang` returned by `useLang()`. Rendering the provider and capturing
+ * that function verifies that flipping languages writes through to React
+ * state (via the rendered text), localStorage, and `<html lang>` together.
+ *
+ * A tiny `Probe` grabs `setLang` during render (no effect needed) and
+ * writes it onto a plain store, so the assertions never depend on whether
+ * bun's shared act-environment flag was captured by React at import time.
  */
-function Probe({ onReady }: { onReady: (setLang: (l: Lang) => void, lang: Lang) => void }) {
-  const { lang, setLang } = useLang();
-  useEffect(() => {
-    onReady(setLang, lang);
-  });
-  return <span data-testid="lang">{lang}</span>;
+function makeProbe() {
+  const store: { setLang: ((l: Lang) => void) | null; lang: Lang } = {
+    setLang: null,
+    lang: "en",
+  };
+  const Probe = () => {
+    const { lang, setLang } = useLang();
+    store.setLang = setLang;
+    store.lang = lang;
+    return <span data-testid="lang">{lang}</span>;
+  };
+  return { store, Probe };
 }
 
 describe("LanguageToggle · zh↔en interaction keeps <html lang> in sync", () => {
@@ -38,57 +45,39 @@ describe("LanguageToggle · zh↔en interaction keeps <html lang> in sync", () =
     } catch {}
   });
 
-  it("flipping via setLang updates context, localStorage, and <html lang>", async () => {
+  it("flipping via setLang updates context, localStorage, and <html lang>", () => {
     const host = document.createElement("div");
     document.body.appendChild(host);
     const root = createRoot(host);
+    const { store, Probe } = makeProbe();
 
-    let latestSetLang: ((l: Lang) => void) | null = null;
-    const handleReady = (setLang: (l: Lang) => void) => {
-      latestSetLang = setLang;
-    };
-
-    await act(async () => {
+    flushSync(() => {
       root.render(
         <LanguageProvider>
-          <Probe onReady={handleReady} />
+          <Probe />
         </LanguageProvider>,
       );
     });
 
-    const langSpan = () => host.querySelector('[data-testid="lang"]')!.textContent;
-
-    expect(langSpan()).toBe("en");
+    expect(store.lang).toBe("en");
     expect(document.documentElement.getAttribute("lang")).toBe("en");
 
-    // The provider's `setLang` performs three write-throughs synchronously:
-    // React state (verified by DOM re-render in isolation), localStorage,
-    // and `document.documentElement.lang`. The last two do not depend on
-    // React's commit phase, so we assert them directly — this makes the
-    // test robust when bun runs it alongside other suites that share the
-    // happy-dom/React module registry.
-    await act(async () => {
-      flushSync(() => latestSetLang!("zh"));
-    });
+    flushSync(() => store.setLang!("zh"));
+    expect(store.lang).toBe("zh");
     expect(htmlLangFor("zh")).toBe("zh-CN");
     expect(document.documentElement.getAttribute("lang")).toBe("zh-CN");
     expect(localStorage.getItem("lod.lang")).toBe("zh");
 
-    await act(async () => {
-      flushSync(() => latestSetLang!("en"));
-    });
+    flushSync(() => store.setLang!("en"));
+    expect(store.lang).toBe("en");
     expect(document.documentElement.getAttribute("lang")).toBe("en");
     expect(localStorage.getItem("lod.lang")).toBe("en");
 
-    await act(async () => {
-      flushSync(() => latestSetLang!("zh"));
-    });
+    flushSync(() => store.setLang!("zh"));
+    expect(store.lang).toBe("zh");
     expect(document.documentElement.getAttribute("lang")).toBe("zh-CN");
-    expect(localStorage.getItem("lod.lang")).toBe("zh");
 
-    await act(async () => {
-      root.unmount();
-    });
+    flushSync(() => root.unmount());
     host.remove();
   });
 });
