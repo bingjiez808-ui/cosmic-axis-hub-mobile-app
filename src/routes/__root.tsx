@@ -15,6 +15,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { LanguageProvider, useLang } from "../lib/i18n";
 import { AccountProvider, useAccount } from "../lib/account";
 import { AccountModal } from "../components/AccountModal";
+import { LanguageToggle } from "../components/LanguageToggle";
 import { LibrarySplash } from "../components/LibrarySplash";
 import { ElderCompanion } from "../components/ElderCompanion";
 import { useSupabaseSession } from "../lib/session";
@@ -255,27 +256,6 @@ function GlobalSageCompanion() {
 }
 
 
-function LanguageToggle() {
-  const { lang, setLang } = useLang();
-  return (
-    <div className="flex items-center gap-1 rounded-full border border-white/10 p-0.5">
-      {(["en", "zh"] as const).map((l) => (
-        <button
-          key={l}
-          type="button"
-          onClick={() => setLang(l)}
-          className={`rounded-full px-2.5 py-1 text-[10px] tracking-[0.28em] transition-colors ${
-            lang === l
-              ? "bg-gold-dust/15 text-gold-light"
-              : "text-stone-warm/50 hover:text-gold-dust"
-          }`}
-        >
-          {l === "en" ? "EN" : "中"}
-        </button>
-      ))}
-    </div>
-  );
-}
 
 function SiteNav() {
   const { t, lang } = useLang();
