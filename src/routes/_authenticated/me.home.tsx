@@ -120,28 +120,17 @@ function DailyRoomPage() {
   const themeKeywords = useMemo(() => {
     if (!score.overall.theme_keywords.length) return d.theme_default_keyword;
     return score.overall.theme_keywords
-      .map((kw) => {
-        // format `new_moon:起始` → phase-name + tail; `retrograde:mercury,venus`
-        // → aspect + planet list
-        const [head, tail] = kw.split(":");
-        if (head === "retrograde") {
-          const planets = (tail ?? "")
-            .split(",")
-            .map((p) => xlate(d.planet, p))
-            .join(" · ");
-          return `${lang === "zh" ? "逆行" : "retrograde"}: ${planets}`;
-        }
-        const phaseName = xlate(d.phase, head);
-        return tail ? `${phaseName} · ${tail}` : phaseName;
-      })
+      .map((kw) => formatThemeKeyword(kw, d, lang))
       .join(" · ");
   }, [score.overall.theme_keywords, d, lang]);
 
-  const phaseName = facts ? xlate(d.phase, facts.moon.phase) : "";
+  const phaseName = facts ? tPhase(d, facts.moon.phase) : "";
   const supportive = score.supportive_signals.length
-    ? score.supportive_signals
-    : d.supportive_demo;
-  const caution = score.caution_signals.length ? score.caution_signals : d.caution_demo;
+    ? score.supportive_signals.map((s) => formatDailySignal(s, d, lang))
+    : [...d.supportive_demo];
+  const caution = score.caution_signals.length
+    ? score.caution_signals.map((s) => formatDailySignal(s, d, lang))
+    : [...d.caution_demo];
 
   return (
     <div className="min-h-screen bg-[#0a0a12] text-amber-50">
