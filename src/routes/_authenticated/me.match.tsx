@@ -226,6 +226,9 @@ function MatchPage() {
             )}
           </div>
         </details>
+          </>
+        )}
+
 
 
         <p className="mt-8 text-xs text-amber-200/50">{d.match_footer}</p>
