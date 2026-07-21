@@ -106,6 +106,53 @@ const DICT = {
   band_high: { zh: "高", en: "High" },
   band_mid: { zh: "中", en: "Mid" },
   band_low: { zh: "低", en: "Low" },
+
+  hero_title: {
+    zh: "在茫茫书页中，寻找与你共振的另一段注脚。",
+    en: "Somewhere in the endless pages, another footnote resonates with yours.",
+  },
+  hero_body: {
+    zh: "共鸣星图并非配对成功率，而是命运图书馆为你点亮的可能。",
+    en: "The resonance atlas is not a compatibility score — it is a lantern the Library lifts for you.",
+  },
+  ritual_step1: { zh: "点亮匿名代号", en: "Kindle your anonymous mark" },
+  ritual_step2: { zh: "在星图上倾听共鸣", en: "Listen for resonance in the atlas" },
+  ritual_step3: { zh: "递出书签，等待回音", en: "Send a bookmark, await the echo" },
+
+  view_atlas: { zh: "星图视图", en: "Atlas view" },
+  view_list: { zh: "列表视图", en: "List view" },
+
+  atlas_center_you: { zh: "你在此处", en: "You are here" },
+  atlas_scanning: { zh: "星图正在校准…", en: "The atlas is calibrating…" },
+  atlas_focus_hint: {
+    zh: "点亮一颗星，展开命运注脚。",
+    en: "Kindle a star to open its footnote.",
+  },
+  atlas_pending_pulse: { zh: "书签已递出，等待回音", en: "Bookmark sent, awaiting reply" },
+  atlas_none_yet: {
+    zh: "星图暂无共鸣者。稍后再来，也许有新的注脚。",
+    en: "No resonant stars yet. Return soon — new footnotes may arrive.",
+  },
+
+  drawer_close: { zh: "关闭", en: "Close" },
+  drawer_radar_self: { zh: "你", en: "You" },
+  drawer_radar_other: { zh: "对方", en: "Them" },
+  drawer_radar_disclaimer: {
+    zh: "四维雷达是共鸣意象，并非关系成功率。",
+    en: "The four axes are a resonance picture, not a relationship success rate.",
+  },
+  drawer_group_resonance: { zh: "产生共鸣的地方", en: "Where you resonate" },
+  drawer_group_complement: { zh: "形成互补的地方", en: "Where you complement" },
+
+  invite_ritual_title: { zh: "递出一枚书签", en: "Offer a bookmark" },
+  invite_ritual_body: {
+    zh: "书签将沿光线飞向对方星点。ta 若接受，两颗星核之间会连起一条金紫细线。",
+    en: "Your bookmark drifts along a beam of light. If accepted, a slender gold-violet thread will bind your two stars.",
+  },
+  invite_delivered: { zh: "书签已抵达对方灯下。", en: "The bookmark has reached their lamp." },
+
+  primary_missing_title: { zh: "需要先设定主命盘", en: "A primary chart is required" },
+  primary_missing_cta: { zh: "前往「今日阅览室」设置 →", en: "Open Today’s Reading Room →" },
 } as const;
 
 type Key = keyof typeof DICT;
