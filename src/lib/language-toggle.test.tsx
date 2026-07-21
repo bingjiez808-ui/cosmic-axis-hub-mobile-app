@@ -1,5 +1,9 @@
 // @ts-expect-error bun:test
 import { describe, expect, it, beforeEach } from "bun:test";
+import { GlobalRegistrator } from "@happy-dom/global-registrator";
+if (typeof globalThis.document === "undefined") {
+  GlobalRegistrator.register({ url: "http://localhost/", width: 1024, height: 768 });
+}
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 
