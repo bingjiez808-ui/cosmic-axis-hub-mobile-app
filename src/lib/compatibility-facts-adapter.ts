@@ -141,7 +141,7 @@ function facetOpenness(f: PremiumFacts): FacetValue | null {
     });
   }
   if (f.western?.aspects) {
-    const commBodies = new Set(["Moon", "Venus", "Mercury"]);
+    const commBodies = new Set(["moon", "venus", "mercury"]);
     const n = f.western.aspects.filter((a) => commBodies.has(a.a) || commBodies.has(a.b)).length;
     parts.push({ v: clamp(0.25 + n * 0.08, 0, 1), ref: "western.aspects", sys: "western" });
   }
