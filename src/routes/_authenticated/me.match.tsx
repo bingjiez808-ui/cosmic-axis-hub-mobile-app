@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { computeCompatibility, type CompatResult } from "@/lib/compatibility-score";
 import { MATCH_DEMO, type MatchDemoKey } from "@/experiences/daily-room/match-fixtures";
@@ -7,6 +7,17 @@ import { ensureSocialPreviewAllowed } from "@/experiences/daily-room/route-guard
 import { SocialConsentGate, useSocialConsent } from "@/experiences/daily-room/social-consent";
 import { useLang } from "@/lib/i18n";
 import { useDaily, xlate } from "@/lib/i18n-daily";
+import {
+  listUserCharts,
+  getChartById,
+  type ChartRow,
+} from "@/lib/reports-store.functions";
+import { buildCalculationSnapshot } from "@/lib/calc-snapshot";
+import { buildPremiumFacts } from "@/lib/premium-facts";
+import {
+  adaptFacetsFromFacts,
+  aggregateEvidence,
+} from "@/lib/compatibility-facts-adapter";
 
 export const Route = createFileRoute("/_authenticated/me/match")({
   head: () => ({ meta: [{ name: "robots", content: "noindex,nofollow" }] }),
@@ -15,6 +26,7 @@ export const Route = createFileRoute("/_authenticated/me/match")({
   },
   component: MatchPage,
 });
+
 
 const KEYS: MatchDemoKey[] = ["friend_pair", "complementary_pair", "clash_pair", "partial_pair"];
 
