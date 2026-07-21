@@ -12,7 +12,7 @@
  * consumer of `useLang` on the current page rerenders in the new
  * language on the same tick.
  */
-import { useLang } from "../lib/i18n";
+import { useLang } from "@/lib/i18n";
 
 export function LanguageToggle() {
   const { lang, setLang } = useLang();

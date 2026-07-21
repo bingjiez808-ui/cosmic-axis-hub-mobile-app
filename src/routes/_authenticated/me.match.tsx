@@ -34,6 +34,10 @@ function MatchPage() {
   const effectivelyRevoked = revoked || !consent.gated;
 
   const pair = MATCH_DEMO[key];
+  const showTechDetails =
+    import.meta.env.DEV &&
+    typeof window !== "undefined" &&
+    window.localStorage.getItem("lod.showTechDetails") === "1";
   const result = useMemo(
     () =>
       computeCompatibility({
@@ -179,7 +183,7 @@ function MatchPage() {
         )}
 
         <p className="mt-8 text-xs text-amber-200/50">{d.match_footer}</p>
-        {import.meta.env.DEV ? (
+        {showTechDetails ? (
           <details className="mt-3 rounded-lg border border-amber-400/10 bg-black/20 px-3 py-2 text-[11px] text-amber-200/40 open:text-amber-200/60">
             <summary className="cursor-pointer select-none tracking-wide">
               {d.match_tech_details_label}

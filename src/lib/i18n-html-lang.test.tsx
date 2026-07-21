@@ -207,6 +207,66 @@ describe("LanguageToggle · real DOM interaction", () => {
     expect(document.querySelector('[data-testid="lang"]')?.textContent).toBe("zh");
     expect(document.body.textContent ?? "").toContain("双人命盘互动 · 演示");
   });
+
+  it("keeps nested LanguageProviders on one shared store when an inner EN button is clicked", async () => {
+    function LocalizedPanel({ id }: { id: string }) {
+      const { lang } = useLang();
+      const d = useDaily();
+      return (
+        <section data-testid={id}>
+          <LanguageToggle />
+          <p data-testid={`${id}-lang`}>{lang}</p>
+          <h2>{d.home_secondary_nav_match}</h2>
+          <p>{d.match_kicker}</p>
+        </section>
+      );
+    }
+
+    await mount(
+      <LanguageProvider>
+        <LocalizedPanel id="outer" />
+        <LanguageProvider>
+          <LocalizedPanel id="inner" />
+        </LanguageProvider>
+      </LanguageProvider>,
+    );
+
+    const inner = document.querySelector<HTMLElement>('[data-testid="inner"]');
+    const innerZh = inner?.querySelector<HTMLButtonElement>('[data-lang-button="zh"]');
+    expect(innerZh).toBeTruthy();
+    await act(async () => {
+      innerZh!.click();
+    });
+
+    expect(document.documentElement.getAttribute("lang")).toBe("zh-CN");
+    expect(document.querySelector('[data-testid="outer-lang"]')?.textContent).toBe("zh");
+    expect(document.querySelector('[data-testid="inner-lang"]')?.textContent).toBe("zh");
+    expect(document.body.textContent ?? "").toContain("适配分析");
+
+    const innerEn = inner?.querySelector<HTMLButtonElement>('[data-lang-button="en"]');
+    expect(innerEn).toBeTruthy();
+    await act(async () => {
+      innerEn!.click();
+    });
+
+    expect(document.documentElement.getAttribute("lang")).toBe("en");
+    expect(window.localStorage.getItem("lod.lang")).toBe("en");
+    expect(document.querySelector('[data-testid="outer-lang"]')?.textContent).toBe("en");
+    expect(document.querySelector('[data-testid="inner-lang"]')?.textContent).toBe("en");
+    expect(document.body.textContent ?? "").toContain("Match");
+    expect(document.body.textContent ?? "").toContain("Two-chart compatibility · demo");
+    expect(document.body.textContent ?? "").not.toContain("双人命盘互动 · 演示");
+
+    await act(async () => {
+      innerZh!.click();
+    });
+
+    expect(document.documentElement.getAttribute("lang")).toBe("zh-CN");
+    expect(window.localStorage.getItem("lod.lang")).toBe("zh");
+    expect(document.querySelector('[data-testid="outer-lang"]')?.textContent).toBe("zh");
+    expect(document.querySelector('[data-testid="inner-lang"]')?.textContent).toBe("zh");
+    expect(document.body.textContent ?? "").toContain("双人命盘互动 · 演示");
+  });
 });
 
 describe("AuthRefreshFailedError", () => {
