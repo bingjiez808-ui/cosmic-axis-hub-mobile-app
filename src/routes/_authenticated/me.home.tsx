@@ -356,6 +356,7 @@ function DailyRoomPage() {
             </div>
           )}
         </section>
+        )}
       </div>
     </div>
   );
