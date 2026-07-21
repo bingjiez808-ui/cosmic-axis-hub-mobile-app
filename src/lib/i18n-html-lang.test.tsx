@@ -36,17 +36,19 @@ function restoreDomWindow(): void {
   });
 }
 
-import React from "react";
-import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { renderToString } from "react-dom/server";
+restoreDomWindow();
+(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-import { htmlLangFor, syncDocumentLang, LanguageProvider, useLang } from "@/lib/i18n";
-import { useDaily } from "@/lib/i18n-daily";
-import { LanguageToggle } from "@/components/LanguageToggle";
-import { AuthRefreshFailedError } from "@/routes/_authenticated/route";
+const React = await import("react");
+const { act } = React;
+const { createRoot } = await import("react-dom/client");
+const { renderToString } = await import("react-dom/server");
+const { htmlLangFor, syncDocumentLang, LanguageProvider, useLang } = await import("@/lib/i18n");
+const { useDaily } = await import("@/lib/i18n-daily");
+const { LanguageToggle } = await import("@/components/LanguageToggle");
+const { AuthRefreshFailedError } = await import("@/routes/_authenticated/route");
 
-const activeRoots: Array<{ root: Root; host: HTMLElement }> = [];
+const activeRoots: Array<{ root: ReturnType<typeof createRoot>; host: HTMLElement }> = [];
 
 async function mount(el: React.ReactElement) {
   restoreDomWindow();
