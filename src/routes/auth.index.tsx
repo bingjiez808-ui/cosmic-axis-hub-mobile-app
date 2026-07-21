@@ -76,14 +76,14 @@ function AuthPage() {
     if (search.redirect) return search.redirect;
     const { data: userData } = await supabase.auth.getUser();
     const userId = userData.user?.id;
-    if (!userId) return "/";
+    if (!userId) return "/me/home";
     const { data } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", userId)
       .eq("role", "admin")
       .maybeSingle();
-    return data ? "/admin" : "/";
+    return data ? "/admin" : "/me/home";
   };
 
   useEffect(() => {

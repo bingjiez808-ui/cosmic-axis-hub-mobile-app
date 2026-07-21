@@ -1,52 +1,90 @@
-这批交付覆盖 8 项要求，涉及新增约 20+ 文件（repository、UI、schema、tests）。为保证质量与真实可跑，我建议按**两轮**执行，本轮完成骨架 + 真实接入 + 全量测试，下一轮做端到端浏览器演练与视觉打磨。
+# Plan: i18n for Daily Room / Friends / Match + Login Entry
 
-## 本轮范围（Turn A）
+## Scope (V1 only)
+Refactor three preview pages to full zh/en, wire language to Intl formatting, expose a "Today" entry across nav + account center, and route post-login default to `/me/home`. No DB migrations, no publish, no changes to deterministic scoring or ephemeris. Existing i18n dict expands; nothing hardcoded on these pages.
 
-### 1. `/me/home` 接入真实命盘
-- 新建 `src/lib/saved-charts.functions.ts`：`listMyCharts / setDefaultChart / renameChart / softDeleteChart / restoreChart`，全部走 `requireSupabaseAuth`。
-- 在 `charts` 表补一次迁移草稿（保留在 `supabase/pending/`）：`display_name`, `is_default`, `deleted_at`, `deleted_reason`；unique `(user_id, canonical_input_hash) WHERE deleted_at IS NULL` 保证去重。
-- `/me/home` 改造：真实登录 → 拉取命盘 → 无命盘或 flag 关闭 → Demo fixture fallback 且明确标注「演示数据」。
-- 新增 `<ChartSwitcher />` 组件（下拉 + 重命名/设为默认/软删+撤销 Toast）。
+## 1. i18n dictionary (`src/lib/i18n.tsx`)
 
-### 2. 好友系统（不含自由聊天）
-- `friendships`、`friend_invites`、`friend_blocks`、`friend_reports` 表（pending 迁移）。
-- `src/lib/friends.functions.ts`：`createInvite / acceptInvite / rejectInvite / cancelInvite / listFriends / removeFriend / blockUser / reportUser`。
-- 邀请方式：一次性 code（`inv_` 前缀）、可选用户名查找、可分享链接 `/invite/<code>`。
-- 新页 `/me/friends`（列表 + 待处理 tab + 屏蔽名单）。
+Add a new `daily` namespace section to `Dict` and to both `zh` / `en` dicts. Groups:
+- Nav / entry: `nav_today`, `today_card_title`, `today_card_open`, `today_card_score_label`.
+- Daily room: header, welcome, evidence toggle, fixture labels, entitlement toggle, missing chart notice, empty states, loading/error.
+- Domains: `domain_study | career | love | wealth` labels + short descriptions.
+- Bands: `band_supportive | neutral | mixed | caution`.
+- Confidence: `confidence_high | medium | low`.
+- Enumerables shown to user (via translator maps, never raw keys):
+  - `planet_*` (sun, moon, mercury, venus, mars, jupiter, saturn, uranus, neptune, pluto, north_node, south_node, chiron).
+  - `aspect_*` (conjunction, opposition, trine, square, sextile, quincunx).
+  - `sign_*` (12 zodiac).
+  - `phase_*` (moon phases: new, waxing_crescent, first_quarter, waxing_gibbous, full, waning_gibbous, last_quarter, waning_crescent).
+- Friends: request states (pending/accepted/blocked/declined), invite methods (link/username/one_time_code), buttons (send/accept/decline/withdraw/remove/block/unblock/report), inbox empty, 5 note templates, 4 report categories, consent revoked banner.
+- Match: mode (friendship / romantic partner / co-founder), facets (communication, emotional_support, action_tempo, boundary_repair, growth), section headings (resonance / complements / friction / advice / evidence / disclaimer), revoked panel, missing-facts notice.
+- Consent gate (`SocialConsentGate`): all its Chinese literals become dict entries with `SOCIAL_MIN_AGE` interpolation.
 
-### 3. 双方授权匹配 `chart_match_consents`
-- 表：`(a_user, b_user, a_chart_id, b_chart_id, mode, a_consent_at, b_consent_at, revoked_at)`。
-- `matches.functions.ts`：`requestMatch / respondMatch / revokeMatch`，撤回后立即失效（unique partial index）。
+Add helper `formatDate(date, lang, tz)` and `formatNumber(n, lang)` wrappers using `Intl` — used everywhere the pages currently pass `today` / scores.
 
-### 4. `compatibility-score-v1` 确定性引擎
-- `src/lib/compatibility-score.ts`：canonical pair key = `[min(a,b), max(a,b)]` 顺序无关；默认 `friendship` 模式。
-- 5 维度：沟通、情绪支持、行动节奏、边界修复、共同成长；输出共鸣点/互补点/误解点/相处建议数组；显式 `disclaimer` 字段。
-- 纯函数、无 AI，全量单测覆盖对称性 + 稳定性。
+## 2. Cache & determinism
+- `daily-facts-v1` and `daily-domain-score-v1` outputs stay language-agnostic (keys/enums preserved).
+- Only human-readable rendering uses the translator maps.
+- If any explanation cache key surfaces (currently these pages don't cache explanation text — supportive/caution strings are literal fixtures), extend its key with `:${lang}` so switching language regenerates the localized string. Deterministic scores must NOT depend on lang.
 
-### 5. 匹配结果 fixtures + repository fallback + 通知
-- `notifications` 表 + `src/lib/notifications.functions.ts`：好友请求、匹配请求、匹配完成三类。
-- 站内红点通过 header badge 显示。
+## 3. Page rewrites
 
-### 6. 会员分层
-- 复用 `useEntitlements()`：基础操作免费；「详细证据」「多命盘每日导读」「完整匹配报告」加 `<PremiumGate feature="daily-detail">`。
-- 已购隐藏 CTA（沿用现有 `entitled` 判定）。
+### `src/routes/_authenticated/me.home.tsx`
+- Replace every literal with `t.*`.
+- Domain labels via `domainLabel(t, key)`; band pills via `bandLabel(t, band)`.
+- Fixture labels come from `loadDailyRoomFixture(...).label` — keep raw fixture label (each fixture is age-scenario named); wrap with a translator map `t.fixture_student_youth` etc.
+- Moon phase renders via `t.phase_*`.
+- Supportive/caution demo fallback strings become `t.today_supportive_demo_1..3` / `t.today_caution_demo_1..3`; skill-driven strings pass through (already deterministic, but wrap with note that these come from fixtures — leave contents intact in the demo since fixtures are pre-authored Chinese; add English variants in the fixture consumer via a `localizeSignal(t, s)` no-op fallback — if a signal doesn't have a locale mapping, we still render it verbatim; document this limitation).
+- Add secondary nav row (Home / My Charts / Friends / Match) using `<Link>`.
+- Intl date formatting via `formatDate(new Date(), lang, tz)` for the today string.
 
-### 7. 文案统一
-- 全库替换用户可见「研究」→「学业与认知」；保留 skill/内部标识符 `study/academic` 不动。
+### `src/routes/_authenticated/me.friends.tsx`
+- Full literal → `t.*`.
+- Note templates rebuilt from `t.note_templates` (readonly string[5]).
+- Report categories from `t.report_categories` (readonly string[4]).
+- Consent gate wrapped by translated messages.
+- Empty states, inbox, buttons all translated.
 
-### 8. 验证
-- 全量 `vitest`、`tsgo`、`bun run build`。
-- Playwright headless 跑 `/me/home`、`/me/friends`、`/me/match` 三视口截图（390/430/1440）。
-- 输出：console 无错、RLS 契约测试（撤回后 A 侧读不到 B 分数）、pair-key 对称性测试、timezone 边界测试。
+### `src/routes/_authenticated/me.match.tsx`
+- Full literal → `t.*`.
+- Facet labels via `t.facet_*` map, mode labels via `t.match_mode_*`.
+- "Compatibility is not a success rate" disclaimer via `t.match_disclaimer`.
+- Missing facts list translated with `t.missing_fact_*` fallback → raw key when unmapped.
 
-## 明确 Defer 到 Turn B
-- 邀请链接的公开 landing page（`/invite/[code]` 无登录预览）
-- 举报后管理员审阅工作流
-- 匹配结果 PDF 导出
+### `src/experiences/daily-room/social-consent.tsx`
+- All Chinese literals through `t.consent_*` with `{age}` interpolation.
 
-## 交付格式
-- 不执行 migration，SQL 存 `supabase/pending/20260722_friends_and_matches.sql` 供审阅
-- 不发布，不调 AI，不真实收费
-- 最终 commit 消息 + 测试计数 + fixture 列表 + 未验证项清单
+## 4. Entry points
 
-确认后我立即开工。
+### Post-login default (`src/routes/auth.index.tsx`)
+- On successful sign-in, if a `redirect` search param is present, honor it. Otherwise navigate to `/me/home` (currently probably `/` or `/ritual`).
+
+### Account center / desktop nav
+- `AccountModal` header row + main site nav (whichever component renders the account menu link) get a new "今日命运 / Today" link at the top of the personal section, pointing to `/me/home`.
+- On mobile drawer: "Today" is the first item under the personal section.
+
+### `/me/home` secondary nav
+- Header row with three tabs: "我的命盘 / My Charts" (opens AccountModal or `/report`), "好友 / Friends" (`/me/friends`), "适配分析 / Match" (`/me/match`).
+
+### Account modal "Today Card"
+- Add a card at the top of `AccountModal` (above "我的命盘与报告") in the black-gold library aesthetic. Shows: "今日星图 / Today's Star Chart", a small overall score preview (uses the same daily-facts pipeline against user's default chart via the existing adapter; if no chart or unentitled preview, show a subdued CTA "打开今日阅览室"). Not crowded on mobile — one line + one button, no horizontal overflow.
+
+## 5. Auth still enforced
+Existing `_authenticated/route.tsx` gate is untouched. Unauthenticated `/me/home` etc. still bounce to `/auth`. Preview-guard `ensureSocialPreviewAllowed` unchanged.
+
+## 6. Tests
+- New `src/lib/i18n-missing-keys.test.ts` — asserts every key present in `en` exists in `zh` and vice versa, and that new keys `nav_today`, `today_card_title`, `domain_study`, all `planet_*`, `aspect_*`, `sign_*`, `phase_*`, `band_*`, `confidence_*`, `facet_*`, `match_mode_*`, `consent_*` are present.
+- Extend an existing route test (or add lightweight snapshot) to render `/me/home` in both langs and assert no literal Chinese in English mode / vice versa for known selectors.
+- `tsgo` + `bunx vitest run` full suite.
+
+## 7. Visual verification
+- Playwright driven, `/me/home` `/me/friends` `/me/match` at 390 / 430 / 1440, in both langs. Assert `scrollWidth === innerWidth`, zero console errors, no nested buttons, entry card visible on account modal.
+
+## 8. Non-goals / explicit constraints
+- No DB migrations, no publish.
+- No changes to deterministic score outputs.
+- No copy from third-party creators (陶白白 etc.) — all copy is Fate Nexus original.
+- Existing user-generated same-lang same-day results (none cached yet on these routes) unchanged; if a future cache is added elsewhere, key includes `:${lang}`.
+
+## Deliverables
+List of edited files, new i18n key count, test count, visual screenshots at three widths × two langs, and note on real signed-in path (which still needs manual login on the preview host, matching prior turns).
