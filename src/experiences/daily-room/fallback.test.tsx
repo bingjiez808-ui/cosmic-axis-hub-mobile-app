@@ -63,11 +63,6 @@ afterEach(async () => {
 describe("/me/home fallbacks · never blank", () => {
   beforeEach(() => {
     resetLangToEnglish();
-    try {
-      window.localStorage.clear();
-    } catch {
-      /* ignore */
-    }
   });
 
   it("pending panel renders non-empty English text by default", async () => {
