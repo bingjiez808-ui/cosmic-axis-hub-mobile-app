@@ -49,7 +49,7 @@ describe("LanguageToggle wiring", () => {
 
   it("root route imports the shared LanguageToggle and renders it in both navs", () => {
     expect(rootSource).toMatch(
-      /import\s*\{\s*LanguageToggle\s*\}\s*from\s*["']\.\.\/components\/LanguageToggle["']/,
+      /import\s*\{\s*LanguageToggle\s*\}\s*from\s*["']@\/components\/LanguageToggle["']/,
     );
     // No duplicate local declaration that could shadow the shared one.
     expect(rootSource).not.toMatch(/function LanguageToggle\(\)/);

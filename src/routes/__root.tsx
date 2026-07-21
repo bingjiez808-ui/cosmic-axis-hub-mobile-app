@@ -12,10 +12,10 @@ import { useEffect, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { LanguageProvider, useLang } from "../lib/i18n";
+import { LanguageProvider, useLang } from "@/lib/i18n";
 import { AccountProvider, useAccount } from "../lib/account";
 import { AccountModal } from "../components/AccountModal";
-import { LanguageToggle } from "../components/LanguageToggle";
+import { LanguageToggle } from "@/components/LanguageToggle";
 import { LibrarySplash } from "../components/LibrarySplash";
 import { ElderCompanion } from "../components/ElderCompanion";
 import { useSupabaseSession } from "../lib/session";
