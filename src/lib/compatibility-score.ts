@@ -74,6 +74,14 @@ export type CompatResult = {
   disclaimer: string;
   partial: boolean;
   confidence: number; // 0..1
+  /** Optional: evidence_refs into premium_facts contributed by the two sides. */
+  evidence_refs?: string[];
+  /** Optional: source systems (bazi/ziwei/western/vedic) that supplied facets. */
+  source_systems?: string[];
+  /** True when facets came from ≥2 different source systems across both sides. */
+  cross_system_support?: boolean;
+  /** Optional: honest missing_facts markers. */
+  missing_facts?: string[];
 };
 
 // -- helpers ---------------------------------------------------------
