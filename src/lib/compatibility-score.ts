@@ -292,3 +292,49 @@ export function computeCompatibility(input: CompatInput): CompatResult {
     confidence,
   };
 }
+
+/* -------------------- facts-adapter integration -------------------- */
+
+import type { PremiumFacts } from "./premium-facts";
+import {
+  adaptFacetsFromFacts,
+  aggregateEvidence,
+} from "./compatibility-facts-adapter";
+
+/**
+ * Convenience: derive facets from each side's PremiumFacts via the
+ * `compatibility-facts-adapter-v1` adapter and compute the score
+ * carrying evidence_refs and cross-system-support metadata.
+ */
+export function computeCompatibilityFromFacts(input: {
+  a: { userId: string; chartId: string; facts: PremiumFacts | null };
+  b: { userId: string; chartId: string; facts: PremiumFacts | null };
+  mode?: CompatMode;
+}): CompatResult {
+  const A = adaptFacetsFromFacts(input.a.facts);
+  const B = adaptFacetsFromFacts(input.b.facts);
+  const facetsA: Partial<SideFacets> = {};
+  const facetsB: Partial<SideFacets> = {};
+  if (A.yang) facetsA.yang = A.yang.value;
+  if (A.pace) facetsA.pace = A.pace.value;
+  if (A.openness) facetsA.openness = A.openness.value;
+  if (A.rootedness) facetsA.rootedness = A.rootedness.value;
+  if (B.yang) facetsB.yang = B.yang.value;
+  if (B.pace) facetsB.pace = B.pace.value;
+  if (B.openness) facetsB.openness = B.openness.value;
+  if (B.rootedness) facetsB.rootedness = B.rootedness.value;
+
+  const base = computeCompatibility({
+    a: { userId: input.a.userId, chartId: input.a.chartId, facets: facetsA },
+    b: { userId: input.b.userId, chartId: input.b.chartId, facets: facetsB },
+    mode: input.mode,
+  });
+  const agg = aggregateEvidence(A, B);
+  return {
+    ...base,
+    evidence_refs: agg.refs,
+    source_systems: [...new Set([...A.consensus_bodies, ...B.consensus_bodies])],
+    cross_system_support: agg.cross_system_support,
+    missing_facts: [...new Set([...A.missing_facts, ...B.missing_facts])],
+  };
+}
