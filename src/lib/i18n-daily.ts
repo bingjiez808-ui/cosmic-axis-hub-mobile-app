@@ -632,10 +632,12 @@ const en: DailyDict = {
   },
   phase: {
     new: "New moon",
+    new_moon: "New moon",
     waxing_crescent: "Waxing crescent",
     first_quarter: "First quarter",
     waxing_gibbous: "Waxing gibbous",
     full: "Full moon",
+    full_moon: "Full moon",
     waning_gibbous: "Waning gibbous",
     last_quarter: "Last quarter",
     waning_crescent: "Waning crescent",
