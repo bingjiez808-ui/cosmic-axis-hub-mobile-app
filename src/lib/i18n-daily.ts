@@ -560,7 +560,7 @@ const en: DailyDict = {
     { id: "pause", text: "I need some space right now; let's reconnect later." },
   ],
 
-  match_kicker: "Bilateral Chart Match · Demo",
+  match_kicker: "Bilateral chart · demo",
   match_title: "Compatibility (visible only after mutual consent)",
   match_intro: () => [],
   match_intro_plain:
