@@ -8,7 +8,6 @@
  * hydration: we detect language from `document.documentElement.lang`
  * with an "en" fallback so we never depend on context timing.
  */
-import { Link } from "@tanstack/react-router";
 import { useEffect } from "react";
 
 function detectLang(): "zh" | "en" {
