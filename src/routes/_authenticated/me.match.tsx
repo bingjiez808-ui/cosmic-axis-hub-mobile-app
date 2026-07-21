@@ -23,9 +23,11 @@ const BAND_CLASS: Record<string, string> = {
 };
 
 function MatchPage() {
+  const consent = useSocialConsent();
   const [key, setKey] = useState<MatchDemoKey>("friend_pair");
   const [mode, setMode] = useState<CompatResult["mode"]>("friendship");
   const [revoked, setRevoked] = useState(false);
+  const effectivelyRevoked = revoked || !consent.gated;
 
   const pair = MATCH_DEMO[key];
   const result = useMemo(
