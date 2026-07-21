@@ -181,6 +181,7 @@ const en: Dict = {
  nav_about: "About",
   nav_sign_in: "Sign in",
   nav_account: "Account",
+  nav_today: "Today",
   ritual_pick_language: "In which tongue shall the library speak to you?",
   ritual_pick_language_hint: "Your reading will be composed in the language you choose.",
   step_of: (i, n) => `Step ${String(i).padStart(2, "0")} / ${String(n).padStart(2, "0")}`,
