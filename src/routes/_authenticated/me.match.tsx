@@ -131,9 +131,11 @@ function MatchPage() {
           ))}
         </section>
 
-        {revoked ? (
+        {effectivelyRevoked ? (
           <div className="rounded-xl border border-rose-400/30 bg-rose-500/5 p-8 text-center text-sm text-rose-100/80">
-            结果已失效 —— 一方撤回授权后，本次匹配结果立即从双方界面移除。
+            {!consent.gated
+              ? "结果不可见 —— 请先完成年龄与隐私同意。撤回同意后，任何已生成的结果都不再显示。"
+              : "结果已失效 —— 一方撤回授权后，本次匹配结果立即从双方界面移除。"}
           </div>
         ) : (
           <ResultPanel result={result} />
