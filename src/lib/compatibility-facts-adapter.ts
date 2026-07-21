@@ -108,7 +108,7 @@ function facetPace(f: PremiumFacts): FacetValue | null {
     const total = init + recv;
     if (total > 0) parts.push({ v: init / total, ref: "bazi.ten_gods", sys: "bazi" });
   }
-  const mercury = f.western?.planets.find((p) => p.name === "Mercury");
+  const mercury = f.western?.planets.find((p) => p.key === "mercury");
   if (mercury) {
     const fastSigns = new Set(["Aries", "Gemini", "Leo", "Libra", "Sagittarius", "Aquarius"]);
     parts.push({
