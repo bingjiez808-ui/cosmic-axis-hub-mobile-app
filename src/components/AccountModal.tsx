@@ -201,7 +201,36 @@ export function AccountModal({ open, onClose }: { open: boolean; onClose: () => 
                   <TarotQuota accountKey={displayAccount.email} plan={displayAccount.plan ?? "free"} lang={lang} />
                 </div>
 
+                <Link
+                  to="/me/home"
+                  onClick={onClose}
+                  className="group block rounded-2xl border border-gold-dust/40 bg-gradient-to-br from-gold-dust/10 via-obsidian/40 to-obsidian/60 p-4 transition-colors hover:border-gold-light/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-light"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust/80">
+                        {lang === "zh" ? "今日星图" : "Today's Chart"}
+                      </p>
+                      <p className="mt-1 font-serif text-lg italic text-stone-warm">
+                        {lang === "zh" ? "今日命运" : "Today"}
+                      </p>
+                      <p className="mt-1 text-xs text-stone-warm/60">
+                        {lang === "zh"
+                          ? "今日领域信号 · 好友 · 适配分析"
+                          : "Today's domain signals · Friends · Compatibility"}
+                      </p>
+                    </div>
+                    <span
+                      aria-hidden="true"
+                      className="text-lg text-gold-light transition-transform group-hover:translate-x-0.5"
+                    >
+                      →
+                    </span>
+                  </div>
+                </Link>
+
                 <MyChartsSection open={open} onClose={onClose} lang={lang} rows={dbCharts} setRows={setDbCharts} />
+
 
                 <MyPremiumReports open={open} lang={lang} />
 
