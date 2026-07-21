@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -11,46 +11,96 @@ export type SessionState = {
 };
 
 /**
- * Client-only backend session hook. It checks the signed-in user's own
- * user_roles row directly so the admin affordance does not depend on an
- * exposed RPC function.
+ * Module-level session store, shared across every `useSupabaseSession()`
+ * call site. A single subscription to `supabase.auth.onAuthStateChange`
+ * feeds all consumers — public header, authenticated pages, footers —
+ * so the signed-in state is consistent regardless of which route the
+ * user is on.
  */
+const SERVER_STATE: SessionState = {
+  session: null,
+  user: null,
+  isAdmin: false,
+  loading: true,
+};
+
+let clientState: SessionState = { ...SERVER_STATE };
+const listeners = new Set<() => void>();
+let initialized = false;
+let currentUserId: string | null = null;
+
+function emit() {
+  for (const l of listeners) l();
+}
+
+function setState(next: Partial<SessionState>) {
+  clientState = { ...clientState, ...next };
+  emit();
+}
+
+async function refreshAdmin(userId: string | null) {
+  if (!userId) {
+    setState({ isAdmin: false });
+    return;
+  }
+  try {
+    const { data } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "admin")
+      .maybeSingle();
+    // Guard against races: only apply if this is still the current user.
+    if (currentUserId === userId) {
+      setState({ isAdmin: !!data });
+    }
+  } catch {
+    if (currentUserId === userId) setState({ isAdmin: false });
+  }
+}
+
+function applySession(session: Session | null) {
+  const user = session?.user ?? null;
+  currentUserId = user?.id ?? null;
+  setState({
+    session,
+    user,
+    loading: false,
+    isAdmin: user ? clientState.isAdmin : false,
+  });
+  void refreshAdmin(currentUserId);
+}
+
+function ensureInitialized() {
+  if (initialized || typeof window === "undefined") return;
+  initialized = true;
+  // Kick off the initial hydration from persisted storage.
+  supabase.auth
+    .getSession()
+    .then(({ data }) => applySession(data.session ?? null))
+    .catch(() => setState({ loading: false }));
+  // Subscribe once for the lifetime of the tab.
+  supabase.auth.onAuthStateChange((_event, session) => {
+    applySession(session ?? null);
+  });
+}
+
+function subscribe(listener: () => void) {
+  ensureInitialized();
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+function getSnapshot(): SessionState {
+  return clientState;
+}
+
+function getServerSnapshot(): SessionState {
+  return SERVER_STATE;
+}
+
 export function useSupabaseSession(): SessionState {
-  const [session, setSession] = useState<Session | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let mounted = true;
-
-    const load = async (s: Session | null) => {
-      if (!mounted) return;
-      setSession(s);
-      if (!s?.user) {
-        setIsAdmin(false);
-        setLoading(false);
-        return;
-      }
-      const { data } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", s.user.id)
-        .eq("role", "admin")
-        .maybeSingle();
-      if (!mounted) return;
-      setIsAdmin(!!data);
-      setLoading(false);
-    };
-
-    supabase.auth.getSession().then(({ data }) => load(data.session));
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
-      void load(s);
-    });
-    return () => {
-      mounted = false;
-      sub.subscription.unsubscribe();
-    };
-  }, []);
-
-  return { session, user: session?.user ?? null, isAdmin, loading };
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
