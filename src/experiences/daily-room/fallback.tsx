@@ -89,12 +89,12 @@ export function DailyRoomError({
           >
             {retry}
           </button>
-          <Link
-            to="/"
+          <a
+            href="/"
             className="rounded-full border border-amber-400/25 px-4 py-2 text-xs text-amber-200/80 hover:border-amber-300/60"
           >
             {homeLbl}
-          </Link>
+          </a>
         </div>
       </div>
     </div>
