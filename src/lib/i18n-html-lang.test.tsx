@@ -1,9 +1,79 @@
 // @ts-expect-error bun:test
-import { describe, expect, it, beforeEach } from "bun:test";
-import { renderToString } from "react-dom/server";
+import { afterEach, describe, expect, it, beforeEach } from "bun:test";
+import { GlobalRegistrator } from "@happy-dom/global-registrator";
+import type { ReactElement } from "react";
+if (typeof globalThis.document === "undefined") {
+  GlobalRegistrator.register({ url: "http://localhost/", width: 1280, height: 900 });
+}
+if (
+  typeof globalThis.document !== "undefined" &&
+  (typeof globalThis.window === "undefined" ||
+    typeof globalThis.window.addEventListener !== "function")
+) {
+  const defaultView = globalThis.document.defaultView;
+  if (defaultView && typeof defaultView.addEventListener === "function") {
+    (globalThis as unknown as { window: Window }).window = defaultView as unknown as Window;
+  }
+}
 
-import { htmlLangFor, syncDocumentLang, LanguageProvider, useLang } from "@/lib/i18n";
-import { AuthRefreshFailedError } from "@/routes/_authenticated/route";
+function restoreDomWindow(): void {
+  const defaultView = globalThis.document?.defaultView;
+  if (!defaultView) return;
+  if (
+    typeof globalThis.window === "undefined" ||
+    globalThis.window !== defaultView ||
+    typeof globalThis.window.addEventListener !== "function"
+  ) {
+    Object.defineProperty(globalThis, "window", {
+      value: defaultView,
+      configurable: true,
+      writable: true,
+    });
+  }
+  Object.defineProperty(globalThis, "localStorage", {
+    value: defaultView.localStorage,
+    configurable: true,
+    writable: true,
+  });
+}
+
+restoreDomWindow();
+(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+
+const React = await import("react");
+const { act } = React;
+const { createRoot } = await import("react-dom/client");
+const { renderToString } = await import("react-dom/server");
+const { htmlLangFor, syncDocumentLang, LanguageProvider, useLang } = await import("@/lib/i18n");
+const { useDaily } = await import("@/lib/i18n-daily");
+const { LanguageToggle } = await import("@/components/LanguageToggle");
+const { AuthRefreshFailedError } = await import("@/routes/_authenticated/route");
+
+const activeRoots: Array<{ root: ReturnType<typeof createRoot>; host: HTMLElement }> = [];
+
+async function mount(el: ReactElement) {
+  restoreDomWindow();
+  const host = document.createElement("div");
+  document.body.appendChild(host);
+  const root = createRoot(host);
+  await act(async () => {
+    root.render(el);
+  });
+  activeRoots.push({ root, host });
+  return { root, host };
+}
+
+afterEach(async () => {
+  restoreDomWindow();
+  while (activeRoots.length) {
+    const { root, host } = activeRoots.pop()!;
+    await act(async () => root.unmount());
+    host.remove();
+  }
+  document.body.innerHTML = "";
+  document.documentElement.setAttribute("lang", "en");
+  window.localStorage.clear();
+});
 
 describe("i18n · html lang tag mapping", () => {
   it("maps app lang → BCP-47 html tag", () => {
@@ -61,6 +131,81 @@ describe("LanguageProvider · SSR shell parity", () => {
     // shell hydrates cleanly. localStorage-driven override happens in an
     // effect after mount.
     expect(html).toBe("lang=en");
+  });
+});
+
+describe("LanguageToggle · real DOM interaction", () => {
+  beforeEach(() => {
+    restoreDomWindow();
+    window.localStorage.clear();
+    document.documentElement.setAttribute("lang", "en");
+  });
+
+  it("clicks zh → en → zh and immediately updates context copy, <html lang>, and persistence", async () => {
+    function ProbeContent() {
+      const { lang } = useLang();
+      const d = useDaily();
+      return (
+        <>
+          <LanguageToggle />
+          <p data-testid="lang">{lang}</p>
+          <h1>{d.match_kicker}</h1>
+          <nav>{d.home_secondary_nav_match}</nav>
+        </>
+      );
+    }
+
+    await mount(
+      <LanguageProvider>
+        <ProbeContent />
+      </LanguageProvider>,
+    );
+
+    const zhButton = document.querySelector<HTMLButtonElement>('[data-lang-button="zh"]');
+    expect(zhButton).toBeTruthy();
+    await act(async () => {
+      zhButton!.click();
+    });
+
+    expect(document.documentElement.getAttribute("lang")).toBe("zh-CN");
+    expect(window.localStorage.getItem("lod.lang")).toBe("zh");
+    expect(document.querySelector('[data-testid="lang"]')?.textContent).toBe("zh");
+    expect(document.body.textContent ?? "").toContain("双人命盘互动 · 演示");
+
+    const enButton = document.querySelector<HTMLButtonElement>('[data-lang-button="en"]');
+    expect(enButton).toBeTruthy();
+    await act(async () => {
+      enButton!.click();
+    });
+
+    expect(document.documentElement.getAttribute("lang")).toBe("en");
+    expect(window.localStorage.getItem("lod.lang")).toBe("en");
+    expect(document.querySelector('[data-testid="lang"]')?.textContent).toBe("en");
+    expect(document.body.textContent ?? "").toContain("Two-chart compatibility · demo");
+    expect(document.body.textContent ?? "").not.toContain("双人命盘互动 · 演示");
+
+    await act(async () => {
+      zhButton!.click();
+    });
+
+    expect(document.documentElement.getAttribute("lang")).toBe("zh-CN");
+    expect(window.localStorage.getItem("lod.lang")).toBe("zh");
+    expect(document.querySelector('[data-testid="lang"]')?.textContent).toBe("zh");
+    expect(document.body.textContent ?? "").toContain("双人命盘互动 · 演示");
+
+    while (activeRoots.length) {
+      const { root, host } = activeRoots.pop()!;
+      await act(async () => root.unmount());
+      host.remove();
+    }
+    await mount(
+      <LanguageProvider>
+        <ProbeContent />
+      </LanguageProvider>,
+    );
+    expect(document.documentElement.getAttribute("lang")).toBe("zh-CN");
+    expect(document.querySelector('[data-testid="lang"]')?.textContent).toBe("zh");
+    expect(document.body.textContent ?? "").toContain("双人命盘互动 · 演示");
   });
 });
 

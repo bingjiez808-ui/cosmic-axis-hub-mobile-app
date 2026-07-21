@@ -39,20 +39,40 @@ import {
 const localStorageBackend: Record<string, string> = {};
 // Minimal in-memory localStorage / window shim so the storage module can run
 // under bun:test. Set once before the module is imported below.
-(globalThis as unknown as { window: unknown }).window = {
-  localStorage: {
-    getItem: (k: string) => localStorageBackend[k] ?? null,
-    setItem: (k: string, v: string) => {
-      localStorageBackend[k] = v;
-    },
-    removeItem: (k: string) => {
-      delete localStorageBackend[k];
-    },
-    clear: () => {
-      for (const k of Object.keys(localStorageBackend)) delete localStorageBackend[k];
-    },
+const storyLocalStorageShim = {
+  getItem: (k: string) => localStorageBackend[k] ?? null,
+  setItem: (k: string, v: string) => {
+    localStorageBackend[k] = v;
   },
-  matchMedia: () => ({ matches: false, addEventListener: () => {}, removeEventListener: () => {} }),
+  removeItem: (k: string) => {
+    delete localStorageBackend[k];
+  },
+  clear: () => {
+    for (const k of Object.keys(localStorageBackend)) delete localStorageBackend[k];
+  },
+};
+const storyMatchMediaShim = () => ({
+  matches: false,
+  addEventListener: () => {},
+  removeEventListener: () => {},
+});
+const existingStoryWindow = (globalThis as unknown as { window?: Window }).window;
+if (existingStoryWindow && typeof existingStoryWindow.addEventListener === "function") {
+  Object.defineProperty(existingStoryWindow, "localStorage", {
+    value: storyLocalStorageShim,
+    configurable: true,
+  });
+  if (typeof existingStoryWindow.matchMedia !== "function") {
+    Object.defineProperty(existingStoryWindow, "matchMedia", {
+      value: storyMatchMediaShim,
+      configurable: true,
+    });
+  }
+} else {
+  (globalThis as unknown as { window: unknown }).window = {
+    localStorage: storyLocalStorageShim,
+    matchMedia: storyMatchMediaShim,
+  };
 };
 
 import {

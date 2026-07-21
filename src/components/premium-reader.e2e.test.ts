@@ -95,27 +95,15 @@ mock.module("@/lib/premium.functions", () => ({
   },
 }));
 
-// Preserve real i18n exports; supply a lightweight useLang that doesn't
-// require a <LanguageProvider>.
-const realI18n = await import("@/lib/i18n");
-mock.module("@/lib/i18n", () => ({
-  ...realI18n,
-  useLang: () => ({
-    lang: "en" as const,
-    setLang: () => {},
-    t: (realI18n as unknown as { DICTS?: Record<string, unknown> }).DICTS?.en ?? {},
-  }),
-}));
-
-// The i18n hook expects a provider — supply a minimal one via mock.
-
 let React: typeof import("react");
 let ReactDOMClient: typeof import("react-dom/client");
 let PremiumReportReader: typeof import("./PremiumReportReader").PremiumReportReader;
+let LanguageProvider: typeof import("@/lib/i18n").LanguageProvider;
 
 beforeAll(async () => {
   React = await import("react");
   ReactDOMClient = await import("react-dom/client");
+  LanguageProvider = (await import("@/lib/i18n")).LanguageProvider;
   const mod = await import("./PremiumReportReader");
   PremiumReportReader = mod.PremiumReportReader;
 });
@@ -138,7 +126,7 @@ async function flush() {
 }
 
 function harness(initialOpen: boolean, onClose: () => void) {
-  return React.createElement(function Harness() {
+  const Harness = function Harness() {
     const [open, setOpen] = React.useState(initialOpen);
     // Expose setter for tests via a data-attribute callback.
     (globalThis as unknown as { __setOpen: (v: boolean) => void }).__setOpen = setOpen;
@@ -151,7 +139,8 @@ function harness(initialOpen: boolean, onClose: () => void) {
         setOpen(false);
       },
     });
-  });
+  };
+  return React.createElement(LanguageProvider, null, React.createElement(Harness));
 }
 
 describe("PremiumReportReader — component E2E", () => {

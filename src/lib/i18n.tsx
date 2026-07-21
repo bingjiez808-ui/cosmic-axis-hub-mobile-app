@@ -1,4 +1,11 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useSyncExternalStore,
+  type ReactNode,
+} from "react";
 
 export type Lang = "en" | "zh";
 
@@ -495,6 +502,68 @@ const DICTS: Record<Lang, Dict> = { en, zh };
 
 type Ctx = { lang: Lang; setLang: (l: Lang) => void; t: Dict };
 const LangCtx = createContext<Ctx | null>(null);
+const LANGUAGE_STORAGE_KEY = "lod.lang";
+const LANGUAGE_CHANGE_EVENT = "lod:lang-change";
+let languageSnapshot: Lang = "en";
+
+function normalizeLang(value: unknown): Lang | null {
+  return value === "en" || value === "zh" ? value : null;
+}
+
+function readStoredLanguage(): Lang {
+  if (typeof window === "undefined") return languageSnapshot;
+  try {
+    return normalizeLang(window.localStorage.getItem(LANGUAGE_STORAGE_KEY)) ?? languageSnapshot;
+  } catch {
+    return languageSnapshot;
+  }
+}
+
+function getLanguageSnapshot(): Lang {
+  languageSnapshot = readStoredLanguage();
+  return languageSnapshot;
+}
+
+function getServerLanguageSnapshot(): Lang {
+  return "en";
+}
+
+function subscribeLanguageStore(onStoreChange: () => void): () => void {
+  if (typeof window === "undefined") return () => undefined;
+  if (
+    typeof window.addEventListener !== "function" ||
+    typeof window.removeEventListener !== "function"
+  ) {
+    return () => undefined;
+  }
+
+  const notify = () => onStoreChange();
+  const onStorage = (event: StorageEvent) => {
+    if (event.key === LANGUAGE_STORAGE_KEY) notify();
+  };
+
+  window.addEventListener(LANGUAGE_CHANGE_EVENT, notify);
+  window.addEventListener("storage", onStorage);
+  return () => {
+    window.removeEventListener(LANGUAGE_CHANGE_EVENT, notify);
+    window.removeEventListener("storage", onStorage);
+  };
+}
+
+function persistLanguage(lang: Lang): void {
+  languageSnapshot = lang;
+  try {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
+    }
+  } catch {}
+  syncDocumentLang(lang);
+  if (typeof window !== "undefined") {
+    if (typeof window.dispatchEvent === "function" && typeof CustomEvent !== "undefined") {
+      window.dispatchEvent(new CustomEvent(LANGUAGE_CHANGE_EVENT, { detail: lang }));
+    }
+  }
+}
 
 /** Public: the BCP-47 tag we render on `<html lang>` for a given app lang. */
 export function htmlLangFor(lang: Lang): "zh-CN" | "en" {
@@ -513,14 +582,11 @@ export function syncDocumentLang(lang: Lang): void {
 }
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<Lang>("en");
-
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem("lod.lang");
-      if (stored === "en" || stored === "zh") setLangState(stored);
-    } catch {}
-  }, []);
+  const lang = useSyncExternalStore(
+    subscribeLanguageStore,
+    getLanguageSnapshot,
+    getServerLanguageSnapshot,
+  );
 
   // Keep <html lang> aligned with the active UI language after mount.
   // Runs client-only, so it never diverges from the SSR shell attribute.
@@ -528,13 +594,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     syncDocumentLang(lang);
   }, [lang]);
 
-  const setLang = (l: Lang) => {
-    setLangState(l);
-    try {
-      localStorage.setItem("lod.lang", l);
-    } catch {}
-    syncDocumentLang(l);
-  };
+  const setLang = useCallback((l: Lang) => persistLanguage(l), []);
 
   return (
     <LangCtx.Provider value={{ lang, setLang, t: DICTS[lang] }}>{children}</LangCtx.Provider>
