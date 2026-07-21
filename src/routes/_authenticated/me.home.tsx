@@ -273,7 +273,7 @@ function DailyRoomPage() {
               <div className="mt-4 rounded-md border border-amber-400/20 bg-amber-500/5 p-3 text-xs text-amber-100/80">
                 <div className="mb-1 font-semibold text-amber-200">{d.contradictions_title}</div>
                 {score.contradictions.map((c, i) => (
-                  <div key={i}>{localizeContradiction(c, domainLabel, lang)}</div>
+                  <div key={i}>{formatContradiction(c, d, lang)}</div>
                 ))}
               </div>
             )}
