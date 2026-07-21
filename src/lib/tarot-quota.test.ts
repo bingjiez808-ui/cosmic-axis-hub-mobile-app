@@ -19,10 +19,18 @@ const shim = {
 // Use defineProperty so this works even when a DOM (happy-dom) has been
 // registered by another test file — then `window` / `localStorage` are
 // non-writable data properties on globalThis.
+const existingTarotWindow = (globalThis as unknown as { window?: Window }).window;
 Object.defineProperty(globalThis, "window", {
-  value: { localStorage: shim, dispatchEvent: () => true },
+  value:
+    existingTarotWindow && typeof existingTarotWindow.addEventListener === "function"
+      ? existingTarotWindow
+      : { localStorage: shim, dispatchEvent: () => true },
   configurable: true,
   writable: true,
+});
+Object.defineProperty(globalThis.window, "localStorage", {
+  value: shim,
+  configurable: true,
 });
 Object.defineProperty(globalThis, "localStorage", {
   value: shim,
