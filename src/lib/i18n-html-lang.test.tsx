@@ -170,7 +170,7 @@ describe("LanguageToggle · real DOM interaction", () => {
     expect(document.documentElement.getAttribute("lang")).toBe("zh-CN");
     expect(window.localStorage.getItem("lod.lang")).toBe("zh");
     expect(document.querySelector('[data-testid="lang"]')?.textContent).toBe("zh");
-    expect(document.body.textContent ?? "").toContain("双人命盘互动 · 演示");
+    expect(document.body.textContent ?? "").toContain("双方命盘适配 · 演示");
 
     const enButton = document.querySelector<HTMLButtonElement>('[data-lang-button="en"]');
     expect(enButton).toBeTruthy();
@@ -182,7 +182,7 @@ describe("LanguageToggle · real DOM interaction", () => {
     expect(window.localStorage.getItem("lod.lang")).toBe("en");
     expect(document.querySelector('[data-testid="lang"]')?.textContent).toBe("en");
     expect(document.body.textContent ?? "").toContain("Two-chart compatibility · demo");
-    expect(document.body.textContent ?? "").not.toContain("双人命盘互动 · 演示");
+    expect(document.body.textContent ?? "").not.toContain("双方命盘适配 · 演示");
 
     await act(async () => {
       zhButton!.click();
@@ -191,7 +191,7 @@ describe("LanguageToggle · real DOM interaction", () => {
     expect(document.documentElement.getAttribute("lang")).toBe("zh-CN");
     expect(window.localStorage.getItem("lod.lang")).toBe("zh");
     expect(document.querySelector('[data-testid="lang"]')?.textContent).toBe("zh");
-    expect(document.body.textContent ?? "").toContain("双人命盘互动 · 演示");
+    expect(document.body.textContent ?? "").toContain("双方命盘适配 · 演示");
 
     while (activeRoots.length) {
       const { root, host } = activeRoots.pop()!;
@@ -205,7 +205,7 @@ describe("LanguageToggle · real DOM interaction", () => {
     );
     expect(document.documentElement.getAttribute("lang")).toBe("zh-CN");
     expect(document.querySelector('[data-testid="lang"]')?.textContent).toBe("zh");
-    expect(document.body.textContent ?? "").toContain("双人命盘互动 · 演示");
+    expect(document.body.textContent ?? "").toContain("双方命盘适配 · 演示");
   });
 
   it("keeps nested LanguageProviders on one shared store when an inner EN button is clicked", async () => {
@@ -255,7 +255,7 @@ describe("LanguageToggle · real DOM interaction", () => {
     expect(document.querySelector('[data-testid="inner-lang"]')?.textContent).toBe("en");
     expect(document.body.textContent ?? "").toContain("Match");
     expect(document.body.textContent ?? "").toContain("Two-chart compatibility · demo");
-    expect(document.body.textContent ?? "").not.toContain("双人命盘互动 · 演示");
+    expect(document.body.textContent ?? "").not.toContain("双方命盘适配 · 演示");
 
     await act(async () => {
       innerZh!.click();
@@ -265,7 +265,7 @@ describe("LanguageToggle · real DOM interaction", () => {
     expect(window.localStorage.getItem("lod.lang")).toBe("zh");
     expect(document.querySelector('[data-testid="outer-lang"]')?.textContent).toBe("zh");
     expect(document.querySelector('[data-testid="inner-lang"]')?.textContent).toBe("zh");
-    expect(document.body.textContent ?? "").toContain("双人命盘互动 · 演示");
+    expect(document.body.textContent ?? "").toContain("双方命盘适配 · 演示");
   });
 });
 
