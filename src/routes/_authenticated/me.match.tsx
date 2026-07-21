@@ -70,8 +70,8 @@ function MatchPage() {
         <section className="mb-6 rounded-xl border border-amber-400/20 bg-black/30 p-5">
           <div className="text-xs uppercase tracking-widest text-amber-200/70">授权状态（模拟）</div>
           <div className="mt-3 grid gap-3 md:grid-cols-2">
-            <ConsentCard label={pair.a.displayName} chart={pair.a.chartLabel} consented={!revoked} />
-            <ConsentCard label={pair.b.displayName} chart={pair.b.chartLabel} consented={!revoked} />
+            <ConsentCard label={pair.a.displayName} chart={pair.a.chartLabel} consented={!effectivelyRevoked} />
+            <ConsentCard label={pair.b.displayName} chart={pair.b.chartLabel} consented={!effectivelyRevoked} />
           </div>
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <button
