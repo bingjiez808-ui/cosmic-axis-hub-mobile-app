@@ -4,11 +4,19 @@ import { useEffect, useMemo, useState } from "react";
 import { loadDailyRoomFixture, type DailyRoomFixtureKey } from "@/experiences/daily-room/fixtures";
 import { ensureSocialPreviewAllowed } from "@/experiences/daily-room/route-guard";
 import { DailyRoomPending, DailyRoomError } from "@/experiences/daily-room/fallback";
-import { listUserCharts, type ChartRow } from "@/lib/reports-store.functions";
+import {
+  listUserCharts,
+  renameChart,
+  setPrimaryChart,
+  setChartRole,
+  deleteChart,
+  type ChartRow,
+} from "@/lib/reports-store.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { useLang } from "@/lib/i18n";
 import { useDaily, useFormatDate, xlate } from "@/lib/i18n-daily";
 import { formatDailySignal, formatThemeKeyword, formatContradiction, tPhase } from "@/lib/daily-format";
+
 
 /**
  * /me/home — Today's Reading Room (preview). Fully localized.
