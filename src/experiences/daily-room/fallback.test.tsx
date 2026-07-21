@@ -33,7 +33,7 @@ async function mount(el: ReactElement) {
 }
 
 function resetLangToEnglish() {
-  resetLangToEnglish();
+  document.documentElement.setAttribute("lang", "en");
   try {
     window.localStorage.clear();
     window.localStorage.setItem("lod.lang", "en");
