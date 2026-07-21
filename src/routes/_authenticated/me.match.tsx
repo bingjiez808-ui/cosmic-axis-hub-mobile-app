@@ -117,82 +117,76 @@ function MatchPage() {
           <p className="mt-3 max-w-2xl text-sm text-amber-100/70">{d.match_intro_plain}</p>
         </header>
 
-        <section className="mb-6 rounded-xl border border-amber-400/20 bg-black/30 p-5">
-          <div className="text-xs uppercase tracking-widest text-amber-200/70">
-            {d.match_consent_status}
-          </div>
-          <div className="mt-3 grid gap-3 md:grid-cols-2">
-            <ConsentCard
-              label={pair.a.displayName}
-              chart={pair.a.chartLabel}
-              consented={!effectivelyRevoked}
-              okText={d.match_consent_ok}
-              revokedText={d.match_consent_revoked}
-            />
-            <ConsentCard
-              label={pair.b.displayName}
-              chart={pair.b.chartLabel}
-              consented={!effectivelyRevoked}
-              okText={d.match_consent_ok}
-              revokedText={d.match_consent_revoked}
-            />
-          </div>
-          <div className="mt-4 flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setRevoked((r) => !r)}
-              className="rounded-full border border-rose-400/40 px-3 py-1.5 text-xs text-rose-200 hover:bg-rose-500/10"
-            >
-              {revoked ? d.match_toggle_reauth : d.match_toggle_revoke}
-            </button>
-            <span className="text-xs text-amber-200/60">{d.match_revoke_hint}</span>
-          </div>
-        </section>
+        <RealImportPanel mode={mode} setMode={setMode} facetLabel={facetLabel} />
 
-        <section className="mb-6 flex flex-wrap gap-2">
-          {KEYS.map((k) => (
-            <button
-              key={k}
-              type="button"
-              onClick={() => {
-                setKey(k);
-                setRevoked(false);
-              }}
-              aria-pressed={key === k}
-              className={`rounded-full border px-3 py-1.5 text-xs transition ${
-                key === k
-                  ? "border-amber-300 bg-amber-300/10 text-amber-100"
-                  : "border-amber-400/20 text-amber-200/70 hover:border-amber-300/60"
-              }`}
-            >
-              {d.match_demo_labels[k]}
-            </button>
-          ))}
-          <span className="mx-2 self-center text-xs text-amber-200/40">|</span>
-          {(["friendship", "romantic", "family", "work"] as const).map((m) => (
-            <button
-              key={m}
-              type="button"
-              onClick={() => setMode(m)}
-              aria-pressed={mode === m}
-              className={`rounded-full border px-3 py-1.5 text-xs transition ${
-                mode === m
-                  ? "border-amber-300 bg-amber-300/10 text-amber-100"
-                  : "border-amber-400/20 text-amber-200/70 hover:border-amber-300/60"
-              }`}
-            >
-              {d.match_modes[m]}
-            </button>
-          ))}
-        </section>
+        <details className="mt-8 rounded-xl border border-amber-400/15 bg-black/20">
+          <summary className="cursor-pointer select-none px-4 py-3 text-xs uppercase tracking-widest text-amber-200/70">
+            {d.match_demo_details_label}
+          </summary>
+          <div className="border-t border-amber-400/10 p-4">
+            <section className="mb-6 rounded-xl border border-amber-400/20 bg-black/30 p-5">
+              <div className="text-xs uppercase tracking-widest text-amber-200/70">
+                {d.match_consent_status}
+              </div>
+              <div className="mt-3 grid gap-3 md:grid-cols-2">
+                <ConsentCard
+                  label={pair.a.displayName}
+                  chart={pair.a.chartLabel}
+                  consented={!effectivelyRevoked}
+                  okText={d.match_consent_ok}
+                  revokedText={d.match_consent_revoked}
+                />
+                <ConsentCard
+                  label={pair.b.displayName}
+                  chart={pair.b.chartLabel}
+                  consented={!effectivelyRevoked}
+                  okText={d.match_consent_ok}
+                  revokedText={d.match_consent_revoked}
+                />
+              </div>
+              <div className="mt-4 flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setRevoked((r) => !r)}
+                  className="rounded-full border border-rose-400/40 px-3 py-1.5 text-xs text-rose-200 hover:bg-rose-500/10"
+                >
+                  {revoked ? d.match_toggle_reauth : d.match_toggle_revoke}
+                </button>
+                <span className="text-xs text-amber-200/60">{d.match_revoke_hint}</span>
+              </div>
+            </section>
 
-        {effectivelyRevoked ? (
-          <div className="rounded-xl border border-rose-400/30 bg-rose-500/5 p-8 text-center text-sm text-rose-100/80">
-            {!consent.gated ? d.match_result_locked_consent : d.match_result_locked_revoked}
+            <section className="mb-6 flex flex-wrap gap-2">
+              {KEYS.map((k) => (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => {
+                    setKey(k);
+                    setRevoked(false);
+                  }}
+                  aria-pressed={key === k}
+                  className={`rounded-full border px-3 py-1.5 text-xs transition ${
+                    key === k
+                      ? "border-amber-300 bg-amber-300/10 text-amber-100"
+                      : "border-amber-400/20 text-amber-200/70 hover:border-amber-300/60"
+                  }`}
+                >
+                  {d.match_demo_labels[k]}
+                </button>
+              ))}
+            </section>
+
+            {effectivelyRevoked ? (
+              <div className="rounded-xl border border-rose-400/30 bg-rose-500/5 p-8 text-center text-sm text-rose-100/80">
+                {!consent.gated ? d.match_result_locked_consent : d.match_result_locked_revoked}
+              </div>
+            ) : (
+              <ResultPanel result={result} d={d} facetLabel={facetLabel} />
+            )}
           </div>
-        ) : (
-          <ResultPanel result={result} d={d} facetLabel={facetLabel} />
-        )}
+        </details>
+
 
         <p className="mt-8 text-xs text-amber-200/50">{d.match_footer}</p>
         {showTechDetails ? (
