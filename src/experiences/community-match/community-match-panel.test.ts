@@ -1,4 +1,6 @@
-import { describe, it, expect } from "vitest";
+// @ts-expect-error bun:test
+import { describe, expect, it } from "bun:test";
+
 
 import {
   CLIENT_SAFE_KEYS,
