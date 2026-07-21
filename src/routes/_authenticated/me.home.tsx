@@ -286,7 +286,12 @@ function DailyRoomPage() {
           </p>
         </section>
 
-        {/* Evidence */}
+        {/* Evidence — free tier hides detailed evidence refs; membership gate. */}
+        {!entitled ? (
+          <section className="mb-16 rounded-xl border border-amber-400/15 bg-black/20 p-5 text-xs text-amber-100/70">
+            详细证据 / 多命盘每日导读 / 完整匹配报告仅对已购会员开放。基础安全操作（查看命盘、上方总览、建议）永远免费。
+          </section>
+        ) : (
         <section className="mb-16 rounded-xl border border-amber-400/15 bg-black/20">
           <button
             type="button"
