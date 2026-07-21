@@ -83,6 +83,46 @@ export type DailyDict = {
   home_secondary_nav_friends: string;
   home_secondary_nav_match: string;
 
+  // ---- Chart manager (real data) ----
+  charts_primary_title: string;
+  charts_primary_missing_title: string;
+  charts_primary_missing_body: string;
+  charts_others_title: string;
+  charts_role_self: string;
+  charts_role_other: string;
+  charts_action_rename: string;
+  charts_action_set_primary: string;
+  charts_action_make_other: string;
+  charts_action_save: string;
+  charts_action_cancel: string;
+  charts_action_delete: string;
+  charts_name_placeholder: string;
+  charts_name_empty_error: string;
+  charts_name_too_long_error: string;
+  charts_saving: string;
+  charts_setting_primary: string;
+  charts_error_generic: (msg: string) => string;
+  charts_untitled_other: string;
+  charts_delete_confirm: (name: string) => string;
+  charts_privacy_notice: string;
+
+  // ---- Match real-import ----
+  match_import_title: string;
+  match_import_intro: string;
+  match_import_my_primary_label: string;
+  match_import_no_primary: string;
+  match_import_go_home: string;
+  match_import_other_label: string;
+  match_import_other_placeholder: string;
+  match_import_no_others: string;
+  match_import_privacy: string;
+  match_import_privacy_ack: string;
+  match_import_run: string;
+  match_import_running: string;
+  match_import_partial_note: (missing: string) => string;
+  match_demo_details_label: string;
+
+
   // ---- /me/friends ----
   friends_title: string;
   friends_subtitle: string;

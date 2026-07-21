@@ -1,6 +1,8 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 
 import { supabase } from "@/integrations/supabase/client";
+import { DailyRoomPending, DailyRoomError } from "@/experiences/daily-room/fallback";
+
 
 /**
  * Recoverable auth error surfaced by the root `errorComponent`. We
@@ -46,6 +48,9 @@ function isRetryableFetchError(err: unknown): boolean {
  */
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
+  pendingMs: 0,
+  pendingComponent: DailyRoomPending,
+  errorComponent: DailyRoomError,
   beforeLoad: async ({ location }) => {
     let data: Awaited<ReturnType<typeof supabase.auth.getUser>>["data"] | null = null;
     let error: unknown = null;
@@ -56,9 +61,6 @@ export const Route = createFileRoute("/_authenticated")({
     } catch (e) {
       error = e;
     }
-    // Genuine network / refresh failure — surface a recoverable error rather
-    // than bouncing to /auth (which would erase the session the user still
-    // holds). Redirects only happen when Supabase confirms there is no user.
     if (error && isRetryableFetchError(error)) {
       throw new AuthRefreshFailedError(error);
     }
@@ -69,3 +71,4 @@ export const Route = createFileRoute("/_authenticated")({
   },
   component: () => <Outlet />,
 });
+

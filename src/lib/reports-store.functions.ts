@@ -342,6 +342,8 @@ export type ChartRow = {
   birth_time: string | null;
   birth_place: string | null;
   lang: string | null;
+  chart_role: "self" | "other";
+  is_primary: boolean;
   created_at: string;
   updated_at: string;
   reports: Array<{
@@ -358,8 +360,11 @@ export const listUserCharts = createServerFn({ method: "GET" })
     const { supabase, userId } = context;
     const { data: charts } = await supabase
       .from("charts")
-      .select("id, name, birth_date, birth_time, birth_place, lang, created_at, updated_at")
+      .select(
+        "id, name, birth_date, birth_time, birth_place, lang, chart_role, is_primary, created_at, updated_at",
+      )
       .eq("user_id", userId)
+      .order("is_primary", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(50);
     if (!charts || charts.length === 0) return [];
@@ -380,8 +385,56 @@ export const listUserCharts = createServerFn({ method: "GET" })
       });
       byChart.set(r.chart_id, list);
     }
-    return charts.map((c) => ({ ...c, reports: byChart.get(c.id) ?? [] }));
+    return charts.map((c) => ({
+      ...c,
+      chart_role: (c.chart_role === "self" ? "self" : "other") as "self" | "other",
+      is_primary: !!c.is_primary,
+      reports: byChart.get(c.id) ?? [],
+    }));
   });
+
+const SetPrimaryChartInput = z.object({ chartId: z.string().uuid() });
+
+/**
+ * Atomically promote a chart to `chart_role='self'` + `is_primary=true`,
+ * demoting any prior primary in the same tx. Enforced by
+ * `public.set_primary_chart` (SECURITY DEFINER, RLS-guarded by user id).
+ */
+export const setPrimaryChart = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => SetPrimaryChartInput.parse(data))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: ok, error } = await supabase.rpc("set_primary_chart", {
+      _chart_id: data.chartId,
+    });
+    if (error || !ok) throw new Error("set_primary_failed");
+    return { ok: true as const };
+  });
+
+const SetChartRoleInput = z.object({
+  chartId: z.string().uuid(),
+  role: z.enum(["self", "other"]),
+});
+
+/**
+ * Change a chart's role between "self" and "other". Demoting the current
+ * primary automatically clears is_primary. Enforced by `set_chart_role`
+ * RPC — never allowed to create a second primary.
+ */
+export const setChartRole = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => SetChartRoleInput.parse(data))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: ok, error } = await supabase.rpc("set_chart_role", {
+      _chart_id: data.chartId,
+      _role: data.role,
+    });
+    if (error || !ok) throw new Error("set_role_failed");
+    return { ok: true as const };
+  });
+
 
 const GetChartByIdInput = z.object({ chartId: z.string().uuid() });
 
