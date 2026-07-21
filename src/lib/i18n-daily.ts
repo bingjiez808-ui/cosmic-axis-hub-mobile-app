@@ -391,10 +391,12 @@ const zh: DailyDict = {
   domain: { study: "学业与认知", career: "事业与方向", love: "关系与情感", wealth: "财富与资源" },
   phase: {
     new: "新月",
+    new_moon: "新月",
     waxing_crescent: "娥眉月（渐盈）",
     first_quarter: "上弦月",
     waxing_gibbous: "盈凸月",
     full: "满月",
+    full_moon: "满月",
     waning_gibbous: "亏凸月",
     last_quarter: "下弦月",
     waning_crescent: "残月",
