@@ -3,23 +3,52 @@
  * (/me/home, /me/friends, /me/match) route chunk loads.
  *
  * Rendered by TanStack Router's `pendingComponent` / `errorComponent`
- * hooks. They mount inside the `<LanguageProvider>` at __root, so we
- * read language from context (not `document.documentElement.lang`).
+ * hooks. These fallbacks must be safe even when TanStack renders them
+ * before the normal route subtree has fully hydrated.
  *
  * Why context, not `document.lang`?
- *   `LanguageProvider` uses `useSyncExternalStore` with a fixed
- *   server snapshot ("en") — React returns the SAME server snapshot on
- *   both SSR and the first client render, then re-renders with the real
- *   client snapshot on mount. That contract guarantees zero hydration
- *   mismatch. Reading `document.documentElement.lang` at render time
- *   returned "en" on the server and "zh" on the first client render for
- *   returning zh-CN visitors, which caused React hydration failures on
- *   /me/home and /me/match. Using `useLang()` fixes it without any
- *   `suppressHydrationWarning`.
+ *   The server shell always emits `<html lang="en">`. If a fallback reads
+ *   `document.documentElement.lang` or localStorage during the first client
+ *   render, returning zh-CN visitors hydrate Chinese text over server English
+ *   text and React reports a mismatch. Therefore this component intentionally
+ *   renders English for SSR AND the first client render, then switches to the
+ *   persisted language from an effect after mount. No suppressHydrationWarning.
  */
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
-import { useLang } from "@/lib/i18n";
+type FallbackLang = "zh" | "en";
+const HYDRATION_SAFE_INITIAL_LANG: FallbackLang = "en";
+
+function readClientFallbackLang(): FallbackLang {
+  if (typeof window === "undefined") return "en";
+  try {
+    const stored = window.localStorage.getItem("lod.lang");
+    if (stored === "zh" || stored === "en") return stored;
+  } catch {
+    /* ignore */
+  }
+  const htmlLang = document.documentElement.getAttribute("lang") ?? "en";
+  return htmlLang.toLowerCase().startsWith("zh") ? "zh" : "en";
+}
+
+function useHydrationSafeFallbackLang(): FallbackLang {
+  // Critical: this initializer must stay a constant. It is evaluated during
+  // the first client render while React is hydrating the server's English HTML.
+  const [lang, setLang] = useState<FallbackLang>(HYDRATION_SAFE_INITIAL_LANG);
+
+  useEffect(() => {
+    const sync = () => setLang(readClientFallbackLang());
+    sync();
+    window.addEventListener("lod:lang-change", sync);
+    window.addEventListener("storage", sync);
+    return () => {
+      window.removeEventListener("lod:lang-change", sync);
+      window.removeEventListener("storage", sync);
+    };
+  }, []);
+
+  return lang;
+}
 
 function useFallbackCopy(): {
   lang: "zh" | "en";
@@ -32,7 +61,7 @@ function useFallbackCopy(): {
   retry: string;
   home: string;
 } {
-  const { lang } = useLang();
+  const lang = useHydrationSafeFallbackLang();
   if (lang === "zh") {
     return {
       lang,

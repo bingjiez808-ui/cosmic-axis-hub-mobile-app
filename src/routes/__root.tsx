@@ -44,9 +44,30 @@ function NotFoundComponent() {
   );
 }
 
+function useHydrationSafeRootLang(): "zh" | "en" {
+  const [lang, setLang] = useState<"zh" | "en">("en");
+
+  useEffect(() => {
+    const sync = () => {
+      const htmlLang = document.documentElement.getAttribute("lang") ?? "en";
+      setLang(htmlLang.toLowerCase().startsWith("zh") ? "zh" : "en");
+    };
+    sync();
+    window.addEventListener("lod:lang-change", sync);
+    window.addEventListener("storage", sync);
+    return () => {
+      window.removeEventListener("lod:lang-change", sync);
+      window.removeEventListener("storage", sync);
+    };
+  }, []);
+
+  return lang;
+}
+
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
+  const rootLang = useHydrationSafeRootLang();
   useEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
@@ -54,10 +75,9 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   const isAuthRefresh =
     error?.name === "AuthRefreshFailedError" ||
     /authentication refresh failed/i.test(error?.message ?? "");
-  // Lang provider isn't in scope for this boundary — detect via <html lang>.
-  const isZh =
-    typeof document !== "undefined" &&
-    (document.documentElement.getAttribute("lang") ?? "en").startsWith("zh");
+  // Lang provider isn't in scope for this boundary. Keep SSR + first hydrate
+  // render pinned to English, then switch from <html lang> after mount.
+  const isZh = rootLang === "zh";
 
   const title = isAuthRefresh
     ? isZh
