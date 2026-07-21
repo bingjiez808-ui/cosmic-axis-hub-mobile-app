@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { computeCompatibility, type CompatResult } from "@/lib/compatibility-score";
 import { MATCH_DEMO, type MatchDemoKey } from "@/experiences/daily-room/match-fixtures";
 import { ensureSocialPreviewAllowed } from "@/experiences/daily-room/route-guard";
+import { SocialConsentGate, useSocialConsent } from "@/experiences/daily-room/social-consent";
 
 export const Route = createFileRoute("/_authenticated/me/match")({
   head: () => ({ meta: [{ name: "robots", content: "noindex,nofollow" }] }),
@@ -22,9 +23,11 @@ const BAND_CLASS: Record<string, string> = {
 };
 
 function MatchPage() {
+  const consent = useSocialConsent();
   const [key, setKey] = useState<MatchDemoKey>("friend_pair");
   const [mode, setMode] = useState<CompatResult["mode"]>("friendship");
   const [revoked, setRevoked] = useState(false);
+  const effectivelyRevoked = revoked || !consent.gated;
 
   const pair = MATCH_DEMO[key];
   const result = useMemo(
@@ -40,8 +43,12 @@ function MatchPage() {
   return (
     <div className="min-h-screen bg-[#0a0a12] text-amber-50">
       <div className="mx-auto w-full max-w-[1100px] px-4 py-8 md:px-8 md:py-12">
-        <div className="mb-6 rounded-lg border border-amber-400/30 bg-amber-500/5 px-4 py-2 text-xs text-amber-200/90">
+        <div className="mb-4 rounded-lg border border-amber-400/30 bg-amber-500/5 px-4 py-2 text-xs text-amber-200/90">
           DEMO 预览 · 互动适配指数（compatibility-score-v1） · 演示 fixture，不写云端，不调用 AI。
+        </div>
+
+        <div className="mb-6">
+          <SocialConsentGate />
         </div>
 
         <header className="mb-8">
@@ -63,8 +70,8 @@ function MatchPage() {
         <section className="mb-6 rounded-xl border border-amber-400/20 bg-black/30 p-5">
           <div className="text-xs uppercase tracking-widest text-amber-200/70">授权状态（模拟）</div>
           <div className="mt-3 grid gap-3 md:grid-cols-2">
-            <ConsentCard label={pair.a.displayName} chart={pair.a.chartLabel} consented={!revoked} />
-            <ConsentCard label={pair.b.displayName} chart={pair.b.chartLabel} consented={!revoked} />
+            <ConsentCard label={pair.a.displayName} chart={pair.a.chartLabel} consented={!effectivelyRevoked} />
+            <ConsentCard label={pair.b.displayName} chart={pair.b.chartLabel} consented={!effectivelyRevoked} />
           </div>
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <button
@@ -124,9 +131,11 @@ function MatchPage() {
           ))}
         </section>
 
-        {revoked ? (
+        {effectivelyRevoked ? (
           <div className="rounded-xl border border-rose-400/30 bg-rose-500/5 p-8 text-center text-sm text-rose-100/80">
-            结果已失效 —— 一方撤回授权后，本次匹配结果立即从双方界面移除。
+            {!consent.gated
+              ? "结果不可见 —— 请先完成年龄与隐私同意。撤回同意后，任何已生成的结果都不再显示。"
+              : "结果已失效 —— 一方撤回授权后，本次匹配结果立即从双方界面移除。"}
           </div>
         ) : (
           <ResultPanel result={result} />
