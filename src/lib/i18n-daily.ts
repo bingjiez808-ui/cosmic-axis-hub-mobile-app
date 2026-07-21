@@ -583,6 +583,48 @@ const en: DailyDict = {
   home_secondary_nav_friends: "Friends",
   home_secondary_nav_match: "Match",
 
+  charts_primary_title: "My primary chart",
+  charts_primary_missing_title: "No primary chart set",
+  charts_primary_missing_body:
+    "Pick the chart that really represents you from “Other charts” below and tap “Set as my primary chart”. Today’s signal and compatibility use this chart.",
+  charts_others_title: "Other charts",
+  charts_role_self: "Mine",
+  charts_role_other: "Other",
+  charts_action_rename: "Rename",
+  charts_action_set_primary: "Set as my primary",
+  charts_action_make_other: "Mark as other",
+  charts_action_save: "Save",
+  charts_action_cancel: "Cancel",
+  charts_action_delete: "Delete",
+  charts_name_placeholder: "Nickname (e.g. Alex / Mom / Partner)",
+  charts_name_empty_error: "Name cannot be empty",
+  charts_name_too_long_error: "Name too long (max 120 characters)",
+  charts_saving: "Saving…",
+  charts_setting_primary: "Setting…",
+  charts_error_generic: (m) => `Could not update: ${m}`,
+  charts_untitled_other: "Untitled other chart",
+  charts_delete_confirm: (name) =>
+    `Delete “${name}” and all of its reports? This cannot be undone.`,
+  charts_privacy_notice:
+    "Other-people charts are private to you and only used for your own compatibility read. Make sure you have their consent before saving.",
+
+  match_import_title: "Pick two saved charts to compare",
+  match_import_intro:
+    "Choose your primary chart and one saved “other” chart. Compatibility is computed by the project’s deterministic engine — no AI is called.",
+  match_import_my_primary_label: "My primary chart",
+  match_import_no_primary: "No primary chart yet.",
+  match_import_go_home: "Set one up in chart manager →",
+  match_import_other_label: "Pick an other-person chart",
+  match_import_other_placeholder: "— select —",
+  match_import_no_others: "You have no “other” charts saved yet. Add one from chart manager.",
+  match_import_privacy: "Consent confirmation",
+  match_import_privacy_ack: "I have their consent to save this chart and run compatibility.",
+  match_import_run: "Run compatibility",
+  match_import_running: "Computing…",
+  match_import_partial_note: (m) => `Facts incomplete: ${m}. Result shown at reduced confidence.`,
+  match_demo_details_label: "See the four demo pairs (never stored, no AI)",
+
+
   friends_title: "Friends",
   friends_subtitle:
     "Invite-only friends, structured notes, block, report — no free chat. Adding a friend is required before you can start a mutual-consent chart match.",
