@@ -137,7 +137,7 @@ describe("LanguageToggle · real DOM interaction", () => {
     const zhButton = document.querySelector<HTMLButtonElement>('[data-lang-button="zh"]');
     expect(zhButton).toBeTruthy();
     await act(async () => {
-      zhButton!.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+      zhButton!.click();
     });
 
     expect(document.documentElement.getAttribute("lang")).toBe("zh-CN");
@@ -148,7 +148,7 @@ describe("LanguageToggle · real DOM interaction", () => {
     const enButton = document.querySelector<HTMLButtonElement>('[data-lang-button="en"]');
     expect(enButton).toBeTruthy();
     await act(async () => {
-      enButton!.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+      enButton!.click();
     });
 
     expect(document.documentElement.getAttribute("lang")).toBe("en");
@@ -158,7 +158,7 @@ describe("LanguageToggle · real DOM interaction", () => {
     expect(document.body.textContent ?? "").not.toContain("双人命盘互动 · 演示");
 
     await act(async () => {
-      zhButton!.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+      zhButton!.click();
     });
 
     expect(document.documentElement.getAttribute("lang")).toBe("zh-CN");
