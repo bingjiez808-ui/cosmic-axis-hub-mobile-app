@@ -19,9 +19,17 @@
 // @ts-expect-error bun:test
 import { describe, expect, it, beforeEach } from "bun:test";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
-if (typeof globalThis.document === "undefined") {
-  GlobalRegistrator.register({ url: "http://localhost/", width: 1024, height: 768 });
-}
+
+// A prior test file may have registered happy-dom against a document
+// object that React's root then attached its delegated event listeners
+// to. Re-registering here gives us a fresh document + window pair so
+// `button.click()` reaches the onClick handler React just wired up.
+try {
+  if (GlobalRegistrator.isRegistered) {
+    GlobalRegistrator.unregister();
+  }
+} catch {}
+GlobalRegistrator.register({ url: "http://localhost/", width: 1024, height: 768 });
 
 import { createRoot } from "react-dom/client";
 import { flushSync } from "react-dom";
