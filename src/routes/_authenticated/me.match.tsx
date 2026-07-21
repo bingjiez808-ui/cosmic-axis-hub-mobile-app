@@ -18,6 +18,9 @@ import {
   adaptFacetsFromFacts,
   aggregateEvidence,
 } from "@/lib/compatibility-facts-adapter";
+import { CommunityMatchPanel } from "@/experiences/community-match/CommunityMatchPanel";
+import { useCommunityMatchCopy } from "@/lib/i18n-community-match";
+
 
 export const Route = createFileRoute("/_authenticated/me/match")({
   head: () => ({ meta: [{ name: "robots", content: "noindex,nofollow" }] }),
