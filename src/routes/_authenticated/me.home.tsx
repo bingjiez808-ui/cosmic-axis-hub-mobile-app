@@ -116,12 +116,55 @@ function DailyRoomPage() {
           DEMO 预览 · 今日阅览室（daily-reading-v1） · 本页数据为演示 fixture，未写入任何账户，未调用 AI。
         </div>
 
+        {/* Real chart adapter (read-only capability-detect) */}
+        <section className="mb-6 rounded-xl border border-amber-400/15 bg-black/20 p-4 text-xs">
+          <div className="mb-2 flex items-center justify-between">
+            <div className="uppercase tracking-widest text-amber-200/70">我的命盘（真实数据）</div>
+            <label className="flex items-center gap-2 text-amber-200/70">
+              <input
+                type="checkbox"
+                checked={entitled}
+                onChange={(e) => setEntitled(e.target.checked)}
+                className="h-3 w-3 accent-amber-400"
+              />
+              <span>模拟已购会员（不写入真实权益）</span>
+            </label>
+          </div>
+          {real.kind === "loading" && <div className="text-amber-200/60">正在读取命盘…</div>}
+          {real.kind === "anonymous" && (
+            <div className="text-amber-200/60">未登录 —— 下方仅显示 DEMO fixture。</div>
+          )}
+          {real.kind === "error" && (
+            <div className="text-rose-300/80">无法读取命盘：{real.message}。以下仅显示 DEMO。</div>
+          )}
+          {real.kind === "ready" && (
+            <div>
+              <div className="text-amber-200/80">已登录 · {real.charts.length} 张命盘（只读接入）</div>
+              {real.charts.length === 0 && (
+                <div className="mt-1 text-amber-200/60">你还没有创建命盘。请去仪式创建。</div>
+              )}
+              {real.charts.slice(0, 5).map((c) => (
+                <div key={c.id} className="mt-1 text-amber-100/80">
+                  · {c.name ?? "未命名命盘"} · {c.birth_date ?? "缺日期"} {c.birth_time ?? ""}
+                </div>
+              ))}
+              <div className="mt-2 text-amber-200/50">
+                能力：只读列表 ✓ · 重命名 {real.canRename ? "✓" : "—"} · 删除{" "}
+                {real.canDelete ? "✓" : "—"} · 设为默认 {real.canSetDefault ? "✓" : "缺列 display_name/is_default，待迁移"}
+              </div>
+            </div>
+          )}
+        </section>
+
         {/* Welcome */}
         <header className="mb-8">
           <div className="text-xs uppercase tracking-[0.2em] text-amber-300/60">Today's Reading Room</div>
           <h1 className="mt-2 text-3xl font-serif tracking-wide md:text-4xl">今日阅览室</h1>
           <div className="mt-2 text-sm text-amber-100/70">
             {today} · {tz} · 命盘：<span className="text-amber-200">{fixture.chartLabel}</span>
+            <span className="ml-2 rounded-full border border-amber-400/30 px-2 py-0.5 text-[10px] text-amber-200">
+              {entitled ? "会员 · 详细证据" : "免费 · 基础总览"}
+            </span>
           </div>
           <div className="mt-4 flex flex-wrap gap-2">
             {FIXTURE_KEYS.map((k) => (
