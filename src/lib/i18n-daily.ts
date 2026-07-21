@@ -156,7 +156,9 @@ export type DailyDict = {
   match_evidence_source: (systems: string, crossSupport: boolean) => string;
   match_evidence_source_fallback: string;
   match_evidence_missing: (fields: string) => string;
-  match_footer: (version: string, pairKey: string) => string;
+  match_footer: string;
+  match_tech_details_label: string;
+  match_tech_line: (version: string, pairKey: string) => string;
   match_facet_labels: Enum<
     "communication" | "emotional_support" | "action_tempo" | "boundary_repair" | "growth"
   >;
@@ -326,7 +328,7 @@ const zh: DailyDict = {
     { id: "pause", text: "最近我需要一些空间，晚点再联系。" },
   ],
 
-  match_kicker: "Bilateral Chart Match · Demo",
+  match_kicker: "双人命盘互动 · 演示",
   match_title: "互动适配（双方授权后可见）",
   match_intro: () => [],
   match_intro_plain:
@@ -363,7 +365,9 @@ const zh: DailyDict = {
     `source systems: ${s} · ${cross ? "跨体系支持 ≥2" : "单体系 / partial"}`,
   match_evidence_source_fallback: "(demo: fixture facets)",
   match_evidence_missing: (f) => `missing: ${f}`,
-  match_footer: (v, pk) => `version ${v} · pair-key ${pk} · 顺序无关 · 纯确定性计算，无 AI。`,
+  match_footer: "顺序无关 · 纯确定性计算，不调用 AI。",
+  match_tech_details_label: "技术依据（供开发核验）",
+  match_tech_line: (v, pk) => `version ${v} · pair-key ${pk}`,
   match_facet_labels: {
     communication: "沟通",
     emotional_support: "情绪支持",
@@ -556,7 +560,7 @@ const en: DailyDict = {
     { id: "pause", text: "I need some space right now; let's reconnect later." },
   ],
 
-  match_kicker: "Bilateral Chart Match · Demo",
+  match_kicker: "Bilateral chart · demo",
   match_title: "Compatibility (visible only after mutual consent)",
   match_intro: () => [],
   match_intro_plain:
@@ -595,8 +599,9 @@ const en: DailyDict = {
     `source systems: ${s} · ${cross ? "cross-system support ≥ 2" : "single-system / partial"}`,
   match_evidence_source_fallback: "(demo: fixture facets)",
   match_evidence_missing: (f) => `missing: ${f}`,
-  match_footer: (v, pk) =>
-    `version ${v} · pair-key ${pk} · order-independent · deterministic, no AI.`,
+  match_footer: "Order-independent · deterministic, no AI.",
+  match_tech_details_label: "Technical basis (for developer audit)",
+  match_tech_line: (v, pk) => `version ${v} · pair-key ${pk}`,
   match_facet_labels: {
     communication: "Communication",
     emotional_support: "Emotional support",
