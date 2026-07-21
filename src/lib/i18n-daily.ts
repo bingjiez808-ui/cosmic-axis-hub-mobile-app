@@ -156,7 +156,9 @@ export type DailyDict = {
   match_evidence_source: (systems: string, crossSupport: boolean) => string;
   match_evidence_source_fallback: string;
   match_evidence_missing: (fields: string) => string;
-  match_footer: (version: string, pairKey: string) => string;
+  match_footer: string;
+  match_tech_details_label: string;
+  match_tech_line: (version: string, pairKey: string) => string;
   match_facet_labels: Enum<
     "communication" | "emotional_support" | "action_tempo" | "boundary_repair" | "growth"
   >;
