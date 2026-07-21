@@ -365,7 +365,9 @@ const zh: DailyDict = {
     `source systems: ${s} · ${cross ? "跨体系支持 ≥2" : "单体系 / partial"}`,
   match_evidence_source_fallback: "(demo: fixture facets)",
   match_evidence_missing: (f) => `missing: ${f}`,
-  match_footer: (v, pk) => `version ${v} · pair-key ${pk} · 顺序无关 · 纯确定性计算，无 AI。`,
+  match_footer: "顺序无关 · 纯确定性计算，不调用 AI。",
+  match_tech_details_label: "技术依据（供开发核验）",
+  match_tech_line: (v, pk) => `version ${v} · pair-key ${pk}`,
   match_facet_labels: {
     communication: "沟通",
     emotional_support: "情绪支持",
