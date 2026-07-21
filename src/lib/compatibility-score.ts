@@ -11,19 +11,20 @@
  * 4. **No success probability**: we never emit "关系成功率 / 结婚率".
  *    Copy calls out "互动适配指数" and a legal disclaimer.
  *
- * The 5 dimensions come from Bagua-style relational categories that
- * appear in both classical bazi 神煞 relationship notes and modern
- * couple/friend literature (Gottman "sound relationship house" adds
- * repair + shared meaning): communication, emotional support, action
- * rhythm, boundary repair, shared growth.
+ * The 5 dimensions are a project-internal decomposition of interaction
+ * quality — communication, emotional support, action rhythm, boundary
+ * repair, shared growth — chosen so each dimension can be scored from
+ * facets we can honestly derive from the chart FACTS. We do NOT claim
+ * any specific external methodology (no Gottman, no classical Bagua
+ * pairing rule) and we do NOT emit success probability.
  *
  * Scores are purely feature-based on the two charts. We do NOT invent
  * astrological compatibility rules — the score derives from four
- * public facets of each side and their signed distance:
- *   • yang (day-master polarity, -1..1)
- *   • pace (bazi 十神 balance, 0..1)
- *   • openness (ziwei self-palace / mercury cluster, 0..1)
- *   • rootedness (earth-branch stability, 0..1)
+ * facets of each side and their signed distance:
+ *   • yang (day-master polarity + Sun element, -1..1)
+ *   • pace (bazi 十神 initiating/receiving + Mercury sign, 0..1)
+ *   • openness (bazi 食伤 + Western Moon/Venus/Mercury aspects, 0..1)
+ *   • rootedness (bazi earth+metal + Sun element, 0..1)
  *
  * Callers pass these four scalars per side. If a side is missing one
  * facet (e.g. no birth time), the engine still returns a score but
@@ -73,6 +74,14 @@ export type CompatResult = {
   disclaimer: string;
   partial: boolean;
   confidence: number; // 0..1
+  /** Optional: evidence_refs into premium_facts contributed by the two sides. */
+  evidence_refs?: string[];
+  /** Optional: source systems (bazi/ziwei/western/vedic) that supplied facets. */
+  source_systems?: string[];
+  /** True when facets came from ≥2 different source systems across both sides. */
+  cross_system_support?: boolean;
+  /** Optional: honest missing_facts markers. */
+  missing_facts?: string[];
 };
 
 // -- helpers ---------------------------------------------------------
@@ -281,5 +290,51 @@ export function computeCompatibility(input: CompatInput): CompatResult {
       "本指数为「互动适配指数」，基于两张确定性命盘特征计算，不代表关系成功率、婚姻结果或任何命运判定。仅作为沟通与相处的参考。",
     partial,
     confidence,
+  };
+}
+
+/* -------------------- facts-adapter integration -------------------- */
+
+import type { PremiumFacts } from "./premium-facts";
+import {
+  adaptFacetsFromFacts,
+  aggregateEvidence,
+} from "./compatibility-facts-adapter";
+
+/**
+ * Convenience: derive facets from each side's PremiumFacts via the
+ * `compatibility-facts-adapter-v1` adapter and compute the score
+ * carrying evidence_refs and cross-system-support metadata.
+ */
+export function computeCompatibilityFromFacts(input: {
+  a: { userId: string; chartId: string; facts: PremiumFacts | null };
+  b: { userId: string; chartId: string; facts: PremiumFacts | null };
+  mode?: CompatMode;
+}): CompatResult {
+  const A = adaptFacetsFromFacts(input.a.facts);
+  const B = adaptFacetsFromFacts(input.b.facts);
+  const facetsA: Partial<SideFacets> = {};
+  const facetsB: Partial<SideFacets> = {};
+  if (A.yang) facetsA.yang = A.yang.value;
+  if (A.pace) facetsA.pace = A.pace.value;
+  if (A.openness) facetsA.openness = A.openness.value;
+  if (A.rootedness) facetsA.rootedness = A.rootedness.value;
+  if (B.yang) facetsB.yang = B.yang.value;
+  if (B.pace) facetsB.pace = B.pace.value;
+  if (B.openness) facetsB.openness = B.openness.value;
+  if (B.rootedness) facetsB.rootedness = B.rootedness.value;
+
+  const base = computeCompatibility({
+    a: { userId: input.a.userId, chartId: input.a.chartId, facets: facetsA },
+    b: { userId: input.b.userId, chartId: input.b.chartId, facets: facetsB },
+    mode: input.mode,
+  });
+  const agg = aggregateEvidence(A, B);
+  return {
+    ...base,
+    evidence_refs: agg.refs,
+    source_systems: [...new Set([...A.consensus_bodies, ...B.consensus_bodies])],
+    cross_system_support: agg.cross_system_support,
+    missing_facts: [...new Set([...A.missing_facts, ...B.missing_facts])],
   };
 }

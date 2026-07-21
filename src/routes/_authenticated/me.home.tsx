@@ -1,25 +1,25 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 
 import { loadDailyRoomFixture, type DailyRoomFixtureKey } from "@/experiences/daily-room/fixtures";
-
-const FLAG_ENABLED =
-  typeof import.meta !== "undefined" &&
-  (import.meta as unknown as { env?: Record<string, string> }).env?.VITE_ENABLE_DAILY_ROOM === "true";
+import { ensureSocialPreviewAllowed } from "@/experiences/daily-room/route-guard";
+import { listUserCharts, type ChartRow } from "@/lib/reports-store.functions";
+import { supabase } from "@/integrations/supabase/client";
 
 /**
- * /me/home — Today's Reading Room (feature-flagged).
+ * /me/home — Today's Reading Room (preview only).
  *
- * `VITE_ENABLE_DAILY_ROOM=true` unlocks this route. Otherwise a hard
- * redirect keeps production surface unchanged.
+ * Access is guarded by host (DEV / localhost / id-preview--*.lovable.app).
+ * Production and other lovable domains are blocked and redirected to `/`.
  *
- * This is DEMO mode only: it renders `daily-facts-v1` +
- * `daily-domain-score-v1` for a chosen fixture and clearly labels
- * everything as demo data. No AI call. No writes.
+ * When a signed-in user's real charts are available, we surface them via a
+ * read-only capability-detected adapter. Otherwise we show typed DEMO
+ * fixtures with a clearly-labelled banner. No AI, no writes.
  */
 export const Route = createFileRoute("/_authenticated/me/home")({
+  head: () => ({ meta: [{ name: "robots", content: "noindex,nofollow" }] }),
   beforeLoad: () => {
-    if (!FLAG_ENABLED) throw redirect({ to: "/" });
+    ensureSocialPreviewAllowed();
   },
   component: DailyRoomPage,
 });
@@ -58,6 +58,12 @@ function todayInTz(tz: string): string {
   return `${y}-${m}-${d}`;
 }
 
+type RealChartAdapterState =
+  | { kind: "loading" }
+  | { kind: "anonymous" }
+  | { kind: "error"; message: string }
+  | { kind: "ready"; charts: ChartRow[]; canDelete: boolean; canRename: boolean; canSetDefault: boolean };
+
 function DailyRoomPage() {
   const tz =
     typeof Intl !== "undefined"
@@ -66,6 +72,38 @@ function DailyRoomPage() {
   const today = todayInTz(tz);
   const [fixtureKey, setFixtureKey] = useState<DailyRoomFixtureKey>("working_adult");
   const [showEvidence, setShowEvidence] = useState(false);
+  const [entitled, setEntitled] = useState(false); // demo toggle: free vs premium tier
+  const [real, setReal] = useState<RealChartAdapterState>({ kind: "loading" });
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (!data.session) {
+          if (!cancelled) setReal({ kind: "anonymous" });
+          return;
+        }
+        const charts = await listUserCharts();
+        if (cancelled) return;
+        // Capability-detect: our current schema lacks display_name / default /
+        // deleted_at columns. Read-only mode only until migration lands.
+        setReal({
+          kind: "ready",
+          charts,
+          canDelete: true, // deleteChart server fn exists
+          canRename: true, // renameChart server fn exists
+          canSetDefault: false, // no is_default column yet
+        });
+      } catch (err) {
+        if (!cancelled)
+          setReal({ kind: "error", message: err instanceof Error ? err.message : "unknown" });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const fixture = loadDailyRoomFixture(fixtureKey, today, tz);
   const { facts, score } = fixture;
@@ -78,12 +116,55 @@ function DailyRoomPage() {
           DEMO 预览 · 今日阅览室（daily-reading-v1） · 本页数据为演示 fixture，未写入任何账户，未调用 AI。
         </div>
 
+        {/* Real chart adapter (read-only capability-detect) */}
+        <section className="mb-6 rounded-xl border border-amber-400/15 bg-black/20 p-4 text-xs">
+          <div className="mb-2 flex items-center justify-between">
+            <div className="uppercase tracking-widest text-amber-200/70">我的命盘（真实数据）</div>
+            <label className="flex items-center gap-2 text-amber-200/70">
+              <input
+                type="checkbox"
+                checked={entitled}
+                onChange={(e) => setEntitled(e.target.checked)}
+                className="h-3 w-3 accent-amber-400"
+              />
+              <span>模拟已购会员（不写入真实权益）</span>
+            </label>
+          </div>
+          {real.kind === "loading" && <div className="text-amber-200/60">正在读取命盘…</div>}
+          {real.kind === "anonymous" && (
+            <div className="text-amber-200/60">未登录 —— 下方仅显示 DEMO fixture。</div>
+          )}
+          {real.kind === "error" && (
+            <div className="text-rose-300/80">无法读取命盘：{real.message}。以下仅显示 DEMO。</div>
+          )}
+          {real.kind === "ready" && (
+            <div>
+              <div className="text-amber-200/80">已登录 · {real.charts.length} 张命盘（只读接入）</div>
+              {real.charts.length === 0 && (
+                <div className="mt-1 text-amber-200/60">你还没有创建命盘。请去仪式创建。</div>
+              )}
+              {real.charts.slice(0, 5).map((c) => (
+                <div key={c.id} className="mt-1 text-amber-100/80">
+                  · {c.name ?? "未命名命盘"} · {c.birth_date ?? "缺日期"} {c.birth_time ?? ""}
+                </div>
+              ))}
+              <div className="mt-2 text-amber-200/50">
+                能力：只读列表 ✓ · 重命名 {real.canRename ? "✓" : "—"} · 删除{" "}
+                {real.canDelete ? "✓" : "—"} · 设为默认 {real.canSetDefault ? "✓" : "缺列 display_name/is_default，待迁移"}
+              </div>
+            </div>
+          )}
+        </section>
+
         {/* Welcome */}
         <header className="mb-8">
           <div className="text-xs uppercase tracking-[0.2em] text-amber-300/60">Today's Reading Room</div>
           <h1 className="mt-2 text-3xl font-serif tracking-wide md:text-4xl">今日阅览室</h1>
           <div className="mt-2 text-sm text-amber-100/70">
             {today} · {tz} · 命盘：<span className="text-amber-200">{fixture.chartLabel}</span>
+            <span className="ml-2 rounded-full border border-amber-400/30 px-2 py-0.5 text-[10px] text-amber-200">
+              {entitled ? "会员 · 详细证据" : "免费 · 基础总览"}
+            </span>
           </div>
           <div className="mt-4 flex flex-wrap gap-2">
             {FIXTURE_KEYS.map((k) => (
@@ -205,7 +286,12 @@ function DailyRoomPage() {
           </p>
         </section>
 
-        {/* Evidence */}
+        {/* Evidence — free tier hides detailed evidence refs; membership gate. */}
+        {!entitled ? (
+          <section className="mb-16 rounded-xl border border-amber-400/15 bg-black/20 p-5 text-xs text-amber-100/70">
+            详细证据 / 多命盘每日导读 / 完整匹配报告仅对已购会员开放。基础安全操作（查看命盘、上方总览、建议）永远免费。
+          </section>
+        ) : (
         <section className="mb-16 rounded-xl border border-amber-400/15 bg-black/20">
           <button
             type="button"
@@ -270,6 +356,7 @@ function DailyRoomPage() {
             </div>
           )}
         </section>
+        )}
       </div>
     </div>
   );
