@@ -75,9 +75,11 @@ export type Database = {
           birth_date: string | null
           birth_place: string | null
           birth_time: string | null
+          chart_role: string
           created_at: string
           id: string
           input_snapshot: Json
+          is_primary: boolean
           lang: string | null
           name: string | null
           normalized_input_hash: string
@@ -88,9 +90,11 @@ export type Database = {
           birth_date?: string | null
           birth_place?: string | null
           birth_time?: string | null
+          chart_role?: string
           created_at?: string
           id?: string
           input_snapshot?: Json
+          is_primary?: boolean
           lang?: string | null
           name?: string | null
           normalized_input_hash: string
@@ -101,9 +105,11 @@ export type Database = {
           birth_date?: string | null
           birth_place?: string | null
           birth_time?: string | null
+          chart_role?: string
           created_at?: string
           id?: string
           input_snapshot?: Json
+          is_primary?: boolean
           lang?: string | null
           name?: string | null
           normalized_input_hash?: string
@@ -878,6 +884,11 @@ export type Database = {
         Returns: boolean
       }
       community_email_verified: { Args: never; Returns: boolean }
+      set_chart_role: {
+        Args: { _chart_id: string; _role: string }
+        Returns: boolean
+      }
+      set_primary_chart: { Args: { _chart_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "user"

@@ -83,6 +83,46 @@ export type DailyDict = {
   home_secondary_nav_friends: string;
   home_secondary_nav_match: string;
 
+  // ---- Chart manager (real data) ----
+  charts_primary_title: string;
+  charts_primary_missing_title: string;
+  charts_primary_missing_body: string;
+  charts_others_title: string;
+  charts_role_self: string;
+  charts_role_other: string;
+  charts_action_rename: string;
+  charts_action_set_primary: string;
+  charts_action_make_other: string;
+  charts_action_save: string;
+  charts_action_cancel: string;
+  charts_action_delete: string;
+  charts_name_placeholder: string;
+  charts_name_empty_error: string;
+  charts_name_too_long_error: string;
+  charts_saving: string;
+  charts_setting_primary: string;
+  charts_error_generic: (msg: string) => string;
+  charts_untitled_other: string;
+  charts_delete_confirm: (name: string) => string;
+  charts_privacy_notice: string;
+
+  // ---- Match real-import ----
+  match_import_title: string;
+  match_import_intro: string;
+  match_import_my_primary_label: string;
+  match_import_no_primary: string;
+  match_import_go_home: string;
+  match_import_other_label: string;
+  match_import_other_placeholder: string;
+  match_import_no_others: string;
+  match_import_privacy: string;
+  match_import_privacy_ack: string;
+  match_import_run: string;
+  match_import_running: string;
+  match_import_partial_note: (missing: string) => string;
+  match_demo_details_label: string;
+
+
   // ---- /me/friends ----
   friends_title: string;
   friends_subtitle: string;
@@ -269,6 +309,47 @@ const zh: DailyDict = {
   home_secondary_nav_charts: "我的命盘",
   home_secondary_nav_friends: "好友",
   home_secondary_nav_match: "适配分析",
+
+  charts_primary_title: "我的主命盘",
+  charts_primary_missing_title: "尚未设置主命盘",
+  charts_primary_missing_body:
+    "请从下方“他人命盘”中挑选一张真正代表你的命盘，点“设为我的主命盘”。今日综合信号与关系适配都以主命盘为准。",
+  charts_others_title: "他人命盘",
+  charts_role_self: "我的",
+  charts_role_other: "他人",
+  charts_action_rename: "重命名",
+  charts_action_set_primary: "设为我的主命盘",
+  charts_action_make_other: "设为他人命盘",
+  charts_action_save: "保存",
+  charts_action_cancel: "取消",
+  charts_action_delete: "删除",
+  charts_name_placeholder: "输入称呼（例如：小林 / 妈妈 / 合作伙伴）",
+  charts_name_empty_error: "称呼不能为空",
+  charts_name_too_long_error: "称呼过长（上限 120 个字符）",
+  charts_saving: "保存中…",
+  charts_setting_primary: "设置中…",
+  charts_error_generic: (m) => `操作失败：${m}`,
+  charts_untitled_other: "未命名的他人命盘",
+  charts_delete_confirm: (name) => `确定删除“${name}”这张命盘及其所有报告吗？此操作不可恢复。`,
+  charts_privacy_notice:
+    "他人命盘仅供你个人查看与关系适配使用，不会公开给社区或好友。请在保存前确保已获得对方同意。",
+
+  match_import_title: "从我的命盘中选择两张进行适配",
+  match_import_intro:
+    "从你已保存的命盘中挑选两张：一张是你的主命盘，一张是想要适配的他人命盘。计算严格采用项目内确定性引擎，不调用任何 AI。",
+  match_import_my_primary_label: "我的主命盘",
+  match_import_no_primary: "尚未设置主命盘。",
+  match_import_go_home: "去命盘管理设置 →",
+  match_import_other_label: "选择他人命盘",
+  match_import_other_placeholder: "— 请选择 —",
+  match_import_no_others: "你还没有保存任何“他人命盘”。请先在命盘管理中添加。",
+  match_import_privacy: "隐私确认",
+  match_import_privacy_ack: "我已获得对方同意保存并用于关系适配。",
+  match_import_run: "开始适配分析",
+  match_import_running: "计算中…",
+  match_import_partial_note: (m) => `资料不完整：${m}。以下结果为受限置信度示例。`,
+  match_demo_details_label: "查看四组演示案例（不会写入云端 / 不调用 AI）",
+
 
   friends_title: "同门 · 好友",
   friends_subtitle:
@@ -501,6 +582,48 @@ const en: DailyDict = {
   home_secondary_nav_charts: "My charts",
   home_secondary_nav_friends: "Friends",
   home_secondary_nav_match: "Match",
+
+  charts_primary_title: "My primary chart",
+  charts_primary_missing_title: "No primary chart set",
+  charts_primary_missing_body:
+    "Pick the chart that really represents you from “Other charts” below and tap “Set as my primary chart”. Today’s signal and compatibility use this chart.",
+  charts_others_title: "Other charts",
+  charts_role_self: "Mine",
+  charts_role_other: "Other",
+  charts_action_rename: "Rename",
+  charts_action_set_primary: "Set as my primary",
+  charts_action_make_other: "Mark as other",
+  charts_action_save: "Save",
+  charts_action_cancel: "Cancel",
+  charts_action_delete: "Delete",
+  charts_name_placeholder: "Nickname (e.g. Alex / Mom / Partner)",
+  charts_name_empty_error: "Name cannot be empty",
+  charts_name_too_long_error: "Name too long (max 120 characters)",
+  charts_saving: "Saving…",
+  charts_setting_primary: "Setting…",
+  charts_error_generic: (m) => `Could not update: ${m}`,
+  charts_untitled_other: "Untitled other chart",
+  charts_delete_confirm: (name) =>
+    `Delete “${name}” and all of its reports? This cannot be undone.`,
+  charts_privacy_notice:
+    "Other-people charts are private to you and only used for your own compatibility read. Make sure you have their consent before saving.",
+
+  match_import_title: "Pick two saved charts to compare",
+  match_import_intro:
+    "Choose your primary chart and one saved “other” chart. Compatibility is computed by the project’s deterministic engine — no AI is called.",
+  match_import_my_primary_label: "My primary chart",
+  match_import_no_primary: "No primary chart yet.",
+  match_import_go_home: "Set one up in chart manager →",
+  match_import_other_label: "Pick an other-person chart",
+  match_import_other_placeholder: "— select —",
+  match_import_no_others: "You have no “other” charts saved yet. Add one from chart manager.",
+  match_import_privacy: "Consent confirmation",
+  match_import_privacy_ack: "I have their consent to save this chart and run compatibility.",
+  match_import_run: "Run compatibility",
+  match_import_running: "Computing…",
+  match_import_partial_note: (m) => `Facts incomplete: ${m}. Result shown at reduced confidence.`,
+  match_demo_details_label: "See the four demo pairs (never stored, no AI)",
+
 
   friends_title: "Friends",
   friends_subtitle:

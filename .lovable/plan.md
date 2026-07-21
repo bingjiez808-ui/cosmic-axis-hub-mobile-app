@@ -1,90 +1,107 @@
-# Plan: i18n for Daily Room / Friends / Match + Login Entry
 
-## Scope (V1 only)
-Refactor three preview pages to full zh/en, wire language to Intl formatting, expose a "Today" entry across nav + account center, and route post-login default to `/me/home`. No DB migrations, no publish, no changes to deterministic scoring or ephemeris. Existing i18n dict expands; nothing hardcoded on these pages.
+本工作量较大，涉及数据库迁移、后端 server functions、UI 重构和路由级加固。分五个阶段落地，每阶段结束跑 `bun test` 与 `tsgo --noEmit`，最后用 Playwright 真实预览验收。**不发布生产**。
 
-## 1. i18n dictionary (`src/lib/i18n.tsx`)
+## 阶段 1 — 数据模型与迁移（Lovable Cloud）
 
-Add a new `daily` namespace section to `Dict` and to both `zh` / `en` dicts. Groups:
-- Nav / entry: `nav_today`, `today_card_title`, `today_card_open`, `today_card_score_label`.
-- Daily room: header, welcome, evidence toggle, fixture labels, entitlement toggle, missing chart notice, empty states, loading/error.
-- Domains: `domain_study | career | love | wealth` labels + short descriptions.
-- Bands: `band_supportive | neutral | mixed | caution`.
-- Confidence: `confidence_high | medium | low`.
-- Enumerables shown to user (via translator maps, never raw keys):
-  - `planet_*` (sun, moon, mercury, venus, mars, jupiter, saturn, uranus, neptune, pluto, north_node, south_node, chiron).
-  - `aspect_*` (conjunction, opposition, trine, square, sextile, quincunx).
-  - `sign_*` (12 zodiac).
-  - `phase_*` (moon phases: new, waxing_crescent, first_quarter, waxing_gibbous, full, waning_gibbous, last_quarter, waning_crescent).
-- Friends: request states (pending/accepted/blocked/declined), invite methods (link/username/one_time_code), buttons (send/accept/decline/withdraw/remove/block/unblock/report), inbox empty, 5 note templates, 4 report categories, consent revoked banner.
-- Match: mode (friendship / romantic partner / co-founder), facets (communication, emotional_support, action_tempo, boundary_repair, growth), section headings (resonance / complements / friction / advice / evidence / disclaimer), revoked panel, missing-facts notice.
-- Consent gate (`SocialConsentGate`): all its Chinese literals become dict entries with `SOCIAL_MIN_AGE` interpolation.
+新增 migration `20260722_chart_roles.sql`：
 
-Add helper `formatDate(date, lang, tz)` and `formatNumber(n, lang)` wrappers using `Intl` — used everywhere the pages currently pass `today` / scores.
+- `ALTER TABLE public.charts ADD COLUMN chart_role text NOT NULL DEFAULT 'other'`
+- `ALTER TABLE public.charts ADD COLUMN is_primary boolean NOT NULL DEFAULT false`
+- `ADD CONSTRAINT charts_chart_role_check CHECK (chart_role IN ('self','other'))`
+- `ADD CONSTRAINT charts_primary_requires_self CHECK (is_primary = false OR chart_role = 'self')`
+- 部分唯一索引：`CREATE UNIQUE INDEX charts_one_primary_per_user ON public.charts(user_id) WHERE is_primary = true`
+- 现有行保留 `chart_role='other'`, `is_primary=false`（默认值）；不自动猜测。
+- RLS 已有 owner-only 策略，不改；新列继承。
+- 新增 `set_primary_chart(_chart_id uuid)` SECURITY DEFINER RPC：在事务里 `UPDATE charts SET is_primary=false WHERE user_id=auth.uid()`，然后 `UPDATE charts SET is_primary=true, chart_role='self' WHERE id=_chart_id AND user_id=auth.uid()`。
 
-## 2. Cache & determinism
-- `daily-facts-v1` and `daily-domain-score-v1` outputs stay language-agnostic (keys/enums preserved).
-- Only human-readable rendering uses the translator maps.
-- If any explanation cache key surfaces (currently these pages don't cache explanation text — supportive/caution strings are literal fixtures), extend its key with `:${lang}` so switching language regenerates the localized string. Deterministic scores must NOT depend on lang.
+迁移执行后由用户在 Cloud 中审批。types 自动重生成。
 
-## 3. Page rewrites
+## 阶段 2 — Server functions (`src/lib/reports-store.functions.ts`)
 
-### `src/routes/_authenticated/me.home.tsx`
-- Replace every literal with `t.*`.
-- Domain labels via `domainLabel(t, key)`; band pills via `bandLabel(t, band)`.
-- Fixture labels come from `loadDailyRoomFixture(...).label` — keep raw fixture label (each fixture is age-scenario named); wrap with a translator map `t.fixture_student_youth` etc.
-- Moon phase renders via `t.phase_*`.
-- Supportive/caution demo fallback strings become `t.today_supportive_demo_1..3` / `t.today_caution_demo_1..3`; skill-driven strings pass through (already deterministic, but wrap with note that these come from fixtures — leave contents intact in the demo since fixtures are pre-authored Chinese; add English variants in the fixture consumer via a `localizeSignal(t, s)` no-op fallback — if a signal doesn't have a locale mapping, we still render it verbatim; document this limitation).
-- Add secondary nav row (Home / My Charts / Friends / Match) using `<Link>`.
-- Intl date formatting via `formatDate(new Date(), lang, tz)` for the today string.
+新增/扩展（均 `requireSupabaseAuth`）：
 
-### `src/routes/_authenticated/me.friends.tsx`
-- Full literal → `t.*`.
-- Note templates rebuilt from `t.note_templates` (readonly string[5]).
-- Report categories from `t.report_categories` (readonly string[4]).
-- Consent gate wrapped by translated messages.
-- Empty states, inbox, buttons all translated.
+- `setPrimaryChart({ chartId })` — 调用 `set_primary_chart` RPC。
+- `setChartRole({ chartId, role: 'self'|'other' })` — 若 role=self 且已有主命盘，仅改角色不改 primary；禁止两张 primary。
+- `renameChart` 已存在，确保 name 不参与 hash（当前实现已是）。
+- `listUserCharts` 返回追加 `chart_role`, `is_primary` 字段（types 更新后自动带上）。
 
-### `src/routes/_authenticated/me.match.tsx`
-- Full literal → `t.*`.
-- Facet labels via `t.facet_*` map, mode labels via `t.match_mode_*`.
-- "Compatibility is not a success rate" disclaimer via `t.match_disclaimer`.
-- Missing facts list translated with `t.missing_fact_*` fallback → raw key when unmapped.
+RLS 隔离：所有 update `.eq('user_id', context.userId)` 显式加，即使 RLS 已限制。
 
-### `src/experiences/daily-room/social-consent.tsx`
-- All Chinese literals through `t.consent_*` with `{age}` interpolation.
+事实缓存 hash 不变（`canonical_input_hash` 已只含出生资料）。角色/name 改动不触发排盘或 AI。
 
-## 4. Entry points
+## 阶段 3 — /me/home 命盘管理器 UI
 
-### Post-login default (`src/routes/auth.index.tsx`)
-- On successful sign-in, if a `redirect` search param is present, honor it. Otherwise navigate to `/me/home` (currently probably `/` or `/ritual`).
+重构 `src/routes/_authenticated/me.home.tsx` 的“我的命盘”section：
 
-### Account center / desktop nav
-- `AccountModal` header row + main site nav (whichever component renders the account menu link) get a new "今日命运 / Today" link at the top of the personal section, pointing to `/me/home`.
-- On mobile drawer: "Today" is the first item under the personal section.
+```text
+┌───────────────────────────────────────┐
+│ 我的主命盘                             │
+│ [主命盘卡片 或 「请选择主命盘」引导]     │
+├───────────────────────────────────────┤
+│ 他人命盘 (n)                           │
+│ · 卡片 [重命名] [设为我的主命盘] [删除] │
+└───────────────────────────────────────┘
+```
 
-### `/me/home` secondary nav
-- Header row with three tabs: "我的命盘 / My Charts" (opens AccountModal or `/report`), "好友 / Friends" (`/me/friends`), "适配分析 / Match" (`/me/match`).
+- 无主命盘时顶部显示黄色引导条 + 「去选择」按钮，锚定到列表；**不阻塞** 今日演示内容。
+- 行内重命名 form：`useState` + `renameChart`，长度 1–40，错误提示双语。
+- 「设为我的主命盘」→ 调用 `setPrimaryChart`，成功后 refetch。
+- 创建/保存新命盘（该流程在 `/synthesis` 等入口）**暂不改动创建流程本身**——用户要求是不擅自设主。当前 UI 已不设主命盘（默认 `is_primary=false`），符合要求；只在保存成功后若账号 0 主命盘弹出一次性选择框（在保存回调处理，改动仅在 UI 层）。
+- 移动端卡片纵向、桌面分组栅格。不显示 hash/version。
+- 命盘为空 / 加载 / 错误状态双语。
 
-### Account modal "Today Card"
-- Add a card at the top of `AccountModal` (above "我的命盘与报告") in the black-gold library aesthetic. Shows: "今日星图 / Today's Star Chart", a small overall score preview (uses the same daily-facts pipeline against user's default chart via the existing adapter; if no chart or unentitled preview, show a subdued CTA "打开今日阅览室"). Not crowded on mobile — one line + one button, no horizontal overflow.
+`src/lib/i18n-daily.ts` 追加 keys：`my_charts_role_self / role_other / set_primary / primary_badge / needs_primary_prompt / privacy_other_consent / unnamed_other` …等。
 
-## 5. Auth still enforced
-Existing `_authenticated/route.tsx` gate is untouched. Unauthenticated `/me/home` etc. still bounce to `/auth`. Preview-guard `ensureSocialPreviewAllowed` unchanged.
+## 阶段 4 — /me/match 真实导入
 
-## 6. Tests
-- New `src/lib/i18n-missing-keys.test.ts` — asserts every key present in `en` exists in `zh` and vice versa, and that new keys `nav_today`, `today_card_title`, `domain_study`, all `planet_*`, `aspect_*`, `sign_*`, `phase_*`, `band_*`, `confidence_*`, `facet_*`, `match_mode_*`, `consent_*` are present.
-- Extend an existing route test (or add lightweight snapshot) to render `/me/home` in both langs and assert no literal Chinese in English mode / vice versa for known selectors.
-- `tsgo` + `bunx vitest run` full suite.
+重构 `src/routes/_authenticated/me.match.tsx`：
 
-## 7. Visual verification
-- Playwright driven, `/me/home` `/me/friends` `/me/match` at 390 / 430 / 1440, in both langs. Assert `scrollWidth === innerWidth`, zero console errors, no nested buttons, entry card visible on account modal.
+- 顶部：两个 Select
+  1. 我的主命盘（自动填充唯一 primary；没有 → CTA「去 /me/home 设置」）
+  2. 他人命盘（从 `chart_role='other'` 列表选，显示 name + 脱敏出生日：`1990-**-** · Shanghai`）
+- 隐私确认 checkbox「我已获得对方同意保存并用于关系适配」，未勾选禁用按钮。
+- 「开始适配分析」→ 通过 `compatibility-facts-adapter.ts` 从两张 chart 的 `calculation_snapshot` 提取 facets；若缺失则调用本地确定性计算（`western-natal`, `bazi-luck`, `ziwei-horoscope`, `vedic-dasha`）填补并写回 snapshot；仍缺则返回 `partial=true` + `missing_facts`。
+- 调用现有 `computeCompatibility` (v1, deterministic, 0 AI tokens)。
+- 结果缓存 key = canonical pair key + mode + calculator_version；使用 `sessionStorage` 或直接每次纯函数重算（已确定性，重算成本可忽略）。
+- DEMO 四按钮移入折叠 `<details>` 「查看演示 fixtures」，与真实结果分离。
+- 加载/错误/空状态/同意撤回双语反馈。
 
-## 8. Non-goals / explicit constraints
-- No DB migrations, no publish.
-- No changes to deterministic score outputs.
-- No copy from third-party creators (陶白白 etc.) — all copy is Fate Nexus original.
-- Existing user-generated same-lang same-day results (none cached yet on these routes) unchanged; if a future cache is added elsewhere, key includes `:${lang}`.
+## 阶段 5 — 今日路由加固（全局 pending）
 
-## Deliverables
-List of edited files, new i18n key count, test count, visual screenshots at three widths × two langs, and note on real signed-in path (which still needs manual login on the preview host, matching prior turns).
+`src/router.tsx`：
+
+- `createRouter({ ..., defaultPendingMs: 0, defaultPendingComponent: GlobalPending, defaultErrorComponent: GlobalError })`.
+
+`src/routes/_authenticated/route.tsx`：
+
+- 追加 `pendingMs: 0`, `pendingComponent: DailyRoomPending`（复用现成组件），确保任何 `_authenticated/*` chunk 加载间隙都非空。
+- 保留 `ssr: false` 与现有 auth 守卫。
+
+`me.home.tsx` 主体已解耦 Supabase；确认 DailyRoomPage 顶部（demo banner + nav + welcome + fixture buttons + score/theme/domains/actions/reflection）在 Supabase pending/error 时完全渲染，仅「我的命盘」section 显示局部 loading/error。为主体加 `data-testid="daily-room-main"`；命盘 section 加 `data-testid="charts-manager"`。
+
+## 测试
+
+新增：
+
+- `src/lib/reports-store.roles.test.ts`：mock supabase client，验证 `setPrimaryChart` 调用 RPC；重命名不改 hash；`setChartRole` 边界。
+- `src/experiences/daily-room/charts-manager.test.tsx`：无主命盘引导、切换主、他人分组、行内重命名双语错误。
+- `src/routes/_authenticated/me.match.test.tsx`：primary 缺失 CTA、导入 partial 显示 missing_facts、同意 checkbox 门控。
+- `tests/visual/navigate-to-home.py`（Playwright）：从 /me/match、/me/friends、侧栏、移动菜单四个入口进 /me/home，断言 `<main>` 立即非空（pending 或主体）；auth 失败模拟下 error UI 非空。
+
+全量 `bun test` + `tsgo --noEmit`。
+
+## 验收命令
+
+```bash
+bun test
+bunx tsgo --noEmit
+python tests/visual/navigate-to-home.py
+```
+
+## 交付说明
+
+- 迁移文件生成后通过 `supabase--migration` 工具提交，等待用户审批；types 待 migration 应用后自动重生成，然后运行测试。
+- 若用户批准前无法跑 types 相关测试，会在提交时明确指出。
+- 不发布，不删数据。
+
+请确认执行。
