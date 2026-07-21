@@ -496,6 +496,22 @@ const DICTS: Record<Lang, Dict> = { en, zh };
 type Ctx = { lang: Lang; setLang: (l: Lang) => void; t: Dict };
 const LangCtx = createContext<Ctx | null>(null);
 
+/** Public: the BCP-47 tag we render on `<html lang>` for a given app lang. */
+export function htmlLangFor(lang: Lang): "zh-CN" | "en" {
+  return lang === "zh" ? "zh-CN" : "en";
+}
+
+/** Sync `document.documentElement.lang` so screen readers, spell-check and
+ *  CSS `:lang()` selectors match the visible UI. Called from an effect so
+ *  the SSR shell (`<html lang="en">`) stays stable and does not cause a
+ *  hydration mismatch. */
+export function syncDocumentLang(lang: Lang): void {
+  if (typeof document === "undefined") return;
+  const tag = htmlLangFor(lang);
+  const el = document.documentElement;
+  if (el.getAttribute("lang") !== tag) el.setAttribute("lang", tag);
+}
+
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>("en");
 
@@ -506,11 +522,18 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     } catch {}
   }, []);
 
+  // Keep <html lang> aligned with the active UI language after mount.
+  // Runs client-only, so it never diverges from the SSR shell attribute.
+  useEffect(() => {
+    syncDocumentLang(lang);
+  }, [lang]);
+
   const setLang = (l: Lang) => {
     setLangState(l);
     try {
       localStorage.setItem("lod.lang", l);
     } catch {}
+    syncDocumentLang(l);
   };
 
   return (
@@ -523,3 +546,6 @@ export function useLang() {
   if (!ctx) throw new Error("useLang must be used within LanguageProvider");
   return ctx;
 }
+
+// Re-export for tests
+export { DICTS };
