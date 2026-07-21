@@ -15,6 +15,27 @@ if (
   }
 }
 
+function restoreDomWindow(): void {
+  const defaultView = globalThis.document?.defaultView;
+  if (!defaultView) return;
+  if (
+    typeof globalThis.window === "undefined" ||
+    globalThis.window !== defaultView ||
+    typeof globalThis.window.addEventListener !== "function"
+  ) {
+    Object.defineProperty(globalThis, "window", {
+      value: defaultView,
+      configurable: true,
+      writable: true,
+    });
+  }
+  Object.defineProperty(globalThis, "localStorage", {
+    value: defaultView.localStorage,
+    configurable: true,
+    writable: true,
+  });
+}
+
 import React from "react";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -28,6 +49,7 @@ import { AuthRefreshFailedError } from "@/routes/_authenticated/route";
 const activeRoots: Array<{ root: Root; host: HTMLElement }> = [];
 
 async function mount(el: React.ReactElement) {
+  restoreDomWindow();
   const host = document.createElement("div");
   document.body.appendChild(host);
   const root = createRoot(host);
@@ -39,6 +61,7 @@ async function mount(el: React.ReactElement) {
 }
 
 afterEach(async () => {
+  restoreDomWindow();
   while (activeRoots.length) {
     const { root, host } = activeRoots.pop()!;
     await act(async () => root.unmount());
@@ -110,6 +133,7 @@ describe("LanguageProvider · SSR shell parity", () => {
 
 describe("LanguageToggle · real DOM interaction", () => {
   beforeEach(() => {
+    restoreDomWindow();
     window.localStorage.clear();
     document.documentElement.setAttribute("lang", "en");
   });
