@@ -98,12 +98,21 @@ const DEFAULT_FACETS: SideFacets = {
   rootedness: 0.5,
 };
 
-const DIM_LABEL: Record<DimensionScore["key"], string> = {
-  communication: "沟通",
-  emotional_support: "情绪支持",
-  action_rhythm: "行动节奏",
-  boundary_repair: "边界修复",
-  shared_growth: "共同成长",
+const DIM_LABEL: Record<CompatLang, Record<DimensionScore["key"], string>> = {
+  zh: {
+    communication: "沟通",
+    emotional_support: "情绪支持",
+    action_rhythm: "行动节奏",
+    boundary_repair: "边界修复",
+    shared_growth: "共同成长",
+  },
+  en: {
+    communication: "Communication",
+    emotional_support: "Emotional support",
+    action_rhythm: "Action tempo",
+    boundary_repair: "Boundary repair",
+    shared_growth: "Shared growth",
+  },
 };
 
 function clamp01(n: number): number {
