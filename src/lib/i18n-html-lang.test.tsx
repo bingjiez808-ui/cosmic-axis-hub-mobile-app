@@ -1,7 +1,11 @@
 // @ts-expect-error bun:test
 import { afterEach, describe, expect, it, beforeEach } from "bun:test";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
-if (typeof globalThis.document === "undefined") {
+if (
+  typeof globalThis.document === "undefined" ||
+  typeof globalThis.window === "undefined" ||
+  typeof globalThis.window.addEventListener !== "function"
+) {
   GlobalRegistrator.register({ url: "http://localhost/", width: 1280, height: 900 });
 }
 
