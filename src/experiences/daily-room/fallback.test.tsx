@@ -33,7 +33,7 @@ async function mount(el: ReactElement) {
 }
 
 function resetLangToEnglish() {
-  document.documentElement.setAttribute("lang", "en");
+  resetLangToEnglish();
   try {
     window.localStorage.clear();
     window.localStorage.setItem("lod.lang", "en");
@@ -62,7 +62,7 @@ afterEach(async () => {
 
 describe("/me/home fallbacks · never blank", () => {
   beforeEach(() => {
-    document.documentElement.setAttribute("lang", "en");
+    resetLangToEnglish();
     try {
       window.localStorage.clear();
     } catch {
@@ -111,7 +111,7 @@ describe("/me/home fallbacks · never blank", () => {
 
 describe("/me/home fallbacks · SSR hydration parity (regression for zh-CN mismatch)", () => {
   beforeEach(() => {
-    document.documentElement.setAttribute("lang", "en");
+    resetLangToEnglish();
     try {
       window.localStorage.clear();
     } catch {
