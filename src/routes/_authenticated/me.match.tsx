@@ -1,16 +1,14 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 
 import { computeCompatibility, type CompatResult } from "@/lib/compatibility-score";
 import { MATCH_DEMO, type MatchDemoKey } from "@/experiences/daily-room/match-fixtures";
-
-const FLAG_ENABLED =
-  typeof import.meta !== "undefined" &&
-  (import.meta as unknown as { env?: Record<string, string> }).env?.VITE_ENABLE_DAILY_ROOM === "true";
+import { ensureSocialPreviewAllowed } from "@/experiences/daily-room/route-guard";
 
 export const Route = createFileRoute("/_authenticated/me/match")({
+  head: () => ({ meta: [{ name: "robots", content: "noindex,nofollow" }] }),
   beforeLoad: () => {
-    if (!FLAG_ENABLED) throw redirect({ to: "/" });
+    ensureSocialPreviewAllowed();
   },
   component: MatchPage,
 });
