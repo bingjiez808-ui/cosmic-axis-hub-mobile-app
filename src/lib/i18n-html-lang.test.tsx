@@ -115,8 +115,6 @@ describe("LanguageToggle · real DOM interaction", () => {
   });
 
   it("clicks zh → en → zh and immediately updates context copy, <html lang>, and persistence", async () => {
-    window.localStorage.setItem("lod.lang", "zh");
-
     function ProbeContent() {
       const { lang } = useLang();
       const d = useDaily();
@@ -135,7 +133,16 @@ describe("LanguageToggle · real DOM interaction", () => {
         <ProbeContent />
       </LanguageProvider>,
     );
+
+    const zhButton = document.querySelector<HTMLButtonElement>('[data-lang-button="zh"]');
+    expect(zhButton).toBeTruthy();
+    await act(async () => {
+      zhButton!.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+
     expect(document.documentElement.getAttribute("lang")).toBe("zh-CN");
+    expect(window.localStorage.getItem("lod.lang")).toBe("zh");
+    expect(document.querySelector('[data-testid="lang"]')?.textContent).toBe("zh");
     expect(document.body.textContent ?? "").toContain("双人命盘互动 · 演示");
 
     const enButton = document.querySelector<HTMLButtonElement>('[data-lang-button="en"]');
@@ -150,14 +157,26 @@ describe("LanguageToggle · real DOM interaction", () => {
     expect(document.body.textContent ?? "").toContain("Two-chart compatibility · demo");
     expect(document.body.textContent ?? "").not.toContain("双人命盘互动 · 演示");
 
-    const zhButton = document.querySelector<HTMLButtonElement>('[data-lang-button="zh"]');
-    expect(zhButton).toBeTruthy();
     await act(async () => {
       zhButton!.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
     });
 
     expect(document.documentElement.getAttribute("lang")).toBe("zh-CN");
     expect(window.localStorage.getItem("lod.lang")).toBe("zh");
+    expect(document.querySelector('[data-testid="lang"]')?.textContent).toBe("zh");
+    expect(document.body.textContent ?? "").toContain("双人命盘互动 · 演示");
+
+    while (activeRoots.length) {
+      const { root, host } = activeRoots.pop()!;
+      await act(async () => root.unmount());
+      host.remove();
+    }
+    await mount(
+      <LanguageProvider>
+        <ProbeContent />
+      </LanguageProvider>,
+    );
+    expect(document.documentElement.getAttribute("lang")).toBe("zh-CN");
     expect(document.querySelector('[data-testid="lang"]')?.textContent).toBe("zh");
     expect(document.body.textContent ?? "").toContain("双人命盘互动 · 演示");
   });
