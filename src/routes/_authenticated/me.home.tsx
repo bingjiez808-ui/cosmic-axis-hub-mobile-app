@@ -67,24 +67,7 @@ type RealChartAdapterState =
   | { kind: "error"; message: string }
   | { kind: "ready"; charts: ChartRow[]; canDelete: boolean; canRename: boolean; canSetDefault: boolean };
 
-/** Rewrite an engine-emitted contradiction like
- *  `study(70) 与 wealth(35) 分数差 ≥ 20，请以现实情境为准。`
- *  into the current locale using structured re-parsing. Falls back to
- *  the raw string if it doesn't match. */
-function localizeContradiction(
-  raw: string,
-  domainLabel: (k: string) => string,
-  lang: "zh" | "en",
-): string {
-  const m = raw.match(/(\w+)\((\d+)\)\s*[^\d]+?(\w+)\((\d+)\)/);
-  if (!m) return raw;
-  const [, aK, aS, bK, bS] = m;
-  const aL = domainLabel(aK);
-  const bL = domainLabel(bK);
-  return lang === "zh"
-    ? `${aL}（${aS}） 与 ${bL}（${bS}） 分数差 ≥ 20，请以现实情境为准。`
-    : `${aL} (${aS}) vs. ${bL} (${bS}) differ by ≥ 20 — trust the real situation over the reading.`;
-}
+// (contradiction/theme/signal formatting now lives in `@/lib/daily-format`.)
 
 function DailyRoomPage() {
   const { lang } = useLang();
