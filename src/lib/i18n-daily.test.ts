@@ -5,7 +5,8 @@
  * the same commit — otherwise the UI silently falls back to `undefined`
  * and renders "undefined" or crashes when the value is invoked.
  */
-import { describe, expect, it } from "vitest";
+// @ts-expect-error bun:test
+import { describe, expect, it } from "bun:test";
 
 import { DAILY_DICTS } from "@/lib/i18n-daily";
 
