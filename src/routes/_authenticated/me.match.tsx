@@ -208,6 +208,27 @@ function ResultPanel({ result }: { result: CompatResult }) {
         <BulletCard title="相处建议" items={result.suggestions} tone="amber" />
       </section>
 
+      {/* Evidence refs — from compatibility-facts-adapter-v1 when available. */}
+      {result.evidence_refs && result.evidence_refs.length > 0 && (
+        <section className="rounded-xl border border-amber-400/15 bg-black/20 p-5 text-xs leading-relaxed text-amber-100/80">
+          <div className="mb-2 text-amber-200/70">证据来源（facts-adapter v1）</div>
+          <div className="flex flex-wrap gap-2">
+            {result.evidence_refs.map((r) => (
+              <code key={r} className="rounded border border-amber-400/20 bg-black/40 px-2 py-0.5 text-amber-200/80">
+                {r}
+              </code>
+            ))}
+          </div>
+          <div className="mt-2 text-amber-200/60">
+            source systems: {result.source_systems?.join(" / ") || "(demo: fixture facets)"} ·{" "}
+            {result.cross_system_support ? "跨体系支持 ≥2" : "单体系 / partial"}
+          </div>
+          {result.missing_facts && result.missing_facts.length > 0 && (
+            <div className="mt-2 text-amber-200/50">missing: {result.missing_facts.join(", ")}</div>
+          )}
+        </section>
+      )}
+
       <section className="rounded-xl border border-amber-400/15 bg-black/20 p-5 text-xs leading-relaxed text-amber-100/70">
         {result.disclaimer}
       </section>
