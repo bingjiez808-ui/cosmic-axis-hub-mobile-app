@@ -33,7 +33,9 @@ import { Route as ApiGenerateAvatarRouteImport } from './routes/api/generate-ava
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
+import { Route as AuthenticatedMeMatchRouteImport } from './routes/_authenticated/me.match'
 import { Route as AuthenticatedMeHomeRouteImport } from './routes/_authenticated/me.home'
+import { Route as AuthenticatedMeFriendsRouteImport } from './routes/_authenticated/me.friends'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 
@@ -158,9 +160,19 @@ const Char91DotmcpChar93ListToolsRoute =
     path: '/.mcp/list-tools',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AuthenticatedMeMatchRoute = AuthenticatedMeMatchRouteImport.update({
+  id: '/me/match',
+  path: '/me/match',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedMeHomeRoute = AuthenticatedMeHomeRouteImport.update({
   id: '/me/home',
   path: '/me/home',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedMeFriendsRoute = AuthenticatedMeFriendsRouteImport.update({
+  id: '/me/friends',
+  path: '/me/friends',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const Char91DotmcpChar93InvokeToolToolRoute =
@@ -201,7 +213,9 @@ export interface FileRoutesByFullPath {
   '/auth/': typeof AuthIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/me/friends': typeof AuthenticatedMeFriendsRoute
   '/me/home': typeof AuthenticatedMeHomeRoute
+  '/me/match': typeof AuthenticatedMeMatchRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -228,7 +242,9 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/me/friends': typeof AuthenticatedMeFriendsRoute
   '/me/home': typeof AuthenticatedMeHomeRoute
+  '/me/match': typeof AuthenticatedMeMatchRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -258,7 +274,9 @@ export interface FileRoutesById {
   '/auth/': typeof AuthIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/_authenticated/me/friends': typeof AuthenticatedMeFriendsRoute
   '/_authenticated/me/home': typeof AuthenticatedMeHomeRoute
+  '/_authenticated/me/match': typeof AuthenticatedMeMatchRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -288,7 +306,9 @@ export interface FileRouteTypes {
     | '/auth/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/me/friends'
     | '/me/home'
+    | '/me/match'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -315,7 +335,9 @@ export interface FileRouteTypes {
     | '/auth'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/me/friends'
     | '/me/home'
+    | '/me/match'
   id:
     | '__root__'
     | '/'
@@ -344,7 +366,9 @@ export interface FileRouteTypes {
     | '/auth/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/_authenticated/me/friends'
     | '/_authenticated/me/home'
+    | '/_authenticated/me/match'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -543,11 +567,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotmcpChar93ListToolsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/me/match': {
+      id: '/_authenticated/me/match'
+      path: '/me/match'
+      fullPath: '/me/match'
+      preLoaderRoute: typeof AuthenticatedMeMatchRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/me/home': {
       id: '/_authenticated/me/home'
       path: '/me/home'
       fullPath: '/me/home'
       preLoaderRoute: typeof AuthenticatedMeHomeRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/me/friends': {
+      id: '/_authenticated/me/friends'
+      path: '/me/friends'
+      fullPath: '/me/friends'
+      preLoaderRoute: typeof AuthenticatedMeFriendsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/.mcp/invoke-tool/$tool': {
@@ -569,12 +607,16 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
+  AuthenticatedMeFriendsRoute: typeof AuthenticatedMeFriendsRoute
   AuthenticatedMeHomeRoute: typeof AuthenticatedMeHomeRoute
+  AuthenticatedMeMatchRoute: typeof AuthenticatedMeMatchRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
+  AuthenticatedMeFriendsRoute: AuthenticatedMeFriendsRoute,
   AuthenticatedMeHomeRoute: AuthenticatedMeHomeRoute,
+  AuthenticatedMeMatchRoute: AuthenticatedMeMatchRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
