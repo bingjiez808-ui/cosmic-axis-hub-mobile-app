@@ -122,9 +122,9 @@ describe("/me/home fallbacks · SSR hydration parity (regression for zh-CN misma
     // Regression: previously DailyRoomPending read `document.documentElement.lang`
     // at render time. SSR emitted English but the first client render read
     // "zh-CN" from <html lang> and emitted Chinese, causing a hydration mismatch.
-    // Now the component reads useLang() (SSR snapshot pinned to "en"), so the
-    // first client render matches the server output. React then re-renders
-    // with the real client snapshot and swaps to Chinese.
+    // Now the component's first render is intentionally pinned to "en", so
+    // the first client render matches the server output. React then re-renders
+    // from an effect with the real client language and swaps to Chinese.
     document.documentElement.setAttribute("lang", "zh-CN");
     window.localStorage.setItem("lod.lang", "zh");
 
@@ -171,6 +171,52 @@ describe("/me/home fallbacks · SSR hydration parity (regression for zh-CN misma
     expect(el?.getAttribute("data-lang")).toBe("zh");
     expect(el?.textContent ?? "").toContain("今日阅览室");
     expect((el?.textContent ?? "").trim().length).toBeGreaterThan(0);
+  });
+
+  it("hydrates cleanly even when a router pending fallback renders outside LanguageProvider", async () => {
+    document.documentElement.setAttribute("lang", "zh-CN");
+    window.localStorage.setItem("lod.lang", "zh");
+
+    const serverHTML = renderToString(<DailyRoomPending />);
+    expect(serverHTML).toContain("Opening today");
+    expect(serverHTML).not.toContain("今日阅览室");
+
+    const host = document.createElement("div");
+    host.innerHTML = serverHTML;
+    document.body.appendChild(host);
+
+    const errors: unknown[] = [];
+    const origError = console.error;
+    console.error = (...args: unknown[]) => {
+      errors.push(args);
+    };
+
+    let hydrated: ReturnType<typeof hydrateRoot> | undefined;
+    try {
+      await act(async () => {
+        hydrated = hydrateRoot(host, <DailyRoomPending />);
+      });
+    } finally {
+      console.error = origError;
+    }
+    roots.push({
+      root: { unmount: () => hydrated?.unmount() },
+      host,
+    });
+
+    const mismatch = errors.find((entry) => {
+      const s = Array.isArray(entry) ? entry.map(String).join(" ") : String(entry);
+      return /hydrat|did not match|mismatch/i.test(s);
+    });
+    if (mismatch) {
+      throw new Error(
+        `Hydration mismatch detected without provider: ${JSON.stringify(mismatch).slice(0, 400)}`,
+      );
+    }
+
+    const el = document.querySelector('[data-testid="daily-room-pending"]');
+    expect(el?.getAttribute("data-lang")).toBe("zh");
+    expect(el?.textContent ?? "").toContain("今日阅览室");
   });
 
   it("error panel hydrates cleanly for zh-CN too", async () => {
