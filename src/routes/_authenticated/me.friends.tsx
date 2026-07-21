@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
 import {
@@ -8,6 +8,8 @@ import {
 } from "@/lib/friends-repo";
 import { ensureSocialPreviewAllowed } from "@/experiences/daily-room/route-guard";
 import { SocialConsentGate, useSocialConsent } from "@/experiences/daily-room/social-consent";
+import { useLang } from "@/lib/i18n";
+import { useDaily, useFormatDate } from "@/lib/i18n-daily";
 
 export const Route = createFileRoute("/_authenticated/me/friends")({
   head: () => ({ meta: [{ name: "robots", content: "noindex,nofollow" }] }),
@@ -17,27 +19,9 @@ export const Route = createFileRoute("/_authenticated/me/friends")({
   component: FriendsPage,
 });
 
-// Shared in-memory repo (per tab). Persists across renders, not across reloads.
 const repo = createInMemoryFriendsRepo();
 const ME = "demo-me";
 const PEER = "demo-peer";
-
-const REPORT_CATEGORIES = [
-  { id: "harassment", label: "骚扰或不当言论" },
-  { id: "spam", label: "垃圾信息 / 广告" },
-  { id: "impersonation", label: "冒充他人身份" },
-  { id: "underage", label: "对方可能未满 18 岁" },
-  { id: "other", label: "其他违反社区约定的行为" },
-];
-
-// Structured note templates (fixed set — no free chat)
-const NOTE_TEMPLATES = [
-  { id: "greet", text: "很高兴认识你，一起阅读命运图书馆吧。" },
-  { id: "thanks", text: "谢谢你接受邀请。" },
-  { id: "match_ask", text: "如果你愿意，我们可以尝试一次双方授权的互动适配。" },
-  { id: "boundary", text: "希望我们的交流保持在阅读与探讨的边界内。" },
-  { id: "pause", text: "最近我需要一些空间，晚点再联系。" },
-];
 
 type LocalNotification = {
   id: string;
@@ -47,6 +31,9 @@ type LocalNotification = {
 };
 
 function FriendsPage() {
+  const d = useDaily();
+  const { lang } = useLang();
+  const fmtDate = useFormatDate();
   const consent = useSocialConsent();
   const [tab, setTab] = useState<"friends" | "pending" | "blocks" | "inbox">("friends");
   const [tick, setTick] = useState(0);
@@ -58,10 +45,10 @@ function FriendsPage() {
   const [blocks, setBlocks] = useState<{ blockerId: string; blockedId: string }[]>([]);
   const [toast, setToast] = useState<string | null>(null);
   const [reportTarget, setReportTarget] = useState<string | null>(null);
-  const [reportCategory, setReportCategory] = useState<string>(REPORT_CATEGORIES[0].id);
+  const [reportCategory, setReportCategory] = useState<string>(d.report_categories[0].id);
   const [reportDetail, setReportDetail] = useState("");
   const [noteTarget, setNoteTarget] = useState<string | null>(null);
-  const [selectedNoteId, setSelectedNoteId] = useState<string>(NOTE_TEMPLATES[0].id);
+  const [selectedNoteId, setSelectedNoteId] = useState<string>(d.note_templates[0].id);
   const [notifications, setNotifications] = useState<LocalNotification[]>([]);
 
   useEffect(() => {
@@ -74,10 +61,10 @@ function FriendsPage() {
 
   function pushNotification(kind: LocalNotification["kind"], text: string) {
     setNotifications((prev) =>
-      [
-        { id: Math.random().toString(36).slice(2, 10), at: Date.now(), text, kind },
-        ...prev,
-      ].slice(0, 20),
+      [{ id: Math.random().toString(36).slice(2, 10), at: Date.now(), text, kind }, ...prev].slice(
+        0,
+        20,
+      ),
     );
   }
 
@@ -92,49 +79,73 @@ function FriendsPage() {
 
   async function seedIncoming() {
     if (!consent.gated) {
-      bump("请先确认年龄与隐私同意");
+      bump(d.toast_need_consent);
       return;
     }
-    const inv = await repo.createInvite(PEER, { userId: ME });
-    void inv;
-    bump("已模拟收到一个好友邀请", "invite");
+    await repo.createInvite(PEER, { userId: ME });
+    bump(d.toast_seeded, "invite");
   }
   async function sendOutgoing() {
     if (!consent.gated) {
-      bump("请先确认年龄与隐私同意");
+      bump(d.toast_need_consent);
       return;
     }
     await repo.createInvite(ME, { userId: PEER });
-    bump("已模拟发出一个好友邀请", "invite");
+    bump(d.toast_sent_invite, "invite");
   }
 
   async function submitReport() {
     if (!reportTarget) return;
+    const cat =
+      d.report_categories.find((c) => c.id === reportCategory)?.label ?? reportCategory;
     await repo.report(ME, reportTarget, reportCategory, reportDetail || undefined);
     setReportTarget(null);
     setReportDetail("");
-    bump(`已提交举报（${reportCategory}）`, "report");
+    bump(d.toast_report_submitted(cat), "report");
   }
 
   async function submitNote() {
     if (!noteTarget) return;
-    const tmpl = NOTE_TEMPLATES.find((t) => t.id === selectedNoteId);
+    const tmpl = d.note_templates.find((t) => t.id === selectedNoteId);
     setNoteTarget(null);
-    bump(`已发送纸条：${tmpl?.text.slice(0, 12)}…`, "note");
+    bump(d.toast_note_sent((tmpl?.text ?? "").slice(0, 12)), "note");
   }
 
   return (
     <div className="min-h-screen bg-[#0a0a12] text-amber-50">
       <div className="mx-auto w-full max-w-[900px] px-4 py-8 md:px-8 md:py-12">
         <div className="mb-4 rounded-lg border border-amber-400/30 bg-amber-500/5 px-4 py-2 text-xs text-amber-200/90">
-          DEMO 预览 · 好友与邀请（in-memory 演示，reload 后会清空）· 迁移未执行前不写入云端。
+          {d.demo_banner_friends}
         </div>
 
+        <nav
+          aria-label={d.nav_today}
+          className="mb-6 flex flex-wrap items-center gap-2 text-xs"
+        >
+          <Link
+            to="/me/home"
+            className="rounded-full border border-amber-400/25 px-3 py-1 text-amber-200/80 hover:border-amber-300/60"
+          >
+            {d.nav_today}
+          </Link>
+          <Link
+            to="/me/friends"
+            aria-current="page"
+            className="rounded-full border border-amber-300 bg-amber-300/10 px-3 py-1 text-amber-100"
+          >
+            {d.home_secondary_nav_friends}
+          </Link>
+          <Link
+            to="/me/match"
+            className="rounded-full border border-amber-400/25 px-3 py-1 text-amber-200/80 hover:border-amber-300/60"
+          >
+            {d.home_secondary_nav_match}
+          </Link>
+        </nav>
+
         <header className="mb-6">
-          <h1 className="text-3xl font-serif tracking-wide">同门 · 好友</h1>
-          <p className="mt-2 text-sm text-amber-100/70">
-            邀请制好友、结构化纸条、屏蔽、举报 —— 没有自由聊天。加为好友后，才可发起双方授权的命盘匹配。
-          </p>
+          <h1 className="text-3xl font-serif tracking-wide">{d.friends_title}</h1>
+          <p className="mt-2 text-sm text-amber-100/70">{d.friends_subtitle}</p>
         </header>
 
         <div className="mb-6">
@@ -151,7 +162,7 @@ function FriendsPage() {
             disabled={!consent.gated}
             className="rounded-full border border-amber-300/40 bg-amber-300/5 px-3 py-1.5 text-xs text-amber-100 hover:bg-amber-300/10 disabled:cursor-not-allowed"
           >
-            向 demo-peer 发邀请
+            {d.friends_send_outgoing}
           </button>
           <button
             type="button"
@@ -159,30 +170,30 @@ function FriendsPage() {
             disabled={!consent.gated}
             className="rounded-full border border-amber-400/20 px-3 py-1.5 text-xs text-amber-100/80 hover:border-amber-300/60 disabled:cursor-not-allowed"
           >
-            模拟收到一个邀请
+            {d.friends_seed_incoming}
           </button>
         </div>
 
         <nav className="mb-4 flex flex-wrap gap-1 border-b border-amber-400/15">
-          {(["friends", "pending", "blocks", "inbox"] as const).map((t) => (
+          {(["friends", "pending", "blocks", "inbox"] as const).map((tk) => (
             <button
-              key={t}
+              key={tk}
               type="button"
-              onClick={() => setTab(t)}
-              aria-current={tab === t ? "page" : undefined}
+              onClick={() => setTab(tk)}
+              aria-current={tab === tk ? "page" : undefined}
               className={`border-b-2 px-3 py-2 text-sm ${
-                tab === t
+                tab === tk
                   ? "border-amber-300 text-amber-100"
                   : "border-transparent text-amber-200/60 hover:text-amber-100"
               }`}
             >
-              {t === "friends"
-                ? `好友 (${friends.length})`
-                : t === "pending"
-                  ? `待处理 (${pending.incoming.length + pending.outgoing.length})`
-                  : t === "blocks"
-                    ? `屏蔽 (${blocks.length})`
-                    : `站内通知 (${notifications.length})`}
+              {tk === "friends"
+                ? d.tab_friends(friends.length)
+                : tk === "pending"
+                  ? d.tab_pending(pending.incoming.length + pending.outgoing.length)
+                  : tk === "blocks"
+                    ? d.tab_blocks(blocks.length)
+                    : d.tab_inbox(notifications.length)}
             </button>
           ))}
         </nav>
@@ -190,7 +201,7 @@ function FriendsPage() {
         {tab === "friends" && (
           <ul className="divide-y divide-amber-400/10 rounded-xl border border-amber-400/15 bg-black/30">
             {friends.length === 0 && (
-              <li className="px-4 py-6 text-sm text-amber-200/60">还没有好友，先发一个邀请吧。</li>
+              <li className="px-4 py-6 text-sm text-amber-200/60">{d.friends_empty}</li>
             )}
             {friends.map((f) => {
               const other = f.aUserId === ME ? f.bUserId : f.aUserId;
@@ -202,7 +213,7 @@ function FriendsPage() {
                   <div className="text-sm">
                     <div className="text-amber-100">{other}</div>
                     <div className="text-xs text-amber-200/50">
-                      加为好友 {new Date(f.createdAt).toLocaleString()}
+                      {d.friends_added_at(fmtDate(new Date(f.createdAt)))}
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -210,38 +221,38 @@ function FriendsPage() {
                       type="button"
                       onClick={() => {
                         setNoteTarget(other);
-                        setSelectedNoteId(NOTE_TEMPLATES[0].id);
+                        setSelectedNoteId(d.note_templates[0].id);
                       }}
                       className="rounded-full border border-amber-400/30 px-3 py-1 text-xs text-amber-100 hover:bg-amber-300/10"
                     >
-                      发送结构化纸条
+                      {d.friends_send_note}
                     </button>
                     <button
                       type="button"
                       onClick={() => setReportTarget(other)}
                       className="rounded-full border border-amber-400/20 px-3 py-1 text-xs text-amber-100/80 hover:border-amber-300/60"
                     >
-                      举报
+                      {d.friends_report}
                     </button>
                     <button
                       type="button"
                       onClick={async () => {
                         await repo.removeFriend(ME, other);
-                        bump("已移除好友");
+                        bump(d.toast_removed);
                       }}
                       className="rounded-full border border-amber-400/20 px-3 py-1 text-xs text-amber-100/80 hover:border-amber-300/60"
                     >
-                      移除
+                      {d.friends_remove}
                     </button>
                     <button
                       type="button"
                       onClick={async () => {
                         await repo.block(ME, other);
-                        bump("已屏蔽（同时解除好友与匹配）", "block");
+                        bump(d.toast_blocked, "block");
                       }}
                       className="rounded-full border border-rose-400/30 px-3 py-1 text-xs text-rose-200 hover:bg-rose-500/10"
                     >
-                      屏蔽
+                      {d.friends_block}
                     </button>
                   </div>
                 </li>
@@ -253,9 +264,13 @@ function FriendsPage() {
         {tab === "pending" && (
           <div className="space-y-6">
             <PendingList
-              title="收到的邀请"
+              title={d.friends_pending_incoming}
               items={pending.incoming}
-              emptyText="暂无待你处理的邀请。"
+              emptyText={d.friends_pending_incoming_empty}
+              lang={lang}
+              codeLabel={d.friends_invite_code}
+              expiresLabel={d.friends_invite_expires}
+              fmtDate={fmtDate}
               actions={(inv) => (
                 <>
                   <button
@@ -263,39 +278,43 @@ function FriendsPage() {
                     disabled={!consent.gated}
                     onClick={async () => {
                       await repo.acceptInvite(inv.code, ME);
-                      bump("已接受", "accept");
+                      bump(d.toast_accepted, "accept");
                     }}
                     className="rounded-full border border-emerald-400/40 px-3 py-1 text-xs text-emerald-200 hover:bg-emerald-500/10 disabled:cursor-not-allowed disabled:opacity-40"
                   >
-                    接受
+                    {d.friends_accept}
                   </button>
                   <button
                     type="button"
                     onClick={async () => {
                       await repo.rejectInvite(inv.code, ME);
-                      bump("已拒绝", "reject");
+                      bump(d.toast_rejected, "reject");
                     }}
                     className="rounded-full border border-amber-400/20 px-3 py-1 text-xs text-amber-100/80 hover:border-amber-300/60"
                   >
-                    拒绝
+                    {d.friends_decline}
                   </button>
                 </>
               )}
             />
             <PendingList
-              title="发出的邀请"
+              title={d.friends_pending_outgoing}
               items={pending.outgoing}
-              emptyText="暂无发出中的邀请。"
+              emptyText={d.friends_pending_outgoing_empty}
+              lang={lang}
+              codeLabel={d.friends_invite_code}
+              expiresLabel={d.friends_invite_expires}
+              fmtDate={fmtDate}
               actions={(inv) => (
                 <button
                   type="button"
                   onClick={async () => {
                     await repo.cancelInvite(inv.code, ME);
-                    bump("已撤回", "revoke");
+                    bump(d.toast_revoked, "revoke");
                   }}
                   className="rounded-full border border-amber-400/20 px-3 py-1 text-xs text-amber-100/80 hover:border-amber-300/60"
                 >
-                  撤回
+                  {d.friends_withdraw}
                 </button>
               )}
             />
@@ -305,7 +324,7 @@ function FriendsPage() {
         {tab === "blocks" && (
           <ul className="divide-y divide-amber-400/10 rounded-xl border border-amber-400/15 bg-black/30">
             {blocks.length === 0 && (
-              <li className="px-4 py-6 text-sm text-amber-200/60">屏蔽列表为空。</li>
+              <li className="px-4 py-6 text-sm text-amber-200/60">{d.blocks_empty}</li>
             )}
             {blocks.map((b, i) => (
               <li
@@ -317,11 +336,11 @@ function FriendsPage() {
                   type="button"
                   onClick={async () => {
                     await repo.unblock(ME, b.blockedId);
-                    bump("已取消屏蔽");
+                    bump(d.toast_unblocked);
                   }}
                   className="rounded-full border border-amber-400/20 px-3 py-1 text-xs text-amber-100/80 hover:border-amber-300/60"
                 >
-                  取消屏蔽
+                  {d.blocks_unblock}
                 </button>
               </li>
             ))}
@@ -331,9 +350,7 @@ function FriendsPage() {
         {tab === "inbox" && (
           <ul className="divide-y divide-amber-400/10 rounded-xl border border-amber-400/15 bg-black/30">
             {notifications.length === 0 && (
-              <li className="px-4 py-6 text-sm text-amber-200/60">
-                站内通知会在你邀请、接受、举报、屏蔽或发送纸条时出现。
-              </li>
+              <li className="px-4 py-6 text-sm text-amber-200/60">{d.inbox_empty}</li>
             )}
             {notifications.map((n) => (
               <li key={n.id} className="flex items-center justify-between px-4 py-3 text-sm">
@@ -352,20 +369,22 @@ function FriendsPage() {
                   <span className="text-amber-100/90">{n.text}</span>
                 </div>
                 <span className="text-xs text-amber-200/50">
-                  {new Date(n.at).toLocaleTimeString()}
+                  {new Intl.DateTimeFormat(lang === "zh" ? "zh-CN" : "en-US", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  }).format(new Date(n.at))}
                 </span>
               </li>
             ))}
           </ul>
         )}
 
-        {/* Report modal (structured, no free text required) */}
         {reportTarget && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
             <div className="w-full max-w-md rounded-xl border border-amber-400/30 bg-[#12121b] p-6">
-              <div className="text-sm text-amber-200/80">举报 · {reportTarget}</div>
+              <div className="text-sm text-amber-200/80">{d.report_modal_title(reportTarget)}</div>
               <div className="mt-3 space-y-2">
-                {REPORT_CATEGORIES.map((c) => (
+                {d.report_categories.map((c) => (
                   <label
                     key={c.id}
                     className="flex items-center gap-3 rounded-lg border border-amber-400/15 p-2 text-sm text-amber-100/90"
@@ -385,7 +404,7 @@ function FriendsPage() {
               <textarea
                 value={reportDetail}
                 onChange={(e) => setReportDetail(e.target.value.slice(0, 300))}
-                placeholder="可选：简要补充（不接受人身攻击、二次骚扰内容）"
+                placeholder={d.report_detail_placeholder}
                 className="mt-3 w-full rounded-lg border border-amber-400/20 bg-black/40 p-2 text-xs text-amber-100 placeholder:text-amber-200/40"
                 rows={3}
               />
@@ -395,43 +414,40 @@ function FriendsPage() {
                   onClick={() => setReportTarget(null)}
                   className="rounded-full border border-amber-400/20 px-3 py-1.5 text-xs text-amber-100/80"
                 >
-                  取消
+                  {d.cancel}
                 </button>
                 <button
                   type="button"
                   onClick={submitReport}
                   className="rounded-full border border-rose-400/40 bg-rose-500/10 px-3 py-1.5 text-xs text-rose-100"
                 >
-                  提交举报
+                  {d.report_submit}
                 </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* Structured note modal — fixed templates only, no free chat */}
         {noteTarget && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
             <div className="w-full max-w-md rounded-xl border border-amber-400/30 bg-[#12121b] p-6">
-              <div className="text-sm text-amber-200/80">结构化纸条 · 发送给 {noteTarget}</div>
-              <div className="mt-2 text-xs text-amber-200/60">
-                仅可从下列模板中选择一条；本平台不提供自由聊天。
-              </div>
+              <div className="text-sm text-amber-200/80">{d.note_modal_title(noteTarget)}</div>
+              <div className="mt-2 text-xs text-amber-200/60">{d.note_modal_hint}</div>
               <div className="mt-3 space-y-2">
-                {NOTE_TEMPLATES.map((t) => (
+                {d.note_templates.map((tmpl) => (
                   <label
-                    key={t.id}
+                    key={tmpl.id}
                     className="flex items-start gap-3 rounded-lg border border-amber-400/15 p-2 text-sm text-amber-100/90"
                   >
                     <input
                       type="radio"
                       name="note-tmpl"
-                      value={t.id}
-                      checked={selectedNoteId === t.id}
+                      value={tmpl.id}
+                      checked={selectedNoteId === tmpl.id}
                       onChange={(e) => setSelectedNoteId(e.target.value)}
                       className="mt-1 accent-amber-400"
                     />
-                    <span>{t.text}</span>
+                    <span>{tmpl.text}</span>
                   </label>
                 ))}
               </div>
@@ -441,14 +457,14 @@ function FriendsPage() {
                   onClick={() => setNoteTarget(null)}
                   className="rounded-full border border-amber-400/20 px-3 py-1.5 text-xs text-amber-100/80"
                 >
-                  取消
+                  {d.cancel}
                 </button>
                 <button
                   type="button"
                   onClick={submitNote}
                   className="rounded-full border border-amber-300/40 bg-amber-300/10 px-3 py-1.5 text-xs text-amber-100"
                 >
-                  发送
+                  {d.send}
                 </button>
               </div>
             </div>
@@ -470,17 +486,28 @@ function PendingList({
   items,
   emptyText,
   actions,
+  lang,
+  codeLabel,
+  expiresLabel,
+  fmtDate,
 }: {
   title: string;
   items: FriendInvite[];
   emptyText: string;
   actions: (inv: FriendInvite) => React.ReactNode;
+  lang: "zh" | "en";
+  codeLabel: (dir: "in" | "out") => string;
+  expiresLabel: (when: string) => string;
+  fmtDate: (d: Date | string, tz?: string) => string;
 }) {
+  void lang;
   return (
     <div>
       <div className="mb-2 text-xs uppercase tracking-widest text-amber-200/70">{title}</div>
       <ul className="divide-y divide-amber-400/10 rounded-xl border border-amber-400/15 bg-black/30">
-        {items.length === 0 && <li className="px-4 py-4 text-sm text-amber-200/60">{emptyText}</li>}
+        {items.length === 0 && (
+          <li className="px-4 py-4 text-sm text-amber-200/60">{emptyText}</li>
+        )}
         {items.map((inv) => (
           <li
             key={inv.id}
@@ -488,11 +515,11 @@ function PendingList({
           >
             <div className="text-sm">
               <div className="text-amber-100">
-                {inv.inviterId === "demo-me" ? "→" : "←"} 邀请码{" "}
+                {codeLabel(inv.inviterId === "demo-me" ? "out" : "in")}{" "}
                 <code className="text-amber-300/80">{inv.code}</code>
               </div>
               <div className="text-xs text-amber-200/50">
-                有效期至 {new Date(inv.expiresAt).toLocaleString()}
+                {expiresLabel(fmtDate(new Date(inv.expiresAt)))}
               </div>
             </div>
             <div className="flex flex-wrap gap-2">{actions(inv)}</div>

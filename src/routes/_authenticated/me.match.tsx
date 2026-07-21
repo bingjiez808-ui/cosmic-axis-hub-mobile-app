@@ -1,10 +1,12 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 
 import { computeCompatibility, type CompatResult } from "@/lib/compatibility-score";
 import { MATCH_DEMO, type MatchDemoKey } from "@/experiences/daily-room/match-fixtures";
 import { ensureSocialPreviewAllowed } from "@/experiences/daily-room/route-guard";
 import { SocialConsentGate, useSocialConsent } from "@/experiences/daily-room/social-consent";
+import { useLang } from "@/lib/i18n";
+import { useDaily, xlate } from "@/lib/i18n-daily";
 
 export const Route = createFileRoute("/_authenticated/me/match")({
   head: () => ({ meta: [{ name: "robots", content: "noindex,nofollow" }] }),
@@ -23,6 +25,8 @@ const BAND_CLASS: Record<string, string> = {
 };
 
 function MatchPage() {
+  const { lang } = useLang();
+  const d = useDaily();
   const consent = useSocialConsent();
   const [key, setKey] = useState<MatchDemoKey>("friend_pair");
   const [mode, setMode] = useState<CompatResult["mode"]>("friendship");
@@ -36,16 +40,54 @@ function MatchPage() {
         a: { userId: pair.a.userId, chartId: pair.a.chartId, facets: pair.a.facets },
         b: { userId: pair.b.userId, chartId: pair.b.chartId, facets: pair.b.facets },
         mode,
+        lang,
       }),
-    [pair, mode],
+    [pair, mode, lang],
   );
+
+  const facetLabel = (k: CompatResult["dimensions"][number]["key"]): string => {
+    switch (k) {
+      case "communication":
+        return d.match_facet_labels.communication;
+      case "emotional_support":
+        return d.match_facet_labels.emotional_support;
+      case "action_rhythm":
+        return d.match_facet_labels.action_tempo;
+      case "boundary_repair":
+        return d.match_facet_labels.boundary_repair;
+      case "shared_growth":
+        return d.match_facet_labels.growth;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#0a0a12] text-amber-50">
       <div className="mx-auto w-full max-w-[1100px] px-4 py-8 md:px-8 md:py-12">
         <div className="mb-4 rounded-lg border border-amber-400/30 bg-amber-500/5 px-4 py-2 text-xs text-amber-200/90">
-          DEMO 预览 · 互动适配指数（compatibility-score-v1） · 演示 fixture，不写云端，不调用 AI。
+          {d.demo_banner_match}
         </div>
+
+        <nav aria-label={d.nav_today} className="mb-6 flex flex-wrap items-center gap-2 text-xs">
+          <Link
+            to="/me/home"
+            className="rounded-full border border-amber-400/25 px-3 py-1 text-amber-200/80 hover:border-amber-300/60"
+          >
+            {d.nav_today}
+          </Link>
+          <Link
+            to="/me/friends"
+            className="rounded-full border border-amber-400/25 px-3 py-1 text-amber-200/80 hover:border-amber-300/60"
+          >
+            {d.home_secondary_nav_friends}
+          </Link>
+          <Link
+            to="/me/match"
+            aria-current="page"
+            className="rounded-full border border-amber-300 bg-amber-300/10 px-3 py-1 text-amber-100"
+          >
+            {d.home_secondary_nav_match}
+          </Link>
+        </nav>
 
         <div className="mb-6">
           <SocialConsentGate />
@@ -53,25 +95,31 @@ function MatchPage() {
 
         <header className="mb-8">
           <div className="text-xs uppercase tracking-[0.2em] text-amber-300/60">
-            Bilateral Chart Match · Demo
+            {d.match_kicker}
           </div>
-          <h1 className="mt-2 text-3xl font-serif tracking-wide md:text-4xl">
-            互动适配（双方授权后可见）
-          </h1>
-          <p className="mt-3 max-w-2xl text-sm text-amber-100/70">
-            这是<strong className="text-amber-200"> 互动适配指数</strong>，用于观察两个人在
-            沟通、情绪支持、行动节奏、边界修复、共同成长上的样貌，<strong className="text-amber-200">
-            不是关系成功率、婚姻结果或命运判定</strong>。真实使用时，需要好友关系 + 双方选择命盘 +
-            双方明确同意，任一方撤回，结果立即失效。
-          </p>
+          <h1 className="mt-2 text-3xl font-serif tracking-wide md:text-4xl">{d.match_title}</h1>
+          <p className="mt-3 max-w-2xl text-sm text-amber-100/70">{d.match_intro_plain}</p>
         </header>
 
-        {/* Consent flow visualization */}
         <section className="mb-6 rounded-xl border border-amber-400/20 bg-black/30 p-5">
-          <div className="text-xs uppercase tracking-widest text-amber-200/70">授权状态（模拟）</div>
+          <div className="text-xs uppercase tracking-widest text-amber-200/70">
+            {d.match_consent_status}
+          </div>
           <div className="mt-3 grid gap-3 md:grid-cols-2">
-            <ConsentCard label={pair.a.displayName} chart={pair.a.chartLabel} consented={!effectivelyRevoked} />
-            <ConsentCard label={pair.b.displayName} chart={pair.b.chartLabel} consented={!effectivelyRevoked} />
+            <ConsentCard
+              label={pair.a.displayName}
+              chart={pair.a.chartLabel}
+              consented={!effectivelyRevoked}
+              okText={d.match_consent_ok}
+              revokedText={d.match_consent_revoked}
+            />
+            <ConsentCard
+              label={pair.b.displayName}
+              chart={pair.b.chartLabel}
+              consented={!effectivelyRevoked}
+              okText={d.match_consent_ok}
+              revokedText={d.match_consent_revoked}
+            />
           </div>
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <button
@@ -79,15 +127,12 @@ function MatchPage() {
               onClick={() => setRevoked((r) => !r)}
               className="rounded-full border border-rose-400/40 px-3 py-1.5 text-xs text-rose-200 hover:bg-rose-500/10"
             >
-              {revoked ? "重新授权" : "模拟一方撤回"}
+              {revoked ? d.match_toggle_reauth : d.match_toggle_revoke}
             </button>
-            <span className="text-xs text-amber-200/60">
-              撤回后：结果立即失效，缓存分数清空，另一方看不到本次结果。
-            </span>
+            <span className="text-xs text-amber-200/60">{d.match_revoke_hint}</span>
           </div>
         </section>
 
-        {/* Controls */}
         <section className="mb-6 flex flex-wrap gap-2">
           {KEYS.map((k) => (
             <button
@@ -104,7 +149,7 @@ function MatchPage() {
                   : "border-amber-400/20 text-amber-200/70 hover:border-amber-300/60"
               }`}
             >
-              {MATCH_DEMO[k].label}
+              {d.match_demo_labels[k]}
             </button>
           ))}
           <span className="mx-2 self-center text-xs text-amber-200/40">|</span>
@@ -120,31 +165,21 @@ function MatchPage() {
                   : "border-amber-400/20 text-amber-200/70 hover:border-amber-300/60"
               }`}
             >
-              {m === "friendship"
-                ? "朋友"
-                : m === "romantic"
-                  ? "亲密"
-                  : m === "family"
-                    ? "家人"
-                    : "搭档"}
+              {d.match_modes[m]}
             </button>
           ))}
         </section>
 
         {effectivelyRevoked ? (
           <div className="rounded-xl border border-rose-400/30 bg-rose-500/5 p-8 text-center text-sm text-rose-100/80">
-            {!consent.gated
-              ? "结果不可见 —— 请先完成年龄与隐私同意。撤回同意后，任何已生成的结果都不再显示。"
-              : "结果已失效 —— 一方撤回授权后，本次匹配结果立即从双方界面移除。"}
+            {!consent.gated ? d.match_result_locked_consent : d.match_result_locked_revoked}
           </div>
         ) : (
-          <ResultPanel result={result} />
+          <ResultPanel result={result} d={d} facetLabel={facetLabel} />
         )}
 
         <p className="mt-8 text-xs text-amber-200/50">
-          version <code className="text-amber-300/70">{result.version}</code> · pair-key{" "}
-          <code className="text-amber-300/70">{result.pairKey}</code> · 顺序无关 ·
-          纯确定性计算，无 AI。
+          {d.match_footer(result.version, result.pairKey)}
         </p>
       </div>
     </div>
@@ -155,10 +190,14 @@ function ConsentCard({
   label,
   chart,
   consented,
+  okText,
+  revokedText,
 }: {
   label: string;
   chart: string;
   consented: boolean;
+  okText: string;
+  revokedText: string;
 }) {
   return (
     <div
@@ -169,7 +208,7 @@ function ConsentCard({
       }`}
     >
       <div className="text-xs uppercase tracking-widest opacity-70">
-        {consented ? "已选择命盘并同意" : "已撤回"}
+        {consented ? okText : revokedText}
       </div>
       <div className="mt-2 text-base">{label}</div>
       <div className="mt-1 text-xs opacity-70">{chart}</div>
@@ -177,63 +216,83 @@ function ConsentCard({
   );
 }
 
-function ResultPanel({ result }: { result: CompatResult }) {
+function ResultPanel({
+  result,
+  d,
+  facetLabel,
+}: {
+  result: CompatResult;
+  d: ReturnType<typeof useDaily>;
+  facetLabel: (k: CompatResult["dimensions"][number]["key"]) => string;
+}) {
   return (
     <div className="space-y-6">
       <section className="rounded-xl border border-amber-400/30 bg-black/40 p-6">
-        <div className="text-xs uppercase tracking-widest text-amber-200/70">互动适配指数</div>
-        <div className="mt-2 flex items-baseline gap-3">
+        <div className="text-xs uppercase tracking-widest text-amber-200/70">
+          {d.match_overall_label}
+        </div>
+        <div className="mt-2 flex flex-wrap items-baseline gap-3">
           <div className="text-6xl font-serif text-amber-100">{result.overall}</div>
-          <div className="text-xs text-amber-200/60">/ 100 · {result.mode}</div>
+          <div className="text-xs text-amber-200/60">
+            / 100 · {d.match_modes[result.mode]}
+          </div>
           {result.partial && (
             <span className="rounded-full border border-amber-400/40 bg-amber-500/10 px-2 py-0.5 text-[10px] text-amber-200">
-              事实不完整 · confidence {result.confidence}
+              {d.match_partial_pill(String(result.confidence))}
             </span>
           )}
         </div>
       </section>
 
       <section className="grid gap-3 md:grid-cols-2 lg:grid-cols-5">
-        {result.dimensions.map((d) => (
-          <div key={d.key} className="rounded-xl border border-amber-400/20 bg-black/30 p-4">
-            <div className="text-xs text-amber-200/70">{d.label}</div>
+        {result.dimensions.map((dim) => (
+          <div key={dim.key} className="rounded-xl border border-amber-400/20 bg-black/30 p-4">
+            <div className="text-xs text-amber-200/70">{facetLabel(dim.key)}</div>
             <div className="mt-1 flex items-baseline gap-2">
-              <div className="text-3xl font-serif text-amber-100">{d.score}</div>
+              <div className="text-3xl font-serif text-amber-100">{dim.score}</div>
               <div className="text-[10px] text-amber-200/50">/ 100</div>
             </div>
             <div
-              className={`mt-2 inline-block rounded-full border px-2 py-0.5 text-[10px] ${BAND_CLASS[d.band]}`}
+              className={`mt-2 inline-block rounded-full border px-2 py-0.5 text-[10px] ${BAND_CLASS[dim.band]}`}
             >
-              {d.band}
+              {xlate(d.band, dim.band)}
             </div>
           </div>
         ))}
       </section>
 
       <section className="grid gap-4 md:grid-cols-2">
-        <BulletCard title="共鸣点" items={result.resonances} tone="emerald" />
-        <BulletCard title="互补点" items={result.complements} tone="amber" />
-        <BulletCard title="误解点" items={result.frictions} tone="rose" />
-        <BulletCard title="相处建议" items={result.suggestions} tone="amber" />
+        <BulletCard title={d.match_resonances} items={result.resonances} tone="emerald" />
+        <BulletCard title={d.match_complements} items={result.complements} tone="amber" />
+        <BulletCard title={d.match_frictions} items={result.frictions} tone="rose" />
+        <BulletCard title={d.match_suggestions} items={result.suggestions} tone="amber" />
       </section>
 
-      {/* Evidence refs — from compatibility-facts-adapter-v1 when available. */}
       {result.evidence_refs && result.evidence_refs.length > 0 && (
         <section className="rounded-xl border border-amber-400/15 bg-black/20 p-5 text-xs leading-relaxed text-amber-100/80">
-          <div className="mb-2 text-amber-200/70">证据来源（facts-adapter v1）</div>
+          <div className="mb-2 text-amber-200/70">{d.match_evidence_title}</div>
           <div className="flex flex-wrap gap-2">
             {result.evidence_refs.map((r) => (
-              <code key={r} className="rounded border border-amber-400/20 bg-black/40 px-2 py-0.5 text-amber-200/80">
+              <code
+                key={r}
+                className="rounded border border-amber-400/20 bg-black/40 px-2 py-0.5 text-amber-200/80"
+              >
                 {r}
               </code>
             ))}
           </div>
           <div className="mt-2 text-amber-200/60">
-            source systems: {result.source_systems?.join(" / ") || "(demo: fixture facets)"} ·{" "}
-            {result.cross_system_support ? "跨体系支持 ≥2" : "单体系 / partial"}
+            {result.source_systems && result.source_systems.length > 0
+              ? d.match_evidence_source(
+                  result.source_systems.join(" / "),
+                  !!result.cross_system_support,
+                )
+              : d.match_evidence_source_fallback}
           </div>
           {result.missing_facts && result.missing_facts.length > 0 && (
-            <div className="mt-2 text-amber-200/50">missing: {result.missing_facts.join(", ")}</div>
+            <div className="mt-2 text-amber-200/50">
+              {d.match_evidence_missing(result.missing_facts.join(", "))}
+            </div>
           )}
         </section>
       )}
