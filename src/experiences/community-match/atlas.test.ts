@@ -54,11 +54,10 @@ describe("community-match atlas · layoutAtlas", () => {
 describe("community-match atlas · radar text equivalent", () => {
   it("produces a readable summary for screen readers", () => {
     const s = radarSummary([
-      { key: "communication", label: "Communication", self: 70, other: 60 },
-      { key: "emotional_support", label: "Emotional support", self: 55, other: 80 },
+      { key: "communication", label: "Communication", score: 70 },
+      { key: "emotional_support", label: "Emotional support", score: 80 },
     ]);
-    expect(s).toContain("Communication");
-    expect(s).toContain("self 70");
-    expect(s).toContain("other 80");
+    expect(s).toContain("Communication: 70");
+    expect(s).toContain("Emotional support: 80");
   });
 });
