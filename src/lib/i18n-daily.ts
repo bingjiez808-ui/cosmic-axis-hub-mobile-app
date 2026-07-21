@@ -427,11 +427,11 @@ const zh: DailyDict = {
 const en: DailyDict = {
   nav_today: "Today",
   demo_banner_home:
-    "DEMO preview · Today's Reading Room (daily-reading-v1) · fixture only, nothing written, no AI.",
+    "DEMO preview · Today's Reading Room · sample data only, nothing written to your account, no AI.",
   demo_banner_friends:
-    "DEMO preview · Friends & invites (in-memory only, cleared on reload). Not synced to cloud.",
+    "DEMO preview · Friends & invites · local sample only, cleared on reload, not synced to cloud.",
   demo_banner_match:
-    "DEMO preview · Compatibility index (compatibility-score-v1) · fixture only, no cloud, no AI.",
+    "DEMO preview · Bilateral compatibility · sample only, nothing written to cloud, no AI.",
   loading: "Loading…",
   cancel: "Cancel",
   submit: "Submit",
