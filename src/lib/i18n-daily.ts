@@ -599,8 +599,9 @@ const en: DailyDict = {
     `source systems: ${s} · ${cross ? "cross-system support ≥ 2" : "single-system / partial"}`,
   match_evidence_source_fallback: "(demo: fixture facets)",
   match_evidence_missing: (f) => `missing: ${f}`,
-  match_footer: (v, pk) =>
-    `version ${v} · pair-key ${pk} · order-independent · deterministic, no AI.`,
+  match_footer: "Order-independent · deterministic, no AI.",
+  match_tech_details_label: "Technical basis (for developer audit)",
+  match_tech_line: (v, pk) => `version ${v} · pair-key ${pk}`,
   match_facet_labels: {
     communication: "Communication",
     emotional_support: "Emotional support",
