@@ -8,6 +8,7 @@ type Dict = {
   nav_about: string;
   nav_sign_in: string;
   nav_account: string;
+  nav_today: string;
   ritual_pick_language: string;
   ritual_pick_language_hint: string;
   step_of: (i: number, n: number) => string;
