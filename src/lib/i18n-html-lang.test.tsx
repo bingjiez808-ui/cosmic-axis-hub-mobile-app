@@ -1,9 +1,43 @@
 // @ts-expect-error bun:test
-import { describe, expect, it, beforeEach } from "bun:test";
+import { afterEach, describe, expect, it, beforeEach } from "bun:test";
+import { GlobalRegistrator } from "@happy-dom/global-registrator";
+if (typeof globalThis.document === "undefined") {
+  GlobalRegistrator.register({ url: "http://localhost/", width: 1280, height: 900 });
+}
+
+import React from "react";
+import { act } from "react";
+import { createRoot, type Root } from "react-dom/client";
 import { renderToString } from "react-dom/server";
 
 import { htmlLangFor, syncDocumentLang, LanguageProvider, useLang } from "@/lib/i18n";
+import { useDaily } from "@/lib/i18n-daily";
+import { LanguageToggle } from "@/components/LanguageToggle";
 import { AuthRefreshFailedError } from "@/routes/_authenticated/route";
+
+const activeRoots: Array<{ root: Root; host: HTMLElement }> = [];
+
+async function mount(el: React.ReactElement) {
+  const host = document.createElement("div");
+  document.body.appendChild(host);
+  const root = createRoot(host);
+  await act(async () => {
+    root.render(el);
+  });
+  activeRoots.push({ root, host });
+  return { root, host };
+}
+
+afterEach(async () => {
+  while (activeRoots.length) {
+    const { root, host } = activeRoots.pop()!;
+    await act(async () => root.unmount());
+    host.remove();
+  }
+  document.body.innerHTML = "";
+  document.documentElement.setAttribute("lang", "en");
+  localStorage.clear();
+});
 
 describe("i18n · html lang tag mapping", () => {
   it("maps app lang → BCP-47 html tag", () => {
@@ -61,6 +95,57 @@ describe("LanguageProvider · SSR shell parity", () => {
     // shell hydrates cleanly. localStorage-driven override happens in an
     // effect after mount.
     expect(html).toBe("lang=en");
+  });
+});
+
+describe("LanguageToggle · real DOM interaction", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    document.documentElement.setAttribute("lang", "en");
+  });
+
+  it("clicks zh → en → zh and immediately updates context copy, <html lang>, and persistence", async () => {
+    localStorage.setItem("lod.lang", "zh");
+
+    function Probe() {
+      const { lang } = useLang();
+      const d = useDaily();
+      return (
+        <LanguageProvider>
+          <LanguageToggle />
+          <p data-testid="lang">{lang}</p>
+          <h1>{d.match_kicker}</h1>
+          <nav>{d.home_secondary_nav_match}</nav>
+        </LanguageProvider>
+      );
+    }
+
+    await mount(<Probe />);
+    expect(document.documentElement.getAttribute("lang")).toBe("zh-CN");
+    expect(document.body.textContent ?? "").toContain("双人命盘互动 · 演示");
+
+    const enButton = document.querySelector<HTMLButtonElement>('[data-lang-button="en"]');
+    expect(enButton).toBeTruthy();
+    await act(async () => {
+      enButton!.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+
+    expect(document.documentElement.getAttribute("lang")).toBe("en");
+    expect(localStorage.getItem("lod.lang")).toBe("en");
+    expect(document.querySelector('[data-testid="lang"]')?.textContent).toBe("en");
+    expect(document.body.textContent ?? "").toContain("Two-chart compatibility · demo");
+    expect(document.body.textContent ?? "").not.toContain("双人命盘互动 · 演示");
+
+    const zhButton = document.querySelector<HTMLButtonElement>('[data-lang-button="zh"]');
+    expect(zhButton).toBeTruthy();
+    await act(async () => {
+      zhButton!.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+
+    expect(document.documentElement.getAttribute("lang")).toBe("zh-CN");
+    expect(localStorage.getItem("lod.lang")).toBe("zh");
+    expect(document.querySelector('[data-testid="lang"]')?.textContent).toBe("zh");
+    expect(document.body.textContent ?? "").toContain("双人命盘互动 · 演示");
   });
 });
 
