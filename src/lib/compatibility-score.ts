@@ -42,10 +42,15 @@ export type SideFacets = {
   rootedness: number; // 0 (fluid) .. 1 (grounded)
 };
 
+export type CompatLang = "zh" | "en";
+
 export type CompatInput = {
   a: { userId: string; chartId: string; facets: Partial<SideFacets> };
   b: { userId: string; chartId: string; facets: Partial<SideFacets> };
   mode?: CompatMode;
+  /** Optional locale for the emitted resonance/complement/friction/
+   * suggestion/disclaimer text. Deterministic scores are unaffected. */
+  lang?: CompatLang;
 };
 
 export type DimensionScore = {
