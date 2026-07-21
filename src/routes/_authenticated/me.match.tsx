@@ -43,6 +43,9 @@ function MatchPage() {
   const { lang } = useLang();
   const d = useDaily();
   const consent = useSocialConsent();
+  const cmc = useCommunityMatchCopy();
+  const [tab, setTab] = useState<"personal" | "community">("personal");
+
   const [key, setKey] = useState<MatchDemoKey>("friend_pair");
   const [mode, setMode] = useState<CompatResult["mode"]>("friendship");
   const [revoked, setRevoked] = useState(false);
