@@ -225,6 +225,179 @@ export type Database = {
           },
         ]
       }
+      community_match_grants: {
+        Row: {
+          a_granted_at: string | null
+          a_revoked_at: string | null
+          a_user_id: string
+          b_granted_at: string | null
+          b_revoked_at: string | null
+          b_user_id: string
+          created_at: string
+          mode: string
+          pair_key: string
+          updated_at: string
+        }
+        Insert: {
+          a_granted_at?: string | null
+          a_revoked_at?: string | null
+          a_user_id: string
+          b_granted_at?: string | null
+          b_revoked_at?: string | null
+          b_user_id: string
+          created_at?: string
+          mode?: string
+          pair_key: string
+          updated_at?: string
+        }
+        Update: {
+          a_granted_at?: string | null
+          a_revoked_at?: string | null
+          a_user_id?: string
+          b_granted_at?: string | null
+          b_revoked_at?: string | null
+          b_user_id?: string
+          created_at?: string
+          mode?: string
+          pair_key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      community_match_invites: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          mode: string
+          recipient_id: string
+          responded_at: string | null
+          sender_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          mode?: string
+          recipient_id: string
+          responded_at?: string | null
+          sender_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          mode?: string
+          recipient_id?: string
+          responded_at?: string | null
+          sender_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      community_match_profiles: {
+        Row: {
+          age_band: string | null
+          anonymous_alias: string
+          consent_version: string
+          consented_at: string
+          created_at: string
+          is_active: boolean
+          last_recommended_at: string | null
+          paused_at: string | null
+          primary_chart_id: string | null
+          recommend_count_today: number
+          recommend_day_key: string
+          show_age_band: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          age_band?: string | null
+          anonymous_alias: string
+          consent_version: string
+          consented_at?: string
+          created_at?: string
+          is_active?: boolean
+          last_recommended_at?: string | null
+          paused_at?: string | null
+          primary_chart_id?: string | null
+          recommend_count_today?: number
+          recommend_day_key?: string
+          show_age_band?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          age_band?: string | null
+          anonymous_alias?: string
+          consent_version?: string
+          consented_at?: string
+          created_at?: string
+          is_active?: boolean
+          last_recommended_at?: string | null
+          paused_at?: string | null
+          primary_chart_id?: string | null
+          recommend_count_today?: number
+          recommend_day_key?: string
+          show_age_band?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_match_profiles_primary_chart_id_fkey"
+            columns: ["primary_chart_id"]
+            isOneToOne: false
+            referencedRelation: "charts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_match_results: {
+        Row: {
+          a_user_id: string
+          b_user_id: string
+          calculator_version: string
+          created_at: string
+          evidence_summary: Json
+          facets_snapshot: Json
+          mode: string
+          pair_key: string
+          score_snapshot: Json
+          status: string
+        }
+        Insert: {
+          a_user_id: string
+          b_user_id: string
+          calculator_version: string
+          created_at?: string
+          evidence_summary: Json
+          facets_snapshot: Json
+          mode?: string
+          pair_key: string
+          score_snapshot: Json
+          status?: string
+        }
+        Update: {
+          a_user_id?: string
+          b_user_id?: string
+          calculator_version?: string
+          created_at?: string
+          evidence_summary?: Json
+          facets_snapshot?: Json
+          mode?: string
+          pair_key?: string
+          score_snapshot?: Json
+          status?: string
+        }
+        Relationships: []
+      }
       community_posts: {
         Row: {
           author_house_key: string
@@ -268,6 +441,131 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      friend_blocks: {
+        Row: {
+          blocked_id: string
+          blocker_id: string
+          created_at: string
+          id: string
+          reason: string | null
+        }
+        Insert: {
+          blocked_id: string
+          blocker_id: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+        }
+        Update: {
+          blocked_id?: string
+          blocker_id?: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+        }
+        Relationships: []
+      }
+      friend_invites: {
+        Row: {
+          code: string
+          created_at: string
+          expires_at: string
+          id: string
+          inviter_id: string
+          responded_at: string | null
+          status: string
+          target_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          inviter_id: string
+          responded_at?: string | null
+          status?: string
+          target_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          inviter_id?: string
+          responded_at?: string | null
+          status?: string
+          target_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      friend_reports: {
+        Row: {
+          category: string
+          created_at: string
+          detail: string | null
+          id: string
+          reported_id: string
+          reporter_id: string
+          status: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          detail?: string | null
+          id?: string
+          reported_id: string
+          reporter_id: string
+          status?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          detail?: string | null
+          id?: string
+          reported_id?: string
+          reporter_id?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      friendships: {
+        Row: {
+          a_user_id: string
+          b_user_id: string
+          created_at: string
+          id: string
+          invite_id: string | null
+          removed_at: string | null
+        }
+        Insert: {
+          a_user_id: string
+          b_user_id: string
+          created_at?: string
+          id?: string
+          invite_id?: string | null
+          removed_at?: string | null
+        }
+        Update: {
+          a_user_id?: string
+          b_user_id?: string
+          created_at?: string
+          id?: string
+          invite_id?: string | null
+          removed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "friendships_invite_id_fkey"
+            columns: ["invite_id"]
+            isOneToOne: false
+            referencedRelation: "friend_invites"
             referencedColumns: ["id"]
           },
         ]
@@ -884,6 +1182,114 @@ export type Database = {
         Returns: boolean
       }
       community_email_verified: { Args: never; Returns: boolean }
+      community_match_alias_for: { Args: { _uid: string }; Returns: string }
+      community_match_expire_stale: { Args: never; Returns: undefined }
+      community_match_invite_by_alias: {
+        Args: { _alias: string; _mode?: string }
+        Returns: {
+          created_at: string
+          expires_at: string
+          id: string
+          mode: string
+          recipient_id: string
+          responded_at: string | null
+          sender_id: string
+          status: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "community_match_invites"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      community_match_opt_in: {
+        Args: {
+          _age_band: string
+          _consent_version: string
+          _show_age_band: boolean
+        }
+        Returns: {
+          age_band: string | null
+          anonymous_alias: string
+          consent_version: string
+          consented_at: string
+          created_at: string
+          is_active: boolean
+          last_recommended_at: string | null
+          paused_at: string | null
+          primary_chart_id: string | null
+          recommend_count_today: number
+          recommend_day_key: string
+          show_age_band: boolean
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "community_match_profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      community_match_opt_out: { Args: never; Returns: undefined }
+      community_match_pair_key: {
+        Args: { _a: string; _b: string }
+        Returns: string
+      }
+      community_match_recommend: {
+        Args: { _limit?: number }
+        Returns: {
+          age_band: string
+          alias: string
+          invite_target_id: string
+          is_paused: boolean
+        }[]
+      }
+      community_match_respond: {
+        Args: { _action: string; _invite_id: string }
+        Returns: {
+          created_at: string
+          expires_at: string
+          id: string
+          mode: string
+          recipient_id: string
+          responded_at: string | null
+          sender_id: string
+          status: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "community_match_invites"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      community_match_revoke_grant: {
+        Args: { _mode?: string; _pair_key: string }
+        Returns: undefined
+      }
+      community_match_revoke_invite: {
+        Args: { _invite_id: string }
+        Returns: undefined
+      }
+      community_match_set_paused: {
+        Args: { _paused: boolean }
+        Returns: undefined
+      }
+      community_match_upsert_result: {
+        Args: {
+          _calc_version: string
+          _evidence: Json
+          _facets: Json
+          _mode: string
+          _pair_key: string
+          _score: Json
+        }
+        Returns: undefined
+      }
       set_chart_role: {
         Args: { _chart_id: string; _role: string }
         Returns: boolean

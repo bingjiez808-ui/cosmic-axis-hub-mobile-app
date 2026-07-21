@@ -1,107 +1,114 @@
 
-本工作量较大，涉及数据库迁移、后端 server functions、UI 重构和路由级加固。分五个阶段落地，每阶段结束跑 `bun test` 与 `tsgo --noEmit`，最后用 Playwright 真实预览验收。**不发布生产**。
+本次改动仅在 preview 生效，不发布生产。/me/match 顶部加两个 tab；原“我的命盘适配”整体保留为 tab A，新增 tab B“社区匿名匹配”。所有分数走现有 deterministic 链路，默认 0 AI 调用。
 
-## 阶段 1 — 数据模型与迁移（Lovable Cloud）
+## 一、数据库与安全（一份 migration）
 
-新增 migration `20260722_chart_roles.sql`：
+### 表（public schema，每张表 GRANT + RLS + 策略齐备）
 
-- `ALTER TABLE public.charts ADD COLUMN chart_role text NOT NULL DEFAULT 'other'`
-- `ALTER TABLE public.charts ADD COLUMN is_primary boolean NOT NULL DEFAULT false`
-- `ADD CONSTRAINT charts_chart_role_check CHECK (chart_role IN ('self','other'))`
-- `ADD CONSTRAINT charts_primary_requires_self CHECK (is_primary = false OR chart_role = 'self')`
-- 部分唯一索引：`CREATE UNIQUE INDEX charts_one_primary_per_user ON public.charts(user_id) WHERE is_primary = true`
-- 现有行保留 `chart_role='other'`, `is_primary=false`（默认值）；不自动猜测。
-- RLS 已有 owner-only 策略，不改；新列继承。
-- 新增 `set_primary_chart(_chart_id uuid)` SECURITY DEFINER RPC：在事务里 `UPDATE charts SET is_primary=false WHERE user_id=auth.uid()`，然后 `UPDATE charts SET is_primary=true, chart_role='self' WHERE id=_chart_id AND user_id=auth.uid()`。
+1. `community_match_profiles`
+   - `user_id uuid PK REFERENCES auth.users`, `primary_chart_id uuid REFERENCES public.charts`, `anonymous_alias text UNIQUE NOT NULL`（服务端生成，形如 `nebula-4718`；与 user_id 之间只在 SECURITY DEFINER 内部映射，客户端不可反查）, `age_band text`（可空，enum: `18-24|25-34|35-44|45-54|55+`）, `show_age_band boolean default true`, `is_active boolean default true`, `paused_at timestamptz`, `consent_version text not null`, `consented_at timestamptz not null default now()`, `created_at/updated_at`.
+   - RLS：只有 owner (`auth.uid()=user_id`) 可 SELECT / UPDATE 自己的行；普通客户端不能 SELECT 别人的档案（匿名候选通过 RPC 返回，绕开表 SELECT）。
 
-迁移执行后由用户在 Cloud 中审批。types 自动重生成。
+2. `community_match_invites`
+   - `id`, `sender_id`, `recipient_id`, `mode text default 'friendship'`, `status text CHECK IN (pending|accepted|declined|expired|revoked|blocked)`, `expires_at timestamptz default now()+interval '7 days'`, `created_at/updated_at`.
+   - 约束：`sender_id <> recipient_id`；`UNIQUE(sender_id, recipient_id) WHERE status='pending'` 防重复。
+   - RLS：只对 sender / recipient SELECT / UPDATE。所有写通过 RPC。
 
-## 阶段 2 — Server functions (`src/lib/reports-store.functions.ts`)
+3. `community_match_grants`
+   - `pair_key text`（`least(a,b) || ':' || greatest(a,b)`，服务端计算写入）, `a_user_id`, `b_user_id`（`a_user_id<b_user_id`）, `a_granted_at`, `b_granted_at`, `a_revoked_at`, `b_revoked_at`, `mode`.
+   - RLS：只对 pair 双方 SELECT。
 
-新增/扩展（均 `requireSupabaseAuth`）：
+4. `community_match_results`
+   - `pair_key text UNIQUE`, `a_user_id`, `b_user_id`, `mode`, `calculator_version text`, `facets_snapshot jsonb`, `score_snapshot jsonb`, `evidence_summary jsonb`, `status text`, `created_at`.
+   - RLS：SELECT 仅当 `auth.uid() in (a,b)` 且 grants 双向有效（未 revoke），通过 helper function `public.can_read_match_result(pair_key)`（SECURITY DEFINER）判定。
 
-- `setPrimaryChart({ chartId })` — 调用 `set_primary_chart` RPC。
-- `setChartRole({ chartId, role: 'self'|'other' })` — 若 role=self 且已有主命盘，仅改角色不改 primary；禁止两张 primary。
-- `renameChart` 已存在，确保 name 不参与 hash（当前实现已是）。
-- `listUserCharts` 返回追加 `chart_role`, `is_primary` 字段（types 更新后自动带上）。
+5. 复用（不新增）：`public.friend_invites`、`public.friendships`、`public.friend_blocks`、`public.friend_reports`（pending migration 20260722 已定义；如尚未落库则一并纳入本次 migration）。聊天入口在 friendship 建立后再开放，本次不新建 chat 表；如项目已有 messages 表则复用，否则聊天入口先渲染 "Coming soon"。
 
-RLS 隔离：所有 update `.eq('user_id', context.userId)` 显式加，即使 RLS 已限制。
+### RPC（SECURITY DEFINER，`auth.uid()` 校验所有权）
 
-事实缓存 hash 不变（`canonical_input_hash` 已只含出生资料）。角色/name 改动不触发排盘或 AI。
+- `community_match_opt_in(_alias_seed text, _age_band text, _show_age_band bool, _consent_version text)` — upsert profile；要求 `charts.is_primary=true, chart_role='self'` 存在，否则 raise。
+- `community_match_pause() / resume() / opt_out()`。
+- `community_match_recommend(_limit int default 10)` — 返回匿名候选：`{alias, age_band?, facets(4维), overall_band, evidence_bullets}`。服务端按现有 facts 缓存计算适配，屏蔽已 block/已 invite pending/自己；每用户 60s 冷却 + 每天 200 次上限。
+- `community_match_invite(_recipient_alias text, _mode text)` / `respond(_invite_id, 'accept'|'decline'|'block')` / `revoke(_invite_id)`。
+- `community_match_grant_confirm(_invite_id)` — accept 后写 grants 与 results（若不存在），返回 pair_key。
+- `community_match_result_read(_pair_key text)` — 校验 grants 有效，返回快照或 `revoked`。
+- `community_match_revoke_grant(_pair_key)`。
+- `community_match_alias_reveal_owner(_alias text)` — 内部使用，不直接暴露给客户端。
 
-## 阶段 3 — /me/home 命盘管理器 UI
+## 二、后端 server functions（`src/lib/community-match.functions.ts`）
 
-重构 `src/routes/_authenticated/me.home.tsx` 的“我的命盘”section：
+`requireSupabaseAuth` 包裹以下 fn，均调用上面 RPC，不绕过 RLS 直接查表：
+`optIn/optOut/pause/resume`、`listRecommendations`、`sendInvite`、`respondInvite`、`revokeInvite`、`listMyInvitesSent/Received`、`listMyMatches`、`readMatchResult`、`revokeMatchGrant`、`blockUserByAlias`、`reportUserByAlias`。
+
+分数计算：候选生成时服务端读取双方 `premium_pdf_reports` / `year_readings_v1` 中缓存的 facts；缺 facts 的用户不进池（or 显示 partial 但不编造）。走 `adaptFacetsFromFacts` + `computeCompatibility`（已有）。同 pair + `CALCULATOR_VERSION` 复用 `community_match_results`。
+
+## 三、前端
+
+`src/routes/_authenticated/me.match.tsx` 顶部加 Tabs（shadcn Tabs）：
+- Tab A `personal`（默认）：现有 `RealImportPanel` + 折叠 Demo。
+- Tab B `community`：新组件 `src/experiences/community-match/CommunityMatchPanel.tsx`。
+
+`CommunityMatchPanel` 子视图：
+- `OptInGate`（未 opt-in / 未成年 / 无主命盘 → 分支引导）
+- `CandidatesGrid`（匿名卡：alias、age_band、四维 bar、总览 band、2–3 evidence bullets；按钮：Invite / Block / Report）
+- `InvitesInbox`（Received / Sent，状态徽标）
+- `MatchesList`（accepted 双向授权卡；点开 `MatchResultDrawer` 显示完整四维解释 + 「邀请成为好友」按钮 → 触发现有 `friend_invites` 流）
+- `PrivacySettings`（暂停 / 退出 / 撤回单个 grant / 隐藏 age_band）
+
+i18n：`src/lib/i18n-community-match.ts` 中英双语字典；沿用黑金视觉与 daily-room tokens。移动端纵向卡，桌面 2 列 grid。
+
+## 四、隐私护栏
+
+- 服务端所有返回体白名单序列化：只允许 `{alias, ageBand?, facets, overallBand, evidenceBullets, inviteState, mode, createdAt}`。写单元测试断言 recommend 响应 JSON 不含 `user_id/chart_id/email/birth/date/lat/lon/name` 等字段名。
+- alias 服务端生成 `${wordFromDeterministicList(userId)}-${4digitHash}`，不暴露 user_id 映射端点。
+- 客户端不查任何跨用户表；所有跨用户查询走 RPC。
+
+## 五、测试（`bun test`）
+
+`src/lib/community-match.test.ts`（Node）
+- opt-in 需主命盘；未成年 / 无主命盘门控
+- 匿名响应字段白名单（PII 泄露断言）
+- pair_key 顺序无关；同 pair 同 version 缓存命中 0 AI；calculator_version 变化触发重算
+- 邀请状态机：pending → accepted/declined/expired/revoked/blocked；重复 pending 被拒；7 天过期
+- 双方 grant 前 `readMatchResult` 拒绝
+- accept 匹配不自动 friendship；friendship 需二次 `friend_invite` accept
+- block 后不再进推荐；report 写入 friend_reports
+- Top K、冷却、每日上限
+- 现有 `/me/match` 个人 tab 回归
+
+组件测试 `src/experiences/community-match/community-match.test.tsx`
+- Tab 切换、opt-in 表单、候选卡渲染 zh/en、隐藏 age_band
+- SSR hydration 首帧英文 → mount 切换 zh 无 mismatch
+
+## 六、验证
+
+- 应用 migration（审批后执行）
+- `bun test`（预期 570+ pass）
+- `bunx tsgo --noEmit` 清洁
+- 刷新 id-preview，登录态实测：切 Tab、未 opt-in 空态、i18n zh↔en、移动/桌面。不替真实账号 opt-in。
+- 输出：migration 摘要、RLS/RPC 列表、修改文件、测试数、预览 asset hash。
+
+## 技术细节
 
 ```text
-┌───────────────────────────────────────┐
-│ 我的主命盘                             │
-│ [主命盘卡片 或 「请选择主命盘」引导]     │
-├───────────────────────────────────────┤
-│ 他人命盘 (n)                           │
-│ · 卡片 [重命名] [设为我的主命盘] [删除] │
-└───────────────────────────────────────┘
+compute path (deterministic, cached):
+  buildCalculationSnapshot(user)
+    → buildPremiumFacts()  (cached in year_readings_v1)
+      → adaptFacetsFromFacts()
+        → computeCompatibility(a, b, mode)  // CALCULATOR_VERSION
+          → persist to community_match_results by pair_key
 ```
 
-- 无主命盘时顶部显示黄色引导条 + 「去选择」按钮，锚定到列表；**不阻塞** 今日演示内容。
-- 行内重命名 form：`useState` + `renameChart`，长度 1–40，错误提示双语。
-- 「设为我的主命盘」→ 调用 `setPrimaryChart`，成功后 refetch。
-- 创建/保存新命盘（该流程在 `/synthesis` 等入口）**暂不改动创建流程本身**——用户要求是不擅自设主。当前 UI 已不设主命盘（默认 `is_primary=false`），符合要求；只在保存成功后若账号 0 主命盘弹出一次性选择框（在保存回调处理，改动仅在 UI 层）。
-- 移动端卡片纵向、桌面分组栅格。不显示 hash/version。
-- 命盘为空 / 加载 / 错误状态双语。
-
-`src/lib/i18n-daily.ts` 追加 keys：`my_charts_role_self / role_other / set_primary / primary_badge / needs_primary_prompt / privacy_other_consent / unnamed_other` …等。
-
-## 阶段 4 — /me/match 真实导入
-
-重构 `src/routes/_authenticated/me.match.tsx`：
-
-- 顶部：两个 Select
-  1. 我的主命盘（自动填充唯一 primary；没有 → CTA「去 /me/home 设置」）
-  2. 他人命盘（从 `chart_role='other'` 列表选，显示 name + 脱敏出生日：`1990-**-** · Shanghai`）
-- 隐私确认 checkbox「我已获得对方同意保存并用于关系适配」，未勾选禁用按钮。
-- 「开始适配分析」→ 通过 `compatibility-facts-adapter.ts` 从两张 chart 的 `calculation_snapshot` 提取 facets；若缺失则调用本地确定性计算（`western-natal`, `bazi-luck`, `ziwei-horoscope`, `vedic-dasha`）填补并写回 snapshot；仍缺则返回 `partial=true` + `missing_facts`。
-- 调用现有 `computeCompatibility` (v1, deterministic, 0 AI tokens)。
-- 结果缓存 key = canonical pair key + mode + calculator_version；使用 `sessionStorage` 或直接每次纯函数重算（已确定性，重算成本可忽略）。
-- DEMO 四按钮移入折叠 `<details>` 「查看演示 fixtures」，与真实结果分离。
-- 加载/错误/空状态/同意撤回双语反馈。
-
-## 阶段 5 — 今日路由加固（全局 pending）
-
-`src/router.tsx`：
-
-- `createRouter({ ..., defaultPendingMs: 0, defaultPendingComponent: GlobalPending, defaultErrorComponent: GlobalError })`.
-
-`src/routes/_authenticated/route.tsx`：
-
-- 追加 `pendingMs: 0`, `pendingComponent: DailyRoomPending`（复用现成组件），确保任何 `_authenticated/*` chunk 加载间隙都非空。
-- 保留 `ssr: false` 与现有 auth 守卫。
-
-`me.home.tsx` 主体已解耦 Supabase；确认 DailyRoomPage 顶部（demo banner + nav + welcome + fixture buttons + score/theme/domains/actions/reflection）在 Supabase pending/error 时完全渲染，仅「我的命盘」section 显示局部 loading/error。为主体加 `data-testid="daily-room-main"`；命盘 section 加 `data-testid="charts-manager"`。
-
-## 测试
-
-新增：
-
-- `src/lib/reports-store.roles.test.ts`：mock supabase client，验证 `setPrimaryChart` 调用 RPC；重命名不改 hash；`setChartRole` 边界。
-- `src/experiences/daily-room/charts-manager.test.tsx`：无主命盘引导、切换主、他人分组、行内重命名双语错误。
-- `src/routes/_authenticated/me.match.test.tsx`：primary 缺失 CTA、导入 partial 显示 missing_facts、同意 checkbox 门控。
-- `tests/visual/navigate-to-home.py`（Playwright）：从 /me/match、/me/friends、侧栏、移动菜单四个入口进 /me/home，断言 `<main>` 立即非空（pending 或主体）；auth 失败模拟下 error UI 非空。
-
-全量 `bun test` + `tsgo --noEmit`。
-
-## 验收命令
-
-```bash
-bun test
-bunx tsgo --noEmit
-python tests/visual/navigate-to-home.py
+```text
+invite state machine
+  pending --accept--> accepted --grant_confirm--> results readable
+        \--decline--> declined
+        \--revoke--> revoked
+        \--block--> blocked (adds friend_block row)
+        \--(t>7d)--> expired
 ```
 
-## 交付说明
-
-- 迁移文件生成后通过 `supabase--migration` 工具提交，等待用户审批；types 待 migration 应用后自动重生成，然后运行测试。
-- 若用户批准前无法跑 types 相关测试，会在提交时明确指出。
-- 不发布，不删数据。
-
-请确认执行。
+假设与确认点（若不同请回复调整）：
+- 复用 `supabase/pending/20260722_friends_and_matches.sql` 里的 friendships / blocks / reports；本次 migration 附带执行它（若未落库）。
+- 本次不实现聊天（chat 表），friendship 建立后 UI 显示「Coming soon · 聊天即将开放」。
+- 默认 0 AI；未来解释性 AI 留 hook 但本 PR 不启用。
