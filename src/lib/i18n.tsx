@@ -339,6 +339,7 @@ const zh: Dict = {
   nav_about: "关于",
   nav_sign_in: "登录",
   nav_account: "我的",
+  nav_today: "今日命运",
   ritual_pick_language: "图书馆应以何种语言与你对话？",
   ritual_pick_language_hint: "你的解读将以所选语言书写。",
   step_of: (i, n) => `第 ${String(i).padStart(2, "0")} 步 / 共 ${String(n).padStart(2, "0")} 步`,
