@@ -1,6 +1,7 @@
 // @ts-expect-error bun:test
 import { afterEach, describe, expect, it, beforeEach } from "bun:test";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
+import type { ReactElement } from "react";
 if (typeof globalThis.document === "undefined") {
   GlobalRegistrator.register({ url: "http://localhost/", width: 1280, height: 900 });
 }
@@ -50,7 +51,7 @@ const { AuthRefreshFailedError } = await import("@/routes/_authenticated/route")
 
 const activeRoots: Array<{ root: ReturnType<typeof createRoot>; host: HTMLElement }> = [];
 
-async function mount(el: React.ReactElement) {
+async function mount(el: ReactElement) {
   restoreDomWindow();
   const host = document.createElement("div");
   document.body.appendChild(host);
