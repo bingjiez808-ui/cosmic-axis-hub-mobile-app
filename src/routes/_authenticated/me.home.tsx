@@ -117,12 +117,20 @@ function DailyRoomPage() {
     let cancelled = false;
     void (async () => {
       try {
-        const { data } = await supabase.auth.getSession();
+        const { data } = await withTimeout(
+          supabase.auth.getSession(),
+          REAL_CHART_FETCH_TIMEOUT_MS,
+          "session",
+        );
         if (!data.session) {
           if (!cancelled) setReal({ kind: "anonymous" });
           return;
         }
-        const charts = await listUserCharts();
+        const charts = await withTimeout(
+          listUserCharts(),
+          REAL_CHART_FETCH_TIMEOUT_MS,
+          "list_charts",
+        );
         if (cancelled) return;
         setReal({
           kind: "ready",
