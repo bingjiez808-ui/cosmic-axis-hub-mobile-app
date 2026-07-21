@@ -43,8 +43,12 @@ function MatchPage() {
   return (
     <div className="min-h-screen bg-[#0a0a12] text-amber-50">
       <div className="mx-auto w-full max-w-[1100px] px-4 py-8 md:px-8 md:py-12">
-        <div className="mb-6 rounded-lg border border-amber-400/30 bg-amber-500/5 px-4 py-2 text-xs text-amber-200/90">
+        <div className="mb-4 rounded-lg border border-amber-400/30 bg-amber-500/5 px-4 py-2 text-xs text-amber-200/90">
           DEMO 预览 · 互动适配指数（compatibility-score-v1） · 演示 fixture，不写云端，不调用 AI。
+        </div>
+
+        <div className="mb-6">
+          <SocialConsentGate />
         </div>
 
         <header className="mb-8">
