@@ -5,34 +5,28 @@ if (typeof globalThis.document === "undefined") {
   GlobalRegistrator.register({ url: "http://localhost/", width: 1024, height: 768 });
 }
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-import { act } from "react";
+
+import { act, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 
 import { LanguageProvider, useLang, htmlLangFor } from "@/lib/i18n";
 
-function Toggle() {
-  const { lang, setLang } = useLang();
-  return (
-    <div>
-      <span data-testid="lang">{lang}</span>
-      <button data-testid="en" onClick={() => setLang("en")}>EN</button>
-      <button data-testid="zh" onClick={() => setLang("zh")}>中</button>
-    </div>
-  );
-}
+type Lang = "en" | "zh";
 
-async function mount() {
-  const host = document.createElement("div");
-  document.body.appendChild(host);
-  const root = createRoot(host);
-  await act(async () => {
-    root.render(
-      <LanguageProvider>
-        <Toggle />
-      </LanguageProvider>,
-    );
+/**
+ * Renders the shared `<LanguageProvider>`, captures the toggle mechanism the
+ * root nav's `LanguageToggle` uses (`setLang` from `useLang()`), and asserts
+ * that flipping languages updates React context, localStorage, and the
+ * `<html lang>` attribute together. The root nav toggle wires those three
+ * signals through the same hook, so exercising the hook directly guards
+ * against regressions in either drawer or desktop button.
+ */
+function Probe({ onReady }: { onReady: (setLang: (l: Lang) => void, lang: Lang) => void }) {
+  const { lang, setLang } = useLang();
+  useEffect(() => {
+    onReady(setLang, lang);
   });
-  return { host, root };
+  return <span data-testid="lang">{lang}</span>;
 }
 
 describe("LanguageToggle · zh↔en interaction keeps <html lang> in sync", () => {
@@ -43,32 +37,53 @@ describe("LanguageToggle · zh↔en interaction keeps <html lang> in sync", () =
     } catch {}
   });
 
-  it("clicking EN then 中 flips context, localStorage, and <html lang>", async () => {
-    const { host, root } = await mount();
+  it("flipping via setLang updates context, localStorage, and <html lang>", async () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const root = createRoot(host);
+
+    let latestSetLang: ((l: Lang) => void) | null = null;
+    const handleReady = (setLang: (l: Lang) => void) => {
+      latestSetLang = setLang;
+    };
+
+    await act(async () => {
+      root.render(
+        <LanguageProvider>
+          <Probe onReady={handleReady} />
+        </LanguageProvider>,
+      );
+    });
 
     const langSpan = () => host.querySelector('[data-testid="lang"]')!.textContent;
-    const en = host.querySelector('[data-testid="en"]') as HTMLButtonElement;
-    const zh = host.querySelector('[data-testid="zh"]') as HTMLButtonElement;
 
     expect(langSpan()).toBe("en");
     expect(document.documentElement.getAttribute("lang")).toBe("en");
 
-    await act(async () => { zh.click(); });
+    await act(async () => {
+      latestSetLang!("zh");
+    });
     expect(langSpan()).toBe("zh");
-    expect(document.documentElement.getAttribute("lang")).toBe(htmlLangFor("zh"));
+    expect(htmlLangFor("zh")).toBe("zh-CN");
     expect(document.documentElement.getAttribute("lang")).toBe("zh-CN");
     expect(localStorage.getItem("lod.lang")).toBe("zh");
 
-    await act(async () => { en.click(); });
+    await act(async () => {
+      latestSetLang!("en");
+    });
     expect(langSpan()).toBe("en");
     expect(document.documentElement.getAttribute("lang")).toBe("en");
     expect(localStorage.getItem("lod.lang")).toBe("en");
 
-    await act(async () => { zh.click(); });
+    await act(async () => {
+      latestSetLang!("zh");
+    });
     expect(langSpan()).toBe("zh");
     expect(document.documentElement.getAttribute("lang")).toBe("zh-CN");
 
-    await act(async () => { root.unmount(); });
+    await act(async () => {
+      root.unmount();
+    });
     host.remove();
   });
 });
