@@ -1,25 +1,25 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 
 import { loadDailyRoomFixture, type DailyRoomFixtureKey } from "@/experiences/daily-room/fixtures";
-
-const FLAG_ENABLED =
-  typeof import.meta !== "undefined" &&
-  (import.meta as unknown as { env?: Record<string, string> }).env?.VITE_ENABLE_DAILY_ROOM === "true";
+import { ensureSocialPreviewAllowed } from "@/experiences/daily-room/route-guard";
+import { listUserCharts, type ChartRow } from "@/lib/reports-store.functions";
+import { supabase } from "@/integrations/supabase/client";
 
 /**
- * /me/home — Today's Reading Room (feature-flagged).
+ * /me/home — Today's Reading Room (preview only).
  *
- * `VITE_ENABLE_DAILY_ROOM=true` unlocks this route. Otherwise a hard
- * redirect keeps production surface unchanged.
+ * Access is guarded by host (DEV / localhost / id-preview--*.lovable.app).
+ * Production and other lovable domains are blocked and redirected to `/`.
  *
- * This is DEMO mode only: it renders `daily-facts-v1` +
- * `daily-domain-score-v1` for a chosen fixture and clearly labels
- * everything as demo data. No AI call. No writes.
+ * When a signed-in user's real charts are available, we surface them via a
+ * read-only capability-detected adapter. Otherwise we show typed DEMO
+ * fixtures with a clearly-labelled banner. No AI, no writes.
  */
 export const Route = createFileRoute("/_authenticated/me/home")({
+  head: () => ({ meta: [{ name: "robots", content: "noindex,nofollow" }] }),
   beforeLoad: () => {
-    if (!FLAG_ENABLED) throw redirect({ to: "/" });
+    ensureSocialPreviewAllowed();
   },
   component: DailyRoomPage,
 });
