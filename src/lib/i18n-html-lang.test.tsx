@@ -46,7 +46,7 @@ afterEach(async () => {
   }
   document.body.innerHTML = "";
   document.documentElement.setAttribute("lang", "en");
-  localStorage.clear();
+  window.localStorage.clear();
 });
 
 describe("i18n · html lang tag mapping", () => {
@@ -110,12 +110,12 @@ describe("LanguageProvider · SSR shell parity", () => {
 
 describe("LanguageToggle · real DOM interaction", () => {
   beforeEach(() => {
-    localStorage.clear();
+    window.localStorage.clear();
     document.documentElement.setAttribute("lang", "en");
   });
 
   it("clicks zh → en → zh and immediately updates context copy, <html lang>, and persistence", async () => {
-    localStorage.setItem("lod.lang", "zh");
+    window.localStorage.setItem("lod.lang", "zh");
 
     function ProbeContent() {
       const { lang } = useLang();
@@ -145,7 +145,7 @@ describe("LanguageToggle · real DOM interaction", () => {
     });
 
     expect(document.documentElement.getAttribute("lang")).toBe("en");
-    expect(localStorage.getItem("lod.lang")).toBe("en");
+    expect(window.localStorage.getItem("lod.lang")).toBe("en");
     expect(document.querySelector('[data-testid="lang"]')?.textContent).toBe("en");
     expect(document.body.textContent ?? "").toContain("Two-chart compatibility · demo");
     expect(document.body.textContent ?? "").not.toContain("双人命盘互动 · 演示");
@@ -157,7 +157,7 @@ describe("LanguageToggle · real DOM interaction", () => {
     });
 
     expect(document.documentElement.getAttribute("lang")).toBe("zh-CN");
-    expect(localStorage.getItem("lod.lang")).toBe("zh");
+    expect(window.localStorage.getItem("lod.lang")).toBe("zh");
     expect(document.querySelector('[data-testid="lang"]')?.textContent).toBe("zh");
     expect(document.body.textContent ?? "").toContain("双人命盘互动 · 演示");
   });
