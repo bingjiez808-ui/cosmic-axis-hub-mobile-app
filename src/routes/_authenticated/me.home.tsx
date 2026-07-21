@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { loadDailyRoomFixture, type DailyRoomFixtureKey } from "@/experiences/daily-room/fixtures";
 import { ensureSocialPreviewAllowed } from "@/experiences/daily-room/route-guard";
+import { DailyRoomPending, DailyRoomError } from "@/experiences/daily-room/fallback";
 import { listUserCharts, type ChartRow } from "@/lib/reports-store.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { useLang } from "@/lib/i18n";
@@ -11,14 +12,43 @@ import { formatDailySignal, formatThemeKeyword, formatContradiction, tPhase } fr
 
 /**
  * /me/home — Today's Reading Room (preview). Fully localized.
+ *
+ * Pending + error components ensure the route chunk load / hydration
+ * gap never surfaces as a blank <main>. The DailyRoomPage body itself
+ * NEVER blocks on Supabase — real chart data loads inside its own
+ * section so today's fixture-driven signal remains visible even if the
+ * backend hangs.
  */
 export const Route = createFileRoute("/_authenticated/me/home")({
   head: () => ({ meta: [{ name: "robots", content: "noindex,nofollow" }] }),
   beforeLoad: () => {
     ensureSocialPreviewAllowed();
   },
+  pendingMs: 0,
+  pendingComponent: DailyRoomPending,
+  errorComponent: DailyRoomError,
   component: DailyRoomPage,
 });
+
+// Real-chart adapter must never wedge the page. Cap the fetch window so a
+// hung Supabase call flips the section to a recoverable error state.
+const REAL_CHART_FETCH_TIMEOUT_MS = 8_000;
+
+function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error(`${label}_timeout`)), ms);
+    p.then(
+      (v) => {
+        clearTimeout(t);
+        resolve(v);
+      },
+      (e) => {
+        clearTimeout(t);
+        reject(e);
+      },
+    );
+  });
+}
 
 const FIXTURE_KEYS: DailyRoomFixtureKey[] = [
   "student_youth",
