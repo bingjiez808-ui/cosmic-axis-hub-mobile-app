@@ -310,6 +310,47 @@ const zh: DailyDict = {
   home_secondary_nav_friends: "好友",
   home_secondary_nav_match: "适配分析",
 
+  charts_primary_title: "我的主命盘",
+  charts_primary_missing_title: "尚未设置主命盘",
+  charts_primary_missing_body:
+    "请从下方“他人命盘”中挑选一张真正代表你的命盘，点“设为我的主命盘”。今日综合信号与关系适配都以主命盘为准。",
+  charts_others_title: "他人命盘",
+  charts_role_self: "我的",
+  charts_role_other: "他人",
+  charts_action_rename: "重命名",
+  charts_action_set_primary: "设为我的主命盘",
+  charts_action_make_other: "设为他人命盘",
+  charts_action_save: "保存",
+  charts_action_cancel: "取消",
+  charts_action_delete: "删除",
+  charts_name_placeholder: "输入称呼（例如：小林 / 妈妈 / 合作伙伴）",
+  charts_name_empty_error: "称呼不能为空",
+  charts_name_too_long_error: "称呼过长（上限 120 个字符）",
+  charts_saving: "保存中…",
+  charts_setting_primary: "设置中…",
+  charts_error_generic: (m) => `操作失败：${m}`,
+  charts_untitled_other: "未命名的他人命盘",
+  charts_delete_confirm: (name) => `确定删除“${name}”这张命盘及其所有报告吗？此操作不可恢复。`,
+  charts_privacy_notice:
+    "他人命盘仅供你个人查看与关系适配使用，不会公开给社区或好友。请在保存前确保已获得对方同意。",
+
+  match_import_title: "从我的命盘中选择两张进行适配",
+  match_import_intro:
+    "从你已保存的命盘中挑选两张：一张是你的主命盘，一张是想要适配的他人命盘。计算严格采用项目内确定性引擎，不调用任何 AI。",
+  match_import_my_primary_label: "我的主命盘",
+  match_import_no_primary: "尚未设置主命盘。",
+  match_import_go_home: "去命盘管理设置 →",
+  match_import_other_label: "选择他人命盘",
+  match_import_other_placeholder: "— 请选择 —",
+  match_import_no_others: "你还没有保存任何“他人命盘”。请先在命盘管理中添加。",
+  match_import_privacy: "隐私确认",
+  match_import_privacy_ack: "我已获得对方同意保存并用于关系适配。",
+  match_import_run: "开始适配分析",
+  match_import_running: "计算中…",
+  match_import_partial_note: (m) => `资料不完整：${m}。以下结果为受限置信度示例。`,
+  match_demo_details_label: "查看四组演示案例（不会写入云端 / 不调用 AI）",
+
+
   friends_title: "同门 · 好友",
   friends_subtitle:
     "邀请制好友、结构化纸条、屏蔽、举报 —— 没有自由聊天。加为好友后，才可发起双方授权的命盘匹配。",
