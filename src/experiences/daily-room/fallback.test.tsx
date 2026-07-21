@@ -107,11 +107,6 @@ describe("/me/home fallbacks · never blank", () => {
 describe("/me/home fallbacks · SSR hydration parity (regression for zh-CN mismatch)", () => {
   beforeEach(() => {
     resetLangToEnglish();
-    try {
-      window.localStorage.clear();
-    } catch {
-      /* ignore */
-    }
   });
 
   it("server HTML for DailyRoomPending contains English copy (server snapshot)", () => {
