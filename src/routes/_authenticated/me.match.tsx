@@ -123,7 +123,41 @@ function MatchPage() {
           <p className="mt-3 max-w-2xl text-sm text-amber-100/70">{d.match_intro_plain}</p>
         </header>
 
+        <div role="tablist" aria-label="match-tabs" className="mb-6 flex flex-wrap gap-2 border-b border-amber-400/15 pb-3 text-xs">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "personal"}
+            onClick={() => setTab("personal")}
+            className={`rounded-full px-3 py-1.5 transition ${
+              tab === "personal"
+                ? "border border-amber-300 bg-amber-300/10 text-amber-100"
+                : "border border-transparent text-amber-200/70 hover:border-amber-300/40"
+            }`}
+          >
+            {cmc.t("tab_personal")}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "community"}
+            onClick={() => setTab("community")}
+            className={`rounded-full px-3 py-1.5 transition ${
+              tab === "community"
+                ? "border border-amber-300 bg-amber-300/10 text-amber-100"
+                : "border border-transparent text-amber-200/70 hover:border-amber-300/40"
+            }`}
+          >
+            {cmc.t("tab_community")}
+          </button>
+        </div>
+
+        {tab === "community" ? (
+          <CommunityMatchPanel />
+        ) : (
+          <>
         <RealImportPanel mode={mode} setMode={setMode} facetLabel={facetLabel} />
+
 
         <details className="mt-8 rounded-xl border border-amber-400/15 bg-black/20">
           <summary className="cursor-pointer select-none px-4 py-3 text-xs uppercase tracking-widest text-amber-200/70">
