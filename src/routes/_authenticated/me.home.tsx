@@ -58,6 +58,12 @@ function todayInTz(tz: string): string {
   return `${y}-${m}-${d}`;
 }
 
+type RealChartAdapterState =
+  | { kind: "loading" }
+  | { kind: "anonymous" }
+  | { kind: "error"; message: string }
+  | { kind: "ready"; charts: ChartRow[]; canDelete: boolean; canRename: boolean; canSetDefault: boolean };
+
 function DailyRoomPage() {
   const tz =
     typeof Intl !== "undefined"
@@ -66,6 +72,38 @@ function DailyRoomPage() {
   const today = todayInTz(tz);
   const [fixtureKey, setFixtureKey] = useState<DailyRoomFixtureKey>("working_adult");
   const [showEvidence, setShowEvidence] = useState(false);
+  const [entitled, setEntitled] = useState(false); // demo toggle: free vs premium tier
+  const [real, setReal] = useState<RealChartAdapterState>({ kind: "loading" });
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (!data.session) {
+          if (!cancelled) setReal({ kind: "anonymous" });
+          return;
+        }
+        const charts = await listUserCharts();
+        if (cancelled) return;
+        // Capability-detect: our current schema lacks display_name / default /
+        // deleted_at columns. Read-only mode only until migration lands.
+        setReal({
+          kind: "ready",
+          charts,
+          canDelete: true, // deleteChart server fn exists
+          canRename: true, // renameChart server fn exists
+          canSetDefault: false, // no is_default column yet
+        });
+      } catch (err) {
+        if (!cancelled)
+          setReal({ kind: "error", message: err instanceof Error ? err.message : "unknown" });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const fixture = loadDailyRoomFixture(fixtureKey, today, tz);
   const { facts, score } = fixture;
