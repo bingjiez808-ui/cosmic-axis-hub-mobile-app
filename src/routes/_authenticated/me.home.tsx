@@ -510,13 +510,10 @@ function DailyRoomPage() {
           <p className="mt-2 text-amber-100/80">{d.reflection_body}</p>
         </section>
 
-        {/* Evidence gate */}
-        {!entitled ? (
-          <section className="mb-16 rounded-xl border border-amber-400/15 bg-black/20 p-5 text-xs text-amber-100/70">
-            {d.free_tier_notice}
-          </section>
-        ) : (
+        {/* Evidence section — collapsed by default; membership gating moved to /me/profile */}
+        {(
           <section className="mb-16 rounded-xl border border-amber-400/15 bg-black/20">
+
             <button
               type="button"
               onClick={() => setShowEvidence((v) => !v)}
