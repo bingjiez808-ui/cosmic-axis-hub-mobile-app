@@ -66,7 +66,7 @@ function useFallbackCopy(): {
     return {
       lang,
       kicker: "今日阅览室",
-      title: "正在打开今日阅览室…",
+      title: "正在翻开今日篇章…",
       hint: "命盘数据加载中，稍候即可开始阅览。",
       errKicker: "阅览室提示",
       errTitle: "今日阅览室暂时无法打开",
