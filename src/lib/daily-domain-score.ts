@@ -155,7 +155,8 @@ export function computeDailyDomainScore(input: {
       missing_facts: missing,
       overall: { score: 50, band: "neutral", theme_keywords: [] },
       domains: DOMAIN_ORDER.map((d) => ({
-        domain: d, score: 50, band: "neutral", confidence: "low", evidence_refs: [],
+        domain: d, score: 50, band: "neutral", confidence: "low",
+        evidence_refs: [], breakdown: [],
       })),
       supportive_signals: [],
       caution_signals: [],
@@ -171,6 +172,7 @@ export function computeDailyDomainScore(input: {
   const domains: DomainSignal[] = DOMAIN_ORDER.map((d) => {
     let delta = 0;
     const refs: string[] = [];
+    const breakdown: DomainScoreContribution[] = [];
     const targets = new Set(NATAL_TARGETS[d]);
     for (const a of facts.transit_to_natal_aspects) {
       if (!targets.has(a.natal)) continue;
@@ -178,21 +180,33 @@ export function computeDailyDomainScore(input: {
       if (!w) continue;
       const sign = aspectSign(a.kind, a.transit);
       if (sign === 0) continue;
-      const orbFactor = 1 - a.orb / 6;
-      const contribution = sign * w * Math.max(0.2, orbFactor);
-      delta += contribution;
-      refs.push(`daily.transit_to_natal_aspects[${a.transit}→${a.natal},${a.kind}]`);
+      const orbFactor = Math.max(0.2, 1 - a.orb / 6);
+      const deltaRaw = sign * w * orbFactor;
+      delta += deltaRaw;
+      const ref = `daily.transit_to_natal_aspects[${a.transit}→${a.natal},${a.kind}]`;
+      refs.push(ref);
       const label = `${a.transit}→${a.natal} ${a.kind}`;
-      if (contribution > 0.5) supportive.push(`${d}:${label}`);
-      if (contribution < -0.5) caution.push(`${d}:${label}`);
+      if (deltaRaw > 0.5) supportive.push(`${d}:${label}`);
+      if (deltaRaw < -0.5) caution.push(`${d}:${label}`);
+      breakdown.push({
+        transit: a.transit, natal: a.natal, kind: a.kind,
+        direction: sign > 0 ? 1 : -1,
+        weight: w, orb: a.orb, orb_factor: orbFactor,
+        delta_raw: deltaRaw,
+        delta_applied: Math.round(deltaRaw * 2),
+        evidence_ref: ref,
+      });
     }
     const score = Math.max(0, Math.min(100, Math.round(50 + delta * 2)));
+    // Sort breakdown by absolute impact so the UI ledger reads top-first.
+    breakdown.sort((a, b) => Math.abs(b.delta_applied) - Math.abs(a.delta_applied));
     return {
       domain: d,
       score,
       band: toBand(score),
       confidence: input.natalHasTime ? "medium" : "low",
       evidence_refs: refs.slice(0, 6),
+      breakdown,
     };
   });
 
