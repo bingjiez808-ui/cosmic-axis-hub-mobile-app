@@ -314,8 +314,8 @@ function DailyRoomPage() {
           </div>
         </section>
 
-        {/* Four domain signals */}
-        <section className="mb-8 grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+        {/* Five life-domain signals (Six Reading Rooms includes overall above) */}
+        <section className="mb-8 grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
           {score.domains.map((dd) => (
             <div key={dd.domain} className="rounded-xl border border-amber-400/20 bg-black/30 p-4">
               <div className="text-xs text-amber-200/70">{domainLabel(dd.domain)}</div>

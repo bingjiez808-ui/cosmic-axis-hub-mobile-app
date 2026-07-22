@@ -73,14 +73,14 @@ describe("daily-format — parseDailySignal", () => {
 
 describe("daily-format — formatDailySignal (zh)", () => {
   const cases: [string, string[]][] = [
-    ["study:sun→mercury trine", ["学业与认知", "太阳", "水星", "三分"]],
-    ["study:mercury→sun trine", ["学业与认知", "水星", "太阳", "三分"]],
-    ["career:mars→mars trine", ["事业与方向", "火星", "三分"]],
-    ["career:mars→sun square", ["事业与方向", "火星", "太阳", "四分"]],
-    ["love:venus→sun opposition", ["关系与情感", "金星", "太阳", "对分"]],
-    ["love:venus→moon opposition", ["关系与情感", "金星", "月亮", "对分"]],
-    ["wealth:jupiter→venus conjunction", ["财富与资源", "木星", "金星", "合相"]],
-    ["wealth:saturn→mars sextile", ["财富与资源", "土星", "火星", "六分"]],
+    ["study:sun→mercury trine", ["学业", "太阳", "水星", "三分"]],
+    ["study:mercury→sun trine", ["学业", "水星", "太阳", "三分"]],
+    ["career:mars→mars trine", ["事业", "火星", "三分"]],
+    ["career:mars→sun square", ["事业", "火星", "太阳", "四分"]],
+    ["love:venus→sun opposition", ["关系", "金星", "太阳", "对分"]],
+    ["love:venus→moon opposition", ["关系", "金星", "月亮", "对分"]],
+    ["wealth:jupiter→venus conjunction", ["财务", "木星", "金星", "合相"]],
+    ["wealth:saturn→mars sextile", ["财务", "土星", "火星", "六分"]],
   ];
   for (const [raw, needles] of cases) {
     it(`renders naturally: ${raw}`, () => {
@@ -102,8 +102,8 @@ describe("daily-format — formatDailySignal (en)", () => {
 });
 
 describe("daily-format — enum translators", () => {
-  it("translates all 4 domains in zh", () => {
-    for (const k of ["study", "career", "love", "wealth"]) {
+  it("translates all v2 domains in zh (5 non-overall + legacy wealth alias)", () => {
+    for (const k of ["study", "career", "love", "body_mind", "finance", "wealth"]) {
       const v = tDomain(zh, k);
       expect(v.length).toBeGreaterThan(0);
       assertNoEnglishLeak(v);
@@ -181,8 +181,8 @@ describe("daily-format — theme + contradiction", () => {
   it("localizes contradiction", () => {
     const raw = "study(70) 与 wealth(35) 分数差 ≥ 20，请以现实情境为准。";
     const zhOut = formatContradiction(raw, zh, "zh");
-    expect(zhOut.includes("学业与认知")).toBe(true);
-    expect(zhOut.includes("财富与资源")).toBe(true);
+    expect(zhOut.includes("学业")).toBe(true);
+    expect(zhOut.includes("财务")).toBe(true);
     assertNoEnglishLeak(zhOut);
     const enOut = formatContradiction(raw, en, "en");
     expect(enOut.toLowerCase().includes("study")).toBe(true);

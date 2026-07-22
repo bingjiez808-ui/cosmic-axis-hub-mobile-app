@@ -1,5 +1,21 @@
 /**
- * daily-domain-score-v1 — deterministic per-day domain signals.
+ * daily-domain-score-v2 — deterministic per-day domain signals.
+ *
+ * v2 upgrade (2026-07): expanded from 4 → 5 non-overall life domains to
+ * match the "Six Reading Rooms" of the Today's Reading Room UI:
+ *
+ *   overall (总体 · 节奏与主任务)
+ *   love     (爱情 · 沟通与边界)
+ *   study    (学业 · 注意力/理解/复习)
+ *   career   (事业 · 协作/推进/决策)
+ *   body_mind(身心 · 作息与压力；不诊断)
+ *   finance  (财务 · 预算复核；不承诺收益)
+ *
+ * Migration notes:
+ *   - v1 used `wealth`; v2 renames to `finance` to force stale caches to
+ *     miss (any consumer keyed on score_version will re-derive).
+ *   - v2 adds `body_mind`. No AI involvement.
+ *   - Same input → same output. No Math.random.
  *
  * Consumes:
  *   - immutable natal FACTS (western planets we already trust)
@@ -8,25 +24,21 @@
  *     Ziwei 大限+流年+流月) — passed in as opaque short strings; this
  *     module treats them as background context only, never fabricating
  *     per-day 干支 / Nakshatra / 流日 / 流时.
- *
- * Produces overall + 4 domain "signals" (study / career / love / wealth)
- * clamped to [0,100], centred at 50, plus band, confidence,
- * supportive_signals, caution_signals, contradictions, missing_facts.
- *
- * Rules encoded (see references/output-schema.md):
- *   - AI never touches this file.
- *   - No Math.random. Same input → same output.
- *   - When daily facts are absent (e.g. natal missing), returns a
- *     `partial: true` object; UI must NOT display fabricated scores.
- *   - Overall is NOT a plain average — it weighs the highest-magnitude
- *     signal band so a strong caution isn't hidden by domain averaging.
  */
 import type { DailyFacts, DailyTransitAspect } from "./daily-facts";
 import type { WesternBodyKey } from "./western-natal";
 
-export const DAILY_DOMAIN_SCORE_VERSION = "daily-domain-score-v1";
+export const DAILY_DOMAIN_SCORE_VERSION = "daily-domain-score-v2";
 
-export type DomainKey = "study" | "career" | "love" | "wealth";
+export type DomainKey = "study" | "career" | "love" | "body_mind" | "finance";
+
+export const DOMAIN_ORDER: readonly DomainKey[] = [
+  "love",
+  "study",
+  "career",
+  "body_mind",
+  "finance",
+] as const;
 
 export type SignalBand = "supportive" | "neutral" | "mixed" | "caution";
 
@@ -61,22 +73,27 @@ export type DailyDomainScore = {
 /**
  * Domain weights per transit body. Deliberately conservative — inner
  * planets (Sun/Moon/Mercury/Venus/Mars) affect study/love/comms scores;
- * outer bodies (Jupiter/Saturn/Uranus/Neptune) affect career/wealth and
- * structural themes. Weights are the *magnitude* the aspect contributes;
- * sign comes from aspect kind.
+ * outer bodies (Jupiter/Saturn/Uranus/Neptune) affect career/finance and
+ * structural themes.
+ *
+ *   body_mind — Moon + Sun weighted (physiology & vitality),
+ *     Saturn/Neptune drain when hard-aspected.
+ *   finance   — Jupiter + Venus + Saturn (opportunity/value/discipline).
  */
 const DOMAIN_WEIGHTS: Record<DomainKey, Partial<Record<WesternBodyKey, number>>> = {
-  study:  { mercury: 3, sun: 2, moon: 1, jupiter: 2, saturn: 2 },
-  career: { sun: 3, saturn: 3, jupiter: 3, mars: 2, mercury: 1 },
-  love:   { venus: 3, moon: 2, mars: 2, jupiter: 1, neptune: 1 },
-  wealth: { jupiter: 3, venus: 2, saturn: 2, sun: 1, mercury: 1 },
+  study:     { mercury: 3, sun: 2, moon: 1, jupiter: 2, saturn: 2 },
+  career:    { sun: 3, saturn: 3, jupiter: 3, mars: 2, mercury: 1 },
+  love:      { venus: 3, moon: 2, mars: 2, jupiter: 1, neptune: 1 },
+  body_mind: { moon: 3, sun: 2, saturn: 2, mars: 1, neptune: 1 },
+  finance:   { jupiter: 3, venus: 2, saturn: 2, sun: 1, mercury: 1 },
 };
 
 const NATAL_TARGETS: Record<DomainKey, WesternBodyKey[]> = {
-  study:  ["sun", "moon", "mercury"],
-  career: ["sun", "saturn", "mars"],
-  love:   ["sun", "moon", "venus"],
-  wealth: ["sun", "venus", "jupiter"],
+  study:     ["sun", "moon", "mercury"],
+  career:    ["sun", "saturn", "mars"],
+  love:      ["sun", "moon", "venus"],
+  body_mind: ["sun", "moon"],
+  finance:   ["sun", "venus", "jupiter"],
 };
 
 function aspectSign(kind: DailyTransitAspect["kind"], transit: WesternBodyKey): number {
@@ -88,8 +105,6 @@ function aspectSign(kind: DailyTransitAspect["kind"], transit: WesternBodyKey): 
     case "opposition":
       return -1;
     case "conjunction":
-      // Conjunction is ambiguous; heuristics: Jupiter/Venus positive,
-      // Saturn negative, Sun/Moon/Mercury/Mars neutral (magnitude 0.5).
       if (transit === "jupiter" || transit === "venus") return +0.5;
       if (transit === "saturn") return -0.5;
       return 0;
@@ -118,7 +133,7 @@ export function computeDailyDomainScore(input: {
       partial: true,
       missing_facts: missing,
       overall: { score: 50, band: "neutral", theme_keywords: [] },
-      domains: (["study", "career", "love", "wealth"] as DomainKey[]).map((d) => ({
+      domains: DOMAIN_ORDER.map((d) => ({
         domain: d, score: 50, band: "neutral", confidence: "low", evidence_refs: [],
       })),
       supportive_signals: [],
@@ -132,7 +147,7 @@ export function computeDailyDomainScore(input: {
   const supportive: string[] = [];
   const caution: string[] = [];
 
-  const domains: DomainSignal[] = (["study", "career", "love", "wealth"] as DomainKey[]).map((d) => {
+  const domains: DomainSignal[] = DOMAIN_ORDER.map((d) => {
     let delta = 0;
     const refs: string[] = [];
     const targets = new Set(NATAL_TARGETS[d]);
@@ -142,7 +157,7 @@ export function computeDailyDomainScore(input: {
       if (!w) continue;
       const sign = aspectSign(a.kind, a.transit);
       if (sign === 0) continue;
-      const orbFactor = 1 - a.orb / 6; // tighter orb → more weight
+      const orbFactor = 1 - a.orb / 6;
       const contribution = sign * w * Math.max(0.2, orbFactor);
       delta += contribution;
       refs.push(`daily.transit_to_natal_aspects[${a.transit}→${a.natal},${a.kind}]`);
@@ -160,8 +175,6 @@ export function computeDailyDomainScore(input: {
     };
   });
 
-  // Overall = weighted mean pulled toward the extreme domain so a single
-  // strong caution isn't averaged away.
   const scores = domains.map((d) => d.score);
   const mean = scores.reduce((s, v) => s + v, 0) / scores.length;
   const extreme = scores.reduce((acc, v) => (Math.abs(v - 50) > Math.abs(acc - 50) ? v : acc), 50);
