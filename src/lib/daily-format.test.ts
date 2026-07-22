@@ -181,8 +181,8 @@ describe("daily-format — theme + contradiction", () => {
   it("localizes contradiction", () => {
     const raw = "study(70) 与 wealth(35) 分数差 ≥ 20，请以现实情境为准。";
     const zhOut = formatContradiction(raw, zh, "zh");
-    expect(zhOut.includes("学业与认知")).toBe(true);
-    expect(zhOut.includes("财富与资源")).toBe(true);
+    expect(zhOut.includes("学业")).toBe(true);
+    expect(zhOut.includes("财务")).toBe(true);
     assertNoEnglishLeak(zhOut);
     const enOut = formatContradiction(raw, en, "en");
     expect(enOut.toLowerCase().includes("study")).toBe(true);

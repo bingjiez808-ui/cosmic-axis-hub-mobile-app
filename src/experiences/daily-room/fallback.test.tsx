@@ -83,7 +83,7 @@ describe("/me/home fallbacks · never blank", () => {
     expect(el?.getAttribute("data-lang")).toBe("zh");
     const txt = el?.textContent ?? "";
     expect(txt).toContain("今日阅览室");
-    expect(txt).toContain("正在打开");
+    expect(txt).toContain("正在翻开");
   });
 
   it("error panel surfaces title, error message, retry button and home link", async () => {
