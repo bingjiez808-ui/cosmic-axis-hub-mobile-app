@@ -105,6 +105,17 @@ export type DailyDict = {
   charts_untitled_other: string;
   charts_delete_confirm: (name: string) => string;
   charts_privacy_notice: string;
+  charts_manage_link: string;
+  profile_title: string;
+  profile_kicker: string;
+  profile_section_primary: string;
+  profile_section_others: string;
+  profile_section_relations: string;
+  profile_section_friends: string;
+  profile_friends_empty: string;
+  profile_privacy_title: string;
+  profile_privacy_body: string;
+  profile_open_today: string;
 
   // ---- Match real-import ----
   match_import_title: string;
@@ -335,6 +346,20 @@ const zh: DailyDict = {
   charts_delete_confirm: (name) => `确定删除“${name}”这张命盘及其所有报告吗？此操作不可恢复。`,
   charts_privacy_notice:
     "他人命盘仅供你个人查看与关系适配使用，不会公开给社区或好友。请在保存前确保已获得对方同意。",
+  charts_manage_link: "管理我的书架",
+  profile_title: "我的图书证",
+  profile_kicker: "命运图书馆 · 个人书架",
+  profile_section_primary: "我的主命盘",
+  profile_section_others: "我的其他命盘",
+  profile_section_relations: "关系书架 · 他人命盘",
+  profile_section_friends: "好友与来信",
+  profile_friends_empty: "还没有好友申请或已建立的联系。",
+  profile_privacy_title: "隐私控制",
+  profile_privacy_body:
+    "默认不加入公开匿名匹配，也不会向好友暴露你的命盘详情。仅在你明确授权关系适配时，才会使用派生匹配特征。",
+  profile_open_today: "打开今日命运 →",
+
+
 
   match_import_title: "从我的命盘中选择两张进行适配",
   match_import_intro:
@@ -616,6 +641,20 @@ const en: DailyDict = {
     `Delete “${name}” and all of its reports? This cannot be undone.`,
   charts_privacy_notice:
     "Other-people charts are private to you and only used for your own compatibility read. Make sure you have their consent before saving.",
+  charts_manage_link: "Manage my bookshelf",
+  profile_title: "My library card",
+  profile_kicker: "Destiny Library · Personal bookshelf",
+  profile_section_primary: "My primary chart",
+  profile_section_others: "My other charts",
+  profile_section_relations: "Relationship shelf · other people",
+  profile_section_friends: "Friends & letters",
+  profile_friends_empty: "No pending friend letters or accepted connections yet.",
+  profile_privacy_title: "Privacy controls",
+  profile_privacy_body:
+    "By default you are not in the anonymous match pool, and friends never see your chart details. Derived compatibility features are only used after you explicitly authorize a match.",
+  profile_open_today: "Open Today's Reading →",
+
+
 
   match_import_title: "Pick two saved charts to compare",
   match_import_intro:

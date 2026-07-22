@@ -4,14 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { loadDailyRoomFixture, type DailyRoomFixtureKey } from "@/experiences/daily-room/fixtures";
 import { ensureSocialPreviewAllowed } from "@/experiences/daily-room/route-guard";
 import { DailyRoomPending, DailyRoomError } from "@/experiences/daily-room/fallback";
-import {
-  listUserCharts,
-  renameChart,
-  setPrimaryChart,
-  setChartRole,
-  deleteChart,
-  type ChartRow,
-} from "@/lib/reports-store.functions";
+import { listUserCharts, type ChartRow } from "@/lib/reports-store.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { useLang } from "@/lib/i18n";
 import { useDaily, useFormatDate, xlate } from "@/lib/i18n-daily";
@@ -119,7 +112,7 @@ function DailyRoomPage() {
   const today = todayInTz(tz);
   const [fixtureKey, setFixtureKey] = useState<DailyRoomFixtureKey>("working_adult");
   const [showEvidence, setShowEvidence] = useState(false);
-  const [entitled, setEntitled] = useState(false);
+  // Membership toggle (dev-only "mock member") removed from this route.
   const [real, setReal] = useState<RealChartAdapterState>({ kind: "loading" });
 
   useEffect(() => {
@@ -213,22 +206,11 @@ function DailyRoomPage() {
           </Link>
         </nav>
 
-        {/* Real chart adapter — manager for primary + others */}
-        <section className="mb-6 rounded-xl border border-amber-400/15 bg-black/20 p-4 text-xs">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <div className="uppercase tracking-widest text-amber-200/70">
-              {d.section_my_charts}
-            </div>
-            <label className="flex items-center gap-2 text-amber-200/70">
-              <input
-                type="checkbox"
-                checked={entitled}
-                onChange={(e) => setEntitled(e.target.checked)}
-                className="h-3 w-3 accent-amber-400"
-              />
-              <span>{d.today_toggle_membership}</span>
-            </label>
-          </div>
+        {/* Lightweight context bar — full chart management lives on /me/profile */}
+        <section
+          className="mb-6 rounded-xl border border-amber-400/15 bg-black/20 px-4 py-3 text-xs"
+          data-testid="home-context-bar"
+        >
           {real.kind === "loading" && (
             <div className="text-amber-200/60">{d.my_charts_loading}</div>
           )}
@@ -238,13 +220,47 @@ function DailyRoomPage() {
           {real.kind === "error" && (
             <div className="text-rose-300/80">{d.my_charts_error(real.message)}</div>
           )}
-          {real.kind === "ready" && (
-            <ChartManager
-              charts={real.charts}
-              onChanged={(charts) => setReal({ ...real, charts })}
-            />
-          )}
+          {real.kind === "ready" && (() => {
+            const primary = real.charts.find(
+              (c) => c.is_primary && c.chart_role === "self",
+            );
+            if (!primary) {
+              return (
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="text-amber-200/80">
+                    {d.charts_primary_missing_title}
+                  </div>
+                  <Link
+                    to="/ritual"
+                    className="min-h-11 rounded-full border border-amber-300/60 px-4 py-2 text-amber-100 hover:bg-amber-500/10"
+                  >
+                    {d.charts_primary_missing_body}
+                  </Link>
+                </div>
+              );
+            }
+            return (
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="text-amber-100/90">
+                  <span className="text-amber-200/60">
+                    {d.charts_primary_title} ·{" "}
+                  </span>
+                  <span className="font-medium">
+                    {primary.name ?? d.my_charts_unnamed}
+                  </span>
+                  <span className="ml-2 text-amber-200/50">{today}</span>
+                </div>
+                <Link
+                  to="/me/profile"
+                  className="min-h-11 rounded-full border border-amber-400/40 px-4 py-2 text-amber-200 hover:bg-amber-500/10"
+                >
+                  {d.charts_manage_link}
+                </Link>
+              </div>
+            );
+          })()}
         </section>
+
 
 
         {/* Welcome */}
@@ -256,10 +272,8 @@ function DailyRoomPage() {
           <div className="mt-2 text-sm text-amber-100/70">
             {fmtDate(today, tz)} · {tz} ·{" "}
             {d.today_chart_label(FIXTURE_CHART_LABELS[fixtureKey][lang])}
-            <span className="ml-2 rounded-full border border-amber-400/30 px-2 py-0.5 text-[10px] text-amber-200">
-              {entitled ? d.today_tier_member : d.today_tier_free}
-            </span>
           </div>
+
           <div className="mt-4 flex flex-wrap gap-2">
             {FIXTURE_KEYS.map((k) => (
               <button
@@ -496,13 +510,10 @@ function DailyRoomPage() {
           <p className="mt-2 text-amber-100/80">{d.reflection_body}</p>
         </section>
 
-        {/* Evidence gate */}
-        {!entitled ? (
-          <section className="mb-16 rounded-xl border border-amber-400/15 bg-black/20 p-5 text-xs text-amber-100/70">
-            {d.free_tier_notice}
-          </section>
-        ) : (
+        {/* Evidence section — collapsed by default; membership gating moved to /me/profile */}
+        {(
           <section className="mb-16 rounded-xl border border-amber-400/15 bg-black/20">
+
             <button
               type="button"
               onClick={() => setShowEvidence((v) => !v)}
@@ -571,266 +582,14 @@ function DailyRoomPage() {
             )}
           </section>
         )}
+
       </div>
     </div>
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* ChartManager — primary + others list with inline actions           */
-/* ------------------------------------------------------------------ */
+/* ChartManager and inline row actions moved to src/experiences/profile/
+ * ChartManager.tsx and re-hosted on the dedicated /me/profile page. Today's
+ * Reading Room only shows a lightweight context bar. */
 
-function ChartManager({
-  charts,
-  onChanged,
-}: {
-  charts: ChartRow[];
-  onChanged: (next: ChartRow[]) => void;
-}) {
-  const d = useDaily();
-  const [busyId, setBusyId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [draftName, setDraftName] = useState("");
-
-  const primary = charts.find((c) => c.is_primary && c.chart_role === "self") ?? null;
-  const others = charts.filter((c) => c.id !== primary?.id);
-
-  const refresh = async () => {
-    try {
-      const next = await listUserCharts();
-      onChanged(next);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "unknown");
-    }
-  };
-
-  const runAction = async (id: string, fn: () => Promise<unknown>) => {
-    setBusyId(id);
-    setError(null);
-    try {
-      await fn();
-      await refresh();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "unknown");
-    } finally {
-      setBusyId(null);
-    }
-  };
-
-  const startRename = (c: ChartRow) => {
-    setEditingId(c.id);
-    setDraftName(c.name ?? "");
-    setError(null);
-  };
-
-  const commitRename = async (id: string) => {
-    const name = draftName.trim();
-    if (!name) {
-      setError(d.charts_name_empty_error);
-      return;
-    }
-    if (name.length > 120) {
-      setError(d.charts_name_too_long_error);
-      return;
-    }
-    await runAction(id, async () => {
-      await renameChart({ data: { chartId: id, name } });
-      setEditingId(null);
-    });
-  };
-
-  return (
-    <div className="space-y-4" data-testid="chart-manager">
-      <div className="text-amber-200/70">{d.my_charts_count(charts.length)}</div>
-      {charts.length === 0 && (
-        <div className="text-amber-200/60">{d.my_charts_empty}</div>
-      )}
-      {error && <div className="text-rose-300/80">{d.charts_error_generic(error)}</div>}
-
-      {/* Primary slot */}
-      <div className="rounded-lg border border-amber-300/40 bg-amber-500/5 p-3">
-        <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-widest text-amber-200">
-          <span>{d.charts_primary_title}</span>
-          <span className="rounded-full border border-amber-300/50 px-2 py-0.5 text-[10px] text-amber-100">
-            {d.charts_role_self}
-          </span>
-        </div>
-        {primary ? (
-          <ChartRowCard
-            c={primary}
-            isPrimary
-            busy={busyId === primary.id}
-            editing={editingId === primary.id}
-            draftName={draftName}
-            onDraftName={setDraftName}
-            onStartRename={() => startRename(primary)}
-            onCancelRename={() => setEditingId(null)}
-            onCommitRename={() => commitRename(primary.id)}
-            onMakeOther={() =>
-              runAction(primary.id, () =>
-                setChartRole({ data: { chartId: primary.id, role: "other" } }),
-              )
-            }
-            onSetPrimary={() => {}}
-            onDelete={() => {
-              if (typeof window !== "undefined" &&
-                !window.confirm(d.charts_delete_confirm(primary.name ?? d.charts_untitled_other))) {
-                return;
-              }
-              void runAction(primary.id, () =>
-                deleteChart({ data: { chartId: primary.id, scope: "chart" } }),
-              );
-            }}
-          />
-        ) : (
-          <div className="text-amber-100/80">
-            <div className="font-medium text-amber-100">{d.charts_primary_missing_title}</div>
-            <p className="mt-1 text-amber-200/70">{d.charts_primary_missing_body}</p>
-          </div>
-        )}
-      </div>
-
-      {/* Others */}
-      {others.length > 0 && (
-        <div className="rounded-lg border border-amber-400/15 bg-black/20 p-3">
-          <div className="mb-2 text-[11px] uppercase tracking-widest text-amber-200/70">
-            {d.charts_others_title}
-          </div>
-          <div className="space-y-2">
-            {others.map((c) => (
-              <ChartRowCard
-                key={c.id}
-                c={c}
-                isPrimary={false}
-                busy={busyId === c.id}
-                editing={editingId === c.id}
-                draftName={draftName}
-                onDraftName={setDraftName}
-                onStartRename={() => startRename(c)}
-                onCancelRename={() => setEditingId(null)}
-                onCommitRename={() => commitRename(c.id)}
-                onMakeOther={() => {}}
-                onSetPrimary={() =>
-                  runAction(c.id, () => setPrimaryChart({ data: { chartId: c.id } }))
-                }
-                onDelete={() => {
-                  if (typeof window !== "undefined" &&
-                    !window.confirm(d.charts_delete_confirm(c.name ?? d.charts_untitled_other))) {
-                    return;
-                  }
-                  void runAction(c.id, () =>
-                    deleteChart({ data: { chartId: c.id, scope: "chart" } }),
-                  );
-                }}
-              />
-            ))}
-          </div>
-          <p className="mt-3 text-[11px] text-amber-200/50">{d.charts_privacy_notice}</p>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ChartRowCard(props: {
-  c: ChartRow;
-  isPrimary: boolean;
-  busy: boolean;
-  editing: boolean;
-  draftName: string;
-  onDraftName: (s: string) => void;
-  onStartRename: () => void;
-  onCancelRename: () => void;
-  onCommitRename: () => void;
-  onSetPrimary: () => void;
-  onMakeOther: () => void;
-  onDelete: () => void;
-}) {
-  const d = useDaily();
-  const { c, isPrimary, busy, editing } = props;
-  const displayName = c.name ?? (isPrimary ? d.my_charts_unnamed : d.charts_untitled_other);
-  return (
-    <div className="rounded-md border border-amber-400/10 bg-black/30 p-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        {editing ? (
-          <div className="flex flex-1 flex-wrap items-center gap-2">
-            <input
-              type="text"
-              value={props.draftName}
-              onChange={(e) => props.onDraftName(e.target.value)}
-              placeholder={d.charts_name_placeholder}
-              maxLength={120}
-              className="flex-1 min-w-[10rem] rounded border border-amber-400/30 bg-black/40 px-2 py-1 text-amber-100 outline-none focus:border-amber-300"
-              autoFocus
-            />
-            <button
-              type="button"
-              disabled={busy}
-              onClick={props.onCommitRename}
-              className="rounded border border-emerald-400/40 px-2 py-1 text-emerald-200 hover:bg-emerald-500/10 disabled:opacity-50"
-            >
-              {busy ? d.charts_saving : d.charts_action_save}
-            </button>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={props.onCancelRename}
-              className="rounded border border-amber-400/20 px-2 py-1 text-amber-200 hover:bg-amber-500/5 disabled:opacity-50"
-            >
-              {d.charts_action_cancel}
-            </button>
-          </div>
-        ) : (
-          <>
-            <div className="text-amber-100">
-              <div className="font-medium">{displayName}</div>
-              <div className="text-[11px] text-amber-200/60">
-                {c.birth_date ?? d.my_charts_missing_date} {c.birth_time ?? ""}
-                {c.birth_place ? ` · ${c.birth_place}` : ""}
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-1">
-              <button
-                type="button"
-                disabled={busy}
-                onClick={props.onStartRename}
-                className="rounded border border-amber-400/25 px-2 py-1 text-amber-200 hover:bg-amber-500/5 disabled:opacity-50"
-              >
-                {d.charts_action_rename}
-              </button>
-              {isPrimary ? (
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={props.onMakeOther}
-                  className="rounded border border-amber-400/25 px-2 py-1 text-amber-200 hover:bg-amber-500/5 disabled:opacity-50"
-                >
-                  {busy ? d.charts_setting_primary : d.charts_action_make_other}
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={props.onSetPrimary}
-                  className="rounded border border-emerald-400/40 px-2 py-1 text-emerald-200 hover:bg-emerald-500/10 disabled:opacity-50"
-                >
-                  {busy ? d.charts_setting_primary : d.charts_action_set_primary}
-                </button>
-              )}
-              <button
-                type="button"
-                disabled={busy}
-                onClick={props.onDelete}
-                className="rounded border border-rose-400/30 px-2 py-1 text-rose-200 hover:bg-rose-500/5 disabled:opacity-50"
-              >
-                {d.charts_action_delete}
-              </button>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
 

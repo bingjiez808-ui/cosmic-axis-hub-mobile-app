@@ -374,8 +374,12 @@ function SiteNav() {
             <Link to="/traditions" className={linkClass}>{t.nav_traditions}</Link>
             <Link to="/ritual" className={linkClass}>{t.nav_ritual}</Link>
             {session && (
-              <Link to="/me/home" className={linkClass + " text-gold-dust"}>{t.nav_today}</Link>
+              <>
+                <Link to="/me/home" className={linkClass + " text-gold-dust"}>{t.nav_today}</Link>
+                <Link to="/me/profile" className={linkClass}>{lang === "zh" ? "我的" : "My library"}</Link>
+              </>
             )}
+
             <Link to="/community" className={linkClass}>{t.nav_community}</Link>
             <Link to="/about" className={linkClass}>{t.nav_about}</Link>
             {showAdmin && (
@@ -476,7 +480,7 @@ function SiteNav() {
       >
         {[
           { to: "/", label: lang === "zh" ? "首页" : "Home" },
-          ...(session ? [{ to: "/me/home", label: t.nav_today }] : []),
+          ...(session ? [{ to: "/me/home", label: t.nav_today }, { to: "/me/profile", label: lang === "zh" ? "我的" : "My library" }] : []),
           { to: "/traditions", label: t.nav_traditions },
           { to: "/ritual", label: t.nav_ritual },
           { to: "/community", label: t.nav_community },

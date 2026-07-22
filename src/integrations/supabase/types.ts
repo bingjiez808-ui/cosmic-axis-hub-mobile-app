@@ -76,6 +76,7 @@ export type Database = {
           birth_place: string | null
           birth_time: string | null
           chart_role: string
+          consent_confirmed_at: string | null
           created_at: string
           id: string
           input_snapshot: Json
@@ -83,6 +84,7 @@ export type Database = {
           lang: string | null
           name: string | null
           normalized_input_hash: string
+          relationship_label: string | null
           updated_at: string
           user_id: string
         }
@@ -91,6 +93,7 @@ export type Database = {
           birth_place?: string | null
           birth_time?: string | null
           chart_role?: string
+          consent_confirmed_at?: string | null
           created_at?: string
           id?: string
           input_snapshot?: Json
@@ -98,6 +101,7 @@ export type Database = {
           lang?: string | null
           name?: string | null
           normalized_input_hash: string
+          relationship_label?: string | null
           updated_at?: string
           user_id: string
         }
@@ -106,6 +110,7 @@ export type Database = {
           birth_place?: string | null
           birth_time?: string | null
           chart_role?: string
+          consent_confirmed_at?: string | null
           created_at?: string
           id?: string
           input_snapshot?: Json
@@ -113,6 +118,7 @@ export type Database = {
           lang?: string | null
           name?: string | null
           normalized_input_hash?: string
+          relationship_label?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -476,6 +482,7 @@ export type Database = {
           expires_at: string
           id: string
           inviter_id: string
+          message: string | null
           responded_at: string | null
           status: string
           target_id: string | null
@@ -487,6 +494,7 @@ export type Database = {
           expires_at?: string
           id?: string
           inviter_id: string
+          message?: string | null
           responded_at?: string | null
           status?: string
           target_id?: string | null
@@ -498,6 +506,7 @@ export type Database = {
           expires_at?: string
           id?: string
           inviter_id?: string
+          message?: string | null
           responded_at?: string | null
           status?: string
           target_id?: string | null

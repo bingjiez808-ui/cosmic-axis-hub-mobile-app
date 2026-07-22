@@ -33,6 +33,7 @@ import { Route as ApiGenerateAvatarRouteImport } from './routes/api/generate-ava
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
+import { Route as AuthenticatedMeProfileRouteImport } from './routes/_authenticated/me.profile'
 import { Route as AuthenticatedMeMatchRouteImport } from './routes/_authenticated/me.match'
 import { Route as AuthenticatedMeHomeRouteImport } from './routes/_authenticated/me.home'
 import { Route as AuthenticatedMeFriendsRouteImport } from './routes/_authenticated/me.friends'
@@ -160,6 +161,11 @@ const Char91DotmcpChar93ListToolsRoute =
     path: '/.mcp/list-tools',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AuthenticatedMeProfileRoute = AuthenticatedMeProfileRouteImport.update({
+  id: '/me/profile',
+  path: '/me/profile',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedMeMatchRoute = AuthenticatedMeMatchRouteImport.update({
   id: '/me/match',
   path: '/me/match',
@@ -216,6 +222,7 @@ export interface FileRoutesByFullPath {
   '/me/friends': typeof AuthenticatedMeFriendsRoute
   '/me/home': typeof AuthenticatedMeHomeRoute
   '/me/match': typeof AuthenticatedMeMatchRoute
+  '/me/profile': typeof AuthenticatedMeProfileRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -245,6 +252,7 @@ export interface FileRoutesByTo {
   '/me/friends': typeof AuthenticatedMeFriendsRoute
   '/me/home': typeof AuthenticatedMeHomeRoute
   '/me/match': typeof AuthenticatedMeMatchRoute
+  '/me/profile': typeof AuthenticatedMeProfileRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -277,6 +285,7 @@ export interface FileRoutesById {
   '/_authenticated/me/friends': typeof AuthenticatedMeFriendsRoute
   '/_authenticated/me/home': typeof AuthenticatedMeHomeRoute
   '/_authenticated/me/match': typeof AuthenticatedMeMatchRoute
+  '/_authenticated/me/profile': typeof AuthenticatedMeProfileRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -309,6 +318,7 @@ export interface FileRouteTypes {
     | '/me/friends'
     | '/me/home'
     | '/me/match'
+    | '/me/profile'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -338,6 +348,7 @@ export interface FileRouteTypes {
     | '/me/friends'
     | '/me/home'
     | '/me/match'
+    | '/me/profile'
   id:
     | '__root__'
     | '/'
@@ -369,6 +380,7 @@ export interface FileRouteTypes {
     | '/_authenticated/me/friends'
     | '/_authenticated/me/home'
     | '/_authenticated/me/match'
+    | '/_authenticated/me/profile'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -567,6 +579,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotmcpChar93ListToolsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/me/profile': {
+      id: '/_authenticated/me/profile'
+      path: '/me/profile'
+      fullPath: '/me/profile'
+      preLoaderRoute: typeof AuthenticatedMeProfileRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/me/match': {
       id: '/_authenticated/me/match'
       path: '/me/match'
@@ -610,6 +629,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMeFriendsRoute: typeof AuthenticatedMeFriendsRoute
   AuthenticatedMeHomeRoute: typeof AuthenticatedMeHomeRoute
   AuthenticatedMeMatchRoute: typeof AuthenticatedMeMatchRoute
+  AuthenticatedMeProfileRoute: typeof AuthenticatedMeProfileRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -617,6 +637,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMeFriendsRoute: AuthenticatedMeFriendsRoute,
   AuthenticatedMeHomeRoute: AuthenticatedMeHomeRoute,
   AuthenticatedMeMatchRoute: AuthenticatedMeMatchRoute,
+  AuthenticatedMeProfileRoute: AuthenticatedMeProfileRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
