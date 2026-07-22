@@ -94,7 +94,7 @@ const ASPECT_TOKENS = new Set([
   "sextile",
   "quincunx",
 ]);
-const DOMAIN_TOKENS = new Set(["study", "career", "love", "wealth"]);
+const DOMAIN_TOKENS = new Set(["study", "career", "love", "body_mind", "finance", "wealth"]);
 
 type Parsed =
   | { kind: "domain_aspect"; domain: string; transit: string; natal: string; aspect: string }

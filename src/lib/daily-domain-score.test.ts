@@ -32,17 +32,23 @@ describe("daily-domain-score-v1", () => {
     expect(JSON.stringify(a)).toBe(JSON.stringify(b));
   });
 
-  test("scores clamped to [0,100], version pinned, 4 domains present", () => {
+  test("v2: scores clamped to [0,100], version pinned, 5 non-overall domains present (love/study/career/body_mind/finance)", () => {
     const s = computeDailyDomainScore({ facts, natalHasTime: true });
-    expect(s.score_version).toBe(DAILY_DOMAIN_SCORE_VERSION);
+    expect(s.score_version).toBe("daily-domain-score-v2");
+    expect(DAILY_DOMAIN_SCORE_VERSION).toBe("daily-domain-score-v2");
     expect(s.overall.score).toBeGreaterThanOrEqual(0);
     expect(s.overall.score).toBeLessThanOrEqual(100);
     const domains = s.domains.map((d) => d.domain).sort();
-    expect(domains).toEqual(["career", "love", "study", "wealth"]);
+    expect(domains).toEqual(["body_mind", "career", "finance", "love", "study"]);
     for (const d of s.domains) {
       expect(d.score).toBeGreaterThanOrEqual(0);
       expect(d.score).toBeLessThanOrEqual(100);
     }
+  });
+
+  test("v2: wealth is retired; no domain uses the legacy key", () => {
+    const s = computeDailyDomainScore({ facts, natalHasTime: true });
+    expect(s.domains.find((d) => (d.domain as string) === "wealth")).toBeUndefined();
   });
 
   test("missing natal time → confidence drops to 'low' on every domain", () => {

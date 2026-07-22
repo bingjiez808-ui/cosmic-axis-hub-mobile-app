@@ -214,7 +214,9 @@ export type DailyDict = {
   // ---- Enumerable maps (never expose raw keys) ----
   band: Enum<"supportive" | "neutral" | "mixed" | "caution" | "high" | "mid" | "low">;
   confidence: Enum<"high" | "medium" | "low">;
-  domain: Enum<"study" | "career" | "love" | "wealth">;
+  // v2 domains include body_mind + finance; `wealth` retained for legacy
+  // (older Skill fixtures still ship v1 signals until they migrate).
+  domain: Enum<"study" | "career" | "love" | "body_mind" | "finance" | "wealth">;
   phase: Enum<
     | "new"
     | "new_moon"
@@ -475,7 +477,14 @@ const zh: DailyDict = {
     low: "低",
   },
   confidence: { high: "高", medium: "中", low: "低" },
-  domain: { study: "学业与认知", career: "事业与方向", love: "关系与情感", wealth: "财富与资源" },
+  domain: {
+    study: "学业 · 注意力与理解",
+    career: "事业 · 协作与推进",
+    love: "关系 · 沟通与边界",
+    body_mind: "身心 · 作息与压力",
+    finance: "财务 · 预算与复核",
+    wealth: "财务 · 预算与复核",
+  },
   phase: {
     new: "新月",
     new_moon: "新月",
@@ -753,10 +762,12 @@ const en: DailyDict = {
   },
   confidence: { high: "High", medium: "Medium", low: "Low" },
   domain: {
-    study: "Study & cognition",
-    career: "Career & direction",
-    love: "Relationships",
-    wealth: "Wealth & resources",
+    study: "Study · focus & review",
+    career: "Career · collaboration & momentum",
+    love: "Relationships · communication & boundaries",
+    body_mind: "Body & mind · rest & pressure",
+    finance: "Finance · budget & review",
+    wealth: "Finance · budget & review",
   },
   phase: {
     new: "New moon",
