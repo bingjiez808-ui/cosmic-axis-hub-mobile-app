@@ -704,7 +704,7 @@ export function interpretDomain(input: {
     };
   }
 
-  const band: SignalBand = "band" in target ? target.band : bandFromScore(target.score);
+  const band: SignalBand = target.band;
   const key: TemplateKey = isOverall ? "overall" : (input.domain as DomainKey);
   const tpl = dict[key][band];
 
