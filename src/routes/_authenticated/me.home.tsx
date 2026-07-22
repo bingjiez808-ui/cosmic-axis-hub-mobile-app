@@ -11,7 +11,7 @@ import { useDaily, useFormatDate, xlate } from "@/lib/i18n-daily";
 import { formatThemeKeyword, formatContradiction, tPhase } from "@/lib/daily-format";
 import { interpretAll } from "@/lib/daily-plain-language";
 import { DailyDestinyCompass, type CompassAxis } from "@/experiences/daily-room/visuals/DailyDestinyCompass";
-import { SevenDayOrbit } from "@/experiences/daily-room/visuals/SevenDayOrbit";
+
 
 
 
@@ -344,89 +344,42 @@ function DailyRoomPage() {
           </div>
         </section>
 
-        {/* Destiny Compass · 6-dimensional radar + 7-day orbit */}
+        {/* Destiny Compass · 6-dimensional radar */}
         <section className="mb-8 rounded-xl border border-amber-400/25 bg-gradient-to-br from-black/60 via-black/40 to-purple-950/20 p-4 md:p-6">
-          <div className="grid gap-6 md:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] md:items-start">
-            {/* Left · Compass */}
-            <div className="min-w-0">
-              <div className="mb-3 text-[11px] uppercase tracking-widest text-amber-200/70">
-                {lang === "zh" ? "命运罗盘 · 六维今日态" : "Destiny Compass · six dimensions"}
-              </div>
-              <div className="mx-auto w-full max-w-[420px]">
-                <DailyDestinyCompass
-                  score={score}
-                  activeAxis={compassAxis}
-                  onSelectAxis={setCompassAxis}
-                  labels={{
-                    overall: d.overall_signal,
-                    love: d.domain.love,
-                    study: d.domain.study,
-                    career: d.domain.career,
-                    body_mind: d.domain.body_mind,
-                    finance: d.domain.finance,
-                  }}
-                  bandLabels={{
-                    supportive: xlate(d.band, "supportive"),
-                    neutral: xlate(d.band, "neutral"),
-                    mixed: xlate(d.band, "mixed"),
-                    caution: xlate(d.band, "caution"),
-                    high: xlate(d.confidence, "high"),
-                    medium: xlate(d.confidence, "medium"),
-                    low: xlate(d.confidence, "low"),
-                    push: lang === "zh" ? "推进" : "push",
-                    observe: lang === "zh" ? "观察" : "observe",
-                    pause: lang === "zh" ? "缓行" : "pause",
-                  }}
-                  centreCaption={
-                    lang === "zh"
-                      ? "点击维度切换，中心为总体节奏"
-                      : "Tap a dimension; centre is the overall pace"
-                  }
-                />
-              </div>
-            </div>
-
-            {/* Right · Seven-day orbit */}
-            <div className="min-w-0">
-              <div className="mb-3 flex items-baseline justify-between gap-3">
-                <div className="text-[11px] uppercase tracking-widest text-amber-200/70">
-                  {lang === "zh" ? "七日星轨" : "Seven-day orbit"}
-                </div>
-                <div className="truncate text-[11px] text-amber-200/60">
-                  {compassAxis === "overall" ? d.overall_signal : domainLabel(compassAxis)}
-                </div>
-              </div>
-              <SevenDayOrbit
-                natal={fixture.natal}
-                natalHasTime={fixture.natalHasTime}
-                todayLocalDate={today}
-                timezone={tz}
-                dimension={compassAxis}
-                dimensionLabel={
-                  compassAxis === "overall" ? d.overall_signal : domainLabel(compassAxis)
-                }
-                todayLabel={lang === "zh" ? "今天" : "Today"}
-                emptyLabel={
-                  lang === "zh"
-                    ? "缺出生资料，暂无星轨。"
-                    : "Missing birth data — orbit unavailable."
-                }
-              />
-
-              {/* Band legend — fills the right column's lower space with meaning */}
-              <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-[11px] text-amber-100/70 sm:grid-cols-4">
-                <LegendDot color="#34d399" label={xlate(d.band, "supportive")} />
-                <LegendDot color="#fbbf24" label={xlate(d.band, "mixed")} />
-                <LegendDot color="#a78bfa" label={xlate(d.band, "neutral")} />
-                <LegendDot color="#f87171" label={xlate(d.band, "caution")} />
-              </div>
-
-              <p className="mt-3 text-[11px] leading-relaxed text-amber-100/55">
-                {lang === "zh"
-                  ? "曲线基于本地时区正午的行星与本命盘几何差，非概率、非命运保证。"
-                  : "Curve derives from noon transits vs. natal geometry — not probability, not a promise."}
-              </p>
-            </div>
+          <div className="mb-3 text-[11px] uppercase tracking-widest text-amber-200/70">
+            {lang === "zh" ? "命运罗盘 · 六维今日态" : "Destiny Compass · six dimensions"}
+          </div>
+          <div className="mx-auto w-full max-w-[460px]">
+            <DailyDestinyCompass
+              score={score}
+              activeAxis={compassAxis}
+              onSelectAxis={setCompassAxis}
+              labels={{
+                overall: d.overall_signal,
+                love: d.domain.love,
+                study: d.domain.study,
+                career: d.domain.career,
+                body_mind: d.domain.body_mind,
+                finance: d.domain.finance,
+              }}
+              bandLabels={{
+                supportive: xlate(d.band, "supportive"),
+                neutral: xlate(d.band, "neutral"),
+                mixed: xlate(d.band, "mixed"),
+                caution: xlate(d.band, "caution"),
+                high: xlate(d.confidence, "high"),
+                medium: xlate(d.confidence, "medium"),
+                low: xlate(d.confidence, "low"),
+                push: lang === "zh" ? "推进" : "push",
+                observe: lang === "zh" ? "观察" : "observe",
+                pause: lang === "zh" ? "缓行" : "pause",
+              }}
+              centreCaption={
+                lang === "zh"
+                  ? "点击维度切换，中心为总体节奏"
+                  : "Tap a dimension; centre is the overall pace"
+              }
+            />
           </div>
         </section>
 
@@ -694,17 +647,3 @@ function DailyRoomPage() {
  * ChartManager.tsx and re-hosted on the dedicated /me/profile page. Today's
  * Reading Room only shows a lightweight context bar. */
 
-
-
-function LegendDot({ color, label }: { color: string; label: string }) {
-  return (
-    <div className="flex min-w-0 items-center gap-1.5">
-      <span
-        aria-hidden="true"
-        className="inline-block h-2 w-2 shrink-0 rounded-full"
-        style={{ backgroundColor: color, boxShadow: `0 0 6px ${color}80` }}
-      />
-      <span className="truncate">{label}</span>
-    </div>
-  );
-}
