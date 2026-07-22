@@ -132,6 +132,12 @@ export type DailyDict = {
   profile_privacy_title: string;
   profile_privacy_body: string;
   profile_open_today: string;
+  bookshelf_completeness: (pct: number) => string;
+  bookshelf_completeness_full: string;
+  bookshelf_shelf_scroll_hint: string;
+  bookshelf_missing_time: string;
+  bookshelf_missing_place: string;
+  bookshelf_missing_report: string;
 
 
   // ---- Match real-import ----
