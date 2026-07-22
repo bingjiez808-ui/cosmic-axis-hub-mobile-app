@@ -206,22 +206,11 @@ function DailyRoomPage() {
           </Link>
         </nav>
 
-        {/* Real chart adapter — manager for primary + others */}
-        <section className="mb-6 rounded-xl border border-amber-400/15 bg-black/20 p-4 text-xs">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <div className="uppercase tracking-widest text-amber-200/70">
-              {d.section_my_charts}
-            </div>
-            <label className="flex items-center gap-2 text-amber-200/70">
-              <input
-                type="checkbox"
-                checked={entitled}
-                onChange={(e) => setEntitled(e.target.checked)}
-                className="h-3 w-3 accent-amber-400"
-              />
-              <span>{d.today_toggle_membership}</span>
-            </label>
-          </div>
+        {/* Lightweight context bar — full chart management lives on /me/profile */}
+        <section
+          className="mb-6 rounded-xl border border-amber-400/15 bg-black/20 px-4 py-3 text-xs"
+          data-testid="home-context-bar"
+        >
           {real.kind === "loading" && (
             <div className="text-amber-200/60">{d.my_charts_loading}</div>
           )}
@@ -231,13 +220,47 @@ function DailyRoomPage() {
           {real.kind === "error" && (
             <div className="text-rose-300/80">{d.my_charts_error(real.message)}</div>
           )}
-          {real.kind === "ready" && (
-            <ChartManager
-              charts={real.charts}
-              onChanged={(charts) => setReal({ ...real, charts })}
-            />
-          )}
+          {real.kind === "ready" && (() => {
+            const primary = real.charts.find(
+              (c) => c.is_primary && c.chart_role === "self",
+            );
+            if (!primary) {
+              return (
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="text-amber-200/80">
+                    {d.charts_primary_missing_title}
+                  </div>
+                  <Link
+                    to="/ritual"
+                    className="min-h-11 rounded-full border border-amber-300/60 px-4 py-2 text-amber-100 hover:bg-amber-500/10"
+                  >
+                    {d.charts_primary_missing_body}
+                  </Link>
+                </div>
+              );
+            }
+            return (
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="text-amber-100/90">
+                  <span className="text-amber-200/60">
+                    {d.charts_primary_title} ·{" "}
+                  </span>
+                  <span className="font-medium">
+                    {primary.name ?? d.my_charts_unnamed}
+                  </span>
+                  <span className="ml-2 text-amber-200/50">{today}</span>
+                </div>
+                <Link
+                  to="/me/profile"
+                  className="min-h-11 rounded-full border border-amber-400/40 px-4 py-2 text-amber-200 hover:bg-amber-500/10"
+                >
+                  {d.charts_manage_link}
+                </Link>
+              </div>
+            );
+          })()}
         </section>
+
 
 
         {/* Welcome */}
