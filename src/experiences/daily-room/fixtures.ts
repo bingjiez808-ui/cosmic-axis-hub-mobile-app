@@ -7,6 +7,7 @@ import { computeDailyFacts } from "@/lib/daily-facts";
 import { computeDailyDomainScore, type DailyDomainScore } from "@/lib/daily-domain-score";
 import { computeWesternChart } from "@/lib/western-natal";
 import type { DailyFacts } from "@/lib/daily-facts";
+import type { WesternPlanet } from "@/lib/western-natal";
 
 export type DailyRoomFixtureKey = "student_youth" | "working_adult" | "adult_transition" | "no_birth_time";
 
@@ -16,6 +17,8 @@ export type DailyRoomFixture = {
   chartLabel: string;
   facts: DailyFacts | null;
   score: DailyDomainScore;
+  natal: WesternPlanet[] | null;
+  natalHasTime: boolean;
   slower: { vedic: string; bazi: string; ziwei: string };
   isDemo: true;
 };
@@ -24,7 +27,7 @@ function build(natalUtc: Date, lat: number, lng: number, localDate: string, time
   const chart = computeWesternChart({ utc: natalUtc, lat, lng });
   const facts = chart ? computeDailyFacts({ natal: chart.planets, localDate, timezone }) : null;
   const score = computeDailyDomainScore({ facts, natalHasTime: true });
-  return { facts, score };
+  return { facts, score, natal: chart?.planets ?? null };
 }
 
 export function loadDailyRoomFixture(
