@@ -102,8 +102,8 @@ describe("daily-format — formatDailySignal (en)", () => {
 });
 
 describe("daily-format — enum translators", () => {
-  it("translates all 4 domains in zh", () => {
-    for (const k of ["study", "career", "love", "wealth"]) {
+  it("translates all v2 domains in zh (5 non-overall + legacy wealth alias)", () => {
+    for (const k of ["study", "career", "love", "body_mind", "finance", "wealth"]) {
       const v = tDomain(zh, k);
       expect(v.length).toBeGreaterThan(0);
       assertNoEnglishLeak(v);
