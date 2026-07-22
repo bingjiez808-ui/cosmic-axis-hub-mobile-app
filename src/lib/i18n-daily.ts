@@ -105,6 +105,17 @@ export type DailyDict = {
   charts_untitled_other: string;
   charts_delete_confirm: (name: string) => string;
   charts_privacy_notice: string;
+  charts_manage_link: string;
+  profile_title: string;
+  profile_kicker: string;
+  profile_section_primary: string;
+  profile_section_others: string;
+  profile_section_relations: string;
+  profile_section_friends: string;
+  profile_friends_empty: string;
+  profile_privacy_title: string;
+  profile_privacy_body: string;
+  profile_open_today: string;
 
   // ---- Match real-import ----
   match_import_title: string;
