@@ -226,19 +226,30 @@ function DailyRoomPage() {
             );
             if (!primary) {
               return (
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="text-amber-200/80">
-                    {d.charts_primary_missing_title}
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <div className="text-amber-100">{d.charts_primary_missing_title}</div>
+                    <div className="mt-1 text-amber-200/70">{d.charts_primary_missing_body}</div>
                   </div>
-                  <Link
-                    to="/ritual"
-                    className="min-h-11 rounded-full border border-amber-300/60 px-4 py-2 text-amber-100 hover:bg-amber-500/10"
-                  >
-                    {d.charts_primary_missing_body}
-                  </Link>
+                  <div className="flex flex-wrap gap-2">
+                    <Link
+                      to="/ritual"
+                      search={{ returnTo: "/me/home" }}
+                      className="min-h-11 rounded-full border border-amber-300/60 bg-amber-500/10 px-4 py-2 text-amber-100 hover:bg-amber-500/20"
+                    >
+                      {d.charts_primary_missing_cta_ritual}
+                    </Link>
+                    <Link
+                      to="/me/profile"
+                      className="min-h-11 rounded-full border border-amber-400/30 px-4 py-2 text-amber-200 hover:bg-amber-500/5"
+                    >
+                      {d.charts_primary_missing_cta_shelf}
+                    </Link>
+                  </div>
                 </div>
               );
             }
+
             return (
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="text-amber-100/90">

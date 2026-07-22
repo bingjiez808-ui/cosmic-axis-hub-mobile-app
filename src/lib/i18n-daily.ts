@@ -106,6 +106,22 @@ export type DailyDict = {
   charts_delete_confirm: (name: string) => string;
   charts_privacy_notice: string;
   charts_manage_link: string;
+  charts_primary_missing_cta_ritual: string;
+  charts_primary_missing_cta_shelf: string;
+  bookshelf_open_report: string;
+  bookshelf_open_today: string;
+  bookshelf_more_menu: string;
+  bookshelf_role_toggle_self: string;
+  bookshelf_role_toggle_other: string;
+  bookshelf_duplicates_found: (n: number) => string;
+  bookshelf_show_duplicates: string;
+  bookshelf_hide_duplicates: string;
+  bookshelf_relations_privacy: string;
+  bookshelf_no_others: string;
+  bookshelf_no_relations: string;
+  bookshelf_main_book_label: string;
+  bookshelf_relation_card_label: string;
+  bookshelf_open_match: string;
   profile_title: string;
   profile_kicker: string;
   profile_section_primary: string;
@@ -116,6 +132,7 @@ export type DailyDict = {
   profile_privacy_title: string;
   profile_privacy_body: string;
   profile_open_today: string;
+
 
   // ---- Match real-import ----
   match_import_title: string;
@@ -324,10 +341,28 @@ const zh: DailyDict = {
   home_secondary_nav_match: "适配分析",
 
   charts_primary_title: "我的主命盘",
-  charts_primary_missing_title: "尚未设置主命盘",
+  charts_primary_missing_title: "先登记你的第一张命盘",
   charts_primary_missing_body:
-    "请从下方“他人命盘”中挑选一张真正代表你的命盘，点“设为我的主命盘”。今日综合信号与关系适配都以主命盘为准。",
+    "今日阅读将以你的主命盘为准。管理书架可以随时更换主命盘或整理关系书架。",
+  charts_primary_missing_cta_ritual: "开启仪式",
+  charts_primary_missing_cta_shelf: "管理我的书架",
+  bookshelf_open_report: "打开高级报告",
+  bookshelf_open_today: "今日命运",
+  bookshelf_more_menu: "更多操作",
+  bookshelf_role_toggle_self: "改为我的命盘",
+  bookshelf_role_toggle_other: "改为他人命盘",
+  bookshelf_duplicates_found: (n) => `发现 ${n} 条与之出生信息相同的记录`,
+  bookshelf_show_duplicates: "查看重复项",
+  bookshelf_hide_duplicates: "收起重复项",
+  bookshelf_relations_privacy:
+    "关系书架仅你可见，仅用于你个人的适配阅读。请确保已获得对方同意；不会自动公开也不会自动发送好友申请。",
+  bookshelf_no_others: "还没有其它属于你自己的命盘。",
+  bookshelf_no_relations: "关系书架为空。你保存的他人命盘会出现在这里。",
+  bookshelf_main_book_label: "主命盘",
+  bookshelf_relation_card_label: "关系藏书",
+  bookshelf_open_match: "适配分析",
   charts_others_title: "他人命盘",
+
   charts_role_self: "我的",
   charts_role_other: "他人",
   charts_action_rename: "重命名",
@@ -618,10 +653,28 @@ const en: DailyDict = {
   home_secondary_nav_match: "Match",
 
   charts_primary_title: "My primary chart",
-  charts_primary_missing_title: "No primary chart set",
+  charts_primary_missing_title: "Register your first chart",
   charts_primary_missing_body:
-    "Pick the chart that really represents you from “Other charts” below and tap “Set as my primary chart”. Today’s signal and compatibility use this chart.",
+    "Today's reading needs your primary chart. Manage your bookshelf to swap it or organise your relationship shelf.",
+  charts_primary_missing_cta_ritual: "Open the ritual",
+  charts_primary_missing_cta_shelf: "Manage my bookshelf",
+  bookshelf_open_report: "Open premium report",
+  bookshelf_open_today: "Today's reading",
+  bookshelf_more_menu: "More",
+  bookshelf_role_toggle_self: "Mark as mine",
+  bookshelf_role_toggle_other: "Mark as other",
+  bookshelf_duplicates_found: (n) => `Found ${n} record${n === 1 ? "" : "s"} with the same birth details`,
+  bookshelf_show_duplicates: "Show duplicates",
+  bookshelf_hide_duplicates: "Hide duplicates",
+  bookshelf_relations_privacy:
+    "The relationship shelf is private to you and only used for your own compatibility reads. Please confirm you have the other person's consent. Nothing here is auto-published or auto-sent as a friend request.",
+  bookshelf_no_others: "You don't have any other charts of your own yet.",
+  bookshelf_no_relations: "Your relationship shelf is empty. Other-people charts you save appear here.",
+  bookshelf_main_book_label: "Primary chart",
+  bookshelf_relation_card_label: "Relationship card",
+  bookshelf_open_match: "Compatibility",
   charts_others_title: "Other charts",
+
   charts_role_self: "Mine",
   charts_role_other: "Other",
   charts_action_rename: "Rename",
