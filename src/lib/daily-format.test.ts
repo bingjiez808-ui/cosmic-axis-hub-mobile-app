@@ -73,14 +73,14 @@ describe("daily-format — parseDailySignal", () => {
 
 describe("daily-format — formatDailySignal (zh)", () => {
   const cases: [string, string[]][] = [
-    ["study:sun→mercury trine", ["学业与认知", "太阳", "水星", "三分"]],
-    ["study:mercury→sun trine", ["学业与认知", "水星", "太阳", "三分"]],
-    ["career:mars→mars trine", ["事业与方向", "火星", "三分"]],
-    ["career:mars→sun square", ["事业与方向", "火星", "太阳", "四分"]],
-    ["love:venus→sun opposition", ["关系与情感", "金星", "太阳", "对分"]],
-    ["love:venus→moon opposition", ["关系与情感", "金星", "月亮", "对分"]],
-    ["wealth:jupiter→venus conjunction", ["财富与资源", "木星", "金星", "合相"]],
-    ["wealth:saturn→mars sextile", ["财富与资源", "土星", "火星", "六分"]],
+    ["study:sun→mercury trine", ["学业", "太阳", "水星", "三分"]],
+    ["study:mercury→sun trine", ["学业", "水星", "太阳", "三分"]],
+    ["career:mars→mars trine", ["事业", "火星", "三分"]],
+    ["career:mars→sun square", ["事业", "火星", "太阳", "四分"]],
+    ["love:venus→sun opposition", ["关系", "金星", "太阳", "对分"]],
+    ["love:venus→moon opposition", ["关系", "金星", "月亮", "对分"]],
+    ["wealth:jupiter→venus conjunction", ["财务", "木星", "金星", "合相"]],
+    ["wealth:saturn→mars sextile", ["财务", "土星", "火星", "六分"]],
   ];
   for (const [raw, needles] of cases) {
     it(`renders naturally: ${raw}`, () => {
