@@ -112,7 +112,7 @@ function DailyRoomPage() {
   const today = todayInTz(tz);
   const [fixtureKey, setFixtureKey] = useState<DailyRoomFixtureKey>("working_adult");
   const [showEvidence, setShowEvidence] = useState(false);
-  const [entitled, setEntitled] = useState(false);
+  // Membership toggle (dev-only "mock member") removed from this route.
   const [real, setReal] = useState<RealChartAdapterState>({ kind: "loading" });
 
   useEffect(() => {
