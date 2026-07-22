@@ -132,6 +132,12 @@ export type DailyDict = {
   profile_privacy_title: string;
   profile_privacy_body: string;
   profile_open_today: string;
+  bookshelf_completeness: (pct: number) => string;
+  bookshelf_completeness_full: string;
+  bookshelf_shelf_scroll_hint: string;
+  bookshelf_missing_time: string;
+  bookshelf_missing_place: string;
+  bookshelf_missing_report: string;
 
 
   // ---- Match real-import ----
@@ -393,6 +399,12 @@ const zh: DailyDict = {
   profile_privacy_body:
     "默认不加入公开匿名匹配，也不会向好友暴露你的命盘详情。仅在你明确授权关系适配时，才会使用派生匹配特征。",
   profile_open_today: "打开今日命运 →",
+  bookshelf_completeness: (p) => `资料完整度 ${p}%`,
+  bookshelf_completeness_full: "资料完整",
+  bookshelf_shelf_scroll_hint: "← 横向滑动查看更多 →",
+  bookshelf_missing_time: "补充出生时间可解锁更精细的时辰分析",
+  bookshelf_missing_place: "补充出生地点可校正地方真太阳时",
+  bookshelf_missing_report: "尚未生成任何报告",
 
 
 
@@ -706,6 +718,12 @@ const en: DailyDict = {
   profile_privacy_body:
     "By default you are not in the anonymous match pool, and friends never see your chart details. Derived compatibility features are only used after you explicitly authorize a match.",
   profile_open_today: "Open Today's Reading →",
+  bookshelf_completeness: (p) => `Profile ${p}% complete`,
+  bookshelf_completeness_full: "Profile complete",
+  bookshelf_shelf_scroll_hint: "← swipe to see more →",
+  bookshelf_missing_time: "Add a birth time to unlock finer hour-level analysis",
+  bookshelf_missing_place: "Add a birth place to apply true local solar time",
+  bookshelf_missing_report: "No report generated yet",
 
 
 

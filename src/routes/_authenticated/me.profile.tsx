@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
-import { ChartManager } from "@/experiences/profile/ChartManager";
+import { PersonalBookshelf } from "@/experiences/profile/PersonalBookshelf";
 import { DailyRoomError, DailyRoomPending } from "@/experiences/daily-room/fallback";
 import { supabase } from "@/integrations/supabase/client";
 import { listUserCharts, type ChartRow } from "@/lib/reports-store.functions";
@@ -114,7 +114,7 @@ function MyProfilePage() {
             </div>
           )}
           {state.kind === "ready" && (
-            <ChartManager
+            <PersonalBookshelf
               charts={state.charts}
               onChanged={(charts) => setState({ ...state, charts })}
             />
