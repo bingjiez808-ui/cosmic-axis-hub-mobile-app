@@ -42,12 +42,33 @@ export const DOMAIN_ORDER: readonly DomainKey[] = [
 
 export type SignalBand = "supportive" | "neutral" | "mixed" | "caution";
 
+/**
+ * A single auditable contribution to a domain score. Every field is
+ * derived deterministically from the DailyFacts aspect table; the UI
+ * "score ledger" is generated from this array — never from hardcoded
+ * demo data. `delta_applied` is the value actually added to the domain
+ * score at the *score-scale* (i.e. after the ×2 in the final formula).
+ */
+export type DomainScoreContribution = {
+  transit: WesternBodyKey;
+  natal: WesternBodyKey;
+  kind: "conjunction" | "opposition" | "trine" | "square" | "sextile";
+  direction: 1 | -1;      // supportive (+1) or straining (-1)
+  weight: number;         // 1..3
+  orb: number;            // degrees, from facts
+  orb_factor: number;     // max(0.2, 1 - orb/6)
+  delta_raw: number;      // direction * weight * orb_factor
+  delta_applied: number;  // rounded score-points, after ×2 in the aggregate
+  evidence_ref: string;   // e.g. "daily.transit_to_natal_aspects[venus→sun,trine]"
+};
+
 export type DomainSignal = {
   domain: DomainKey;
   score: number;         // 0..100
   band: SignalBand;
   confidence: "low" | "medium" | "high";
   evidence_refs: string[];
+  breakdown: DomainScoreContribution[]; // audit ledger — may be []
 };
 
 export type DailyDomainScore = {
