@@ -641,6 +641,20 @@ const en: DailyDict = {
     `Delete “${name}” and all of its reports? This cannot be undone.`,
   charts_privacy_notice:
     "Other-people charts are private to you and only used for your own compatibility read. Make sure you have their consent before saving.",
+  charts_manage_link: "Manage my bookshelf",
+  profile_title: "My library card",
+  profile_kicker: "Destiny Library · Personal bookshelf",
+  profile_section_primary: "My primary chart",
+  profile_section_others: "My other charts",
+  profile_section_relations: "Relationship shelf · other people",
+  profile_section_friends: "Friends & letters",
+  profile_friends_empty: "No pending friend letters or accepted connections yet.",
+  profile_privacy_title: "Privacy controls",
+  profile_privacy_body:
+    "By default you are not in the anonymous match pool, and friends never see your chart details. Derived compatibility features are only used after you explicitly authorize a match.",
+  profile_open_today: "Open Today's Reading →",
+
+
 
   match_import_title: "Pick two saved charts to compare",
   match_import_intro:
