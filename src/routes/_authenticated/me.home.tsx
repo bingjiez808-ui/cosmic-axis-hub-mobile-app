@@ -15,7 +15,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useLang } from "@/lib/i18n";
 import { useDaily, useFormatDate, xlate } from "@/lib/i18n-daily";
-import { formatDailySignal, formatThemeKeyword, formatContradiction, tPhase } from "@/lib/daily-format";
+import { formatThemeKeyword, formatContradiction, tPhase } from "@/lib/daily-format";
+import { interpretAll } from "@/lib/daily-plain-language";
 
 
 /**
@@ -171,12 +172,12 @@ function DailyRoomPage() {
   }, [score.overall.theme_keywords, d, lang]);
 
   const phaseName = facts ? tPhase(d, facts.moon.phase) : "";
-  const supportive = score.supportive_signals.length
-    ? score.supportive_signals.map((s) => formatDailySignal(s, d, lang))
-    : [...d.supportive_demo];
-  const caution = score.caution_signals.length
-    ? score.caution_signals.map((s) => formatDailySignal(s, d, lang))
-    : [...d.caution_demo];
+  const plain = useMemo(
+    () => interpretAll({ score, facts, lang }),
+    [score, facts, lang],
+  );
+  const supportive = plain.overall.do_today;
+  const caution = plain.overall.avoid_today;
 
   return (
     <div className="min-h-screen bg-[#0a0a12] text-amber-50">
@@ -332,14 +333,17 @@ function DailyRoomPage() {
           ))}
         </section>
 
-        {/* Actions */}
+        {/* Plain-language: what to do / what to watch (0-AI templates) */}
         <section className="mb-8 grid gap-4 md:grid-cols-2">
           <div className="rounded-xl border border-emerald-400/20 bg-emerald-500/5 p-5">
             <div className="text-xs uppercase tracking-widest text-emerald-200/80">
               {d.supportive_title}
             </div>
+            <p className="mt-3 text-sm leading-relaxed text-emerald-50">
+              {plain.overall.headline}
+            </p>
             <ul className="mt-3 space-y-2 text-sm text-emerald-50/90">
-              {[...supportive].slice(0, 3).map((s, i) => (
+              {supportive.slice(0, 3).map((s, i) => (
                 <li key={i} className="flex gap-2">
                   <span className="text-emerald-300">·</span>
                   <span>{s}</span>
@@ -351,8 +355,11 @@ function DailyRoomPage() {
             <div className="text-xs uppercase tracking-widest text-rose-200/80">
               {d.caution_title}
             </div>
+            <p className="mt-3 text-sm leading-relaxed text-rose-50">
+              {plain.overall.may_show_as}
+            </p>
             <ul className="mt-3 space-y-2 text-sm text-rose-50/90">
-              {[...caution].slice(0, 3).map((s, i) => (
+              {caution.slice(0, 3).map((s, i) => (
                 <li key={i} className="flex gap-2">
                   <span className="text-rose-300">·</span>
                   <span>{s}</span>
@@ -361,6 +368,121 @@ function DailyRoomPage() {
             </ul>
           </div>
         </section>
+
+        {/* How the score is computed — transparency */}
+        <section className="mb-8 rounded-xl border border-amber-400/15 bg-black/20 p-5 text-xs text-amber-100/80">
+          <details>
+            <summary className="cursor-pointer text-amber-200">
+              {lang === "zh" ? "分数不是命运判决 · 查看计算方法" : "Scores aren't a verdict · how they're computed"}
+            </summary>
+            <div className="mt-3 space-y-2 leading-relaxed">
+              {lang === "zh" ? (
+                <>
+                  <p>每个领域从 50 分中性基准开始。和谐信号（三分/六分/木星或金星合相）为加分，紧张信号（四分/对分/土星合相）为减分。</p>
+                  <p>单条影响值 = 方向(±1) × 领域相关权重(1–3) × 精确度系数 × 2。精确度系数 = max(0.2, 1 - orb/6)，越接近精确相位影响越大。</p>
+                  <p>水星对学业/表达权重较高；金星、月亮对关系权重较高；木星、金星、土星对财务权重较高；月亮、太阳对身心权重较高（详见代码 DOMAIN_WEIGHTS 矩阵）。</p>
+                  <p>总体分 = 五领域平均分 × 60% + 偏离 50 最远的那一项 × 40%。资料不完整时回到中性 50 并降低置信度。</p>
+                  <p className="text-amber-200/70">分数不是好运概率、成功率或事件必然发生率，只表示当日该领域的可用资源与调整成本。现实情境永远优先。</p>
+                </>
+              ) : (
+                <>
+                  <p>Every domain starts at a neutral 50. Harmonious signals add; straining signals subtract.</p>
+                  <p>Contribution = direction(±1) × domain-weight(1–3) × orb-factor × 2. Orb-factor = max(0.2, 1 - orb/6) — closer to exact, larger effect.</p>
+                  <p>Mercury weights higher for study/comms; Venus & Moon for relationships; Jupiter/Venus/Saturn for finance; Moon & Sun for body-mind (see DOMAIN_WEIGHTS).</p>
+                  <p>Overall = mean of 5 domains × 60% + the most-off-neutral domain × 40%. Missing data pulls back to 50 with lowered confidence.</p>
+                  <p className="text-amber-200/70">Scores are not a luck probability, success rate, or certainty of events — only the day's usable resources and adjustment cost. Reality always wins.</p>
+                </>
+              )}
+            </div>
+          </details>
+        </section>
+
+        {/* Per-domain plain-language ledger */}
+        <section className="mb-8 grid gap-3 md:grid-cols-2">
+          {plain.domains.map((pd) => {
+            const row = score.domains.find((x) => x.domain === pd.domain);
+            if (!row) return null;
+            return (
+              <details
+                key={pd.domain}
+                className="rounded-xl border border-amber-400/15 bg-black/25 p-4 text-sm"
+              >
+                <summary className="cursor-pointer">
+                  <span className="text-amber-100">{domainLabel(pd.domain)}</span>
+                  <span className="ml-2 text-xs text-amber-300/80">{row.score}</span>
+                  <span
+                    className={`ml-2 inline-block rounded-full border px-2 py-0.5 text-[10px] ${BAND_COLOR[row.band]}`}
+                  >
+                    {xlate(d.band, row.band)}
+                  </span>
+                </summary>
+                <div className="mt-3 space-y-2 text-amber-100/85 leading-relaxed">
+                  <p>{pd.headline}</p>
+                  <p className="text-amber-100/70">{pd.may_show_as}</p>
+                  {pd.do_today.length > 0 && (
+                    <div>
+                      <div className="text-[11px] uppercase tracking-widest text-emerald-200/80">
+                        {lang === "zh" ? "建议做" : "Do today"}
+                      </div>
+                      <ul className="mt-1 list-disc pl-5 text-emerald-50/90">
+                        {pd.do_today.map((s, i) => <li key={i}>{s}</li>)}
+                      </ul>
+                    </div>
+                  )}
+                  {pd.avoid_today.length > 0 && (
+                    <div>
+                      <div className="text-[11px] uppercase tracking-widest text-rose-200/80">
+                        {lang === "zh" ? "注意避免" : "Avoid today"}
+                      </div>
+                      <ul className="mt-1 list-disc pl-5 text-rose-50/90">
+                        {pd.avoid_today.map((s, i) => <li key={i}>{s}</li>)}
+                      </ul>
+                    </div>
+                  )}
+                  <div className="text-[11px] text-amber-200/60">{pd.week_trend}</div>
+                  {/* Score ledger */}
+                  <div className="mt-2 border-t border-amber-400/10 pt-2">
+                    <div className="text-[11px] uppercase tracking-widest text-amber-200/70">
+                      {lang === "zh" ? "本日加减分账单" : "Today's score ledger"}
+                    </div>
+                    <div className="mt-1 text-[11px] text-amber-100/70">
+                      {lang === "zh" ? "基础分 50" : "Base 50"}
+                    </div>
+                    {row.breakdown.length === 0 ? (
+                      <div className="mt-1 text-[11px] text-amber-100/60">
+                        {lang === "zh"
+                          ? "今天没有足够强的单项信号，保持中性观察。"
+                          : "No strong single signal today — stay observant."}
+                      </div>
+                    ) : (
+                      <ul className="mt-1 space-y-0.5">
+                        {row.breakdown.slice(0, 6).map((b, i) => (
+                          <li key={i} className="flex justify-between text-[11px] text-amber-100/75">
+                            <span>
+                              {b.direction > 0
+                                ? (lang === "zh" ? "和谐信号" : "Harmonious")
+                                : (lang === "zh" ? "紧张信号" : "Straining")}
+                              {" · "}
+                              {lang === "zh" ? "权重" : "w"} {b.weight} · orb {b.orb.toFixed(1)}°
+                            </span>
+                            <span className={b.delta_applied >= 0 ? "text-emerald-300" : "text-rose-300"}>
+                              {b.delta_applied >= 0 ? "+" : ""}{b.delta_applied}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    <div className="mt-1 text-[11px] text-amber-200/70">
+                      {lang === "zh" ? "最终分" : "Final"} · {row.score} ·{" "}
+                      {lang === "zh" ? "置信度" : "confidence"} {xlate(d.confidence, row.confidence)}
+                    </div>
+                  </div>
+                </div>
+              </details>
+            );
+          })}
+        </section>
+
 
         {/* Counter + reflection */}
         <section className="mb-8 rounded-xl border border-amber-400/20 bg-black/30 p-5 text-sm">
