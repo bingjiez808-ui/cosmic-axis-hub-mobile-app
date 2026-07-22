@@ -172,12 +172,12 @@ function DailyRoomPage() {
   }, [score.overall.theme_keywords, d, lang]);
 
   const phaseName = facts ? tPhase(d, facts.moon.phase) : "";
-  const supportive = score.supportive_signals.length
-    ? score.supportive_signals.map((s) => formatDailySignal(s, d, lang))
-    : [...d.supportive_demo];
-  const caution = score.caution_signals.length
-    ? score.caution_signals.map((s) => formatDailySignal(s, d, lang))
-    : [...d.caution_demo];
+  const plain = useMemo(
+    () => interpretAll({ score, facts, lang }),
+    [score, facts, lang],
+  );
+  const supportive = plain.overall.do_today;
+  const caution = plain.overall.avoid_today;
 
   return (
     <div className="min-h-screen bg-[#0a0a12] text-amber-50">
