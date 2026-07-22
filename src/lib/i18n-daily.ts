@@ -106,6 +106,22 @@ export type DailyDict = {
   charts_delete_confirm: (name: string) => string;
   charts_privacy_notice: string;
   charts_manage_link: string;
+  charts_primary_missing_cta_ritual: string;
+  charts_primary_missing_cta_shelf: string;
+  bookshelf_open_report: string;
+  bookshelf_open_today: string;
+  bookshelf_more_menu: string;
+  bookshelf_role_toggle_self: string;
+  bookshelf_role_toggle_other: string;
+  bookshelf_duplicates_found: (n: number) => string;
+  bookshelf_show_duplicates: string;
+  bookshelf_hide_duplicates: string;
+  bookshelf_relations_privacy: string;
+  bookshelf_no_others: string;
+  bookshelf_no_relations: string;
+  bookshelf_main_book_label: string;
+  bookshelf_relation_card_label: string;
+  bookshelf_open_match: string;
   profile_title: string;
   profile_kicker: string;
   profile_section_primary: string;
@@ -116,6 +132,7 @@ export type DailyDict = {
   profile_privacy_title: string;
   profile_privacy_body: string;
   profile_open_today: string;
+
 
   // ---- Match real-import ----
   match_import_title: string;
