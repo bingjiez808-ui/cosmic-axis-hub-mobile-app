@@ -15,7 +15,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useLang } from "@/lib/i18n";
 import { useDaily, useFormatDate, xlate } from "@/lib/i18n-daily";
-import { formatDailySignal, formatThemeKeyword, formatContradiction, tPhase } from "@/lib/daily-format";
+import { formatThemeKeyword, formatContradiction, tPhase } from "@/lib/daily-format";
+import { interpretAll } from "@/lib/daily-plain-language";
 
 
 /**
