@@ -661,12 +661,6 @@ const EN: FullDict = {
 
 const DICTS: Record<Lang, FullDict> = { zh: ZH, en: EN };
 
-function bandFromScore(score: number): SignalBand {
-  if (score >= 62) return "supportive";
-  if (score >= 52) return "neutral";
-  if (score >= 45) return "mixed";
-  return "caution";
-}
 
 /**
  * Interpret a single domain (or overall) into plain-language output.
