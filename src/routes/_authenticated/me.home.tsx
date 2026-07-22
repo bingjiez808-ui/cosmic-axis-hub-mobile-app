@@ -695,3 +695,16 @@ function DailyRoomPage() {
  * Reading Room only shows a lightweight context bar. */
 
 
+
+function LegendDot({ color, label }: { color: string; label: string }) {
+  return (
+    <div className="flex min-w-0 items-center gap-1.5">
+      <span
+        aria-hidden="true"
+        className="inline-block h-2 w-2 shrink-0 rounded-full"
+        style={{ backgroundColor: color, boxShadow: `0 0 6px ${color}80` }}
+      />
+      <span className="truncate">{label}</span>
+    </div>
+  );
+}
