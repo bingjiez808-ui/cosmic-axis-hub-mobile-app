@@ -272,10 +272,8 @@ function DailyRoomPage() {
           <div className="mt-2 text-sm text-amber-100/70">
             {fmtDate(today, tz)} · {tz} ·{" "}
             {d.today_chart_label(FIXTURE_CHART_LABELS[fixtureKey][lang])}
-            <span className="ml-2 rounded-full border border-amber-400/30 px-2 py-0.5 text-[10px] text-amber-200">
-              {entitled ? d.today_tier_member : d.today_tier_free}
-            </span>
           </div>
+
           <div className="mt-4 flex flex-wrap gap-2">
             {FIXTURE_KEYS.map((k) => (
               <button
