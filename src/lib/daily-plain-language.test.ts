@@ -29,10 +29,13 @@ describe("daily-plain-language-v1", () => {
     expect(JSON.stringify(a)).toBe(JSON.stringify(b));
   });
 
-  test("zh output does NOT leak raw aspect / planet / domain keys", () => {
+  test("zh user-visible text does NOT leak raw aspect / planet / domain keys", () => {
     const out = interpretAll({ score, facts, lang: "zh" });
-    const blob = JSON.stringify(out);
-    expect(FORBIDDEN_ZH.test(blob)).toBe(false);
+    const visible = [out.overall, ...out.domains].flatMap((o) => [
+      o.headline, o.may_show_as, o.week_trend, ...o.do_today, ...o.avoid_today,
+      o.missing_data_note ?? "",
+    ]).join(" | ");
+    expect(FORBIDDEN_ZH.test(visible)).toBe(false);
   });
 
   test("every domain × every band template exists in zh + en", () => {
