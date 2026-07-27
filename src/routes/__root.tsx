@@ -356,12 +356,14 @@ function SiteNav() {
   const isActive = (to: string) =>
     to === "/" ? pathname === "/" : pathname === to || pathname.startsWith(to + "/");
 
-  const NavLink = ({ to, label }: { to: string; label: string }) => {
+  const NavLink = ({ to, label, ariaLabel }: { to: string; label: string; ariaLabel?: string }) => {
     const active = isActive(to);
     return (
       <Link
         to={to}
         aria-current={active ? "page" : undefined}
+        aria-label={ariaLabel}
+        title={ariaLabel}
         className={`${linkBase} ${active ? linkActive : linkIdle}`}
       >
         {label}
@@ -375,15 +377,15 @@ function SiteNav() {
   const orbVisible = orbActive && !showTopBar && !drawerOpen;
 
   // Core nav entries per auth state (mobile drawer mirrors these + "More")
-  const coreEntries: Array<{ to: string; label: string }> = session
+  const coreEntries: Array<{ to: string; label: string; ariaLabel?: string }> = session
     ? [
-        { to: "/", label: libraryHomeLabel },
+        { to: "/", label: libraryHomeLabel, ariaLabel: libraryHomeAria },
         { to: "/me/home", label: myHomeLabel },
         { to: "/ritual", label: t.nav_ritual },
         { to: "/community", label: t.nav_community },
       ]
     : [
-        { to: "/", label: libraryHomeLabel },
+        { to: "/", label: libraryHomeLabel, ariaLabel: libraryHomeAria },
         { to: "/ritual", label: t.nav_ritual },
         { to: "/traditions", label: t.nav_traditions },
         { to: "/community", label: t.nav_community },
