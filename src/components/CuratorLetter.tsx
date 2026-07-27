@@ -153,10 +153,8 @@ export function CuratorLetter() {
   // crash on `copy.pages[-1].title`). On hydration, returning viewers
   // fold the letter and first-time viewers stay on the sealed cover.
   const [stage, dispatch] = useReducer(reducer, { kind: "sealed" as const });
-  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    setHydrated(true);
     if (readSeen()) dispatch({ type: "fold" });
   }, []);
 
