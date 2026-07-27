@@ -807,10 +807,12 @@ function HistoricalEchoSlot({
   primaryBirthDate,
   todayISO,
   priority,
+  initialExpanded,
 }: {
   primaryBirthDate: string | null;
   todayISO: string;
   priority: ReturnType<typeof pickPriorityDomain>;
+  initialExpanded?: boolean;
 }) {
   const defaultStage: LifeStage | null = defaultStageForAge(
     computeAge(primaryBirthDate, todayISO),
@@ -843,11 +845,219 @@ function HistoricalEchoSlot({
   }, [defaultStage, stage]);
 
   if (!primaryBirthDate || !stage) return null;
-  return <HistoricalEcho stage={stage} domain={priority} />;
+  return (
+    <HistoricalEcho
+      stage={stage}
+      domain={priority}
+      initialExpanded={initialExpanded}
+    />
+  );
+}
+
+/**
+ * ReadingPath — bookmark-style breadcrumb pinned to today's page. Quiet
+ * in-page anchor row, not a SaaS nav bar. Active step reflects `focus`.
+ */
+function ReadingPath({
+  lang,
+  focus,
+  hasIntent,
+}: {
+  lang: "en" | "zh";
+  focus: "welcome" | "peers" | null;
+  hasIntent: boolean;
+}) {
+  const steps: Array<{ key: "welcome" | "chapter" | "echo"; label: string; href: string }> = [
+    { key: "welcome", label: lang === "zh" ? "馆长序言" : "Curator's welcome", href: "#curator-welcome" },
+    { key: "chapter", label: lang === "zh" ? "此刻的人生页码" : "Life chapter now", href: "#life-chapter" },
+    { key: "echo", label: lang === "zh" ? "历史回声" : "Historical echoes", href: "#historical-echo" },
+  ];
+  const active: "welcome" | "chapter" | "echo" =
+    focus === "welcome" ? "welcome" : focus === "peers" ? "chapter" : "welcome";
+  void hasIntent;
+  return (
+    <nav
+      aria-label={lang === "zh" ? "阅读路径" : "Reading path"}
+      className="mb-6 flex flex-wrap items-center gap-1.5 text-[11px] text-amber-200/70"
+      data-testid="reading-path"
+    >
+      {steps.map((s, i) => (
+        <span key={s.key} className="flex items-center gap-1.5">
+          {i > 0 ? <span aria-hidden className="text-amber-300/40">→</span> : null}
+          <a
+            href={s.href}
+            aria-current={active === s.key ? "true" : undefined}
+            className={`rounded-full border px-3 py-1 transition ${
+              active === s.key
+                ? "border-amber-300 bg-amber-300/10 text-amber-100"
+                : "border-amber-400/20 hover:border-amber-300/60 hover:text-amber-100"
+            }`}
+          >
+            {s.label}
+          </a>
+        </span>
+      ))}
+    </nav>
+  );
+}
+
+/**
+ * CuratorWelcomeBookmark — golden bookmark clipped to today's page. Stable
+ * `id="curator-welcome"` anchor. Empty-intent state invites picking one;
+ * intent-present state shows welcomeBack(intent) with "Why?" and change
+ * affordances. When `focused`, pulses a ring for ~1.5s and (if not already
+ * in view) scrolls itself into view exactly once.
+ */
+function CuratorWelcomeBookmark({
+  lang,
+  intent,
+  onChange,
+  focused,
+}: {
+  lang: "en" | "zh";
+  intent: OnboardingIntent | null;
+  onChange: (v: OnboardingIntent) => void | Promise<void>;
+  focused: boolean;
+}) {
+  const L = normalizeLang(lang);
+  const copy = curatorLetter[L];
+  const rootRef = useRef<HTMLElement | null>(null);
+  const scrolledRef = useRef(false);
+  const [explain, setExplain] = useState(false);
+  const [picking, setPicking] = useState(false);
+  const [pulse, setPulse] = useState(false);
+
+  useEffect(() => {
+    if (!focused) return;
+    if (scrolledRef.current) return;
+    scrolledRef.current = true;
+    const el = rootRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const inView =
+      rect.top >= 0 &&
+      rect.bottom <= (window.innerHeight || document.documentElement.clientHeight);
+    if (!inView) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    setPulse(true);
+    const t = window.setTimeout(() => setPulse(false), 1500);
+    return () => window.clearTimeout(t);
+  }, [focused]);
+
+  const pickerLabel = L === "zh" ? "换一句我现在更需要的" : "Try another line I need more right now";
+  const whyLabel = L === "zh" ? "为什么会看到这句话？" : "Why am I seeing this line?";
+  const kicker = L === "zh" ? "馆长今日留言" : "Today's note from the Curator";
+  const emptyPrompt = L === "zh" ? "让馆长知道你此刻最需要什么" : "Tell the Curator what you most want right now";
+  const explainBody =
+    L === "zh"
+      ? "这句话来自你在序言中自选的意图，只影响馆长的叙事欢迎语，不改变你的命盘计算。"
+      : "This line comes from the intent you picked in the Curator's letter. It shapes only this welcome sentence — it never changes any chart calculation.";
+
+  return (
+    <section
+      ref={rootRef}
+      id="curator-welcome"
+      aria-label={kicker}
+      data-testid="curator-welcome-card"
+      className={`relative mb-6 scroll-mt-24 rounded-2xl border p-5 md:p-6 transition-shadow ${
+        pulse ? "border-amber-300 shadow-[0_0_0_3px_rgba(251,191,36,0.35)]" : "border-amber-400/35"
+      } bg-gradient-to-br from-amber-950/25 via-black/50 to-purple-950/20`}
+    >
+      <div
+        aria-hidden
+        className="absolute -left-1 top-4 hidden h-9 w-2 rounded-r-full bg-gradient-to-b from-amber-300 to-amber-600 md:block"
+      />
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="flex items-start gap-3">
+          <span
+            aria-hidden
+            className="mt-1 inline-flex h-8 w-8 flex-none items-center justify-center rounded-full bg-gradient-to-br from-red-700 via-red-800 to-red-950 font-serif italic text-amber-100 shadow-[inset_0_0_6px_rgba(0,0,0,0.55)] ring-1 ring-red-950/80"
+          >
+            ✦
+          </span>
+          <div>
+            <div className="text-[10px] uppercase tracking-[0.32em] text-amber-300/70">{kicker}</div>
+            {intent ? (
+              <p
+                className="mt-2 font-serif text-lg italic leading-relaxed text-amber-50 md:text-xl"
+                data-testid="curator-welcome-line"
+              >
+                {copy.welcomeBack(intent)}
+              </p>
+            ) : (
+              <p className="mt-2 text-sm text-amber-100/80">{emptyPrompt}</p>
+            )}
+          </div>
+        </div>
+        {intent ? (
+          <div className="flex flex-none flex-wrap items-start gap-2 text-[11px]">
+            <button
+              type="button"
+              onClick={() => setExplain((v) => !v)}
+              aria-expanded={explain}
+              className="min-h-9 rounded-full border border-amber-400/30 px-3 py-1 text-amber-200 hover:border-amber-300"
+              data-testid="curator-welcome-why"
+            >
+              {whyLabel}
+            </button>
+            <button
+              type="button"
+              onClick={() => setPicking((v) => !v)}
+              className="min-h-9 rounded-full border border-amber-300/60 bg-amber-500/10 px-3 py-1 text-amber-100 hover:bg-amber-500/20"
+              data-testid="curator-welcome-change"
+            >
+              {pickerLabel}
+            </button>
+          </div>
+        ) : null}
+      </div>
+
+      {explain ? (
+        <p className="mt-3 rounded-md border border-amber-400/20 bg-black/40 p-3 text-[11px] leading-relaxed text-amber-100/80">
+          {explainBody}
+        </p>
+      ) : null}
+
+      {(picking || !intent) ? (
+        <div
+          role="radiogroup"
+          aria-label={copy.intentPrompt}
+          className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4"
+          data-testid="curator-welcome-picker"
+        >
+          {ONBOARDING_INTENTS.map((k) => {
+            const active = intent === k;
+            const o = copy.intentOptions[k];
+            return (
+              <button
+                key={k}
+                role="radio"
+                type="button"
+                aria-checked={active}
+                onClick={() => {
+                  void onChange(k);
+                  setPicking(false);
+                }}
+                data-testid={`curator-welcome-intent-${k}`}
+                className={`min-h-11 rounded-lg border px-3 py-2 text-left transition ${
+                  active
+                    ? "border-amber-300 bg-amber-400/15 text-amber-100"
+                    : "border-amber-400/25 text-amber-200/85 hover:border-amber-300 hover:bg-amber-500/5"
+                }`}
+              >
+                <div className="text-sm font-semibold">{o.label}</div>
+                <div className="mt-0.5 text-[11px] leading-snug text-amber-100/70">{o.hint}</div>
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+    </section>
+  );
 }
 
 /* ChartManager and inline row actions moved to src/experiences/profile/
  * ChartManager.tsx and re-hosted on the dedicated /me/profile page. Today's
  * Reading Room only shows a lightweight context bar. */
+
 
 
