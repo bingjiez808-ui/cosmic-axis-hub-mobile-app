@@ -18,6 +18,9 @@ type SearchParams = {
   lunar?: string;
   readingId?: string;
   gender?: "male" | "female";
+  role?: "self" | "other";
+  relationship?: string;
+  relationshipLabel?: string;
 };
 
 export const Route = createFileRoute("/synthesis")({
@@ -44,6 +47,9 @@ export const Route = createFileRoute("/synthesis")({
     lunar: typeof s.lunar === "string" ? s.lunar : undefined,
     readingId: typeof s.readingId === "string" ? s.readingId : undefined,
     gender: s.gender === "male" ? "male" : s.gender === "female" ? "female" : undefined,
+    role: s.role === "self" ? "self" : s.role === "other" ? "other" : undefined,
+    relationship: typeof s.relationship === "string" ? s.relationship : undefined,
+    relationshipLabel: typeof s.relationshipLabel === "string" ? s.relationshipLabel : undefined,
   }),
   component: SynthesisPage,
 });
