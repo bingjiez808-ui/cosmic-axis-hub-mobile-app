@@ -373,7 +373,22 @@ function DailyRoomPage() {
           </div>
         </header>
 
+        {/* Curator's welcome bookmark — always present, always the same anchor.
+            Signed-in visitors see today's welcomeBack line; without an intent
+            we invite them to pick one right here. focus=welcome deep-links
+            scroll here and pulse a soft ring. */}
+        <CuratorWelcomeBookmark
+          lang={lang}
+          intent={onboardingIntent}
+          onChange={changeIntent}
+          focused={focus === "welcome"}
+        />
+
+        {/* Reading-path breadcrumb — bookmarks pinned to today's page. */}
+        <ReadingPath lang={lang} focus={focus} hasIntent={onboardingIntent != null} />
+
         {/* Overall + theme */}
+
         <section className="mb-8 grid gap-4 md:grid-cols-[1fr_2fr]">
           <div className="rounded-xl border border-amber-400/30 bg-black/40 p-6">
             <div className="text-xs uppercase tracking-widest text-amber-200/60">
