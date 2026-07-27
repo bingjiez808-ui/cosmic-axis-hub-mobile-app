@@ -36,10 +36,7 @@ function prefersReducedMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-export function ConcernSelector({
-  hasPrimaryChart = false,
-  existingReportId = null,
-}: Props) {
+export function ConcernSelector({ hasPrimaryChart = false, existingReportId = null }: Props) {
   const { lang } = useLang();
   const session = useSupabaseSession();
   const isSignedIn = !!session?.user?.id;
@@ -156,7 +153,9 @@ export function ConcernSelector({
       className="mx-auto w-full max-w-6xl px-5 py-16 sm:py-20"
     >
       <div className="mb-8 text-center">
-        <p className="text-[10px] uppercase tracking-[0.36em] text-amber-300/70">{H.kicker[lang]}</p>
+        <p className="text-[10px] uppercase tracking-[0.36em] text-amber-300/70">
+          {H.kicker[lang]}
+        </p>
         <h2
           id="concern-heading"
           className="mt-3 font-serif text-2xl leading-tight text-amber-100/95 sm:text-3xl"
@@ -224,7 +223,10 @@ export function ConcernSelector({
               <ul className="mt-3 space-y-2">
                 {rec.featureBullets[lang].map((b, i) => (
                   <li key={i} className="flex gap-3 text-sm leading-relaxed text-amber-100/85">
-                    <span aria-hidden className="mt-2 h-1 w-1 shrink-0 rounded-full bg-amber-300/70" />
+                    <span
+                      aria-hidden
+                      className="mt-2 h-1 w-1 shrink-0 rounded-full bg-amber-300/70"
+                    />
                     <span>{b}</span>
                   </li>
                 ))}
@@ -247,7 +249,11 @@ export function ConcernSelector({
               <ol className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-amber-100/75">
                 {journeyStages.map((s, i) => (
                   <li key={i} className="flex items-center gap-2">
-                    {i > 0 ? <span aria-hidden className="text-amber-300/50">→</span> : null}
+                    {i > 0 ? (
+                      <span aria-hidden className="text-amber-300/50">
+                        →
+                      </span>
+                    ) : null}
                     <span
                       className={
                         i === 0
