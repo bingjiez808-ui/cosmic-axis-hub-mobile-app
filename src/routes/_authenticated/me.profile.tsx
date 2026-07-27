@@ -104,7 +104,6 @@ function MyProfilePage() {
           <TicketsBlock />
         </div>
 
-
         {/* Bookshelf */}
         <section
           className="mb-8 rounded-xl border border-amber-400/15 bg-black/20 p-4 md:p-6"
@@ -159,5 +158,3 @@ function TicketsBlock() {
   const { lang } = useLang();
   return <MyTicketsCard lang={lang} />;
 }
-
-

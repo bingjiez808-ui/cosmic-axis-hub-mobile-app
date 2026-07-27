@@ -9,7 +9,6 @@ import { createFeedbackTicket } from "@/lib/tickets.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { SageAvatar } from "@/components/SageAvatar";
 
-
 /**
  * SageCompanion — the single, unified floating "Sage" avatar in the
  * bottom-left of the app. Non-fortune-telling: routes every message
@@ -469,15 +468,8 @@ function TicketDraftCard({ draft, lang }: { draft: TicketDraft; lang: "en" | "zh
         onClick={() => void submit()}
         className="w-full rounded-lg border border-gold-dust/40 bg-gold-dust/15 px-3 py-2 text-[12px] font-medium text-gold-light hover:bg-gold-dust/25 disabled:opacity-40"
       >
-        {busy
-          ? zh
-            ? "登记中…"
-            : "Filing…"
-          : zh
-            ? "登记到管理员后台"
-            : "File to admin"}
+        {busy ? (zh ? "登记中…" : "Filing…") : zh ? "登记到管理员后台" : "File to admin"}
       </button>
     </div>
   );
 }
-

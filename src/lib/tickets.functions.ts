@@ -22,13 +22,7 @@ import { enforceRateLimit } from "./rate-limit.server";
  *    service-role admin client.
  */
 
-export const TICKET_CATEGORIES = [
-  "product",
-  "device",
-  "order",
-  "payment",
-  "subscription",
-] as const;
+export const TICKET_CATEGORIES = ["product", "device", "order", "payment", "subscription"] as const;
 export type TicketCategory = (typeof TICKET_CATEGORIES)[number];
 
 export const TICKET_STATUSES = [
@@ -203,18 +197,14 @@ export const adminListTickets = createServerFn({ method: "POST" })
     if (data.category) query = query.eq("category", data.category);
     if (data.q) {
       const like = `%${data.q.replace(/[%_]/g, "\\$&")}%`;
-      query = query.or(
-        `ticket_code.ilike.${like},subject.ilike.${like},message.ilike.${like}`,
-      );
+      query = query.or(`ticket_code.ilike.${like},subject.ilike.${like},message.ilike.${like}`);
     }
     const { data: rows, error } = await query;
     if (error) throw new Error(error.message);
     const list = (rows ?? []) as AdminTicket[];
 
     // Hydrate user emails so admin can identify the reporter.
-    const userIds = Array.from(
-      new Set(list.map((r) => r.user_id).filter((v): v is string => !!v)),
-    );
+    const userIds = Array.from(new Set(list.map((r) => r.user_id).filter((v): v is string => !!v)));
     if (userIds.length > 0) {
       const { data: profiles } = await supabaseAdmin
         .from("profiles")

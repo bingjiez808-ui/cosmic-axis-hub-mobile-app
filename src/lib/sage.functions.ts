@@ -165,10 +165,7 @@ function productHelpAnswer(
   };
 }
 
-function orderDraft(
-  message: string,
-  lang: "en" | "zh",
-): { text: string; next: SageNextAction } {
+function orderDraft(message: string, lang: "en" | "zh"): { text: string; next: SageNextAction } {
   const zh = lang === "zh";
   const subject = zh ? "订单 / 支付 / 会员 咨询" : "Order / Payment / Membership question";
   return {
@@ -185,7 +182,6 @@ function orderDraft(
     },
   };
 }
-
 
 async function emotionalReply(
   message: string,
@@ -310,7 +306,6 @@ export const sageChat = createServerFn({ method: "POST" })
         nextAction: next,
       };
     }
-
 
     // 6) Emotional support — the only path that uses the model.
     try {

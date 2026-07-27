@@ -42,7 +42,12 @@ function fmt(iso: string | null) {
   const d = new Date(iso);
   return Number.isNaN(d.getTime())
     ? "—"
-    : d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+    : d.toLocaleString(undefined, {
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
 }
 
 export function AdminTicketsSection() {
@@ -93,7 +98,9 @@ export function AdminTicketsSection() {
     <section className="mx-auto mt-10 max-w-6xl">
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-[10px] uppercase tracking-[0.42em] text-gold-dust">Feedback & tickets</p>
+          <p className="text-[10px] uppercase tracking-[0.42em] text-gold-dust">
+            Feedback & tickets
+          </p>
           <h2 className="mt-1 font-serif text-2xl italic text-stone-warm">反馈与工单</h2>
           <p className="mt-1 text-xs text-stone-warm/60">
             仅产品 / 设备 / 订单 / 支付 / 订阅问题。心理陪伴、命理解读与无关内容不进入这里。
@@ -173,7 +180,9 @@ export function AdminTicketsSection() {
               <div className="text-xs text-stone-warm/70">{CAT_LABEL[t.category]}</div>
               <div className="truncate text-sm text-stone-warm">{t.subject ?? "—"}</div>
               <div>
-                <span className={`rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-[0.22em] ${STATUS_STYLE[t.status]}`}>
+                <span
+                  className={`rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-[0.22em] ${STATUS_STYLE[t.status]}`}
+                >
                   {STATUS_LABEL[t.status]}
                 </span>
               </div>
@@ -306,7 +315,9 @@ function TicketDrawer({
           </section>
 
           <section>
-            <p className="text-[10px] uppercase tracking-[0.24em] text-stone-warm/50">内部备注（用户看不到）</p>
+            <p className="text-[10px] uppercase tracking-[0.24em] text-stone-warm/50">
+              内部备注（用户看不到）
+            </p>
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
