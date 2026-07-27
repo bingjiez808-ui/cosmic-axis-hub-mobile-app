@@ -50,11 +50,18 @@ export const Route = createFileRoute("/_authenticated/me/home")({
   beforeLoad: () => {
     ensureSocialPreviewAllowed();
   },
+  validateSearch: (
+    s: Record<string, unknown>,
+  ): { focus?: "welcome" | "peers" } => {
+    const f = s.focus;
+    return f === "welcome" || f === "peers" ? { focus: f } : {};
+  },
   pendingMs: 0,
   pendingComponent: DailyRoomPending,
   errorComponent: DailyRoomError,
   component: DailyRoomPage,
 });
+
 
 // Real-chart adapter must never wedge the page. Cap the fetch window so a
 // hung Supabase call flips the section to a recoverable error state.
