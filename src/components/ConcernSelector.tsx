@@ -147,6 +147,13 @@ export function ConcernSelector({
         <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-amber-100/60">
           {H.sub[lang]}
         </p>
+        <a
+          href="#feature-library"
+          data-testid="concern-skip"
+          className="mt-4 inline-block text-[11px] uppercase tracking-[0.26em] text-amber-100/45 hover:text-amber-200"
+        >
+          {lang === "zh" ? "暂时不选择，先浏览全部馆藏" : "Skip for now — browse the full library"}
+        </a>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(260px,340px)_1fr]">

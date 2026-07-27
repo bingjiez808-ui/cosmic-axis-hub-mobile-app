@@ -10,12 +10,23 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { LIFE_STAGES, ONBOARDING_INTENTS } from "@/lib/life-guidance-v1";
 import { CONCERN_KEYS } from "@/lib/concern-guidance-v1";
+import {
+  DAILY_FOCUSES,
+  SUPPORT_MODES,
+  localDateKey,
+} from "@/lib/user-state-model";
 
 const stageSchema = z.enum(LIFE_STAGES as unknown as [string, ...string[]]);
 const intentSchema = z.enum(
   ONBOARDING_INTENTS as unknown as [string, ...string[]],
 );
 const concernSchema = z.enum(CONCERN_KEYS as unknown as [string, ...string[]]);
+const dailyFocusSchema = z.enum(
+  DAILY_FOCUSES as unknown as [string, ...string[]],
+);
+const supportModeSchema = z.enum(
+  SUPPORT_MODES as unknown as [string, ...string[]],
+);
 
 export const setConcern = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -41,7 +52,7 @@ export const getLifeGuidancePrefs = createServerFn({ method: "GET" })
     const { data, error } = await context.supabase
       .from("user_preferences" as never)
       .select(
-        "life_stage, life_stage_source, onboarding_intent, onboarding_intent_at, concern, concern_at, updated_at",
+        "life_stage, life_stage_source, onboarding_intent, onboarding_intent_at, concern, concern_at, daily_focus, daily_focus_date, support_mode, updated_at",
       )
       .eq("user_id", context.userId)
       .maybeSingle();
@@ -53,6 +64,9 @@ export const getLifeGuidancePrefs = createServerFn({ method: "GET" })
       onboarding_intent_at: string | null;
       concern: string | null;
       concern_at: string | null;
+      daily_focus: string | null;
+      daily_focus_date: string | null;
+      support_mode: string | null;
       updated_at: string;
     } | null;
   });
@@ -190,6 +204,58 @@ export const saveLifeResponse = createServerFn({ method: "POST" })
           body: data.body,
         } as never,
         { onConflict: "user_id,figure_key" },
+      );
+    if (error) throw error;
+    return { ok: true as const };
+  });
+
+/**
+ * Record today's daily_focus. Stored with a local-date key so
+ * yesterday's focus doesn't bleed into today's view. Pass `null` to
+ * clear (e.g. "no specific question").
+ */
+export const setDailyFocus = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((raw) =>
+    z
+      .object({
+        focus: dailyFocusSchema.nullable(),
+        localDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+      })
+      .parse(raw),
+  )
+  .handler(async ({ context, data }) => {
+    const day = data.localDate ?? localDateKey();
+    const { error } = await context.supabase
+      .from("user_preferences" as never)
+      .upsert(
+        {
+          user_id: context.userId,
+          daily_focus: data.focus,
+          daily_focus_date: data.focus ? day : null,
+        } as never,
+        { onConflict: "user_id" },
+      );
+    if (error) throw error;
+    return { ok: true as const };
+  });
+
+/**
+ * Record how the user wants the Sage companion to chat. Only used by
+ * the Sage/tree-hollow surface; never influences chart calculation.
+ */
+export const setSupportMode = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((raw) => z.object({ mode: supportModeSchema }).parse(raw))
+  .handler(async ({ context, data }) => {
+    const { error } = await context.supabase
+      .from("user_preferences" as never)
+      .upsert(
+        {
+          user_id: context.userId,
+          support_mode: data.mode,
+        } as never,
+        { onConflict: "user_id" },
       );
     if (error) throw error;
     return { ok: true as const };

@@ -1122,10 +1122,13 @@ export type Database = {
           concern: string | null
           concern_at: string | null
           created_at: string
+          daily_focus: string | null
+          daily_focus_date: string | null
           life_stage: string | null
           life_stage_source: string | null
           onboarding_intent: string | null
           onboarding_intent_at: string | null
+          support_mode: string | null
           updated_at: string
           user_id: string
         }
@@ -1133,10 +1136,13 @@ export type Database = {
           concern?: string | null
           concern_at?: string | null
           created_at?: string
+          daily_focus?: string | null
+          daily_focus_date?: string | null
           life_stage?: string | null
           life_stage_source?: string | null
           onboarding_intent?: string | null
           onboarding_intent_at?: string | null
+          support_mode?: string | null
           updated_at?: string
           user_id: string
         }
@@ -1144,10 +1150,13 @@ export type Database = {
           concern?: string | null
           concern_at?: string | null
           created_at?: string
+          daily_focus?: string | null
+          daily_focus_date?: string | null
           life_stage?: string | null
           life_stage_source?: string | null
           onboarding_intent?: string | null
           onboarding_intent_at?: string | null
+          support_mode?: string | null
           updated_at?: string
           user_id?: string
         }
