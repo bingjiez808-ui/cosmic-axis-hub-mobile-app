@@ -690,87 +690,36 @@ function DailyRoomPage() {
           <p className="mt-2 text-amber-100/80">{d.reflection_body}</p>
         </section>
 
-        {/* ─── Life chapter right now (deterministic, 0-AI) ─── */}
-        {(() => {
-          const primaryBirthDate =
-            real.kind === "ready"
-              ? real.charts.find((c) => c.is_primary && c.chart_role === "self")
-                  ?.birth_date ?? null
-              : null;
-          const priority = pickPriorityDomain(score.domains);
-          const peersFocused = focus === "peers";
-          return (
-            <div
-              id="echoes"
-              data-focus={peersFocused ? "peers" : undefined}
-              style={{ scrollMarginTop: "calc(var(--site-nav-height, 96px) + 72px)" }}
-              className={peersFocused ? "rounded-2xl ring-2 ring-amber-300/60 ring-offset-2 ring-offset-[#0a0a12] transition-shadow" : ""}
-            >
-              <span id="life-chapter" aria-hidden className="block h-0 w-0 -mt-24" />
-              {peersFocused ? (
-                <div
-                  className="mb-3 rounded-lg border border-amber-400/25 bg-amber-500/5 px-4 py-2 text-xs text-amber-100/85"
-                  data-testid="peers-path-hint"
-                >
-                  {lang === "zh"
-                    ? "你正在阅读：同龄人的人生章节 → 历史回声"
-                    : "You're reading: your peers' life chapter → historical echoes"}
-                </div>
-              ) : null}
-              {!primaryBirthDate && peersFocused ? (
-                <section
-                  className="mb-8 rounded-xl border border-amber-400/30 bg-black/40 p-6"
-                  data-testid="peers-empty-no-primary"
-                >
-                  <div className="text-[11px] uppercase tracking-widest text-amber-200/70">
-                    {lang === "zh" ? "同龄人的人生章节" : "Your peers' life chapter"}
-                  </div>
-                  <h3 className="mt-2 font-serif text-2xl text-amber-100">
-                    {lang === "zh"
-                      ? "先登记出生日期，图书馆才能找到与你处于相近人生阶段的回声。"
-                      : "Add your birth date first — the library then knows which chapter to open beside yours."}
-                  </h3>
-                  <Link
-                    to="/ritual"
-                    search={{ returnTo: "/me/home?focus=peers#life-chapter" } as never}
-                    className="mt-4 inline-flex min-h-11 rounded-full border border-amber-300/60 bg-amber-500/10 px-4 py-2 text-sm text-amber-100 hover:bg-amber-500/20"
-                  >
-                    {lang === "zh" ? "登记出生日期 →" : "Register your birth date →"}
-                  </Link>
-                </section>
-              ) : (
-                <>
-                  <LifeChapterCard
-                    primaryBirthDate={primaryBirthDate}
-                    todayISO={today}
-                    domainScores={score.domains}
-                    domainLabels={{
-                      love: d.domain.love,
-                      study: d.domain.study,
-                      career: d.domain.career,
-                      body_mind: d.domain.body_mind,
-                      finance: d.domain.finance,
-                    }}
-                  />
-                  <HistoricalEchoSlot
-                    primaryBirthDate={primaryBirthDate}
-                    todayISO={today}
-                    priority={priority}
-                    concern={concern}
-                    domainScore={
-                      priority
-                        ? score.domains.find((dd) => dd.domain === priority)?.score ?? null
-                        : null
-                    }
-                    domainLabel={priority ? domainLabel(priority) : null}
-                    initialExpanded={peersFocused}
-                  />
-
-                </>
-              )}
+        {/* Cross-module CTA — Historical Echoes lives on its own page. */}
+        <section
+          className="mb-12 rounded-xl border border-amber-400/25 bg-black/30 px-5 py-5"
+          data-testid="home-echoes-cta"
+        >
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="text-[11px] uppercase tracking-widest text-amber-200/70">
+                {lang === "zh" ? "跨模块" : "Cross-module"}
+              </div>
+              <h3 className="mt-1 font-serif text-lg text-amber-100">
+                {lang === "zh"
+                  ? "去历史回声寻找相似人生阶段"
+                  : "Find peers in a similar life chapter"}
+              </h3>
+              <p className="mt-1 text-xs text-amber-100/60">
+                {lang === "zh"
+                  ? "历史人物、同龄故事与人生阶段推荐已整合到「历史回声」。"
+                  : "Historical figures, peer stories and life-stage matches now live on Historical Echoes."}
+              </p>
             </div>
-          );
-        })()}
+            <Link
+              to="/me/echoes"
+              className="inline-flex min-h-11 items-center rounded-full border border-amber-300/60 bg-amber-500/10 px-4 py-2 text-sm text-amber-100 hover:bg-amber-500/20"
+            >
+              {lang === "zh" ? "打开历史回声 →" : "Open Historical Echoes →"}
+            </Link>
+          </div>
+        </section>
+
 
 
 
