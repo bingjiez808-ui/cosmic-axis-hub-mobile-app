@@ -11,6 +11,17 @@ import { useDaily, useFormatDate, xlate } from "@/lib/i18n-daily";
 import { formatThemeKeyword, formatContradiction, tPhase } from "@/lib/daily-format";
 import { interpretAll } from "@/lib/daily-plain-language";
 import { DailyDestinyCompass, type CompassAxis } from "@/experiences/daily-room/visuals/DailyDestinyCompass";
+import { LifeChapterCard } from "@/experiences/life-guidance/LifeChapterCard";
+import { HistoricalEcho } from "@/experiences/life-guidance/HistoricalEcho";
+import {
+  defaultStageForAge,
+  computeAge,
+  pickPriorityDomain,
+  LIFE_STAGES,
+  type LifeStage,
+} from "@/lib/life-guidance-v1";
+import { useServerFn } from "@tanstack/react-start";
+import { getLifeGuidancePrefs } from "@/lib/life-guidance.functions";
 
 
 
@@ -565,6 +576,39 @@ function DailyRoomPage() {
           <p className="mt-2 text-amber-100/80">{d.reflection_body}</p>
         </section>
 
+        {/* ─── Life chapter right now (deterministic, 0-AI) ─── */}
+        {(() => {
+          const primaryBirthDate =
+            real.kind === "ready"
+              ? real.charts.find((c) => c.is_primary && c.chart_role === "self")
+                  ?.birth_date ?? null
+              : null;
+          const priority = pickPriorityDomain(score.domains);
+          return (
+            <>
+              <LifeChapterCard
+                primaryBirthDate={primaryBirthDate}
+                todayISO={today}
+                domainScores={score.domains}
+                domainLabels={{
+                  love: d.domain.love,
+                  study: d.domain.study,
+                  career: d.domain.career,
+                  body_mind: d.domain.body_mind,
+                  finance: d.domain.finance,
+                }}
+              />
+              <HistoricalEchoSlot
+                primaryBirthDate={primaryBirthDate}
+                todayISO={today}
+                priority={priority}
+              />
+            </>
+          );
+        })()}
+
+
+
         {/* Evidence section — collapsed by default; membership gating moved to /me/profile */}
         {(
           <section className="mb-16 rounded-xl border border-amber-400/15 bg-black/20">
@@ -643,7 +687,56 @@ function DailyRoomPage() {
   );
 }
 
+/**
+ * HistoricalEchoSlot — resolves the user's active life stage (server
+ * preference override → age-derived default) and hands it to
+ * HistoricalEcho along with today's priority domain.
+ */
+function HistoricalEchoSlot({
+  primaryBirthDate,
+  todayISO,
+  priority,
+}: {
+  primaryBirthDate: string | null;
+  todayISO: string;
+  priority: ReturnType<typeof pickPriorityDomain>;
+}) {
+  const defaultStage: LifeStage | null = defaultStageForAge(
+    computeAge(primaryBirthDate, todayISO),
+  );
+  const [stage, setStage] = useState<LifeStage | null>(defaultStage);
+  const getPrefs = useServerFn(getLifeGuidancePrefs);
+
+  useEffect(() => {
+    let cancelled = false;
+    getPrefs()
+      .then((row) => {
+        if (cancelled) return;
+        if (
+          row?.life_stage &&
+          (LIFE_STAGES as readonly string[]).includes(row.life_stage)
+        ) {
+          setStage(row.life_stage as LifeStage);
+        }
+      })
+      .catch(() => {
+        /* keep default */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [getPrefs]);
+
+  useEffect(() => {
+    if (defaultStage && !stage) setStage(defaultStage);
+  }, [defaultStage, stage]);
+
+  if (!primaryBirthDate || !stage) return null;
+  return <HistoricalEcho stage={stage} domain={priority} />;
+}
+
 /* ChartManager and inline row actions moved to src/experiences/profile/
  * ChartManager.tsx and re-hosted on the dedicated /me/profile page. Today's
  * Reading Room only shows a lightweight context bar. */
+
 

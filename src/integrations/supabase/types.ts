@@ -579,6 +579,66 @@ export type Database = {
           },
         ]
       }
+      life_bookmarks: {
+        Row: {
+          created_at: string
+          domain: string | null
+          figure_key: string
+          id: string
+          stage: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          domain?: string | null
+          figure_key: string
+          id?: string
+          stage?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          domain?: string | null
+          figure_key?: string
+          id?: string
+          stage?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      life_responses: {
+        Row: {
+          body: string
+          created_at: string
+          domain: string | null
+          figure_key: string
+          id: string
+          stage: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          domain?: string | null
+          figure_key: string
+          id?: string
+          stage?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          domain?: string | null
+          figure_key?: string
+          id?: string
+          stage?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       phone_otps: {
         Row: {
           attempts: number
@@ -1054,6 +1114,30 @@ export type Database = {
           message?: string
           resolved?: boolean
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      user_preferences: {
+        Row: {
+          created_at: string
+          life_stage: string | null
+          life_stage_source: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          life_stage?: string | null
+          life_stage_source?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          life_stage?: string | null
+          life_stage_source?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

@@ -8,6 +8,7 @@ import baziImg from "@/assets/tradition-bazi.jpg";
 import ziweiImg from "@/assets/tradition-ziwei.jpg";
 import treeImg from "@/assets/tree-of-destiny.jpg";
 import { TraditionModal, type TraditionId } from "@/components/TraditionModal";
+import { CuratorLetter } from "@/components/CuratorLetter";
 import { useLang } from "@/lib/i18n";
 
 export const Route = createFileRoute("/")({
@@ -431,6 +432,11 @@ function LandingPage() {
           {t.philosophy_a} <span className="italic text-gold-light">{t.philosophy_em}</span>
         </p>
       </section>
+
+      {/* ─────────── CURATOR'S LETTER ─────────── */}
+      <CuratorLetter />
+
+
 
       {/* ─────────── FOUR TRADITIONS ─────────── */}
       <section id="traditions" className="relative z-10 mx-auto max-w-7xl px-6 py-24 md:px-12">
