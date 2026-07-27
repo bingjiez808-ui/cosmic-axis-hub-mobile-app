@@ -11,7 +11,8 @@
  * `src/lib/concern-guidance-v1.ts`.
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useServerFn } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 
 import { useLang } from "@/lib/i18n";
 import {
