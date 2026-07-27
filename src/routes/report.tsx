@@ -151,6 +151,7 @@ import {
   type ReportDimensionAI,
 } from "@/lib/report.functions";
 import {
+  assignChartOwnership,
   beginReport,
   buildCanonicalChartInput,
   ensureChart,
@@ -186,6 +187,9 @@ type SearchParams = {
   lunar?: string;
   readingId?: string;
   gender?: "male" | "female";
+  role?: "self" | "other";
+  relationship?: string;
+  relationshipLabel?: string;
 };
 
 const pickStr = (v: unknown) => (typeof v === "string" ? v : undefined);
@@ -213,6 +217,9 @@ export const Route = createFileRoute("/report")({
     lunar: pickStr(s.lunar),
     readingId: pickStr(s.readingId),
     gender: s.gender === "male" ? "male" : s.gender === "female" ? "female" : undefined,
+    role: s.role === "self" ? "self" : s.role === "other" ? "other" : undefined,
+    relationship: pickStr(s.relationship),
+    relationshipLabel: pickStr(s.relationshipLabel),
   }),
   component: ReportPage,
 });
@@ -938,6 +945,24 @@ function ReportPage() {
         setAiError("chart_save_failed");
         setAiState("error");
         return;
+      }
+
+      // 2b. Persist ownership metadata coming from the ritual.
+      // Only assigns when the URL carries `role` (i.e. this chart was
+      // just created via /ritual). Never overrides an existing primary.
+      if (search.role === "self" || search.role === "other") {
+        try {
+          await assignChartOwnership({
+            data: {
+              chartId,
+              role: search.role,
+              relationshipLabel: search.relationshipLabel || undefined,
+              autoPromoteIfNoPrimary: search.role === "self",
+            },
+          });
+        } catch {
+          /* non-fatal: chart still exists; user can adjust in /me/profile */
+        }
       }
 
       // Migrate a temporary/legacy readingId in the URL to the persisted

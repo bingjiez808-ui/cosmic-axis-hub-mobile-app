@@ -32,6 +32,16 @@ export const Route = createFileRoute("/ritual")({
 
 type FieldKey = "name" | "date" | "time" | "place" | "gender";
 type Gender = "male" | "female" | "";
+type OwnerRole = "self" | "other" | "";
+type Relationship = "partner" | "family" | "friend" | "colleague" | "other" | "";
+
+const RELATIONSHIP_LABELS: Record<Exclude<Relationship, "">, [string, string]> = {
+  partner: ["Partner", "伴侣"],
+  family: ["Family", "家人"],
+  friend: ["Friend", "朋友"],
+  colleague: ["Colleague", "同事"],
+  other: ["Other", "其他"],
+};
 
 // -------- 5 psychology-inspired calibration questions --------
 // Not tests, no right answers — used to nudge the AI reading toward the user.
@@ -129,12 +139,13 @@ function RitualPage() {
     gender: "",
   });
   // `gender: ""` in `values` starts unset. Users must click an explicit
-  // option — including "prefer not to say" — before advancing. We track
-  // that explicit-choice separately so an untouched gender step still
-  // blocks Next with an inline explanation.
+  // option — including "prefer not to say" — before advancing.
   const [genderChosen, setGenderChosen] = useState(false);
+  // Ownership: this chart is mine, or someone else's? Never defaults —
+  // must be explicitly chosen so the DB row is filed correctly.
+  const [ownerRole, setOwnerRole] = useState<OwnerRole>("");
+  const [relationship, setRelationship] = useState<Relationship>("");
   const [quiz] = useState<string[]>(["", "", "", "", ""]);
-  // Quiz has been retired — the flow is intake-only now.
   const [step, setStep] = useState(0);
   const skipQuiz = true;
   const [restored, setRestored] = useState(false);
@@ -148,7 +159,12 @@ function RitualPage() {
         const s = JSON.parse(raw);
         if (s && typeof s === "object") {
           if (s.values) setValues((v) => ({ ...v, ...s.values }));
-          if (typeof s.step === "number") setStep(Math.max(0, Math.min(s.step, 4)));
+          if (typeof s.step === "number") setStep(Math.max(0, Math.min(s.step, 5)));
+          if (s.ownerRole === "self" || s.ownerRole === "other") setOwnerRole(s.ownerRole);
+          if (typeof s.relationship === "string" && s.relationship in RELATIONSHIP_LABELS) {
+            setRelationship(s.relationship as Relationship);
+          }
+          if (s.genderChosen === true) setGenderChosen(true);
         }
       }
     } catch {}
@@ -161,12 +177,13 @@ function RitualPage() {
     try {
       sessionStorage.setItem(
         RITUAL_STATE_KEY,
-        JSON.stringify({ values, quiz, step, skipQuiz }),
+        JSON.stringify({ values, quiz, step, skipQuiz, ownerRole, relationship, genderChosen }),
       );
     } catch {}
-  }, [values, quiz, step, skipQuiz, restored]);
+  }, [values, quiz, step, skipQuiz, restored, ownerRole, relationship, genderChosen]);
 
-  const totalSteps = (skipQuiz ? 0 : QUIZ.length) + 5;
+  const OWNERSHIP_STEP_COUNT = 1;
+  const totalSteps = OWNERSHIP_STEP_COUNT + 5;
 
   const questionSteps: {
     key: FieldKey;
@@ -175,29 +192,22 @@ function RitualPage() {
     placeholder: string;
     input: "text" | "date" | "time" | "gender";
   }[] = [
-    // Order matters: gender is asked up front alongside birth date/time so
-    // the Zi Wei calculator can run from the first synthesis. The label
-    // makes clear it is only used by traditional algorithms and is never
-    // publicly displayed. `place` intentionally comes last because it
-    // often needs a city picker and is less sensitive.
     { key: "name", prompt: t.q_name, hint: t.q_name_hint, placeholder: t.q_name_ph, input: "text" },
     { key: "date", prompt: t.q_date, hint: t.q_date_hint, placeholder: "", input: "date" },
     { key: "time", prompt: t.q_time, hint: t.q_time_hint, placeholder: "", input: "time" },
     { key: "gender", prompt: t.q_gender, hint: t.q_gender_hint, placeholder: "", input: "gender" },
     { key: "place", prompt: t.q_place, hint: t.q_place_hint, placeholder: t.q_place_ph, input: "text" },
-];
+  ];
 
-// `noOrphan` lives in @/lib/typography — imported at the top of the file.
-
-
-  const quizCount = skipQuiz ? 0 : QUIZ.length;
   const progress = useMemo(() => (step + 1) / totalSteps, [step, totalSteps]);
   const isLast = step === totalSteps - 1;
-  const isQuizStep = !skipQuiz && step < QUIZ.length;
-  const quizIdx = isQuizStep ? step : -1;
-  const isIntakeStep = step >= quizCount;
-  const intakeIdx = isIntakeStep ? step - quizCount : -1;
+  const isOwnershipStep = step === 0;
+  const isIntakeStep = step >= OWNERSHIP_STEP_COUNT;
+  const intakeIdx = isIntakeStep ? step - OWNERSHIP_STEP_COUNT : -1;
   const currentQ = isIntakeStep ? questionSteps[intakeIdx] : null;
+  // Quiz retired — retained variables to preserve existing render/progress code.
+  const isQuizStep = false;
+  const quizIdx = -1;
 
   // Per-step validation. Returns null when OK, or a localized error
   // message describing precisely which field is invalid. The Next
@@ -205,6 +215,19 @@ function RitualPage() {
   // surfaces the reason inline, which is more discoverable than a
   // grey button with no explanation.
   const validateCurrentStep = (): string | null => {
+    if (isOwnershipStep) {
+      if (ownerRole !== "self" && ownerRole !== "other") {
+        return lang === "zh"
+          ? "请先选择这张命盘属于「我」还是「他人」。"
+          : "Please pick whether this chart is for you or someone else.";
+      }
+      if (ownerRole === "other" && !relationship) {
+        return lang === "zh"
+          ? "请选择你与对方的关系（仅保存在你的个人书架，不通知对方，不公开）。"
+          : "Please pick the relationship (kept privately in your library — never notified or public).";
+      }
+      return null;
+    }
     if (isQuizStep) {
       return quiz[quizIdx]
         ? null
@@ -279,6 +302,8 @@ function RitualPage() {
     if (isLast) {
       // Full-schema recheck before firing any calculation / navigation.
       const finalErrors: string[] = [];
+      if (ownerRole !== "self" && ownerRole !== "other") finalErrors.push("owner");
+      if (ownerRole === "other" && !relationship) finalErrors.push("relationship");
       if (values.name.trim().length === 0) finalErrors.push("name");
       if (!/^\d{4}-\d{2}-\d{2}$/.test(values.date)) finalErrors.push("date");
       if (!/^\d{2}:\d{2}$/.test(values.time)) finalErrors.push("time");
@@ -294,6 +319,9 @@ function RitualPage() {
       }
       const info = solarToLunarInfo(values.date, values.time);
       const gender = values.gender === "male" || values.gender === "female" ? values.gender : "";
+      const relLabel = ownerRole === "other" && relationship
+        ? RELATIONSHIP_LABELS[relationship as Exclude<Relationship, "">][li]
+        : "";
       const params = new URLSearchParams({
         name: values.name,
         date: values.date,
@@ -302,6 +330,9 @@ function RitualPage() {
         ...(gender ? { gender } : {}),
         lang,
         quiz: quiz.join(""),
+        role: ownerRole,
+        ...(relationship ? { relationship } : {}),
+        ...(relLabel ? { relationshipLabel: relLabel } : {}),
         readingId: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         ...(info
           ? {
@@ -333,7 +364,7 @@ function RitualPage() {
       if (!err) setFieldError(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [values, genderChosen]);
+  }, [values, genderChosen, ownerRole, relationship]);
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-x-hidden px-6 pt-32 pb-24">
@@ -371,11 +402,11 @@ function RitualPage() {
             </>
           )}
           {/* intake dots */}
-          {Array.from({ length: 5 }).map((_, i) => (
+          {Array.from({ length: totalSteps }).map((_, i) => (
             <div
               key={i}
               className={`h-px transition-all duration-700 ${
-                step >= quizCount + i ? "w-10 bg-gold-dust" : "w-6 bg-white/15"
+                step >= i ? "w-10 bg-gold-dust" : "w-6 bg-white/15"
               }`}
             />
           ))}
@@ -396,6 +427,76 @@ function RitualPage() {
 
 
             {/* Quiz retired — intake step only. */}
+
+            {isOwnershipStep && (
+              <div data-ritual-field>
+                <h1 className="mx-auto mb-4 max-w-xl text-balance font-serif text-3xl italic leading-tight text-stone-warm md:text-5xl">
+                  {lang === "zh" ? "这张命盘属于谁？" : "Whose chart is this?"}
+                </h1>
+                <p className="mx-auto mb-10 max-w-md text-sm text-stone-warm/50">
+                  {lang === "zh"
+                    ? "此选择只保存在你的个人书架里；不会通知对方，也不会公开数据。真正的好友、聊天、共享与匹配仍需双方授权。"
+                    : "Your choice is kept privately in your personal library. Nobody is notified and no data is shared. Real friends, chat, sharing and matching still require both parties to consent."}
+                </p>
+                <div role="radiogroup" aria-label={lang === "zh" ? "命盘归属" : "Chart ownership"} className="mx-auto flex max-w-md flex-col gap-3">
+                  {(["self", "other"] as const).map((r) => {
+                    const active = ownerRole === r;
+                    const label = r === "self"
+                      ? (lang === "zh" ? "我的命盘（首次生成将设为我的主命盘）" : "My chart (first one becomes my primary)")
+                      : (lang === "zh" ? "他人命盘（保存到关系与适配）" : "Someone else's chart (saved to Relationships)");
+                    return (
+                      <button
+                        key={r}
+                        type="button"
+                        role="radio"
+                        aria-checked={active}
+                        onClick={() => setOwnerRole(r)}
+                        className={`min-h-[48px] rounded-2xl border px-5 py-3 text-left text-[12px] leading-relaxed transition-colors ${
+                          active
+                            ? "border-gold-dust bg-gold-dust/10 text-gold-light"
+                            : "border-white/15 text-stone-warm/70 hover:border-gold-dust/40 hover:text-gold-dust"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+                {ownerRole === "other" && (
+                  <div className="mx-auto mt-6 max-w-md">
+                    <p className="mb-3 text-[11px] uppercase tracking-[0.28em] text-stone-warm/60">
+                      {lang === "zh" ? "关系（必选）" : "Relationship (required)"}
+                    </p>
+                    <div role="radiogroup" aria-label={lang === "zh" ? "关系类型" : "Relationship type"} className="flex flex-wrap justify-center gap-2">
+                      {(Object.keys(RELATIONSHIP_LABELS) as Array<Exclude<Relationship, "">>).map((rel) => {
+                        const active = relationship === rel;
+                        return (
+                          <button
+                            key={rel}
+                            type="button"
+                            role="radio"
+                            aria-checked={active}
+                            onClick={() => setRelationship(rel)}
+                            className={`min-h-[40px] rounded-full border px-4 py-2 text-[11px] uppercase tracking-[0.24em] transition-colors ${
+                              active
+                                ? "border-gold-dust bg-gold-dust/10 text-gold-light"
+                                : "border-white/15 text-stone-warm/70 hover:border-gold-dust/40 hover:text-gold-dust"
+                            }`}
+                          >
+                            {RELATIONSHIP_LABELS[rel][li]}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                {fieldError && (
+                  <p role="alert" data-testid="ritual-field-error" className="mx-auto mt-6 max-w-md rounded-lg border border-rose-400/40 bg-rose-500/10 px-4 py-2 text-left text-[12px] leading-relaxed text-rose-100">
+                    {fieldError}
+                  </p>
+                )}
+              </div>
+            )}
 
             {isIntakeStep && currentQ && (
               <>
