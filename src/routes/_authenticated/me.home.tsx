@@ -159,8 +159,10 @@ function DailyRoomPage() {
   // Membership toggle (dev-only "mock member") removed from this route.
   const [real, setReal] = useState<RealChartAdapterState>({ kind: "loading" });
   const [onboardingIntent, setOnboardingIntent] = useState<OnboardingIntent | null>(null);
+  const [concern, setConcernState] = useState<ConcernKey | null>(null);
   const getPrefsFn = useServerFn(getLifeGuidancePrefs);
   const saveIntentFn = useServerFn(setOnboardingIntentFn);
+  const saveConcernFn = useServerFn(setConcernFn);
   useEffect(() => {
     let cancelled = false;
     getPrefsFn()
@@ -168,6 +170,21 @@ function DailyRoomPage() {
         if (cancelled) return;
         const v = row?.onboarding_intent;
         if (isOnboardingIntent(v)) setOnboardingIntent(v);
+        const c = row?.concern;
+        if (isConcernKey(c)) setConcernState(c);
+        else if (typeof window !== "undefined") {
+          try {
+            const s = window.sessionStorage.getItem("fate.concern.v1");
+            if (isConcernKey(s)) {
+              setConcernState(s);
+              // migrate to cloud once
+              saveConcernFn({ data: { concern: s } }).catch(() => {});
+              window.sessionStorage.removeItem("fate.concern.v1");
+            }
+          } catch {
+            /* ignore */
+          }
+        }
       })
       .catch(() => {
         /* keep null */
@@ -175,7 +192,7 @@ function DailyRoomPage() {
     return () => {
       cancelled = true;
     };
-  }, [getPrefsFn]);
+  }, [getPrefsFn, saveConcernFn]);
 
   const changeIntent = async (next: OnboardingIntent) => {
     setOnboardingIntent(next);
@@ -183,6 +200,15 @@ function DailyRoomPage() {
       await saveIntentFn({ data: { intent: next } });
     } catch {
       /* keep optimistic; RLS will re-sync on next visit */
+    }
+  };
+
+  const changeConcern = async (next: ConcernKey) => {
+    setConcernState(next);
+    try {
+      await saveConcernFn({ data: { concern: next } });
+    } catch {
+      /* keep optimistic */
     }
   };
 
