@@ -8,7 +8,7 @@ import {
   type FriendInvite,
   type Friendship,
 } from "@/lib/friends-repo";
-import { ensureSocialPreviewAllowed } from "@/experiences/daily-room/route-guard";
+
 import { SocialConsentGate, useSocialConsent } from "@/experiences/daily-room/social-consent";
 import { useLang } from "@/lib/i18n";
 import { useDaily, useFormatDate } from "@/lib/i18n-daily";
@@ -18,9 +18,6 @@ import { DailyRoomError } from "@/experiences/daily-room/fallback";
 
 export const Route = createFileRoute("/_authenticated/me/friends")({
   head: () => ({ meta: [{ name: "robots", content: "noindex,nofollow" }] }),
-  beforeLoad: () => {
-    ensureSocialPreviewAllowed();
-  },
   pendingMs: 0,
   pendingComponent: PersonalShellPending,
   errorComponent: DailyRoomError,
