@@ -95,7 +95,7 @@ function MyProfilePage() {
         </header>
 
         {/* Membership & orders — anchor target for the sub-nav "Membership" tab */}
-        <div id="membership-orders" className="mb-8 space-y-4 scroll-mt-28">
+        <div id="membership-orders" style={{ scrollMarginTop: "calc(var(--site-nav-height, 96px) + 72px)" }} className="mb-8 space-y-4">
           <MembershipCard />
           <TicketsBlock />
         </div>
