@@ -305,38 +305,14 @@ function DailyRoomPage() {
         {/* Hub cards — clear next step for each personal module */}
         <HomeHubCards real={real} lang={lang} />
 
-        {/* Secondary in-page nav — "Today" is the active module */}
-        <nav
-          aria-label={lang === "zh" ? "我的主页 · 模块" : "My Home · sections"}
-          className="mb-6 flex flex-wrap items-center gap-2 text-xs"
-        >
-          <a
-            href="#today"
-            aria-current="page"
-            className="rounded-full border border-amber-300 bg-amber-300/10 px-3 py-1 text-amber-100"
-          >
-            {lang === "zh" ? "今日命运" : "Today's Fate"}
-          </a>
-          <Link
-            to="/me/profile"
-            className="rounded-full border border-amber-400/25 px-3 py-1 text-amber-200/80 hover:border-amber-300/60"
-          >
-            {lang === "zh" ? "命盘与报告" : "Charts & Reports"}
-          </Link>
-          <Link
-            to="/me/friends"
-            className="rounded-full border border-amber-400/25 px-3 py-1 text-amber-200/80 hover:border-amber-300/60"
-          >
-            {d.home_secondary_nav_friends}
-          </Link>
-          <Link
-            to="/me/match"
-            className="rounded-full border border-amber-400/25 px-3 py-1 text-amber-200/80 hover:border-amber-300/60"
-          >
-            {d.home_secondary_nav_match}
-          </Link>
-        </nav>
+        {/* Shared personal-workspace sub-nav (Today's Fate active) */}
+        <PersonalWorkspaceNav active="/me/home" />
         <div id="today" className="sr-only" aria-hidden />
+        <p className="mb-4 text-xs text-amber-200/60" data-testid="home-purpose-hint">
+          {lang === "zh"
+            ? "这里显示今天的一件事：主线、六领域建议与 7 日走向。想去命盘/好友/适配，用上面的次级导航。"
+            : "This page shows the one thing for today: your line, six-domain notes and the 7-day arc. Use the sub-nav above to reach charts, friends or match."}
+        </p>
 
 
         {/* Lightweight context bar — full chart management lives on /me/profile */}
