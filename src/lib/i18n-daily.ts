@@ -690,6 +690,9 @@ const en: DailyDict = {
   bookshelf_no_relations: "Your relationship shelf is empty. Other-people charts you save appear here.",
   bookshelf_main_book_label: "Primary chart",
   bookshelf_relation_card_label: "Relationship card",
+  bookshelf_relation_label_placeholder: "Relationship (Partner, Mother, Friend…)",
+  bookshelf_relation_label_edit: "Edit relationship label",
+  bookshelf_relation_label_none: "No relationship set",
   bookshelf_open_match: "Compatibility",
   charts_others_title: "Other charts",
 
