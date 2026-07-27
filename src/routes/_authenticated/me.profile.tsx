@@ -8,6 +8,7 @@ import { DailyRoomError, DailyRoomPending } from "@/experiences/daily-room/fallb
 import { supabase } from "@/integrations/supabase/client";
 import { listUserCharts, type ChartRow } from "@/lib/reports-store.functions";
 import { useDaily } from "@/lib/i18n-daily";
+import { useLang } from "@/lib/i18n";
 
 /**
  * /me/profile — the user's Personal Library Card.
