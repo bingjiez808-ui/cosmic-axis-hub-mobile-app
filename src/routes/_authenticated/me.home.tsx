@@ -281,12 +281,6 @@ function DailyRoomPage() {
 
         {/* Page title — "My Library" is the personal reading desk. Today's Fate is its default first module. */}
         <header className="mb-6">
-          <div className="text-[10px] uppercase tracking-[0.36em] text-amber-300/60">
-            {lang === "zh" ? "命运图书馆 · 我的书架" : "Destiny Library · My Library"}
-          </div>
-          <h1 className="mt-2 font-serif text-3xl tracking-wide md:text-4xl">
-            {lang === "zh" ? "我的书架" : "My Library"}
-          </h1>
           <p className="mt-2 max-w-2xl text-sm text-amber-100/70">
             {lang === "zh"
               ? "这里是你的个人书架主页，默认打开「今日命运」。命盘、关系、历史回声与会员，从上方书架导航进入。"
