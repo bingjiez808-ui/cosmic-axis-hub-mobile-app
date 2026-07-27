@@ -121,6 +121,9 @@ export type DailyDict = {
   bookshelf_no_relations: string;
   bookshelf_main_book_label: string;
   bookshelf_relation_card_label: string;
+  bookshelf_relation_label_placeholder: string;
+  bookshelf_relation_label_edit: string;
+  bookshelf_relation_label_none: string;
   bookshelf_open_match: string;
   profile_title: string;
   profile_kicker: string;
