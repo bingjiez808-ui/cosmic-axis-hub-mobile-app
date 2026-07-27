@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 
+import { PersonalWorkspaceNav } from "@/components/PersonalWorkspaceNav";
+
 import { computeCompatibility, type CompatResult } from "@/lib/compatibility-score";
 import { MATCH_DEMO, type MatchDemoKey } from "@/experiences/daily-room/match-fixtures";
 import { ensureSocialPreviewAllowed } from "@/experiences/daily-room/route-guard";
@@ -89,27 +91,7 @@ function MatchPage() {
           {d.demo_banner_match}
         </div>
 
-        <nav aria-label={d.nav_today} className="mb-6 flex flex-wrap items-center gap-2 text-xs">
-          <Link
-            to="/me/home"
-            className="rounded-full border border-amber-400/25 px-3 py-1 text-amber-200/80 hover:border-amber-300/60"
-          >
-            {d.nav_today}
-          </Link>
-          <Link
-            to="/me/friends"
-            className="rounded-full border border-amber-400/25 px-3 py-1 text-amber-200/80 hover:border-amber-300/60"
-          >
-            {d.home_secondary_nav_friends}
-          </Link>
-          <Link
-            to="/me/match"
-            aria-current="page"
-            className="rounded-full border border-amber-300 bg-amber-300/10 px-3 py-1 text-amber-100"
-          >
-            {d.home_secondary_nav_match}
-          </Link>
-        </nav>
+        <PersonalWorkspaceNav active="/me/match" />
 
         <div className="mb-6">
           <SocialConsentGate />

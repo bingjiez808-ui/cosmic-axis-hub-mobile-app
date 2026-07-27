@@ -4,6 +4,8 @@ import { motion } from "framer-motion";
 import { CuratorLetter } from "@/components/CuratorLetter";
 import { ConcernSelector } from "@/components/ConcernSelector";
 import { FeatureLibraryShelf } from "@/components/FeatureLibraryShelf";
+import { HomePersonalDeskTeaser } from "@/components/HomePersonalDeskTeaser";
+import { PremiumReportCta } from "@/components/PremiumReportCta";
 import { useLang } from "@/lib/i18n";
 import { useSupabaseSession } from "@/lib/session";
 
@@ -218,6 +220,9 @@ function LandingPage() {
       {/* ─────────── FEATURE LIBRARY SHELF ─────────── */}
       <FeatureLibraryShelf />
 
+      {/* ─────────── PERSONAL READING DESK teaser (after-signin value) ─────── */}
+      <HomePersonalDeskTeaser />
+
       {/* ─────────── TRUST BRIDGE → traditions detail page ─────────── */}
       <section
         id="trust-bridge"
@@ -235,6 +240,14 @@ function LandingPage() {
         >
           {isZh ? "了解四大体系如何共同阅读" : "See how the four traditions read together"}
         </Link>
+        <p
+          data-testid="trust-bridge-data-note"
+          className="mx-auto mt-4 max-w-2xl text-[11px] leading-relaxed text-stone-warm/45"
+        >
+          {isZh
+            ? "详情页可查看：西方星盘的行星、宫位与相位；印度本命盘、Nakshatra 与 Dasha 大运；八字四柱、十神与大运流年；紫微十二宫、主星与大限流年——每一项都基于真实排盘数据，未接入的部分不会承诺。"
+            : "The detail page shows: Western planets, houses and aspects; the Vedic natal chart, Nakshatras and Dasha periods; the BaZi four pillars, ten gods and luck cycles; the Zi Wei twelve palaces, main stars and major limits — all from real calculations. Anything not yet supported is never promised."}
+        </p>
       </section>
 
       {/* ─────────── HISTORICAL ECHO PREVIEW (Curator's letter) ─────────── */}
@@ -254,6 +267,14 @@ function LandingPage() {
           {isZh
             ? "一次生成，永久保存；不是订阅、不自动续费。"
             : "Generated once, kept forever — no subscription, no auto-renew."}
+        </p>
+        <div className="mt-6 flex justify-center">
+          <PremiumReportCta />
+        </div>
+        <p className="mx-auto mt-3 max-w-md text-[11px] leading-relaxed text-stone-warm/45">
+          {isZh
+            ? "未登录会先带你回到登录页并保留原意图；没有命盘会引导你先开启仪式；已购或生成中都会直接打开对应状态。"
+            : "If you aren't signed in we route through login and keep your intent; if you have no chart yet the ritual opens first; already-paid or in-progress reports open in the right state."}
         </p>
       </section>
 
