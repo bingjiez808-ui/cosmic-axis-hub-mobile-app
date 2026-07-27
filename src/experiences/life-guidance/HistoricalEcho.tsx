@@ -163,10 +163,12 @@ export function HistoricalEcho({ stage, domain, initialExpanded }: HistoricalEch
 
   return (
     <section
+      id="historical-echo"
       aria-label={copy.title}
-      className="relative mb-8 overflow-hidden rounded-xl border border-amber-500/25 bg-black/60 p-6 md:p-7"
+      className="relative mb-8 overflow-hidden rounded-xl border border-amber-500/25 bg-black/60 p-6 md:p-7 scroll-mt-24"
       data-testid="historical-echo"
     >
+
       {/* Gallery of arched niches — sits behind text with a soft scrim */}
       <picture aria-hidden="true">
         <source
