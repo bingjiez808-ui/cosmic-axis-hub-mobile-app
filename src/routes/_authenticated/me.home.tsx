@@ -715,7 +715,8 @@ function DailyRoomPage() {
             <div
               id="echoes"
               data-focus={peersFocused ? "peers" : undefined}
-              className={`scroll-mt-24 ${peersFocused ? "rounded-2xl ring-2 ring-amber-300/60 ring-offset-2 ring-offset-[#0a0a12] transition-shadow" : ""}`}
+              style={{ scrollMarginTop: "calc(var(--site-nav-height, 96px) + 72px)" }}
+              className={peersFocused ? "rounded-2xl ring-2 ring-amber-300/60 ring-offset-2 ring-offset-[#0a0a12] transition-shadow" : ""}
             >
               <span id="life-chapter" aria-hidden className="block h-0 w-0 -mt-24" />
               {peersFocused ? (
