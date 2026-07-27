@@ -30,6 +30,7 @@ import {
   type AdminOrderRow,
   type AdminUserChartRow,
 } from "@/lib/premium.functions";
+import { AdminTicketsSection } from "@/components/AdminTicketsSection";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -255,6 +256,9 @@ function AdminPage() {
       </div>
 
       <PremiumOrdersSection reloadKey={reload} onReload={() => setReload((n) => n + 1)} />
+
+      <AdminTicketsSection />
+
 
 
       {editing && (
