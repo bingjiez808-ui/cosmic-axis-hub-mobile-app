@@ -381,11 +381,11 @@ function RitualPage() {
             </>
           )}
           {/* intake dots */}
-          {Array.from({ length: 5 }).map((_, i) => (
+          {Array.from({ length: totalSteps }).map((_, i) => (
             <div
               key={i}
               className={`h-px transition-all duration-700 ${
-                step >= quizCount + i ? "w-10 bg-gold-dust" : "w-6 bg-white/15"
+                step >= i ? "w-10 bg-gold-dust" : "w-6 bg-white/15"
               }`}
             />
           ))}
