@@ -5,6 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useLang } from "@/lib/i18n";
 import {
   echoCopy,
+  normalizeLang,
   figuresFor,
   type DomainKey,
   type HistoricalFigure,
@@ -31,7 +32,7 @@ export type HistoricalEchoProps = {
  */
 export function HistoricalEcho({ stage, domain }: HistoricalEchoProps) {
   const { lang } = useLang();
-  const copy = echoCopy[lang];
+  const copy = echoCopy[normalizeLang(lang)];
 
   const list = useMemo(
     () => (stage ? figuresFor(stage, domain) : []),
