@@ -98,9 +98,11 @@ function MyProfilePage() {
         </header>
 
         {/* Membership */}
-        <div className="mb-8">
+        <div className="mb-8 space-y-4">
           <MembershipCard />
+          <TicketsBlock />
         </div>
+
 
         {/* Bookshelf */}
         <section
