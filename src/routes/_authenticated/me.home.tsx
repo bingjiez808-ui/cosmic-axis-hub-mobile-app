@@ -29,7 +29,17 @@ import { useServerFn } from "@tanstack/react-start";
 import {
   getLifeGuidancePrefs,
   setOnboardingIntent as setOnboardingIntentFn,
+  setConcern as setConcernFn,
 } from "@/lib/life-guidance.functions";
+import {
+  CONCERNS,
+  CONCERN_KEYS,
+  isConcernKey,
+  resolveConcernRoute,
+  selectDailyCounsel,
+  type ConcernKey,
+  type DailyBand,
+} from "@/lib/concern-guidance-v1";
 
 
 
