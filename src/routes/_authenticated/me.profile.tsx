@@ -159,4 +159,4 @@ function TicketsBlock() {
   return <MyTicketsCard lang={lang} />;
 }
 
-}
+
