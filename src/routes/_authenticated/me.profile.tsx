@@ -75,8 +75,9 @@ function MyProfilePage() {
             {d.profile_kicker}
           </div>
           <h1 className="mt-2 text-3xl font-serif tracking-wide md:text-4xl">
-            {d.lang === "zh" ? "命盘与报告" : "Charts & Reports"}
+            {lang === "zh" ? "命盘与报告" : "Charts & Reports"}
           </h1>
+
 
           {state.kind === "ready" && state.email && (
             <div className="mt-2 text-sm text-amber-100/70">{state.email}</div>
