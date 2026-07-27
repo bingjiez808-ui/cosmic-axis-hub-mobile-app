@@ -1272,3 +1272,344 @@ export const chapterCopy: Record<Lang, {
     emptyCta: "Go to registration",
   },
 };
+
+/* ─────────── Historical Echo · deterministic 4-layer recommender ──────── */
+
+/**
+ * Situation tags describe *what kind of turn* the figure faced. They are
+ * NOT chart claims and NOT domain labels — they let us match figures to
+ * a reader by "this is the sort of decision you're facing", instead of
+ * just "same life stage".
+ */
+export type SituationTag =
+  | "learning_stance"
+  | "graduate_direction"
+  | "career_transition"
+  | "career_family_conflict"
+  | "self_expression_risk"
+  | "late_start"
+  | "health_constraint"
+  | "physical_pain_creation"
+  | "relationship_boundary"
+  | "financial_rebuild"
+  | "wealth_distribution"
+  | "midlife_withdrawal"
+  | "legacy_handoff"
+  | "delegation_handoff"
+  | "elder_growth";
+
+/**
+ * Per-figure metadata layered on top of `historicalFigures`. Kept as a
+ * side table so the existing figure array stays visually stable.
+ *
+ *   tags        — situation categories this figure's turn embodied.
+ *   signal      — whether the figure's turn was primarily an
+ *                 opportunity window, a pressure window, or neither.
+ *                 Used to align with today's domain signal band.
+ *   curatedRank — smaller = editor's preferred order for this stage.
+ *                 Only breaks ties; never overrides higher signal match.
+ *   sourceUrl   — public biography reference (Wikipedia).
+ */
+export type FigureMeta = {
+  tags: readonly SituationTag[];
+  signal: "opportunity" | "pressure" | "neutral";
+  curatedRank: number;
+  sourceUrl: string;
+};
+
+export const FIGURE_META: Record<string, FigureMeta> = {
+  malala: {
+    tags: ["self_expression_risk", "learning_stance", "health_constraint"],
+    signal: "opportunity",
+    curatedRank: 1,
+    sourceUrl: "https://en.wikipedia.org/wiki/Malala_Yousafzai",
+  },
+  franklin_teen: {
+    tags: ["learning_stance"],
+    signal: "opportunity",
+    curatedRank: 2,
+    sourceUrl: "https://en.wikipedia.org/wiki/Benjamin_Franklin",
+  },
+  curie_young: {
+    tags: ["learning_stance", "late_start"],
+    signal: "opportunity",
+    curatedRank: 3,
+    sourceUrl: "https://en.wikipedia.org/wiki/Marie_Curie",
+  },
+  jobs_20s: {
+    tags: ["career_transition", "self_expression_risk"],
+    signal: "opportunity",
+    curatedRank: 1,
+    sourceUrl: "https://en.wikipedia.org/wiki/Steve_Jobs",
+  },
+  murasaki: {
+    tags: ["self_expression_risk", "relationship_boundary"],
+    signal: "neutral",
+    curatedRank: 3,
+    sourceUrl: "https://en.wikipedia.org/wiki/Murasaki_Shikibu",
+  },
+  franklin_20s: {
+    tags: ["career_transition", "financial_rebuild"],
+    signal: "opportunity",
+    curatedRank: 2,
+    sourceUrl: "https://en.wikipedia.org/wiki/Benjamin_Franklin",
+  },
+  abe_lawyer: {
+    tags: ["career_transition", "learning_stance"],
+    signal: "neutral",
+    curatedRank: 1,
+    sourceUrl: "https://en.wikipedia.org/wiki/Abraham_Lincoln",
+  },
+  curie_marriage: {
+    tags: ["career_family_conflict", "health_constraint"],
+    signal: "pressure",
+    curatedRank: 3,
+    sourceUrl: "https://en.wikipedia.org/wiki/Marie_Curie",
+  },
+  kahlo: {
+    tags: ["physical_pain_creation", "health_constraint", "career_family_conflict"],
+    signal: "pressure",
+    curatedRank: 2,
+    sourceUrl: "https://en.wikipedia.org/wiki/Frida_Kahlo",
+  },
+  gauguin: {
+    tags: ["career_transition", "career_family_conflict", "financial_rebuild"],
+    signal: "pressure",
+    curatedRank: 3,
+    sourceUrl: "https://en.wikipedia.org/wiki/Paul_Gauguin",
+  },
+  junghmid: {
+    tags: ["midlife_withdrawal", "career_transition"],
+    signal: "neutral",
+    curatedRank: 1,
+    sourceUrl: "https://en.wikipedia.org/wiki/Carl_Jung",
+  },
+  julia_child: {
+    tags: ["late_start", "career_transition"],
+    signal: "opportunity",
+    curatedRank: 2,
+    sourceUrl: "https://en.wikipedia.org/wiki/Julia_Child",
+  },
+  buffett: {
+    tags: ["legacy_handoff", "wealth_distribution"],
+    signal: "opportunity",
+    curatedRank: 1,
+    sourceUrl: "https://en.wikipedia.org/wiki/Warren_Buffett",
+  },
+  hokusai: {
+    tags: ["elder_growth", "late_start"],
+    signal: "opportunity",
+    curatedRank: 2,
+    sourceUrl: "https://en.wikipedia.org/wiki/Hokusai",
+  },
+  mandela_later: {
+    tags: ["legacy_handoff", "delegation_handoff"],
+    signal: "neutral",
+    curatedRank: 3,
+    sourceUrl: "https://en.wikipedia.org/wiki/Nelson_Mandela",
+  },
+};
+
+/**
+ * Reader concern → situation tags. Concern strings mirror
+ * concern-guidance-v1 `ConcernKey` but are typed loosely to avoid a
+ * cross-module dependency (life-guidance is imported by many callers).
+ */
+export const CONCERN_TAG_MAP: Record<string, readonly SituationTag[]> = {
+  study: ["learning_stance", "late_start"],
+  career: ["career_transition", "delegation_handoff", "self_expression_risk"],
+  love: ["relationship_boundary", "career_family_conflict"],
+  relationships: ["relationship_boundary", "career_family_conflict", "legacy_handoff"],
+  finance: ["financial_rebuild", "wealth_distribution"],
+  self_family: ["career_family_conflict", "health_constraint", "legacy_handoff"],
+  overview: [],
+};
+
+/** Today's priority-domain lens → situation tags it naturally illuminates. */
+export const DOMAIN_TAG_MAP: Record<DomainKey, readonly SituationTag[]> = {
+  study: ["learning_stance", "late_start"],
+  career: ["career_transition", "delegation_handoff", "self_expression_risk"],
+  love: ["relationship_boundary", "career_family_conflict"],
+  body_mind: ["health_constraint", "physical_pain_creation", "midlife_withdrawal"],
+  finance: ["financial_rebuild", "wealth_distribution"],
+};
+
+export type DomainSignalBand = "opportunity" | "pressure" | "neutral";
+
+/**
+ * Classify today's domain score (0..100) into an explicit signal band.
+ * Distinct from "distance from 50" — a 30 (pressure) must not be treated
+ * as equivalent to a 70 (opportunity). Thresholds mirror the plain-
+ * language interpreter used elsewhere in the reading room.
+ */
+export function classifyDomainSignal(score: number | null | undefined): DomainSignalBand {
+  if (typeof score !== "number" || Number.isNaN(score)) return "neutral";
+  if (score >= 60) return "opportunity";
+  if (score <= 40) return "pressure";
+  return "neutral";
+}
+
+export type FigureReasonKey = "stage" | "concern" | "domain" | "signal";
+
+export type FigureReason = {
+  key: FigureReasonKey;
+  label: Record<Lang, string>;
+};
+
+export type FigureRecommendation = {
+  figure: HistoricalFigure;
+  meta: FigureMeta;
+  score: number;
+  reasons: FigureReason[];
+  matchLevel: "high" | "stage_only";
+};
+
+export type RecommendFiguresInput = {
+  stage: LifeStage;
+  concern?: string | null;
+  domain?: DomainKey | null;
+  domainSignal?: DomainSignalBand | null;
+  /** Localized domain label (e.g. "事业" / "Career") for reason chips. */
+  domainLabel?: string | null;
+};
+
+/**
+ * Deterministic four-layer scorer. Same input → same ordering. No AI,
+ * no Math.random. Only figures whose `stage` matches are ever returned.
+ *
+ * Layers:
+ *   L1 stage       (mandatory filter)              — always adds "stage" reason
+ *   L2 concern     (concern tag ∩ figure.tags)     +3, adds "concern"
+ *   L3 domain lens (domain tag ∩ figure.tags  OR
+ *                   figure.domains ∋ domain)       +2, adds "domain"
+ *   L4 signal      (figure.signal === today's band
+ *                   AND band !== "neutral")        +2, adds "signal"
+ *
+ * `matchLevel = "high"` when total ≥ 3 (i.e. at least concern hit, or
+ * both domain and signal hit); otherwise "stage_only" so the UI can
+ * disclose "recommended by life stage only".
+ *
+ * Tie-break: curatedRank ascending, then insertion order in
+ * `historicalFigures` — never insertion order in `FIGURE_META`.
+ */
+export function recommendFigures(input: RecommendFiguresInput): FigureRecommendation[] {
+  const { stage, concern, domain, domainSignal, domainLabel } = input;
+  const insertionIndex = new Map<string, number>();
+  historicalFigures.forEach((f, i) => insertionIndex.set(f.key, i));
+
+  const stageMatches = historicalFigures.filter((f) => f.stage === stage);
+  const concernTags = new Set<SituationTag>(
+    concern && CONCERN_TAG_MAP[concern] ? CONCERN_TAG_MAP[concern] : [],
+  );
+  const domainTags = new Set<SituationTag>(
+    domain && DOMAIN_TAG_MAP[domain] ? DOMAIN_TAG_MAP[domain] : [],
+  );
+  const stageLabel: Record<Lang, string> = {
+    zh: "人生阶段相近",
+    en: "Similar life stage",
+  };
+  const concernLabel: Record<Lang, string> = {
+    zh: "对准你现在关心的方向",
+    en: "Speaks to your current concern",
+  };
+  const domainLabelReason = (dl: string | null | undefined): Record<Lang, string> => ({
+    zh: dl ? `贴近今天更受关注的「${dl}」` : "贴近今天更受关注的方向",
+    en: dl ? `Aligned with today's focus on ${dl}` : "Aligned with today's focus",
+  });
+  const signalLabel = (band: DomainSignalBand, dl: string | null | undefined): Record<Lang, string> => {
+    if (band === "opportunity") {
+      return {
+        zh: dl ? `今天的「${dl}」处于机会窗口` : "今天处于机会窗口",
+        en: dl ? `Today's ${dl} sits in an opportunity window` : "Today sits in an opportunity window",
+      };
+    }
+    return {
+      zh: dl ? `今天的「${dl}」处于压力窗口` : "今天处于压力窗口",
+      en: dl ? `Today's ${dl} sits in a pressure window` : "Today sits in a pressure window",
+    };
+  };
+
+  const scored: FigureRecommendation[] = stageMatches.map((figure) => {
+    const meta = FIGURE_META[figure.key] ?? {
+      tags: [] as readonly SituationTag[],
+      signal: "neutral" as const,
+      curatedRank: 999,
+      sourceUrl: "",
+    };
+    const tagSet = new Set(meta.tags);
+    const reasons: FigureReason[] = [{ key: "stage", label: stageLabel }];
+    let score = 0;
+
+    const concernHit = [...concernTags].some((t) => tagSet.has(t));
+    if (concernHit) {
+      score += 3;
+      reasons.push({ key: "concern", label: concernLabel });
+    }
+
+    const domainTagHit = [...domainTags].some((t) => tagSet.has(t));
+    const domainListHit = !!domain && figure.domains.includes(domain);
+    if (domainTagHit || domainListHit) {
+      score += 2;
+      reasons.push({ key: "domain", label: domainLabelReason(domainLabel ?? null) });
+    }
+
+    if (
+      domainSignal &&
+      domainSignal !== "neutral" &&
+      meta.signal === domainSignal
+    ) {
+      score += 2;
+      reasons.push({ key: "signal", label: signalLabel(domainSignal, domainLabel ?? null) });
+    }
+
+    return {
+      figure,
+      meta,
+      score,
+      reasons,
+      matchLevel: score >= 3 ? "high" : "stage_only",
+    };
+  });
+
+  scored.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    if (a.meta.curatedRank !== b.meta.curatedRank)
+      return a.meta.curatedRank - b.meta.curatedRank;
+    return (
+      (insertionIndex.get(a.figure.key) ?? 0) -
+      (insertionIndex.get(b.figure.key) ?? 0)
+    );
+  });
+  return scored;
+}
+
+/**
+ * Bilingual source-note label surfaced under each biography card.
+ */
+export const figureSourceLabel: Record<Lang, string> = {
+  zh: "公开传记资料 · 维基百科",
+  en: "Public biography · Wikipedia",
+};
+
+/**
+ * Bilingual "recommended by life stage only" coverage banner shown when
+ * no concern/domain/signal produced a stronger match than stage alone.
+ */
+export const echoCoverageBanner: Record<Lang, { title: string; body: string }> = {
+  zh: {
+    title: "按人生阶段推荐",
+    body: "还没有强烈匹配到你现在关注的方向；下面这几位是按你所在的人生章节挑选的。",
+  },
+  en: {
+    title: "Recommended by life stage only",
+    body: "No strong match to your current focus yet — these figures are picked from the chapter you're in.",
+  },
+};
+
+/**
+ * Bilingual "reason" heading rendered as an aria label above chips.
+ */
+export const echoReasonHeading: Record<Lang, string> = {
+  zh: "为什么推荐这一位",
+  en: "Why we picked this one",
+};

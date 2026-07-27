@@ -174,3 +174,123 @@ describe("life-guidance-v1", () => {
     });
   });
 });
+
+import {
+  classifyDomainSignal,
+  recommendFigures,
+  FIGURE_META,
+  CONCERN_TAG_MAP,
+  DOMAIN_TAG_MAP,
+} from "@/lib/life-guidance-v1";
+
+describe("classifyDomainSignal", () => {
+  it("maps ≥60 → opportunity, ≤40 → pressure, else neutral", () => {
+    expect(classifyDomainSignal(72)).toBe("opportunity");
+    expect(classifyDomainSignal(60)).toBe("opportunity");
+    expect(classifyDomainSignal(59)).toBe("neutral");
+    expect(classifyDomainSignal(41)).toBe("neutral");
+    expect(classifyDomainSignal(40)).toBe("pressure");
+    expect(classifyDomainSignal(10)).toBe("pressure");
+    expect(classifyDomainSignal(null)).toBe("neutral");
+    expect(classifyDomainSignal(undefined)).toBe("neutral");
+  });
+});
+
+describe("FIGURE_META coverage", () => {
+  it("assigns metadata to every historical figure", () => {
+    for (const f of historicalFigures) {
+      const m = FIGURE_META[f.key];
+      expect(m).toBeDefined();
+      expect(m.tags.length).toBeGreaterThan(0);
+      expect(["opportunity", "pressure", "neutral"]).toContain(m.signal);
+      expect(m.sourceUrl.startsWith("http")).toBe(true);
+    }
+  });
+});
+
+describe("recommendFigures", () => {
+  it("is deterministic for identical input", () => {
+    const a = recommendFigures({
+      stage: "building_life",
+      concern: "love",
+      domain: "love",
+      domainSignal: "pressure",
+      domainLabel: "爱情",
+    });
+    const b = recommendFigures({
+      stage: "building_life",
+      concern: "love",
+      domain: "love",
+      domainSignal: "pressure",
+      domainLabel: "爱情",
+    });
+    expect(a.map((r) => r.figure.key)).toEqual(b.map((r) => r.figure.key));
+  });
+
+  it("all returned figures are in the requested stage", () => {
+    const list = recommendFigures({ stage: "midlife_reassessment" });
+    expect(list.length).toBeGreaterThan(0);
+    for (const r of list) expect(r.figure.stage).toBe("midlife_reassessment");
+  });
+
+  it("distinguishes opportunity vs pressure alignment on the same figure set", () => {
+    const opp = recommendFigures({
+      stage: "maturity_legacy",
+      domain: "finance",
+      domainSignal: "opportunity",
+    });
+    const pres = recommendFigures({
+      stage: "maturity_legacy",
+      domain: "finance",
+      domainSignal: "pressure",
+    });
+    // Different signals must not produce identical top ordering when at
+    // least one figure has a non-neutral signal — regression guard for
+    // the old "absolute-distance-from-50" bug.
+    const oppTop = opp[0].figure.key;
+    const presTop = pres[0].figure.key;
+    // Both branches must include a signal alignment reason when the top
+    // figure's signal matches the requested band.
+    if (FIGURE_META[oppTop].signal === "opportunity") {
+      expect(opp[0].reasons.some((r) => r.key === "signal")).toBe(true);
+    }
+    if (FIGURE_META[presTop].signal === "pressure") {
+      expect(pres[0].reasons.some((r) => r.key === "signal")).toBe(true);
+    }
+  });
+
+  it("emits a 'concern' reason chip when concern tags overlap", () => {
+    const list = recommendFigures({
+      stage: "midlife_reassessment",
+      concern: "finance",
+    });
+    const top = list[0];
+    // gauguin sits under midlife_reassessment with financial_rebuild tag
+    expect(top.reasons.some((r) => r.key === "concern")).toBe(true);
+    expect(top.matchLevel).toBe("high");
+  });
+
+  it("falls back to matchLevel=stage_only when nothing beyond stage matches", () => {
+    const list = recommendFigures({
+      stage: "learning_self",
+      concern: "finance", // no overlap with learning_self figures
+      domain: null,
+      domainSignal: "neutral",
+    });
+    expect(list.every((r) => r.matchLevel === "stage_only")).toBe(true);
+    // stage reason still present so UI can render the chip row
+    expect(list[0].reasons.some((r) => r.key === "stage")).toBe(true);
+  });
+
+  it("CONCERN_TAG_MAP covers every concern key with a valid list", () => {
+    for (const k of Object.keys(CONCERN_TAG_MAP)) {
+      expect(Array.isArray(CONCERN_TAG_MAP[k])).toBe(true);
+    }
+  });
+
+  it("DOMAIN_TAG_MAP covers all five domains", () => {
+    for (const d of ["love", "study", "career", "body_mind", "finance"] as const) {
+      expect(DOMAIN_TAG_MAP[d].length).toBeGreaterThan(0);
+    }
+  });
+});

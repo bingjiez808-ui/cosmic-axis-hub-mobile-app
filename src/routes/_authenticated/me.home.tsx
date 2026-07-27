@@ -17,6 +17,7 @@ import {
   defaultStageForAge,
   computeAge,
   pickPriorityDomain,
+  classifyDomainSignal,
   curatorLetter,
   isOnboardingIntent,
   ONBOARDING_INTENTS,
@@ -24,6 +25,7 @@ import {
   normalizeLang,
   type LifeStage,
   type OnboardingIntent,
+  type DomainSignalBand,
 } from "@/lib/life-guidance-v1";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -756,8 +758,16 @@ function DailyRoomPage() {
                     primaryBirthDate={primaryBirthDate}
                     todayISO={today}
                     priority={priority}
+                    concern={concern}
+                    domainScore={
+                      priority
+                        ? score.domains.find((dd) => dd.domain === priority)?.score ?? null
+                        : null
+                    }
+                    domainLabel={priority ? domainLabel(priority) : null}
                     initialExpanded={peersFocused}
                   />
+
                 </>
               )}
             </div>
@@ -854,11 +864,17 @@ function HistoricalEchoSlot({
   primaryBirthDate,
   todayISO,
   priority,
+  concern,
+  domainScore,
+  domainLabel,
   initialExpanded,
 }: {
   primaryBirthDate: string | null;
   todayISO: string;
   priority: ReturnType<typeof pickPriorityDomain>;
+  concern: ConcernKey | null;
+  domainScore: number | null;
+  domainLabel: string | null;
   initialExpanded?: boolean;
 }) {
   const defaultStage: LifeStage | null = defaultStageForAge(
@@ -892,10 +908,14 @@ function HistoricalEchoSlot({
   }, [defaultStage, stage]);
 
   if (!primaryBirthDate || !stage) return null;
+  const signal: DomainSignalBand = classifyDomainSignal(domainScore);
   return (
     <HistoricalEcho
       stage={stage}
       domain={priority}
+      concern={concern}
+      domainSignal={signal}
+      domainLabel={domainLabel}
       initialExpanded={initialExpanded}
     />
   );

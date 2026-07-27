@@ -5,9 +5,14 @@ import { useServerFn } from "@tanstack/react-start";
 import { useLang } from "@/lib/i18n";
 import {
   echoCopy,
+  echoCoverageBanner,
+  echoReasonHeading,
+  figureSourceLabel,
   normalizeLang,
-  figuresFor,
+  recommendFigures,
   type DomainKey,
+  type DomainSignalBand,
+  type FigureRecommendation,
   type HistoricalFigure,
   type LifeStage,
 } from "@/lib/life-guidance-v1";
@@ -21,6 +26,12 @@ import {
 export type HistoricalEchoProps = {
   stage: LifeStage | null;
   domain: DomainKey | null;
+  /** Today's picked concern (from concern-guidance-v1). */
+  concern?: string | null;
+  /** Today's priority-domain signal band. */
+  domainSignal?: DomainSignalBand | null;
+  /** Localized label for today's priority domain (e.g. "事业"). */
+  domainLabel?: string | null;
   /**
    * When set, expands the deck on first render — used by focus=peers
    * deep-links so the traveller doesn't have to guess which card holds
@@ -36,14 +47,35 @@ export type HistoricalEchoProps = {
  * page") and written response ("write in the margin"). Both save to
  * the signed-in user's private tables.
  */
-export function HistoricalEcho({ stage, domain, initialExpanded }: HistoricalEchoProps) {
+export function HistoricalEcho({
+  stage,
+  domain,
+  concern,
+  domainSignal,
+  domainLabel,
+  initialExpanded,
+}: HistoricalEchoProps) {
   const { lang } = useLang();
-  const copy = echoCopy[normalizeLang(lang)];
+  const nlang = normalizeLang(lang);
+  const copy = echoCopy[nlang];
+  const bannerCopy = echoCoverageBanner[nlang];
+  const reasonHeading = echoReasonHeading[nlang];
 
-  const list = useMemo(
-    () => (stage ? figuresFor(stage, domain) : []),
-    [stage, domain],
+  const recs: FigureRecommendation[] = useMemo(
+    () =>
+      stage
+        ? recommendFigures({
+            stage,
+            concern: concern ?? null,
+            domain: domain ?? null,
+            domainSignal: domainSignal ?? null,
+            domainLabel: domainLabel ?? null,
+          })
+        : [],
+    [stage, concern, domain, domainSignal, domainLabel],
   );
+  const list = useMemo(() => recs.map((r) => r.figure), [recs]);
+  const stageOnly = recs.length > 0 && recs.every((r) => r.matchLevel === "stage_only");
   const [expanded, setExpanded] = useState<boolean>(Boolean(initialExpanded));
 
   const [idx, setIdx] = useState(0);
@@ -78,9 +110,10 @@ export function HistoricalEcho({ stage, domain, initialExpanded }: HistoricalEch
   // Reset carousel when list identity changes.
   useEffect(() => {
     setIdx(0);
-  }, [stage, domain]);
+  }, [stage, domain, concern, domainSignal]);
 
   const current = list[idx] ?? null;
+  const currentRec = recs[idx] ?? null;
 
   useEffect(() => {
     if (!expanded || !current) return;
@@ -100,6 +133,7 @@ export function HistoricalEcho({ stage, domain, initialExpanded }: HistoricalEch
       cancelled = true;
     };
   }, [expanded, current, getResponseFn]);
+
 
   if (!stage || list.length === 0) {
     return null;
@@ -237,6 +271,19 @@ export function HistoricalEcho({ stage, domain, initialExpanded }: HistoricalEch
               {copy.disclaimer}
             </p>
 
+            {stageOnly ? (
+              <div
+                className="mt-4 rounded-md border border-amber-400/25 bg-amber-500/5 px-3 py-2 text-xs text-amber-100/80"
+                data-testid="historical-echo-coverage-banner"
+              >
+                <div className="text-[11px] uppercase tracking-widest text-amber-200/70">
+                  {bannerCopy.title}
+                </div>
+                <p className="mt-1">{bannerCopy.body}</p>
+              </div>
+            ) : null}
+
+
             <div className="mt-5 flex items-center justify-between text-xs text-amber-200/70">
               <button
                 type="button"
@@ -267,8 +314,11 @@ export function HistoricalEcho({ stage, domain, initialExpanded }: HistoricalEch
               <FigureCard
                 key={current.key}
                 figure={current}
-                lang={lang}
+                recommendation={currentRec}
+                lang={nlang}
                 copy={copy}
+                reasonHeading={reasonHeading}
+                sourceLabel={figureSourceLabel[nlang]}
                 bookmarked={isBookmarked}
                 onBookmark={onBookmark}
                 response={response}
@@ -286,6 +336,7 @@ export function HistoricalEcho({ stage, domain, initialExpanded }: HistoricalEch
               <p className="mt-6 text-sm text-amber-100/70">{copy.empty}</p>
             )}
 
+
             <div className="mt-8 border-t border-amber-400/10 pt-4 text-xs leading-relaxed text-amber-100/70">
               <p>{copy.closeQuote1}</p>
               <p className="mt-2 font-serif italic text-amber-200/90">{copy.closeQuote2}</p>
@@ -301,8 +352,11 @@ export function HistoricalEcho({ stage, domain, initialExpanded }: HistoricalEch
 
 function FigureCard({
   figure,
+  recommendation,
   lang,
   copy,
+  reasonHeading,
+  sourceLabel,
   bookmarked,
   onBookmark,
   response,
@@ -314,8 +368,11 @@ function FigureCard({
   savedResp,
 }: {
   figure: HistoricalFigure;
+  recommendation: FigureRecommendation | null;
   lang: "en" | "zh";
   copy: (typeof echoCopy)["en"];
+  reasonHeading: string;
+  sourceLabel: string;
   bookmarked: boolean;
   onBookmark: () => void;
   response: string;
@@ -352,6 +409,30 @@ function FigureCard({
           {bookmarked ? copy.bookmarked : copy.bookmark}
         </button>
       </div>
+
+      {recommendation && recommendation.reasons.length > 0 ? (
+        <div
+          className="mt-3"
+          aria-label={reasonHeading}
+          data-testid={`figure-reasons-${figure.key}`}
+        >
+          <div className="text-[11px] uppercase tracking-widest text-amber-200/70">
+            {reasonHeading}
+          </div>
+          <ul className="mt-2 flex flex-wrap gap-2">
+            {recommendation.reasons.map((r) => (
+              <li
+                key={r.key}
+                className="rounded-full border border-amber-400/25 bg-amber-500/5 px-3 py-1 text-[11px] text-amber-100/85"
+                data-reason-key={r.key}
+              >
+                {r.label[lang]}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
 
       <dl className="mt-4 grid gap-4 md:grid-cols-2">
         <Field label={copy.situationLabel} value={figure.situation[lang]} />
@@ -439,6 +520,19 @@ function FigureCard({
           <div className="mt-2 text-[11px] text-emerald-300/80">{copy.respondSaved}</div>
         ) : null}
       </div>
+
+      {recommendation && recommendation.meta.sourceUrl ? (
+        <div className="mt-4 border-t border-amber-400/10 pt-3 text-[11px] text-amber-200/60">
+          <a
+            href={recommendation.meta.sourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline decoration-amber-400/40 underline-offset-2 hover:text-amber-100"
+          >
+            {sourceLabel} ↗
+          </a>
+        </div>
+      ) : null}
     </article>
   );
 }
