@@ -73,6 +73,7 @@ function MyProfilePage() {
   return (
     <div className="min-h-screen bg-[#0a0a12] text-amber-50">
       <div className="mx-auto w-full max-w-[1100px] px-4 py-8 md:px-8 md:py-12">
+        <PersonalWorkspaceNav active="/me/profile" />
         <header className="mb-8">
           <div className="text-xs uppercase tracking-[0.24em] text-amber-300/60">
             {d.profile_kicker}

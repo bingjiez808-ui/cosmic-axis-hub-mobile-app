@@ -234,11 +234,17 @@ function OraclePage() {
   return (
     <div className="min-h-screen bg-[#0a0a12] text-amber-50">
       <div className="mx-auto w-full max-w-[900px] px-4 py-8 md:px-8 md:py-12">
+        <PersonalWorkspaceNav active="/me/oracle" />
         <header className="mb-6">
           <div className="text-[11px] uppercase tracking-[0.24em] text-amber-300/70">
             {t("kicker")}
           </div>
           <h1 className="mt-2 font-serif text-3xl tracking-wide md:text-4xl">{t("title")}</h1>
+          <p className="mt-2 text-sm text-amber-100/70" data-testid="oracle-purpose-hint">
+            {lang === "zh"
+              ? "神谕者阅览室：本页做四体系交叉解读与 90 天窗口。命盘管理请回「命盘与报告」，会员到期在同一页面。"
+              : "Oracle Reading Room: this page runs cross-tradition readings and 90-day windows. Manage charts on ‘Charts & Reports’; membership state stays on the same tab."}
+          </p>
         </header>
 
         {/* Membership status */}

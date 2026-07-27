@@ -122,8 +122,7 @@ function FriendsPage() {
 
         <PersonalWorkspaceNav active="/me/friends" />
         <p className="mb-4 text-xs text-amber-200/60" data-testid="friends-purpose-hint">
-          {d.nav_today ? "" : ""}
-          {(() => "")()}
+          {d.friends_subtitle}
         </p>
 
         <header className="mb-6">
