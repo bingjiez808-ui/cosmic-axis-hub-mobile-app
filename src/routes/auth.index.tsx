@@ -108,7 +108,16 @@ function AuthPage() {
     let cancelled = false;
     const bounce = () => {
       getPostAuthDestination().then((to) => {
-        if (!cancelled) navigate({ to: to as never });
+        if (cancelled) return;
+        // TanStack `navigate({ to })` drops hash fragments on string
+        // routes. When the caller wants us to land on a specific in-page
+        // anchor (e.g. `/me/home?focus=peers#life-chapter`) we fall back
+        // to a full same-origin assign so both search and hash survive.
+        if (to.includes("#") || to.includes("?")) {
+          window.location.assign(to);
+        } else {
+          navigate({ to: to as never });
+        }
       });
     };
     supabase.auth.getSession().then(({ data }) => {
@@ -123,6 +132,7 @@ function AuthPage() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate, search.redirect]);
+
 
   const isSignup = mode === "signup";
   const pwRules = useMemo(() => evaluatePassword(password), [password]);
