@@ -314,8 +314,11 @@ export function HistoricalEcho({
               <FigureCard
                 key={current.key}
                 figure={current}
-                lang={lang}
+                recommendation={currentRec}
+                lang={nlang}
                 copy={copy}
+                reasonHeading={reasonHeading}
+                sourceLabel={figureSourceLabel[nlang]}
                 bookmarked={isBookmarked}
                 onBookmark={onBookmark}
                 response={response}
@@ -332,6 +335,7 @@ export function HistoricalEcho({
             ) : (
               <p className="mt-6 text-sm text-amber-100/70">{copy.empty}</p>
             )}
+
 
             <div className="mt-8 border-t border-amber-400/10 pt-4 text-xs leading-relaxed text-amber-100/70">
               <p>{copy.closeQuote1}</p>
