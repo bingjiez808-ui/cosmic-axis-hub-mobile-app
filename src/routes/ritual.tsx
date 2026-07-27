@@ -139,12 +139,13 @@ function RitualPage() {
     gender: "",
   });
   // `gender: ""` in `values` starts unset. Users must click an explicit
-  // option — including "prefer not to say" — before advancing. We track
-  // that explicit-choice separately so an untouched gender step still
-  // blocks Next with an inline explanation.
+  // option — including "prefer not to say" — before advancing.
   const [genderChosen, setGenderChosen] = useState(false);
+  // Ownership: this chart is mine, or someone else's? Never defaults —
+  // must be explicitly chosen so the DB row is filed correctly.
+  const [ownerRole, setOwnerRole] = useState<OwnerRole>("");
+  const [relationship, setRelationship] = useState<Relationship>("");
   const [quiz] = useState<string[]>(["", "", "", "", ""]);
-  // Quiz has been retired — the flow is intake-only now.
   const [step, setStep] = useState(0);
   const skipQuiz = true;
   const [restored, setRestored] = useState(false);
@@ -158,7 +159,12 @@ function RitualPage() {
         const s = JSON.parse(raw);
         if (s && typeof s === "object") {
           if (s.values) setValues((v) => ({ ...v, ...s.values }));
-          if (typeof s.step === "number") setStep(Math.max(0, Math.min(s.step, 4)));
+          if (typeof s.step === "number") setStep(Math.max(0, Math.min(s.step, 5)));
+          if (s.ownerRole === "self" || s.ownerRole === "other") setOwnerRole(s.ownerRole);
+          if (typeof s.relationship === "string" && s.relationship in RELATIONSHIP_LABELS) {
+            setRelationship(s.relationship as Relationship);
+          }
+          if (s.genderChosen === true) setGenderChosen(true);
         }
       }
     } catch {}
