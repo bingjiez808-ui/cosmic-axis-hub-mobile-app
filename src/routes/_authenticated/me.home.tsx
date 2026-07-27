@@ -576,6 +576,39 @@ function DailyRoomPage() {
           <p className="mt-2 text-amber-100/80">{d.reflection_body}</p>
         </section>
 
+        {/* ─── Life chapter right now (deterministic, 0-AI) ─── */}
+        {(() => {
+          const primaryBirthDate =
+            real.kind === "ready"
+              ? real.charts.find((c) => c.is_primary && c.chart_role === "self")
+                  ?.birth_date ?? null
+              : null;
+          const priority = pickPriorityDomain(score.domains);
+          return (
+            <>
+              <LifeChapterCard
+                primaryBirthDate={primaryBirthDate}
+                todayISO={today}
+                domainScores={score.domains}
+                domainLabels={{
+                  love: d.domain.love,
+                  study: d.domain.study,
+                  career: d.domain.career,
+                  body_mind: d.domain.body_mind,
+                  finance: d.domain.finance,
+                }}
+              />
+              <HistoricalEchoSlot
+                primaryBirthDate={primaryBirthDate}
+                todayISO={today}
+                priority={priority}
+              />
+            </>
+          );
+        })()}
+
+
+
         {/* Evidence section — collapsed by default; membership gating moved to /me/profile */}
         {(
           <section className="mb-16 rounded-xl border border-amber-400/15 bg-black/20">
