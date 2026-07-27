@@ -10,12 +10,23 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { LIFE_STAGES, ONBOARDING_INTENTS } from "@/lib/life-guidance-v1";
 import { CONCERN_KEYS } from "@/lib/concern-guidance-v1";
+import {
+  DAILY_FOCUSES,
+  SUPPORT_MODES,
+  localDateKey,
+} from "@/lib/user-state-model";
 
 const stageSchema = z.enum(LIFE_STAGES as unknown as [string, ...string[]]);
 const intentSchema = z.enum(
   ONBOARDING_INTENTS as unknown as [string, ...string[]],
 );
 const concernSchema = z.enum(CONCERN_KEYS as unknown as [string, ...string[]]);
+const dailyFocusSchema = z.enum(
+  DAILY_FOCUSES as unknown as [string, ...string[]],
+);
+const supportModeSchema = z.enum(
+  SUPPORT_MODES as unknown as [string, ...string[]],
+);
 
 export const setConcern = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
