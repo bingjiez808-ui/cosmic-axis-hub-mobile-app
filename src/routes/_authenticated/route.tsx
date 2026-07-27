@@ -51,12 +51,18 @@ export const Route = createFileRoute("/_authenticated")({
   pendingMs: 0,
   pendingComponent: DailyRoomPending,
   errorComponent: DailyRoomError,
+  // Use `getSession()` — a *local* localStorage read — instead of
+  // `getUser()`, which does a network call to /auth/v1/user and blocks
+  // the entire authenticated subtree behind DailyRoomPending for seconds.
+  // The session token is verified by the server on every subsequent
+  // request; we only need to confirm the user has a local session before
+  // rendering the frame. Component-level effects can re-verify.
   beforeLoad: async ({ location }) => {
-    let data: Awaited<ReturnType<typeof supabase.auth.getUser>>["data"] | null = null;
+    let session: Awaited<ReturnType<typeof supabase.auth.getSession>>["data"]["session"] | null = null;
     let error: unknown = null;
     try {
-      const res = await supabase.auth.getUser();
-      data = res.data;
+      const res = await supabase.auth.getSession();
+      session = res.data.session;
       error = res.error;
     } catch (e) {
       error = e;
@@ -64,10 +70,10 @@ export const Route = createFileRoute("/_authenticated")({
     if (error && isRetryableFetchError(error)) {
       throw new AuthRefreshFailedError(error);
     }
-    if (error || !data?.user) {
+    if (!session?.user) {
       throw redirect({ to: "/auth", search: { redirect: location.href } as never });
     }
-    return { userId: data.user.id };
+    return { userId: session.user.id };
   },
   component: () => <Outlet />,
 });
