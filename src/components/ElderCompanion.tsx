@@ -4,9 +4,11 @@ import { X, Send, Loader2 } from "lucide-react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 
-import { sageChat, type SageChatResponse } from "@/lib/sage.functions";
+import { sageChat, type SageChatResponse, type SageNextAction } from "@/lib/sage.functions";
+import { createFeedbackTicket } from "@/lib/tickets.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { SageAvatar } from "@/components/SageAvatar";
+
 
 /**
  * SageCompanion — the single, unified floating "Sage" avatar in the
