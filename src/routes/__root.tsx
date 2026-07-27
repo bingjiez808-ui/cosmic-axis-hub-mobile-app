@@ -573,6 +573,8 @@ function SiteNav() {
               to={item.to}
               onClick={() => setDrawerOpen(false)}
               aria-current={active ? "page" : undefined}
+              aria-label={item.ariaLabel}
+              title={item.ariaLabel}
               className={`flex min-h-11 items-center justify-end whitespace-nowrap rounded-lg px-4 py-3 text-right text-[13px] ${
                 isZh ? "tracking-normal" : "uppercase tracking-[0.24em]"
               } ${active ? "bg-gold-dust/10 text-gold-light" : "text-stone-warm/85 hover:bg-gold-dust/10 hover:text-gold-light"}`}
