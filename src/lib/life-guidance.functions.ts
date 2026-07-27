@@ -9,11 +9,31 @@ import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { LIFE_STAGES, ONBOARDING_INTENTS } from "@/lib/life-guidance-v1";
+import { CONCERN_KEYS } from "@/lib/concern-guidance-v1";
 
 const stageSchema = z.enum(LIFE_STAGES as unknown as [string, ...string[]]);
 const intentSchema = z.enum(
   ONBOARDING_INTENTS as unknown as [string, ...string[]],
 );
+const concernSchema = z.enum(CONCERN_KEYS as unknown as [string, ...string[]]);
+
+export const setConcern = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((raw) => z.object({ concern: concernSchema }).parse(raw))
+  .handler(async ({ context, data }) => {
+    const { error } = await context.supabase
+      .from("user_preferences" as never)
+      .upsert(
+        {
+          user_id: context.userId,
+          concern: data.concern,
+          concern_at: new Date().toISOString(),
+        } as never,
+        { onConflict: "user_id" },
+      );
+    if (error) throw error;
+    return { ok: true as const };
+  });
 
 export const getLifeGuidancePrefs = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -21,7 +41,7 @@ export const getLifeGuidancePrefs = createServerFn({ method: "GET" })
     const { data, error } = await context.supabase
       .from("user_preferences" as never)
       .select(
-        "life_stage, life_stage_source, onboarding_intent, onboarding_intent_at, updated_at",
+        "life_stage, life_stage_source, onboarding_intent, onboarding_intent_at, concern, concern_at, updated_at",
       )
       .eq("user_id", context.userId)
       .maybeSingle();
@@ -31,6 +51,8 @@ export const getLifeGuidancePrefs = createServerFn({ method: "GET" })
       life_stage_source: "auto" | "user" | null;
       onboarding_intent: string | null;
       onboarding_intent_at: string | null;
+      concern: string | null;
+      concern_at: string | null;
       updated_at: string;
     } | null;
   });
