@@ -5,6 +5,7 @@ import { CuratorLetter } from "@/components/CuratorLetter";
 import { ConcernSelector } from "@/components/ConcernSelector";
 import { FeatureLibraryShelf } from "@/components/FeatureLibraryShelf";
 import { useLang } from "@/lib/i18n";
+import { useSupabaseSession } from "@/lib/session";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -15,6 +16,7 @@ export const Route = createFileRoute("/")({
   }),
   component: LandingPage,
 });
+
 
 function HeroLanguageChooser() {
   const { lang, setLang, t } = useLang();
