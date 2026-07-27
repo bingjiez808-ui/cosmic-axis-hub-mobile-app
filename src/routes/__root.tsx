@@ -298,7 +298,8 @@ function SiteNav() {
   const avatarUrl = hydrated ? account?.avatar : undefined;
   const isZh = lang === "zh";
   const adminLabel = isZh ? "议政厅" : "Admin";
-  const libraryHomeLabel = isZh ? "图书馆首页" : "Library Home";
+  const libraryHomeLabel = isZh ? "导览室" : "Guide Hall";
+  const libraryHomeAria = isZh ? "导览室（首页）" : "Guide Hall (Home)";
   const myHomeLabel = isZh ? "我的主页" : "My Home";
   const moreLabel = isZh ? "了解 · 更多" : "Learn · More";
 
@@ -355,12 +356,14 @@ function SiteNav() {
   const isActive = (to: string) =>
     to === "/" ? pathname === "/" : pathname === to || pathname.startsWith(to + "/");
 
-  const NavLink = ({ to, label }: { to: string; label: string }) => {
+  const NavLink = ({ to, label, ariaLabel }: { to: string; label: string; ariaLabel?: string }) => {
     const active = isActive(to);
     return (
       <Link
         to={to}
         aria-current={active ? "page" : undefined}
+        aria-label={ariaLabel}
+        title={ariaLabel}
         className={`${linkBase} ${active ? linkActive : linkIdle}`}
       >
         {label}
@@ -374,15 +377,15 @@ function SiteNav() {
   const orbVisible = orbActive && !showTopBar && !drawerOpen;
 
   // Core nav entries per auth state (mobile drawer mirrors these + "More")
-  const coreEntries: Array<{ to: string; label: string }> = session
+  const coreEntries: Array<{ to: string; label: string; ariaLabel?: string }> = session
     ? [
-        { to: "/", label: libraryHomeLabel },
+        { to: "/", label: libraryHomeLabel, ariaLabel: libraryHomeAria },
         { to: "/me/home", label: myHomeLabel },
         { to: "/ritual", label: t.nav_ritual },
         { to: "/community", label: t.nav_community },
       ]
     : [
-        { to: "/", label: libraryHomeLabel },
+        { to: "/", label: libraryHomeLabel, ariaLabel: libraryHomeAria },
         { to: "/ritual", label: t.nav_ritual },
         { to: "/traditions", label: t.nav_traditions },
         { to: "/community", label: t.nav_community },
@@ -419,7 +422,7 @@ function SiteNav() {
           {/* Brand — returns to library home; not the only home entry */}
           <Link
             to="/"
-            aria-label={libraryHomeLabel}
+            aria-label={libraryHomeAria}
             className="min-w-0 flex-1 truncate font-serif text-sm tracking-normal text-stone-warm md:flex-none md:justify-self-start md:whitespace-nowrap md:text-base"
           >
             Destiny<span className="text-gold-dust">·</span>Library
@@ -428,7 +431,7 @@ function SiteNav() {
           {/* Core nav (desktop) */}
           <div className="hidden items-center justify-center gap-4 md:flex md:justify-self-center lg:gap-8">
             {coreEntries.map((e) => (
-              <NavLink key={e.to} to={e.to} label={e.label} />
+              <NavLink key={e.to} to={e.to} label={e.label} ariaLabel={e.ariaLabel} />
             ))}
             {moreEntries.length > 0 && (
               <div className="relative" data-more-menu>
@@ -570,6 +573,8 @@ function SiteNav() {
               to={item.to}
               onClick={() => setDrawerOpen(false)}
               aria-current={active ? "page" : undefined}
+              aria-label={item.ariaLabel}
+              title={item.ariaLabel}
               className={`flex min-h-11 items-center justify-end whitespace-nowrap rounded-lg px-4 py-3 text-right text-[13px] ${
                 isZh ? "tracking-normal" : "uppercase tracking-[0.24em]"
               } ${active ? "bg-gold-dust/10 text-gold-light" : "text-stone-warm/85 hover:bg-gold-dust/10 hover:text-gold-light"}`}

@@ -87,6 +87,15 @@ function LandingPage() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, ease: [0.32, 0.72, 0, 1] }}
+          className="relative z-10 mb-3 text-[10px] font-light uppercase tracking-[0.48em] text-stone-warm/55"
+        >
+          {isZh ? "命运图书馆 · 导览室" : "Destiny Library · Guide Hall"}
+        </motion.p>
+
+        <motion.p
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, ease: [0.32, 0.72, 0, 1] }}
           className="relative z-10 mb-8 text-[11px] font-light uppercase tracking-[0.42em] text-gold-dust"
         >
           {t.hero_kicker}
