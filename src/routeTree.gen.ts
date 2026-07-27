@@ -40,6 +40,7 @@ import { Route as AuthenticatedMeOracleRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedMeMembershipRouteImport } from './routes/_authenticated/me.membership'
 import { Route as AuthenticatedMeMatchRouteImport } from './routes/_authenticated/me.match'
 import { Route as AuthenticatedMeHomeRouteImport } from './routes/_authenticated/me.home'
+import { Route as AuthenticatedMeFunLibraryRouteImport } from './routes/_authenticated/me.fun-library'
 import { Route as AuthenticatedMeFriendsRouteImport } from './routes/_authenticated/me.friends'
 import { Route as AuthenticatedMeEchoesRouteImport } from './routes/_authenticated/me.echoes'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
@@ -203,6 +204,12 @@ const AuthenticatedMeHomeRoute = AuthenticatedMeHomeRouteImport.update({
   path: '/me/home',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedMeFunLibraryRoute =
+  AuthenticatedMeFunLibraryRouteImport.update({
+    id: '/me/fun-library',
+    path: '/me/fun-library',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedMeFriendsRoute = AuthenticatedMeFriendsRouteImport.update({
   id: '/me/friends',
   path: '/me/friends',
@@ -254,6 +261,7 @@ export interface FileRoutesByFullPath {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/me/echoes': typeof AuthenticatedMeEchoesRoute
   '/me/friends': typeof AuthenticatedMeFriendsRoute
+  '/me/fun-library': typeof AuthenticatedMeFunLibraryRoute
   '/me/home': typeof AuthenticatedMeHomeRoute
   '/me/match': typeof AuthenticatedMeMatchRoute
   '/me/membership': typeof AuthenticatedMeMembershipRoute
@@ -289,6 +297,7 @@ export interface FileRoutesByTo {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/me/echoes': typeof AuthenticatedMeEchoesRoute
   '/me/friends': typeof AuthenticatedMeFriendsRoute
+  '/me/fun-library': typeof AuthenticatedMeFunLibraryRoute
   '/me/home': typeof AuthenticatedMeHomeRoute
   '/me/match': typeof AuthenticatedMeMatchRoute
   '/me/membership': typeof AuthenticatedMeMembershipRoute
@@ -327,6 +336,7 @@ export interface FileRoutesById {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/_authenticated/me/echoes': typeof AuthenticatedMeEchoesRoute
   '/_authenticated/me/friends': typeof AuthenticatedMeFriendsRoute
+  '/_authenticated/me/fun-library': typeof AuthenticatedMeFunLibraryRoute
   '/_authenticated/me/home': typeof AuthenticatedMeHomeRoute
   '/_authenticated/me/match': typeof AuthenticatedMeMatchRoute
   '/_authenticated/me/membership': typeof AuthenticatedMeMembershipRoute
@@ -365,6 +375,7 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/me/echoes'
     | '/me/friends'
+    | '/me/fun-library'
     | '/me/home'
     | '/me/match'
     | '/me/membership'
@@ -400,6 +411,7 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/me/echoes'
     | '/me/friends'
+    | '/me/fun-library'
     | '/me/home'
     | '/me/match'
     | '/me/membership'
@@ -437,6 +449,7 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/_authenticated/me/echoes'
     | '/_authenticated/me/friends'
+    | '/_authenticated/me/fun-library'
     | '/_authenticated/me/home'
     | '/_authenticated/me/match'
     | '/_authenticated/me/membership'
@@ -690,6 +703,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMeHomeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/me/fun-library': {
+      id: '/_authenticated/me/fun-library'
+      path: '/me/fun-library'
+      fullPath: '/me/fun-library'
+      preLoaderRoute: typeof AuthenticatedMeFunLibraryRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/me/friends': {
       id: '/_authenticated/me/friends'
       path: '/me/friends'
@@ -725,6 +745,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedMeEchoesRoute: typeof AuthenticatedMeEchoesRoute
   AuthenticatedMeFriendsRoute: typeof AuthenticatedMeFriendsRoute
+  AuthenticatedMeFunLibraryRoute: typeof AuthenticatedMeFunLibraryRoute
   AuthenticatedMeHomeRoute: typeof AuthenticatedMeHomeRoute
   AuthenticatedMeMatchRoute: typeof AuthenticatedMeMatchRoute
   AuthenticatedMeMembershipRoute: typeof AuthenticatedMeMembershipRoute
@@ -737,6 +758,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedMeEchoesRoute: AuthenticatedMeEchoesRoute,
   AuthenticatedMeFriendsRoute: AuthenticatedMeFriendsRoute,
+  AuthenticatedMeFunLibraryRoute: AuthenticatedMeFunLibraryRoute,
   AuthenticatedMeHomeRoute: AuthenticatedMeHomeRoute,
   AuthenticatedMeMatchRoute: AuthenticatedMeMatchRoute,
   AuthenticatedMeMembershipRoute: AuthenticatedMeMembershipRoute,
