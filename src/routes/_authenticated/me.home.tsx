@@ -687,7 +687,56 @@ function DailyRoomPage() {
   );
 }
 
+/**
+ * HistoricalEchoSlot — resolves the user's active life stage (server
+ * preference override → age-derived default) and hands it to
+ * HistoricalEcho along with today's priority domain.
+ */
+function HistoricalEchoSlot({
+  primaryBirthDate,
+  todayISO,
+  priority,
+}: {
+  primaryBirthDate: string | null;
+  todayISO: string;
+  priority: ReturnType<typeof pickPriorityDomain>;
+}) {
+  const defaultStage: LifeStage | null = defaultStageForAge(
+    computeAge(primaryBirthDate, todayISO),
+  );
+  const [stage, setStage] = useState<LifeStage | null>(defaultStage);
+  const getPrefs = useServerFn(getLifeGuidancePrefs);
+
+  useEffect(() => {
+    let cancelled = false;
+    getPrefs()
+      .then((row) => {
+        if (cancelled) return;
+        if (
+          row?.life_stage &&
+          (LIFE_STAGES as readonly string[]).includes(row.life_stage)
+        ) {
+          setStage(row.life_stage as LifeStage);
+        }
+      })
+      .catch(() => {
+        /* keep default */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [getPrefs]);
+
+  useEffect(() => {
+    if (defaultStage && !stage) setStage(defaultStage);
+  }, [defaultStage, stage]);
+
+  if (!primaryBirthDate || !stage) return null;
+  return <HistoricalEcho stage={stage} domain={priority} />;
+}
+
 /* ChartManager and inline row actions moved to src/experiences/profile/
  * ChartManager.tsx and re-hosted on the dedicated /me/profile page. Today's
  * Reading Room only shows a lightweight context bar. */
+
 
