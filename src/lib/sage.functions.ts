@@ -294,27 +294,13 @@ export const sageChat = createServerFn({ method: "POST" })
       };
     }
 
-    // 5) Order help — record a real ticket, only claim what actually happened.
+    // 5) Order help — return a ticket DRAFT. The user must call
+    //    createFeedbackTicket to actually persist. We do not write
+    //    anything to user_feedback here.
     if (intent === "order_help") {
-      let ticket: { id: string; category: "order" } | undefined;
-      try {
-        const summary = data.message.slice(0, 200);
-        const { data: inserted } = await supabase
-          .from("user_feedback")
-          .insert({
-            user_id: userId,
-            category: "order",
-            message: summary,
-            keywords: [],
-            lang: data.lang,
-          })
-          .select("id")
-          .maybeSingle();
-        if (inserted?.id) ticket = { id: String(inserted.id), category: "order" };
-      } catch {
-        // Ignore — the reply below still works without a ticket id.
-      }
-      const { text, next } = orderHelpAnswer(!!ticket, ticket?.id ?? null, data.lang);
+      const { text, next } = orderDraft(data.message, data.lang);
+      void supabase; // context available for future filter checks
+      void userId;
       return {
         intent,
         text,
@@ -322,9 +308,9 @@ export const sageChat = createServerFn({ method: "POST" })
         usedChart: false,
         chargedQuota: false,
         nextAction: next,
-        feedbackTicket: ticket,
       };
     }
+
 
     // 6) Emotional support — the only path that uses the model.
     try {
