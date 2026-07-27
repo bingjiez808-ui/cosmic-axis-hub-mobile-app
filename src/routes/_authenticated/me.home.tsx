@@ -300,8 +300,8 @@ function DailyRoomPage() {
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-amber-100/70">
             {lang === "zh"
-              ? "这是你每天回到图书馆的个人阅览桌。默认打开「今日命运」，也可从下方进入命盘、好友、历史回声与会员。"
-              : "This is your personal reading desk in the library. It opens with today's fate; use the cards below to reach charts, friends, historical echoes and membership."}
+              ? "这是你每天回到图书馆的个人书架。默认打开「今日命运」，也可从下方进入命盘、好友、历史回声与会员。"
+              : "This is your Personal Library shelf. It opens with today's fate; use the cards below to reach charts, friends, historical echoes and membership."}
           </p>
         </header>
 
