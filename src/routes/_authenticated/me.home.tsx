@@ -717,6 +717,36 @@ function DailyRoomPage() {
           </div>
         </section>
 
+        {/* Cross-module CTA — Fun Library (Reader-types). Short link only. */}
+        <section
+          className="mb-12 rounded-xl border border-amber-400/25 bg-black/30 px-5 py-5"
+          data-testid="home-fun-library-cta"
+        >
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="text-[11px] uppercase tracking-widest text-amber-200/70">
+                {lang === "zh" ? "趣味图书馆" : "Fun Library"}
+              </div>
+              <h3 className="mt-1 font-serif text-lg text-amber-100">
+                {lang === "zh"
+                  ? "领一本属于你的“藏书人格”"
+                  : "Claim your Reader-Type"}
+              </h3>
+              <p className="mt-1 text-xs text-amber-100/60">
+                {lang === "zh"
+                  ? "十二个荒诞夜晚的小选择，看看你是哪一种读书人。约五分钟。"
+                  : "Twelve absurd nights, twelve small choices — about five minutes."}
+              </p>
+            </div>
+            <Link
+              to="/me/fun-library"
+              className="inline-flex min-h-11 items-center rounded-full border border-amber-300/60 bg-amber-500/10 px-4 py-2 text-sm text-amber-100 hover:bg-amber-500/20"
+            >
+              {lang === "zh" ? "打开趣味图书馆 →" : "Open Fun Library →"}
+            </Link>
+          </div>
+        </section>
+
 
 
 
