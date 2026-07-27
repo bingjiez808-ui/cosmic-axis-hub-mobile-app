@@ -405,26 +405,31 @@ function RitualPage() {
                 <p className="mb-14 text-sm text-stone-warm/50">{currentQ.hint}</p>
 
                 {currentQ.key === "place" ? (
-                  <CityCombobox
-                    value={values.place}
-                    onChange={(v) => setValues((s) => ({ ...s, place: v }))}
-                    placeholder={currentQ.placeholder}
-                    onCommit={advance}
-                  />
+                  <div data-ritual-field>
+                    <CityCombobox
+                      value={values.place}
+                      onChange={(v) => setValues((s) => ({ ...s, place: v }))}
+                      placeholder={currentQ.placeholder}
+                      onCommit={advance}
+                    />
+                  </div>
                 ) : currentQ.key === "gender" ? (
-                  <div className="mx-auto max-w-md">
+                  <div className="mx-auto max-w-md" data-ritual-field>
                     <div role="radiogroup" aria-label={t.q_gender} className="flex flex-wrap justify-center gap-3">
                       {(["male", "female", ""] as Gender[]).map((g) => {
                         const label =
                           g === "male" ? t.q_gender_male : g === "female" ? t.q_gender_female : t.q_gender_skip;
-                        const active = values.gender === g;
+                        const active = genderChosen && values.gender === g;
                         return (
                           <button
                             key={g || "skip"}
                             type="button"
                             role="radio"
                             aria-checked={active}
-                            onClick={() => setValues((v) => ({ ...v, gender: g }))}
+                            onClick={() => {
+                              setValues((v) => ({ ...v, gender: g }));
+                              setGenderChosen(true);
+                            }}
                             className={`min-h-[44px] rounded-full border px-6 py-2.5 text-[11px] uppercase tracking-[0.28em] transition-colors ${
                               active
                                 ? "border-gold-dust bg-gold-dust/10 text-gold-light"
@@ -436,20 +441,21 @@ function RitualPage() {
                         );
                       })}
                     </div>
-                    {values.gender === "" && (
+                    {genderChosen && values.gender === "" && (
                       <p className="mx-auto mt-4 max-w-md rounded-2xl border border-nebula-purple/30 bg-nebula-purple/[0.06] p-3 text-left text-[11.5px] leading-relaxed text-stone-warm/70">
                         ⚠ {t.q_gender_skip_warn}
                       </p>
                     )}
                   </div>
                 ) : (
-                  <div className="mx-auto max-w-md">
+                  <div className="mx-auto max-w-md" data-ritual-field>
                     <input
                       key={currentQ.key}
                       autoFocus
                       type={currentQ.input}
                       placeholder={currentQ.placeholder}
                       className="ritual-input w-full"
+                      aria-invalid={fieldError ? true : undefined}
                       min={currentQ.input === "date" ? "1900-01-01" : undefined}
                       max={currentQ.input === "date" ? "2099-12-31" : undefined}
                       value={values[currentQ.key]}
@@ -466,6 +472,13 @@ function RitualPage() {
                       }}
                       style={{ colorScheme: "dark" }}
                     />
+                    {currentQ.key === "time" && (
+                      <p className="mt-3 text-[10px] uppercase tracking-[0.32em] text-stone-warm/40">
+                        {lang === "zh"
+                          ? "准确出生时间是生成完整四体系报告的前提。"
+                          : "An accurate birth time is required for the full four-tradition reading."}
+                      </p>
+                    )}
                     {currentQ.input === "date" && (() => {
                       const info = solarToLunarInfo(values.date, values.time);
                       if (!info) {
@@ -494,6 +507,15 @@ function RitualPage() {
                       );
                     })()}
                   </div>
+                )}
+                {fieldError && (
+                  <p
+                    role="alert"
+                    data-testid="ritual-field-error"
+                    className="mx-auto mt-4 max-w-md rounded-lg border border-rose-400/40 bg-rose-500/10 px-4 py-2 text-left text-[12px] leading-relaxed text-rose-100"
+                  >
+                    {fieldError}
+                  </p>
                 )}
               </>
             )}
