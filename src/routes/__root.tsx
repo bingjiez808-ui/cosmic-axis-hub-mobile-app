@@ -391,6 +391,19 @@ function SiteNav() {
         { to: "/community", label: t.nav_community },
       ];
 
+  // Personal-shelf shortcuts. When signed-out these redirect through /auth
+  // so the user lands on the target after login.
+  const shelfLink = (to: string) =>
+    session ? to : `/auth?mode=login&redirect=${encodeURIComponent(to)}`;
+  const shelfEntries: Array<{ href: string; label: string }> = [
+    { href: shelfLink("/me/home"), label: isZh ? "今日命运" : "Today's Fate" },
+    { href: shelfLink("/me/profile"), label: isZh ? "命盘与报告" : "Charts & Reports" },
+    { href: shelfLink("/me/friends"), label: isZh ? "好友" : "Friends" },
+    { href: shelfLink("/me/match"), label: isZh ? "适配分析" : "Match" },
+    { href: shelfLink("/me/home#echoes"), label: isZh ? "历史回声" : "Echoes" },
+    { href: shelfLink("/me/profile#membership-orders"), label: isZh ? "会员与订单" : "Membership" },
+  ];
+
   const moreEntries: Array<{ to: string; label: string }> = [
     ...(session ? [{ to: "/traditions", label: t.nav_traditions }] : []),
     { to: "/about", label: t.nav_about },
@@ -447,8 +460,22 @@ function SiteNav() {
                 {moreOpen && (
                   <div
                     role="menu"
-                    className="absolute right-0 top-full mt-2 w-48 rounded-xl border border-gold-dust/25 bg-obsidian/95 p-1 backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.5)]"
+                    className="absolute right-0 top-full mt-2 w-64 rounded-xl border border-gold-dust/25 bg-obsidian/95 p-2 backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.5)]"
                   >
+                    <div className="px-2 pt-1 pb-1 text-[9px] uppercase tracking-[0.28em] text-stone-warm/40">
+                      {isZh ? "个人书架" : "Personal Library"}
+                    </div>
+                    {shelfEntries.map((e) => (
+                      <a
+                        key={e.href}
+                        href={e.href}
+                        onClick={() => setMoreOpen(false)}
+                        className="block rounded-lg px-3 py-2 text-[12px] text-stone-warm/85 hover:bg-gold-dust/10 hover:text-gold-light"
+                      >
+                        {e.label}
+                      </a>
+                    ))}
+                    {moreEntries.length > 0 && <div className="my-2 h-px bg-white/10" />}
                     {moreEntries.map((e) => (
                       <Link
                         key={e.to}
@@ -583,6 +610,20 @@ function SiteNav() {
             </Link>
           );
         })}
+        <div className="my-1 h-px bg-white/10" />
+        <div className="px-3 pb-1 pt-1 text-right text-[9px] uppercase tracking-[0.28em] text-stone-warm/40">
+          {isZh ? "个人书架" : "Personal Library"}
+        </div>
+        {shelfEntries.map((e) => (
+          <a
+            key={e.href}
+            href={e.href}
+            onClick={() => setDrawerOpen(false)}
+            className="flex min-h-11 items-center justify-end whitespace-nowrap rounded-lg px-4 py-3 text-right text-[12px] text-stone-warm/80 hover:bg-gold-dust/10 hover:text-gold-light"
+          >
+            {e.label}
+          </a>
+        ))}
         {moreEntries.length > 0 && <div className="my-1 h-px bg-white/10" />}
         {moreEntries.map((item) => {
           const active = isActive(item.to);
@@ -654,24 +695,85 @@ function SiteNav() {
 
 function SiteFooter() {
   const { t, lang } = useLang();
-  const labels = lang === "zh"
-    ? { ethics: "关于", privacy: "隐私政策", terms: "服务条款", del: "删除账户", traditions: t.nav_traditions }
-    : { ethics: "Ethics", privacy: "Privacy", terms: "Terms", del: "Delete account", traditions: "Traditions" };
+  const { session } = useSupabaseSession();
+  const isZh = lang === "zh";
+  const shelfHref = (to: string) =>
+    session ? to : `/auth?mode=login&redirect=${encodeURIComponent(to)}`;
+
+  const groups: Array<{ title: string; items: Array<{ href: string; label: string; external?: boolean }> }> = [
+    {
+      title: isZh ? "探索图书馆" : "Explore the Library",
+      items: [
+        { href: "/", label: isZh ? "导览室" : "Guide Hall" },
+        { href: "/ritual", label: t.nav_ritual },
+        { href: "/traditions", label: isZh ? "四大体系" : "Four Traditions" },
+        { href: "/community", label: t.nav_community },
+        { href: "/about", label: isZh ? "关于与伦理" : "Ethics" },
+      ],
+    },
+    {
+      title: isZh ? "个人书架" : "Personal Library",
+      items: [
+        { href: shelfHref("/me/home"), label: isZh ? "今日命运" : "Today's Fate" },
+        { href: shelfHref("/me/profile"), label: isZh ? "命盘与报告" : "Charts & Reports" },
+        { href: shelfHref("/me/friends"), label: isZh ? "好友与来信" : "Friends" },
+        { href: shelfHref("/me/match"), label: isZh ? "适配分析" : "Match" },
+        { href: shelfHref("/me/home#echoes"), label: isZh ? "历史回声" : "Echoes" },
+        { href: shelfHref("/me/profile#membership-orders"), label: isZh ? "会员与订单" : "Membership" },
+      ],
+    },
+    {
+      title: isZh ? "帮助与条款" : "Help & Terms",
+      items: [
+        { href: "/privacy", label: isZh ? "隐私政策" : "Privacy" },
+        { href: "/terms", label: isZh ? "服务条款" : "Terms" },
+        { href: "/delete-account", label: isZh ? "删除账户" : "Delete account" },
+        { href: "mailto:fatenexus.studio@gmail.com", label: "fatenexus.studio@gmail.com", external: true },
+      ],
+    },
+  ];
+
   return (
     <footer className="relative z-10 border-t border-white/5 px-4 py-12 sm:px-6 md:px-12 md:py-16">
-      <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 text-center md:flex-row md:gap-8 md:text-left">
-        <div className="font-serif text-xl text-stone-warm">
-          Destiny<span className="text-gold-dust">Library</span>
+      <div className="mx-auto max-w-7xl">
+        <div className="grid gap-8 md:grid-cols-[1.2fr_1fr_1fr_1fr] md:gap-10">
+          <div>
+            <div className="font-serif text-xl text-stone-warm">
+              Destiny<span className="text-gold-dust">Library</span>
+            </div>
+            <p className="mt-3 max-w-xs text-[11px] leading-relaxed text-stone-warm/50">
+              {isZh
+                ? "四大命理体系，一份看见自己的方式。文化娱乐与自我反思，不替你决定人生。"
+                : "Four traditions read together — a way to see the patterns in your own life. Cultural reading and self-reflection, never a verdict."}
+            </p>
+          </div>
+          {groups.map((g) => (
+            <div key={g.title}>
+              <div className="mb-3 text-[10px] font-medium uppercase tracking-[0.28em] text-gold-dust/80">
+                {g.title}
+              </div>
+              <ul className="space-y-2 text-[11px] text-stone-warm/60">
+                {g.items.map((it) => (
+                  <li key={it.href}>
+                    <a
+                      href={it.href}
+                      className="transition-colors hover:text-gold-dust"
+                    >
+                      {it.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
-        <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-[10px] font-medium uppercase tracking-[0.28em] text-stone-warm/50 md:gap-10">
-          <Link to="/traditions" className="transition-colors hover:text-gold-dust">{labels.traditions}</Link>
-          <Link to="/about" className="transition-colors hover:text-gold-dust">{labels.ethics}</Link>
-          <Link to="/privacy" className="transition-colors hover:text-gold-dust">{labels.privacy}</Link>
-          <Link to="/terms" className="transition-colors hover:text-gold-dust">{labels.terms}</Link>
-          <Link to="/delete-account" className="transition-colors hover:text-gold-dust">{labels.del}</Link>
-        </div>
-        <div className="text-[10px] uppercase tracking-[0.28em] italic text-stone-warm/40">
-          © MMXXVI · Four civilizations, one question
+        <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-white/5 pt-6 text-center text-[10px] uppercase tracking-[0.28em] text-stone-warm/40 md:flex-row md:text-left">
+          <span className="italic">© MMXXVI · Four civilizations, one question</span>
+          <span className="normal-case tracking-normal text-stone-warm/40">
+            {isZh
+              ? "如需支持，也可发送邮件至 fatenexus.studio@gmail.com。请勿在邮件中分享密码或敏感个人信息。"
+              : "For support, you can also email fatenexus.studio@gmail.com. Please do not share passwords or sensitive personal information."}
+          </span>
         </div>
       </div>
     </footer>

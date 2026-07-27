@@ -4,7 +4,8 @@ import { Loader2, Send } from "lucide-react";
 
 import { PersonalWorkspaceNav } from "@/components/PersonalWorkspaceNav";
 
-import { DailyRoomError, DailyRoomPending } from "@/experiences/daily-room/fallback";
+import { DailyRoomError } from "@/experiences/daily-room/fallback";
+import { PersonalShellPending } from "@/experiences/daily-room/personal-shell-pending";
 import { supabase } from "@/integrations/supabase/client";
 import { listUserCharts, type ChartRow } from "@/lib/reports-store.functions";
 import { askOracle } from "@/lib/oracle.functions";
@@ -34,7 +35,7 @@ export const Route = createFileRoute("/_authenticated/me/oracle")({
     source: typeof raw.source === "string" ? raw.source : undefined,
   }),
   pendingMs: 0,
-  pendingComponent: DailyRoomPending,
+  pendingComponent: PersonalShellPending,
   errorComponent: DailyRoomError,
   component: OraclePage,
 });

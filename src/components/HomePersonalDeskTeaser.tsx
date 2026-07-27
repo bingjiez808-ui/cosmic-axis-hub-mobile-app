@@ -7,13 +7,13 @@ import { useSupabaseSession } from "@/lib/session";
 
 /**
  * HomePersonalDeskTeaser — landing-page module that explains what a
- * signed-in user gets on `/me/home`. Not a duplicate of the feature
- * shelf: focused on the *daily* value + the personal desk metaphor.
+ * signed-in user gets on `/me/home`. Focused on the *daily* value and
+ * the "Personal Library" metaphor.
  *
  * CTA is session-aware:
- * - signed-in → primary "Open my reading desk" (→ /me/home)
- * - signed-out → primary "Sign in to open my desk" (→ /auth?redirect=/me/home)
- *                secondary "Start the ritual" (→ /ritual)
+ * - signed-in → primary "Enter my Personal Library" (→ /me/home)
+ * - signed-out → primary "Sign in to open my Library" (→ /auth?redirect=/me/home)
+ *                secondary "Open the ritual" (→ /ritual)
  */
 export function HomePersonalDeskTeaser() {
   const { lang } = useLang();
@@ -85,17 +85,17 @@ export function HomePersonalDeskTeaser() {
     >
       <div className="mx-auto max-w-2xl text-center">
         <p className="text-[10px] uppercase tracking-[0.36em] text-gold-dust/80">
-          {isZh ? "登录后 · 你的个人阅览桌" : "After sign-in · your reading desk"}
+          {isZh ? "登录后 · 你的个人书架" : "After sign-in · your Personal Library"}
         </p>
         <h2 className="mt-3 font-serif text-3xl leading-tight text-stone-warm md:text-4xl">
           {isZh
-            ? "登录之后，每天回来打开的是你的一张桌子。"
-            : "Once you sign in, coming back opens your own desk."}
+            ? "登录之后，每天回来打开的是你自己的一格书架。"
+            : "Once you sign in, coming back opens your own shelf of the library."}
         </h2>
         <p className="mt-4 text-sm leading-relaxed text-stone-warm/65 md:text-base">
           {isZh
-            ? "不是一次性读一份报告就结束，而是每天有一件确定可做的事：今日主线、命盘、好友、匹配、历史回声、会员，都在同一张阅览桌上。"
-            : "Not a one-off report. Each day has one clear thing to do — today's line, your charts, friends, match, historical echoes and membership all on the same desk."}
+            ? "不是一次性读一份报告就结束，而是每天有一件确定可做的事：今日主线、命盘、好友、匹配、历史回声、会员，都在同一个个人书架上。"
+            : "Not a one-off report. Each day has one clear thing to do — today's line, your charts, friends, match, historical echoes and membership all on the same Personal Library."}
         </p>
       </div>
 
@@ -134,7 +134,7 @@ export function HomePersonalDeskTeaser() {
             data-testid="desk-teaser-cta-primary"
             className="inline-flex min-h-11 items-center rounded-full border border-gold-dust/40 bg-obsidian/80 px-10 py-4 text-xs uppercase tracking-[0.32em] text-gold-dust transition hover:border-gold-dust hover:bg-gold-dust/10"
           >
-            {isZh ? "进入我的主页" : "Open my reading desk"}
+            {isZh ? "进入我的个人书架" : "Enter my Personal Library"}
           </Link>
         ) : (
           <>
@@ -144,7 +144,7 @@ export function HomePersonalDeskTeaser() {
               data-testid="desk-teaser-cta-primary"
               className="inline-flex min-h-11 items-center rounded-full border border-gold-dust/40 bg-obsidian/80 px-10 py-4 text-xs uppercase tracking-[0.32em] text-gold-dust transition hover:border-gold-dust hover:bg-gold-dust/10"
             >
-              {isZh ? "登录后打开我的阅览桌" : "Sign in to open my desk"}
+              {isZh ? "登录后打开我的书架" : "Sign in to open my Library"}
             </Link>
             <Link
               to="/ritual"

@@ -24,11 +24,17 @@ import { CommunityMatchPanel } from "@/experiences/community-match/CommunityMatc
 import { useCommunityMatchCopy } from "@/lib/i18n-community-match";
 
 
+import { PersonalShellPending } from "@/experiences/daily-room/personal-shell-pending";
+import { DailyRoomError } from "@/experiences/daily-room/fallback";
+
 export const Route = createFileRoute("/_authenticated/me/match")({
   head: () => ({ meta: [{ name: "robots", content: "noindex,nofollow" }] }),
   beforeLoad: () => {
     ensureSocialPreviewAllowed();
   },
+  pendingMs: 0,
+  pendingComponent: PersonalShellPending,
+  errorComponent: DailyRoomError,
   component: MatchPage,
 });
 

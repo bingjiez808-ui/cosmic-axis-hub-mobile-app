@@ -13,11 +13,17 @@ import { SocialConsentGate, useSocialConsent } from "@/experiences/daily-room/so
 import { useLang } from "@/lib/i18n";
 import { useDaily, useFormatDate } from "@/lib/i18n-daily";
 
+import { PersonalShellPending } from "@/experiences/daily-room/personal-shell-pending";
+import { DailyRoomError } from "@/experiences/daily-room/fallback";
+
 export const Route = createFileRoute("/_authenticated/me/friends")({
   head: () => ({ meta: [{ name: "robots", content: "noindex,nofollow" }] }),
   beforeLoad: () => {
     ensureSocialPreviewAllowed();
   },
+  pendingMs: 0,
+  pendingComponent: PersonalShellPending,
+  errorComponent: DailyRoomError,
   component: FriendsPage,
 });
 

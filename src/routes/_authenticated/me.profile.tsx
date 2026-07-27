@@ -6,7 +6,8 @@ import { PersonalWorkspaceNav } from "@/components/PersonalWorkspaceNav";
 import { PersonalBookshelf } from "@/experiences/profile/PersonalBookshelf";
 import { MembershipCard } from "@/components/MembershipCard";
 import { MyTicketsCard } from "@/components/MyTicketsCard";
-import { DailyRoomError, DailyRoomPending } from "@/experiences/daily-room/fallback";
+import { DailyRoomError } from "@/experiences/daily-room/fallback";
+import { PersonalShellPending } from "@/experiences/daily-room/personal-shell-pending";
 import { supabase } from "@/integrations/supabase/client";
 import { listUserCharts, type ChartRow } from "@/lib/reports-store.functions";
 import { useDaily } from "@/lib/i18n-daily";
@@ -24,7 +25,7 @@ import { useLang } from "@/lib/i18n";
 export const Route = createFileRoute("/_authenticated/me/profile")({
   head: () => ({ meta: [{ name: "robots", content: "noindex,nofollow" }] }),
   pendingMs: 0,
-  pendingComponent: DailyRoomPending,
+  pendingComponent: PersonalShellPending,
   errorComponent: DailyRoomError,
   component: MyProfilePage,
 });
@@ -93,8 +94,8 @@ function MyProfilePage() {
           </p>
         </header>
 
-        {/* Membership */}
-        <div className="mb-8 space-y-4">
+        {/* Membership & orders — anchor target for the sub-nav "Membership" tab */}
+        <div id="membership-orders" className="mb-8 space-y-4 scroll-mt-28">
           <MembershipCard />
           <TicketsBlock />
         </div>
