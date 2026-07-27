@@ -498,17 +498,82 @@ function SiteNav() {
             {coreEntries.map((e) => (
               <NavLink key={e.to} to={e.to} label={e.label} ariaLabel={e.ariaLabel} />
             ))}
+            <div className="relative" data-library-menu>
+              <button
+                type="button"
+                id="library-menu-trigger"
+                aria-haspopup="menu"
+                aria-expanded={libraryOpen}
+                aria-controls="library-menu-panel"
+                onClick={() => {
+                  setMoreOpen(false);
+                  setLibraryOpen((v) => !v);
+                }}
+                className={`${linkBase} ${isLibraryActive ? linkActive : linkIdle}`}
+              >
+                {myLibraryLabel} <span aria-hidden className="ml-1 text-[9px]">▾</span>
+              </button>
+              {libraryOpen && (
+                <div
+                  id="library-menu-panel"
+                  role="menu"
+                  aria-labelledby="library-menu-trigger"
+                  className="absolute right-0 top-full mt-2 w-72 rounded-xl border border-gold-dust/25 bg-obsidian/95 p-2 backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.5)]"
+                >
+                  {libraryEntries.map((e) => {
+                    const active = isActive(e.to);
+                    const gated = gatedShelfHref(e.to);
+                    const cls = `block rounded-lg px-3 py-2 ${
+                      active ? "bg-gold-dust/10 text-gold-dust" : "text-stone-warm/85 hover:bg-gold-dust/10 hover:text-gold-light"
+                    }`;
+                    const inner = (
+                      <>
+                        <div className={`text-[12px] ${isZh ? "tracking-normal" : "uppercase tracking-[0.24em]"}`}>{e.label}</div>
+                        <div className="mt-0.5 text-[10px] text-stone-warm/55">{e.hint}</div>
+                      </>
+                    );
+                    return gated ? (
+                      <Link
+                        key={e.to}
+                        to={gated.to}
+                        search={gated.search}
+                        onClick={() => setLibraryOpen(false)}
+                        className={cls}
+                        role="menuitem"
+                      >
+                        {inner}
+                      </Link>
+                    ) : (
+                      <Link
+                        key={e.to}
+                        to={e.to}
+                        onClick={() => setLibraryOpen(false)}
+                        aria-current={active ? "page" : undefined}
+                        className={cls}
+                        role="menuitem"
+                      >
+                        {inner}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
             {moreEntries.length > 0 && (
               <div className="relative" data-more-menu>
                 <button
                   type="button"
                   aria-haspopup="menu"
                   aria-expanded={moreOpen}
-                  onClick={() => setMoreOpen((v) => !v)}
+                  onClick={() => {
+                    setLibraryOpen(false);
+                    setMoreOpen((v) => !v);
+                  }}
                   className={`${linkBase} ${linkIdle}`}
                 >
                   {moreLabel} <span aria-hidden className="ml-1 text-[9px]">▾</span>
                 </button>
+
                 {moreOpen && (
                   <div
                     role="menu"
