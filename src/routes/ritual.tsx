@@ -6,6 +6,8 @@ import { CityCombobox } from "@/components/CityCombobox";
 import { useLang } from "@/lib/i18n";
 import { solarToLunarInfo } from "@/lib/lunar";
 import { noOrphan } from "@/lib/typography";
+import { listUserCharts } from "@/lib/reports-store.functions";
+
 
 const RITUAL_STATE_KEY = "lod:ritual-draft-v2";
 
@@ -150,6 +152,9 @@ function RitualPage() {
   const skipQuiz = true;
   const [restored, setRestored] = useState(false);
   const [fieldError, setFieldError] = useState<string | null>(null);
+  const [primaryConflict, setPrimaryConflict] = useState<URLSearchParams | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
 
   // Restore draft from sessionStorage (client-only, avoids hydration mismatch)
   useEffect(() => {
