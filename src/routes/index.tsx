@@ -9,6 +9,7 @@ import ziweiImg from "@/assets/tradition-ziwei.jpg";
 import treeImg from "@/assets/tree-of-destiny.jpg";
 import { TraditionModal, type TraditionId } from "@/components/TraditionModal";
 import { CuratorLetter } from "@/components/CuratorLetter";
+import { ConcernSelector } from "@/components/ConcernSelector";
 import { useLang } from "@/lib/i18n";
 
 export const Route = createFileRoute("/")({
