@@ -492,6 +492,8 @@ function SealedStage({
 function PageStage({
   index,
   copy,
+  lang,
+  isSignedIn,
   reduceMotion,
   intent,
   intentSaved,
@@ -501,6 +503,8 @@ function PageStage({
 }: {
   index: 1 | 2 | 3 | 4;
   copy: (typeof curatorLetter)["en"];
+  lang: "en" | "zh";
+  isSignedIn: boolean | null;
   reduceMotion: boolean;
   intent: OnboardingIntent | null;
   intentSaved: "idle" | "cloud" | "local";
@@ -508,6 +512,7 @@ function PageStage({
   onNext: () => void;
   onPrev: () => void;
 }) {
+
   const safeIndex = ((): 1 | 2 | 3 | 4 => {
     const n = Number(index);
     if (!Number.isFinite(n)) return 1;
