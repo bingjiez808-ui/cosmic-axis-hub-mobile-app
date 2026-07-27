@@ -364,7 +364,7 @@ function RitualPage() {
       if (!err) setFieldError(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [values, genderChosen]);
+  }, [values, genderChosen, ownerRole, relationship]);
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-x-hidden px-6 pt-32 pb-24">
