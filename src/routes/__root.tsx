@@ -298,7 +298,8 @@ function SiteNav() {
   const avatarUrl = hydrated ? account?.avatar : undefined;
   const isZh = lang === "zh";
   const adminLabel = isZh ? "议政厅" : "Admin";
-  const libraryHomeLabel = isZh ? "图书馆首页" : "Library Home";
+  const libraryHomeLabel = isZh ? "导览室" : "Guide Hall";
+  const libraryHomeAria = isZh ? "导览室（首页）" : "Guide Hall (Home)";
   const myHomeLabel = isZh ? "我的主页" : "My Home";
   const moreLabel = isZh ? "了解 · 更多" : "Learn · More";
 
