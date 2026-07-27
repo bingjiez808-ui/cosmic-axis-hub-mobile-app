@@ -7,6 +7,14 @@ import { useLang } from "@/lib/i18n";
 import { solarToLunarInfo } from "@/lib/lunar";
 import { noOrphan } from "@/lib/typography";
 import { listUserCharts } from "@/lib/reports-store.functions";
+import {
+  FIELD_STEP,
+  firstMissingStep,
+  missingFields,
+  nameStepCopy,
+  validateField,
+  type RitualState,
+} from "@/lib/ritual-validation";
 
 
 const RITUAL_STATE_KEY = "lod:ritual-draft-v2";
