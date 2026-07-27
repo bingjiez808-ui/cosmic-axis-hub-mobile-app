@@ -34,7 +34,9 @@ type LoadState =
 
 function MyProfilePage() {
   const d = useDaily();
+  const { lang } = useLang();
   const [state, setState] = useState<LoadState>({ kind: "loading" });
+
 
   useEffect(() => {
     let cancelled = false;
