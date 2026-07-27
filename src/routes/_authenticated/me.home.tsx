@@ -864,11 +864,17 @@ function HistoricalEchoSlot({
   primaryBirthDate,
   todayISO,
   priority,
+  concern,
+  domainScore,
+  domainLabel,
   initialExpanded,
 }: {
   primaryBirthDate: string | null;
   todayISO: string;
   priority: ReturnType<typeof pickPriorityDomain>;
+  concern: ConcernKey | null;
+  domainScore: number | null;
+  domainLabel: string | null;
   initialExpanded?: boolean;
 }) {
   const defaultStage: LifeStage | null = defaultStageForAge(
@@ -902,10 +908,14 @@ function HistoricalEchoSlot({
   }, [defaultStage, stage]);
 
   if (!primaryBirthDate || !stage) return null;
+  const signal: DomainSignalBand = classifyDomainSignal(domainScore);
   return (
     <HistoricalEcho
       stage={stage}
       domain={priority}
+      concern={concern}
+      domainSignal={signal}
+      domainLabel={domainLabel}
       initialExpanded={initialExpanded}
     />
   );
