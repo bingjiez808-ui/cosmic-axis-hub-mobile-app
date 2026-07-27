@@ -292,6 +292,7 @@ function SiteNav() {
   const [atTop, setAtTop] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [libraryOpen, setLibraryOpen] = useState(false);
   const [orbActive, setOrbActive] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const navRef = useRef<HTMLElement | null>(null);
@@ -323,8 +324,9 @@ function SiteNav() {
   const adminLabel = isZh ? "议政厅" : "Admin";
   const libraryHomeLabel = isZh ? "导览室" : "Guide Hall";
   const libraryHomeAria = isZh ? "导览室（首页）" : "Guide Hall (Home)";
-  const myHomeLabel = isZh ? "我的主页" : "My Home";
+  const myLibraryLabel = isZh ? "我的书架" : "My Library";
   const moreLabel = isZh ? "了解 · 更多" : "Learn · More";
+
 
   useEffect(() => {
     const onScroll = () => setAtTop(window.scrollY < 40);
