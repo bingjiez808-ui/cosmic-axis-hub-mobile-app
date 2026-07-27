@@ -16,9 +16,12 @@ import {
 } from "@/lib/life-guidance.functions";
 import { supabase } from "@/integrations/supabase/client";
 
-import heroPng from "/assets/life-guidance/destiny-library-hero.png?url";
-import heroWebp from "/assets/life-guidance/destiny-library-hero.webp?url";
-import heroMobileWebp from "/assets/life-guidance/destiny-library-hero-mobile.webp?url";
+// Assets live under `public/assets/life-guidance/` and are served at the
+// same URL path in dev and prod. See docs/assets.md.
+const heroPng = "/assets/life-guidance/destiny-library-hero.png";
+const heroWebp = "/assets/life-guidance/destiny-library-hero.webp";
+const heroMobileWebp = "/assets/life-guidance/destiny-library-hero-mobile.webp";
+
 
 /**
  * CuratorLetter — an immersive multi-page opening ritual for the landing
