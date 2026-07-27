@@ -8,6 +8,7 @@ import {
   ONBOARDING_INTENTS,
   curatorLetter,
   isOnboardingIntent,
+  normalizeLang,
   type OnboardingIntent,
 } from "@/lib/life-guidance-v1";
 import {
