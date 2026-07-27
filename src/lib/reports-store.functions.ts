@@ -344,6 +344,7 @@ export type ChartRow = {
   lang: string | null;
   chart_role: "self" | "other";
   is_primary: boolean;
+  relationship_label: string | null;
   created_at: string;
   updated_at: string;
   reports: Array<{
@@ -361,7 +362,7 @@ export const listUserCharts = createServerFn({ method: "GET" })
     const { data: charts } = await supabase
       .from("charts")
       .select(
-        "id, name, birth_date, birth_time, birth_place, lang, chart_role, is_primary, created_at, updated_at",
+        "id, name, birth_date, birth_time, birth_place, lang, chart_role, is_primary, relationship_label, created_at, updated_at",
       )
       .eq("user_id", userId)
       .order("is_primary", { ascending: false })
@@ -385,12 +386,16 @@ export const listUserCharts = createServerFn({ method: "GET" })
       });
       byChart.set(r.chart_id, list);
     }
-    return charts.map((c) => ({
-      ...c,
-      chart_role: (c.chart_role === "self" ? "self" : "other") as "self" | "other",
-      is_primary: !!c.is_primary,
-      reports: byChart.get(c.id) ?? [],
-    }));
+    return charts.map((c) => {
+      const relRaw = (c as { relationship_label?: unknown }).relationship_label;
+      return {
+        ...c,
+        chart_role: (c.chart_role === "self" ? "self" : "other") as "self" | "other",
+        is_primary: !!c.is_primary,
+        relationship_label: typeof relRaw === "string" && relRaw.length > 0 ? relRaw : null,
+        reports: byChart.get(c.id) ?? [],
+      };
+    });
   });
 
 const SetPrimaryChartInput = z.object({ chartId: z.string().uuid() });
@@ -501,6 +506,38 @@ export const assignChartOwnership = createServerFn({ method: "POST" })
     }
     return { ok: true as const, promoted };
   });
+
+/**
+ * Pure metadata update: change only the human-readable relationship
+ * label ("Partner", "Mother"…) on a chart the caller owns. Never
+ * touches chart_role / is_primary / birth data, never regenerates any
+ * report, never calls AI, never bills — RLS scopes the row to the
+ * caller. Exported for /me/profile inline edits.
+ */
+export const AssignChartOwnershipInputSchema = AssignChartOwnershipInput; // re-exported for tests
+
+const SetChartRelationshipLabelInput = z.object({
+  chartId: z.string().uuid(),
+  label: z.string().trim().max(80).nullable(),
+});
+
+export const setChartRelationshipLabel = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => SetChartRelationshipLabelInput.parse(data))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const value = data.label && data.label.length > 0 ? data.label : null;
+    const { error } = await supabase
+      .from("charts")
+      .update({ relationship_label: value })
+      .eq("id", data.chartId)
+      .eq("user_id", userId);
+    if (error) throw new Error("relationship_label_update_failed");
+    return { ok: true as const, label: value };
+  });
+
+
+
 
 
 

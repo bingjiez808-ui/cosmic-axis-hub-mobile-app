@@ -18,6 +18,7 @@ import {
   deleteChart,
   listUserCharts,
   renameChart,
+  setChartRelationshipLabel,
   setChartRole,
   setPrimaryChart,
   type ChartRow,
@@ -240,6 +241,18 @@ export function PersonalBookshelf({ charts, onChanged }: PersonalBookshelfProps)
               setChartRole({ data: { chartId: id, role: "self" } }),
             )
           }
+          onEditRelationLabel={(c) => {
+            if (typeof window === "undefined") return;
+            const current = c.relationship_label ?? "";
+            const next = window.prompt(d.bookshelf_relation_label_placeholder, current);
+            if (next === null) return;
+            const trimmed = next.trim().slice(0, 80);
+            void runAction(c.id, () =>
+              setChartRelationshipLabel({
+                data: { chartId: c.id, label: trimmed.length > 0 ? trimmed : null },
+              }),
+            );
+          }}
           onDelete={confirmDelete}
         />
       </div>
@@ -482,6 +495,7 @@ function ShelfRow(props: {
   onCommitRename: (id: string) => void;
   onSetPrimary: (id: string) => void;
   onFlipRole: (id: string) => void;
+  onEditRelationLabel?: (c: ChartRow) => void;
   onDelete: (c: ChartRow) => void;
 }) {
   const d = useDaily();
@@ -524,6 +538,7 @@ function ShelfRow(props: {
               onCommitRename={props.onCommitRename}
               onSetPrimary={props.onSetPrimary}
               onFlipRole={props.onFlipRole}
+              onEditRelationLabel={props.onEditRelationLabel}
               onDelete={props.onDelete}
             />
           ))}
@@ -552,6 +567,7 @@ function SpineCard(props: {
   onCommitRename: (id: string) => void;
   onSetPrimary: (id: string) => void;
   onFlipRole: (id: string) => void;
+  onEditRelationLabel?: (c: ChartRow) => void;
   onDelete: (c: ChartRow) => void;
 }) {
   const d = useDaily();
@@ -608,6 +624,15 @@ function SpineCard(props: {
               >
                 {isRel ? d.bookshelf_relation_card_label : d.charts_role_self}
               </div>
+              {isRel && (
+                <div className="mt-1 text-[11px] text-purple-100/80">
+                  {c.relationship_label ?? (
+                    <span className="italic opacity-60">
+                      {d.bookshelf_relation_label_none}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
             <MoreMenu
               busy={busy}
@@ -618,6 +643,12 @@ function SpineCard(props: {
                 isRel
                   ? [
                       { label: d.charts_action_rename, onClick: () => props.onStartRename(c) },
+                      ...(props.onEditRelationLabel
+                        ? [{
+                            label: d.bookshelf_relation_label_edit,
+                            onClick: () => props.onEditRelationLabel?.(c),
+                          }]
+                        : []),
                       { label: d.bookshelf_role_toggle_self, onClick: () => props.onFlipRole(c.id) },
                       { label: d.charts_action_delete, onClick: () => props.onDelete(c), danger: true },
                     ]

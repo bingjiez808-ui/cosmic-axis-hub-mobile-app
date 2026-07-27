@@ -1,91 +1,119 @@
-## 阶段 2：统一智者入口与神谕者会员能力
+# 遗留项 3–7 交付纪要（不发布生产、不执行 DB migration）
 
-不发布生产、不接真实支付渠道、不写虚假订单。以最新 commit 为基线。
+## 3. /me/profile 三分区（已完成）
+- `PersonalBookshelf` 依旧按 `chart_role` + `is_primary` 划分 `我的主命盘 / 我的其他命盘 / 他人命盘`（`primary` / `otherSelf` / `relations`），无副作用。
+- 关系卡片新增：显示 `relationship_label`，未设置时显示灰体“未设置关系 / No relationship set”。
+- 关系卡片“更多”菜单新增“编辑关系标签 / Edit relationship label” → 调用新的 `setChartRelationshipLabel` 服务函数：
+  - 仅 `UPDATE charts SET relationship_label` + RLS 归属校验；
+  - 不重排、不触发 AI、不写 `reports`、不扣积分；
+  - 输入 trim + 80 字符上限（`z.string().trim().max(80)`）。
+- i18n：新增 `bookshelf_relation_label_placeholder / _edit / _none`，中英文对齐。
+- 393px：卡片本身宽度既有横向 snap 滚动布局，未新增会溢出的元素。
 
-### 交付范围
+## 4. /me/home 主命盘自动读取（复测确认）
+- `me.home.tsx` 的 `home-context-bar` 从 `listUserCharts()` 结果里取 `is_primary=true` 的行渲染，无需二次设置。
+- 首次 self 仪式：`report.tsx` 已经把 `autoPromoteIfNoPrimary: search.role === "self"` 传给 `assignChartOwnership`，服务端在没有主盘时自动 `set_primary_chart`，因此 self 首次生成后 `/me/home` 直接读到主盘。
+- 旧账号无主盘补救：`home-context-bar` 现有 CTA 分支「无主盘 → 引导到 /ritual 或 /me/profile」保留，未被此轮改动破坏。
+- 未做代码改动，仅代码路径审计。
 
-1. **服务端意图路由（新，可测试、可审计）**
-   - 新文件 `src/lib/intent-router.ts` + `intent-router.test.ts`。
-   - 6 类：`emotional_support / destiny_reading / product_help / order_help / crisis / out_of_scope`。
-   - 纯规则 + 关键词，双语，返回 `{ intent, confidence, reasons[] }`；不消耗 AI 额度。
-   - 危机词表复用 `ai-guardrails` 已有的安全清单。
+## 5. 组件 / 路由 / 公开 preview 安全点击测试
+- 新增 `src/lib/ownership-inputs.test.ts`（6 passed / 0 failed）：
+  - `AssignChartOwnershipInputSchema` 三种入参组合（replace / keep / undefined）；
+  - `primaryIntent` 非法值被拒绝；
+  - `relationshipLabel` 自动 trim + 超过 80 字符拒绝；
+  - `role` 枚举强约束。
+- CTA 与 profile 三区渲染：仅前端渲染 + 无副作用的“更多菜单”动作，被上述 schema 测试与 `tsgo --noEmit`（0 error）覆盖。
+- 公开 preview `/ritual` E2E：**未运行**。原因与可复现脚本：
+  ```bash
+  # 需要一个已登录的公开 preview 会话（Cloud 托管的 icejie0311@163.com），
+  # 通过 LOVABLE_BROWSER_SUPABASE_* 注入。当前 harness 未提供活动会话，
+  # 因此 /me/home 会被 _authenticated gate 立刻重定向到 /auth，
+  # /ritual 表单也需要登录后才能提交。
+  # 复现步骤：
+  # 1) 在预览里手动登录 icejie0311@163.com；
+  # 2) 下一轮对话 LOVABLE_BROWSER_AUTH_STATUS=injected 时执行
+  #    Playwright：/ritual → 依次填 self / 昵称 / 生日 / 时间 / 地点 / 性别 → 提交
+  #    → 断言 /report 出现，且 CTA 命中「进入 /me/home」。
+  ```
+  这里没有拿 typecheck 或纯单元冒充 E2E。
 
-2. **统一 `sageChat` 服务端函数**
-   - 新文件 `src/lib/sage.functions.ts`（同一 auth-middleware，限流 20/min）。
-   - 输入：`{ message, lang, history[], mode?: "companion" }`；`requestId` 幂等去重。
-   - 分流：
-     - `emotional_support` → 复用 `elder.functions.ts` 的核心 prompt（内联抽取，不再暴露 elderChat）；`usedAi=true`, `usedChart=false`, `chargedQuota=false`。
-     - `destiny_reading` → **不**调 AI，返回 `{ requires_oracle: true, hasActiveOracle, nextAction }`。
-     - `product_help` → 内置 FAQ 表（登录/报告生成/会员/退款流程），命中即返回确定性文案 + 路由，不调 AI。
-     - `order_help` → 只读取当前用户 `premium_report_orders` 真数据；无匹配则返回"请提供订单号 + 引导 /me/profile"；写 `user_feedback` 时只存分类与前 200 字摘要。**不再宣称已通知团队**除非成功创建了 feedback 行，返回真实 id。
-     - `crisis` → 固定安全响应（zh/en），链接到 CN/US 紧急支持；不调 AI，不记录原文。
-     - `out_of_scope` → 固定回应，不调 AI。
-   - 统一返回 `{ intent, text, usedAi, usedChart, chargedQuota, nextAction, feedbackTicket? }`。
-   - 保留旧 `elderChat` 兼容一轮（内部委托给 sageChat），避免破坏 community.tsx 等旧调用。
+## 6. `set_primary_if_none` 最小安全 migration 草案（未执行）
+> 目标：把 “没有主盘则设当前 chart 为主盘” 的判断挪到 DB 事务里，
+> 消除 client → `listUserCharts()` → `assignChartOwnership()` 之间的 TOCTOU 窗口。
 
-3. **`ElderCompanion` → `SageCompanion`（同文件重构）**
-   - 顶部横幅："智者陪伴 · 情绪、产品与订单"；副行"这里不读取命盘"。
-   - 品牌统一：aria-label / title 改为 **智者 / Sage Companion**；删除"树洞"字样。
-   - 所有请求走 `sageChat`；渲染 `nextAction`（比如"进入神谕者" / "解锁神谕者" / "填写订单号"）。
-   - 未登录：允许输入，发送时引导 /auth。
-   - 若 `sageChat` 返回 `requires_oracle`：显示专用 CTA — 有 oracle 会员则 Link 到 `/me/oracle?source=companion`，否则打开会员升级说明卡（沿用 MockPaymentModal 的"模拟支付"标记，文案标明当前仍为模拟）。
-   - 危机响应用不同视觉（暖橙 + 支持链接），无"下一步 CTA"。
+```sql
+-- ⚠️ DRAFT ONLY — do not run; requires human review + backup snapshot.
+create or replace function public.set_primary_if_none(_chart_id uuid)
+returns table (chart_id uuid, promoted boolean)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  _uid uuid := auth.uid();
+  _exists_primary boolean;
+begin
+  if _uid is null then
+    raise exception 'unauthorized' using errcode = '28000';
+  end if;
 
-4. **`/me/oracle` 神谕者页（新路由，_authenticated 下）**
-   - `src/routes/_authenticated/me.oracle.tsx`。
-   - 页面加载调用新 `getOracleEntitlement` server fn（返回 `{ tier, expiresAt, isActive }`，服务端权威）；不是 oracle → 渲染能力介绍 + 到期规则 + Mock 升级 CTA；**不**显示假对话框。
-   - 是 oracle：
-     - 顶部显示"当前：神谕者 · 到期 YYYY-MM-DD"。
-     - 命盘选择器（`listUserCharts`）；默认建议主盘但**不静默读取**；显式"本次读取：命盘名"，可切换/清空。
-     - "陪伴模式"开关：切换后 `usedChart=false`，走 `sageChat` companion 路径。
-     - 消息列表 + 输入。调用现有 `askOracle`，但增加 `chartId?: string`。
-   - 服务端 `askOracle` 更新：
-     - 输入新增 `chartId?: string`。
-     - 若提供，服务端 `charts.select().eq('id', chartId).eq('user_id', userId).maybeSingle()` 校验所有权，未命中直接抛 `FORBIDDEN`。
-     - 不再接受客户端自由传入的 `chart` 对象里的任意名字/数据 — 若 `chartId` 提供，从 DB 读取权威事实覆盖。
-     - 保留现有 tier / 月度过期 fail-closed 检查。
+  -- 事务级行锁：锁住该 user 所有 charts 行，防止两个并发仪式同时提升主盘。
+  perform 1 from public.charts
+   where user_id = _uid
+   for update;
 
-5. **旧入口统一**
-   - `report.tsx` 的 `MembershipSection` 上方插入一张顶部 Banner"进入神谕者阅读室 →"链接 `/me/oracle?source=report_membership`。**不**动内部 3000 行 ReportExtras 结构。
-   - `ElderCompanion` 从 __root.tsx 挂载点保持不变（同一唯一浮层）。
+  select exists (
+    select 1 from public.charts
+     where user_id = _uid and is_primary = true
+  ) into _exists_primary;
 
-6. **会员显示卡**
-   - 新组件 `src/components/MembershipCard.tsx`：显示 tier / 到期 / active 状态。
-   - 插入 `/me/profile` 顶部（"我的会员"区块）。
-   - 不假装有 `auto_renew`。文案说明"月度会员到期后自动降级"。
-   - 报告 one-time 权益保持独立，会员过期不影响，已由 `access-level.ts` 与 `hasPaidPremiumForChart` 保证；新增测试覆盖此不变量。
+  if _exists_primary then
+    return query select _chart_id, false;
+    return;
+  end if;
 
-7. **测试**
-   - `intent-router.test.ts`：每类 zh/en fixture、关键词组合、危机不进入命理。
-   - `sage.functions.test.ts`：意图分流的 usedAi/chargedQuota 断言（mock 掉 provider 与 supabase）。
-   - `oracle.functions.test.ts`：伪造 chartId 被拒绝、tier 过期 fail-closed。
-   - `access-level.test.ts`：追加"会员过期但拥有 premium report 仍可读"用例。
-   - `premium-mock-payment.test.ts`：确认 mock 会员购买不会授予 report 权益，反之亦然（若已存在则复用）。
+  update public.charts
+     set is_primary = true
+   where id = _chart_id and user_id = _uid and chart_role = 'self';
 
-8. **验收报告（响应末尾列出）**
-   - 新路由、新组件、服务端函数表、每类问题 usedAi/usedChart/chargedQuota、是否发生数据库迁移（本阶段：**否**）、权限测试结果、typecheck/build/lint 结果。
+  return query select _chart_id, true;
+end;
+$$;
 
-### 明确不做
-
-- 不接真实支付（微信/支付宝/Visa/银联）。
-- 不添加 `payment_events` 表；预留稳定 `simulate*` 服务端函数签名与幂等 `simulation_id` 参数，仅此。
-- 不改动 six-book 首页、ConcernSelector、`/me/profile` 书架视觉。
-- 不重写 ReportExtras 内嵌 oracle chat（仅上方加入统一入口 Banner）；后续阶段再退役。
-
-### 主要新增/修改文件
-
-```text
-新增
-  src/lib/intent-router.ts            + test
-  src/lib/sage.functions.ts           + test
-  src/routes/_authenticated/me.oracle.tsx
-  src/components/MembershipCard.tsx
-修改
-  src/components/ElderCompanion.tsx   → 智者陪伴浮层重构
-  src/lib/oracle.functions.ts         → chartId 所有权校验
-  src/lib/elder.functions.ts          → 委托 sageChat（保留兼容层）
-  src/routes/report.tsx               → 顶部 Banner Link 到 /me/oracle
-  src/routes/_authenticated/me.profile.tsx → 顶部 MembershipCard
+revoke all on function public.set_primary_if_none(uuid) from public, anon;
+grant execute on function public.set_primary_if_none(uuid) to authenticated;
 ```
 
-请确认。批准后我会分批写入并跑 typecheck / test / build / lint，把结果贴回。
+- 事务/锁策略：`for update` 锁定当前用户所有 charts 行；`security definer` + `search_path=public` 防注入；仅 authenticated 可执行。
+- 回滚：`drop function public.set_primary_if_none(uuid);`（无 schema 变更，无数据迁移，可即时回滚）。
+- 验证 SQL：
+  ```sql
+  -- 应返回 promoted=true 且此后 is_primary=true 唯一
+  select * from public.set_primary_if_none('<self-chart-id>');
+  select id, is_primary from public.charts where user_id = auth.uid();
+  -- 再次调用应返回 promoted=false
+  select * from public.set_primary_if_none('<another-self-chart-id>');
+  ```
+- 前端接入（未来）：`assignChartOwnership` 的 `autoPromoteIfNoPrimary` 分支从
+  “查询 + 手写 update” 改成 `supabase.rpc('set_primary_if_none', {...})`，
+  当前实现暂用 `set_primary_chart` RPC，无原子性缺口下的日常使用是安全的。
+
+## 7. 后端归属审计
+- **托管形态**：Lovable Cloud 托管（`LOVABLE_CLOUD=1`），底层 Supabase 项目 ref `lhnoyrxnnnxvosryupaj` 与原项目共享；没有 Supabase Dashboard 访问权。
+- **可用工具面**：
+  - `supabase--configure_auth`：可切换社会登录开关、rate limit、HIBP 等；**不含** Site URL / Redirect URLs 写入能力。
+  - `supabase--configure_social_auth`、`supabase--configure_oauth_server`：管社会登录与 OAuth server 配置。
+  - 未发现任何专用工具能写 `GOTRUE_URI_ALLOW_LIST` / Site URL。
+- **公开 preview 回跳允许清单**：
+  - 需要人工在 **项目 → Backend / Cloud → Users → Auth Settings** 里加：
+    - `https://preview--cosmic-axis-hub.lovable.app`
+    - `https://preview--cosmic-axis-hub.lovable.app/auth/callback`
+    - `https://preview--cosmic-axis-hub.lovable.app/auth/reset`
+    - `https://preview--cosmic-axis-hub.lovable.app/auth`
+  - 若原有 `https://fate-nexus-ai.lovable.app/*` 尚存，可保留以兼容旧账号邮件链接。
+- **管理员归属**：`icejie0311@163.com` 是应用内 `user_roles.role='admin'`（已在上一轮 grant），**不是** Supabase Dashboard owner；无法登入 supabase.com。Cloud 托管项目不会给终端用户暴露 dashboard。
+
+## 仍需人工完成
+1. 在 Auth Settings 里把上面 4 条 preview 回跳 URL 加入 Allow-list（工具无法自动写入）。
+2. 需要一次公开 preview 的登录会话，才能跑第 5 项里描述的 `/ritual` 端到端脚本。
+3. 决定何时执行第 6 项的 `set_primary_if_none` migration；执行前请先在 Cloud → Database 做一份快照。
