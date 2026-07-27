@@ -17,11 +17,15 @@ import {
   defaultStageForAge,
   computeAge,
   pickPriorityDomain,
+  curatorLetter,
+  isOnboardingIntent,
   LIFE_STAGES,
   type LifeStage,
+  type OnboardingIntent,
 } from "@/lib/life-guidance-v1";
 import { useServerFn } from "@tanstack/react-start";
 import { getLifeGuidancePrefs } from "@/lib/life-guidance.functions";
+
 
 
 
@@ -129,6 +133,24 @@ function DailyRoomPage() {
   const [compassAxis, setCompassAxis] = useState<CompassAxis>("overall");
   // Membership toggle (dev-only "mock member") removed from this route.
   const [real, setReal] = useState<RealChartAdapterState>({ kind: "loading" });
+  const [onboardingIntent, setOnboardingIntent] = useState<OnboardingIntent | null>(null);
+  const getPrefsFn = useServerFn(getLifeGuidancePrefs);
+  useEffect(() => {
+    let cancelled = false;
+    getPrefsFn()
+      .then((row) => {
+        if (cancelled) return;
+        const v = row?.onboarding_intent;
+        if (isOnboardingIntent(v)) setOnboardingIntent(v);
+      })
+      .catch(() => {
+        /* keep null */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [getPrefsFn]);
+
 
   useEffect(() => {
     let cancelled = false;
@@ -194,6 +216,19 @@ function DailyRoomPage() {
         <div className="mb-6 rounded-lg border border-amber-400/30 bg-amber-500/5 px-4 py-2 text-xs text-amber-200/90">
           {d.demo_banner_home}
         </div>
+
+        {onboardingIntent ? (
+          <div
+            className="mb-6 rounded-lg border border-amber-500/25 bg-black/40 px-4 py-3 text-sm text-amber-100/90"
+            data-testid="curator-welcome-line"
+          >
+            <span className="mr-2 text-[10px] uppercase tracking-[0.28em] text-amber-300/70">
+              {lang === "zh" ? "馆长留言" : "From the Curator"}
+            </span>
+            {curatorLetter[lang].welcomeBack(onboardingIntent)}
+          </div>
+        ) : null}
+
 
         {/* Secondary in-page nav */}
         <nav

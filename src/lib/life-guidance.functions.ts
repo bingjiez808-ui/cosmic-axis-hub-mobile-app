@@ -8,22 +8,29 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { LIFE_STAGES } from "@/lib/life-guidance-v1";
+import { LIFE_STAGES, ONBOARDING_INTENTS } from "@/lib/life-guidance-v1";
 
 const stageSchema = z.enum(LIFE_STAGES as unknown as [string, ...string[]]);
+const intentSchema = z.enum(
+  ONBOARDING_INTENTS as unknown as [string, ...string[]],
+);
 
 export const getLifeGuidancePrefs = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from("user_preferences" as never)
-      .select("life_stage, life_stage_source, updated_at")
+      .select(
+        "life_stage, life_stage_source, onboarding_intent, onboarding_intent_at, updated_at",
+      )
       .eq("user_id", context.userId)
       .maybeSingle();
     if (error && error.code !== "PGRST116") throw error;
     return (data ?? null) as {
       life_stage: string | null;
       life_stage_source: "auto" | "user" | null;
+      onboarding_intent: string | null;
+      onboarding_intent_at: string | null;
       updated_at: string;
     } | null;
   });
@@ -49,6 +56,25 @@ export const setLifeStage = createServerFn({ method: "POST" })
     if (error) throw error;
     return { ok: true as const };
   });
+
+export const setOnboardingIntent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((raw) => z.object({ intent: intentSchema }).parse(raw))
+  .handler(async ({ context, data }) => {
+    const { error } = await context.supabase
+      .from("user_preferences" as never)
+      .upsert(
+        {
+          user_id: context.userId,
+          onboarding_intent: data.intent,
+          onboarding_intent_at: new Date().toISOString(),
+        } as never,
+        { onConflict: "user_id" },
+      );
+    if (error) throw error;
+    return { ok: true as const };
+  });
+
 
 export const listLifeBookmarks = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])

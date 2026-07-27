@@ -1122,6 +1122,8 @@ export type Database = {
           created_at: string
           life_stage: string | null
           life_stage_source: string | null
+          onboarding_intent: string | null
+          onboarding_intent_at: string | null
           updated_at: string
           user_id: string
         }
@@ -1129,6 +1131,8 @@ export type Database = {
           created_at?: string
           life_stage?: string | null
           life_stage_source?: string | null
+          onboarding_intent?: string | null
+          onboarding_intent_at?: string | null
           updated_at?: string
           user_id: string
         }
@@ -1136,6 +1140,8 @@ export type Database = {
           created_at?: string
           life_stage?: string | null
           life_stage_source?: string | null
+          onboarding_intent?: string | null
+          onboarding_intent_at?: string | null
           updated_at?: string
           user_id?: string
         }

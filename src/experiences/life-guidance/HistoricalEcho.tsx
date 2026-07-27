@@ -156,9 +156,36 @@ export function HistoricalEcho({ stage, domain }: HistoricalEchoProps) {
   return (
     <section
       aria-label={copy.title}
-      className="mb-8 rounded-xl border border-purple-400/25 bg-gradient-to-br from-black/60 via-black/45 to-purple-950/30 p-6 md:p-7"
+      className="relative mb-8 overflow-hidden rounded-xl border border-amber-500/25 bg-black/60 p-6 md:p-7"
       data-testid="historical-echo"
     >
+      {/* Gallery of arched niches — sits behind text with a soft scrim */}
+      <picture aria-hidden="true">
+        <source
+          type="image/webp"
+          media="(min-width: 720px)"
+          srcSet="/assets/life-guidance/historical-echo-gallery.webp"
+        />
+        <source
+          type="image/webp"
+          srcSet="/assets/life-guidance/historical-echo-gallery-mobile.webp"
+        />
+        <img
+          src="/assets/life-guidance/historical-echo-gallery.png"
+          alt=""
+          loading="lazy"
+          decoding="async"
+          width={1774}
+          height={887}
+          className="pointer-events-none absolute inset-0 h-full w-full object-cover object-center opacity-70"
+        />
+      </picture>
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.65)_0%,rgba(0,0,0,0.5)_45%,rgba(0,0,0,0.85)_100%)]"
+      />
+
+      <div className="relative z-10">
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
@@ -167,15 +194,15 @@ export function HistoricalEcho({ stage, domain }: HistoricalEchoProps) {
         className="flex w-full items-baseline justify-between text-left"
       >
         <div>
-          <div className="text-[11px] uppercase tracking-widest text-purple-200/70">
+          <div className="text-[11px] uppercase tracking-widest text-amber-200/80">
             {copy.title}
           </div>
-          <div className="mt-1 font-serif text-lg italic text-amber-100/90 md:text-xl">
+          <div className="mt-1 font-serif text-lg italic text-amber-50 md:text-xl">
             {copy.intro}
           </div>
         </div>
         <span
-          className={`ml-4 inline-block text-amber-300/70 transition-transform duration-500 ${
+          className={`ml-4 inline-block text-amber-300/80 transition-transform duration-500 ${
             expanded ? "rotate-90" : ""
           }`}
           aria-hidden
@@ -183,6 +210,7 @@ export function HistoricalEcho({ stage, domain }: HistoricalEchoProps) {
           →
         </span>
       </button>
+
 
       <AnimatePresence initial={false}>
         {expanded ? (
@@ -249,9 +277,11 @@ export function HistoricalEcho({ stage, domain }: HistoricalEchoProps) {
           </motion.div>
         ) : null}
       </AnimatePresence>
+      </div>
     </section>
   );
 }
+
 
 function FigureCard({
   figure,
