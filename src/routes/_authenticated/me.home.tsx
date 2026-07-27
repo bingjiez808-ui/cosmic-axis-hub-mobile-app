@@ -11,6 +11,17 @@ import { useDaily, useFormatDate, xlate } from "@/lib/i18n-daily";
 import { formatThemeKeyword, formatContradiction, tPhase } from "@/lib/daily-format";
 import { interpretAll } from "@/lib/daily-plain-language";
 import { DailyDestinyCompass, type CompassAxis } from "@/experiences/daily-room/visuals/DailyDestinyCompass";
+import { LifeChapterCard } from "@/experiences/life-guidance/LifeChapterCard";
+import { HistoricalEcho } from "@/experiences/life-guidance/HistoricalEcho";
+import {
+  defaultStageForAge,
+  computeAge,
+  pickPriorityDomain,
+  LIFE_STAGES,
+  type LifeStage,
+} from "@/lib/life-guidance-v1";
+import { useServerFn } from "@tanstack/react-start";
+import { getLifeGuidancePrefs } from "@/lib/life-guidance.functions";
 
 
 
