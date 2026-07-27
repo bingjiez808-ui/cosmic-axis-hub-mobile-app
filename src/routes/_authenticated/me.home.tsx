@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { PersonalWorkspaceNav } from "@/components/PersonalWorkspaceNav";
+
 import { loadDailyRoomFixture, type DailyRoomFixtureKey } from "@/experiences/daily-room/fixtures";
 import { ensureSocialPreviewAllowed } from "@/experiences/daily-room/route-guard";
 import { DailyRoomPending, DailyRoomError } from "@/experiences/daily-room/fallback";

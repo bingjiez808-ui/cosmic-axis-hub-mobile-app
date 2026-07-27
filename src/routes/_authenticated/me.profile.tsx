@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
+import { PersonalWorkspaceNav } from "@/components/PersonalWorkspaceNav";
+
 import { PersonalBookshelf } from "@/experiences/profile/PersonalBookshelf";
 import { MembershipCard } from "@/components/MembershipCard";
 import { MyTicketsCard } from "@/components/MyTicketsCard";

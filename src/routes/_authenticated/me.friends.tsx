@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
+import { PersonalWorkspaceNav } from "@/components/PersonalWorkspaceNav";
+
 import {
   createInMemoryFriendsRepo,
   type FriendInvite,
@@ -118,30 +120,11 @@ function FriendsPage() {
           {d.demo_banner_friends}
         </div>
 
-        <nav
-          aria-label={d.nav_today}
-          className="mb-6 flex flex-wrap items-center gap-2 text-xs"
-        >
-          <Link
-            to="/me/home"
-            className="rounded-full border border-amber-400/25 px-3 py-1 text-amber-200/80 hover:border-amber-300/60"
-          >
-            {d.nav_today}
-          </Link>
-          <Link
-            to="/me/friends"
-            aria-current="page"
-            className="rounded-full border border-amber-300 bg-amber-300/10 px-3 py-1 text-amber-100"
-          >
-            {d.home_secondary_nav_friends}
-          </Link>
-          <Link
-            to="/me/match"
-            className="rounded-full border border-amber-400/25 px-3 py-1 text-amber-200/80 hover:border-amber-300/60"
-          >
-            {d.home_secondary_nav_match}
-          </Link>
-        </nav>
+        <PersonalWorkspaceNav active="/me/friends" />
+        <p className="mb-4 text-xs text-amber-200/60" data-testid="friends-purpose-hint">
+          {d.nav_today ? "" : ""}
+          {(() => "")()}
+        </p>
 
         <header className="mb-6">
           <h1 className="text-3xl font-serif tracking-wide">{d.friends_title}</h1>

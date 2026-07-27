@@ -2,6 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, Send } from "lucide-react";
 
+import { PersonalWorkspaceNav } from "@/components/PersonalWorkspaceNav";
+
 import { DailyRoomError, DailyRoomPending } from "@/experiences/daily-room/fallback";
 import { supabase } from "@/integrations/supabase/client";
 import { listUserCharts, type ChartRow } from "@/lib/reports-store.functions";
