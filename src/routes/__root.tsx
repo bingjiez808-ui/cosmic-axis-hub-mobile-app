@@ -488,33 +488,36 @@ function SiteNav() {
                     role="menu"
                     className="absolute right-0 top-full mt-2 w-64 rounded-xl border border-gold-dust/25 bg-obsidian/95 p-2 backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.5)]"
                   >
-                    <div className="px-2 pt-1 pb-1 text-[9px] uppercase tracking-[0.28em] text-stone-warm/40">
-                      {isZh ? "个人书架" : "Personal Library"}
-                    </div>
-                    {shelfEntries.map((e) => (
-                      <a
-                        key={e.href}
-                        href={e.href}
-                        onClick={() => setMoreOpen(false)}
-                        className="block rounded-lg px-3 py-2 text-[12px] text-stone-warm/85 hover:bg-gold-dust/10 hover:text-gold-light"
-                      >
-                        {e.label}
-                      </a>
-                    ))}
-                    {moreEntries.length > 0 && <div className="my-2 h-px bg-white/10" />}
-                    {moreEntries.map((e) => (
-                      <Link
-                        key={e.to}
-                        to={e.to}
-                        onClick={() => setMoreOpen(false)}
-                        aria-current={isActive(e.to) ? "page" : undefined}
-                        className={`block rounded-lg px-3 py-2 text-[12px] ${
-                          isZh ? "tracking-normal" : "uppercase tracking-[0.24em]"
-                        } ${isActive(e.to) ? "text-gold-dust bg-gold-dust/10" : "text-stone-warm/80 hover:bg-gold-dust/10 hover:text-gold-light"}`}
-                      >
-                        {e.label}
-                      </Link>
-                    ))}
+                    {moreEntries.map((e) => {
+                      const key = e.to ?? e.href ?? e.label;
+                      const active = e.to ? isActive(e.to) : false;
+                      const cls = `block rounded-lg px-3 py-2 text-[12px] ${
+                        isZh ? "tracking-normal" : "uppercase tracking-[0.24em]"
+                      } ${active ? "text-gold-dust bg-gold-dust/10" : "text-stone-warm/80 hover:bg-gold-dust/10 hover:text-gold-light"}`;
+                      if (e.href) {
+                        return (
+                          <a
+                            key={key}
+                            href={e.href}
+                            onClick={() => setMoreOpen(false)}
+                            className={cls}
+                          >
+                            {e.label}
+                          </a>
+                        );
+                      }
+                      return (
+                        <Link
+                          key={key}
+                          to={e.to!}
+                          onClick={() => setMoreOpen(false)}
+                          aria-current={active ? "page" : undefined}
+                          className={cls}
+                        >
+                          {e.label}
+                        </Link>
+                      );
+                    })}
                   </div>
                 )}
               </div>
