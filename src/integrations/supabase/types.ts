@@ -1119,6 +1119,8 @@ export type Database = {
       }
       user_preferences: {
         Row: {
+          concern: string | null
+          concern_at: string | null
           created_at: string
           life_stage: string | null
           life_stage_source: string | null
@@ -1128,6 +1130,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          concern?: string | null
+          concern_at?: string | null
           created_at?: string
           life_stage?: string | null
           life_stage_source?: string | null
@@ -1137,6 +1141,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          concern?: string | null
+          concern_at?: string | null
           created_at?: string
           life_stage?: string | null
           life_stage_source?: string | null
