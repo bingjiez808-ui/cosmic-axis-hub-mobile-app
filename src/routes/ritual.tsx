@@ -531,8 +531,8 @@ function RitualPage() {
               )}
               <button
                 onClick={advance}
-                disabled={!canAdvance}
-                className="group relative overflow-hidden rounded-full border border-gold-dust/40 px-10 py-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust transition-all hover:border-gold-dust disabled:cursor-not-allowed disabled:opacity-30"
+                
+                className="group relative overflow-hidden rounded-full border border-gold-dust/40 px-10 py-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust transition-all hover:border-gold-dust "
               >
                 <span className="relative z-10">
                   {isLast ? t.invoke : t.continue}
