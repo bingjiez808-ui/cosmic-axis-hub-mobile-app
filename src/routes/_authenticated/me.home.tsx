@@ -287,32 +287,30 @@ function DailyRoomPage() {
 
 
 
-        {/* Page title — "My Home" is the personal reading desk. Today's Fate is its default first module. */}
+        {/* Page title — "My Library" is the personal reading desk. Today's Fate is its default first module. */}
         <header className="mb-6">
           <div className="text-[10px] uppercase tracking-[0.36em] text-amber-300/60">
-            {lang === "zh" ? "命运图书馆 · 个人书架" : "Destiny Library · Personal Library"}
+            {lang === "zh" ? "命运图书馆 · 我的书架" : "Destiny Library · My Library"}
           </div>
           <h1 className="mt-2 font-serif text-3xl tracking-wide md:text-4xl">
-            {lang === "zh" ? "我的主页" : "My Home"}
+            {lang === "zh" ? "书架主页" : "Library Home"}
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-amber-100/70">
             {lang === "zh"
-              ? "这是你每天回到图书馆的个人书架。默认打开「今日命运」，也可从下方进入命盘、好友、历史回声与会员。"
-              : "This is your Personal Library shelf. It opens with today's fate; use the cards below to reach charts, friends, historical echoes and membership."}
+              ? "这是你每天回到图书馆的书架主页。默认打开「今日命运」；命盘、关系、历史回声与会员，从上方书架导航进入。"
+              : "This is your Library home. It opens with today's fate; use the library sub-nav above to reach charts, relationships, echoes and membership."}
           </p>
         </header>
-
-        {/* Hub cards — clear next step for each personal module */}
-        <HomeHubCards real={real} lang={lang} />
 
         {/* Shared personal-workspace sub-nav (Today's Fate active) */}
         <PersonalWorkspaceNav active="/me/home" />
         <div id="today" className="sr-only" aria-hidden />
         <p className="mb-4 text-xs text-amber-200/60" data-testid="home-purpose-hint">
           {lang === "zh"
-            ? "这里显示今天的一件事：主线、六领域建议与 7 日走向。想去命盘/好友/适配，用上面的次级导航。"
-            : "This page shows the one thing for today: your line, six-domain notes and the 7-day arc. Use the sub-nav above to reach charts, friends or match."}
+            ? "这里显示今天的一件事：主线、六领域建议与 7 日走向。想去命盘/关系/历史回声/会员，用上面的书架导航。"
+            : "This page shows the one thing for today: your line, six-domain notes and the 7-day arc. Use the library sub-nav above for charts, relationships, echoes or membership."}
         </p>
+
 
 
         {/* Lightweight context bar — full chart management lives on /me/profile */}
@@ -1281,133 +1279,9 @@ function DailyCuratorCounsel({
 
 /* ---------- Home Hub Cards ---------- */
 
-function HomeHubCards({
-  real,
-  lang,
-}: {
-  real: RealChartAdapterState;
-  lang: "en" | "zh";
-}) {
-  const isZh = lang === "zh";
-  const ready = real.kind === "ready" ? real : null;
-  const charts = ready?.charts ?? [];
-  const primary = charts.find((c) => c.is_primary && c.chart_role === "self") ?? null;
-  const otherCount = charts.filter((c) => !c.is_primary || c.chart_role !== "self").length;
+// HomeHubCards removed — duplicated PersonalWorkspaceNav entries.
+// Library sub-nav is now the single canonical entry point for /me/*.
 
-  const cards: Array<{
-    to: string;
-    title: string;
-    desc: string;
-    reveal: string;
-    status: string;
-    accent?: boolean;
-  }> = [
-    {
-      to: "#today",
-      accent: true,
-      title: isZh ? "今日命运" : "Today's Fate",
-      desc: isZh
-        ? "今天与未来 7 天：总体、学业、事业、爱情、人际、财富、健康。"
-        : "Today and the next 7 days: overall, study, career, love, people, wealth, health.",
-      reveal: isZh ? "打开：白话结论 · 六维罗盘 · 计算说明。" : "Opens: plain-word verdict, six-axis compass, calculation notes.",
-      status: primary
-        ? isZh
-          ? "主命盘已就绪"
-          : "Primary chart ready"
-        : isZh
-          ? "尚未设置主命盘"
-          : "No primary chart yet",
-    },
-    {
-      to: "/me/profile",
-      title: isZh ? "命盘与报告" : "Charts & Reports",
-      desc: isZh
-        ? "管理主命盘、他人命盘、已购报告；重命名或删除。"
-        : "Manage the primary chart, others' charts, purchased reports; rename or delete.",
-      reveal: isZh ? "打开：个人书架与图书证。" : "Opens: personal bookshelf & library card.",
-      status: primary
-        ? isZh
-          ? `共 ${charts.length} 张 · 主命盘：${primary.name ?? (isZh ? "已设置" : "set")}`
-          : `${charts.length} chart${charts.length === 1 ? "" : "s"} · primary set`
-        : charts.length > 0
-          ? isZh
-            ? `共 ${charts.length} 张 · 尚未指定主命盘`
-            : `${charts.length} chart${charts.length === 1 ? "" : "s"} · no primary yet`
-          : isZh
-            ? "尚未添加任何命盘"
-            : "No charts yet",
-    },
-    {
-      to: "/me/friends",
-      title: isZh ? "好友与匹配" : "Friends & Match",
-      desc: isZh
-        ? "好友申请、导入他人命盘、双方授权后计算适配。"
-        : "Friend requests, import others' charts, mutual-consent compatibility.",
-      reveal: isZh ? "打开：邀请、授权、匹配面板。" : "Opens: invites, consent, match panels.",
-      status: isZh ? `他人命盘 ${otherCount} 张` : `${otherCount} other chart${otherCount === 1 ? "" : "s"}`,
-    },
-    {
-      to: "#historical-echo",
-      title: isZh ? "历史回声" : "Historical Echoes",
-      desc: isZh
-        ? "寻找曾面对相似处境的人 —— 不是宣称命格相同。"
-        : "Find people who once faced a similar situation — not claiming an identical chart.",
-      reveal: isZh ? "打开：按处境推荐 · 收藏 · 我的私密回应。" : "Opens: situation-based figures, bookmarks, private notes.",
-      status: isZh ? "按当前关注与今日信号推荐" : "Ranked by concern & today's signal",
-    },
-    {
-      to: "/me/oracle",
-      title: isZh ? "会员与订单" : "Membership & Orders",
-      desc: isZh
-        ? "智者 / 神谕者月度会员、一次性综合报告、订单与工单。"
-        : "Sage / Oracle monthly plans, one-time reports, orders and tickets.",
-      reveal: isZh ? "打开：神谕者阅读室与账户菜单。" : "Opens: Oracle reading room and account menu.",
-      status: isZh ? "查看当前会员与工单状态" : "View plan & ticket status",
-    },
-  ];
-
-  return (
-    <section
-      aria-label={isZh ? "个人中枢" : "Personal hub"}
-      data-testid="home-hub-cards"
-      className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
-    >
-      {cards.map((c) => {
-        const isAnchor = c.to.startsWith("#");
-        const cls = `group flex h-full flex-col justify-between rounded-xl border p-4 text-left transition ${
-          c.accent
-            ? "border-amber-300/60 bg-amber-500/5 hover:bg-amber-500/10"
-            : "border-amber-400/20 bg-black/25 hover:border-amber-300/50 hover:bg-black/40"
-        }`;
-        const body = (
-          <>
-            <div>
-              <div className="flex items-center justify-between gap-2">
-                <h2 className="font-serif text-base text-amber-50 md:text-lg">{c.title}</h2>
-                <span aria-hidden className="text-amber-300/60 transition group-hover:translate-x-0.5">→</span>
-              </div>
-              <p className="mt-2 text-xs leading-relaxed text-amber-100/75">{c.desc}</p>
-              <p className="mt-2 text-[11px] leading-relaxed text-amber-200/55">{c.reveal}</p>
-            </div>
-            <div className="mt-3 inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.22em] text-amber-300/70">
-              <span aria-hidden className="h-1 w-1 rounded-full bg-amber-300/70" />
-              {c.status}
-            </div>
-          </>
-        );
-        return isAnchor ? (
-          <a key={c.title} href={c.to} className={cls}>
-            {body}
-          </a>
-        ) : (
-          <Link key={c.title} to={c.to} className={cls}>
-            {body}
-          </Link>
-        );
-      })}
-    </section>
-  );
-}
 
 
 

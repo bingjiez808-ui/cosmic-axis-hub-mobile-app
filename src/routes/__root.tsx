@@ -292,6 +292,7 @@ function SiteNav() {
   const [atTop, setAtTop] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [libraryOpen, setLibraryOpen] = useState(false);
   const [orbActive, setOrbActive] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const navRef = useRef<HTMLElement | null>(null);
@@ -323,8 +324,9 @@ function SiteNav() {
   const adminLabel = isZh ? "议政厅" : "Admin";
   const libraryHomeLabel = isZh ? "导览室" : "Guide Hall";
   const libraryHomeAria = isZh ? "导览室（首页）" : "Guide Hall (Home)";
-  const myHomeLabel = isZh ? "我的主页" : "My Home";
+  const myLibraryLabel = isZh ? "我的书架" : "My Library";
   const moreLabel = isZh ? "了解 · 更多" : "Learn · More";
+
 
   useEffect(() => {
     const onScroll = () => setAtTop(window.scrollY < 40);
@@ -334,15 +336,27 @@ function SiteNav() {
   }, []);
 
   useEffect(() => {
-    if (!moreOpen) return;
+    if (!moreOpen && !libraryOpen) return;
     const onDoc = (e: MouseEvent) => {
       const el = e.target as HTMLElement | null;
-      if (el?.closest("[data-more-menu]")) return;
+      if (el?.closest("[data-more-menu]") || el?.closest("[data-library-menu]")) return;
       setMoreOpen(false);
+      setLibraryOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setMoreOpen(false);
+        setLibraryOpen(false);
+      }
     };
     document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
-  }, [moreOpen]);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [moreOpen, libraryOpen]);
+
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null;
@@ -414,15 +428,22 @@ function SiteNav() {
 
   const orbVisible = orbActive && !showTopBar && !drawerOpen;
 
-  // Global IA — identical for signed-in and signed-out. Personal-shelf
-  // features (Today's Fate, Charts, Friends, Match, Echoes, Membership) do
-  // NOT live here; they belong to /me/home + PersonalWorkspaceNav.
+  // Global IA — identical for signed-in and signed-out. "My Library" is a
+  // dropdown of the five shelf entries (mirrored by PersonalWorkspaceNav
+  // once inside /me/*), never a flat set of top-level links.
   const coreEntries: Array<{ to: string; label: string; ariaLabel?: string }> = [
     { to: "/", label: libraryHomeLabel, ariaLabel: libraryHomeAria },
     { to: "/ritual", label: t.nav_ritual },
     { to: "/traditions", label: t.nav_traditions },
     { to: "/community", label: t.nav_community },
-    { to: "/me/home", label: myHomeLabel },
+  ];
+
+  const libraryEntries: Array<{ to: "/me/home" | "/me/profile" | "/me/friends" | "/me/echoes" | "/me/membership"; label: string; hint: string }> = [
+    { to: "/me/home", label: isZh ? "书架主页" : "Library Home", hint: isZh ? "今日命运与主线" : "Today's fate & throughline" },
+    { to: "/me/profile", label: isZh ? "命盘与报告" : "Charts & Reports", hint: isZh ? "主命盘 · 他人命盘 · 报告" : "Primary · others · reports" },
+    { to: "/me/friends", label: isZh ? "关系与适配" : "Relationships", hint: isZh ? "好友 · 邀请 · 适配分析" : "Friends · invites · match" },
+    { to: "/me/echoes", label: isZh ? "历史回声" : "Historical Echoes", hint: isZh ? "相似处境的历史人物" : "Figures with similar arcs" },
+    { to: "/me/membership", label: isZh ? "会员与订单" : "Membership & Orders", hint: isZh ? "会员 · 订单 · 工单" : "Plans · orders · tickets" },
   ];
 
   // "Learn · More" — informational/policy only. Never duplicate personal features here.
@@ -434,6 +455,11 @@ function SiteNav() {
     { href: "mailto:fatenexus.studio@gmail.com", label: isZh ? "联系支持" : "Contact support", external: true },
     ...(showAdmin ? [{ to: "/admin", label: adminLabel }] : []),
   ];
+
+  const isLibraryActive = libraryEntries.some((e) => isActive(e.to));
+  const gatedShelfHref = (to: string) =>
+    !session ? { to: "/auth" as const, search: { mode: "login" as const, redirect: to } } : null;
+
 
   return (
     <>
@@ -472,17 +498,82 @@ function SiteNav() {
             {coreEntries.map((e) => (
               <NavLink key={e.to} to={e.to} label={e.label} ariaLabel={e.ariaLabel} />
             ))}
+            <div className="relative" data-library-menu>
+              <button
+                type="button"
+                id="library-menu-trigger"
+                aria-haspopup="menu"
+                aria-expanded={libraryOpen}
+                aria-controls="library-menu-panel"
+                onClick={() => {
+                  setMoreOpen(false);
+                  setLibraryOpen((v) => !v);
+                }}
+                className={`${linkBase} ${isLibraryActive ? linkActive : linkIdle}`}
+              >
+                {myLibraryLabel} <span aria-hidden className="ml-1 text-[9px]">▾</span>
+              </button>
+              {libraryOpen && (
+                <div
+                  id="library-menu-panel"
+                  role="menu"
+                  aria-labelledby="library-menu-trigger"
+                  className="absolute right-0 top-full mt-2 w-72 rounded-xl border border-gold-dust/25 bg-obsidian/95 p-2 backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.5)]"
+                >
+                  {libraryEntries.map((e) => {
+                    const active = isActive(e.to);
+                    const gated = gatedShelfHref(e.to);
+                    const cls = `block rounded-lg px-3 py-2 ${
+                      active ? "bg-gold-dust/10 text-gold-dust" : "text-stone-warm/85 hover:bg-gold-dust/10 hover:text-gold-light"
+                    }`;
+                    const inner = (
+                      <>
+                        <div className={`text-[12px] ${isZh ? "tracking-normal" : "uppercase tracking-[0.24em]"}`}>{e.label}</div>
+                        <div className="mt-0.5 text-[10px] text-stone-warm/55">{e.hint}</div>
+                      </>
+                    );
+                    return gated ? (
+                      <Link
+                        key={e.to}
+                        to={gated.to}
+                        search={gated.search}
+                        onClick={() => setLibraryOpen(false)}
+                        className={cls}
+                        role="menuitem"
+                      >
+                        {inner}
+                      </Link>
+                    ) : (
+                      <Link
+                        key={e.to}
+                        to={e.to}
+                        onClick={() => setLibraryOpen(false)}
+                        aria-current={active ? "page" : undefined}
+                        className={cls}
+                        role="menuitem"
+                      >
+                        {inner}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
             {moreEntries.length > 0 && (
               <div className="relative" data-more-menu>
                 <button
                   type="button"
                   aria-haspopup="menu"
                   aria-expanded={moreOpen}
-                  onClick={() => setMoreOpen((v) => !v)}
+                  onClick={() => {
+                    setLibraryOpen(false);
+                    setMoreOpen((v) => !v);
+                  }}
                   className={`${linkBase} ${linkIdle}`}
                 >
                   {moreLabel} <span aria-hidden className="ml-1 text-[9px]">▾</span>
                 </button>
+
                 {moreOpen && (
                   <div
                     role="menu"
@@ -656,7 +747,43 @@ function SiteNav() {
             </Link>
           );
         })}
+        <div className="my-1 h-px bg-white/10" />
+        <div className="px-3 pb-1 pt-1 text-right text-[9px] uppercase tracking-[0.28em] text-stone-warm/40">
+          {myLibraryLabel}
+        </div>
+        {libraryEntries.map((e) => {
+          const active = isActive(e.to);
+          const gate = !session;
+          const cls = `flex min-h-11 items-center justify-end whitespace-nowrap rounded-lg px-4 py-3 text-right text-[12px] ${
+            isZh ? "tracking-normal" : "uppercase tracking-[0.22em]"
+          } ${active ? "bg-gold-dust/10 text-gold-light" : "text-stone-warm/80 hover:bg-gold-dust/10 hover:text-gold-light"}`;
+          if (gate) {
+            return (
+              <Link
+                key={e.to}
+                to="/auth"
+                search={{ mode: "login", redirect: e.to }}
+                onClick={() => setDrawerOpen(false)}
+                className={cls}
+              >
+                {e.label}
+              </Link>
+            );
+          }
+          return (
+            <Link
+              key={e.to}
+              to={e.to}
+              onClick={() => setDrawerOpen(false)}
+              aria-current={active ? "page" : undefined}
+              className={cls}
+            >
+              {e.label}
+            </Link>
+          );
+        })}
         {moreEntries.length > 0 && <div className="my-1 h-px bg-white/10" />}
+
         {moreEntries.length > 0 && (
           <div className="px-3 pb-1 pt-1 text-right text-[9px] uppercase tracking-[0.28em] text-stone-warm/40">
             {isZh ? "了解 · 更多" : "Learn · More"}
