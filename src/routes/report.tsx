@@ -186,6 +186,9 @@ type SearchParams = {
   lunar?: string;
   readingId?: string;
   gender?: "male" | "female";
+  role?: "self" | "other";
+  relationship?: string;
+  relationshipLabel?: string;
 };
 
 const pickStr = (v: unknown) => (typeof v === "string" ? v : undefined);
@@ -213,6 +216,9 @@ export const Route = createFileRoute("/report")({
     lunar: pickStr(s.lunar),
     readingId: pickStr(s.readingId),
     gender: s.gender === "male" ? "male" : s.gender === "female" ? "female" : undefined,
+    role: s.role === "self" ? "self" : s.role === "other" ? "other" : undefined,
+    relationship: pickStr(s.relationship),
+    relationshipLabel: pickStr(s.relationshipLabel),
   }),
   component: ReportPage,
 });
