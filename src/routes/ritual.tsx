@@ -428,6 +428,76 @@ function RitualPage() {
 
             {/* Quiz retired — intake step only. */}
 
+            {isOwnershipStep && (
+              <div data-ritual-field>
+                <h1 className="mx-auto mb-4 max-w-xl text-balance font-serif text-3xl italic leading-tight text-stone-warm md:text-5xl">
+                  {lang === "zh" ? "这张命盘属于谁？" : "Whose chart is this?"}
+                </h1>
+                <p className="mx-auto mb-10 max-w-md text-sm text-stone-warm/50">
+                  {lang === "zh"
+                    ? "此选择只保存在你的个人书架里；不会通知对方，也不会公开数据。真正的好友、聊天、共享与匹配仍需双方授权。"
+                    : "Your choice is kept privately in your personal library. Nobody is notified and no data is shared. Real friends, chat, sharing and matching still require both parties to consent."}
+                </p>
+                <div role="radiogroup" aria-label={lang === "zh" ? "命盘归属" : "Chart ownership"} className="mx-auto flex max-w-md flex-col gap-3">
+                  {(["self", "other"] as const).map((r) => {
+                    const active = ownerRole === r;
+                    const label = r === "self"
+                      ? (lang === "zh" ? "我的命盘（首次生成将设为我的主命盘）" : "My chart (first one becomes my primary)")
+                      : (lang === "zh" ? "他人命盘（保存到关系与适配）" : "Someone else's chart (saved to Relationships)");
+                    return (
+                      <button
+                        key={r}
+                        type="button"
+                        role="radio"
+                        aria-checked={active}
+                        onClick={() => setOwnerRole(r)}
+                        className={`min-h-[48px] rounded-2xl border px-5 py-3 text-left text-[12px] leading-relaxed transition-colors ${
+                          active
+                            ? "border-gold-dust bg-gold-dust/10 text-gold-light"
+                            : "border-white/15 text-stone-warm/70 hover:border-gold-dust/40 hover:text-gold-dust"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+                {ownerRole === "other" && (
+                  <div className="mx-auto mt-6 max-w-md">
+                    <p className="mb-3 text-[11px] uppercase tracking-[0.28em] text-stone-warm/60">
+                      {lang === "zh" ? "关系（必选）" : "Relationship (required)"}
+                    </p>
+                    <div role="radiogroup" aria-label={lang === "zh" ? "关系类型" : "Relationship type"} className="flex flex-wrap justify-center gap-2">
+                      {(Object.keys(RELATIONSHIP_LABELS) as Array<Exclude<Relationship, "">>).map((rel) => {
+                        const active = relationship === rel;
+                        return (
+                          <button
+                            key={rel}
+                            type="button"
+                            role="radio"
+                            aria-checked={active}
+                            onClick={() => setRelationship(rel)}
+                            className={`min-h-[40px] rounded-full border px-4 py-2 text-[11px] uppercase tracking-[0.24em] transition-colors ${
+                              active
+                                ? "border-gold-dust bg-gold-dust/10 text-gold-light"
+                                : "border-white/15 text-stone-warm/70 hover:border-gold-dust/40 hover:text-gold-dust"
+                            }`}
+                          >
+                            {RELATIONSHIP_LABELS[rel][li]}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                {fieldError && (
+                  <p role="alert" data-testid="ritual-field-error" className="mx-auto mt-6 max-w-md rounded-lg border border-rose-400/40 bg-rose-500/10 px-4 py-2 text-left text-[12px] leading-relaxed text-rose-100">
+                    {fieldError}
+                  </p>
+                )}
+              </div>
+            )}
+
             {isIntakeStep && currentQ && (
               <>
                 <h1 className="mx-auto mb-4 max-w-xl text-balance font-serif text-3xl italic leading-tight text-stone-warm md:text-5xl" style={{ wordBreak: "keep-all", overflowWrap: "break-word" }}>
