@@ -405,16 +405,22 @@ function LandingPage() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 1.3 }}
-          className="relative z-10 mt-10 md:mt-14"
+          className="relative z-10 mt-10 flex flex-col items-center gap-4 md:mt-14"
         >
-          <Link
-            to="/ritual"
+          <a
+            href="#concern-heading"
             className="group relative inline-flex overflow-hidden rounded-full border border-gold-dust/40 bg-obsidian/80 px-10 py-4 backdrop-blur-sm transition-colors hover:border-gold-dust md:px-12 md:py-5"
           >
             <span className="relative z-10 text-xs font-medium uppercase tracking-[0.32em] text-gold-dust">
-              {t.hero_cta}
+              {lang === "zh" ? "带着我的问题，开始阅读" : "Read with my question"}
             </span>
             <span className="absolute inset-0 translate-y-full bg-gold-dust/10 transition-transform duration-500 group-hover:translate-y-0" />
+          </a>
+          <Link
+            to="/ritual"
+            className="text-[11px] uppercase tracking-[0.32em] text-stone-warm/50 hover:text-gold-dust"
+          >
+            {t.hero_cta}
           </Link>
         </motion.div>
 
