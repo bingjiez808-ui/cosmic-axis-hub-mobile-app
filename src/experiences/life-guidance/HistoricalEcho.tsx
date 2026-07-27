@@ -352,8 +352,11 @@ export function HistoricalEcho({
 
 function FigureCard({
   figure,
+  recommendation,
   lang,
   copy,
+  reasonHeading,
+  sourceLabel,
   bookmarked,
   onBookmark,
   response,
@@ -365,8 +368,11 @@ function FigureCard({
   savedResp,
 }: {
   figure: HistoricalFigure;
+  recommendation: FigureRecommendation | null;
   lang: "en" | "zh";
   copy: (typeof echoCopy)["en"];
+  reasonHeading: string;
+  sourceLabel: string;
   bookmarked: boolean;
   onBookmark: () => void;
   response: string;
@@ -403,6 +409,30 @@ function FigureCard({
           {bookmarked ? copy.bookmarked : copy.bookmark}
         </button>
       </div>
+
+      {recommendation && recommendation.reasons.length > 0 ? (
+        <div
+          className="mt-3"
+          aria-label={reasonHeading}
+          data-testid={`figure-reasons-${figure.key}`}
+        >
+          <div className="text-[11px] uppercase tracking-widest text-amber-200/70">
+            {reasonHeading}
+          </div>
+          <ul className="mt-2 flex flex-wrap gap-2">
+            {recommendation.reasons.map((r) => (
+              <li
+                key={r.key}
+                className="rounded-full border border-amber-400/25 bg-amber-500/5 px-3 py-1 text-[11px] text-amber-100/85"
+                data-reason-key={r.key}
+              >
+                {r.label[lang]}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
 
       <dl className="mt-4 grid gap-4 md:grid-cols-2">
         <Field label={copy.situationLabel} value={figure.situation[lang]} />
