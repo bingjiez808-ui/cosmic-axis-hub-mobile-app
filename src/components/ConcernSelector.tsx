@@ -1,10 +1,12 @@
 /**
  * ConcernSelector — "带着我的问题开始阅读" homepage module.
  *
- * Layout: desktop places the seven concern chips on the left and the
- * response book page on the right; mobile stacks them and scrolls the
- * response into view after picking. Every string is deterministic and
- * ships from `src/lib/concern-guidance-v1.ts`.
+ * Behaviour (Phase 1):
+ * - Derives `overview` as the default selection when nothing is stored,
+ *   so the response side is never empty on first paint.
+ * - Only writes to sessionStorage / cloud when the user actually clicks.
+ * - Broadcasts picks via a custom event so the shelf reacts instantly
+ *   in the same tab without polling.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
@@ -22,40 +24,51 @@ import { setConcern as setConcernFn } from "@/lib/life-guidance.functions";
 import { useSupabaseSession } from "@/lib/session";
 
 const CONCERN_STORAGE_KEY = "fate.concern.v1";
+export const CONCERN_EVENT = "fate:concern-changed";
 
 type Props = {
   hasPrimaryChart?: boolean;
   existingReportId?: string | null;
 };
 
-export function ConcernSelector({
-  hasPrimaryChart = false,
-  existingReportId = null,
-}: Props) {
+function prefersReducedMotion() {
+  if (typeof window === "undefined" || !window.matchMedia) return false;
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+export function ConcernSelector({ hasPrimaryChart = false, existingReportId = null }: Props) {
   const { lang } = useLang();
   const session = useSupabaseSession();
   const isSignedIn = !!session?.user?.id;
   const saveConcern = useServerFn(setConcernFn);
 
-  const [picked, setPicked] = useState<ConcernKey | null>(null);
+  // `explicit` = user actually chose. `null` → fall back to overview.
+  const [explicit, setExplicit] = useState<ConcernKey | null>(null);
   const responseRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
       const stored = window.sessionStorage.getItem(CONCERN_STORAGE_KEY);
-      if (isConcernKey(stored)) setPicked(stored);
+      if (isConcernKey(stored)) setExplicit(stored);
     } catch {
       /* ignore */
     }
   }, []);
 
+  const picked: ConcernKey = explicit ?? "overview";
+
   const onPick = useCallback(
     (k: ConcernKey) => {
-      const first = picked !== k;
-      setPicked(k);
+      const first = explicit !== k;
+      setExplicit(k);
       try {
         window.sessionStorage.setItem(CONCERN_STORAGE_KEY, k);
+      } catch {
+        /* ignore */
+      }
+      try {
+        window.dispatchEvent(new CustomEvent(CONCERN_EVENT, { detail: k }));
       } catch {
         /* ignore */
       }
@@ -64,26 +77,30 @@ export function ConcernSelector({
           /* keep local pick */
         });
       }
-      // Mobile: bring the response into view once after a fresh pick.
+      // Mobile: scroll response into view once per fresh pick.
       if (first && typeof window !== "undefined" && window.innerWidth < 1024) {
         setTimeout(() => {
-          responseRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+          responseRef.current?.scrollIntoView({
+            behavior: prefersReducedMotion() ? "auto" : "smooth",
+            block: "start",
+          });
         }, 60);
       }
     },
-    [picked, isSignedIn, saveConcern],
+    [explicit, isSignedIn, saveConcern],
   );
 
-  const rec = picked ? CONCERNS[picked] : null;
-  const ctaHref = useMemo(() => {
-    if (!picked) return null;
-    return resolveConcernRoute({
-      concern: picked,
-      isSignedIn,
-      hasPrimaryChart,
-      existingReportId,
-    });
-  }, [picked, isSignedIn, hasPrimaryChart, existingReportId]);
+  const rec = CONCERNS[picked];
+  const ctaHref = useMemo(
+    () =>
+      resolveConcernRoute({
+        concern: picked,
+        isSignedIn,
+        hasPrimaryChart,
+        existingReportId,
+      }),
+    [picked, isSignedIn, hasPrimaryChart, existingReportId],
+  );
 
   const H = {
     kicker: {
@@ -95,10 +112,11 @@ export function ConcernSelector({
       en: "What question brings you here today?",
     },
     sub: {
-      zh: "选一个更靠近你此刻的问题；你可以随时更换。这个选择只影响阅读入口和文案，不改变命盘计算。",
-      en: "Pick the one closest to you right now — you can change it any time. This only shapes the reading entry point, never the chart calculation.",
+      zh: "选择一个更靠近你此刻的问题，右侧会立即出现图书馆的回应；如果暂时说不清，我们会先从认识自己开始。",
+      en: "Pick the question closest to you right now — the library's response appears at the side. If you can't put it into words yet, we start by helping you meet yourself.",
     },
     picked: { zh: "你选择了", en: "You picked" },
+    default: { zh: "默认起点", en: "Default starting point" },
     responseTitle: { zh: "命运图书馆可以陪你看：", en: "The library can read this with you:" },
     sampleTitle: { zh: "样例节选", en: "Sample excerpt" },
     journeyTitle: { zh: "接下来会经过", en: "Your journey from here" },
@@ -114,21 +132,19 @@ export function ConcernSelector({
       zh: "免费包含综合解读中的对应章节；¥79 高级 AI 深度报告解锁 24 章完整版本。",
       en: "Free includes the matching chapter in the panorama; the ¥79 premium report unlocks the full 24-chapter version.",
     },
-    empty: {
-      zh: "选择一个问题，右侧会立即出现图书馆的回应。",
-      en: "Pick a question — the library's response appears here.",
-    },
   };
 
-  const journeyStages = useMemo(() => {
-    if (!rec) return null;
-    return [
+  const journeyStages = useMemo(
+    () => [
       { zh: "你现在的问题", en: "Your question now" },
       { zh: "登记出生资料", en: "Register birth details" },
       { zh: `优先打开【${rec.chip.zh}】阅读`, en: `Open «${rec.chip.en}» first` },
       { zh: "可继续全景与年度报告", en: "Continue to panorama & yearly report" },
-    ];
-  }, [rec]);
+    ],
+    [rec],
+  );
+
+  const isDerivedDefault = explicit === null;
 
   return (
     <section
@@ -137,7 +153,9 @@ export function ConcernSelector({
       className="mx-auto w-full max-w-6xl px-5 py-16 sm:py-20"
     >
       <div className="mb-8 text-center">
-        <p className="text-[10px] uppercase tracking-[0.36em] text-amber-300/70">{H.kicker[lang]}</p>
+        <p className="text-[10px] uppercase tracking-[0.36em] text-amber-300/70">
+          {H.kicker[lang]}
+        </p>
         <h2
           id="concern-heading"
           className="mt-3 font-serif text-2xl leading-tight text-amber-100/95 sm:text-3xl"
@@ -147,13 +165,6 @@ export function ConcernSelector({
         <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-amber-100/60">
           {H.sub[lang]}
         </p>
-        <a
-          href="#feature-library"
-          data-testid="concern-skip"
-          className="mt-4 inline-block text-[11px] uppercase tracking-[0.26em] text-amber-100/45 hover:text-amber-200"
-        >
-          {lang === "zh" ? "暂时不选择，先浏览全部馆藏" : "Skip for now — browse the full library"}
-        </a>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(260px,340px)_1fr]">
@@ -189,93 +200,93 @@ export function ConcernSelector({
         </div>
 
         <div ref={responseRef} className="min-h-[220px]">
-          {rec && ctaHref ? (
-            <article
-              aria-live="polite"
-              data-testid="concern-response"
-              className="rounded-xl border border-amber-100/15 bg-gradient-to-b from-[#1a120a]/85 to-[#0e0a06]/85 p-6 shadow-[0_18px_60px_rgba(0,0,0,0.55)] sm:p-8"
-            >
-              <div className="flex items-baseline gap-3">
-                <span className="text-[10px] uppercase tracking-[0.24em] text-amber-300/70">
-                  {H.picked[lang]}
-                </span>
-                <span className="font-serif text-base text-amber-100">{rec.chip[lang]}</span>
-              </div>
+          <article
+            aria-live="polite"
+            data-testid="concern-response"
+            className="rounded-xl border border-amber-100/15 bg-gradient-to-b from-[#1a120a]/85 to-[#0e0a06]/85 p-6 shadow-[0_18px_60px_rgba(0,0,0,0.55)] sm:p-8"
+          >
+            <div className="flex items-baseline gap-3">
+              <span className="text-[10px] uppercase tracking-[0.24em] text-amber-300/70">
+                {isDerivedDefault ? H.default[lang] : H.picked[lang]}
+              </span>
+              <span className="font-serif text-base text-amber-100">{rec.chip[lang]}</span>
+            </div>
 
-              <p className="mt-4 font-serif text-base leading-relaxed text-amber-50/95 sm:text-lg">
-                {rec.situationalResponse[lang]}
+            <p className="mt-4 font-serif text-base leading-relaxed text-amber-50/95 sm:text-lg">
+              {rec.situationalResponse[lang]}
+            </p>
+
+            <div className="mt-6">
+              <h3 className="font-serif text-sm uppercase tracking-[0.18em] text-amber-200/70">
+                {H.responseTitle[lang]}
+              </h3>
+              <ul className="mt-3 space-y-2">
+                {rec.featureBullets[lang].map((b, i) => (
+                  <li key={i} className="flex gap-3 text-sm leading-relaxed text-amber-100/85">
+                    <span
+                      aria-hidden
+                      className="mt-2 h-1 w-1 shrink-0 rounded-full bg-amber-300/70"
+                    />
+                    <span>{b}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="mt-6 rounded-lg border border-amber-100/10 bg-black/25 p-4">
+              <div className="mb-1 text-[11px] uppercase tracking-[0.2em] text-amber-200/60">
+                {H.sampleTitle[lang]}
+              </div>
+              <p className="text-[13.5px] italic leading-relaxed text-amber-100/80">
+                {rec.sampleOutput[lang]}
               </p>
+            </div>
 
-              <div className="mt-6">
-                <h3 className="font-serif text-sm uppercase tracking-[0.18em] text-amber-200/70">
-                  {H.responseTitle[lang]}
-                </h3>
-                <ul className="mt-3 space-y-2">
-                  {rec.featureBullets[lang].map((b, i) => (
-                    <li key={i} className="flex gap-3 text-sm leading-relaxed text-amber-100/85">
-                      <span aria-hidden className="mt-2 h-1 w-1 shrink-0 rounded-full bg-amber-300/70" />
-                      <span>{b}</span>
-                    </li>
-                  ))}
-                </ul>
+            <div className="mt-6">
+              <div className="text-[11px] uppercase tracking-[0.22em] text-amber-200/60">
+                {H.journeyTitle[lang]}
               </div>
+              <ol className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-amber-100/75">
+                {journeyStages.map((s, i) => (
+                  <li key={i} className="flex items-center gap-2">
+                    {i > 0 ? (
+                      <span aria-hidden className="text-amber-300/50">
+                        →
+                      </span>
+                    ) : null}
+                    <span
+                      className={
+                        i === 0
+                          ? "rounded-full border border-amber-300/60 bg-amber-500/10 px-2 py-0.5 text-amber-100"
+                          : ""
+                      }
+                    >
+                      {s[lang]}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </div>
 
-              <div className="mt-6 rounded-lg border border-amber-100/10 bg-black/25 p-4">
-                <div className="mb-1 text-[11px] uppercase tracking-[0.2em] text-amber-200/60">
-                  {H.sampleTitle[lang]}
-                </div>
-                <p className="text-[13.5px] italic leading-relaxed text-amber-100/80">
-                  {rec.sampleOutput[lang]}
-                </p>
-              </div>
+            <p className="mt-5 text-[11px] leading-snug text-amber-100/50">{H.boundary[lang]}</p>
 
-              {/* Journey map */}
-              {journeyStages ? (
-                <div className="mt-6">
-                  <div className="text-[11px] uppercase tracking-[0.22em] text-amber-200/60">
-                    {H.journeyTitle[lang]}
-                  </div>
-                  <ol className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-amber-100/75">
-                    {journeyStages.map((s, i) => (
-                      <li key={i} className="flex items-center gap-2">
-                        {i > 0 ? <span aria-hidden className="text-amber-300/50">→</span> : null}
-                        <span
-                          className={
-                            i === 0
-                              ? "rounded-full border border-amber-300/60 bg-amber-500/10 px-2 py-0.5 text-amber-100"
-                              : ""
-                          }
-                        >
-                          {s[lang]}
-                        </span>
-                      </li>
-                    ))}
-                  </ol>
-                </div>
-              ) : null}
-
-              <p className="mt-5 text-[11px] leading-snug text-amber-100/50">{H.boundary[lang]}</p>
-
-              <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="text-[12px] leading-snug text-amber-100/55">
-                  {rec.nextStepHint[lang]}
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="text-[12px] leading-snug text-amber-100/55">
+                {rec.nextStepHint[lang]}
+                {!isDerivedDefault ? (
                   <div className="mt-1 text-amber-100/40">
                     {isSignedIn ? H.signedInNote[lang] : H.signedOutNote[lang]}
                   </div>
-                </div>
-                <Link
-                  to={ctaHref}
-                  className="inline-flex min-h-[48px] items-center justify-center rounded-lg bg-gradient-to-r from-amber-300 to-amber-500 px-6 text-sm font-medium text-black shadow-[0_10px_30px_rgba(251,191,36,0.25)] transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
-                >
-                  {rec.ctaLabel[lang]}
-                </Link>
+                ) : null}
               </div>
-            </article>
-          ) : (
-            <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-amber-100/15 bg-black/20 p-8 text-center text-sm text-amber-100/50">
-              {H.empty[lang]}
+              <Link
+                to={ctaHref}
+                className="inline-flex min-h-[48px] items-center justify-center rounded-lg bg-gradient-to-r from-amber-300 to-amber-500 px-6 text-sm font-medium text-black shadow-[0_10px_30px_rgba(251,191,36,0.25)] transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
+              >
+                {rec.ctaLabel[lang]}
+              </Link>
             </div>
-          )}
+          </article>
         </div>
       </div>
     </section>
