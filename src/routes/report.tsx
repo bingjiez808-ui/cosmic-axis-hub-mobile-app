@@ -1530,7 +1530,52 @@ function ReportPage() {
 
       {/* Dimensions */}
       <section className="mx-auto max-w-5xl space-y-10 px-4 sm:px-6 md:px-12">
+        {search.date && aiState === "ready" && (search.role === "self" || search.role === "other") && (
+          <div
+            data-testid="report-completion-cta"
+            className="glass-card flex flex-col gap-3 rounded-2xl border border-gold-dust/30 bg-black/30 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div className="text-sm text-stone-warm/80">
+              {search.role === "other"
+                ? lang === "zh"
+                  ? `已作为「${search.relationshipLabel || "他人命盘"}」保存到你的个人书架。`
+                  : `Saved to your Personal Library as "${search.relationshipLabel || "someone else"}".`
+                : search.primaryIntent === "keep"
+                  ? lang === "zh"
+                    ? "已另存为「我的其他命盘」（未改动主命盘）。"
+                    : "Saved as one of your other charts. Your primary chart is unchanged."
+                  : lang === "zh"
+                    ? "已设为你的主命盘。"
+                    : "Set as your primary chart."}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {search.role === "other" ? (
+                <Link
+                  to="/me/friends"
+                  className="min-h-11 rounded-full border border-gold-dust/50 bg-gold-dust/10 px-5 py-2 text-[11px] uppercase tracking-[0.24em] text-gold-dust hover:bg-gold-dust/20"
+                >
+                  {lang === "zh" ? "去关系与适配" : "Relationships"}
+                </Link>
+              ) : search.primaryIntent === "keep" ? (
+                <Link
+                  to="/me/profile"
+                  className="min-h-11 rounded-full border border-gold-dust/50 bg-gold-dust/10 px-5 py-2 text-[11px] uppercase tracking-[0.24em] text-gold-dust hover:bg-gold-dust/20"
+                >
+                  {lang === "zh" ? "去个人书架" : "Personal Library"}
+                </Link>
+              ) : (
+                <Link
+                  to="/me/home"
+                  className="min-h-11 rounded-full border border-gold-dust/50 bg-gold-dust/10 px-5 py-2 text-[11px] uppercase tracking-[0.24em] text-gold-dust hover:bg-gold-dust/20"
+                >
+                  {lang === "zh" ? "去书架主页" : "Library Home"}
+                </Link>
+              )}
+            </div>
+          </div>
+        )}
         {search.date && (aiState === "loading" || aiState === "error") && (
+
           <div
             className={`glass-card flex flex-col gap-3 rounded-2xl px-5 py-3 text-[11px] uppercase tracking-[0.28em] sm:flex-row sm:items-center sm:justify-between ${
               aiState === "error" ? "text-red-300/80" : "text-gold-dust/80"
