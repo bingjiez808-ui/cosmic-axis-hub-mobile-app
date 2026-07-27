@@ -5,6 +5,7 @@
  * DB effect (RLS scoping, `set_primary_chart` RPC transaction) is
  * exercised via preview E2E because bun:test cannot boot Supabase.
  */
+// @ts-expect-error — bun:test
 import { describe, expect, test } from "bun:test";
 import {
   AssignChartOwnershipInputSchema,
