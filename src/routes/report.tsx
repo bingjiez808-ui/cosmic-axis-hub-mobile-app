@@ -190,6 +190,7 @@ type SearchParams = {
   role?: "self" | "other";
   relationship?: string;
   relationshipLabel?: string;
+  primaryIntent?: "replace" | "keep" | "auto";
 };
 
 const pickStr = (v: unknown) => (typeof v === "string" ? v : undefined);
@@ -220,9 +221,14 @@ export const Route = createFileRoute("/report")({
     role: s.role === "self" ? "self" : s.role === "other" ? "other" : undefined,
     relationship: pickStr(s.relationship),
     relationshipLabel: pickStr(s.relationshipLabel),
+    primaryIntent:
+      s.primaryIntent === "replace" || s.primaryIntent === "keep" || s.primaryIntent === "auto"
+        ? s.primaryIntent
+        : undefined,
   }),
   component: ReportPage,
 });
+
 
 type DetailBlock = { label: [string, string]; items: [string, string][] };
 
@@ -958,12 +964,17 @@ function ReportPage() {
               role: search.role,
               relationshipLabel: search.relationshipLabel || undefined,
               autoPromoteIfNoPrimary: search.role === "self",
+              primaryIntent:
+                search.primaryIntent === "replace" || search.primaryIntent === "keep"
+                  ? search.primaryIntent
+                  : undefined,
             },
           });
         } catch {
           /* non-fatal: chart still exists; user can adjust in /me/profile */
         }
       }
+
 
       // Migrate a temporary/legacy readingId in the URL to the persisted
       // chart UUID that actually belongs to this user. Only rewrite when
