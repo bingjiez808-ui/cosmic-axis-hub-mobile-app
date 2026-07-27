@@ -338,7 +338,8 @@ export function CuratorLetter() {
     <section
       id="curator-letter"
       aria-labelledby={headingId}
-      className="relative z-10 mx-auto max-w-6xl px-4 py-16 md:px-8 md:py-24"
+      className="relative z-10 mx-auto w-full max-w-[min(76rem,calc(100vw-1.5rem))] overflow-hidden px-3 py-10 sm:px-6 md:px-8 md:py-16 lg:py-20"
+      style={{ paddingBottom: `max(2.5rem, env(safe-area-inset-bottom))` }}
     >
       <div
         ref={rootRef}
@@ -346,7 +347,8 @@ export function CuratorLetter() {
         onKeyDown={onKeyDown}
         role="region"
         aria-roledescription="Curator's opening letter"
-        className="relative overflow-hidden rounded-[1.75rem] border border-amber-400/25 shadow-[0_30px_120px_-40px_rgba(0,0,0,0.8)] focus:outline-none"
+        data-testid="curator-stage"
+        className="relative w-full overflow-hidden rounded-[clamp(1.25rem,2vw,1.75rem)] border border-amber-400/25 shadow-[0_30px_120px_-40px_rgba(0,0,0,0.8)] focus:outline-none"
       >
         {/* Library scene — responsive background with dark scrim */}
         <picture>
@@ -377,20 +379,23 @@ export function CuratorLetter() {
           className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/70"
         />
 
-        {/* content */}
-        <div className="relative z-10 flex min-h-[560px] flex-col justify-between px-5 py-10 sm:px-8 md:min-h-[640px] md:px-16 md:py-16">
-          {/* header row */}
-          <div className="flex flex-wrap items-baseline justify-between gap-3">
+        {/* content — stable stage height across pages via clamp(dvh) */}
+        <div
+          className="relative z-10 flex w-full flex-col justify-between px-4 py-8 sm:px-8 sm:py-12 md:px-14 md:py-14 lg:px-20 lg:py-16"
+          style={{ minHeight: "clamp(560px, 72svh, 780px)" }}
+        >
+          {/* header row — grid on mobile so kicker can truncate and skip stays reachable */}
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:flex sm:flex-wrap sm:items-baseline sm:justify-between">
             <div
               id={headingId}
-              className="text-[10px] uppercase tracking-[0.42em] text-amber-300/80"
+              className="min-w-0 truncate text-[10px] uppercase tracking-[0.32em] text-amber-300/80 sm:tracking-[0.42em]"
             >
               {copy.kicker}
             </div>
             <button
               type="button"
               onClick={() => dispatch({ type: "skip" })}
-              className="min-h-11 rounded-full border border-amber-400/25 px-4 py-2 text-[11px] uppercase tracking-[0.26em] text-amber-200/70 hover:border-amber-300 hover:text-amber-100"
+              className="shrink-0 min-h-11 rounded-full border border-amber-400/25 px-4 py-2 text-[11px] uppercase tracking-[0.26em] text-amber-200/70 hover:border-amber-300 hover:text-amber-100"
               data-testid="curator-skip"
             >
               {copy.skipCta}
@@ -398,7 +403,7 @@ export function CuratorLetter() {
           </div>
 
           {/* stage body */}
-          <div className="my-8 flex-1">
+          <div className="my-6 flex min-h-0 flex-1 md:my-8">
             <AnimatePresence mode="wait" initial={false}>
               {stage.kind === "sealed" ? (
                 <SealedStage
@@ -428,9 +433,9 @@ export function CuratorLetter() {
 
           {/* footer — safety, always visible */}
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-[10px] uppercase tracking-[0.28em] text-amber-100/50">
-            <span>{copy.safety}</span>
+            <span className="min-w-0 break-words">{copy.safety}</span>
             {stage.kind === "page" ? (
-              <span data-testid="curator-page-of">
+              <span data-testid="curator-page-of" className="shrink-0">
                 {copy.pageOf(stage.index, TOTAL_PAGES)}
               </span>
             ) : null}
@@ -440,6 +445,7 @@ export function CuratorLetter() {
     </section>
   );
 }
+
 
 function SealedStage({
   copy,
