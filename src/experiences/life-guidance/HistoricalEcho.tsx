@@ -520,6 +520,19 @@ function FigureCard({
           <div className="mt-2 text-[11px] text-emerald-300/80">{copy.respondSaved}</div>
         ) : null}
       </div>
+
+      {recommendation && recommendation.meta.sourceUrl ? (
+        <div className="mt-4 border-t border-amber-400/10 pt-3 text-[11px] text-amber-200/60">
+          <a
+            href={recommendation.meta.sourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline decoration-amber-400/40 underline-offset-2 hover:text-amber-100"
+          >
+            {sourceLabel} ↗
+          </a>
+        </div>
+      ) : null}
     </article>
   );
 }
