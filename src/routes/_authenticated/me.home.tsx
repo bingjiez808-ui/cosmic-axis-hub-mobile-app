@@ -133,6 +133,24 @@ function DailyRoomPage() {
   const [compassAxis, setCompassAxis] = useState<CompassAxis>("overall");
   // Membership toggle (dev-only "mock member") removed from this route.
   const [real, setReal] = useState<RealChartAdapterState>({ kind: "loading" });
+  const [onboardingIntent, setOnboardingIntent] = useState<OnboardingIntent | null>(null);
+  const getPrefsFn = useServerFn(getLifeGuidancePrefs);
+  useEffect(() => {
+    let cancelled = false;
+    getPrefsFn()
+      .then((row) => {
+        if (cancelled) return;
+        const v = row?.onboarding_intent;
+        if (isOnboardingIntent(v)) setOnboardingIntent(v);
+      })
+      .catch(() => {
+        /* keep null */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [getPrefsFn]);
+
 
   useEffect(() => {
     let cancelled = false;
