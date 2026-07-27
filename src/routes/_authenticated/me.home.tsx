@@ -1346,7 +1346,7 @@ function HomeHubCards({
       reveal: isZh ? "打开：个人书架与图书证。" : "Opens: personal bookshelf & library card.",
       status: primary
         ? isZh
-          ? `共 ${charts.length} 张 · 主命盘：${primary.title ?? primary.subject_name ?? (isZh ? "已设置" : "set")}`
+          ? `共 ${charts.length} 张 · 主命盘：${primary.name ?? (isZh ? "已设置" : "set")}`
           : `${charts.length} chart${charts.length === 1 ? "" : "s"} · primary set`
         : charts.length > 0
           ? isZh
