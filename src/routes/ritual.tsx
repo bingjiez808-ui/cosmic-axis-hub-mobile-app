@@ -302,6 +302,8 @@ function RitualPage() {
     if (isLast) {
       // Full-schema recheck before firing any calculation / navigation.
       const finalErrors: string[] = [];
+      if (ownerRole !== "self" && ownerRole !== "other") finalErrors.push("owner");
+      if (ownerRole === "other" && !relationship) finalErrors.push("relationship");
       if (values.name.trim().length === 0) finalErrors.push("name");
       if (!/^\d{4}-\d{2}-\d{2}$/.test(values.date)) finalErrors.push("date");
       if (!/^\d{2}:\d{2}$/.test(values.time)) finalErrors.push("time");
@@ -317,6 +319,9 @@ function RitualPage() {
       }
       const info = solarToLunarInfo(values.date, values.time);
       const gender = values.gender === "male" || values.gender === "female" ? values.gender : "";
+      const relLabel = ownerRole === "other" && relationship
+        ? RELATIONSHIP_LABELS[relationship as Exclude<Relationship, "">][li]
+        : "";
       const params = new URLSearchParams({
         name: values.name,
         date: values.date,
@@ -325,6 +330,9 @@ function RitualPage() {
         ...(gender ? { gender } : {}),
         lang,
         quiz: quiz.join(""),
+        role: ownerRole,
+        ...(relationship ? { relationship } : {}),
+        ...(relLabel ? { relationshipLabel: relLabel } : {}),
         readingId: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         ...(info
           ? {
