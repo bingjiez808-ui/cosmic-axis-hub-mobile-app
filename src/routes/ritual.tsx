@@ -208,7 +208,6 @@ function RitualPage() {
   // Quiz retired — retained variables to preserve existing render/progress code.
   const isQuizStep = false;
   const quizIdx = -1;
-  const currentQ = isIntakeStep ? questionSteps[intakeIdx] : null;
 
   // Per-step validation. Returns null when OK, or a localized error
   // message describing precisely which field is invalid. The Next
