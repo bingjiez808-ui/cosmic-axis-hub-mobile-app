@@ -538,6 +538,7 @@ function ShelfRow(props: {
               onCommitRename={props.onCommitRename}
               onSetPrimary={props.onSetPrimary}
               onFlipRole={props.onFlipRole}
+              onEditRelationLabel={props.onEditRelationLabel}
               onDelete={props.onDelete}
             />
           ))}
