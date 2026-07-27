@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
 import { PersonalBookshelf } from "@/experiences/profile/PersonalBookshelf";
+import { MembershipCard } from "@/components/MembershipCard";
 import { DailyRoomError, DailyRoomPending } from "@/experiences/daily-room/fallback";
 import { supabase } from "@/integrations/supabase/client";
 import { listUserCharts, type ChartRow } from "@/lib/reports-store.functions";
@@ -69,9 +70,7 @@ function MyProfilePage() {
           <div className="text-xs uppercase tracking-[0.24em] text-amber-300/60">
             {d.profile_kicker}
           </div>
-          <h1 className="mt-2 text-3xl font-serif tracking-wide md:text-4xl">
-            {d.profile_title}
-          </h1>
+          <h1 className="mt-2 text-3xl font-serif tracking-wide md:text-4xl">{d.profile_title}</h1>
           {state.kind === "ready" && state.email && (
             <div className="mt-2 text-sm text-amber-100/70">{state.email}</div>
           )}
@@ -97,6 +96,11 @@ function MyProfilePage() {
           </div>
         </header>
 
+        {/* Membership */}
+        <div className="mb-8">
+          <MembershipCard />
+        </div>
+
         {/* Bookshelf */}
         <section
           className="mb-8 rounded-xl border border-amber-400/15 bg-black/20 p-4 md:p-6"
@@ -109,9 +113,7 @@ function MyProfilePage() {
             <div className="text-sm text-amber-200/70">{d.my_charts_anonymous}</div>
           )}
           {state.kind === "error" && (
-            <div className="text-sm text-rose-300/80">
-              {d.my_charts_error(state.message)}
-            </div>
+            <div className="text-sm text-rose-300/80">{d.my_charts_error(state.message)}</div>
           )}
           {state.kind === "ready" && (
             <PersonalBookshelf
