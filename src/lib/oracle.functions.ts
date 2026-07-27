@@ -13,6 +13,10 @@ const AskInput = z.object({
   // Which paid surface is calling. Used to enforce membership-tier + quota
   // server-side so the paywall cannot be bypassed from the browser.
   feature: z.enum(["tarot", "oracle_chat", "general"]).default("general"),
+  // Authoritative chart reference. When provided, the server re-reads the
+  // chart from the database (RLS-scoped to the caller) and rejects if it
+  // isn't owned. `chart` is only used as a hint when chartId is absent.
+  chartId: z.string().uuid().optional(),
   chart: z
     .object({
       name: z.string().max(120).optional(),
