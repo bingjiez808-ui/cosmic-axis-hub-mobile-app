@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { loadDailyRoomFixture, type DailyRoomFixtureKey } from "@/experiences/daily-room/fixtures";
 import { ensureSocialPreviewAllowed } from "@/experiences/daily-room/route-guard";
@@ -19,12 +19,18 @@ import {
   pickPriorityDomain,
   curatorLetter,
   isOnboardingIntent,
+  ONBOARDING_INTENTS,
   LIFE_STAGES,
+  normalizeLang,
   type LifeStage,
   type OnboardingIntent,
 } from "@/lib/life-guidance-v1";
 import { useServerFn } from "@tanstack/react-start";
-import { getLifeGuidancePrefs } from "@/lib/life-guidance.functions";
+import {
+  getLifeGuidancePrefs,
+  setOnboardingIntent as setOnboardingIntentFn,
+} from "@/lib/life-guidance.functions";
+
 
 
 
