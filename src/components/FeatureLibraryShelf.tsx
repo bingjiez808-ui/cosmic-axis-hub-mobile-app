@@ -28,12 +28,7 @@ import {
   type ShelfBookKey,
 } from "@/lib/concern-guidance-v1";
 import { CONCERN_EVENT } from "@/components/ConcernSelector";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 import coverSelf from "@/assets/shelf-books/self_knowledge.webp";
 import coverStudy from "@/assets/shelf-books/study_growth.webp";
@@ -256,8 +251,7 @@ export function FeatureLibraryShelf() {
           const b = openBook ? SHELF_BOOKS.find((x) => x.key === openBook) : null;
           if (!b) return null;
           const cover = COVERS[b.key];
-          const isFeatured =
-            !!pickedConcern && CONCERNS[pickedConcern].featuredShelfBook === b.key;
+          const isFeatured = !!pickedConcern && CONCERNS[pickedConcern].featuredShelfBook === b.key;
           const titleId = `shelf-book-title-${b.key}`;
           const descId = `shelf-book-desc-${b.key}`;
           return (
