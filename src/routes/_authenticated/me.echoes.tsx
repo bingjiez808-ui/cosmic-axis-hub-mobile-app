@@ -109,16 +109,53 @@ function EchoesPage() {
           </div>
         )}
         {state.kind === "ready" && (
-          <HistoricalEcho
-            stage={state.stage}
-            domain={null}
-            concern={null}
-            domainSignal={null}
-            domainLabel={null}
-            initialExpanded
-          />
+          <>
+            <LifeChapterCardFromFixture
+              primaryBirthDate={state.birthDate}
+              todayISO={new Date().toISOString().slice(0, 10)}
+            />
+            <HistoricalEcho
+              stage={state.stage}
+              domain={null}
+              concern={null}
+              domainSignal={null}
+              domainLabel={null}
+              initialExpanded
+            />
+          </>
         )}
       </div>
+    </div>
+  );
+}
+
+function LifeChapterCardFromFixture({
+  primaryBirthDate,
+  todayISO,
+}: {
+  primaryBirthDate: string;
+  todayISO: string;
+}) {
+  const d = useDaily();
+  const tz =
+    typeof Intl !== "undefined"
+      ? Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Shanghai"
+      : "Asia/Shanghai";
+  const fixture = loadDailyRoomFixture("working_adult", todayISO, tz);
+  return (
+    <div className="mb-8">
+      <LifeChapterCard
+        primaryBirthDate={primaryBirthDate}
+        todayISO={todayISO}
+        domainScores={fixture.score.domains}
+        domainLabels={{
+          love: d.domain.love,
+          study: d.domain.study,
+          career: d.domain.career,
+          body_mind: d.domain.body_mind,
+          finance: d.domain.finance,
+        }}
+      />
     </div>
   );
 }
