@@ -23,11 +23,29 @@ export const Route = createFileRoute("/auth/")({
       { name: "robots", content: "noindex" },
     ],
   }),
-  validateSearch: (s: Record<string, unknown>): { redirect?: string; mode?: "login" | "signup"; verified?: "1" } => ({
-    ...(typeof s.redirect === "string" && s.redirect.startsWith("/") ? { redirect: s.redirect } : {}),
-    ...(s.mode === "signup" ? { mode: "signup" as const } : s.mode === "login" ? { mode: "login" as const } : {}),
-    ...(s.verified === "1" ? { verified: "1" as const } : {}),
-  }),
+  validateSearch: (s: Record<string, unknown>): { redirect?: string; mode?: "login" | "signup"; verified?: "1" } => {
+    // Same-origin, absolute-path redirect only. Allow query and hash so
+    // downstream focus/scroll targets survive the round-trip. Reject any
+    // scheme, protocol-relative URL, or backslash-based bypass.
+    const raw = typeof s.redirect === "string" ? s.redirect : "";
+    const safeRedirect =
+      raw.startsWith("/") && !raw.startsWith("//") && !raw.startsWith("/\\")
+        ? raw
+        : undefined;
+    const modeIn = s.mode;
+    const mode: "login" | "signup" | undefined =
+      modeIn === "signup"
+        ? "signup"
+        : modeIn === "login" || modeIn === "signin"
+          ? "login"
+          : undefined;
+    return {
+      ...(safeRedirect ? { redirect: safeRedirect } : {}),
+      ...(mode ? { mode } : {}),
+      ...(s.verified === "1" ? { verified: "1" as const } : {}),
+    };
+  },
+
   component: AuthPage,
 });
 
