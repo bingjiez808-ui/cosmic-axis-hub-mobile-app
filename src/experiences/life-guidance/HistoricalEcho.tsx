@@ -277,9 +277,11 @@ export function HistoricalEcho({ stage, domain }: HistoricalEchoProps) {
           </motion.div>
         ) : null}
       </AnimatePresence>
+      </div>
     </section>
   );
 }
+
 
 function FigureCard({
   figure,
