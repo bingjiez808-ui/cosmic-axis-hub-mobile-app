@@ -9,7 +9,8 @@
  *  - scoring never touches network / fetch
  */
 
-import { describe, expect, it, vi } from "vitest";
+// @ts-expect-error bun:test
+import { describe, expect, it } from "bun:test";
 import { QUIZ, QUIZ_VERSION } from "./quiz";
 import { SCORING_VERSION, scoreReadingPersonality } from "./scoring";
 import { ALL_TYPE_CODES, TYPE_CATALOG } from "./types-catalog";
@@ -17,12 +18,8 @@ import type { AxisKey } from "./types";
 
 const AXES: AxisKey[] = ["ML", "ET", "AC", "FO"];
 
-// Helper: given a target sign per axis, build a valid Answers array.
-// For each question, pick whichever option produces weights that
-// agree with (or don't contradict) the target on both axes.
 function buildAnswersForSigns(signs: Record<AxisKey, 1 | -1>): string[] {
   return QUIZ.map((q) => {
-    // Pick the option that maximizes dot(weights, signs).
     let bestOpt = q.options[0];
     let bestScore = -Infinity;
     for (const opt of q.options) {
@@ -117,8 +114,6 @@ describe("Fun Library · scoring", () => {
   });
 
   it("tie-break at raw=0 is stable across repeated runs", () => {
-    // Construct an answer set where at least one axis nets to 0:
-    // pick paired-cancel options (option[0] for even Q, option[3] for odd Q of same pair).
     const answers = QUIZ.map((q, i) => q.options[i % 2 === 0 ? 0 : 3].id);
     const first = scoreReadingPersonality(answers);
     for (let i = 0; i < 5; i += 1) {
@@ -127,17 +122,20 @@ describe("Fun Library · scoring", () => {
   });
 
   it("scoring never calls global fetch", () => {
-    const spy = vi.fn(() => Promise.reject(new Error("network forbidden")));
+    let called = 0;
     const original = globalThis.fetch;
     // @ts-expect-error test monkey patch
-    globalThis.fetch = spy;
+    globalThis.fetch = (..._args: unknown[]) => {
+      called += 1;
+      return Promise.reject(new Error("network forbidden"));
+    };
     try {
       const answers = QUIZ.map((q) => q.options[0].id);
       scoreReadingPersonality(answers);
     } finally {
       globalThis.fetch = original;
     }
-    expect(spy).not.toHaveBeenCalled();
+    expect(called).toBe(0);
   });
 });
 
