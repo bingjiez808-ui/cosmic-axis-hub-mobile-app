@@ -29,7 +29,7 @@ type Item = {
 };
 
 const ITEMS: Item[] = [
-  { to: "/me/home", labelZh: "主页", labelEn: "Home", testId: "pwn-home" },
+  { to: "/me/home", labelZh: "书架主页", labelEn: "Library Home", testId: "pwn-home" },
   { to: "/me/profile", labelZh: "命盘与报告", labelEn: "Charts & Reports", testId: "pwn-profile" },
   {
     to: "/me/friends",
