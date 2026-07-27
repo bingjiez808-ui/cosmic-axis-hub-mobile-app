@@ -422,7 +422,7 @@ function SiteNav() {
           {/* Brand — returns to library home; not the only home entry */}
           <Link
             to="/"
-            aria-label={libraryHomeLabel}
+            aria-label={libraryHomeAria}
             className="min-w-0 flex-1 truncate font-serif text-sm tracking-normal text-stone-warm md:flex-none md:justify-self-start md:whitespace-nowrap md:text-base"
           >
             Destiny<span className="text-gold-dust">·</span>Library
@@ -431,7 +431,7 @@ function SiteNav() {
           {/* Core nav (desktop) */}
           <div className="hidden items-center justify-center gap-4 md:flex md:justify-self-center lg:gap-8">
             {coreEntries.map((e) => (
-              <NavLink key={e.to} to={e.to} label={e.label} />
+              <NavLink key={e.to} to={e.to} label={e.label} ariaLabel={e.ariaLabel} />
             ))}
             {moreEntries.length > 0 && (
               <div className="relative" data-more-menu>
