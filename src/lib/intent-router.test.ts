@@ -1,5 +1,8 @@
-import { describe, expect, it } from "vitest";
+// @ts-expect-error bun:test
+import { describe, expect, test } from "bun:test";
 import { classifyIntent } from "./intent-router";
+
+const it = test;
 
 describe("classifyIntent", () => {
   it("empty text falls back to emotional_support", () => {
