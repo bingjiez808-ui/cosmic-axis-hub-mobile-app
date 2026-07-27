@@ -86,26 +86,11 @@ function MyProfilePage() {
           {state.kind === "ready" && state.email && (
             <div className="mt-2 text-sm text-amber-100/70">{state.email}</div>
           )}
-          <div className="mt-4 flex flex-wrap gap-2 text-xs">
-            <Link
-              to="/me/home"
-              className="min-h-11 rounded-full border border-amber-400/40 px-4 py-2 text-amber-200 hover:bg-amber-500/10"
-            >
-              {d.profile_open_today}
-            </Link>
-            <Link
-              to="/me/friends"
-              className="min-h-11 rounded-full border border-amber-400/25 px-4 py-2 text-amber-200/80 hover:border-amber-300/60"
-            >
-              {d.home_secondary_nav_friends}
-            </Link>
-            <Link
-              to="/me/match"
-              className="min-h-11 rounded-full border border-amber-400/25 px-4 py-2 text-amber-200/80 hover:border-amber-300/60"
-            >
-              {d.home_secondary_nav_match}
-            </Link>
-          </div>
+          <p className="mt-3 max-w-2xl text-sm text-amber-100/70" data-testid="profile-purpose-hint">
+            {lang === "zh"
+              ? "这里管理你的主命盘、其他命盘、关系书架、会员与工单。今日阅读和好友、匹配请从上方的次级导航进入。"
+              : "This page manages your primary chart, other charts, relationship shelf, membership and tickets. Use the sub-nav above to reach today's reading, friends or match."}
+          </p>
         </header>
 
         {/* Membership */}
