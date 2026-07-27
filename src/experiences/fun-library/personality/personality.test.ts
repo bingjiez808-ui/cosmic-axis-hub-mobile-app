@@ -124,8 +124,7 @@ describe("Fun Library · scoring", () => {
   it("scoring never calls global fetch", () => {
     let called = 0;
     const original = globalThis.fetch;
-    // @ts-expect-error test monkey patch
-    globalThis.fetch = (..._args: unknown[]) => {
+    (globalThis as { fetch: unknown }).fetch = (..._args: unknown[]) => {
       called += 1;
       return Promise.reject(new Error("network forbidden"));
     };
