@@ -758,8 +758,16 @@ function DailyRoomPage() {
                     primaryBirthDate={primaryBirthDate}
                     todayISO={today}
                     priority={priority}
+                    concern={concern}
+                    domainScore={
+                      priority
+                        ? score.domains.find((dd) => dd.domain === priority)?.score ?? null
+                        : null
+                    }
+                    domainLabel={priority ? domainLabel(priority) : null}
                     initialExpanded={peersFocused}
                   />
+
                 </>
               )}
             </div>
