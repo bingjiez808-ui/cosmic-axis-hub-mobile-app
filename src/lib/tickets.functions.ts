@@ -240,7 +240,11 @@ export const adminUpdateTicket = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     await assertAdmin(supabase, userId);
 
-    const patch: Record<string, unknown> = {};
+    const patch: {
+      status?: TicketStatus;
+      priority?: TicketPriority;
+      admin_note?: string | null;
+    } = {};
     if (data.status !== undefined) patch.status = data.status;
     if (data.priority !== undefined) patch.priority = data.priority;
     if (data.admin_note !== undefined) patch.admin_note = data.admin_note;
