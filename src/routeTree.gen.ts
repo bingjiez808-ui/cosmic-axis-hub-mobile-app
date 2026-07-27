@@ -34,8 +34,10 @@ import { Route as ApiGenerateAvatarRouteImport } from './routes/api/generate-ava
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
+import { Route as AuthenticatedMeRelationshipsRouteImport } from './routes/_authenticated/me.relationships'
 import { Route as AuthenticatedMeProfileRouteImport } from './routes/_authenticated/me.profile'
 import { Route as AuthenticatedMeOracleRouteImport } from './routes/_authenticated/me.oracle'
+import { Route as AuthenticatedMeMembershipRouteImport } from './routes/_authenticated/me.membership'
 import { Route as AuthenticatedMeMatchRouteImport } from './routes/_authenticated/me.match'
 import { Route as AuthenticatedMeHomeRouteImport } from './routes/_authenticated/me.home'
 import { Route as AuthenticatedMeFriendsRouteImport } from './routes/_authenticated/me.friends'
@@ -168,6 +170,12 @@ const Char91DotmcpChar93ListToolsRoute =
     path: '/.mcp/list-tools',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AuthenticatedMeRelationshipsRoute =
+  AuthenticatedMeRelationshipsRouteImport.update({
+    id: '/me/relationships',
+    path: '/me/relationships',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedMeProfileRoute = AuthenticatedMeProfileRouteImport.update({
   id: '/me/profile',
   path: '/me/profile',
@@ -178,6 +186,12 @@ const AuthenticatedMeOracleRoute = AuthenticatedMeOracleRouteImport.update({
   path: '/me/oracle',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedMeMembershipRoute =
+  AuthenticatedMeMembershipRouteImport.update({
+    id: '/me/membership',
+    path: '/me/membership',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedMeMatchRoute = AuthenticatedMeMatchRouteImport.update({
   id: '/me/match',
   path: '/me/match',
@@ -235,8 +249,10 @@ export interface FileRoutesByFullPath {
   '/me/friends': typeof AuthenticatedMeFriendsRoute
   '/me/home': typeof AuthenticatedMeHomeRoute
   '/me/match': typeof AuthenticatedMeMatchRoute
+  '/me/membership': typeof AuthenticatedMeMembershipRoute
   '/me/oracle': typeof AuthenticatedMeOracleRoute
   '/me/profile': typeof AuthenticatedMeProfileRoute
+  '/me/relationships': typeof AuthenticatedMeRelationshipsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -267,8 +283,10 @@ export interface FileRoutesByTo {
   '/me/friends': typeof AuthenticatedMeFriendsRoute
   '/me/home': typeof AuthenticatedMeHomeRoute
   '/me/match': typeof AuthenticatedMeMatchRoute
+  '/me/membership': typeof AuthenticatedMeMembershipRoute
   '/me/oracle': typeof AuthenticatedMeOracleRoute
   '/me/profile': typeof AuthenticatedMeProfileRoute
+  '/me/relationships': typeof AuthenticatedMeRelationshipsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -302,8 +320,10 @@ export interface FileRoutesById {
   '/_authenticated/me/friends': typeof AuthenticatedMeFriendsRoute
   '/_authenticated/me/home': typeof AuthenticatedMeHomeRoute
   '/_authenticated/me/match': typeof AuthenticatedMeMatchRoute
+  '/_authenticated/me/membership': typeof AuthenticatedMeMembershipRoute
   '/_authenticated/me/oracle': typeof AuthenticatedMeOracleRoute
   '/_authenticated/me/profile': typeof AuthenticatedMeProfileRoute
+  '/_authenticated/me/relationships': typeof AuthenticatedMeRelationshipsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -337,8 +357,10 @@ export interface FileRouteTypes {
     | '/me/friends'
     | '/me/home'
     | '/me/match'
+    | '/me/membership'
     | '/me/oracle'
     | '/me/profile'
+    | '/me/relationships'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -369,8 +391,10 @@ export interface FileRouteTypes {
     | '/me/friends'
     | '/me/home'
     | '/me/match'
+    | '/me/membership'
     | '/me/oracle'
     | '/me/profile'
+    | '/me/relationships'
   id:
     | '__root__'
     | '/'
@@ -403,8 +427,10 @@ export interface FileRouteTypes {
     | '/_authenticated/me/friends'
     | '/_authenticated/me/home'
     | '/_authenticated/me/match'
+    | '/_authenticated/me/membership'
     | '/_authenticated/me/oracle'
     | '/_authenticated/me/profile'
+    | '/_authenticated/me/relationships'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -610,6 +636,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotmcpChar93ListToolsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/me/relationships': {
+      id: '/_authenticated/me/relationships'
+      path: '/me/relationships'
+      fullPath: '/me/relationships'
+      preLoaderRoute: typeof AuthenticatedMeRelationshipsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/me/profile': {
       id: '/_authenticated/me/profile'
       path: '/me/profile'
@@ -622,6 +655,13 @@ declare module '@tanstack/react-router' {
       path: '/me/oracle'
       fullPath: '/me/oracle'
       preLoaderRoute: typeof AuthenticatedMeOracleRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/me/membership': {
+      id: '/_authenticated/me/membership'
+      path: '/me/membership'
+      fullPath: '/me/membership'
+      preLoaderRoute: typeof AuthenticatedMeMembershipRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/me/match': {
@@ -667,8 +707,10 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMeFriendsRoute: typeof AuthenticatedMeFriendsRoute
   AuthenticatedMeHomeRoute: typeof AuthenticatedMeHomeRoute
   AuthenticatedMeMatchRoute: typeof AuthenticatedMeMatchRoute
+  AuthenticatedMeMembershipRoute: typeof AuthenticatedMeMembershipRoute
   AuthenticatedMeOracleRoute: typeof AuthenticatedMeOracleRoute
   AuthenticatedMeProfileRoute: typeof AuthenticatedMeProfileRoute
+  AuthenticatedMeRelationshipsRoute: typeof AuthenticatedMeRelationshipsRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -676,8 +718,10 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMeFriendsRoute: AuthenticatedMeFriendsRoute,
   AuthenticatedMeHomeRoute: AuthenticatedMeHomeRoute,
   AuthenticatedMeMatchRoute: AuthenticatedMeMatchRoute,
+  AuthenticatedMeMembershipRoute: AuthenticatedMeMembershipRoute,
   AuthenticatedMeOracleRoute: AuthenticatedMeOracleRoute,
   AuthenticatedMeProfileRoute: AuthenticatedMeProfileRoute,
+  AuthenticatedMeRelationshipsRoute: AuthenticatedMeRelationshipsRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
