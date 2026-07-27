@@ -5,9 +5,14 @@ import { useServerFn } from "@tanstack/react-start";
 import { useLang } from "@/lib/i18n";
 import {
   echoCopy,
+  echoCoverageBanner,
+  echoReasonHeading,
+  figureSourceLabel,
   normalizeLang,
-  figuresFor,
+  recommendFigures,
   type DomainKey,
+  type DomainSignalBand,
+  type FigureRecommendation,
   type HistoricalFigure,
   type LifeStage,
 } from "@/lib/life-guidance-v1";
@@ -21,6 +26,12 @@ import {
 export type HistoricalEchoProps = {
   stage: LifeStage | null;
   domain: DomainKey | null;
+  /** Today's picked concern (from concern-guidance-v1). */
+  concern?: string | null;
+  /** Today's priority-domain signal band. */
+  domainSignal?: DomainSignalBand | null;
+  /** Localized label for today's priority domain (e.g. "事业"). */
+  domainLabel?: string | null;
   /**
    * When set, expands the deck on first render — used by focus=peers
    * deep-links so the traveller doesn't have to guess which card holds
