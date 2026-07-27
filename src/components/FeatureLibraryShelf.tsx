@@ -28,6 +28,12 @@ import {
   type ShelfBookKey,
 } from "@/lib/concern-guidance-v1";
 import { CONCERN_EVENT } from "@/components/ConcernSelector";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 import coverSelf from "@/assets/shelf-books/self_knowledge.webp";
 import coverStudy from "@/assets/shelf-books/study_growth.webp";
