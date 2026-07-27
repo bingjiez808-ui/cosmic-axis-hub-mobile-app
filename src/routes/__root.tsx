@@ -381,6 +381,21 @@ function SiteNav() {
 
   const NavLink = ({ to, label, ariaLabel }: { to: string; label: string; ariaLabel?: string }) => {
     const active = isActive(to);
+    // "My Home" — when signed-out, route through /auth so login lands back on /me/home.
+    const needsAuthGate = !session && to.startsWith("/me");
+    if (needsAuthGate) {
+      return (
+        <Link
+          to="/auth"
+          search={{ mode: "login", redirect: to }}
+          aria-label={ariaLabel}
+          title={ariaLabel}
+          className={`${linkBase} ${linkIdle}`}
+        >
+          {label}
+        </Link>
+      );
+    }
     return (
       <Link
         to={to}
@@ -399,37 +414,24 @@ function SiteNav() {
 
   const orbVisible = orbActive && !showTopBar && !drawerOpen;
 
-  // Core nav entries per auth state (mobile drawer mirrors these + "More")
-  const coreEntries: Array<{ to: string; label: string; ariaLabel?: string }> = session
-    ? [
-        { to: "/", label: libraryHomeLabel, ariaLabel: libraryHomeAria },
-        { to: "/me/home", label: myHomeLabel },
-        { to: "/ritual", label: t.nav_ritual },
-        { to: "/community", label: t.nav_community },
-      ]
-    : [
-        { to: "/", label: libraryHomeLabel, ariaLabel: libraryHomeAria },
-        { to: "/ritual", label: t.nav_ritual },
-        { to: "/traditions", label: t.nav_traditions },
-        { to: "/community", label: t.nav_community },
-      ];
-
-  // Personal-shelf shortcuts. When signed-out these redirect through /auth
-  // so the user lands on the target after login.
-  const shelfLink = (to: string) =>
-    session ? to : `/auth?mode=login&redirect=${encodeURIComponent(to)}`;
-  const shelfEntries: Array<{ href: string; label: string }> = [
-    { href: shelfLink("/me/home"), label: isZh ? "今日命运" : "Today's Fate" },
-    { href: shelfLink("/me/profile"), label: isZh ? "命盘与报告" : "Charts & Reports" },
-    { href: shelfLink("/me/friends"), label: isZh ? "好友" : "Friends" },
-    { href: shelfLink("/me/match"), label: isZh ? "适配分析" : "Match" },
-    { href: shelfLink("/me/home#echoes"), label: isZh ? "历史回声" : "Echoes" },
-    { href: shelfLink("/me/profile#membership-orders"), label: isZh ? "会员与订单" : "Membership" },
+  // Global IA — identical for signed-in and signed-out. Personal-shelf
+  // features (Today's Fate, Charts, Friends, Match, Echoes, Membership) do
+  // NOT live here; they belong to /me/home + PersonalWorkspaceNav.
+  const coreEntries: Array<{ to: string; label: string; ariaLabel?: string }> = [
+    { to: "/", label: libraryHomeLabel, ariaLabel: libraryHomeAria },
+    { to: "/ritual", label: t.nav_ritual },
+    { to: "/traditions", label: t.nav_traditions },
+    { to: "/community", label: t.nav_community },
+    { to: "/about", label: t.nav_about },
+    { to: "/me/home", label: myHomeLabel },
   ];
 
-  const moreEntries: Array<{ to: string; label: string }> = [
-    ...(session ? [{ to: "/traditions", label: t.nav_traditions }] : []),
-    { to: "/about", label: t.nav_about },
+  // "Learn · More" — informational/policy only. Never duplicate personal features here.
+  const moreEntries: Array<{ to?: string; href?: string; label: string; external?: boolean }> = [
+    { to: "/privacy", label: isZh ? "隐私政策" : "Privacy" },
+    { to: "/terms", label: isZh ? "服务条款" : "Terms" },
+    { to: "/delete-account", label: isZh ? "删除账户" : "Delete account" },
+    { href: "mailto:fatenexus.studio@gmail.com", label: isZh ? "联系支持" : "Contact support", external: true },
     ...(showAdmin ? [{ to: "/admin", label: adminLabel }] : []),
   ];
 
