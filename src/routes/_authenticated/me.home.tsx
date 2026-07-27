@@ -1106,5 +1106,152 @@ function CuratorWelcomeBookmark({
  * ChartManager.tsx and re-hosted on the dedicated /me/profile page. Today's
  * Reading Room only shows a lightweight context bar. */
 
+/**
+ * DailyCuratorCounsel — three deterministic paragraphs tied to the user's
+ * picked concern, today's overall band, and today's priority domain.
+ *
+ * When no concern is set we render the 7-concern picker instead of a
+ * fabricated message. Everything is sourced from `selectDailyCounsel`.
+ */
+function DailyCuratorCounsel({
+  lang,
+  concern,
+  band,
+  priorityDomain,
+  onPickConcern,
+  onToggleEvidence,
+}: {
+  lang: "en" | "zh";
+  concern: ConcernKey | null;
+  band: DailyBand;
+  priorityDomain: string;
+  onPickConcern: (c: ConcernKey) => void | Promise<void>;
+  onToggleEvidence: () => void;
+}) {
+  const [changing, setChanging] = useState(false);
+
+  const L = {
+    kicker: { zh: "馆长今日留言", en: "Today's note from the Curator" },
+    empty: {
+      zh: "让馆长知道你此刻最需要什么",
+      en: "Tell the Curator what you most want right now",
+    },
+    t1: { zh: "你带来的问题", en: "The question you brought" },
+    t2: { zh: "今天值得留意", en: "What today's data shows" },
+    t3: { zh: "今天可以尝试", en: "One thing to try today" },
+    why: { zh: "查看今天为什么这样判断", en: "Why today reads this way" },
+    change: { zh: "我现在关心的已经变了", en: "My concern has changed" },
+    cont: (topic: string) => (lang === "zh" ? `继续阅读我的【${topic}】` : `Continue reading my ${topic}`),
+    domainNote: (d: string) =>
+      lang === "zh"
+        ? `今日「${d}」是被最多信号点到的领域。`
+        : `«${d}» is the domain most signals point to today.`,
+  };
+
+  const triple = concern ? selectDailyCounsel({ concern, band, lang }) : null;
+  const rec = concern ? CONCERNS[concern] : null;
+  const domainLabel = priorityDomain; // already localized upstream via domain-score lang-agnostic key
+  const ctaHref = rec
+    ? resolveConcernRoute({ concern: rec.key, isSignedIn: true, hasPrimaryChart: false })
+    : "/ritual";
+
+  return (
+    <section
+      id="daily-counsel"
+      data-testid="daily-counsel"
+      className="mb-8 rounded-2xl border border-amber-400/30 bg-gradient-to-br from-amber-950/25 via-black/50 to-purple-950/25 p-5 md:p-6"
+    >
+      <div className="text-[10px] uppercase tracking-[0.32em] text-amber-300/70">
+        {L.kicker[lang]}
+      </div>
+
+      {!concern || changing ? (
+        <div className="mt-3">
+          <p className="mb-3 text-sm text-amber-100/80">{L.empty[lang]}</p>
+          <div
+            role="radiogroup"
+            aria-label={L.empty[lang]}
+            className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4"
+          >
+            {CONCERN_KEYS.map((k) => (
+              <button
+                key={k}
+                role="radio"
+                type="button"
+                aria-checked={concern === k}
+                onClick={() => {
+                  void onPickConcern(k);
+                  setChanging(false);
+                }}
+                data-testid={`daily-counsel-concern-${k}`}
+                className={`min-h-11 rounded-lg border px-3 py-2 text-left transition ${
+                  concern === k
+                    ? "border-amber-300 bg-amber-400/15 text-amber-100"
+                    : "border-amber-400/25 text-amber-200/85 hover:border-amber-300 hover:bg-amber-500/5"
+                }`}
+              >
+                <div className="text-sm font-medium">{CONCERNS[k].chip[lang]}</div>
+                <div className="mt-0.5 text-[11px] leading-snug text-amber-100/70">
+                  {CONCERNS[k].question[lang]}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : triple && rec ? (
+        <div className="mt-3 space-y-4">
+          <div data-testid="counsel-p1">
+            <div className="text-[11px] uppercase tracking-[0.22em] text-amber-200/70">
+              {L.t1[lang]}
+            </div>
+            <p className="mt-1 font-serif italic leading-relaxed text-amber-50/95">
+              {triple.response}
+            </p>
+          </div>
+          <div data-testid="counsel-p2">
+            <div className="text-[11px] uppercase tracking-[0.22em] text-amber-200/70">
+              {L.t2[lang]}
+            </div>
+            <p className="mt-1 leading-relaxed text-amber-100/90">{triple.today}</p>
+            <p className="mt-1 text-[12px] leading-snug text-amber-200/60">
+              {L.domainNote(domainLabel)}
+            </p>
+          </div>
+          <div data-testid="counsel-p3">
+            <div className="text-[11px] uppercase tracking-[0.22em] text-amber-200/70">
+              {L.t3[lang]}
+            </div>
+            <p className="mt-1 leading-relaxed text-amber-100/90">{triple.move}</p>
+          </div>
+
+          <div className="flex flex-wrap gap-2 pt-2">
+            <button
+              type="button"
+              onClick={onToggleEvidence}
+              className="min-h-9 rounded-full border border-amber-400/30 px-3 py-1 text-[11px] text-amber-200 hover:border-amber-300"
+            >
+              {L.why[lang]}
+            </button>
+            <Link
+              to={ctaHref}
+              className="min-h-9 rounded-full bg-gradient-to-r from-amber-300 to-amber-500 px-4 py-1 text-[11px] font-medium text-black hover:brightness-110"
+            >
+              {L.cont(rec.chip[lang])}
+            </Link>
+            <button
+              type="button"
+              onClick={() => setChanging(true)}
+              className="min-h-9 rounded-full border border-amber-400/25 px-3 py-1 text-[11px] text-amber-200/80 hover:border-amber-300"
+            >
+              {L.change[lang]}
+            </button>
+          </div>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+
 
 
