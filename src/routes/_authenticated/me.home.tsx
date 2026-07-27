@@ -14,21 +14,13 @@ import { useDaily, useFormatDate, xlate } from "@/lib/i18n-daily";
 import { formatThemeKeyword, formatContradiction, tPhase } from "@/lib/daily-format";
 import { interpretAll } from "@/lib/daily-plain-language";
 import { DailyDestinyCompass, type CompassAxis } from "@/experiences/daily-room/visuals/DailyDestinyCompass";
-import { LifeChapterCard } from "@/experiences/life-guidance/LifeChapterCard";
-import { HistoricalEcho } from "@/experiences/life-guidance/HistoricalEcho";
 import {
-  defaultStageForAge,
-  computeAge,
   pickPriorityDomain,
-  classifyDomainSignal,
   curatorLetter,
   isOnboardingIntent,
   ONBOARDING_INTENTS,
-  LIFE_STAGES,
   normalizeLang,
-  type LifeStage,
   type OnboardingIntent,
-  type DomainSignalBand,
 } from "@/lib/life-guidance-v1";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -293,23 +285,22 @@ function DailyRoomPage() {
             {lang === "zh" ? "命运图书馆 · 我的书架" : "Destiny Library · My Library"}
           </div>
           <h1 className="mt-2 font-serif text-3xl tracking-wide md:text-4xl">
-            {lang === "zh" ? "我的书架" : "My Library"}
+            {lang === "zh" ? "今日命运" : "Today's Fate"}
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-amber-100/70">
             {lang === "zh"
-              ? "这里是你的个人书架主页，默认打开「今日命运」。命盘、关系、历史回声与会员，从上方书架导航进入。"
-              : "This is your personal library home; it opens with today's fate. Use the library sub-nav above to reach charts, relationships, echoes and membership."}
+              ? "这里只做一件事：今天的重点、六领域白话建议、未来 7 天走向。历史回声、命盘、关系与会员从上方书架导航进入。"
+              : "This page does one thing: today's headline, plain-language notes across six domains, and the 7-day arc. Historical Echoes, charts, relationships and membership live on their own tabs above."}
           </p>
         </header>
-
 
         {/* Shared personal-workspace sub-nav (Today's Fate active) */}
         <PersonalWorkspaceNav active="/me/home" />
         <div id="today" className="sr-only" aria-hidden />
         <p className="mb-4 text-xs text-amber-200/60" data-testid="home-purpose-hint">
           {lang === "zh"
-            ? "这里显示今天的一件事：主线、六领域建议与 7 日走向。想去命盘/关系/历史回声/会员，用上面的书架导航。"
-            : "This page shows the one thing for today: your line, six-domain notes and the 7-day arc. Use the library sub-nav above for charts, relationships, echoes or membership."}
+            ? "本页专注今日命运，不再嵌入历史回声或命盘管理；请用上方书架导航切换模块。"
+            : "This page focuses on today's fate only — it no longer embeds Historical Echoes or chart management. Use the library sub-nav above to switch modules."}
         </p>
 
 
@@ -437,8 +428,6 @@ function DailyRoomPage() {
           onToggleEvidence={() => setShowEvidence((v) => !v)}
         />
 
-        {/* Reading-path breadcrumb — bookmarks pinned to today's page. */}
-        <ReadingPath lang={lang} focus={focus} hasIntent={onboardingIntent != null} />
 
         {/* Overall + theme */}
 
@@ -698,87 +687,36 @@ function DailyRoomPage() {
           <p className="mt-2 text-amber-100/80">{d.reflection_body}</p>
         </section>
 
-        {/* ─── Life chapter right now (deterministic, 0-AI) ─── */}
-        {(() => {
-          const primaryBirthDate =
-            real.kind === "ready"
-              ? real.charts.find((c) => c.is_primary && c.chart_role === "self")
-                  ?.birth_date ?? null
-              : null;
-          const priority = pickPriorityDomain(score.domains);
-          const peersFocused = focus === "peers";
-          return (
-            <div
-              id="echoes"
-              data-focus={peersFocused ? "peers" : undefined}
-              style={{ scrollMarginTop: "calc(var(--site-nav-height, 96px) + 72px)" }}
-              className={peersFocused ? "rounded-2xl ring-2 ring-amber-300/60 ring-offset-2 ring-offset-[#0a0a12] transition-shadow" : ""}
-            >
-              <span id="life-chapter" aria-hidden className="block h-0 w-0 -mt-24" />
-              {peersFocused ? (
-                <div
-                  className="mb-3 rounded-lg border border-amber-400/25 bg-amber-500/5 px-4 py-2 text-xs text-amber-100/85"
-                  data-testid="peers-path-hint"
-                >
-                  {lang === "zh"
-                    ? "你正在阅读：同龄人的人生章节 → 历史回声"
-                    : "You're reading: your peers' life chapter → historical echoes"}
-                </div>
-              ) : null}
-              {!primaryBirthDate && peersFocused ? (
-                <section
-                  className="mb-8 rounded-xl border border-amber-400/30 bg-black/40 p-6"
-                  data-testid="peers-empty-no-primary"
-                >
-                  <div className="text-[11px] uppercase tracking-widest text-amber-200/70">
-                    {lang === "zh" ? "同龄人的人生章节" : "Your peers' life chapter"}
-                  </div>
-                  <h3 className="mt-2 font-serif text-2xl text-amber-100">
-                    {lang === "zh"
-                      ? "先登记出生日期，图书馆才能找到与你处于相近人生阶段的回声。"
-                      : "Add your birth date first — the library then knows which chapter to open beside yours."}
-                  </h3>
-                  <Link
-                    to="/ritual"
-                    search={{ returnTo: "/me/home?focus=peers#life-chapter" } as never}
-                    className="mt-4 inline-flex min-h-11 rounded-full border border-amber-300/60 bg-amber-500/10 px-4 py-2 text-sm text-amber-100 hover:bg-amber-500/20"
-                  >
-                    {lang === "zh" ? "登记出生日期 →" : "Register your birth date →"}
-                  </Link>
-                </section>
-              ) : (
-                <>
-                  <LifeChapterCard
-                    primaryBirthDate={primaryBirthDate}
-                    todayISO={today}
-                    domainScores={score.domains}
-                    domainLabels={{
-                      love: d.domain.love,
-                      study: d.domain.study,
-                      career: d.domain.career,
-                      body_mind: d.domain.body_mind,
-                      finance: d.domain.finance,
-                    }}
-                  />
-                  <HistoricalEchoSlot
-                    primaryBirthDate={primaryBirthDate}
-                    todayISO={today}
-                    priority={priority}
-                    concern={concern}
-                    domainScore={
-                      priority
-                        ? score.domains.find((dd) => dd.domain === priority)?.score ?? null
-                        : null
-                    }
-                    domainLabel={priority ? domainLabel(priority) : null}
-                    initialExpanded={peersFocused}
-                  />
-
-                </>
-              )}
+        {/* Cross-module CTA — Historical Echoes lives on its own page. */}
+        <section
+          className="mb-12 rounded-xl border border-amber-400/25 bg-black/30 px-5 py-5"
+          data-testid="home-echoes-cta"
+        >
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="text-[11px] uppercase tracking-widest text-amber-200/70">
+                {lang === "zh" ? "跨模块" : "Cross-module"}
+              </div>
+              <h3 className="mt-1 font-serif text-lg text-amber-100">
+                {lang === "zh"
+                  ? "去历史回声寻找相似人生阶段"
+                  : "Find peers in a similar life chapter"}
+              </h3>
+              <p className="mt-1 text-xs text-amber-100/60">
+                {lang === "zh"
+                  ? "历史人物、同龄故事与人生阶段推荐已整合到「历史回声」。"
+                  : "Historical figures, peer stories and life-stage matches now live on Historical Echoes."}
+              </p>
             </div>
-          );
-        })()}
+            <Link
+              to="/me/echoes"
+              className="inline-flex min-h-11 items-center rounded-full border border-amber-300/60 bg-amber-500/10 px-4 py-2 text-sm text-amber-100 hover:bg-amber-500/20"
+            >
+              {lang === "zh" ? "打开历史回声 →" : "Open Historical Echoes →"}
+            </Link>
+          </div>
+        </section>
+
 
 
 
@@ -861,118 +799,6 @@ function DailyRoomPage() {
   );
 }
 
-/**
- * HistoricalEchoSlot — resolves the user's active life stage (server
- * preference override → age-derived default) and hands it to
- * HistoricalEcho along with today's priority domain.
- */
-function HistoricalEchoSlot({
-  primaryBirthDate,
-  todayISO,
-  priority,
-  concern,
-  domainScore,
-  domainLabel,
-  initialExpanded,
-}: {
-  primaryBirthDate: string | null;
-  todayISO: string;
-  priority: ReturnType<typeof pickPriorityDomain>;
-  concern: ConcernKey | null;
-  domainScore: number | null;
-  domainLabel: string | null;
-  initialExpanded?: boolean;
-}) {
-  const defaultStage: LifeStage | null = defaultStageForAge(
-    computeAge(primaryBirthDate, todayISO),
-  );
-  const [stage, setStage] = useState<LifeStage | null>(defaultStage);
-  const getPrefs = useServerFn(getLifeGuidancePrefs);
-
-  useEffect(() => {
-    let cancelled = false;
-    getPrefs()
-      .then((row) => {
-        if (cancelled) return;
-        if (
-          row?.life_stage &&
-          (LIFE_STAGES as readonly string[]).includes(row.life_stage)
-        ) {
-          setStage(row.life_stage as LifeStage);
-        }
-      })
-      .catch(() => {
-        /* keep default */
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [getPrefs]);
-
-  useEffect(() => {
-    if (defaultStage && !stage) setStage(defaultStage);
-  }, [defaultStage, stage]);
-
-  if (!primaryBirthDate || !stage) return null;
-  const signal: DomainSignalBand = classifyDomainSignal(domainScore);
-  return (
-    <HistoricalEcho
-      stage={stage}
-      domain={priority}
-      concern={concern}
-      domainSignal={signal}
-      domainLabel={domainLabel}
-      initialExpanded={initialExpanded}
-    />
-  );
-}
-
-/**
- * ReadingPath — bookmark-style breadcrumb pinned to today's page. Quiet
- * in-page anchor row, not a SaaS nav bar. Active step reflects `focus`.
- */
-function ReadingPath({
-  lang,
-  focus,
-  hasIntent,
-}: {
-  lang: "en" | "zh";
-  focus: "welcome" | "peers" | null;
-  hasIntent: boolean;
-}) {
-  const steps: Array<{ key: "welcome" | "chapter" | "echo"; label: string; href: string }> = [
-    { key: "welcome", label: lang === "zh" ? "馆长序言" : "Curator's welcome", href: "#curator-welcome" },
-    { key: "chapter", label: lang === "zh" ? "此刻的人生页码" : "Life chapter now", href: "#life-chapter" },
-    { key: "echo", label: lang === "zh" ? "历史回声" : "Historical echoes", href: "#historical-echo" },
-  ];
-  const active: "welcome" | "chapter" | "echo" =
-    focus === "welcome" ? "welcome" : focus === "peers" ? "chapter" : "welcome";
-  void hasIntent;
-  return (
-    <nav
-      aria-label={lang === "zh" ? "阅读路径" : "Reading path"}
-      className="mb-6 flex flex-wrap items-center gap-1.5 text-[11px] text-amber-200/70"
-      data-testid="reading-path"
-    >
-      {steps.map((s, i) => (
-        <span key={s.key} className="flex items-center gap-1.5">
-          {i > 0 ? <span aria-hidden className="text-amber-300/40">→</span> : null}
-          <a
-            href={s.href}
-            aria-current={active === s.key ? "true" : undefined}
-            className={`rounded-full border px-3 py-1 transition ${
-              active === s.key
-                ? "border-amber-300 bg-amber-300/10 text-amber-100"
-                : "border-amber-400/20 hover:border-amber-300/60 hover:text-amber-100"
-            }`}
-          >
-            {s.label}
-          </a>
-        </span>
-      ))}
-    </nav>
-  );
-}
 
 /**
  * CuratorWelcomeBookmark — golden bookmark clipped to today's page. Stable
