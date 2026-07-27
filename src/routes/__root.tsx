@@ -623,6 +623,25 @@ function SiteNav() {
       >
         {coreEntries.map((item) => {
           const active = isActive(item.to);
+          const gate = !session && item.to.startsWith("/me");
+          const cls = `flex min-h-11 items-center justify-end whitespace-nowrap rounded-lg px-4 py-3 text-right text-[13px] ${
+            isZh ? "tracking-normal" : "uppercase tracking-[0.24em]"
+          } ${active ? "bg-gold-dust/10 text-gold-light" : "text-stone-warm/85 hover:bg-gold-dust/10 hover:text-gold-light"}`;
+          if (gate) {
+            return (
+              <Link
+                key={item.to}
+                to="/auth"
+                search={{ mode: "login", redirect: item.to }}
+                onClick={() => setDrawerOpen(false)}
+                aria-label={item.ariaLabel}
+                title={item.ariaLabel}
+                className={cls}
+              >
+                {item.label}
+              </Link>
+            );
+          }
           return (
             <Link
               key={item.to}
@@ -631,40 +650,43 @@ function SiteNav() {
               aria-current={active ? "page" : undefined}
               aria-label={item.ariaLabel}
               title={item.ariaLabel}
-              className={`flex min-h-11 items-center justify-end whitespace-nowrap rounded-lg px-4 py-3 text-right text-[13px] ${
-                isZh ? "tracking-normal" : "uppercase tracking-[0.24em]"
-              } ${active ? "bg-gold-dust/10 text-gold-light" : "text-stone-warm/85 hover:bg-gold-dust/10 hover:text-gold-light"}`}
+              className={cls}
             >
               {item.label}
             </Link>
           );
         })}
-        <div className="my-1 h-px bg-white/10" />
-        <div className="px-3 pb-1 pt-1 text-right text-[9px] uppercase tracking-[0.28em] text-stone-warm/40">
-          {isZh ? "个人书架" : "Personal Library"}
-        </div>
-        {shelfEntries.map((e) => (
-          <a
-            key={e.href}
-            href={e.href}
-            onClick={() => setDrawerOpen(false)}
-            className="flex min-h-11 items-center justify-end whitespace-nowrap rounded-lg px-4 py-3 text-right text-[12px] text-stone-warm/80 hover:bg-gold-dust/10 hover:text-gold-light"
-          >
-            {e.label}
-          </a>
-        ))}
         {moreEntries.length > 0 && <div className="my-1 h-px bg-white/10" />}
+        {moreEntries.length > 0 && (
+          <div className="px-3 pb-1 pt-1 text-right text-[9px] uppercase tracking-[0.28em] text-stone-warm/40">
+            {isZh ? "了解 · 更多" : "Learn · More"}
+          </div>
+        )}
         {moreEntries.map((item) => {
-          const active = isActive(item.to);
+          const key = item.to ?? item.href ?? item.label;
+          const active = item.to ? isActive(item.to) : false;
+          const cls = `flex min-h-11 items-center justify-end whitespace-nowrap rounded-lg px-4 py-3 text-right text-[12px] ${
+            isZh ? "tracking-normal" : "uppercase tracking-[0.22em]"
+          } ${active ? "bg-gold-dust/10 text-gold-light" : "text-stone-warm/70 hover:bg-gold-dust/10 hover:text-gold-light"}`;
+          if (item.href) {
+            return (
+              <a
+                key={key}
+                href={item.href}
+                onClick={() => setDrawerOpen(false)}
+                className={cls}
+              >
+                {item.label}
+              </a>
+            );
+          }
           return (
             <Link
-              key={item.to}
-              to={item.to}
+              key={key}
+              to={item.to!}
               onClick={() => setDrawerOpen(false)}
               aria-current={active ? "page" : undefined}
-              className={`flex min-h-11 items-center justify-end whitespace-nowrap rounded-lg px-4 py-3 text-right text-[12px] ${
-                isZh ? "tracking-normal" : "uppercase tracking-[0.22em]"
-              } ${active ? "bg-gold-dust/10 text-gold-light" : "text-stone-warm/70 hover:bg-gold-dust/10 hover:text-gold-light"}`}
+              className={cls}
             >
               {item.label}
             </Link>
