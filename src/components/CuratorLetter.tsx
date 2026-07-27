@@ -255,7 +255,7 @@ export function CuratorLetter() {
 
   // Folded "book spine" state — one line + revisit button. Rendered once
   // the ritual has been finished or on returning sessions.
-  if (hydrated && stage.kind === "folded") {
+  if (stage.kind === "folded") {
     return (
       <section
         id="curator-letter"
