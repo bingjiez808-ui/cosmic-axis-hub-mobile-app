@@ -51,7 +51,10 @@ const T = {
     en: "Oracle · Chart & Synastry",
   },
   loading: { zh: "读取权限中…", en: "Checking your access…" },
-  expired: { zh: "月度会员已到期，已自动降级。", en: "Monthly membership expired — auto-downgraded." },
+  expired: {
+    zh: "月度会员已到期，已自动降级。",
+    en: "Monthly membership expired — auto-downgraded.",
+  },
   active_until: { zh: "有效期至", en: "Valid until" },
   no_access_title: {
     zh: "神谕者是月度会员能力",
@@ -122,9 +125,7 @@ function OraclePage() {
   const t = (k: keyof typeof T) => T[k][lang];
   const [mem, setMem] = useState<MembershipView>({ kind: "loading" });
   const [charts, setCharts] = useState<ChartRow[]>([]);
-  const [selectedChartId, setSelectedChartId] = useState<string | "companion" | null>(
-    null,
-  );
+  const [selectedChartId, setSelectedChartId] = useState<string | "companion" | null>(null);
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
@@ -143,7 +144,7 @@ function OraclePage() {
       const rawTier = (data?.membership_tier ?? "none") as string;
       const exp = (data?.membership_expires_at as string | null) ?? null;
       const expTs = exp ? new Date(exp).getTime() : null;
-      const active = (rawTier === "oracle") && !!expTs && expTs > Date.now();
+      const active = rawTier === "oracle" && !!expTs && expTs > Date.now();
       if (cancelled) return;
       if (active) {
         setMem({ kind: "oracle", expiresAt: exp });
@@ -179,7 +180,7 @@ function OraclePage() {
   const chartRow = useMemo(
     () =>
       selectedChartId && selectedChartId !== "companion"
-        ? charts.find((c) => c.id === selectedChartId) ?? null
+        ? (charts.find((c) => c.id === selectedChartId) ?? null)
         : null,
     [charts, selectedChartId],
   );
@@ -235,27 +236,19 @@ function OraclePage() {
           <div className="text-[11px] uppercase tracking-[0.24em] text-amber-300/70">
             {t("kicker")}
           </div>
-          <h1 className="mt-2 font-serif text-3xl tracking-wide md:text-4xl">
-            {t("title")}
-          </h1>
+          <h1 className="mt-2 font-serif text-3xl tracking-wide md:text-4xl">{t("title")}</h1>
         </header>
 
         {/* Membership status */}
-        {mem.kind === "loading" && (
-          <div className="text-sm text-amber-100/70">{t("loading")}</div>
-        )}
+        {mem.kind === "loading" && <div className="text-sm text-amber-100/70">{t("loading")}</div>}
 
         {mem.kind === "no-oracle" && (
           <section className="rounded-xl border border-amber-400/25 bg-black/30 p-6">
             <div className="text-[11px] uppercase tracking-widest text-amber-300/70">
               {t("member_kicker")}
             </div>
-            <h2 className="mt-2 font-serif text-2xl text-amber-100">
-              {t("no_access_title")}
-            </h2>
-            <p className="mt-3 text-sm leading-relaxed text-amber-100/75">
-              {t("no_access_body")}
-            </p>
+            <h2 className="mt-2 font-serif text-2xl text-amber-100">{t("no_access_title")}</h2>
+            <p className="mt-3 text-sm leading-relaxed text-amber-100/75">{t("no_access_body")}</p>
             <p className="mt-3 text-xs text-amber-200/60">{t("mock_notice")}</p>
             {mem.expiresAt && (
               <p className="mt-2 text-xs text-amber-200/60">
@@ -427,9 +420,7 @@ function OraclePage() {
                         void send();
                       }
                     }}
-                    placeholder={
-                      isCompanion ? t("placeholder_companion") : t("placeholder_oracle")
-                    }
+                    placeholder={isCompanion ? t("placeholder_companion") : t("placeholder_oracle")}
                     className="max-h-32 min-h-10 flex-1 resize-none rounded-lg border border-amber-400/20 bg-black/40 px-3 py-2 text-sm text-amber-50 placeholder:text-amber-100/40 focus:border-amber-300/60 focus:outline-none"
                   />
                   <button

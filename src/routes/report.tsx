@@ -22,12 +22,7 @@ import {
   BookOpen,
   type LucideIcon,
 } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 // Sage tree-hole is mounted globally in src/routes/__root.tsx.
 
 const DIM_ICONS: Record<string, LucideIcon> = {
@@ -66,7 +61,8 @@ function traditionIcon(name: string): LucideIcon {
   if (TRADITION_ICONS[name]) return TRADITION_ICONS[name];
   const k = name.toLowerCase();
   if (k.includes("astro") || k.includes("占星")) return Sun;
-  if (k.includes("jyot") || k.includes("vedic") || k.includes("印度") || k.includes("吠陀")) return Moon;
+  if (k.includes("jyot") || k.includes("vedic") || k.includes("印度") || k.includes("吠陀"))
+    return Moon;
   if (k.includes("bazi") || k.includes("八字") || k.includes("pillar")) return Layers;
   if (k.includes("zi") || k.includes("紫微") || k.includes("dou")) return Star;
   return Sparkles;
@@ -77,7 +73,10 @@ function traditionIcon(name: string): LucideIcon {
 function splitParagraphs(text: string, groupSize = 2): string[] {
   if (!text) return [];
   // Respect explicit line breaks the model may have inserted.
-  const blocks = text.split(/\n{2,}|\r\n\r\n/).map((s) => s.trim()).filter(Boolean);
+  const blocks = text
+    .split(/\n{2,}|\r\n\r\n/)
+    .map((s) => s.trim())
+    .filter(Boolean);
   const out: string[] = [];
   for (const block of blocks) {
     // Sentence splitter for CJK + Latin punctuation, keeping the delimiter.
@@ -87,7 +86,12 @@ function splitParagraphs(text: string, groupSize = 2): string[] {
       continue;
     }
     for (let i = 0; i < parts.length; i += groupSize) {
-      out.push(parts.slice(i, i + groupSize).join("").trim());
+      out.push(
+        parts
+          .slice(i, i + groupSize)
+          .join("")
+          .trim(),
+      );
     }
   }
   return out;
@@ -101,9 +105,10 @@ function textFromUnknown(value: unknown, lang: "en" | "zh"): string {
   }
   if (value && typeof value === "object") {
     const r = value as Record<string, unknown>;
-    const candidates = lang === "zh"
-      ? [r.zh, r.cn, r.chinese, r.plain, r.text, r.synthesis, r.headline, r.summary, r.en]
-      : [r.en, r.plain, r.text, r.synthesis, r.headline, r.summary, r.zh, r.cn];
+    const candidates =
+      lang === "zh"
+        ? [r.zh, r.cn, r.chinese, r.plain, r.text, r.synthesis, r.headline, r.summary, r.en]
+        : [r.en, r.plain, r.text, r.synthesis, r.headline, r.summary, r.zh, r.cn];
     for (const c of candidates) {
       const s = textFromUnknown(c, lang).trim();
       if (s) return s;
@@ -154,7 +159,12 @@ import {
   saveReport,
 } from "@/lib/reports-store.functions";
 import { supabase } from "@/integrations/supabase/client";
-import { buildReportCacheKey, buildReportFingerprint, buildReportRequest, buildReportSeed } from "@/lib/report-input";
+import {
+  buildReportCacheKey,
+  buildReportFingerprint,
+  buildReportRequest,
+  buildReportSeed,
+} from "@/lib/report-input";
 import { REPORT_AI_VERSION } from "@/lib/ai-cache-version";
 import { useAccount } from "@/lib/account";
 import {
@@ -163,7 +173,6 @@ import {
   ELEMENT_LABEL_ZH,
   type CalculationSnapshot,
 } from "@/lib/calc-snapshot";
-
 
 type SearchParams = {
   name?: string;
@@ -187,8 +196,7 @@ export const Route = createFileRoute("/report")({
       { title: "Your reading — Library of Destiny" },
       {
         name: "description",
-        content:
-          "The unified AI reading of your life, synthesized across four ancient traditions.",
+        content: "The unified AI reading of your life, synthesized across four ancient traditions.",
       },
       { name: "robots", content: "noindex" },
     ],
@@ -238,7 +246,10 @@ const dimensions: Dimension[] = [
     evidence: [
       {
         tradition: ["Astrology", "西方占星"],
-        note: ["Sun in fire · Mercury retrograde in the 3rd house", "太阳落火象 · 水星逆行于第三宫"],
+        note: [
+          "Sun in fire · Mercury retrograde in the 3rd house",
+          "太阳落火象 · 水星逆行于第三宫",
+        ],
       },
       {
         tradition: ["Jyotish", "印度占星"],
@@ -269,7 +280,10 @@ const dimensions: Dimension[] = [
           ["Natural warmth that mobilises others quickly", "自带温度，能迅速调动他人"],
           ["High standards applied first to yourself", "对自己先严格，再对世界温柔"],
           ["Fast pattern recognition across people and ideas", "在人与想法之间快速识别模式"],
-          ["Recovers meaning from setbacks better than most", "从挫折中重新提炼意义的能力，强于常人"],
+          [
+            "Recovers meaning from setbacks better than most",
+            "从挫折中重新提炼意义的能力，强于常人",
+          ],
         ],
       },
       {
@@ -286,10 +300,7 @@ const dimensions: Dimension[] = [
   {
     key: "academic",
     title: ["Academic & Cognition", "学业与认知"],
-    headline: [
-      "Learn by shaping, not by absorbing",
-      "以「塑造」为轴的认知节奏 —— 不靠被动吸收",
-    ],
+    headline: ["Learn by shaping, not by absorbing", "以「塑造」为轴的认知节奏 —— 不靠被动吸收"],
     stars: 4,
     strengths: [0.8, 0.75, 0.8, 0.75],
     evidence: [
@@ -299,15 +310,24 @@ const dimensions: Dimension[] = [
       },
       {
         tradition: ["Jyotish", "印度占星"],
-        note: ["Moon in a knowledge-oriented Nakshatra · Jupiter aspect", "月亮居学识型 Nakshatra · 木星照射"],
+        note: [
+          "Moon in a knowledge-oriented Nakshatra · Jupiter aspect",
+          "月亮居学识型 Nakshatra · 木星照射",
+        ],
       },
       {
         tradition: ["BaZi", "八字"],
-        note: ["Resource star 印 supports the day master · Output star 食伤 lends expression", "印星生扶日主 · 食伤透干利于表达"],
+        note: [
+          "Resource star 印 supports the day master · Output star 食伤 lends expression",
+          "印星生扶日主 · 食伤透干利于表达",
+        ],
       },
       {
         tradition: ["Zi Wei", "紫微"],
-        note: ["Palace of parents / education carries 化科 · 文昌 in the命宫", "父母/学识宫见化科 · 文昌照命"],
+        note: [
+          "Palace of parents / education carries 化科 · 文昌 in the命宫",
+          "父母/学识宫见化科 · 文昌照命",
+        ],
       },
     ],
     synthesis: [
@@ -315,7 +335,7 @@ const dimensions: Dimension[] = [
       "四大体系一致给出「形状」而非「智商」：知识只有在被使用、被讲述、被重新组织的时候才在你身上真正留下——单纯被动听讲会最快被遗忘。优势多集中在语言表达、社会观察与跨领域整合；纯粹应试型的死记硬背，不是这张盘的天然赛道。",
     ],
     plain: [
-      "In everyday words: pick learning methods that let you output early — write summaries, teach juniors, build small projects. Whichever subject cluster you're actually curious about is more diagnostic than any \"gifted at math or humanities\" label. Please treat the clusters below as directions to test, not as fate.",
+      'In everyday words: pick learning methods that let you output early — write summaries, teach juniors, build small projects. Whichever subject cluster you\'re actually curious about is more diagnostic than any "gifted at math or humanities" label. Please treat the clusters below as directions to test, not as fate.',
       "说人话：选那种「让你尽早输出」的学习方式——写摘要、讲给学弟妹听、动手做一个小项目。你此刻真正好奇的学科族群，比任何「文科好还是理科好」的标签都更能说明问题。下面的族群候选是方向，不是结论——请在真实成绩、真实兴趣里验证它。",
     ],
     viz: "radar",
@@ -323,28 +343,64 @@ const dimensions: Dimension[] = [
       {
         label: ["Subject cluster candidates", "学科族群候选"],
         items: [
-          ["Languages & humanities expression — writing, translation, teaching", "语言与人文表达 —— 写作 · 翻译 · 教学"],
-          ["Social observation & research — sociology, psychology, policy studies", "社会观察与研究 —— 社会学 · 心理 · 政策研究"],
-          ["Cross-domain integration — design × technology, humanities × data", "跨学科整合 —— 设计 × 技术、人文 × 数据"],
-          ["Applied engineering & operations (secondary channel — needs a project to anchor)", "实务工程与应用（次通道 · 需要一个具体项目锚定）"],
+          [
+            "Languages & humanities expression — writing, translation, teaching",
+            "语言与人文表达 —— 写作 · 翻译 · 教学",
+          ],
+          [
+            "Social observation & research — sociology, psychology, policy studies",
+            "社会观察与研究 —— 社会学 · 心理 · 政策研究",
+          ],
+          [
+            "Cross-domain integration — design × technology, humanities × data",
+            "跨学科整合 —— 设计 × 技术、人文 × 数据",
+          ],
+          [
+            "Applied engineering & operations (secondary channel — needs a project to anchor)",
+            "实务工程与应用（次通道 · 需要一个具体项目锚定）",
+          ],
         ],
       },
       {
         label: ["Study style that works", "适合的学习方式"],
         items: [
-          ["Learn by teaching · summarise, then present within 48 hours", "以教代学 · 学完 48 小时内讲一遍"],
-          ["Small, finished projects beat long, un-shipped ones", "小而完整的项目 · 优于宏大而无产出的长战线"],
-          ["Rotate 2–3 subjects a season — pure single-track fatigue drains you", "每季度轮换 2–3 门 · 单线高强度容易疲劳"],
-          ["Age-adapted: student → coursework + side project · adult → re-skilling or teaching what you already do", "按年龄适配：学生 → 课程 + 副项目 · 成年 → 再学习或反哺自己的手艺"],
+          [
+            "Learn by teaching · summarise, then present within 48 hours",
+            "以教代学 · 学完 48 小时内讲一遍",
+          ],
+          [
+            "Small, finished projects beat long, un-shipped ones",
+            "小而完整的项目 · 优于宏大而无产出的长战线",
+          ],
+          [
+            "Rotate 2–3 subjects a season — pure single-track fatigue drains you",
+            "每季度轮换 2–3 门 · 单线高强度容易疲劳",
+          ],
+          [
+            "Age-adapted: student → coursework + side project · adult → re-skilling or teaching what you already do",
+            "按年龄适配：学生 → 课程 + 副项目 · 成年 → 再学习或反哺自己的手艺",
+          ],
         ],
       },
       {
         label: ["Watch-outs to guard", "需要注意的地方"],
         items: [
-          ["Rebelling against authority mid-course — pick programs with real freedom", "中途因不服权威而改路 —— 尽量选择留有自由度的课程"],
-          ["Confusing curiosity with commitment — new topic every month, none deepened", "把好奇心误当承诺 —— 每月一门新话题，没有一门被深化"],
-          ["Neglecting the boring foundational reps (grammar drills, base math)", "忽略那些「无聊但必要」的基础练习"],
-          ["Reading your chart as an IQ score — this reading only describes learning shape, not intelligence rank", "把这份解读当作智商评分 —— 它只描述学习形状，不给智力打分"],
+          [
+            "Rebelling against authority mid-course — pick programs with real freedom",
+            "中途因不服权威而改路 —— 尽量选择留有自由度的课程",
+          ],
+          [
+            "Confusing curiosity with commitment — new topic every month, none deepened",
+            "把好奇心误当承诺 —— 每月一门新话题，没有一门被深化",
+          ],
+          [
+            "Neglecting the boring foundational reps (grammar drills, base math)",
+            "忽略那些「无聊但必要」的基础练习",
+          ],
+          [
+            "Reading your chart as an IQ score — this reading only describes learning shape, not intelligence rank",
+            "把这份解读当作智商评分 —— 它只描述学习形状，不给智力打分",
+          ],
         ],
       },
     ],
@@ -352,17 +408,23 @@ const dimensions: Dimension[] = [
   {
     key: "vocation",
     title: ["Vocation", "事业方向"],
-    headline: [
-      "Built to lead, not to repeat",
-      "为领导而生，非为重复而设",
-    ],
+    headline: ["Built to lead, not to repeat", "为领导而生，非为重复而设"],
     stars: 4,
     strengths: [0.85, 0.8, 0.9, 0.7],
     evidence: [
-      { tradition: ["Astrology", "西方占星"], note: ["Sun conjunct Midheaven in the 10th", "太阳合天顶于第十宫"] },
+      {
+        tradition: ["Astrology", "西方占星"],
+        note: ["Sun conjunct Midheaven in the 10th", "太阳合天顶于第十宫"],
+      },
       { tradition: ["Jyotish", "印度占星"], note: ["Jupiter in the 10th Bhava", "木星居第十宫"] },
-      { tradition: ["BaZi", "八字"], note: ["Officer star 正官 prominent in the month pillar", "月柱正官显位"] },
-      { tradition: ["Zi Wei", "紫微"], note: ["紫微天府 in the career palace", "紫微天府入官禄宫"] },
+      {
+        tradition: ["BaZi", "八字"],
+        note: ["Officer star 正官 prominent in the month pillar", "月柱正官显位"],
+      },
+      {
+        tradition: ["Zi Wei", "紫微"],
+        note: ["紫微天府 in the career palace", "紫微天府入官禄宫"],
+      },
     ],
     synthesis: [
       "All four traditions converge: leadership, autonomy or founding roles will outperform repetitive execution work.",
@@ -397,16 +459,16 @@ const dimensions: Dimension[] = [
   {
     key: "wealth",
     title: ["Wealth", "财富格局"],
-    headline: [
-      "Built over cycles, not seasons",
-      "以周期积累，而非季节暴富",
-    ],
+    headline: ["Built over cycles, not seasons", "以周期积累，而非季节暴富"],
     stars: 4,
     strengths: [0.75, 0.7, 0.85, 0.7],
     evidence: [
       { tradition: ["Astrology", "西方占星"], note: ["Venus trine Jupiter", "金星三合木星"] },
       { tradition: ["Jyotish", "印度占星"], note: ["Dhana yoga forming", "形成 Dhana Yoga"] },
-      { tradition: ["BaZi", "八字"], note: ["Wealth star 正财 with element support", "正财有力有根"] },
+      {
+        tradition: ["BaZi", "八字"],
+        note: ["Wealth star 正财 with element support", "正财有力有根"],
+      },
       { tradition: ["Zi Wei", "紫微"], note: ["武曲 aspecting the wealth palace", "武曲照财帛宫"] },
     ],
     synthesis: [
@@ -442,17 +504,26 @@ const dimensions: Dimension[] = [
   {
     key: "love",
     title: ["Love & Marriage", "情感与婚姻"],
-    headline: [
-      "Late clarity rewards early patience",
-      "晚一点看清，胜过早一点将就",
-    ],
+    headline: ["Late clarity rewards early patience", "晚一点看清，胜过早一点将就"],
     stars: 3,
     strengths: [0.6, 0.7, 0.55, 0.75],
     evidence: [
-      { tradition: ["Astrology", "西方占星"], note: ["Venus square Saturn — mature love pattern", "金星刑土星 — 成熟型恋爱模式"] },
-      { tradition: ["Jyotish", "印度占星"], note: ["7th lord aspected by Saturn", "七宫主受土星照射"] },
-      { tradition: ["BaZi", "八字"], note: ["Spouse palace strong in later luck pillars", "夫妻宫于后运走强"] },
-      { tradition: ["Zi Wei", "紫微"], note: ["天同化禄 in the marriage palace", "天同化禄入夫妻宫"] },
+      {
+        tradition: ["Astrology", "西方占星"],
+        note: ["Venus square Saturn — mature love pattern", "金星刑土星 — 成熟型恋爱模式"],
+      },
+      {
+        tradition: ["Jyotish", "印度占星"],
+        note: ["7th lord aspected by Saturn", "七宫主受土星照射"],
+      },
+      {
+        tradition: ["BaZi", "八字"],
+        note: ["Spouse palace strong in later luck pillars", "夫妻宫于后运走强"],
+      },
+      {
+        tradition: ["Zi Wei", "紫微"],
+        note: ["天同化禄 in the marriage palace", "天同化禄入夫妻宫"],
+      },
     ],
     synthesis: [
       "Three traditions concur that partnership deepens later; one warns against forcing timing. Depth over speed.",
@@ -486,15 +557,15 @@ const dimensions: Dimension[] = [
   {
     key: "health",
     title: ["Health & Vitality", "健康与活力"],
-    headline: [
-      "Fire tempered by water",
-      "火盛，需水来调",
-    ],
+    headline: ["Fire tempered by water", "火盛，需水来调"],
     stars: 4,
     strengths: [0.7, 0.75, 0.8, 0.65],
     evidence: [
       { tradition: ["Astrology", "西方占星"], note: ["Ascendant ruler cadent", "命主星落续宫"] },
-      { tradition: ["Jyotish", "印度占星"], note: ["6th lord in a friendly sign", "六宫主入友好星座"] },
+      {
+        tradition: ["Jyotish", "印度占星"],
+        note: ["6th lord in a friendly sign", "六宫主入友好星座"],
+      },
       { tradition: ["BaZi", "八字"], note: ["Fire dominant · needs Water", "火旺 · 需水制"] },
       { tradition: ["Zi Wei", "紫微"], note: ["疾厄宫 lightly afflicted", "疾厄宫轻煞"] },
     ],
@@ -532,17 +603,32 @@ const dimensions: Dimension[] = [
   {
     key: "parents",
     title: ["Parents & Family", "父母与原生家庭"],
-    headline: [
-      "Rooted, but built to leave the roof",
-      "根扎得深 —— 却生来要走出屋檐",
-    ],
+    headline: ["Rooted, but built to leave the roof", "根扎得深 —— 却生来要走出屋檐"],
     stars: 4,
     strengths: [0.75, 0.85, 0.8, 0.8],
     evidence: [
-      { tradition: ["Astrology", "西方占星"], note: ["Moon in the 4th · Saturn aspecting IC", "月亮居第四宫 · 土星照 IC"] },
-      { tradition: ["Jyotish", "印度占星"], note: ["4th lord well-placed · Guru's grace on mother-karma", "四宫主得地 · 母亲之业受木星恩泽"] },
-      { tradition: ["BaZi", "八字"], note: ["Year-pillar 印 (Resource) strong; slight 冲 with day pillar", "年柱印星有力；与日柱轻冲"] },
-      { tradition: ["Zi Wei", "紫微"], note: ["父母宫 has 天梁 · 化科 present", "父母宫见天梁 · 化科入宫"] },
+      {
+        tradition: ["Astrology", "西方占星"],
+        note: ["Moon in the 4th · Saturn aspecting IC", "月亮居第四宫 · 土星照 IC"],
+      },
+      {
+        tradition: ["Jyotish", "印度占星"],
+        note: [
+          "4th lord well-placed · Guru's grace on mother-karma",
+          "四宫主得地 · 母亲之业受木星恩泽",
+        ],
+      },
+      {
+        tradition: ["BaZi", "八字"],
+        note: [
+          "Year-pillar 印 (Resource) strong; slight 冲 with day pillar",
+          "年柱印星有力；与日柱轻冲",
+        ],
+      },
+      {
+        tradition: ["Zi Wei", "紫微"],
+        note: ["父母宫 has 天梁 · 化科 present", "父母宫见天梁 · 化科入宫"],
+      },
     ],
     synthesis: [
       "All four systems draw the same picture: a formative home that gave you standards and a work ethic, and a chart that then insists you leave those standards behind long enough to build your own.",
@@ -568,8 +654,14 @@ const dimensions: Dimension[] = [
         items: [
           ["Approval-seeking that outlives its usefulness", "早已失效、却仍在寻求父母认可的模式"],
           ["Confusing loyalty with living the same life", "把「忠诚」误当作「过一样的人生」"],
-          ["Financial help with unspoken emotional strings attached", "带着未言明情感条件的经济支持"],
-          ["Ages 27–34: the classic separation-and-return arc", "27–34 岁：典型的「离开—回来」弧线"],
+          [
+            "Financial help with unspoken emotional strings attached",
+            "带着未言明情感条件的经济支持",
+          ],
+          [
+            "Ages 27–34: the classic separation-and-return arc",
+            "27–34 岁：典型的「离开—回来」弧线",
+          ],
         ],
       },
     ],
@@ -577,17 +669,35 @@ const dimensions: Dimension[] = [
   {
     key: "children",
     title: ["Children & Legacy", "子女与传承"],
-    headline: [
-      "Few in number, deep in influence",
-      "数不多 —— 但份量都很重",
-    ],
+    headline: ["Few in number, deep in influence", "数不多 —— 但份量都很重"],
     stars: 3,
     strengths: [0.7, 0.75, 0.7, 0.8],
     evidence: [
-      { tradition: ["Astrology", "西方占星"], note: ["5th house lord aspecting Jupiter · one strong node", "第五宫主与木星有相 · 一个强节点"] },
-      { tradition: ["Jyotish", "印度占星"], note: ["5th Bhava clean; Putra karaka Jupiter dignified", "五宫清朗 · Putra Kāraka（木星）得地"] },
-      { tradition: ["BaZi", "八字"], note: ["Output star 食神 leaning bright; hour pillar carries the child signal", "食神偏亮 · 时柱承接子女信号"] },
-      { tradition: ["Zi Wei", "紫微"], note: ["子女宫 with 天同 / 天喜 · 化禄 in tow", "子女宫见天同/天喜 · 化禄相随"] },
+      {
+        tradition: ["Astrology", "西方占星"],
+        note: [
+          "5th house lord aspecting Jupiter · one strong node",
+          "第五宫主与木星有相 · 一个强节点",
+        ],
+      },
+      {
+        tradition: ["Jyotish", "印度占星"],
+        note: [
+          "5th Bhava clean; Putra karaka Jupiter dignified",
+          "五宫清朗 · Putra Kāraka（木星）得地",
+        ],
+      },
+      {
+        tradition: ["BaZi", "八字"],
+        note: [
+          "Output star 食神 leaning bright; hour pillar carries the child signal",
+          "食神偏亮 · 时柱承接子女信号",
+        ],
+      },
+      {
+        tradition: ["Zi Wei", "紫微"],
+        note: ["子女宫 with 天同 / 天喜 · 化禄 in tow", "子女宫见天同/天喜 · 化禄相随"],
+      },
     ],
     synthesis: [
       "The four systems agree on shape more than on count: a small circle of children — biological, adopted, mentored, or created — that carries an unusually direct imprint of your temperament. Quality of transmission, not quantity of offspring.",
@@ -602,19 +712,34 @@ const dimensions: Dimension[] = [
       {
         label: ["Likely shape of the bond", "子女缘的可能形状"],
         items: [
-          ["1–2 biological or fully-committed children (rather than many)", "1–2 个亲生或全心投入的孩子（而非多数）"],
+          [
+            "1–2 biological or fully-committed children (rather than many)",
+            "1–2 个亲生或全心投入的孩子（而非多数）",
+          ],
           ["First-born tends to mirror your early-life temperament", "长子/女多半映照你早年的性情"],
-          ["A late-arriving child or protégé who changes the chart", "较晚出现、却改写命盘的一个孩子或后辈"],
-          ["Teaching, mentoring, or authorship as parallel legacy", "教学 · 带徒 · 著述，作为并行的传承"],
+          [
+            "A late-arriving child or protégé who changes the chart",
+            "较晚出现、却改写命盘的一个孩子或后辈",
+          ],
+          [
+            "Teaching, mentoring, or authorship as parallel legacy",
+            "教学 · 带徒 · 著述，作为并行的传承",
+          ],
         ],
       },
       {
         label: ["Watch-outs to guard", "需要注意的地方"],
         items: [
-          ["Repeating your parents' silences with your own kids", "把父母对你的沉默，重复给自己的孩子"],
+          [
+            "Repeating your parents' silences with your own kids",
+            "把父母对你的沉默，重复给自己的孩子",
+          ],
           ["Pushing children onto your unlived vocation", "把自己未走过的路，塞进孩子的人生"],
           ["Over-protection that starves their independence", "过度保护，反而饿死了他们的独立"],
-          ["Delaying decisions about family past a workable window", "把是否要孩子的决定，拖过了可行的窗口"],
+          [
+            "Delaying decisions about family past a workable window",
+            "把是否要孩子的决定，拖过了可行的窗口",
+          ],
         ],
       },
     ],
@@ -629,8 +754,14 @@ const dimensions: Dimension[] = [
     stars: 5,
     strengths: [0.95, 0.9, 0.85, 0.9],
     evidence: [
-      { tradition: ["Astrology", "西方占星"], note: ["North Node in the 9th house", "北交点入第九宫"] },
-      { tradition: ["Jyotish", "印度占星"], note: ["Rahu in the 9th Bhava · dharma", "Rahu 入第九宫 · 主 dharma"] },
+      {
+        tradition: ["Astrology", "西方占星"],
+        note: ["North Node in the 9th house", "北交点入第九宫"],
+      },
+      {
+        tradition: ["Jyotish", "印度占星"],
+        note: ["Rahu in the 9th Bhava · dharma", "Rahu 入第九宫 · 主 dharma"],
+      },
       { tradition: ["BaZi", "八字"], note: ["Output star 伤官/食神 favoured", "食伤为喜"] },
       { tradition: ["Zi Wei", "紫微"], note: ["迁移宫 activated", "迁移宫动"] },
     ],
@@ -647,10 +778,22 @@ const dimensions: Dimension[] = [
       {
         label: ["Synthesis of the previous modules", "前文模块的合并总结"],
         items: [
-          ["Character × Vocation → you lead by translating, not by commanding.", "性格 × 事业 → 你靠「翻译」领导，而非「命令」。"],
-          ["Wealth × Health → compounding money and compounding sleep obey the same law.", "财富 × 健康 → 复利的钱与复利的睡眠，遵循同一条法则。"],
-          ["Love × Parents × Children → the same lesson replays across three generations.", "感情 × 父母 × 子女 → 同一堂课，在三代人之间重播。"],
-          ["All seven → each one is a bridge; the mission is being the bridge-builder.", "七者合并 → 每个都是一座桥；使命就是「造桥的人」本身。"],
+          [
+            "Character × Vocation → you lead by translating, not by commanding.",
+            "性格 × 事业 → 你靠「翻译」领导，而非「命令」。",
+          ],
+          [
+            "Wealth × Health → compounding money and compounding sleep obey the same law.",
+            "财富 × 健康 → 复利的钱与复利的睡眠，遵循同一条法则。",
+          ],
+          [
+            "Love × Parents × Children → the same lesson replays across three generations.",
+            "感情 × 父母 × 子女 → 同一堂课，在三代人之间重播。",
+          ],
+          [
+            "All seven → each one is a bridge; the mission is being the bridge-builder.",
+            "七者合并 → 每个都是一座桥；使命就是「造桥的人」本身。",
+          ],
         ],
       },
       {
@@ -665,10 +808,22 @@ const dimensions: Dimension[] = [
       {
         label: ["Potential crises to prepare for", "潜在的危机"],
         items: [
-          ["Burnout from over-explaining yourself to skeptics", "把自己反复解释给不理解的人 —— 累到耗尽"],
-          ["Identity drift when the audience grows faster than you do", "受众成长快过自我，容易身份漂移"],
-          ["A midlife crossroads: prestige vs. mission — choose mission", "中年岔口：名声与使命之间 —— 选使命"],
-          ["Isolation in the year you break through — build a small trusted circle early", "突破的那一年容易孤立 —— 提早养一个小而可信的圈子"],
+          [
+            "Burnout from over-explaining yourself to skeptics",
+            "把自己反复解释给不理解的人 —— 累到耗尽",
+          ],
+          [
+            "Identity drift when the audience grows faster than you do",
+            "受众成长快过自我，容易身份漂移",
+          ],
+          [
+            "A midlife crossroads: prestige vs. mission — choose mission",
+            "中年岔口：名声与使命之间 —— 选使命",
+          ],
+          [
+            "Isolation in the year you break through — build a small trusted circle early",
+            "突破的那一年容易孤立 —— 提早养一个小而可信的圈子",
+          ],
         ],
       },
     ],
@@ -727,7 +882,9 @@ function ReportPage() {
   //                 commits via `saveReport` / `failReport`.
   const seed = buildReportSeed(search);
   const [ai, setAi] = useState<ReportAI | null>(null);
-  const [aiState, setAiState] = useState<"idle" | "loading" | "ready" | "error" | "needs-auth" | "needs-verify">("idle");
+  const [aiState, setAiState] = useState<
+    "idle" | "loading" | "ready" | "error" | "needs-auth" | "needs-verify"
+  >("idle");
   const [aiError, setAiError] = useState<string | null>(null);
   const [aiProgress, setAiProgress] = useState({ done: 0, total: 0 });
   const [reportChartId, setReportChartId] = useState<string | null>(null);
@@ -747,7 +904,8 @@ function ReportPage() {
     setAiProgress({ done: 0, total: totalSteps });
 
     const draftKey = "lod.report-draft";
-    const currentUrl = typeof window !== "undefined" ? window.location.pathname + window.location.search : "/report";
+    const currentUrl =
+      typeof window !== "undefined" ? window.location.pathname + window.location.search : "/report";
 
     (async () => {
       // 1. Session check.
@@ -756,7 +914,9 @@ function ReportPage() {
       if (!session) {
         try {
           localStorage.setItem(draftKey, JSON.stringify(search));
-        } catch { /* ignore */ }
+        } catch {
+          /* ignore */
+        }
         setAiState("needs-auth");
         return;
       }
@@ -795,7 +955,9 @@ function ReportPage() {
             search: ((s: SearchParams) => ({ ...s, readingId: chartId })) as never,
           });
         }
-      } catch { /* best-effort URL sync */ }
+      } catch {
+        /* best-effort URL sync */
+      }
 
       // 3. Look up existing report.
       try {
@@ -814,7 +976,9 @@ function ReportPage() {
           });
           return;
         }
-      } catch { /* fall through to begin */ }
+      } catch {
+        /* fall through to begin */
+      }
 
       // 4. Atomic claim.
       let claim: Awaited<ReturnType<typeof beginReport>>;
@@ -873,7 +1037,10 @@ function ReportPage() {
 
       // 5. We own this generation. Run the streaming pieces.
       const req = buildReportRequest(search, reportLang);
-      const acc: { summary: string; dimensions: ReportDimensionAI[] } = { summary: "", dimensions: [] };
+      const acc: { summary: string; dimensions: ReportDimensionAI[] } = {
+        summary: "",
+        dimensions: [],
+      };
       setAi({ summary: "", dimensions: [] });
 
       let firstError: unknown = null;
@@ -888,7 +1055,9 @@ function ReportPage() {
           acc.summary = res.summary;
           setAi((prev) => ({ summary: res.summary, dimensions: prev?.dimensions ?? [] }));
         })
-        .catch((err) => { firstError = firstError ?? err; })
+        .catch((err) => {
+          firstError = firstError ?? err;
+        })
         .finally(bump);
 
       const dimPromises = DIM_KEYS.map((k) =>
@@ -896,12 +1065,14 @@ function ReportPage() {
           .then((dim) => {
             if (stale()) return;
             acc.dimensions.push(dim);
-            const ordered = DIM_KEYS
-              .map((key) => acc.dimensions.find((d) => d.key === key))
-              .filter((d): d is ReportDimensionAI => !!d);
+            const ordered = DIM_KEYS.map((key) => acc.dimensions.find((d) => d.key === key)).filter(
+              (d): d is ReportDimensionAI => !!d,
+            );
             setAi((prev) => ({ summary: prev?.summary ?? acc.summary, dimensions: ordered }));
           })
-          .catch((err) => { firstError = firstError ?? err; })
+          .catch((err) => {
+            firstError = firstError ?? err;
+          })
           .finally(bump),
       );
 
@@ -909,16 +1080,27 @@ function ReportPage() {
       if (stale()) return;
 
       if (acc.dimensions.length === 0 && !acc.summary) {
-        await failReport({ data: { reportId: claim.reportId, error_message: (firstError as Error)?.message?.slice(0, 300) ?? "unknown" } }).catch(() => {});
+        await failReport({
+          data: {
+            reportId: claim.reportId,
+            error_message: (firstError as Error)?.message?.slice(0, 300) ?? "unknown",
+          },
+        }).catch(() => {});
         setAiError((firstError as Error)?.message ?? "unknown");
         setAiState("error");
         return;
       }
 
-      const finalDims: ReportDimensionAI[] = DIM_KEYS.map((k) =>
-        acc.dimensions.find((d) => d.key === k) ?? {
-          key: k, headline: "", evidence: [], synthesis: "", plain: "", details: [],
-        },
+      const finalDims: ReportDimensionAI[] = DIM_KEYS.map(
+        (k) =>
+          acc.dimensions.find((d) => d.key === k) ?? {
+            key: k,
+            headline: "",
+            evidence: [],
+            synthesis: "",
+            plain: "",
+            details: [],
+          },
       );
       const finalReport: ReportAI = { summary: acc.summary, dimensions: finalDims };
       setAi(finalReport);
@@ -934,7 +1116,9 @@ function ReportPage() {
             provider: "lovable-ai-gateway",
           },
         });
-      } catch { /* keep local mirror */ }
+      } catch {
+        /* keep local mirror */
+      }
       updateReadingAI(fingerprint, {
         aiReport: finalReport,
         aiReportVersion: REPORT_AI_VERSION,
@@ -943,7 +1127,6 @@ function ReportPage() {
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seed, reportLang, search.readingId]);
-
 
   useEffect(() => {
     runReport();
@@ -954,7 +1137,13 @@ function ReportPage() {
     if (aiState !== "needs-auth") return;
     navigate({
       to: "/auth",
-      search: { mode: "login", redirect: typeof window !== "undefined" ? window.location.pathname + window.location.search : "/report" } as never,
+      search: {
+        mode: "login",
+        redirect:
+          typeof window !== "undefined"
+            ? window.location.pathname + window.location.search
+            : "/report",
+      } as never,
     });
   }, [aiState, navigate]);
 
@@ -998,12 +1187,13 @@ function ReportPage() {
           `太阳落${sun.sign_zh} · ${ELEMENT_LABEL_ZH[sun.element]}`,
         ]
       : [pendingEn, pendingZh];
-    const baziLine: [string, string] = bazi.day_master && bazi.pillars
-      ? [
-          `Day-master ${bazi.day_master.stem} (${bazi.day_master.element}); pillars ${bazi.pillars.year} ${bazi.pillars.month} ${bazi.pillars.day}${bazi.pillars.hour ? " " + bazi.pillars.hour : ""}`,
-          `日主 ${bazi.day_master.stem}（${bazi.day_master.element}）· 四柱 ${bazi.pillars.year} ${bazi.pillars.month} ${bazi.pillars.day}${bazi.pillars.hour ? " " + bazi.pillars.hour : ""}`,
-        ]
-      : [pendingEn, pendingZh];
+    const baziLine: [string, string] =
+      bazi.day_master && bazi.pillars
+        ? [
+            `Day-master ${bazi.day_master.stem} (${bazi.day_master.element}); pillars ${bazi.pillars.year} ${bazi.pillars.month} ${bazi.pillars.day}${bazi.pillars.hour ? " " + bazi.pillars.hour : ""}`,
+            `日主 ${bazi.day_master.stem}（${bazi.day_master.element}）· 四柱 ${bazi.pillars.year} ${bazi.pillars.month} ${bazi.pillars.day}${bazi.pillars.hour ? " " + bazi.pillars.hour : ""}`,
+          ]
+        : [pendingEn, pendingZh];
     const v = snapshot.vedic.chart;
     const vedic: [string, string] = v
       ? [
@@ -1014,7 +1204,8 @@ function ReportPage() {
     const z = snapshot.ziwei.chart;
     const ziwei: [string, string] = z
       ? (() => {
-          const stars = z.palaces[z.soul_palace_index]?.major_stars.map((s) => s.name).join("·") || "空宫";
+          const stars =
+            z.palaces[z.soul_palace_index]?.major_stars.map((s) => s.name).join("·") || "空宫";
           return [
             `Soul palace ${stars}; body star ${z.body}; ${z.five_elements_class}`,
             `命宫 ${stars}·身宫主星 ${z.body}·${z.five_elements_class}`,
@@ -1078,7 +1269,9 @@ function ReportPage() {
                   const label = textFromUnknown(br.label, lang);
                   return {
                     label: [label, label] as [string, string],
-                    items: textArrayFromUnknown(br.items, lang).map((it) => [it, it] as [string, string]),
+                    items: textArrayFromUnknown(br.items, lang).map(
+                      (it) => [it, it] as [string, string],
+                    ),
                   };
                 })
               : d.details,
@@ -1086,7 +1279,6 @@ function ReportPage() {
       }),
     [aiByKey, snapshotEvidence, lang],
   );
-
 
   return (
     <div className="pt-32 pb-32">
@@ -1176,24 +1368,29 @@ function ReportPage() {
       {(() => {
         const fingerprint = search.date ? buildReportFingerprint(search, reportLang) : undefined;
         const savedReading = undefined as
-          | { aiReport?: ReportAI; aiReportVersion?: string; aiOutlook?: unknown; aiOutlookVersion?: string }
+          | {
+              aiReport?: ReportAI;
+              aiReportVersion?: string;
+              aiOutlook?: unknown;
+              aiOutlookVersion?: string;
+            }
           | undefined;
         return (
-      <SaveReadingBar
-        reading={{
-          name: search.name,
-          date: search.date,
-          time: search.time,
-          place: search.place,
-          lang: reportLang,
-        }}
-        onOpenAccount={() => setAccOpen(true)}
-        fingerprint={fingerprint}
-        aiReport={ai ?? savedReading?.aiReport}
-        aiReportVersion={ai ? REPORT_AI_VERSION : savedReading?.aiReportVersion}
-        aiOutlook={undefined}
-        aiOutlookVersion={undefined}
-      />
+          <SaveReadingBar
+            reading={{
+              name: search.name,
+              date: search.date,
+              time: search.time,
+              place: search.place,
+              lang: reportLang,
+            }}
+            onOpenAccount={() => setAccOpen(true)}
+            fingerprint={fingerprint}
+            aiReport={ai ?? savedReading?.aiReport}
+            aiReportVersion={ai ? REPORT_AI_VERSION : savedReading?.aiReportVersion}
+            aiOutlook={undefined}
+            aiOutlookVersion={undefined}
+          />
         );
       })()}
 
@@ -1218,8 +1415,12 @@ function ReportPage() {
             </p>
             <div className="flex flex-wrap gap-2 text-[10px] uppercase tracking-[0.28em] text-stone-warm/50">
               <span className="rounded-full border border-white/10 px-3 py-1">☉ ☽ ☿ ♀ ♂ ♃ ♄</span>
-              <span className="rounded-full border border-white/10 px-3 py-1">Ⓐ {lang === "zh" ? "上升" : "Asc"}</span>
-              <span className="rounded-full border border-white/10 px-3 py-1">Ⓜ {lang === "zh" ? "天顶" : "MC"}</span>
+              <span className="rounded-full border border-white/10 px-3 py-1">
+                Ⓐ {lang === "zh" ? "上升" : "Asc"}
+              </span>
+              <span className="rounded-full border border-white/10 px-3 py-1">
+                Ⓜ {lang === "zh" ? "天顶" : "MC"}
+              </span>
             </div>
           </div>
 
@@ -1263,20 +1464,15 @@ function ReportPage() {
                 />
               </div>
             </div>
-
           </div>
         </div>
-
-
 
         <ChartZoomModal
           open={zoomNatal}
           onClose={() => setZoomNatal(false)}
           title={lang === "zh" ? "本命盘 · 大图查询" : "Natal chart · full view"}
           subtitle={
-            lang === "zh"
-              ? "十三星体 · 十二宫 · 主要相位"
-              : "13 bodies · 12 houses · major aspects"
+            lang === "zh" ? "十三星体 · 十二宫 · 主要相位" : "13 bodies · 12 houses · major aspects"
           }
         >
           <div className="flex flex-col items-center gap-4">
@@ -1295,8 +1491,6 @@ function ReportPage() {
           </div>
         </ChartZoomModal>
       </section>
-
-
 
       {/* Dimensions */}
       <section className="mx-auto max-w-5xl space-y-10 px-4 sm:px-6 md:px-12">
@@ -1333,147 +1527,146 @@ function ReportPage() {
           const arrived = aiByKey.has(d.key);
           const pending = !!search.date && aiState === "loading" && !arrived;
           return (
-          <motion.article
-            key={d.key}
-            id={d.key}
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.8, delay: idx * 0.04, ease: [0.32, 0.72, 0, 1] }}
-            className={`glass-card scroll-mt-24 overflow-hidden rounded-3xl p-4 sm:p-8 md:p-12 ${pending ? "opacity-70" : ""}`}
-          >
-            <div className="mb-8 flex flex-wrap items-start justify-between gap-4 border-b border-white/10 pb-6">
-              <div className="flex min-w-0 items-start gap-4">
-                <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl border border-gold-dust/25 bg-gradient-to-br from-gold-dust/[0.12] to-transparent text-gold-light shadow-[0_0_24px_-12px_hsl(45_70%_60%/0.5)]">
-                  {(() => {
-                    const Icon = DIM_ICONS[d.key] ?? Sparkles;
-                    return <Icon size={22} strokeWidth={1.5} />;
-                  })()}
-                </div>
-                <div className="min-w-0">
-                  <p className="mb-2 flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
-                    <span>{String(idx + 1).padStart(2, "0")} · {d.title[li]}</span>
-                    {pending && (
-                      <span className="inline-flex items-center gap-1.5 rounded-full border border-gold-dust/30 px-2 py-0.5 text-[9px] tracking-[0.28em] text-gold-dust/80">
-                        <span className="size-1.5 animate-pulse rounded-full bg-gold-dust" />
-                        {lang === "zh" ? "生成中" : "Writing"}
+            <motion.article
+              key={d.key}
+              id={d.key}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-80px" }}
+              transition={{ duration: 0.8, delay: idx * 0.04, ease: [0.32, 0.72, 0, 1] }}
+              className={`glass-card scroll-mt-24 overflow-hidden rounded-3xl p-4 sm:p-8 md:p-12 ${pending ? "opacity-70" : ""}`}
+            >
+              <div className="mb-8 flex flex-wrap items-start justify-between gap-4 border-b border-white/10 pb-6">
+                <div className="flex min-w-0 items-start gap-4">
+                  <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl border border-gold-dust/25 bg-gradient-to-br from-gold-dust/[0.12] to-transparent text-gold-light shadow-[0_0_24px_-12px_hsl(45_70%_60%/0.5)]">
+                    {(() => {
+                      const Icon = DIM_ICONS[d.key] ?? Sparkles;
+                      return <Icon size={22} strokeWidth={1.5} />;
+                    })()}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="mb-2 flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+                      <span>
+                        {String(idx + 1).padStart(2, "0")} · {d.title[li]}
                       </span>
+                      {pending && (
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-gold-dust/30 px-2 py-0.5 text-[9px] tracking-[0.28em] text-gold-dust/80">
+                          <span className="size-1.5 animate-pulse rounded-full bg-gold-dust" />
+                          {lang === "zh" ? "生成中" : "Writing"}
+                        </span>
+                      )}
+                    </p>
+                    <h2 className="font-serif text-2xl italic text-stone-warm md:text-3xl">
+                      {d.headline[li]}
+                    </h2>
+                  </div>
+                </div>
+                <Stars n={d.stars} />
+              </div>
+
+              <div className="grid grid-cols-1 gap-8 lg:grid-cols-5">
+                {/* Left: evidence + viz */}
+                <div className="lg:col-span-2">
+                  <p className="mb-4 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+                    {t.evidence_across}
+                  </p>
+                  <ul className="mb-8 space-y-3 text-sm">
+                    {d.evidence.map((e) => {
+                      const TIcon = traditionIcon(e.tradition[0]);
+                      return (
+                        <li key={e.tradition[0]} className="border-l border-gold-dust/30 pl-4">
+                          <p className="mb-1 flex items-center gap-2 font-serif text-gold-light">
+                            <TIcon size={13} strokeWidth={1.5} className="opacity-80" />
+                            <span>{e.tradition[li]}</span>
+                          </p>
+                          <p className="text-stone-warm/60">{e.note[li]}</p>
+                        </li>
+                      );
+                    })}
+                  </ul>
+
+                  <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+                    {t.strength_map}
+                  </p>
+                  <div className="text-stone-warm/50">
+                    {d.viz === "elements" && d.elementStrengths ? (
+                      <FiveElements strengths={d.elementStrengths} lang={lang} size={240} />
+                    ) : (
+                      <StrengthRadar values={d.strengths} labels={t.four_traditions} size={220} />
                     )}
-                  </p>
-                  <h2 className="font-serif text-2xl italic text-stone-warm md:text-3xl">
-                    {d.headline[li]}
-                  </h2>
-                </div>
-              </div>
-              <Stars n={d.stars} />
-            </div>
-
-
-            <div className="grid grid-cols-1 gap-8 lg:grid-cols-5">
-              {/* Left: evidence + viz */}
-              <div className="lg:col-span-2">
-                <p className="mb-4 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
-                  {t.evidence_across}
-                </p>
-                <ul className="mb-8 space-y-3 text-sm">
-                  {d.evidence.map((e) => {
-                    const TIcon = traditionIcon(e.tradition[0]);
-                    return (
-                      <li key={e.tradition[0]} className="border-l border-gold-dust/30 pl-4">
-                        <p className="mb-1 flex items-center gap-2 font-serif text-gold-light">
-                          <TIcon size={13} strokeWidth={1.5} className="opacity-80" />
-                          <span>{e.tradition[li]}</span>
-                        </p>
-                        <p className="text-stone-warm/60">{e.note[li]}</p>
-                      </li>
-                    );
-                  })}
-                </ul>
-
-                <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
-                  {t.strength_map}
-                </p>
-                <div className="text-stone-warm/50">
-                  {d.viz === "elements" && d.elementStrengths ? (
-                    <FiveElements strengths={d.elementStrengths} lang={lang} size={240} />
-                  ) : (
-                    <StrengthRadar
-                      values={d.strengths}
-                      labels={t.four_traditions}
-                      size={220}
-                    />
-                  )}
-                </div>
-              </div>
-
-              {/* Right: synthesis + plain-language */}
-              <div className="lg:col-span-3">
-                <p className="mb-4 flex items-center gap-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
-                  <span className="inline-block size-1.5 rotate-45 bg-gold-dust" aria-hidden="true" />
-                  {t.synthesis}
-                </p>
-                <div className="reading-copy mb-8 space-y-4 text-base leading-relaxed text-stone-warm/80">
-                  {splitParagraphs(d.synthesis[li]).map((para, i) => (
-                    <p key={i}>{para}</p>
-                  ))}
-                </div>
-
-                <div className="rounded-2xl border border-gold-dust/25 bg-gradient-to-br from-gold-dust/[0.08] to-gold-dust/[0.02] p-5 md:p-6">
-                  <p className="mb-3 flex items-center gap-2 text-[10px] uppercase tracking-[0.32em] text-gold-light">
-                    <span className="size-1.5 rounded-full bg-gold-dust" />
-                    {t.in_plain_words}
-                  </p>
-                  <div className="reading-copy space-y-3 font-serif text-[15px] italic leading-[1.7] text-stone-warm/90 md:text-base">
-                    {splitParagraphs(d.plain[li]).map((para, i) => (
-                      <p key={i}>{para}</p>
-                    ))}
                   </div>
                 </div>
 
-                {d.details && d.details.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setDetailKey(d.key)}
-                    className="group mt-6 flex w-full items-center justify-between gap-3 rounded-2xl border border-gold-dust/25 bg-gradient-to-br from-gold-dust/[0.06] to-transparent px-5 py-4 text-left transition-all hover:border-gold-dust/50 hover:from-gold-dust/[0.1] hover:shadow-[0_10px_40px_-20px_hsl(45_70%_60%/0.6)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-light"
-                  >
-                    <span className="flex min-w-0 items-center gap-3">
-                      <span className="grid size-9 shrink-0 place-items-center rounded-xl border border-gold-dust/30 bg-obsidian/60 text-gold-light">
-                        <Maximize2 size={14} strokeWidth={1.6} />
-                      </span>
-                      <span className="min-w-0">
-                        <span className="block text-[10px] uppercase tracking-[0.32em] text-gold-dust/80">
-                          {lang === "zh" ? "查看四体系详细佐证" : "View four-system evidence"}
+                {/* Right: synthesis + plain-language */}
+                <div className="lg:col-span-3">
+                  <p className="mb-4 flex items-center gap-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+                    <span
+                      className="inline-block size-1.5 rotate-45 bg-gold-dust"
+                      aria-hidden="true"
+                    />
+                    {t.synthesis}
+                  </p>
+                  <div className="reading-copy mb-8 space-y-4 text-base leading-relaxed text-stone-warm/80">
+                    {splitParagraphs(d.synthesis[li]).map((para, i) => (
+                      <p key={i}>{para}</p>
+                    ))}
+                  </div>
+
+                  <div className="rounded-2xl border border-gold-dust/25 bg-gradient-to-br from-gold-dust/[0.08] to-gold-dust/[0.02] p-5 md:p-6">
+                    <p className="mb-3 flex items-center gap-2 text-[10px] uppercase tracking-[0.32em] text-gold-light">
+                      <span className="size-1.5 rounded-full bg-gold-dust" />
+                      {t.in_plain_words}
+                    </p>
+                    <div className="reading-copy space-y-3 font-serif text-[15px] italic leading-[1.7] text-stone-warm/90 md:text-base">
+                      {splitParagraphs(d.plain[li]).map((para, i) => (
+                        <p key={i}>{para}</p>
+                      ))}
+                    </div>
+                  </div>
+
+                  {d.details && d.details.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setDetailKey(d.key)}
+                      className="group mt-6 flex w-full items-center justify-between gap-3 rounded-2xl border border-gold-dust/25 bg-gradient-to-br from-gold-dust/[0.06] to-transparent px-5 py-4 text-left transition-all hover:border-gold-dust/50 hover:from-gold-dust/[0.1] hover:shadow-[0_10px_40px_-20px_hsl(45_70%_60%/0.6)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-light"
+                    >
+                      <span className="flex min-w-0 items-center gap-3">
+                        <span className="grid size-9 shrink-0 place-items-center rounded-xl border border-gold-dust/30 bg-obsidian/60 text-gold-light">
+                          <Maximize2 size={14} strokeWidth={1.6} />
                         </span>
-                        <span className="mt-1 block truncate font-serif text-sm italic text-stone-warm/75">
-                          {lang === "zh"
-                            ? "通道 · 警惕 · 落位数据 · 图示"
-                            : "Channels · cautions · placements · charts"}
+                        <span className="min-w-0">
+                          <span className="block text-[10px] uppercase tracking-[0.32em] text-gold-dust/80">
+                            {lang === "zh" ? "查看四体系详细佐证" : "View four-system evidence"}
+                          </span>
+                          <span className="mt-1 block truncate font-serif text-sm italic text-stone-warm/75">
+                            {lang === "zh"
+                              ? "通道 · 警惕 · 落位数据 · 图示"
+                              : "Channels · cautions · placements · charts"}
+                          </span>
                         </span>
                       </span>
-                    </span>
-                    <span className="flex items-center gap-2 text-gold-dust/70 transition-transform group-hover:translate-x-1">
-                      {/* Preview dots — one per detail block */}
-                      <span className="hidden gap-1 sm:flex">
-                        {d.details.map((_, i) => (
-                          <span
-                            key={i}
-                            className={`size-1.5 rounded-full ${
-                              i === 0 ? "bg-emerald-300/70" : "bg-amber-300/70"
-                            }`}
-                          />
-                        ))}
+                      <span className="flex items-center gap-2 text-gold-dust/70 transition-transform group-hover:translate-x-1">
+                        {/* Preview dots — one per detail block */}
+                        <span className="hidden gap-1 sm:flex">
+                          {d.details.map((_, i) => (
+                            <span
+                              key={i}
+                              className={`size-1.5 rounded-full ${
+                                i === 0 ? "bg-emerald-300/70" : "bg-amber-300/70"
+                              }`}
+                            />
+                          ))}
+                        </span>
+                        <ChevronRight size={16} />
                       </span>
-                      <ChevronRight size={16} />
-                    </span>
-                  </button>
-                )}
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          </motion.article>
+            </motion.article>
           );
         })}
       </section>
-
 
       {/* Life Timeline — 大运 */}
       <div className="mt-24">
@@ -1492,20 +1685,13 @@ function ReportPage() {
       {/* Membership tiers — Oracle unlocks Synastry + 90-day windows + Future watchlist */}
       <MembershipSection birthISO={search.date} search={search} />
 
-
-
-
-
-
       {/* Outro */}
       <div className="mx-auto mt-16 max-w-3xl px-6 text-center print:hidden">
-
         <p className="mb-6 text-[10px] uppercase tracking-[0.42em] text-gold-dust">
           {t.note_on_fate}
         </p>
         <p className="mb-12 font-serif text-2xl italic leading-relaxed text-stone-warm/70">
-          {t.note_body_1}{" "}
-          <span className="text-gold-light">{t.note_body_2}</span>
+          {t.note_body_1} <span className="text-gold-light">{t.note_body_2}</span>
         </p>
         <div className="flex flex-wrap justify-center gap-4">
           <Link
@@ -1580,12 +1766,10 @@ function DimensionDetailModal({
 }) {
   const li = lang === "zh" ? 1 : 0;
   const d = dimension;
-  const DIcon = d ? DIM_ICONS[d.key] ?? Sparkles : Sparkles;
+  const DIcon = d ? (DIM_ICONS[d.key] ?? Sparkles) : Sparkles;
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent
-        className="fixed inset-x-0 bottom-0 top-2 left-0 right-0 grid h-[calc(100dvh-0.5rem)] max-h-[100dvh] w-full max-w-none translate-x-0 translate-y-0 grid-rows-[auto_1fr] gap-0 overflow-hidden rounded-b-none rounded-t-3xl border border-gold-dust/25 bg-obsidian/98 p-0 backdrop-blur-xl sm:inset-auto sm:left-[50%] sm:top-[50%] sm:h-auto sm:max-h-[92vh] sm:w-[96vw] sm:max-w-4xl sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-3xl [&>button]:right-3 [&>button]:top-3 [&>button]:z-30 [&>button]:grid [&>button]:size-11 [&>button]:place-items-center [&>button]:rounded-full [&>button]:border [&>button]:border-gold-dust/30 [&>button]:bg-obsidian/70 [&>button]:text-gold-light [&>button]:opacity-100 sm:[&>button]:right-4 sm:[&>button]:top-4"
-      >
+      <DialogContent className="fixed inset-x-0 bottom-0 top-2 left-0 right-0 grid h-[calc(100dvh-0.5rem)] max-h-[100dvh] w-full max-w-none translate-x-0 translate-y-0 grid-rows-[auto_1fr] gap-0 overflow-hidden rounded-b-none rounded-t-3xl border border-gold-dust/25 bg-obsidian/98 p-0 backdrop-blur-xl sm:inset-auto sm:left-[50%] sm:top-[50%] sm:h-auto sm:max-h-[92vh] sm:w-[96vw] sm:max-w-4xl sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-3xl [&>button]:right-3 [&>button]:top-3 [&>button]:z-30 [&>button]:grid [&>button]:size-11 [&>button]:place-items-center [&>button]:rounded-full [&>button]:border [&>button]:border-gold-dust/30 [&>button]:bg-obsidian/70 [&>button]:text-gold-light [&>button]:opacity-100 sm:[&>button]:right-4 sm:[&>button]:top-4">
         {d && (
           <div
             className="relative row-span-2 grid grid-rows-[auto_1fr] overflow-hidden"
@@ -1621,129 +1805,131 @@ function DimensionDetailModal({
             </div>
 
             {/* Scrollable body */}
-            <div className="relative overflow-y-auto overflow-x-hidden" style={{ WebkitOverflowScrolling: "touch" }}>
+            <div
+              className="relative overflow-y-auto overflow-x-hidden"
+              style={{ WebkitOverflowScrolling: "touch" }}
+            >
+              <div className="relative grid gap-8 px-6 py-7 sm:px-10 md:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
+                {/* Left column — data visualisation */}
+                <div className="flex flex-col gap-6">
+                  {/* Four-system strength bars */}
+                  <div>
+                    <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/80">
+                      {lang === "zh" ? "四大体系强度" : "Four-system strength"}
+                    </p>
+                    <ul className="space-y-2.5">
+                      {t.four_traditions.map((label, i) => {
+                        const v = d.strengths[i];
+                        const TIcon = traditionIcon(d.evidence[i]?.tradition[0] ?? label);
+                        return (
+                          <li key={label} className="flex items-center gap-3">
+                            <span className="grid size-6 shrink-0 place-items-center rounded-md border border-gold-dust/25 text-gold-light">
+                              <TIcon size={11} strokeWidth={1.6} />
+                            </span>
+                            <span className="w-20 shrink-0 text-[10px] uppercase tracking-[0.22em] text-stone-warm/60">
+                              {label}
+                            </span>
+                            <span className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-white/[0.06]">
+                              <motion.span
+                                initial={{ width: 0 }}
+                                animate={{ width: `${Math.round(v * 100)}%` }}
+                                transition={{ duration: 0.9, ease: [0.32, 0.72, 0, 1] }}
+                                className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-gold-dust/70 to-gold-light"
+                              />
+                            </span>
+                            <span className="w-8 shrink-0 text-right font-serif text-[11px] italic text-gold-light">
+                              {Math.round(v * 100)}
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
 
-            <div className="relative grid gap-8 px-6 py-7 sm:px-10 md:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
-              {/* Left column — data visualisation */}
-              <div className="flex flex-col gap-6">
-                {/* Four-system strength bars */}
-                <div>
-                  <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/80">
-                    {lang === "zh" ? "四大体系强度" : "Four-system strength"}
-                  </p>
-                  <ul className="space-y-2.5">
-                    {t.four_traditions.map((label, i) => {
-                      const v = d.strengths[i];
-                      const TIcon = traditionIcon(d.evidence[i]?.tradition[0] ?? label);
-                      return (
-                        <li key={label} className="flex items-center gap-3">
-                          <span className="grid size-6 shrink-0 place-items-center rounded-md border border-gold-dust/25 text-gold-light">
-                            <TIcon size={11} strokeWidth={1.6} />
-                          </span>
-                          <span className="w-20 shrink-0 text-[10px] uppercase tracking-[0.22em] text-stone-warm/60">
-                            {label}
-                          </span>
-                          <span className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-white/[0.06]">
-                            <motion.span
-                              initial={{ width: 0 }}
-                              animate={{ width: `${Math.round(v * 100)}%` }}
-                              transition={{ duration: 0.9, ease: [0.32, 0.72, 0, 1] }}
-                              className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-gold-dust/70 to-gold-light"
-                            />
-                          </span>
-                          <span className="w-8 shrink-0 text-right font-serif text-[11px] italic text-gold-light">
-                            {Math.round(v * 100)}
-                          </span>
-                        </li>
-                      );
-                    })}
-                  </ul>
+                  {/* Evidence details from each tradition */}
+                  <div>
+                    <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/80">
+                      {lang === "zh" ? "各体系落位" : "Placements by tradition"}
+                    </p>
+                    <ul className="space-y-2.5">
+                      {d.evidence.map((e) => {
+                        const TIcon = traditionIcon(e.tradition[0]);
+                        return (
+                          <li
+                            key={e.tradition[0]}
+                            className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2.5"
+                          >
+                            <p className="mb-1 flex items-center gap-2 font-serif text-[13px] italic text-gold-light">
+                              <TIcon size={12} strokeWidth={1.5} />
+                              {e.tradition[li]}
+                            </p>
+                            <p className="text-[12px] leading-relaxed text-stone-warm/70">
+                              {e.note[li]}
+                            </p>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
                 </div>
 
-                {/* Evidence details from each tradition */}
-                <div>
-                  <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/80">
-                    {lang === "zh" ? "各体系落位" : "Placements by tradition"}
-                  </p>
-                  <ul className="space-y-2.5">
-                    {d.evidence.map((e) => {
-                      const TIcon = traditionIcon(e.tradition[0]);
-                      return (
-                        <li
-                          key={e.tradition[0]}
-                          className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2.5"
-                        >
-                          <p className="mb-1 flex items-center gap-2 font-serif text-[13px] italic text-gold-light">
-                            <TIcon size={12} strokeWidth={1.5} />
-                            {e.tradition[li]}
-                          </p>
-                          <p className="text-[12px] leading-relaxed text-stone-warm/70">
-                            {e.note[li]}
-                          </p>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              </div>
-
-              {/* Right column — channels & cautions, spelled out */}
-              <div className="flex flex-col gap-5">
-                {d.details?.map((block, bIdx) => {
-                  const isCaution = bIdx > 0;
-                  const ItemIcon = isCaution ? AlertTriangle : Check;
-                  return (
-                    <motion.div
-                      key={block.label[0]}
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.4, delay: 0.08 * bIdx }}
-                      className={`rounded-2xl border p-4 sm:p-5 ${
-                        isCaution
-                          ? "border-amber-200/25 bg-gradient-to-br from-amber-300/[0.06] to-transparent"
-                          : "border-emerald-200/25 bg-gradient-to-br from-emerald-300/[0.06] to-transparent"
-                      }`}
-                    >
-                      <p
-                        className={`mb-3 flex items-center gap-2 text-[10px] uppercase tracking-[0.3em] ${
-                          isCaution ? "text-amber-200/90" : "text-emerald-200/90"
+                {/* Right column — channels & cautions, spelled out */}
+                <div className="flex flex-col gap-5">
+                  {d.details?.map((block, bIdx) => {
+                    const isCaution = bIdx > 0;
+                    const ItemIcon = isCaution ? AlertTriangle : Check;
+                    return (
+                      <motion.div
+                        key={block.label[0]}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.4, delay: 0.08 * bIdx }}
+                        className={`rounded-2xl border p-4 sm:p-5 ${
+                          isCaution
+                            ? "border-amber-200/25 bg-gradient-to-br from-amber-300/[0.06] to-transparent"
+                            : "border-emerald-200/25 bg-gradient-to-br from-emerald-300/[0.06] to-transparent"
                         }`}
                       >
-                        <span
-                          className={`grid size-6 place-items-center rounded-md ${
-                            isCaution
-                              ? "bg-amber-300/15 text-amber-200"
-                              : "bg-emerald-300/15 text-emerald-200"
+                        <p
+                          className={`mb-3 flex items-center gap-2 text-[10px] uppercase tracking-[0.3em] ${
+                            isCaution ? "text-amber-200/90" : "text-emerald-200/90"
                           }`}
                         >
-                          <ItemIcon size={11} strokeWidth={2} />
-                        </span>
-                        {block.label[li]}
-                      </p>
-                      <ul className="space-y-2">
-                        {block.items.map((it, i) => (
-                          <li
-                            key={it[0]}
-                            className="flex items-start gap-3 rounded-lg border border-white/5 bg-obsidian/40 px-3 py-2 text-[13px] leading-relaxed text-stone-warm/85"
+                          <span
+                            className={`grid size-6 place-items-center rounded-md ${
+                              isCaution
+                                ? "bg-amber-300/15 text-amber-200"
+                                : "bg-emerald-300/15 text-emerald-200"
+                            }`}
                           >
-                            <span
-                              className={`grid size-5 shrink-0 place-items-center rounded-full font-serif text-[10px] italic ${
-                                isCaution
-                                  ? "bg-amber-300/20 text-amber-100"
-                                  : "bg-emerald-300/20 text-emerald-100"
-                              }`}
+                            <ItemIcon size={11} strokeWidth={2} />
+                          </span>
+                          {block.label[li]}
+                        </p>
+                        <ul className="space-y-2">
+                          {block.items.map((it, i) => (
+                            <li
+                              key={it[0]}
+                              className="flex items-start gap-3 rounded-lg border border-white/5 bg-obsidian/40 px-3 py-2 text-[13px] leading-relaxed text-stone-warm/85"
                             >
-                              {i + 1}
-                            </span>
-                            <span>{it[li]}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </motion.div>
-                  );
-                })}
+                              <span
+                                className={`grid size-5 shrink-0 place-items-center rounded-full font-serif text-[10px] italic ${
+                                  isCaution
+                                    ? "bg-amber-300/20 text-amber-100"
+                                    : "bg-emerald-300/20 text-emerald-100"
+                                }`}
+                              >
+                                {i + 1}
+                              </span>
+                              <span>{it[li]}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </motion.div>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
             </div>
           </div>
         )}
@@ -1757,7 +1943,12 @@ const ASPECT_LABELS: Record<number, { en: string; zh: string; tone: string; tone
   2: { en: "Sextile", zh: "六分相", tone: "supportive · easy flow", toneZh: "支持 · 顺畅流动" },
   3: { en: "Square", zh: "四分相", tone: "friction · growth pressure", toneZh: "摩擦 · 成长张力" },
   4: { en: "Trine", zh: "三分相", tone: "harmonic · natural gift", toneZh: "和谐 · 天赋之流" },
-  6: { en: "Opposition", zh: "对分相", tone: "polarity · mirror tension", toneZh: "极性 · 镜像张力" },
+  6: {
+    en: "Opposition",
+    zh: "对分相",
+    tone: "polarity · mirror tension",
+    toneZh: "极性 · 镜像张力",
+  },
 };
 
 function PlanetReadingPanel({
@@ -1811,81 +2002,77 @@ function PlanetReadingPanel({
       className="planet-panel relative flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-gold-dust/25 bg-gradient-to-br from-white/[0.04] to-transparent"
     >
       <div className="max-h-[520px] flex-1 overflow-y-auto overscroll-contain p-5 pr-4 md:max-h-[600px] lg:max-h-none">
-
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
-            {lang === "zh" ? "行星落位" : "Planet placement"}
-          </p>
-          <p className="mt-2 font-serif text-2xl italic text-stone-warm">
-            <span className="mr-2 text-gold-light">{p.glyph}</span>
-            {p.name[lang === "zh" ? 1 : 0]}
-            <span className="mx-2 text-stone-warm/40">
-              {lang === "zh" ? "落于" : "in"}
-            </span>
-            <span className="text-gold-light">{s.g}</span>{" "}
-            {lang === "zh" ? s.zh : s.en}
-          </p>
-          <p className="mt-1 text-[10px] uppercase tracking-[0.28em] text-gold-dust/70">
-            {lang === "zh" ? `第 ${house} 宫` : `House ${house}`}
-          </p>
-          <p className="mt-2 text-xs leading-relaxed text-stone-warm/60">
-            {p.meaning[lang === "zh" ? 1 : 0]}
-          </p>
-          <p className="mt-3 rounded-xl border border-gold-dust/20 bg-obsidian/40 p-3 text-[12px] leading-relaxed text-stone-warm/80">
-            <span className="mr-2 text-[9px] uppercase tracking-[0.32em] text-gold-dust/70">
-              {lang === "zh" ? "落位解读" : "Placement reading"}
-            </span>
-            <span className="block pt-1">{placementReading(planetIdx, signs[planetIdx], house, lang)}</span>
-          </p>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+              {lang === "zh" ? "行星落位" : "Planet placement"}
+            </p>
+            <p className="mt-2 font-serif text-2xl italic text-stone-warm">
+              <span className="mr-2 text-gold-light">{p.glyph}</span>
+              {p.name[lang === "zh" ? 1 : 0]}
+              <span className="mx-2 text-stone-warm/40">{lang === "zh" ? "落于" : "in"}</span>
+              <span className="text-gold-light">{s.g}</span> {lang === "zh" ? s.zh : s.en}
+            </p>
+            <p className="mt-1 text-[10px] uppercase tracking-[0.28em] text-gold-dust/70">
+              {lang === "zh" ? `第 ${house} 宫` : `House ${house}`}
+            </p>
+            <p className="mt-2 text-xs leading-relaxed text-stone-warm/60">
+              {p.meaning[lang === "zh" ? 1 : 0]}
+            </p>
+            <p className="mt-3 rounded-xl border border-gold-dust/20 bg-obsidian/40 p-3 text-[12px] leading-relaxed text-stone-warm/80">
+              <span className="mr-2 text-[9px] uppercase tracking-[0.32em] text-gold-dust/70">
+                {lang === "zh" ? "落位解读" : "Placement reading"}
+              </span>
+              <span className="block pt-1">
+                {placementReading(planetIdx, signs[planetIdx], house, lang)}
+              </span>
+            </p>
+          </div>
+          <button
+            onClick={onClear}
+            className="rounded-full border border-white/10 px-3 py-1 text-[9px] uppercase tracking-[0.28em] text-stone-warm/50 transition-colors hover:border-gold-dust/40 hover:text-gold-dust"
+          >
+            {lang === "zh" ? "收起" : "close"}
+          </button>
         </div>
-        <button
-          onClick={onClear}
-          className="rounded-full border border-white/10 px-3 py-1 text-[9px] uppercase tracking-[0.28em] text-stone-warm/50 transition-colors hover:border-gold-dust/40 hover:text-gold-dust"
-        >
-          {lang === "zh" ? "收起" : "close"}
-        </button>
-      </div>
 
-      <div className="mt-4 border-t border-white/5 pt-4">
-        <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
-          {lang === "zh" ? "主要相位" : "Major aspects"}
-        </p>
-        {aspects.length === 0 ? (
-          <p className="text-[11px] uppercase tracking-[0.24em] text-stone-warm/40">
-            {lang === "zh" ? "此行星暂无强相位" : "no major aspects"}
+        <div className="mt-4 border-t border-white/5 pt-4">
+          <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+            {lang === "zh" ? "主要相位" : "Major aspects"}
           </p>
-        ) : (
-          <ul className="space-y-2">
-            {aspects.map((a, i) => (
-              <li
-                key={i}
-                className="rounded-xl border border-white/5 bg-white/[0.02] px-3 py-2 text-[11px]"
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-stone-warm/70">
-                    <span className="mr-1 text-gold-light">{a.other.glyph}</span>
-                    {a.other.name[lang === "zh" ? 1 : 0]}
-                    <span className="mx-1 text-stone-warm/40">
-                      {lang === "zh" ? "在" : "in"}
+          {aspects.length === 0 ? (
+            <p className="text-[11px] uppercase tracking-[0.24em] text-stone-warm/40">
+              {lang === "zh" ? "此行星暂无强相位" : "no major aspects"}
+            </p>
+          ) : (
+            <ul className="space-y-2">
+              {aspects.map((a, i) => (
+                <li
+                  key={i}
+                  className="rounded-xl border border-white/5 bg-white/[0.02] px-3 py-2 text-[11px]"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-stone-warm/70">
+                      <span className="mr-1 text-gold-light">{a.other.glyph}</span>
+                      {a.other.name[lang === "zh" ? 1 : 0]}
+                      <span className="mx-1 text-stone-warm/40">{lang === "zh" ? "在" : "in"}</span>
+                      {lang === "zh" ? a.otherSign.zh : a.otherSign.en}
                     </span>
-                    {lang === "zh" ? a.otherSign.zh : a.otherSign.en}
-                  </span>
-                  <span className="text-right text-gold-dust/80">
-                    {lang === "zh" ? a.label.zh : a.label.en}
-                    <span className="ml-2 text-stone-warm/40">
-                      {lang === "zh" ? a.label.toneZh : a.label.tone}
+                    <span className="text-right text-gold-dust/80">
+                      {lang === "zh" ? a.label.zh : a.label.en}
+                      <span className="ml-2 text-stone-warm/40">
+                        {lang === "zh" ? a.label.toneZh : a.label.tone}
+                      </span>
                     </span>
-                  </span>
-                </div>
-                <p className="mt-1 text-[11px] leading-relaxed text-stone-warm/55">
-                  {aspectReading(a.aKey, lang)}
-                </p>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+                  </div>
+                  <p className="mt-1 text-[11px] leading-relaxed text-stone-warm/55">
+                    {aspectReading(a.aKey, lang)}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
     </motion.div>
   );
@@ -1893,14 +2080,32 @@ function PlanetReadingPanel({
 
 // Signs → element / modality mapping for the compact facts card.
 const SIGN_ELEMENT: [string, string][] = [
-  ["Fire", "火"], ["Earth", "土"], ["Air", "风"], ["Water", "水"],
-  ["Fire", "火"], ["Earth", "土"], ["Air", "风"], ["Water", "水"],
-  ["Fire", "火"], ["Earth", "土"], ["Air", "风"], ["Water", "水"],
+  ["Fire", "火"],
+  ["Earth", "土"],
+  ["Air", "风"],
+  ["Water", "水"],
+  ["Fire", "火"],
+  ["Earth", "土"],
+  ["Air", "风"],
+  ["Water", "水"],
+  ["Fire", "火"],
+  ["Earth", "土"],
+  ["Air", "风"],
+  ["Water", "水"],
 ];
 const SIGN_MODALITY: [string, string][] = [
-  ["Cardinal", "开创"], ["Fixed", "固定"], ["Mutable", "变动"], ["Cardinal", "开创"],
-  ["Fixed", "固定"], ["Mutable", "变动"], ["Cardinal", "开创"], ["Fixed", "固定"],
-  ["Mutable", "变动"], ["Cardinal", "开创"], ["Fixed", "固定"], ["Mutable", "变动"],
+  ["Cardinal", "开创"],
+  ["Fixed", "固定"],
+  ["Mutable", "变动"],
+  ["Cardinal", "开创"],
+  ["Fixed", "固定"],
+  ["Mutable", "变动"],
+  ["Cardinal", "开创"],
+  ["Fixed", "固定"],
+  ["Mutable", "变动"],
+  ["Cardinal", "开创"],
+  ["Fixed", "固定"],
+  ["Mutable", "变动"],
 ];
 
 function ChartTipCard({ lang, seed }: { lang: "en" | "zh"; seed: string }) {
@@ -1956,7 +2161,6 @@ function ChartTipCard({ lang, seed }: { lang: "en" | "zh"; seed: string }) {
   );
 }
 
-
 function ChartFactsCard({
   lang,
   seed,
@@ -1998,7 +2202,6 @@ function ChartFactsCard({
         </p>
       </div>
       <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-
         {PLANETS.map((p, idx) => {
           const s = ZODIAC_SIGNS[signs[idx]];
           const h = houseForSign(signs[idx], ascSign);
@@ -2054,4 +2257,3 @@ function ChartFactsCard({
     </div>
   );
 }
-

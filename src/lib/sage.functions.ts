@@ -77,10 +77,8 @@ const CRISIS_TEXT: Record<"en" | "zh", string> = {
 };
 
 const OUT_OF_SCOPE_TEXT: Record<"en" | "zh", string> = {
-  zh:
-    "这里专注于陪你理解自己的处境、阅读你授权的命盘，以及处理产品与订单问题。这个问题不在智者能解读的范围内。",
-  en:
-    "This companion is for understanding your own moment, reading charts you've authorised, and helping with product / order questions. That request isn't something the Sage can answer here.",
+  zh: "这里专注于陪你理解自己的处境、阅读你授权的命盘，以及处理产品与订单问题。这个问题不在智者能解读的范围内。",
+  en: "This companion is for understanding your own moment, reading charts you've authorised, and helping with product / order questions. That request isn't something the Sage can answer here.",
 };
 
 function destinyResponse(
@@ -106,7 +104,10 @@ function destinyResponse(
 }
 
 // A tiny keyword-driven FAQ. Falls back to a "here's where to look" line.
-function productHelpAnswer(msg: string, lang: "en" | "zh"): {
+function productHelpAnswer(
+  msg: string,
+  lang: "en" | "zh",
+): {
   text: string;
   next: SageNextAction;
 } {
@@ -203,8 +204,7 @@ The visitor just wants to vent or share a small worry. Please:
 3) Do NOT talk about charts, astrology, BaZi, Zi Wei, Jyotish or fate — this is NOT a reading.
 4) Offer 1–2 tiny, concrete self-care nudges.
 5) English, 60–160 words; never claim to be an AI.`;
-  const system =
-    (lang === "zh" ? systemZh : systemEn) + "\n\n" + guardrailsFor(lang);
+  const system = (lang === "zh" ? systemZh : systemEn) + "\n\n" + guardrailsFor(lang);
 
   const messages = [
     ...history.map((m) => ({ role: m.role, content: m.content })),

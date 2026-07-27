@@ -70,9 +70,7 @@ export function ElderCompanion({ lang }: { lang: "en" | "zh" }) {
   useEffect(() => {
     if (!open) return;
     if (messages.length === 0) {
-      const opener = (lang === "zh" ? OPENERS_ZH : OPENERS_EN)[
-        Math.floor(Math.random() * 2)
-      ];
+      const opener = (lang === "zh" ? OPENERS_ZH : OPENERS_EN)[Math.floor(Math.random() * 2)];
       setMessages([{ role: "assistant", content: opener }]);
     }
   }, [open, lang, messages.length]);
@@ -91,9 +89,7 @@ export function ElderCompanion({ lang }: { lang: "en" | "zh" }) {
     if (!text || busy) return;
     if (!authed) {
       setBanner(
-        lang === "zh"
-          ? "先登录，我才能听你慢慢说。"
-          : "Please sign in first — then I can listen.",
+        lang === "zh" ? "先登录，我才能听你慢慢说。" : "Please sign in first — then I can listen.",
       );
       return;
     }
@@ -107,10 +103,7 @@ export function ElderCompanion({ lang }: { lang: "en" | "zh" }) {
     setBusy(true);
     try {
       const res = await chat({ data: { message: text, lang, history } });
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: res.text, meta: res },
-      ]);
+      setMessages((prev) => [...prev, { role: "assistant", content: res.text, meta: res }]);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       setMessages((prev) => [
@@ -214,9 +207,7 @@ export function ElderCompanion({ lang }: { lang: "en" | "zh" }) {
                   >
                     {m.content}
                   </div>
-                  {m.role === "assistant" && m.meta && (
-                    <NextActionRow meta={m.meta} lang={lang} />
-                  )}
+                  {m.role === "assistant" && m.meta && <NextActionRow meta={m.meta} lang={lang} />}
                 </div>
               ))}
               {busy && (
@@ -280,13 +271,7 @@ export function ElderCompanion({ lang }: { lang: "en" | "zh" }) {
   );
 }
 
-function NextActionRow({
-  meta,
-  lang,
-}: {
-  meta: SageChatResponse;
-  lang: "en" | "zh";
-}) {
+function NextActionRow({ meta, lang }: { meta: SageChatResponse; lang: "en" | "zh" }) {
   const na = meta.nextAction;
   if (!na || na.kind === "none" || na.kind === "crisis_support") return null;
 
@@ -308,9 +293,7 @@ function NextActionRow({
         to="/report"
         className="mt-1 inline-flex min-h-9 items-center rounded-full border border-gold-dust/30 px-3 py-1.5 text-[11px] text-gold-light/90 hover:bg-gold-dust/10"
       >
-        {zh
-          ? "了解神谕者月度会员（模拟支付）"
-          : "About Oracle monthly (simulated payment)"}
+        {zh ? "了解神谕者月度会员（模拟支付）" : "About Oracle monthly (simulated payment)"}
       </Link>
     );
   }

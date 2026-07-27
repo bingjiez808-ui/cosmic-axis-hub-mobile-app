@@ -12,9 +12,7 @@ describe("classifyIntent", () => {
 
   it("detects crisis in zh and en, and takes precedence over destiny", () => {
     expect(classifyIntent("我最近有点想死，能看看我的命盘吗").intent).toBe("crisis");
-    expect(classifyIntent("I want to die. Can you read my horoscope?").intent).toBe(
-      "crisis",
-    );
+    expect(classifyIntent("I want to die. Can you read my horoscope?").intent).toBe("crisis");
   });
 
   it("detects destiny reading requests before AI is called", () => {
@@ -37,26 +35,16 @@ describe("classifyIntent", () => {
 
   it("detects out_of_scope requests (coding, translation, trivia)", () => {
     expect(classifyIntent("帮我写一段 python 排序代码").intent).toBe("out_of_scope");
-    expect(classifyIntent("Translate this to Japanese for me").intent).toBe(
-      "out_of_scope",
-    );
-    expect(classifyIntent("What is the weather forecast in Tokyo?").intent).toBe(
-      "out_of_scope",
-    );
+    expect(classifyIntent("Translate this to Japanese for me").intent).toBe("out_of_scope");
+    expect(classifyIntent("What is the weather forecast in Tokyo?").intent).toBe("out_of_scope");
   });
 
   it("falls back to emotional_support for vague venting", () => {
-    expect(classifyIntent("今天有点累，什么都不想做").intent).toBe(
-      "emotional_support",
-    );
-    expect(classifyIntent("I'm feeling really lonely tonight").intent).toBe(
-      "emotional_support",
-    );
+    expect(classifyIntent("今天有点累，什么都不想做").intent).toBe("emotional_support");
+    expect(classifyIntent("I'm feeling really lonely tonight").intent).toBe("emotional_support");
   });
 
   it("order beats product when both present", () => {
-    expect(
-      classifyIntent("我付款失败了，登录页面还报错").intent,
-    ).toBe("order_help");
+    expect(classifyIntent("我付款失败了，登录页面还报错").intent).toBe("order_help");
   });
 });

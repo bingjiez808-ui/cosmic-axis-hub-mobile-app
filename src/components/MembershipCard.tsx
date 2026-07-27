@@ -77,15 +77,11 @@ export function MembershipCard() {
         .maybeSingle();
       if (cancelled) return;
       const rawTier = (data?.membership_tier ?? "none") as string;
-      const exp = data?.membership_expires_at
-        ? (data.membership_expires_at as string)
-        : null;
+      const exp = data?.membership_expires_at ? (data.membership_expires_at as string) : null;
       const expDate = exp ? new Date(exp) : null;
       const paid = rawTier === "sage" || rawTier === "oracle";
       const active = paid && !!expDate && expDate.getTime() > Date.now();
-      const tier: "none" | "sage" | "oracle" = active
-        ? (rawTier as "sage" | "oracle")
-        : "none";
+      const tier: "none" | "sage" | "oracle" = active ? (rawTier as "sage" | "oracle") : "none";
       setState({ kind: "ready", tier, expiresAt: exp, active });
     })();
     return () => {
@@ -116,9 +112,7 @@ export function MembershipCard() {
       data-testid="membership-card"
       className="rounded-xl border border-amber-400/20 bg-gradient-to-br from-[#1a1226] to-[#0a0a12] p-5"
     >
-      <div className="text-[11px] uppercase tracking-widest text-amber-300/70">
-        {t("kicker")}
-      </div>
+      <div className="text-[11px] uppercase tracking-widest text-amber-300/70">{t("kicker")}</div>
       <div className="mt-2 flex flex-wrap items-baseline justify-between gap-3">
         <h2 className="font-serif text-2xl text-amber-100">{title}</h2>
         {state.tier !== "none" && (
@@ -133,12 +127,8 @@ export function MembershipCard() {
           </div>
         )}
       </div>
-      <p className="mt-3 text-xs leading-relaxed text-amber-100/65">
-        {t("auto_lapse")}
-      </p>
-      <p className="mt-1 text-xs leading-relaxed text-amber-100/50">
-        {t("reports_note")}
-      </p>
+      <p className="mt-3 text-xs leading-relaxed text-amber-100/65">{t("auto_lapse")}</p>
+      <p className="mt-1 text-xs leading-relaxed text-amber-100/50">{t("reports_note")}</p>
       <div className="mt-4 flex flex-wrap gap-2">
         <Link
           to="/me/oracle"
