@@ -220,12 +220,14 @@ export const sendPasswordResetEmail = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const siteUrl =
+      process.env.PUBLIC_SITE_URL ??
       process.env.SITE_URL ??
       process.env.VITE_SITE_URL ??
-      "https://fate-nexus-ai.lovable.app";
+      process.env.VITE_PUBLIC_SITE_URL ??
+      "https://preview--cosmic-axis-hub.lovable.app";
     // Generates a recovery link and triggers the recovery email via GoTrue.
     const { error } = await supabaseAdmin.auth.resetPasswordForEmail(data.email, {
-      redirectTo: `${siteUrl}/auth?reset=1`,
+      redirectTo: `${siteUrl}/auth/reset`,
     });
     if (error) throw new Error(error.message);
     return { ok: true as const };
