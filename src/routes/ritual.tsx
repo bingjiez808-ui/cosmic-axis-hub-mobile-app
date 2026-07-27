@@ -7,6 +7,14 @@ import { useLang } from "@/lib/i18n";
 import { solarToLunarInfo } from "@/lib/lunar";
 import { noOrphan } from "@/lib/typography";
 import { listUserCharts } from "@/lib/reports-store.functions";
+import {
+  FIELD_STEP,
+  firstMissingStep,
+  missingFields,
+  nameStepCopy,
+  validateField,
+  type RitualState,
+} from "@/lib/ritual-validation";
 
 
 const RITUAL_STATE_KEY = "lod:ritual-draft-v2";
@@ -190,6 +198,17 @@ function RitualPage() {
   const OWNERSHIP_STEP_COUNT = 1;
   const totalSteps = OWNERSHIP_STEP_COUNT + 5;
 
+  const ritualState: RitualState = {
+    ownerRole,
+    relationship,
+    name: values.name,
+    date: values.date,
+    time: values.time,
+    place: values.place,
+    gender: values.gender as RitualState["gender"],
+    genderChosen,
+  };
+
   const questionSteps: {
     key: FieldKey;
     prompt: string;
@@ -197,7 +216,15 @@ function RitualPage() {
     placeholder: string;
     input: "text" | "date" | "time" | "gender";
   }[] = [
-    { key: "name", prompt: t.q_name, hint: t.q_name_hint, placeholder: t.q_name_ph, input: "text" },
+    {
+      key: "name",
+      // Dynamic: for "other" this becomes a private-nickname prompt so
+      // the user doesn't feel forced to type the other person's real name.
+      prompt: nameStepCopy(lang, ownerRole).prompt,
+      hint: nameStepCopy(lang, ownerRole).hint,
+      placeholder: nameStepCopy(lang, ownerRole).placeholder,
+      input: "text",
+    },
     { key: "date", prompt: t.q_date, hint: t.q_date_hint, placeholder: "", input: "date" },
     { key: "time", prompt: t.q_time, hint: t.q_time_hint, placeholder: "", input: "time" },
     { key: "gender", prompt: t.q_gender, hint: t.q_gender_hint, placeholder: "", input: "gender" },
@@ -212,82 +239,23 @@ function RitualPage() {
   const currentQ = isIntakeStep ? questionSteps[intakeIdx] : null;
   // Quiz retired — retained variables to preserve existing render/progress code.
   const isQuizStep = false;
-  const quizIdx = -1;
 
-  // Per-step validation. Returns null when OK, or a localized error
-  // message describing precisely which field is invalid. The Next
-  // button is NOT disabled — clicking it always runs this check and
-  // surfaces the reason inline, which is more discoverable than a
-  // grey button with no explanation.
+  /**
+   * Per-step validation. Ownership step checks owner then relationship
+   * in that order so the message reflects the first *actually* missing
+   * field — clicking "other" without a relationship must NOT keep
+   * showing "please pick ownership".
+   */
   const validateCurrentStep = (): string | null => {
     if (isOwnershipStep) {
-      if (ownerRole !== "self" && ownerRole !== "other") {
-        return lang === "zh"
-          ? "请先选择这张命盘属于「我」还是「他人」。"
-          : "Please pick whether this chart is for you or someone else.";
-      }
-      if (ownerRole === "other" && !relationship) {
-        return lang === "zh"
-          ? "请选择你与对方的关系（仅保存在你的个人书架，不通知对方，不公开）。"
-          : "Please pick the relationship (kept privately in your library — never notified or public).";
-      }
-      return null;
+      return (
+        validateField("owner", ritualState, lang) ??
+        validateField("relationship", ritualState, lang)
+      );
     }
-    if (isQuizStep) {
-      return quiz[quizIdx]
-        ? null
-        : lang === "zh"
-          ? "请选择一个最贴近你的选项。"
-          : "Please pick the option closest to you.";
-    }
+    if (isQuizStep) return null;
     if (!currentQ) return null;
-    const raw = (values[currentQ.key] ?? "").trim();
-    if (currentQ.key === "name") {
-      if (raw.length === 0)
-        return lang === "zh" ? "请为这张命盘写下一个称呼。" : "Please write a name for this chart.";
-      if (raw.length > 60)
-        return lang === "zh" ? "称呼过长（最多 60 字）。" : "Too long (60 characters max).";
-      return null;
-    }
-    if (currentQ.key === "date") {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(raw))
-        return lang === "zh" ? "请填写完整的出生日期（YYYY-MM-DD）。" : "Please enter a full birth date (YYYY-MM-DD).";
-      const d = new Date(raw + "T00:00:00");
-      if (Number.isNaN(d.getTime()))
-        return lang === "zh" ? "日期无效，请再检查。" : "Invalid date.";
-      const now = new Date();
-      if (d > now)
-        return lang === "zh" ? "出生日期不能是未来。" : "Birth date can't be in the future.";
-      const year = d.getFullYear();
-      if (year < 1900 || year > 2099)
-        return lang === "zh" ? "年份需在 1900–2099 之间。" : "Year must be between 1900 and 2099.";
-      return null;
-    }
-    if (currentQ.key === "time") {
-      if (!/^\d{2}:\d{2}$/.test(raw))
-        return lang === "zh"
-          ? "准确出生时间是生成四体系报告的前提，请填写 HH:MM。"
-          : "An accurate birth time is required for the full four-tradition reading. Please enter HH:MM.";
-      const [hh, mm] = raw.split(":").map(Number);
-      if (hh < 0 || hh > 23 || mm < 0 || mm > 59)
-        return lang === "zh" ? "时间无效。" : "Invalid time.";
-      return null;
-    }
-    if (currentQ.key === "place") {
-      if (raw.length < 2)
-        return lang === "zh"
-          ? "请选择或输入可解析的出生地点（国家 + 城市）。"
-          : "Please pick or enter a resolvable birth place (country + city).";
-      return null;
-    }
-    if (currentQ.key === "gender") {
-      if (!genderChosen)
-        return lang === "zh"
-          ? "请明确选择一项——包含「暂不填写」。这不会被公开显示。"
-          : "Please explicitly pick one option — including 'prefer not to say'. This is never shown publicly.";
-      return null;
-    }
-    return null;
+    return validateField(currentQ.key as never, ritualState, lang);
   };
 
   const canAdvance = validateCurrentStep() === null;
@@ -305,20 +273,17 @@ function RitualPage() {
     setFieldError(null);
     if (isLast) {
       if (submitting) return;
-      const finalErrors: string[] = [];
-      if (ownerRole !== "self" && ownerRole !== "other") finalErrors.push("owner");
-      if (ownerRole === "other" && !relationship) finalErrors.push("relationship");
-      if (values.name.trim().length === 0) finalErrors.push("name");
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(values.date)) finalErrors.push("date");
-      if (!/^\d{2}:\d{2}$/.test(values.time)) finalErrors.push("time");
-      if (values.place.trim().length < 2) finalErrors.push("place");
-      if (!genderChosen) finalErrors.push("gender");
-      if (finalErrors.length > 0) {
+      const miss = missingFields(ritualState, lang);
+      if (miss.length > 0) {
+        const jumpTo = firstMissingStep(ritualState, lang);
+        const firstMsg = validateField(miss[0], ritualState, lang);
         setFieldError(
-          lang === "zh"
-            ? `还有 ${finalErrors.length} 项需要补充，请回到前面步骤完善。`
-            : `${finalErrors.length} field${finalErrors.length > 1 ? "s" : ""} still need attention — please go back to complete them.`,
+          (lang === "zh"
+            ? `还有 ${miss.length} 项需要补充。`
+            : `${miss.length} field${miss.length > 1 ? "s" : ""} still need attention.`) +
+            (firstMsg ? " " + firstMsg : ""),
         );
+        if (jumpTo >= 0 && jumpTo !== step) setStep(jumpTo);
         return;
       }
       const info = solarToLunarInfo(values.date, values.time);
@@ -390,18 +355,24 @@ function RitualPage() {
   };
 
 
-  // Clear stale error when the user moves to a different step or
-  // updates the current field. Errors should never survive navigation.
+  // Clear stale error when the user moves to a different step. Errors
+  // should never survive step navigation.
   useEffect(() => {
     setFieldError(null);
   }, [step]);
+  // When ANY field on the current step changes, recompute the current
+  // step's error. Previously this only cleared — leaving a stale
+  // "please pick ownership" message visible after the user picked
+  // "other" but hadn't yet picked a relationship. Now the message
+  // always reflects the current first-missing field on this step, and
+  // clears entirely once the step is fully valid.
   useEffect(() => {
-    if (fieldError) {
-      const err = validateCurrentStep();
-      if (!err) setFieldError(null);
-    }
+    if (!fieldError) return;
+    setFieldError(validateCurrentStep());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [values, genderChosen, ownerRole, relationship]);
+  // Suppress unused warning for FIELD_STEP re-export used only in tests.
+  void FIELD_STEP;
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-x-hidden px-6 pt-32 pb-24">
