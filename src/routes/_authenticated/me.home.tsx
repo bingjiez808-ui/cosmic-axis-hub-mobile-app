@@ -287,32 +287,30 @@ function DailyRoomPage() {
 
 
 
-        {/* Page title — "My Home" is the personal reading desk. Today's Fate is its default first module. */}
+        {/* Page title — "My Library" is the personal reading desk. Today's Fate is its default first module. */}
         <header className="mb-6">
           <div className="text-[10px] uppercase tracking-[0.36em] text-amber-300/60">
-            {lang === "zh" ? "命运图书馆 · 个人书架" : "Destiny Library · Personal Library"}
+            {lang === "zh" ? "命运图书馆 · 我的书架" : "Destiny Library · My Library"}
           </div>
           <h1 className="mt-2 font-serif text-3xl tracking-wide md:text-4xl">
-            {lang === "zh" ? "我的主页" : "My Home"}
+            {lang === "zh" ? "书架主页" : "Library Home"}
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-amber-100/70">
             {lang === "zh"
-              ? "这是你每天回到图书馆的个人书架。默认打开「今日命运」，也可从下方进入命盘、好友、历史回声与会员。"
-              : "This is your Personal Library shelf. It opens with today's fate; use the cards below to reach charts, friends, historical echoes and membership."}
+              ? "这是你每天回到图书馆的书架主页。默认打开「今日命运」；命盘、关系、历史回声与会员，从上方书架导航进入。"
+              : "This is your Library home. It opens with today's fate; use the library sub-nav above to reach charts, relationships, echoes and membership."}
           </p>
         </header>
-
-        {/* Hub cards — clear next step for each personal module */}
-        <HomeHubCards real={real} lang={lang} />
 
         {/* Shared personal-workspace sub-nav (Today's Fate active) */}
         <PersonalWorkspaceNav active="/me/home" />
         <div id="today" className="sr-only" aria-hidden />
         <p className="mb-4 text-xs text-amber-200/60" data-testid="home-purpose-hint">
           {lang === "zh"
-            ? "这里显示今天的一件事：主线、六领域建议与 7 日走向。想去命盘/好友/适配，用上面的次级导航。"
-            : "This page shows the one thing for today: your line, six-domain notes and the 7-day arc. Use the sub-nav above to reach charts, friends or match."}
+            ? "这里显示今天的一件事：主线、六领域建议与 7 日走向。想去命盘/关系/历史回声/会员，用上面的书架导航。"
+            : "This page shows the one thing for today: your line, six-domain notes and the 7-day arc. Use the library sub-nav above for charts, relationships, echoes or membership."}
         </p>
+
 
 
         {/* Lightweight context bar — full chart management lives on /me/profile */}
