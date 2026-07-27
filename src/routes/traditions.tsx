@@ -1,11 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 
 import astrologyImg from "@/assets/tradition-astrology.jpg";
 import jyotishImg from "@/assets/tradition-jyotish.jpg";
 import baziImg from "@/assets/tradition-bazi.jpg";
 import ziweiImg from "@/assets/tradition-ziwei.jpg";
+import treeImg from "@/assets/tree-of-destiny.jpg";
 import { TraditionModal, type TraditionId } from "@/components/TraditionModal";
 import { useLang } from "@/lib/i18n";
 
@@ -53,10 +54,7 @@ const chapters: Chapter[] = [
     numeral: "I",
     elderId: "astrology",
     title: ["Western Astrology", "西方占星"],
-    subtitle: [
-      "The dialogue between psyche and sky",
-      "灵魂与星空的对话",
-    ],
+    subtitle: ["The dialogue between psyche and sky", "灵魂与星空的对话"],
     origin: [
       "From Babylonian observation through Hellenistic geometry, refined in the twentieth century by Jungian depth psychology.",
       "从巴比伦的观测，经希腊化时期的几何化整理，到二十世纪由荣格深度心理学再次精炼。",
@@ -91,10 +89,7 @@ const chapters: Chapter[] = [
     numeral: "II",
     elderId: "jyotish",
     title: ["Jyotish", "印度占星 · Jyotish"],
-    subtitle: [
-      "The science of light — India's Vedic astrology",
-      "光的科学 —— 印度吠陀占星",
-    ],
+    subtitle: ["The science of light — India's Vedic astrology", "光的科学 —— 印度吠陀占星"],
     origin: [
       "Rooted in the Vedas, refined by classical treatises over two millennia, still practiced continuously today.",
       "根植于吠陀经典，经两千余年的古典典籍精炼，至今仍在被持续实践。",
@@ -129,10 +124,7 @@ const chapters: Chapter[] = [
     numeral: "III",
     elderId: "bazi",
     title: ["BaZi — 八字", "八字 · 四柱"],
-    subtitle: [
-      "The Four Pillars of Destiny",
-      "命运的四柱",
-    ],
+    subtitle: ["The Four Pillars of Destiny", "命运的四柱"],
     origin: [
       "A Chinese system distilled from Yin-Yang cosmology and the Five Elements, formalised through the Tang and Song dynasties.",
       "自阴阳宇宙观与五行学说提炼而成的中国体系，于唐宋之间定型。",
@@ -167,10 +159,7 @@ const chapters: Chapter[] = [
     numeral: "IV",
     elderId: "ziwei",
     title: ["Zi Wei Dou Shu — 紫微斗数", "紫微斗数"],
-    subtitle: [
-      "The Purple Star Astrology of the Chinese imperium",
-      "中华帝国的紫微星占",
-    ],
+    subtitle: ["The Purple Star Astrology of the Chinese imperium", "中华帝国的紫微星占"],
     origin: [
       "Traditionally attributed to the Song-dynasty sage Chen Xiyi. Reserved for centuries as an imperial system of destiny.",
       "相传源于宋代高士陈希夷，数百年间作为宫廷所秘藏的命运体系。",
@@ -221,8 +210,243 @@ const HEADER = {
   cta: ["Begin the ritual", "开始仪式"] as Bi,
 };
 
+// ─────────── Focus comparison (moved off the homepage) ───────────
+type FocusRow = {
+  key: "character" | "vocation" | "wealth" | "love" | "health" | "family" | "mission";
+  focus: {
+    astrology: Bi;
+    jyotish: Bi;
+    bazi: Bi;
+    ziwei: Bi;
+  };
+};
+
+const focusData: FocusRow[] = [
+  {
+    key: "character",
+    focus: {
+      astrology: [
+        "Reads temperament as a dialogue between Sun, Moon and Ascendant — psychological archetypes.",
+        "以太阳、月亮与上升的对话读性格 —— 心理原型的语言。",
+      ],
+      jyotish: [
+        "Sees personality through the Moon's Nakshatra — the karmic imprint of this lifetime.",
+        "从月亮的 Nakshatra 读性格 —— 此生的业力印记。",
+      ],
+      bazi: [
+        "Distills character as the Day Master and the balance of five elements around it.",
+        "以日主与其周围五行的平衡，提炼一个人的本质。",
+      ],
+      ziwei: [
+        "Fixes the self in the 命宫 (Palace of Self) — the star seated there governs your grain.",
+        "以命宫定人 —— 坐守命宫的主星，决定你的底色。",
+      ],
+    },
+  },
+  {
+    key: "vocation",
+    focus: {
+      astrology: [
+        "The 10th house and its ruler describe how you meet the world in work.",
+        "第十宫与其主星，描绘你在事业中面对世界的姿态。",
+      ],
+      jyotish: [
+        "Strongest in career timing — Dashā cycles show when a vocation ripens.",
+        "在时机上最擅长 —— Dashā 大运告诉你何时功成。",
+      ],
+      bazi: [
+        "The Officer, Wealth and Output stars measure suitability for leadership or craft.",
+        "官星、财星、食伤，衡量你适合领导、执行还是创造。",
+      ],
+      ziwei: [
+        "The 官禄宫 (Career Palace) is unusually detailed — down to the flavour of the role.",
+        "官禄宫极为细致 —— 甚至能读出岗位的气质。",
+      ],
+    },
+  },
+  {
+    key: "wealth",
+    focus: {
+      astrology: [
+        "The 2nd and 8th houses read your own resources vs. resources through others.",
+        "第二宫与第八宫，读你自己的资源与他人给你的资源。",
+      ],
+      jyotish: [
+        "Dhana Yogas — combinations of wealth-lords — are the classical strength here.",
+        "以 Dhana Yoga（财富组合）著称，是此系的经典强项。",
+      ],
+      bazi: [
+        "Wealth stars 正财 / 偏财 and their roots reveal earning shape and stability.",
+        "以正财、偏财及其根气，读收入形态与稳定度。",
+      ],
+      ziwei: [
+        "The 财帛宫 shows how you earn; the 田宅宫 shows what you keep.",
+        "财帛宫看进账，田宅宫看留存。",
+      ],
+    },
+  },
+  {
+    key: "love",
+    focus: {
+      astrology: [
+        "Venus, Mars, and the 7th house draw the shape of desire and partnership.",
+        "金星、火星与第七宫，勾勒欲望与伴侣关系的形状。",
+      ],
+      jyotish: [
+        "The 7th lord, Venus and Jupiter time marriage with unusual precision.",
+        "七宫主、金星与木星，能相当精准地判断婚期。",
+      ],
+      bazi: [
+        "The spouse palace and hidden stems reveal partner traits and compatibility.",
+        "夫妻宫与藏干，透露伴侣的样子与合婚气场。",
+      ],
+      ziwei: [
+        "The 夫妻宫 with its main stars and 四化 draws marriage as a story arc.",
+        "夫妻宫的主星与四化，把婚姻画成一条剧情弧线。",
+      ],
+    },
+  },
+  {
+    key: "health",
+    focus: {
+      astrology: [
+        "The 6th house and Ascendant ruler mark stress patterns and body constitution.",
+        "第六宫与命主星，标记压力模式与身体底子。",
+      ],
+      jyotish: [
+        "Reads dosha, chronic tendencies, and karmic health cycles through the 6th and 8th.",
+        "从六宫、八宫读体质、慢性倾向与业力健康周期。",
+      ],
+      bazi: [
+        "Five-element imbalance (excess Fire, weak Water…) predicts organ tendencies.",
+        "五行偏枯（火旺、水弱…）预示脏腑倾向。",
+      ],
+      ziwei: [
+        "The 疾厄宫 flags susceptible body zones and stress signatures.",
+        "疾厄宫标出易感的身体部位与压力印记。",
+      ],
+    },
+  },
+  {
+    key: "family",
+    focus: {
+      astrology: [
+        "The 4th house and Moon read your roots — the family climate that shaped you.",
+        "第四宫与月亮 —— 读你的根系，塑造你的家庭气候。",
+      ],
+      jyotish: [
+        "Chandra (Moon), Matru-karaka and the 4th bhava layer mother, home and inner soil.",
+        "月亮、母亲卡拉卡与第四宫，层层叠出母亲、家园与内在土壤。",
+      ],
+      bazi: [
+        "The year and month pillars record ancestry; 印星 (Resource stars) show how parents nourish or press.",
+        "年柱与月柱记录祖脉；印星揭示父母如何滋养或压制你。",
+      ],
+      ziwei: [
+        "The 父母宫 and 田宅宫 draw parents, home and the shape of family destiny.",
+        "父母宫与田宅宫 —— 描绘父母、家庭与家宅的命运轮廓。",
+      ],
+    },
+  },
+  {
+    key: "mission",
+    focus: {
+      astrology: [
+        "The lunar nodes trace the karmic direction of the soul in this lifetime.",
+        "南北交点，描绘此生灵魂的业力方向。",
+      ],
+      jyotish: [
+        "Dharma houses (1, 5, 9) and Rahu-Ketu reveal your purpose axis.",
+        "达摩三宫（1/5/9）与 Rahu-Ketu，读你的使命轴线。",
+      ],
+      bazi: [
+        "The 用神 (favourable element) is the north star of what your life is for.",
+        "以「用神」为北极星，指出这一生的用力方向。",
+      ],
+      ziwei: [
+        "命宫 + 迁移宫 + 福德宫 together stage your mission across contexts.",
+        "命宫、迁移宫与福德宫三位一体，铺陈使命的舞台。",
+      ],
+    },
+  },
+];
+
+function FocusComparison() {
+  const { lang, t } = useLang();
+  const li: 0 | 1 = lang === "zh" ? 1 : 0;
+  const [active, setActive] = useState<FocusRow["key"]>("character");
+  const row = focusData.find((r) => r.key === active)!;
+
+  const dimLabels: Record<FocusRow["key"], string> = {
+    character: t.focus_dim_character,
+    vocation: t.focus_dim_vocation,
+    wealth: t.focus_dim_wealth,
+    love: t.focus_dim_love,
+    health: t.focus_dim_health,
+    family: t.focus_dim_family,
+    mission: t.focus_dim_mission,
+  };
+
+  const cards = [
+    { key: "astrology", label: t.four_traditions[0], text: row.focus.astrology[li] },
+    { key: "jyotish", label: t.four_traditions[1], text: row.focus.jyotish[li] },
+    { key: "bazi", label: t.four_traditions[2], text: row.focus.bazi[li] },
+    { key: "ziwei", label: t.four_traditions[3], text: row.focus.ziwei[li] },
+  ];
+
+  return (
+    <section className="relative z-10 mx-auto max-w-6xl px-6 py-24 md:px-12">
+      <div className="mb-10 text-center">
+        <p className="mb-3 text-[10px] uppercase tracking-[0.4em] text-gold-dust">
+          {t.focus_kicker}
+        </p>
+        <h3 className="font-serif text-4xl leading-tight text-stone-warm md:text-5xl">
+          {t.focus_title}
+          <span className="italic gold-gradient-text">{t.focus_title_em}</span>
+        </h3>
+        <p className="mx-auto mt-4 max-w-xl text-sm text-stone-warm/50">{t.focus_hint}</p>
+      </div>
+      <div className="mb-10 flex flex-wrap justify-center gap-2">
+        {(Object.keys(dimLabels) as FocusRow["key"][]).map((k) => (
+          <button
+            key={k}
+            type="button"
+            onClick={() => setActive(k)}
+            className={`rounded-full border px-5 py-2 text-[11px] uppercase tracking-[0.28em] transition-all ${
+              active === k
+                ? "border-gold-dust bg-gold-dust/10 text-gold-light"
+                : "border-white/10 text-stone-warm/60 hover:border-gold-dust/40 hover:text-gold-dust"
+            }`}
+          >
+            {dimLabels[k]}
+          </button>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <AnimatePresence mode="popLayout" initial={false}>
+          {cards.map((c, i) => (
+            <motion.div
+              key={`${active}-${c.key}`}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.45, delay: i * 0.06, ease: [0.32, 0.72, 0, 1] }}
+              className="glass-card group flex h-full flex-col rounded-2xl p-6"
+            >
+              <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/80">
+                {c.label}
+              </p>
+              <p className="font-serif text-base leading-relaxed text-stone-warm/85">{c.text}</p>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+    </section>
+  );
+}
+
 function TraditionsPage() {
-  const { lang } = useLang();
+  const { lang, t } = useLang();
   const li: 0 | 1 = lang === "zh" ? 1 : 0;
   const [openTradition, setOpenTradition] = useState<TraditionId | null>(null);
 
@@ -241,6 +465,17 @@ function TraditionsPage() {
         </h1>
         <p className="mx-auto max-w-2xl font-light text-stone-warm/60">{HEADER.lead[li]}</p>
       </header>
+
+      {/* Four Pillars — moved from homepage */}
+      <section id="four-pillars" className="mx-auto max-w-6xl px-6 pb-16 md:px-12">
+        <p className="mb-3 text-center text-[10px] uppercase tracking-[0.4em] text-gold-dust">
+          {t.pillars_kicker}
+        </p>
+        <h2 className="mx-auto mb-12 max-w-3xl text-center font-serif text-3xl leading-tight text-stone-warm md:text-4xl">
+          {t.pillars_title_a}
+          <span className="italic">{t.pillars_title_em}</span>
+        </h2>
+      </section>
 
       {/* Chapters */}
       <div className="mx-auto max-w-6xl space-y-32 px-6 md:px-12">
@@ -267,9 +502,7 @@ function TraditionsPage() {
             </div>
             <div className={`lg:col-span-7 ${idx % 2 === 1 ? "lg:order-1" : ""}`}>
               <p className="mb-4 font-serif text-2xl italic text-gold-dust">{c.numeral}.</p>
-              <h2 className="mb-3 font-serif text-4xl text-stone-warm md:text-5xl">
-                {c.title[li]}
-              </h2>
+              <h2 className="mb-3 font-serif text-4xl text-stone-warm md:text-5xl">{c.title[li]}</h2>
               <p className="mb-8 text-sm uppercase tracking-[0.3em] text-stone-warm/50">
                 {c.subtitle[li]}
               </p>
@@ -288,7 +521,10 @@ function TraditionsPage() {
                   </p>
                   <ul className="space-y-2 text-sm text-stone-warm/75">
                     {c.concepts.map((cc) => (
-                      <li key={cc.name[0]} className="flex justify-between gap-6 border-b border-white/5 pb-2">
+                      <li
+                        key={cc.name[0]}
+                        className="flex justify-between gap-6 border-b border-white/5 pb-2"
+                      >
                         <span className="font-serif text-gold-light">{cc.name[li]}</span>
                         <span className="text-right text-stone-warm/50">{cc.gloss[li]}</span>
                       </li>
@@ -328,7 +564,81 @@ function TraditionsPage() {
         ))}
       </div>
 
-      <div className="mx-auto mt-32 max-w-3xl px-6 text-center">
+      {/* Same question, four instruments — moved from homepage */}
+      <FocusComparison />
+
+      {/* AI synthesis showcase — moved from homepage */}
+      <section className="relative z-10 mx-auto max-w-6xl px-6 py-24 md:px-12">
+        <div className="glass-card overflow-hidden rounded-[2.5rem]">
+          <div className="grid grid-cols-1 lg:grid-cols-2">
+            <div className="p-10 md:p-16">
+              <p className="mb-6 text-[10px] font-medium uppercase tracking-[0.42em] text-gold-dust">
+                {t.show_kicker}
+              </p>
+              <h3 className="mb-8 font-serif text-4xl italic leading-tight text-stone-warm md:text-5xl">
+                {t.show_title}
+              </h3>
+              <p className="mb-10 text-base font-light leading-relaxed text-stone-warm/60 md:text-lg">
+                {t.show_body}
+              </p>
+              <ul className="space-y-4 text-sm text-stone-warm/80">
+                {[t.show_b1, t.show_b2, t.show_b3, t.show_b4].map((line) => (
+                  <li key={line} className="flex items-center gap-4">
+                    <span className="size-1.5 rounded-full bg-gold-dust" />
+                    {line}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                to="/ritual"
+                className="mt-12 inline-flex rounded-full bg-gold-dust px-8 py-3 text-xs font-medium uppercase tracking-[0.32em] text-obsidian transition-colors hover:bg-gold-light"
+              >
+                {t.show_cta}
+              </Link>
+            </div>
+            <div className="relative border-l border-white/5 bg-void-blue/40">
+              <img
+                src={treeImg}
+                alt="The Tree of Destiny"
+                loading="lazy"
+                width={1280}
+                height={1280}
+                className="h-full min-h-[420px] w-full object-cover opacity-80"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-obsidian via-transparent to-transparent" />
+              <div className="absolute bottom-8 left-8 right-8 text-center">
+                <p className="text-[10px] uppercase tracking-[0.4em] text-gold-dust/70">
+                  {t.show_tree}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Eight dimensions preview — moved from homepage */}
+      <section className="relative z-10 mx-auto max-w-6xl px-6 py-16 md:px-12">
+        <div className="mb-10 text-center">
+          <p className="mb-3 text-[10px] uppercase tracking-[0.4em] text-gold-dust">
+            {t.dims_kicker}
+          </p>
+          <h3 className="font-serif text-3xl italic text-stone-warm md:text-4xl">
+            {t.dims_title}
+          </h3>
+        </div>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          {t.dims_list.map((d) => (
+            <div
+              key={d}
+              className="glass-card flex h-24 items-center justify-center rounded-2xl px-4 text-center text-sm uppercase tracking-[0.28em] text-stone-warm/70"
+            >
+              {d}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <div className="mx-auto mt-24 max-w-3xl px-6 text-center">
         <h3 className="mb-8 font-serif text-3xl italic text-stone-warm md:text-4xl">
           {HEADER.footer[li]}
           <span className="gold-gradient-text">{HEADER.footerEm[li]}</span>
