@@ -6,6 +6,8 @@ import { CityCombobox } from "@/components/CityCombobox";
 import { useLang } from "@/lib/i18n";
 import { solarToLunarInfo } from "@/lib/lunar";
 import { noOrphan } from "@/lib/typography";
+import { listUserCharts } from "@/lib/reports-store.functions";
+
 
 const RITUAL_STATE_KEY = "lod:ritual-draft-v2";
 
@@ -150,6 +152,9 @@ function RitualPage() {
   const skipQuiz = true;
   const [restored, setRestored] = useState(false);
   const [fieldError, setFieldError] = useState<string | null>(null);
+  const [primaryConflict, setPrimaryConflict] = useState<URLSearchParams | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
 
   // Restore draft from sessionStorage (client-only, avoids hydration mismatch)
   useEffect(() => {
@@ -287,11 +292,10 @@ function RitualPage() {
 
   const canAdvance = validateCurrentStep() === null;
 
-  const advance = () => {
+  const advance = async () => {
     const err = validateCurrentStep();
     if (err) {
       setFieldError(err);
-      // Scroll the input into view so mobile users notice the message.
       requestAnimationFrame(() => {
         const el = document.querySelector<HTMLElement>("[data-ritual-field]");
         el?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -300,7 +304,7 @@ function RitualPage() {
     }
     setFieldError(null);
     if (isLast) {
-      // Full-schema recheck before firing any calculation / navigation.
+      if (submitting) return;
       const finalErrors: string[] = [];
       if (ownerRole !== "self" && ownerRole !== "other") finalErrors.push("owner");
       if (ownerRole === "other" && !relationship) finalErrors.push("relationship");
@@ -346,12 +350,45 @@ function RitualPage() {
             }
           : {}),
       });
+
+      // If claiming this as "my chart" and a primary self-chart already
+      // exists, ask the user how to resolve the collision instead of
+      // silently overriding. Anonymous users / errors → proceed normally
+      // (they'll auth on /report; no primary yet).
+      if (ownerRole === "self") {
+        setSubmitting(true);
+        try {
+          const charts = await listUserCharts();
+          const hasPrimarySelf = charts.some(
+            (c) => c.is_primary && c.chart_role === "self",
+          );
+          if (hasPrimarySelf) {
+            setPrimaryConflict(params);
+            setSubmitting(false);
+            return;
+          }
+        } catch {
+          /* anonymous or transient — fall through to normal navigation */
+        }
+        setSubmitting(false);
+      }
+
       try { sessionStorage.removeItem(RITUAL_STATE_KEY); } catch {}
       navigate({ to: "/synthesis", search: () => Object.fromEntries(params) as never });
     } else {
       setStep((s) => s + 1);
     }
   };
+
+  const resolvePrimaryConflict = (intent: "replace" | "keep") => {
+    if (!primaryConflict) return;
+    const params = new URLSearchParams(primaryConflict);
+    params.set("primaryIntent", intent);
+    try { sessionStorage.removeItem(RITUAL_STATE_KEY); } catch {}
+    setPrimaryConflict(null);
+    navigate({ to: "/synthesis", search: () => Object.fromEntries(params) as never });
+  };
+
 
   // Clear stale error when the user moves to a different step or
   // updates the current field. Errors should never survive navigation.
@@ -648,6 +685,54 @@ function RitualPage() {
           {t.progress} · {Math.round(progress * 100)}%
         </p>
       </div>
+      {primaryConflict && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="primary-conflict-title"
+          data-testid="ritual-primary-conflict"
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 px-4"
+          onKeyDown={(e) => { if (e.key === "Escape") setPrimaryConflict(null); }}
+        >
+          <div className="w-full max-w-md rounded-2xl border border-gold-dust/30 bg-[#0a0a12] p-6 text-stone-warm shadow-2xl">
+            <h2 id="primary-conflict-title" className="font-serif text-lg text-gold-light">
+              {lang === "zh" ? "你已有一张主命盘" : "You already have a primary chart"}
+            </h2>
+            <p className="mt-2 text-sm text-stone-warm/75">
+              {lang === "zh"
+                ? "这张新的「我的命盘」希望如何处理？旧的主命盘不会被删除，只会被降级为其他命盘。"
+                : "How should this new 'my chart' be filed? Your existing primary won't be deleted — it will be kept as one of your other charts."}
+            </p>
+            <div className="mt-5 flex flex-col gap-2">
+              <button
+                type="button"
+                data-testid="ritual-conflict-replace"
+                onClick={() => resolvePrimaryConflict("replace")}
+                className="min-h-11 rounded-full border border-gold-dust/50 bg-gold-dust/10 px-5 py-2 text-sm text-gold-dust hover:bg-gold-dust/20"
+              >
+                {lang === "zh" ? "替换主命盘（旧的降为其他命盘）" : "Replace primary (demote the old one)"}
+              </button>
+              <button
+                type="button"
+                data-testid="ritual-conflict-keep"
+                onClick={() => resolvePrimaryConflict("keep")}
+                className="min-h-11 rounded-full border border-white/15 px-5 py-2 text-sm text-stone-warm/80 hover:border-gold-dust/40 hover:text-gold-dust"
+              >
+                {lang === "zh" ? "另存为我的其他命盘" : "Save as one of my other charts"}
+              </button>
+              <button
+                type="button"
+                data-testid="ritual-conflict-cancel"
+                onClick={() => setPrimaryConflict(null)}
+                className="min-h-11 rounded-full border border-transparent px-5 py-2 text-xs text-stone-warm/50 hover:text-stone-warm/80"
+              >
+                {lang === "zh" ? "返回修改" : "Back to edit"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+

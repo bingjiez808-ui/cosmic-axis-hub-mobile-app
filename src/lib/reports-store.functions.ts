@@ -451,6 +451,10 @@ const AssignChartOwnershipInput = z.object({
   role: z.enum(["self", "other"]),
   relationshipLabel: z.string().trim().max(80).optional(),
   autoPromoteIfNoPrimary: z.boolean().default(false),
+  // "replace" — force-promote this chart as primary (demotes any prior primary
+  // atomically via set_primary_chart). "keep" — never touch primary. Default
+  // undefined = fall back to autoPromoteIfNoPrimary behaviour.
+  primaryIntent: z.enum(["replace", "keep"]).optional(),
 });
 
 export const assignChartOwnership = createServerFn({ method: "POST" })
@@ -470,24 +474,34 @@ export const assignChartOwnership = createServerFn({ method: "POST" })
     if (updateErr) throw new Error("ownership_update_failed");
 
     let promoted = false;
-    if (data.role === "self" && data.autoPromoteIfNoPrimary) {
-      const { data: existingPrimary } = await supabase
-        .from("charts")
-        .select("id")
-        .eq("user_id", userId)
-        .eq("is_primary", true)
-        .eq("chart_role", "self")
-        .neq("id", data.chartId)
-        .maybeSingle();
-      if (!existingPrimary) {
+    if (data.role === "self") {
+      if (data.primaryIntent === "replace") {
+        // Explicit user consent to replace an existing primary. The RPC
+        // demotes any prior primary in a single statement.
         const { data: ok } = await supabase.rpc("set_primary_chart", {
           _chart_id: data.chartId,
         });
         promoted = !!ok;
+      } else if (data.primaryIntent !== "keep" && data.autoPromoteIfNoPrimary) {
+        const { data: existingPrimary } = await supabase
+          .from("charts")
+          .select("id")
+          .eq("user_id", userId)
+          .eq("is_primary", true)
+          .eq("chart_role", "self")
+          .neq("id", data.chartId)
+          .maybeSingle();
+        if (!existingPrimary) {
+          const { data: ok } = await supabase.rpc("set_primary_chart", {
+            _chart_id: data.chartId,
+          });
+          promoted = !!ok;
+        }
       }
     }
     return { ok: true as const, promoted };
   });
+
 
 
 const GetChartByIdInput = z.object({ chartId: z.string().uuid() });
