@@ -128,11 +128,17 @@ function RitualPage() {
     place: "",
     gender: "",
   });
+  // `gender: ""` in `values` starts unset. Users must click an explicit
+  // option — including "prefer not to say" — before advancing. We track
+  // that explicit-choice separately so an untouched gender step still
+  // blocks Next with an inline explanation.
+  const [genderChosen, setGenderChosen] = useState(false);
   const [quiz] = useState<string[]>(["", "", "", "", ""]);
   // Quiz has been retired — the flow is intake-only now.
   const [step, setStep] = useState(0);
   const skipQuiz = true;
   const [restored, setRestored] = useState(false);
+  const [fieldError, setFieldError] = useState<string | null>(null);
 
   // Restore draft from sessionStorage (client-only, avoids hydration mismatch)
   useEffect(() => {
@@ -193,16 +199,99 @@ function RitualPage() {
   const intakeIdx = isIntakeStep ? step - quizCount : -1;
   const currentQ = isIntakeStep ? questionSteps[intakeIdx] : null;
 
-  const canAdvance = isQuizStep
-    ? !!quiz[quizIdx]
-    : currentQ?.key === "gender"
-      ? true // gender step allows skip
-      : (values[currentQ!.key] ?? "").trim().length > 0;
+  // Per-step validation. Returns null when OK, or a localized error
+  // message describing precisely which field is invalid. The Next
+  // button is NOT disabled — clicking it always runs this check and
+  // surfaces the reason inline, which is more discoverable than a
+  // grey button with no explanation.
+  const validateCurrentStep = (): string | null => {
+    if (isQuizStep) {
+      return quiz[quizIdx]
+        ? null
+        : lang === "zh"
+          ? "请选择一个最贴近你的选项。"
+          : "Please pick the option closest to you.";
+    }
+    if (!currentQ) return null;
+    const raw = (values[currentQ.key] ?? "").trim();
+    if (currentQ.key === "name") {
+      if (raw.length === 0)
+        return lang === "zh" ? "请为这张命盘写下一个称呼。" : "Please write a name for this chart.";
+      if (raw.length > 60)
+        return lang === "zh" ? "称呼过长（最多 60 字）。" : "Too long (60 characters max).";
+      return null;
+    }
+    if (currentQ.key === "date") {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(raw))
+        return lang === "zh" ? "请填写完整的出生日期（YYYY-MM-DD）。" : "Please enter a full birth date (YYYY-MM-DD).";
+      const d = new Date(raw + "T00:00:00");
+      if (Number.isNaN(d.getTime()))
+        return lang === "zh" ? "日期无效，请再检查。" : "Invalid date.";
+      const now = new Date();
+      if (d > now)
+        return lang === "zh" ? "出生日期不能是未来。" : "Birth date can't be in the future.";
+      const year = d.getFullYear();
+      if (year < 1900 || year > 2099)
+        return lang === "zh" ? "年份需在 1900–2099 之间。" : "Year must be between 1900 and 2099.";
+      return null;
+    }
+    if (currentQ.key === "time") {
+      if (!/^\d{2}:\d{2}$/.test(raw))
+        return lang === "zh"
+          ? "准确出生时间是生成四体系报告的前提，请填写 HH:MM。"
+          : "An accurate birth time is required for the full four-tradition reading. Please enter HH:MM.";
+      const [hh, mm] = raw.split(":").map(Number);
+      if (hh < 0 || hh > 23 || mm < 0 || mm > 59)
+        return lang === "zh" ? "时间无效。" : "Invalid time.";
+      return null;
+    }
+    if (currentQ.key === "place") {
+      if (raw.length < 2)
+        return lang === "zh"
+          ? "请选择或输入可解析的出生地点（国家 + 城市）。"
+          : "Please pick or enter a resolvable birth place (country + city).";
+      return null;
+    }
+    if (currentQ.key === "gender") {
+      if (!genderChosen)
+        return lang === "zh"
+          ? "请明确选择一项——包含「暂不填写」。这不会被公开显示。"
+          : "Please explicitly pick one option — including 'prefer not to say'. This is never shown publicly.";
+      return null;
+    }
+    return null;
+  };
 
+  const canAdvance = validateCurrentStep() === null;
 
   const advance = () => {
-    if (!canAdvance) return;
+    const err = validateCurrentStep();
+    if (err) {
+      setFieldError(err);
+      // Scroll the input into view so mobile users notice the message.
+      requestAnimationFrame(() => {
+        const el = document.querySelector<HTMLElement>("[data-ritual-field]");
+        el?.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+      return;
+    }
+    setFieldError(null);
     if (isLast) {
+      // Full-schema recheck before firing any calculation / navigation.
+      const finalErrors: string[] = [];
+      if (values.name.trim().length === 0) finalErrors.push("name");
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(values.date)) finalErrors.push("date");
+      if (!/^\d{2}:\d{2}$/.test(values.time)) finalErrors.push("time");
+      if (values.place.trim().length < 2) finalErrors.push("place");
+      if (!genderChosen) finalErrors.push("gender");
+      if (finalErrors.length > 0) {
+        setFieldError(
+          lang === "zh"
+            ? `还有 ${finalErrors.length} 项需要补充，请回到前面步骤完善。`
+            : `${finalErrors.length} field${finalErrors.length > 1 ? "s" : ""} still need attention — please go back to complete them.`,
+        );
+        return;
+      }
       const info = solarToLunarInfo(values.date, values.time);
       const gender = values.gender === "male" || values.gender === "female" ? values.gender : "";
       const params = new URLSearchParams({
@@ -232,6 +321,19 @@ function RitualPage() {
       setStep((s) => s + 1);
     }
   };
+
+  // Clear stale error when the user moves to a different step or
+  // updates the current field. Errors should never survive navigation.
+  useEffect(() => {
+    setFieldError(null);
+  }, [step]);
+  useEffect(() => {
+    if (fieldError) {
+      const err = validateCurrentStep();
+      if (!err) setFieldError(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [values, genderChosen]);
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-x-hidden px-6 pt-32 pb-24">

@@ -5,7 +5,8 @@ import { PersonalWorkspaceNav } from "@/components/PersonalWorkspaceNav";
 
 import { loadDailyRoomFixture, type DailyRoomFixtureKey } from "@/experiences/daily-room/fixtures";
 import { ensureSocialPreviewAllowed } from "@/experiences/daily-room/route-guard";
-import { DailyRoomPending, DailyRoomError } from "@/experiences/daily-room/fallback";
+import { DailyRoomError } from "@/experiences/daily-room/fallback";
+import { PersonalShellPending } from "@/experiences/daily-room/personal-shell-pending";
 import { listUserCharts, type ChartRow } from "@/lib/reports-store.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { useLang } from "@/lib/i18n";
@@ -71,7 +72,7 @@ export const Route = createFileRoute("/_authenticated/me/home")({
     return f === "welcome" || f === "peers" ? { focus: f } : {};
   },
   pendingMs: 0,
-  pendingComponent: DailyRoomPending,
+  pendingComponent: PersonalShellPending,
   errorComponent: DailyRoomError,
   component: DailyRoomPage,
 });
@@ -712,10 +713,11 @@ function DailyRoomPage() {
           const peersFocused = focus === "peers";
           return (
             <div
-              id="life-chapter"
+              id="echoes"
               data-focus={peersFocused ? "peers" : undefined}
               className={`scroll-mt-24 ${peersFocused ? "rounded-2xl ring-2 ring-amber-300/60 ring-offset-2 ring-offset-[#0a0a12] transition-shadow" : ""}`}
             >
+              <span id="life-chapter" aria-hidden className="block h-0 w-0 -mt-24" />
               {peersFocused ? (
                 <div
                   className="mb-3 rounded-lg border border-amber-400/25 bg-amber-500/5 px-4 py-2 text-xs text-amber-100/85"

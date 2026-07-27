@@ -144,7 +144,7 @@ function LandingPage() {
                 className="group relative inline-flex overflow-hidden rounded-full border border-gold-dust/40 bg-obsidian/80 px-10 py-4 backdrop-blur-sm transition-colors hover:border-gold-dust md:px-12 md:py-5"
               >
                 <span className="relative z-10 text-xs font-medium uppercase tracking-[0.32em] text-gold-dust">
-                  {isZh ? "回到我的阅览桌" : "Back to my reading desk"}
+                  {isZh ? "回到我的个人书架" : "Back to my Personal Library"}
                 </span>
                 <span className="absolute inset-0 translate-y-full bg-gold-dust/10 transition-transform duration-500 group-hover:translate-y-0" />
               </Link>
