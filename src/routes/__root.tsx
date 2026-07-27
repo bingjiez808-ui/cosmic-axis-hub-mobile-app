@@ -294,7 +294,30 @@ function SiteNav() {
   const [moreOpen, setMoreOpen] = useState(false);
   const [orbActive, setOrbActive] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+  const navRef = useRef<HTMLElement | null>(null);
   useEffect(() => { setHydrated(true); }, []);
+
+  // Publish real global-nav height as --site-nav-height so any sticky UI
+  // below it (e.g. PersonalWorkspaceNav) can offset correctly instead of
+  // guessing top-14/top-16 and getting covered.
+  useEffect(() => {
+    const el = navRef.current;
+    if (!el) return;
+    const write = () => {
+      const h = Math.ceil(el.getBoundingClientRect().height);
+      if (h > 0) {
+        document.documentElement.style.setProperty("--site-nav-height", `${h}px`);
+      }
+    };
+    write();
+    const ro = new ResizeObserver(write);
+    ro.observe(el);
+    window.addEventListener("resize", write);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", write);
+    };
+  }, []);
   const avatarUrl = hydrated ? account?.avatar : undefined;
   const isZh = lang === "zh";
   const adminLabel = isZh ? "议政厅" : "Admin";
