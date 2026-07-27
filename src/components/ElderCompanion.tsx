@@ -4,7 +4,8 @@ import { X, Send, Loader2 } from "lucide-react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 
-import { sageChat, type SageChatResponse } from "@/lib/sage.functions";
+import { sageChat, type SageChatResponse, type SageNextAction } from "@/lib/sage.functions";
+import { createFeedbackTicket } from "@/lib/tickets.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { SageAvatar } from "@/components/SageAvatar";
 
@@ -307,18 +308,168 @@ function NextActionRow({ meta, lang }: { meta: SageChatResponse; lang: "en" | "z
       </Link>
     );
   }
-  if (na.kind === "provide_order_id") {
-    return (
-      <span className="mt-1 text-[10.5px] text-stone-warm/60">
-        {meta.feedbackTicket
-          ? zh
-            ? `已记入后台 · 工单 ${meta.feedbackTicket.id.slice(0, 8)}`
-            : `Filed · ticket ${meta.feedbackTicket.id.slice(0, 8)}`
-          : zh
-            ? "请把订单号发过来"
-            : "Please share the order number"}
-      </span>
-    );
+  if (na.kind === "confirm_ticket_draft") {
+    return <TicketDraftCard draft={na.draft} lang={lang} />;
   }
   return null;
+}
+
+type TicketDraft = Extract<SageNextAction, { kind: "confirm_ticket_draft" }>["draft"];
+
+const CATEGORY_LABEL: Record<TicketDraft["category"], { zh: string; en: string }> = {
+  product: { zh: "产品问题", en: "Product issue" },
+  device: { zh: "设备 / 故障", en: "Device / bug" },
+  order: { zh: "订单问题", en: "Order" },
+  payment: { zh: "支付问题", en: "Payment" },
+  subscription: { zh: "订阅 / 会员", en: "Subscription" },
+};
+
+const MAILTO =
+  "mailto:fatenexus.studio@gmail.com" +
+  "?subject=" +
+  encodeURIComponent("Fate Nexus 订单问题 / 工单号");
+
+function TicketDraftCard({ draft, lang }: { draft: TicketDraft; lang: "en" | "zh" }) {
+  const zh = lang === "zh";
+  const [category, setCategory] = useState<TicketDraft["category"]>(draft.category);
+  const [subject, setSubject] = useState(draft.subject);
+  const [message, setMessage] = useState(draft.message);
+  const [orderIdInput, setOrderIdInput] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [filed, setFiled] = useState<{ ticket_code: string } | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const requestIdRef = useRef<string>(
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `req-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+  );
+  const create = useServerFn(createFeedbackTicket);
+
+  const submit = async () => {
+    if (busy || filed) return;
+    setErr(null);
+    setBusy(true);
+    try {
+      const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const orderId = uuidRe.test(orderIdInput.trim()) ? orderIdInput.trim() : null;
+      const res = await create({
+        data: {
+          category,
+          subject: subject.trim().slice(0, 120) || CATEGORY_LABEL[category][lang],
+          message: message.trim().slice(0, 2000),
+          orderId,
+          requestId: requestIdRef.current,
+          lang,
+        },
+      });
+      setFiled({ ticket_code: res.ticket_code });
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (filed) {
+    return (
+      <div className="mt-2 w-full rounded-xl border border-emerald-500/30 bg-emerald-950/25 p-3 text-[11.5px] leading-relaxed text-emerald-100">
+        <p className="font-serif">
+          {zh ? "已登记，工单号 " : "Filed. Ticket "}
+          <span className="font-mono text-emerald-200">{filed.ticket_code}</span>
+        </p>
+        <p className="mt-1 text-emerald-100/80">
+          {zh
+            ? "管理员会在后台查看这条工单。你可以在「我的会员 · 工单」页跟踪状态。"
+            : "An admin will review this ticket. You can track its status on the Membership · Tickets page."}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-2 w-full space-y-2 rounded-xl border border-gold-dust/30 bg-obsidian/60 p-3 text-[11.5px] text-stone-warm">
+      <p className="text-[10px] uppercase tracking-[0.24em] text-gold-dust/80">
+        {zh ? "工单草稿 · 未登记" : "Ticket draft · not filed"}
+      </p>
+      <label className="block">
+        <span className="text-stone-warm/60">{zh ? "分类" : "Category"}</span>
+        <select
+          value={category}
+          onChange={(e) => setCategory(e.target.value as TicketDraft["category"])}
+          className="mt-1 w-full rounded-md border border-gold-dust/20 bg-obsidian/70 px-2 py-1 text-[12px] text-stone-warm focus:border-gold-light/50 focus:outline-none"
+        >
+          {(Object.keys(CATEGORY_LABEL) as TicketDraft["category"][]).map((k) => (
+            <option key={k} value={k}>
+              {CATEGORY_LABEL[k][lang]}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="block">
+        <span className="text-stone-warm/60">{zh ? "主题" : "Subject"}</span>
+        <input
+          type="text"
+          value={subject}
+          maxLength={120}
+          onChange={(e) => setSubject(e.target.value)}
+          className="mt-1 w-full rounded-md border border-gold-dust/20 bg-obsidian/70 px-2 py-1 text-[12px] text-stone-warm focus:border-gold-light/50 focus:outline-none"
+        />
+      </label>
+      <label className="block">
+        <span className="text-stone-warm/60">{zh ? "详细描述" : "Details"}</span>
+        <textarea
+          value={message}
+          maxLength={2000}
+          rows={3}
+          onChange={(e) => setMessage(e.target.value)}
+          className="mt-1 w-full resize-none rounded-md border border-gold-dust/20 bg-obsidian/70 px-2 py-1 text-[12px] text-stone-warm focus:border-gold-light/50 focus:outline-none"
+        />
+      </label>
+      {(category === "order" || category === "payment" || category === "subscription") && (
+        <>
+          <label className="block">
+            <span className="text-stone-warm/60">
+              {zh ? "订单号（可选）" : "Order ID (optional)"}
+            </span>
+            <input
+              type="text"
+              value={orderIdInput}
+              placeholder="uuid"
+              onChange={(e) => setOrderIdInput(e.target.value)}
+              className="mt-1 w-full rounded-md border border-gold-dust/20 bg-obsidian/70 px-2 py-1 font-mono text-[11px] text-stone-warm focus:border-gold-light/50 focus:outline-none"
+            />
+          </label>
+          <p className="rounded-md border border-gold-dust/15 bg-gold-dust/5 px-2 py-1.5 text-[10.5px] leading-snug text-stone-warm/70">
+            {zh
+              ? "如需补充订单凭证，也可发送邮件至 "
+              : "You may also email additional receipts to "}
+            <a href={MAILTO} className="text-gold-light underline">
+              fatenexus.studio@gmail.com
+            </a>
+            {zh
+              ? "。请注明注册邮箱和工单号，不要发送密码、验证码或完整银行卡信息。"
+              : ". Include your registered email and ticket number; never send passwords, verification codes, or full card details."}
+          </p>
+        </>
+      )}
+      <p className="text-[10px] leading-snug text-stone-warm/50">
+        {zh
+          ? "请勿填写银行卡号、验证码、密码或身份证。按下方按钮才会保存到管理员后台。"
+          : "Do not include card numbers, verification codes, passwords, or ID numbers. Nothing is stored until you press the button below."}
+      </p>
+      {err && (
+        <p className="rounded-md border border-red-500/30 bg-red-950/30 px-2 py-1 text-[11px] text-red-300">
+          {err}
+        </p>
+      )}
+      <button
+        type="button"
+        disabled={busy || !subject.trim() || !message.trim()}
+        onClick={() => void submit()}
+        className="w-full rounded-lg border border-gold-dust/40 bg-gold-dust/15 px-3 py-2 text-[12px] font-medium text-gold-light hover:bg-gold-dust/25 disabled:opacity-40"
+      >
+        {busy ? (zh ? "登记中…" : "Filing…") : zh ? "登记到管理员后台" : "File to admin"}
+      </button>
+    </div>
+  );
 }

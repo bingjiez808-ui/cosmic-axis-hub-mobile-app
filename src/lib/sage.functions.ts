@@ -45,7 +45,14 @@ export type SageNextAction =
   | { kind: "upgrade_oracle"; source: "companion" }
   | { kind: "open_route"; href: string; label: { zh: string; en: string } }
   | { kind: "crisis_support" }
-  | { kind: "provide_order_id" };
+  | {
+      kind: "confirm_ticket_draft";
+      draft: {
+        category: "product" | "device" | "order" | "payment" | "subscription";
+        subject: string;
+        message: string;
+      };
+    };
 
 export type SageChatResponse = {
   intent: Intent;
@@ -54,7 +61,6 @@ export type SageChatResponse = {
   usedChart: boolean;
   chargedQuota: boolean;
   nextAction: SageNextAction;
-  feedbackTicket?: { id: string; category: "device" | "order" };
 };
 
 // ------------------------------------------------------------------
@@ -159,25 +165,21 @@ function productHelpAnswer(
   };
 }
 
-function orderHelpAnswer(
-  hasFeedback: boolean,
-  ticketId: string | null,
-  lang: "en" | "zh",
-): { text: string; next: SageNextAction } {
+function orderDraft(message: string, lang: "en" | "zh"): { text: string; next: SageNextAction } {
   const zh = lang === "zh";
-  if (hasFeedback && ticketId) {
-    return {
-      text: zh
-        ? `已把这条反馈记入后台（工单号 ${ticketId.slice(0, 8)}）。你可以在「我的会员」页查看你名下的订单；如需人工跟进，请告诉我订单号。`
-        : `Your note has been filed (ticket ${ticketId.slice(0, 8)}). You can review your orders on the membership page; if you need a human to follow up, please share the order number.`,
-      next: { kind: "provide_order_id" },
-    };
-  }
+  const subject = zh ? "订单 / 支付 / 会员 咨询" : "Order / Payment / Membership question";
   return {
     text: zh
-      ? "为了保护你的账户，我不会替你调阅陌生订单。请把订单号或注册邮箱发过来，我会指引下一步；或者在「我的会员」页直接查看你名下的订单。"
-      : "To protect your account, I won't look up unfamiliar orders. Share the order number or the email you signed up with and I'll point you to the next step; or check your own orders on the membership page.",
-    next: { kind: "provide_order_id" },
+      ? "这看起来是订单或支付类问题。我为你准备了一份工单草稿（下方可查看和编辑）——只有你按下「登记到管理员后台」，它才会被保存。请不要在其中填写密码、验证码、身份证或完整银行卡号。"
+      : "This looks like an order or payment question. I've prepared a ticket draft below — it is only saved if you press \"File to admin\". Please don't include passwords, verification codes, ID numbers, or full card details.",
+    next: {
+      kind: "confirm_ticket_draft",
+      draft: {
+        category: "order",
+        subject,
+        message: message.slice(0, 1500),
+      },
+    },
   };
 }
 
@@ -288,27 +290,13 @@ export const sageChat = createServerFn({ method: "POST" })
       };
     }
 
-    // 5) Order help — record a real ticket, only claim what actually happened.
+    // 5) Order help — return a ticket DRAFT. The user must call
+    //    createFeedbackTicket to actually persist. We do not write
+    //    anything to user_feedback here.
     if (intent === "order_help") {
-      let ticket: { id: string; category: "order" } | undefined;
-      try {
-        const summary = data.message.slice(0, 200);
-        const { data: inserted } = await supabase
-          .from("user_feedback")
-          .insert({
-            user_id: userId,
-            category: "order",
-            message: summary,
-            keywords: [],
-            lang: data.lang,
-          })
-          .select("id")
-          .maybeSingle();
-        if (inserted?.id) ticket = { id: String(inserted.id), category: "order" };
-      } catch {
-        // Ignore — the reply below still works without a ticket id.
-      }
-      const { text, next } = orderHelpAnswer(!!ticket, ticket?.id ?? null, data.lang);
+      const { text, next } = orderDraft(data.message, data.lang);
+      void supabase; // context available for future filter checks
+      void userId;
       return {
         intent,
         text,
@@ -316,7 +304,6 @@ export const sageChat = createServerFn({ method: "POST" })
         usedChart: false,
         chargedQuota: false,
         nextAction: next,
-        feedbackTicket: ticket,
       };
     }
 

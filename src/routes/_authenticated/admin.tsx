@@ -30,6 +30,7 @@ import {
   type AdminOrderRow,
   type AdminUserChartRow,
 } from "@/lib/premium.functions";
+import { AdminTicketsSection } from "@/components/AdminTicketsSection";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -109,7 +110,9 @@ function AdminPage() {
     if (!rows) return null;
     const now = Date.now();
     const day = 24 * 60 * 60 * 1000;
-    const active7 = rows.filter((r) => r.lastSignInAt && now - new Date(r.lastSignInAt).getTime() < 7 * day).length;
+    const active7 = rows.filter(
+      (r) => r.lastSignInAt && now - new Date(r.lastSignInAt).getTime() < 7 * day,
+    ).length;
     const admins = rows.filter((r) => r.roles.includes("admin")).length;
     return { active7, admins };
   }, [rows]);
@@ -120,7 +123,9 @@ function AdminPage() {
         <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="text-[10px] uppercase tracking-[0.42em] text-gold-dust">Admin</p>
-            <h1 className="mt-2 font-serif text-4xl italic text-stone-warm">议政厅 · Council chamber</h1>
+            <h1 className="mt-2 font-serif text-4xl italic text-stone-warm">
+              议政厅 · Council chamber
+            </h1>
             <p className="mt-2 max-w-xl text-sm text-stone-warm/60">
               查看所有访客、会员档位与近 30 日趋势。可为访客升为「贤者」或「神谕者」。
             </p>
@@ -159,14 +164,20 @@ function AdminPage() {
           <div className="mb-8 grid gap-4 md:grid-cols-2">
             <ChartCard title="每日新增用户 · 30d">
               <ResponsiveContainer width="100%" height={200}>
-                <LineChart data={stats.series} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <LineChart
+                  data={stats.series}
+                  margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
                   <XAxis
                     dataKey="date"
                     tick={{ fontSize: 10, fill: "rgba(255,255,255,0.4)" }}
                     tickFormatter={(v: string) => v.slice(5)}
                   />
-                  <YAxis tick={{ fontSize: 10, fill: "rgba(255,255,255,0.4)" }} allowDecimals={false} />
+                  <YAxis
+                    tick={{ fontSize: 10, fill: "rgba(255,255,255,0.4)" }}
+                    allowDecimals={false}
+                  />
                   <Tooltip
                     contentStyle={{
                       background: "rgba(10,10,15,0.9)",
@@ -175,7 +186,14 @@ function AdminPage() {
                       fontSize: 12,
                     }}
                   />
-                  <Line type="monotone" dataKey="newUsers" stroke="#d4af37" strokeWidth={2} dot={false} name="新增" />
+                  <Line
+                    type="monotone"
+                    dataKey="newUsers"
+                    stroke="#d4af37"
+                    strokeWidth={2}
+                    dot={false}
+                    name="新增"
+                  />
                 </LineChart>
               </ResponsiveContainer>
             </ChartCard>
@@ -188,7 +206,10 @@ function AdminPage() {
                     tick={{ fontSize: 10, fill: "rgba(255,255,255,0.4)" }}
                     tickFormatter={(v: string) => v.slice(5)}
                   />
-                  <YAxis tick={{ fontSize: 10, fill: "rgba(255,255,255,0.4)" }} allowDecimals={false} />
+                  <YAxis
+                    tick={{ fontSize: 10, fill: "rgba(255,255,255,0.4)" }}
+                    allowDecimals={false}
+                  />
                   <Tooltip
                     contentStyle={{
                       background: "rgba(10,10,15,0.9)",
@@ -220,7 +241,9 @@ function AdminPage() {
                 type="button"
                 onClick={() => setTierFilter(t)}
                 className={`rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.24em] transition ${
-                  tierFilter === t ? "bg-gold-dust text-obsidian" : "text-stone-warm/60 hover:text-gold-dust"
+                  tierFilter === t
+                    ? "bg-gold-dust text-obsidian"
+                    : "text-stone-warm/60 hover:text-gold-dust"
                 }`}
               >
                 {t === "all" ? "全部" : TIER_LABELS[t]}
@@ -256,6 +279,7 @@ function AdminPage() {
 
       <PremiumOrdersSection reloadKey={reload} onReload={() => setReload((n) => n + 1)} />
 
+      <AdminTicketsSection />
 
       {editing && (
         <EditDrawer
@@ -273,9 +297,13 @@ function AdminPage() {
 
 function Stat({ label, value, accent }: { label: string; value: number; accent?: boolean }) {
   return (
-    <div className={`glass-card rounded-xl border px-4 py-3 ${accent ? "border-gold-dust/40" : "border-white/10"}`}>
+    <div
+      className={`glass-card rounded-xl border px-4 py-3 ${accent ? "border-gold-dust/40" : "border-white/10"}`}
+    >
       <div className="text-[10px] uppercase tracking-[0.28em] text-stone-warm/50">{label}</div>
-      <div className={`mt-1 font-serif text-2xl ${accent ? "text-gold-light" : "text-stone-warm"}`}>{value}</div>
+      <div className={`mt-1 font-serif text-2xl ${accent ? "text-gold-light" : "text-stone-warm"}`}>
+        {value}
+      </div>
     </div>
   );
 }
@@ -355,7 +383,15 @@ function UserRow({ row, onEdit }: { row: Row; onEdit: () => void }) {
   );
 }
 
-function EditDrawer({ row, onClose, onSaved }: { row: Row; onClose: () => void; onSaved: () => void }) {
+function EditDrawer({
+  row,
+  onClose,
+  onSaved,
+}: {
+  row: Row;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
   const [displayName, setDisplayName] = useState(row.displayName ?? "");
   const [tier, setTier] = useState<Tier>(row.membershipTier);
   const [expiresAt, setExpiresAt] = useState<string>(
@@ -367,7 +403,9 @@ function EditDrawer({ row, onClose, onSaved }: { row: Row; onClose: () => void; 
   async function saveProfile() {
     setBusy(true);
     try {
-      await adminUpdateProfile({ data: { userId: row.id, displayName: displayName.trim() || null } });
+      await adminUpdateProfile({
+        data: { userId: row.id, displayName: displayName.trim() || null },
+      });
       toast.success("称呼已更新");
       onSaved();
     } catch (e) {
@@ -380,7 +418,12 @@ function EditDrawer({ row, onClose, onSaved }: { row: Row; onClose: () => void; 
   async function saveMembership() {
     setBusy(true);
     try {
-      const iso = tier === "none" ? null : expiresAt ? new Date(`${expiresAt}T23:59:59Z`).toISOString() : null;
+      const iso =
+        tier === "none"
+          ? null
+          : expiresAt
+            ? new Date(`${expiresAt}T23:59:59Z`).toISOString()
+            : null;
       await setUserMembership({ data: { userId: row.id, tier, expiresAt: iso } });
       toast.success("会员档位已更新");
       onSaved();
@@ -422,9 +465,15 @@ function EditDrawer({ row, onClose, onSaved }: { row: Row; onClose: () => void; 
           <div>
             <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust">管理访客</p>
             <h2 className="mt-1 font-serif text-xl text-stone-warm">{row.email}</h2>
-            {row.phone && <p className="mt-0.5 font-mono text-[11px] text-stone-warm/50">{row.phone}</p>}
+            {row.phone && (
+              <p className="mt-0.5 font-mono text-[11px] text-stone-warm/50">{row.phone}</p>
+            )}
           </div>
-          <button type="button" onClick={onClose} className="text-stone-warm/50 hover:text-gold-dust">
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-stone-warm/50 hover:text-gold-dust"
+          >
             ✕
           </button>
         </div>
@@ -447,7 +496,9 @@ function EditDrawer({ row, onClose, onSaved }: { row: Row; onClose: () => void; 
         </section>
 
         <section className="mb-6 border-t border-white/10 pt-6">
-          <label className="text-[10px] uppercase tracking-[0.28em] text-stone-warm/50">会员档位</label>
+          <label className="text-[10px] uppercase tracking-[0.28em] text-stone-warm/50">
+            会员档位
+          </label>
           <div className="mt-2 grid grid-cols-3 gap-2">
             {(["none", "sage", "oracle"] as const).map((t) => (
               <button
@@ -466,7 +517,9 @@ function EditDrawer({ row, onClose, onSaved }: { row: Row; onClose: () => void; 
           </div>
           {tier !== "none" && (
             <div className="mt-3">
-              <label className="text-[10px] uppercase tracking-[0.28em] text-stone-warm/50">到期日</label>
+              <label className="text-[10px] uppercase tracking-[0.28em] text-stone-warm/50">
+                到期日
+              </label>
               <input
                 type="date"
                 value={expiresAt}
@@ -487,7 +540,9 @@ function EditDrawer({ row, onClose, onSaved }: { row: Row; onClose: () => void; 
         </section>
 
         <section className="mb-6 border-t border-white/10 pt-6">
-          <label className="text-[10px] uppercase tracking-[0.28em] text-stone-warm/50">代寄取回信</label>
+          <label className="text-[10px] uppercase tracking-[0.28em] text-stone-warm/50">
+            代寄取回信
+          </label>
           <button
             type="button"
             onClick={async () => {
@@ -505,7 +560,9 @@ function EditDrawer({ row, onClose, onSaved }: { row: Row; onClose: () => void; 
         </section>
 
         <section className="border-t border-white/10 pt-6">
-          <label className="text-[10px] uppercase tracking-[0.28em] text-stone-warm/50">直接重铸口令</label>
+          <label className="text-[10px] uppercase tracking-[0.28em] text-stone-warm/50">
+            直接重铸口令
+          </label>
           <input
             type="text"
             placeholder="新口令（至少 8 位）"
@@ -566,7 +623,11 @@ function PremiumOrdersSection({
       toast.error("请填写备注（至少 4 字）");
       return;
     }
-    if (!window.confirm(`确认将订单标记为已付款并解锁高级深度报告？\n邮箱：${confirming.email ?? confirming.userId}`))
+    if (
+      !window.confirm(
+        `确认将订单标记为已付款并解锁高级深度报告？\n邮箱：${confirming.email ?? confirming.userId}`,
+      )
+    )
       return;
     setBusy(true);
     try {
@@ -593,7 +654,6 @@ function PremiumOrdersSection({
       <GrantByChartPanel onGranted={onReload} />
 
       <div className="glass-card rounded-2xl border border-white/10 p-4">
-
         <div className="mb-4 flex flex-wrap items-center gap-3">
           {(["all", "pending", "paid", "failed", "refunded"] as const).map((s) => (
             <button
@@ -683,9 +743,7 @@ function PremiumOrdersSection({
       {confirming && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-obsidian/80 p-4">
           <div className="glass-card w-full max-w-md rounded-2xl border border-gold-dust/30 p-6">
-            <h3 className="mb-3 font-serif text-xl text-stone-warm">
-              手动开通 ¥79 高级深度报告
-            </h3>
+            <h3 className="mb-3 font-serif text-xl text-stone-warm">手动开通 ¥79 高级深度报告</h3>
             <p className="mb-2 text-[13px] text-stone-warm/70">
               {confirming.email ?? confirming.userId}
             </p>
@@ -770,7 +828,11 @@ function GrantByChartPanel({ onGranted }: { onGranted: () => void }) {
       toast.error("该命盘已有历史 paid 订单，无需再次开通");
       return;
     }
-    if (!window.confirm(`确认为 ${row.email ?? row.userId} 的命盘「${row.name ?? row.chartId.slice(0, 8)}」授予测试权益？`))
+    if (
+      !window.confirm(
+        `确认为 ${row.email ?? row.userId} 的命盘「${row.name ?? row.chartId.slice(0, 8)}」授予测试权益？`,
+      )
+    )
       return;
     setGranting(row.chartId);
     try {
@@ -874,5 +936,3 @@ function GrantByChartPanel({ onGranted }: { onGranted: () => void }) {
     </div>
   );
 }
-
-

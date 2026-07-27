@@ -3,10 +3,12 @@ import { useEffect, useState } from "react";
 
 import { PersonalBookshelf } from "@/experiences/profile/PersonalBookshelf";
 import { MembershipCard } from "@/components/MembershipCard";
+import { MyTicketsCard } from "@/components/MyTicketsCard";
 import { DailyRoomError, DailyRoomPending } from "@/experiences/daily-room/fallback";
 import { supabase } from "@/integrations/supabase/client";
 import { listUserCharts, type ChartRow } from "@/lib/reports-store.functions";
 import { useDaily } from "@/lib/i18n-daily";
+import { useLang } from "@/lib/i18n";
 
 /**
  * /me/profile — the user's Personal Library Card.
@@ -97,8 +99,9 @@ function MyProfilePage() {
         </header>
 
         {/* Membership */}
-        <div className="mb-8">
+        <div className="mb-8 space-y-4">
           <MembershipCard />
+          <TicketsBlock />
         </div>
 
         {/* Bookshelf */}
@@ -149,4 +152,9 @@ function MyProfilePage() {
       </div>
     </div>
   );
+}
+
+function TicketsBlock() {
+  const { lang } = useLang();
+  return <MyTicketsCard lang={lang} />;
 }

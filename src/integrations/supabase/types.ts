@@ -1086,36 +1086,74 @@ export type Database = {
       }
       user_feedback: {
         Row: {
+          admin_note: string | null
           category: Database["public"]["Enums"]["feedback_category"]
           created_at: string
           id: string
           keywords: string[]
           lang: string | null
           message: string
+          order_id: string | null
+          priority: Database["public"]["Enums"]["ticket_priority"]
+          request_id: string | null
           resolved: boolean
+          resolved_at: string | null
+          status: Database["public"]["Enums"]["ticket_status"]
+          subject: string | null
+          ticket_code: string
+          updated_at: string
           user_id: string | null
+          user_reply: string | null
         }
         Insert: {
+          admin_note?: string | null
           category?: Database["public"]["Enums"]["feedback_category"]
           created_at?: string
           id?: string
           keywords?: string[]
           lang?: string | null
           message: string
+          order_id?: string | null
+          priority?: Database["public"]["Enums"]["ticket_priority"]
+          request_id?: string | null
           resolved?: boolean
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["ticket_status"]
+          subject?: string | null
+          ticket_code?: string
+          updated_at?: string
           user_id?: string | null
+          user_reply?: string | null
         }
         Update: {
+          admin_note?: string | null
           category?: Database["public"]["Enums"]["feedback_category"]
           created_at?: string
           id?: string
           keywords?: string[]
           lang?: string | null
           message?: string
+          order_id?: string | null
+          priority?: Database["public"]["Enums"]["ticket_priority"]
+          request_id?: string | null
           resolved?: boolean
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["ticket_status"]
+          subject?: string | null
+          ticket_code?: string
+          updated_at?: string
           user_id?: string | null
+          user_reply?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_feedback_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "premium_report_orders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_preferences: {
         Row: {
@@ -1404,6 +1442,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      generate_ticket_code: { Args: never; Returns: string }
       set_chart_role: {
         Args: { _chart_id: string; _role: string }
         Returns: boolean
@@ -1412,8 +1451,21 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
-      feedback_category: "device" | "order" | "other"
+      feedback_category:
+        | "device"
+        | "order"
+        | "other"
+        | "product"
+        | "payment"
+        | "subscription"
       membership_tier: "none" | "sage" | "oracle"
+      ticket_priority: "low" | "normal" | "high" | "urgent"
+      ticket_status:
+        | "new"
+        | "in_progress"
+        | "waiting_user"
+        | "resolved"
+        | "closed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1542,8 +1594,23 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
-      feedback_category: ["device", "order", "other"],
+      feedback_category: [
+        "device",
+        "order",
+        "other",
+        "product",
+        "payment",
+        "subscription",
+      ],
       membership_tier: ["none", "sage", "oracle"],
+      ticket_priority: ["low", "normal", "high", "urgent"],
+      ticket_status: [
+        "new",
+        "in_progress",
+        "waiting_user",
+        "resolved",
+        "closed",
+      ],
     },
   },
 } as const
