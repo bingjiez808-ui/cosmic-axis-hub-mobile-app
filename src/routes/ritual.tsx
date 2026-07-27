@@ -32,6 +32,16 @@ export const Route = createFileRoute("/ritual")({
 
 type FieldKey = "name" | "date" | "time" | "place" | "gender";
 type Gender = "male" | "female" | "";
+type OwnerRole = "self" | "other" | "";
+type Relationship = "partner" | "family" | "friend" | "colleague" | "other" | "";
+
+const RELATIONSHIP_LABELS: Record<Exclude<Relationship, "">, [string, string]> = {
+  partner: ["Partner", "伴侣"],
+  family: ["Family", "家人"],
+  friend: ["Friend", "朋友"],
+  colleague: ["Colleague", "同事"],
+  other: ["Other", "其他"],
+};
 
 // -------- 5 psychology-inspired calibration questions --------
 // Not tests, no right answers — used to nudge the AI reading toward the user.
