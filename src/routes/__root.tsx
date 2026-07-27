@@ -336,15 +336,27 @@ function SiteNav() {
   }, []);
 
   useEffect(() => {
-    if (!moreOpen) return;
+    if (!moreOpen && !libraryOpen) return;
     const onDoc = (e: MouseEvent) => {
       const el = e.target as HTMLElement | null;
-      if (el?.closest("[data-more-menu]")) return;
+      if (el?.closest("[data-more-menu]") || el?.closest("[data-library-menu]")) return;
       setMoreOpen(false);
+      setLibraryOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setMoreOpen(false);
+        setLibraryOpen(false);
+      }
     };
     document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
-  }, [moreOpen]);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [moreOpen, libraryOpen]);
+
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null;
