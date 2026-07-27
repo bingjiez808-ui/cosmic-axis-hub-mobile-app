@@ -29,6 +29,7 @@ import { Route as DevPanoramaTourRouteImport } from './routes/dev.panorama-tour'
 import { Route as DevGuidedLibraryV2RouteImport } from './routes/dev.guided-library-v2'
 import { Route as DevDemoPremiumRouteImport } from './routes/dev.demo-premium'
 import { Route as AuthResetRouteImport } from './routes/auth.reset'
+import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as ApiGenerateAvatarRouteImport } from './routes/api/generate-avatar'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
@@ -140,6 +141,11 @@ const AuthResetRoute = AuthResetRouteImport.update({
   path: '/reset',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/callback',
+  path: '/callback',
+  getParentRoute: () => AuthRoute,
+} as any)
 const ApiGenerateAvatarRoute = ApiGenerateAvatarRouteImport.update({
   id: '/api/generate-avatar',
   path: '/api/generate-avatar',
@@ -217,6 +223,7 @@ export interface FileRoutesByFullPath {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/api/generate-avatar': typeof ApiGenerateAvatarRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/auth/reset': typeof AuthResetRoute
   '/dev/demo-premium': typeof DevDemoPremiumRoute
   '/dev/guided-library-v2': typeof DevGuidedLibraryV2Route
@@ -248,6 +255,7 @@ export interface FileRoutesByTo {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/api/generate-avatar': typeof ApiGenerateAvatarRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/auth/reset': typeof AuthResetRoute
   '/dev/demo-premium': typeof DevDemoPremiumRoute
   '/dev/guided-library-v2': typeof DevGuidedLibraryV2Route
@@ -282,6 +290,7 @@ export interface FileRoutesById {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/api/generate-avatar': typeof ApiGenerateAvatarRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/auth/reset': typeof AuthResetRoute
   '/dev/demo-premium': typeof DevDemoPremiumRoute
   '/dev/guided-library-v2': typeof DevGuidedLibraryV2Route
@@ -316,6 +325,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/admin'
     | '/api/generate-avatar'
+    | '/auth/callback'
     | '/auth/reset'
     | '/dev/demo-premium'
     | '/dev/guided-library-v2'
@@ -347,6 +357,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/admin'
     | '/api/generate-avatar'
+    | '/auth/callback'
     | '/auth/reset'
     | '/dev/demo-premium'
     | '/dev/guided-library-v2'
@@ -380,6 +391,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/_authenticated/admin'
     | '/api/generate-avatar'
+    | '/auth/callback'
     | '/auth/reset'
     | '/dev/demo-premium'
     | '/dev/guided-library-v2'
@@ -563,6 +575,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthResetRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/api/generate-avatar': {
       id: '/api/generate-avatar'
       path: '/api/generate-avatar'
@@ -665,11 +684,13 @@ const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
 interface AuthRouteChildren {
+  AuthCallbackRoute: typeof AuthCallbackRoute
   AuthResetRoute: typeof AuthResetRoute
   AuthIndexRoute: typeof AuthIndexRoute
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
+  AuthCallbackRoute: AuthCallbackRoute,
   AuthResetRoute: AuthResetRoute,
   AuthIndexRoute: AuthIndexRoute,
 }
