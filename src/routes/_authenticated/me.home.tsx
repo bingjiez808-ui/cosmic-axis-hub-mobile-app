@@ -136,6 +136,8 @@ function DailyRoomPage() {
   const { lang } = useLang();
   const d = useDaily();
   const fmtDate = useFormatDate();
+  const search = Route.useSearch();
+  const focus = search.focus ?? null;
   const tz =
     typeof Intl !== "undefined"
       ? Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Shanghai"
@@ -148,6 +150,7 @@ function DailyRoomPage() {
   const [real, setReal] = useState<RealChartAdapterState>({ kind: "loading" });
   const [onboardingIntent, setOnboardingIntent] = useState<OnboardingIntent | null>(null);
   const getPrefsFn = useServerFn(getLifeGuidancePrefs);
+  const saveIntentFn = useServerFn(setOnboardingIntentFn);
   useEffect(() => {
     let cancelled = false;
     getPrefsFn()
@@ -163,6 +166,16 @@ function DailyRoomPage() {
       cancelled = true;
     };
   }, [getPrefsFn]);
+
+  const changeIntent = async (next: OnboardingIntent) => {
+    setOnboardingIntent(next);
+    try {
+      await saveIntentFn({ data: { intent: next } });
+    } catch {
+      /* keep optimistic; RLS will re-sync on next visit */
+    }
+  };
+
 
 
   useEffect(() => {
