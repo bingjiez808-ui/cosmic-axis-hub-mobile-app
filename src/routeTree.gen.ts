@@ -41,6 +41,7 @@ import { Route as AuthenticatedMeMembershipRouteImport } from './routes/_authent
 import { Route as AuthenticatedMeMatchRouteImport } from './routes/_authenticated/me.match'
 import { Route as AuthenticatedMeHomeRouteImport } from './routes/_authenticated/me.home'
 import { Route as AuthenticatedMeFriendsRouteImport } from './routes/_authenticated/me.friends'
+import { Route as AuthenticatedMeEchoesRouteImport } from './routes/_authenticated/me.echoes'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 
@@ -207,6 +208,11 @@ const AuthenticatedMeFriendsRoute = AuthenticatedMeFriendsRouteImport.update({
   path: '/me/friends',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedMeEchoesRoute = AuthenticatedMeEchoesRouteImport.update({
+  id: '/me/echoes',
+  path: '/me/echoes',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const Char91DotmcpChar93InvokeToolToolRoute =
   Char91DotmcpChar93InvokeToolToolRouteImport.update({
     id: '/.mcp/invoke-tool/$tool',
@@ -246,6 +252,7 @@ export interface FileRoutesByFullPath {
   '/auth/': typeof AuthIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/me/echoes': typeof AuthenticatedMeEchoesRoute
   '/me/friends': typeof AuthenticatedMeFriendsRoute
   '/me/home': typeof AuthenticatedMeHomeRoute
   '/me/match': typeof AuthenticatedMeMatchRoute
@@ -280,6 +287,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/me/echoes': typeof AuthenticatedMeEchoesRoute
   '/me/friends': typeof AuthenticatedMeFriendsRoute
   '/me/home': typeof AuthenticatedMeHomeRoute
   '/me/match': typeof AuthenticatedMeMatchRoute
@@ -317,6 +325,7 @@ export interface FileRoutesById {
   '/auth/': typeof AuthIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/_authenticated/me/echoes': typeof AuthenticatedMeEchoesRoute
   '/_authenticated/me/friends': typeof AuthenticatedMeFriendsRoute
   '/_authenticated/me/home': typeof AuthenticatedMeHomeRoute
   '/_authenticated/me/match': typeof AuthenticatedMeMatchRoute
@@ -354,6 +363,7 @@ export interface FileRouteTypes {
     | '/auth/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/me/echoes'
     | '/me/friends'
     | '/me/home'
     | '/me/match'
@@ -388,6 +398,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/me/echoes'
     | '/me/friends'
     | '/me/home'
     | '/me/match'
@@ -424,6 +435,7 @@ export interface FileRouteTypes {
     | '/auth/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/_authenticated/me/echoes'
     | '/_authenticated/me/friends'
     | '/_authenticated/me/home'
     | '/_authenticated/me/match'
@@ -685,6 +697,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMeFriendsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/me/echoes': {
+      id: '/_authenticated/me/echoes'
+      path: '/me/echoes'
+      fullPath: '/me/echoes'
+      preLoaderRoute: typeof AuthenticatedMeEchoesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/.mcp/invoke-tool/$tool': {
       id: '/.mcp/invoke-tool/$tool'
       path: '/.mcp/invoke-tool/$tool'
@@ -704,6 +723,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
+  AuthenticatedMeEchoesRoute: typeof AuthenticatedMeEchoesRoute
   AuthenticatedMeFriendsRoute: typeof AuthenticatedMeFriendsRoute
   AuthenticatedMeHomeRoute: typeof AuthenticatedMeHomeRoute
   AuthenticatedMeMatchRoute: typeof AuthenticatedMeMatchRoute
@@ -715,6 +735,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
+  AuthenticatedMeEchoesRoute: AuthenticatedMeEchoesRoute,
   AuthenticatedMeFriendsRoute: AuthenticatedMeFriendsRoute,
   AuthenticatedMeHomeRoute: AuthenticatedMeHomeRoute,
   AuthenticatedMeMatchRoute: AuthenticatedMeMatchRoute,
