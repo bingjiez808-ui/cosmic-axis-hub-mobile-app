@@ -241,6 +241,18 @@ export function PersonalBookshelf({ charts, onChanged }: PersonalBookshelfProps)
               setChartRole({ data: { chartId: id, role: "self" } }),
             )
           }
+          onEditRelationLabel={(c) => {
+            if (typeof window === "undefined") return;
+            const current = c.relationship_label ?? "";
+            const next = window.prompt(d.bookshelf_relation_label_placeholder, current);
+            if (next === null) return;
+            const trimmed = next.trim().slice(0, 80);
+            void runAction(c.id, () =>
+              setChartRelationshipLabel({
+                data: { chartId: c.id, label: trimmed.length > 0 ? trimmed : null },
+              }),
+            );
+          }}
           onDelete={confirmDelete}
         />
       </div>
