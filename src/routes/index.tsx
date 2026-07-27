@@ -433,6 +433,11 @@ function LandingPage() {
         </p>
       </section>
 
+      {/* ─────────── CURATOR'S LETTER ─────────── */}
+      <CuratorLetter />
+
+
+
       {/* ─────────── FOUR TRADITIONS ─────────── */}
       <section id="traditions" className="relative z-10 mx-auto max-w-7xl px-6 py-24 md:px-12">
         <div className="mb-16 flex items-end justify-between">
