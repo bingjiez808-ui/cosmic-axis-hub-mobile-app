@@ -17,6 +17,7 @@ import {
   defaultStageForAge,
   computeAge,
   pickPriorityDomain,
+  classifyDomainSignal,
   curatorLetter,
   isOnboardingIntent,
   ONBOARDING_INTENTS,
@@ -24,6 +25,7 @@ import {
   normalizeLang,
   type LifeStage,
   type OnboardingIntent,
+  type DomainSignalBand,
 } from "@/lib/life-guidance-v1";
 import { useServerFn } from "@tanstack/react-start";
 import {
