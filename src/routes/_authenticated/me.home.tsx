@@ -17,11 +17,15 @@ import {
   defaultStageForAge,
   computeAge,
   pickPriorityDomain,
+  curatorLetter,
+  isOnboardingIntent,
   LIFE_STAGES,
   type LifeStage,
+  type OnboardingIntent,
 } from "@/lib/life-guidance-v1";
 import { useServerFn } from "@tanstack/react-start";
 import { getLifeGuidancePrefs } from "@/lib/life-guidance.functions";
+
 
 
 
