@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
-import { PersonalWorkspaceNav } from "@/components/PersonalWorkspaceNav";
+import { PersonalWorkspaceNav, RelationshipsSubtabs } from "@/components/PersonalWorkspaceNav";
 
 import {
   createInMemoryFriendsRepo,
@@ -127,6 +127,7 @@ function FriendsPage() {
         </div>
 
         <PersonalWorkspaceNav active="/me/friends" />
+        <RelationshipsSubtabs current="friends" />
         <p className="mb-4 text-xs text-amber-200/60" data-testid="friends-purpose-hint">
           {d.friends_subtitle}
         </p>
