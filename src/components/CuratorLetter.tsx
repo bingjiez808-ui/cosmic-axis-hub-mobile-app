@@ -338,8 +338,8 @@ export function CuratorLetter() {
     <section
       id="curator-letter"
       aria-labelledby={headingId}
-      className="relative z-10 mx-auto w-full max-w-[min(76rem,calc(100vw-1.5rem))] overflow-hidden px-3 py-10 sm:px-6 md:px-8 md:py-16 lg:py-20"
-      style={{ paddingBottom: `max(2.5rem, env(safe-area-inset-bottom))` }}
+      className="relative z-10 mx-auto w-full max-w-[min(76rem,calc(100vw-1.5rem))] px-3 py-8 sm:px-6 md:px-8 md:py-14 lg:py-16"
+      style={{ paddingBottom: `max(1.5rem, env(safe-area-inset-bottom))` }}
     >
       <div
         ref={rootRef}
@@ -349,6 +349,12 @@ export function CuratorLetter() {
         aria-roledescription="Curator's opening letter"
         data-testid="curator-stage"
         className="relative w-full overflow-hidden rounded-[clamp(1.25rem,2vw,1.75rem)] border border-amber-400/25 shadow-[0_30px_120px_-40px_rgba(0,0,0,0.8)] focus:outline-none"
+        style={{
+          // Fixed reading stage — identical box across all 4 pages.
+          // Uses dvh so mobile browser chrome doesn't clip content.
+          height: "min(calc(100dvh - 5rem), 780px)",
+          minHeight: "520px",
+        }}
       >
         {/* Library scene — responsive background with dark scrim */}
         <picture>
@@ -369,7 +375,6 @@ export function CuratorLetter() {
             className="pointer-events-none absolute inset-0 h-full w-full object-cover object-[center_35%] md:object-center"
           />
         </picture>
-        {/* readability scrim — charcoal / walnut / never wide purple */}
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0.35)_0%,rgba(6,4,2,0.72)_55%,rgba(0,0,0,0.9)_100%)]"
@@ -379,13 +384,10 @@ export function CuratorLetter() {
           className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/70"
         />
 
-        {/* content — stable stage height across pages via clamp(dvh) */}
-        <div
-          className="relative z-10 flex w-full flex-col justify-between px-4 py-8 sm:px-8 sm:py-12 md:px-14 md:py-14 lg:px-20 lg:py-16"
-          style={{ minHeight: "clamp(560px, 72svh, 780px)" }}
-        >
-          {/* header row — grid on mobile so kicker can truncate and skip stays reachable */}
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:flex sm:flex-wrap sm:items-baseline sm:justify-between">
+        {/* Stage layout: fixed header / scrollable body / fixed footer */}
+        <div className="relative z-10 flex h-full w-full flex-col">
+          {/* header row */}
+          <div className="shrink-0 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 pt-5 sm:flex sm:flex-wrap sm:items-baseline sm:justify-between sm:px-8 sm:pt-8 md:px-14 md:pt-10">
             <div
               id={headingId}
               className="min-w-0 truncate text-[10px] uppercase tracking-[0.32em] text-amber-300/80 sm:tracking-[0.42em]"
@@ -402,43 +404,85 @@ export function CuratorLetter() {
             </button>
           </div>
 
-          {/* stage body */}
-          <div className="my-6 flex min-h-0 flex-1 md:my-8">
-            <AnimatePresence mode="wait" initial={false}>
-              {stage.kind === "sealed" ? (
-                <SealedStage
-                  key="sealed"
-                  copy={copy}
-                  reduceMotion={!!reduceMotion}
-                  onOpen={() => dispatch({ type: "next" })}
-                />
-              ) : (
-                <PageStage
-                  key={`page-${pageIndex}`}
-                  index={pageIndex as 1 | 2 | 3 | 4}
-                  copy={copy}
-                  lang={normalizeLang(lang)}
-                  isSignedIn={isSignedIn}
-                  reduceMotion={!!reduceMotion}
-                  intent={intent}
-                  intentSaved={intentSaved}
-                  onChooseIntent={chooseIntent}
-                  onNext={() => dispatch({ type: "next" })}
-                  onPrev={() => dispatch({ type: "prev" })}
-                />
-
-              )}
-            </AnimatePresence>
+          {/* scrollable body — content overflow stays INSIDE the stage */}
+          <div
+            className="relative flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-4 py-5 sm:px-8 sm:py-7 md:px-14 md:py-8"
+            data-testid="curator-scroll"
+            style={{ scrollbarWidth: "thin" }}
+          >
+            <div className="mx-auto flex min-h-full w-full max-w-[46rem] flex-col justify-center">
+              <AnimatePresence mode="wait" initial={false}>
+                {stage.kind === "sealed" ? (
+                  <SealedStage
+                    key="sealed"
+                    copy={copy}
+                    reduceMotion={!!reduceMotion}
+                    onOpen={() => dispatch({ type: "next" })}
+                  />
+                ) : (
+                  <PageStage
+                    key={`page-${pageIndex}`}
+                    index={pageIndex as 1 | 2 | 3 | 4}
+                    copy={copy}
+                    lang={normalizeLang(lang)}
+                    isSignedIn={isSignedIn}
+                    reduceMotion={!!reduceMotion}
+                    intent={intent}
+                    intentSaved={intentSaved}
+                    onChooseIntent={chooseIntent}
+                  />
+                )}
+              </AnimatePresence>
+            </div>
+            {/* bottom fade — hints scrollable content without shifting layout */}
+            <div
+              aria-hidden
+              className="pointer-events-none sticky bottom-0 -mt-8 h-8 bg-gradient-to-t from-black/70 to-transparent"
+            />
           </div>
 
-          {/* footer — safety, always visible */}
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-[10px] uppercase tracking-[0.28em] text-amber-100/50">
-            <span className="min-w-0 break-words">{copy.safety}</span>
-            {stage.kind === "page" ? (
-              <span data-testid="curator-page-of" className="shrink-0">
-                {copy.pageOf(stage.index, TOTAL_PAGES)}
-              </span>
-            ) : null}
+          {/* fixed footer — prev/next + safety + page counter always visible */}
+          <div className="shrink-0 border-t border-amber-400/10 bg-black/35 px-4 py-3 sm:px-8 md:px-14">
+            <div className="flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => dispatch({ type: "prev" })}
+                disabled={stage.kind !== "page" || stage.index === 1}
+                aria-label={lang === "zh" ? "上一页" : "Previous"}
+                className="min-h-11 shrink-0 rounded-full border border-amber-400/25 px-4 py-2 text-[11px] uppercase tracking-[0.26em] text-amber-200/80 disabled:opacity-30"
+              >
+                ←
+              </button>
+              <div className="flex min-w-0 flex-col items-center gap-1 text-center text-[10px] uppercase tracking-[0.28em] text-amber-100/50">
+                <span className="min-w-0 truncate">{copy.safety}</span>
+                {stage.kind === "page" ? (
+                  <span data-testid="curator-page-of" className="shrink-0 text-amber-200/70">
+                    {copy.pageOf(stage.index, TOTAL_PAGES)}
+                  </span>
+                ) : null}
+              </div>
+              {stage.kind === "page" && stage.index < 4 ? (
+                <button
+                  type="button"
+                  onClick={() => dispatch({ type: "next" })}
+                  className="min-h-11 shrink-0 rounded-full border border-amber-300/60 bg-amber-500/10 px-5 py-2 text-[11px] uppercase tracking-[0.3em] text-amber-100 hover:bg-amber-500/20"
+                  data-testid="curator-next"
+                >
+                  {copy.continueCta} →
+                </button>
+              ) : stage.kind === "page" && stage.index === 4 ? (
+                <button
+                  type="button"
+                  onClick={() => dispatch({ type: "next" })}
+                  className="min-h-11 shrink-0 rounded-full bg-amber-400 px-5 py-2 text-[11px] uppercase tracking-[0.3em] text-black hover:bg-amber-300"
+                  data-testid="curator-finish"
+                >
+                  {copy.closeCta}
+                </button>
+              ) : (
+                <span className="min-h-11 w-[3.25rem] shrink-0" aria-hidden />
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -507,8 +551,6 @@ function PageStage({
   intent,
   intentSaved,
   onChooseIntent,
-  onNext,
-  onPrev,
 }: {
   index: 1 | 2 | 3 | 4;
   copy: (typeof curatorLetter)["en"];
@@ -518,8 +560,6 @@ function PageStage({
   intent: OnboardingIntent | null;
   intentSaved: "idle" | "cloud" | "local";
   onChooseIntent: (v: OnboardingIntent) => void;
-  onNext: () => void;
-  onPrev: () => void;
 }) {
 
   const safeIndex = ((): 1 | 2 | 3 | 4 => {
@@ -531,28 +571,28 @@ function PageStage({
   return (
     <motion.article
       initial={
-        reduceMotion ? { opacity: 0 } : { opacity: 0, rotateY: 8, y: 8 }
+        reduceMotion ? { opacity: 0 } : { opacity: 0, rotateY: 6, y: 6 }
       }
       animate={{ opacity: 1, rotateY: 0, y: 0 }}
-      exit={reduceMotion ? { opacity: 0 } : { opacity: 0, rotateY: -8, y: -8 }}
-      transition={{ duration: reduceMotion ? 0.15 : 0.55, ease: [0.32, 0.72, 0, 1] }}
-      className="mx-auto flex w-full max-w-[min(64rem,100%)] min-w-0 flex-col"
+      exit={reduceMotion ? { opacity: 0 } : { opacity: 0, rotateY: -6, y: -6 }}
+      transition={{ duration: reduceMotion ? 0.15 : 0.5, ease: [0.32, 0.72, 0, 1] }}
+      className="mx-auto flex w-full min-w-0 flex-col"
       data-testid={`curator-page-${safeIndex}`}
       style={{ perspective: 1400, transformStyle: "preserve-3d" }}
     >
-      <div className="min-w-0 rounded-2xl border border-amber-300/15 bg-[rgba(28,20,10,0.55)] p-5 backdrop-blur-[2px] sm:p-7 md:p-10 lg:p-12">
+      <div className="min-w-0 rounded-2xl border border-amber-300/15 bg-[rgba(28,20,10,0.55)] p-5 text-center backdrop-blur-[2px] sm:p-7 md:p-9 md:text-left">
         <p className="text-[10px] uppercase tracking-[0.4em] text-amber-200/60">
           {copy.pageOf(safeIndex, TOTAL_PAGES)}
         </p>
         <h3
           className="mt-3 font-serif italic leading-[1.15] text-amber-50"
-          style={{ fontSize: "clamp(1.5rem, 2.4vw + 0.75rem, 2.75rem)", wordBreak: "keep-all", overflowWrap: "anywhere" }}
+          style={{ fontSize: "clamp(1.5rem, 2.4vw + 0.75rem, 2.5rem)", wordBreak: "keep-all", overflowWrap: "anywhere" }}
         >
           {page.title}
         </h3>
         <div
-          className="mt-5 space-y-4 font-serif text-amber-50/85"
-          style={{ fontSize: "clamp(1rem, 0.55vw + 0.9rem, 1.15rem)", lineHeight: 1.75 }}
+          className="mx-auto mt-5 max-w-[38rem] space-y-4 font-serif text-amber-50/85"
+          style={{ fontSize: "clamp(1rem, 0.5vw + 0.9rem, 1.1rem)", lineHeight: 1.75 }}
         >
           {page.body.map((line, i) => (
             <p key={i} style={{ overflowWrap: "anywhere" }}>{line}</p>
@@ -573,7 +613,7 @@ function PageStage({
 
         {safeIndex === 4 ? (
           <div className="mt-8 flex flex-col gap-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-center md:justify-start">
               <Link
                 to="/ritual"
                 className="min-h-11 rounded-full bg-amber-400 px-6 py-3 text-center text-xs font-medium uppercase tracking-[0.3em] text-black hover:bg-amber-300"
@@ -587,7 +627,7 @@ function PageStage({
                 variant="outline-strong"
               />
             </div>
-            <div className="grid gap-2 text-[11px] leading-relaxed text-amber-100/70 sm:grid-cols-2">
+            <div className="grid gap-2 text-left text-[11px] leading-relaxed text-amber-100/70 sm:grid-cols-2">
               <p>
                 <span className="mr-2 text-amber-300/70">→ {copy.doorSelf}</span>
                 {lang === "zh"
@@ -603,37 +643,6 @@ function PageStage({
             </div>
           </div>
         ) : null}
-      </div>
-
-      {/* nav */}
-      <div className="mt-6 flex items-center justify-between text-xs text-amber-200/75">
-        <button
-          type="button"
-          onClick={onPrev}
-          disabled={index === 1}
-          className="min-h-11 rounded-full border border-amber-400/25 px-4 py-2 text-[11px] uppercase tracking-[0.26em] disabled:opacity-30"
-        >
-          ←
-        </button>
-        {index < 4 ? (
-          <button
-            type="button"
-            onClick={onNext}
-            className="min-h-11 rounded-full border border-amber-300/60 bg-amber-500/10 px-6 py-2 text-[11px] uppercase tracking-[0.3em] text-amber-100 hover:bg-amber-500/20"
-            data-testid="curator-next"
-          >
-            {copy.continueCta} →
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={onNext}
-            className="min-h-11 rounded-full bg-amber-400 px-6 py-2 text-[11px] uppercase tracking-[0.3em] text-black hover:bg-amber-300"
-            data-testid="curator-finish"
-          >
-            {copy.closeCta}
-          </button>
-        )}
       </div>
     </motion.article>
   );
