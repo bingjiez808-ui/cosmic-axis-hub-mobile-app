@@ -422,12 +422,12 @@ function SiteNav() {
     { to: "/ritual", label: t.nav_ritual },
     { to: "/traditions", label: t.nav_traditions },
     { to: "/community", label: t.nav_community },
-    { to: "/about", label: t.nav_about },
     { to: "/me/home", label: myHomeLabel },
   ];
 
   // "Learn · More" — informational/policy only. Never duplicate personal features here.
   const moreEntries: Array<{ to?: string; href?: string; label: string; external?: boolean }> = [
+    { to: "/about", label: t.nav_about },
     { to: "/privacy", label: isZh ? "隐私政策" : "Privacy" },
     { to: "/terms", label: isZh ? "服务条款" : "Terms" },
     { to: "/delete-account", label: isZh ? "删除账户" : "Delete account" },
@@ -765,12 +765,11 @@ function SiteFooter() {
     {
       title: isZh ? "个人书架" : "Personal Library",
       items: [
-        { href: shelfHref("/me/home"), label: isZh ? "今日命运" : "Today's Fate" },
+        { href: shelfHref("/me/home"), label: isZh ? "主页" : "Home" },
         { href: shelfHref("/me/profile"), label: isZh ? "命盘与报告" : "Charts & Reports" },
-        { href: shelfHref("/me/friends"), label: isZh ? "好友与来信" : "Friends" },
-        { href: shelfHref("/me/match"), label: isZh ? "适配分析" : "Match" },
-        { href: shelfHref("/me/home#echoes"), label: isZh ? "历史回声" : "Echoes" },
-        { href: shelfHref("/me/profile#membership-orders"), label: isZh ? "会员与订单" : "Membership" },
+        { href: shelfHref("/me/friends"), label: isZh ? "关系与适配" : "Relationships" },
+        { href: shelfHref("/me/echoes"), label: isZh ? "历史回声" : "Echoes" },
+        { href: shelfHref("/me/membership"), label: isZh ? "会员与订单" : "Membership" },
       ],
     },
     {
