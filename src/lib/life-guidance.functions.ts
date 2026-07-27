@@ -41,7 +41,7 @@ export const getLifeGuidancePrefs = createServerFn({ method: "GET" })
     const { data, error } = await context.supabase
       .from("user_preferences" as never)
       .select(
-        "life_stage, life_stage_source, onboarding_intent, onboarding_intent_at, updated_at",
+        "life_stage, life_stage_source, onboarding_intent, onboarding_intent_at, concern, concern_at, updated_at",
       )
       .eq("user_id", context.userId)
       .maybeSingle();
@@ -51,6 +51,8 @@ export const getLifeGuidancePrefs = createServerFn({ method: "GET" })
       life_stage_source: "auto" | "user" | null;
       onboarding_intent: string | null;
       onboarding_intent_at: string | null;
+      concern: string | null;
+      concern_at: string | null;
       updated_at: string;
     } | null;
   });
