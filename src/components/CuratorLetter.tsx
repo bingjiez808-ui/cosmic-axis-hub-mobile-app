@@ -412,6 +412,8 @@ export function CuratorLetter() {
                   key={`page-${pageIndex}`}
                   index={pageIndex as 1 | 2 | 3 | 4}
                   copy={copy}
+                  lang={normalizeLang(lang)}
+                  isSignedIn={isSignedIn}
                   reduceMotion={!!reduceMotion}
                   intent={intent}
                   intentSaved={intentSaved}
@@ -419,6 +421,7 @@ export function CuratorLetter() {
                   onNext={() => dispatch({ type: "next" })}
                   onPrev={() => dispatch({ type: "prev" })}
                 />
+
               )}
             </AnimatePresence>
           </div>
