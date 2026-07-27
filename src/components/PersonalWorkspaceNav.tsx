@@ -16,7 +16,13 @@ import { useLang } from "@/lib/i18n";
  */
 
 type Item = {
-  to: "/me/home" | "/me/profile" | "/me/friends" | "/me/echoes" | "/me/membership";
+  to:
+    | "/me/home"
+    | "/me/profile"
+    | "/me/friends"
+    | "/me/echoes"
+    | "/me/membership"
+    | "/me/fun-library";
   /**
    * Extra pathnames whose "active" state should light up this tab —
    * used so /me/friends AND /me/match both highlight the
@@ -39,6 +45,7 @@ const ITEMS: Item[] = [
     testId: "pwn-relationships",
   },
   { to: "/me/echoes", labelZh: "历史回声", labelEn: "Echoes", testId: "pwn-echoes" },
+  { to: "/me/fun-library", labelZh: "趣味图书馆", labelEn: "Fun Library", testId: "pwn-fun-library" },
   { to: "/me/membership", labelZh: "会员与订单", labelEn: "Membership", testId: "pwn-membership" },
 ];
 
