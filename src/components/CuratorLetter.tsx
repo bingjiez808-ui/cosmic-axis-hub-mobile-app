@@ -531,27 +531,34 @@ function PageStage({
   return (
     <motion.article
       initial={
-        reduceMotion ? { opacity: 0 } : { opacity: 0, rotateY: 12, y: 10 }
+        reduceMotion ? { opacity: 0 } : { opacity: 0, rotateY: 8, y: 8 }
       }
       animate={{ opacity: 1, rotateY: 0, y: 0 }}
-      exit={reduceMotion ? { opacity: 0 } : { opacity: 0, rotateY: -12, y: -10 }}
+      exit={reduceMotion ? { opacity: 0 } : { opacity: 0, rotateY: -8, y: -8 }}
       transition={{ duration: reduceMotion ? 0.15 : 0.55, ease: [0.32, 0.72, 0, 1] }}
-      className="mx-auto max-w-[58ch]"
+      className="mx-auto flex w-full max-w-[min(64rem,100%)] min-w-0 flex-col"
       data-testid={`curator-page-${safeIndex}`}
-      style={{ perspective: 1400 }}
+      style={{ perspective: 1400, transformStyle: "preserve-3d" }}
     >
-      <div className="rounded-2xl border border-amber-300/15 bg-[rgba(28,20,10,0.55)] p-6 backdrop-blur-[2px] md:p-10">
+      <div className="min-w-0 rounded-2xl border border-amber-300/15 bg-[rgba(28,20,10,0.55)] p-5 backdrop-blur-[2px] sm:p-7 md:p-10 lg:p-12">
         <p className="text-[10px] uppercase tracking-[0.4em] text-amber-200/60">
           {copy.pageOf(safeIndex, TOTAL_PAGES)}
         </p>
-        <h3 className="mt-3 font-serif text-2xl italic leading-snug text-amber-50 md:text-4xl">
+        <h3
+          className="mt-3 font-serif italic leading-[1.15] text-amber-50"
+          style={{ fontSize: "clamp(1.5rem, 2.4vw + 0.75rem, 2.75rem)", wordBreak: "keep-all", overflowWrap: "anywhere" }}
+        >
           {page.title}
         </h3>
-        <div className="mt-5 space-y-4 font-serif text-[17px] leading-[1.75] text-amber-50/85 md:text-lg">
+        <div
+          className="mt-5 space-y-4 font-serif text-amber-50/85"
+          style={{ fontSize: "clamp(1rem, 0.55vw + 0.9rem, 1.15rem)", lineHeight: 1.75 }}
+        >
           {page.body.map((line, i) => (
-            <p key={i}>{line}</p>
+            <p key={i} style={{ overflowWrap: "anywhere" }}>{line}</p>
           ))}
         </div>
+
 
         {safeIndex === 3 ? (
           <IntentPicker
