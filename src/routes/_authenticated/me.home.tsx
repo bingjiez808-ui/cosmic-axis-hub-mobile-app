@@ -243,17 +243,10 @@ function DailyRoomPage() {
           {d.demo_banner_home}
         </div>
 
-        {onboardingIntent ? (
-          <div
-            className="mb-6 rounded-lg border border-amber-500/25 bg-black/40 px-4 py-3 text-sm text-amber-100/90"
-            data-testid="curator-welcome-line"
-          >
-            <span className="mr-2 text-[10px] uppercase tracking-[0.28em] text-amber-300/70">
-              {lang === "zh" ? "馆长留言" : "From the Curator"}
-            </span>
-            {curatorLetter[lang].welcomeBack(onboardingIntent)}
-          </div>
-        ) : null}
+        {/* Curator welcome bookmark & reading-path breadcrumb render below
+            the header — see CuratorWelcomeBookmark. */}
+
+
 
 
         {/* Secondary in-page nav */}
