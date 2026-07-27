@@ -151,6 +151,7 @@ import {
   type ReportDimensionAI,
 } from "@/lib/report.functions";
 import {
+  assignChartOwnership,
   beginReport,
   buildCanonicalChartInput,
   ensureChart,
