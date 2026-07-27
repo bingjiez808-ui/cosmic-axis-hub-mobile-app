@@ -146,16 +146,18 @@ export function CuratorLetter() {
   const copy = curatorLetter[lang];
   const reduceMotion = useReducedMotion();
 
-  // Initial stage: first-time → sealed (auto-open ritual for first-time
-  // visitors), returning viewer → folded book spine. During SSR we always
-  // start folded to avoid hydration mismatches; a small effect promotes
-  // to sealed once we know this is a fresh visit.
-  const [stage, dispatch] = useReducer(reducer, { kind: "folded" as const });
+  // Initial stage is ALWAYS "sealed" so SSR and the very first client
+  // render agree on a fully-renderable stage (folded also renders safely
+  // but was previously gated on `hydrated`, which caused pre-hydration
+  // renders to fall through to the ritual body with pageIndex=0 and
+  // crash on `copy.pages[-1].title`). On hydration, returning viewers
+  // fold the letter and first-time viewers stay on the sealed cover.
+  const [stage, dispatch] = useReducer(reducer, { kind: "sealed" as const });
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     setHydrated(true);
-    if (!readSeen()) dispatch({ type: "open" });
+    if (readSeen()) dispatch({ type: "fold" });
   }, []);
 
   useEffect(() => {
