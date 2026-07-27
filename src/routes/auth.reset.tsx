@@ -4,6 +4,7 @@ import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useLang } from "@/lib/i18n";
+import { getPublicSiteUrl } from "@/lib/site-url";
 
 type Stage = "request" | "sent" | "reset" | "done";
 
@@ -111,7 +112,7 @@ function ResetPage() {
     setBusy(true);
     try {
       await supabase.auth.resetPasswordForEmail(addr, {
-        redirectTo: `${window.location.origin}/auth/reset`,
+        redirectTo: `${getPublicSiteUrl()}/auth/reset`,
       });
     } catch {
       // ignore — neutral messaging
@@ -127,7 +128,7 @@ function ResetPage() {
     setBusy(true);
     try {
       await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
-        redirectTo: `${window.location.origin}/auth/reset`,
+        redirectTo: `${getPublicSiteUrl()}/auth/reset`,
       });
     } catch {}
     toast.success(t.sentBody(email));

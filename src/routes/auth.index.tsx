@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { useLang } from "@/lib/i18n";
+import { getAuthRedirectUrl, getPublicSiteUrl } from "@/lib/site-url";
 
 type Mode = "login" | "signup";
 type SignupStage = "form" | "sent";
@@ -201,10 +202,14 @@ function AuthPage() {
   async function onGoogle() {
     if (busy) return;
     setBusy(true);
-    const redirectParam = search.redirect ? `?redirect=${encodeURIComponent(search.redirect)}` : "";
     try {
+      // Google OAuth must return to a PUBLIC route so id-preview never
+      // shows up in the OAuth redirect. We still restore the intended
+      // in-app destination via ?next=... on the callback URL.
       const res = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: `${window.location.origin}/auth${redirectParam}`,
+        redirect_uri: `${getPublicSiteUrl()}/auth${
+          search.redirect ? `?redirect=${encodeURIComponent(search.redirect)}` : ""
+        }`,
       });
       if (res && "error" in res && res.error) toast.error(t.genericError);
     } catch {
@@ -226,7 +231,7 @@ function AuthPage() {
       await supabase.auth.signUp({
         email: addr,
         password,
-        options: { emailRedirectTo: `${window.location.origin}/auth?mode=login&verified=1` },
+        options: { emailRedirectTo: getAuthRedirectUrl(search.redirect) },
       });
     } catch {
       // Neutral messaging — never reveal whether the address is registered.
@@ -272,7 +277,7 @@ function AuthPage() {
       await supabase.auth.resend({
         type: "signup",
         email: addr,
-        options: { emailRedirectTo: `${window.location.origin}/auth?mode=login&verified=1` },
+        options: { emailRedirectTo: getAuthRedirectUrl(search.redirect) },
       });
     } catch {
       // ignore — neutral
