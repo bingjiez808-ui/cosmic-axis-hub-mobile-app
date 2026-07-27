@@ -369,6 +369,9 @@ const zh: DailyDict = {
   bookshelf_no_relations: "关系书架为空。你保存的他人命盘会出现在这里。",
   bookshelf_main_book_label: "主命盘",
   bookshelf_relation_card_label: "关系藏书",
+  bookshelf_relation_label_placeholder: "关系（如：伴侣、母亲、朋友）",
+  bookshelf_relation_label_edit: "编辑关系标签",
+  bookshelf_relation_label_none: "未设置关系",
   bookshelf_open_match: "适配分析",
   charts_others_title: "他人命盘",
 
