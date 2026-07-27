@@ -450,6 +450,7 @@ function SiteNav() {
       </button>
 
       <nav
+        ref={navRef}
         className={`fixed left-1/2 top-0 z-50 w-full max-w-[100vw] -translate-x-1/2 px-3 py-3 md:p-6 transition-all duration-500 ${
           showTopBar ? "opacity-100 translate-y-0" : "-translate-y-full opacity-0 pointer-events-none"
         }`}
