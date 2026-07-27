@@ -5,7 +5,7 @@ import { useSupabaseSession } from "@/lib/session";
 
 /**
  * PremiumReportCta — session-aware entry to the ¥79 24-chapter deep
- * report. This CTA never fakes payment, never opens a "contact admin"
+ * report. This CTA never fakes payment, never opens an escalation-to-staff
  * fallback, and always sends the visitor into the real /report route
  * — which owns the downstream state machine:
  *   - not signed in → the button routes through /auth with a redirect
