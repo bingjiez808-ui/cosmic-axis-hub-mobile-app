@@ -281,6 +281,7 @@ function SiteNav() {
   const { t, lang } = useLang();
   const { account } = useAccount();
   const { session, isAdmin, loading } = useSupabaseSession();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
   const openAcc = () => {
     if (!session) {
       window.location.assign("/auth?mode=login");
@@ -290,11 +291,16 @@ function SiteNav() {
   };
   const [atTop, setAtTop] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const [orbActive, setOrbActive] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => { setHydrated(true); }, []);
   const avatarUrl = hydrated ? account?.avatar : undefined;
-  const adminLabel = lang === "zh" ? "议政厅" : "Admin";
+  const isZh = lang === "zh";
+  const adminLabel = isZh ? "议政厅" : "Admin";
+  const libraryHomeLabel = isZh ? "图书馆首页" : "Library Home";
+  const myHomeLabel = isZh ? "我的主页" : "My Home";
+  const moreLabel = isZh ? "了解 · 更多" : "Learn · More";
 
   useEffect(() => {
     const onScroll = () => setAtTop(window.scrollY < 40);
@@ -303,8 +309,17 @@ function SiteNav() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Show the floating orb only briefly after the user interacts, then
-  // auto-hide after 3s of no activity.
+  useEffect(() => {
+    if (!moreOpen) return;
+    const onDoc = (e: MouseEvent) => {
+      const el = e.target as HTMLElement | null;
+      if (el?.closest("[data-more-menu]")) return;
+      setMoreOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [moreOpen]);
+
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null;
     const reveal = () => {
@@ -329,17 +344,55 @@ function SiteNav() {
   }, []);
 
 
-  // Top glass bar visible only when at the top of the page.
   const showTopBar = atTop;
 
-  const linkClass = lang === "zh"
-    ? "inline-flex min-h-11 items-center whitespace-nowrap text-[13px] tracking-normal normal-case text-stone-warm/75 transition-colors hover:text-gold-dust flex-none"
-    : "inline-flex min-h-11 items-center whitespace-nowrap text-[11px] uppercase tracking-[0.28em] text-stone-warm/70 transition-colors hover:text-gold-dust flex-none";
+  const linkBase = isZh
+    ? "inline-flex min-h-11 items-center whitespace-nowrap text-[13px] tracking-normal normal-case transition-colors flex-none"
+    : "inline-flex min-h-11 items-center whitespace-nowrap text-[11px] uppercase tracking-[0.28em] transition-colors flex-none";
+  const linkIdle = "text-stone-warm/75 hover:text-gold-dust";
+  const linkActive = "text-gold-dust";
+
+  const isActive = (to: string) =>
+    to === "/" ? pathname === "/" : pathname === to || pathname.startsWith(to + "/");
+
+  const NavLink = ({ to, label }: { to: string; label: string }) => {
+    const active = isActive(to);
+    return (
+      <Link
+        to={to}
+        aria-current={active ? "page" : undefined}
+        className={`${linkBase} ${active ? linkActive : linkIdle}`}
+      >
+        {label}
+      </Link>
+    );
+  };
 
   const accountLabel = session ? t.nav_account : t.nav_sign_in;
   const showAdmin = !loading && isAdmin;
 
   const orbVisible = orbActive && !showTopBar && !drawerOpen;
+
+  // Core nav entries per auth state (mobile drawer mirrors these + "More")
+  const coreEntries: Array<{ to: string; label: string }> = session
+    ? [
+        { to: "/", label: libraryHomeLabel },
+        { to: "/me/home", label: myHomeLabel },
+        { to: "/ritual", label: t.nav_ritual },
+        { to: "/community", label: t.nav_community },
+      ]
+    : [
+        { to: "/", label: libraryHomeLabel },
+        { to: "/ritual", label: t.nav_ritual },
+        { to: "/traditions", label: t.nav_traditions },
+        { to: "/community", label: t.nav_community },
+      ];
+
+  const moreEntries: Array<{ to: string; label: string }> = [
+    ...(session ? [{ to: "/traditions", label: t.nav_traditions }] : []),
+    { to: "/about", label: t.nav_about },
+    ...(showAdmin ? [{ to: "/admin", label: adminLabel }] : []),
+  ];
 
   return (
     <>
@@ -357,43 +410,71 @@ function SiteNav() {
         <span className="block h-2 w-2 rounded-full bg-gold-dust shadow-[0_0_10px_2px_color-mix(in_oklab,var(--gold-light)_60%,transparent)]" />
       </button>
 
-      {/* Full top navigation bar — only at top of page */}
       <nav
         className={`fixed left-1/2 top-0 z-50 w-full max-w-[100vw] -translate-x-1/2 px-3 py-3 md:p-6 transition-all duration-500 ${
           showTopBar ? "opacity-100 translate-y-0" : "-translate-y-full opacity-0 pointer-events-none"
         }`}
       >
         <div className="glass-card mx-auto flex w-full max-w-[calc(100vw-1.5rem)] items-center gap-2 rounded-full px-3 py-2 md:grid md:w-auto md:max-w-[min(96vw,72rem)] md:grid-cols-[1fr_auto_1fr] md:items-center md:gap-4 md:px-5 md:py-2 lg:gap-8 lg:px-7">
+          {/* Brand — returns to library home; not the only home entry */}
           <Link
             to="/"
+            aria-label={libraryHomeLabel}
             className="min-w-0 flex-1 truncate font-serif text-sm tracking-normal text-stone-warm md:flex-none md:justify-self-start md:whitespace-nowrap md:text-base"
           >
             Destiny<span className="text-gold-dust">·</span>Library
           </Link>
-          <div className="hidden items-center justify-center gap-4 md:flex md:justify-self-center lg:gap-8">
-            <Link to="/traditions" className={linkClass}>{t.nav_traditions}</Link>
-            <Link to="/ritual" className={linkClass}>{t.nav_ritual}</Link>
-            {session && (
-              <>
-                <Link to="/me/home" className={linkClass + " text-gold-dust"}>{t.nav_today}</Link>
-                <Link to="/me/profile" className={linkClass}>{lang === "zh" ? "我的" : "My library"}</Link>
-              </>
-            )}
 
-            <Link to="/community" className={linkClass}>{t.nav_community}</Link>
-            <Link to="/about" className={linkClass}>{t.nav_about}</Link>
-            {showAdmin && (
-              <Link to="/admin" className={linkClass + " text-gold-dust"}>{adminLabel}</Link>
+          {/* Core nav (desktop) */}
+          <div className="hidden items-center justify-center gap-4 md:flex md:justify-self-center lg:gap-8">
+            {coreEntries.map((e) => (
+              <NavLink key={e.to} to={e.to} label={e.label} />
+            ))}
+            {moreEntries.length > 0 && (
+              <div className="relative" data-more-menu>
+                <button
+                  type="button"
+                  aria-haspopup="menu"
+                  aria-expanded={moreOpen}
+                  onClick={() => setMoreOpen((v) => !v)}
+                  className={`${linkBase} ${linkIdle}`}
+                >
+                  {moreLabel} <span aria-hidden className="ml-1 text-[9px]">▾</span>
+                </button>
+                {moreOpen && (
+                  <div
+                    role="menu"
+                    className="absolute right-0 top-full mt-2 w-48 rounded-xl border border-gold-dust/25 bg-obsidian/95 p-1 backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.5)]"
+                  >
+                    {moreEntries.map((e) => (
+                      <Link
+                        key={e.to}
+                        to={e.to}
+                        onClick={() => setMoreOpen(false)}
+                        aria-current={isActive(e.to) ? "page" : undefined}
+                        className={`block rounded-lg px-3 py-2 text-[12px] ${
+                          isZh ? "tracking-normal" : "uppercase tracking-[0.24em]"
+                        } ${isActive(e.to) ? "text-gold-dust bg-gold-dust/10" : "text-stone-warm/80 hover:bg-gold-dust/10 hover:text-gold-light"}`}
+                      >
+                        {e.label}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
           </div>
+
+          {/* Right side */}
           <div className="flex items-center gap-2 md:justify-self-end md:gap-3">
             {session ? (
               <button
                 type="button"
                 onClick={openAcc}
+                aria-label={isZh ? "账户菜单" : "Account menu"}
                 className="hidden flex-none items-center gap-2 whitespace-nowrap rounded-full border border-gold-dust/40 px-3 py-1 text-[10px] tracking-[0.24em] text-gold-dust transition-colors hover:bg-gold-dust/10 md:flex"
               >
-                {avatarUrl && (
+                {avatarUrl ? (
                   <img
                     src={avatarUrl!}
                     alt=""
@@ -401,8 +482,12 @@ function SiteNav() {
                     loading="lazy"
                     decoding="async"
                   />
+                ) : (
+                  <span aria-hidden className="grid h-5 w-5 flex-none place-items-center rounded-full border border-gold-dust/40 text-[9px] italic">
+                    {(account?.name?.[0] ?? (isZh ? "我" : "A")).toUpperCase()}
+                  </span>
                 )}
-                <span className="whitespace-nowrap">{accountLabel}</span>
+                <span className="whitespace-nowrap">{isZh ? "账户" : "Account"}</span>
               </button>
             ) : (
               <div className="hidden items-center gap-2 md:flex">
@@ -411,20 +496,20 @@ function SiteNav() {
                   search={{ mode: "login", redirect: undefined }}
                   className="flex-none whitespace-nowrap rounded-full border border-gold-dust/40 px-3 py-1 text-[10px] tracking-[0.24em] text-gold-dust transition-colors hover:bg-gold-dust/10"
                 >
-                  {lang === "zh" ? "登录" : "Sign in"}
+                  {isZh ? "登录" : "Sign in"}
                 </Link>
                 <Link
                   to="/auth"
                   search={{ mode: "signup", redirect: undefined }}
                   className="flex-none whitespace-nowrap rounded-full bg-gold-dust px-3 py-1 text-[10px] tracking-[0.24em] text-obsidian transition-colors hover:bg-gold-light"
                 >
-                  {lang === "zh" ? "注册" : "Sign up"}
+                  {isZh ? "注册" : "Sign up"}
                 </Link>
               </div>
             )}
             <div className="hidden md:block"><LanguageToggle /></div>
 
-            {/* Mobile-only account chip (compact) */}
+            {/* Mobile-only account chip */}
             <button
               type="button"
               onClick={openAcc}
@@ -434,14 +519,14 @@ function SiteNav() {
               {avatarUrl ? (
                 <img src={avatarUrl!} alt="" loading="lazy" decoding="async" className="h-7 w-7 rounded-full object-cover" />
               ) : (
-                <span className="text-[10px] tracking-[0.16em]">{lang === "zh" ? "我" : "ME"}</span>
+                <span className="text-[10px] tracking-[0.16em]">{isZh ? "我" : "ME"}</span>
               )}
             </button>
 
-            {/* Mobile hamburger — opens the side rail */}
+            {/* Mobile hamburger */}
             <button
               type="button"
-              aria-label={lang === "zh" ? "打开菜单" : "Open menu"}
+              aria-label={isZh ? "打开菜单" : "Open menu"}
               aria-expanded={drawerOpen}
               onClick={() => setDrawerOpen((v) => !v)}
               className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-gold-dust/40 text-gold-dust md:hidden"
@@ -456,7 +541,7 @@ function SiteNav() {
         </div>
       </nav>
 
-      {/* Backdrop for the side rail — mobile-only for easy dismissal */}
+      {/* Backdrop */}
       <div
         aria-hidden="true"
         onClick={() => setDrawerOpen(false)}
@@ -465,10 +550,9 @@ function SiteNav() {
         }`}
       />
 
-      {/* Slim vertical rail — slides in from the right when the dot is tapped.
-          No backdrop, no dialog: just a compact column of links. */}
+      {/* Mobile drawer — mirrors desktop IA */}
       <aside
-        aria-label="Navigation rail"
+        aria-label={isZh ? "导航" : "Navigation"}
         aria-hidden={!drawerOpen}
         onMouseLeave={() => setDrawerOpen(false)}
         style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}
@@ -478,28 +562,39 @@ function SiteNav() {
             : "pointer-events-none translate-x-6 opacity-0"
         }`}
       >
-        {[
-          { to: "/", label: lang === "zh" ? "首页" : "Home" },
-          ...(session ? [{ to: "/me/home", label: t.nav_today }, { to: "/me/profile", label: lang === "zh" ? "我的" : "My library" }] : []),
-          { to: "/traditions", label: t.nav_traditions },
-          { to: "/ritual", label: t.nav_ritual },
-          { to: "/community", label: t.nav_community },
-          { to: "/about", label: t.nav_about },
-          ...(showAdmin ? [{ to: "/admin", label: adminLabel }] : []),
-        ].map((item) => (
-          <Link
-            key={item.to}
-            to={item.to}
-            onClick={() => setDrawerOpen(false)}
-            className={`flex min-h-11 items-center justify-end whitespace-nowrap rounded-lg px-4 py-3 text-right text-[13px] ${
-              lang === "zh"
-                ? "tracking-normal text-stone-warm/85"
-                : "uppercase tracking-[0.24em] text-stone-warm/75"
-            } transition-colors hover:bg-gold-dust/10 hover:text-gold-light`}
-          >
-            {item.label}
-          </Link>
-        ))}
+        {coreEntries.map((item) => {
+          const active = isActive(item.to);
+          return (
+            <Link
+              key={item.to}
+              to={item.to}
+              onClick={() => setDrawerOpen(false)}
+              aria-current={active ? "page" : undefined}
+              className={`flex min-h-11 items-center justify-end whitespace-nowrap rounded-lg px-4 py-3 text-right text-[13px] ${
+                isZh ? "tracking-normal" : "uppercase tracking-[0.24em]"
+              } ${active ? "bg-gold-dust/10 text-gold-light" : "text-stone-warm/85 hover:bg-gold-dust/10 hover:text-gold-light"}`}
+            >
+              {item.label}
+            </Link>
+          );
+        })}
+        {moreEntries.length > 0 && <div className="my-1 h-px bg-white/10" />}
+        {moreEntries.map((item) => {
+          const active = isActive(item.to);
+          return (
+            <Link
+              key={item.to}
+              to={item.to}
+              onClick={() => setDrawerOpen(false)}
+              aria-current={active ? "page" : undefined}
+              className={`flex min-h-11 items-center justify-end whitespace-nowrap rounded-lg px-4 py-3 text-right text-[12px] ${
+                isZh ? "tracking-normal" : "uppercase tracking-[0.22em]"
+              } ${active ? "bg-gold-dust/10 text-gold-light" : "text-stone-warm/70 hover:bg-gold-dust/10 hover:text-gold-light"}`}
+            >
+              {item.label}
+            </Link>
+          );
+        })}
         <div className="my-1 h-px bg-white/10" />
         {session ? (
           <button
@@ -519,7 +614,7 @@ function SiteNav() {
                 className="h-5 w-5 flex-none rounded-full border border-gold-dust/40 object-cover"
               />
             )}
-            <span>{accountLabel}</span>
+            <span>{isZh ? "账户" : "Account"}</span>
           </button>
         ) : (
           <>
@@ -529,7 +624,7 @@ function SiteNav() {
               onClick={() => setDrawerOpen(false)}
               className="flex min-h-11 items-center justify-end whitespace-nowrap rounded-lg px-4 py-3 text-[11px] uppercase tracking-[0.24em] text-gold-dust hover:bg-gold-dust/10"
             >
-              {lang === "zh" ? "登录" : "Sign in"}
+              {isZh ? "登录" : "Sign in"}
             </Link>
             <Link
               to="/auth"
@@ -537,7 +632,7 @@ function SiteNav() {
               onClick={() => setDrawerOpen(false)}
               className="flex min-h-11 items-center justify-end whitespace-nowrap rounded-lg bg-gold-dust/10 px-4 py-3 text-[11px] uppercase tracking-[0.24em] text-gold-light hover:bg-gold-dust/20"
             >
-              {lang === "zh" ? "注册" : "Sign up"}
+              {isZh ? "注册" : "Sign up"}
             </Link>
           </>
         )}
@@ -548,6 +643,7 @@ function SiteNav() {
     </>
   );
 }
+
 
 
 
