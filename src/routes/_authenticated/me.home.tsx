@@ -293,15 +293,15 @@ function DailyRoomPage() {
         {/* Page title — "My Home" is the personal reading desk. Today's Fate is its default first module. */}
         <header className="mb-6">
           <div className="text-[10px] uppercase tracking-[0.36em] text-amber-300/60">
-            {lang === "zh" ? "命运图书馆 · 个人阅览桌" : "Destiny Library · Personal desk"}
+            {lang === "zh" ? "命运图书馆 · 个人书架" : "Destiny Library · Personal Library"}
           </div>
           <h1 className="mt-2 font-serif text-3xl tracking-wide md:text-4xl">
             {lang === "zh" ? "我的主页" : "My Home"}
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-amber-100/70">
             {lang === "zh"
-              ? "这是你每天回到图书馆的个人阅览桌。默认打开「今日命运」，也可从下方进入命盘、好友、历史回声与会员。"
-              : "This is your personal reading desk in the library. It opens with today's fate; use the cards below to reach charts, friends, historical echoes and membership."}
+              ? "这是你每天回到图书馆的个人书架。默认打开「今日命运」，也可从下方进入命盘、好友、历史回声与会员。"
+              : "This is your Personal Library shelf. It opens with today's fate; use the cards below to reach charts, friends, historical echoes and membership."}
           </p>
         </header>
 
@@ -715,7 +715,8 @@ function DailyRoomPage() {
             <div
               id="echoes"
               data-focus={peersFocused ? "peers" : undefined}
-              className={`scroll-mt-24 ${peersFocused ? "rounded-2xl ring-2 ring-amber-300/60 ring-offset-2 ring-offset-[#0a0a12] transition-shadow" : ""}`}
+              style={{ scrollMarginTop: "calc(var(--site-nav-height, 96px) + 72px)" }}
+              className={peersFocused ? "rounded-2xl ring-2 ring-amber-300/60 ring-offset-2 ring-offset-[#0a0a12] transition-shadow" : ""}
             >
               <span id="life-chapter" aria-hidden className="block h-0 w-0 -mt-24" />
               {peersFocused ? (
