@@ -305,12 +305,12 @@ export function CuratorLetter() {
             >
               {copy.doorSelf}
             </Link>
-            <a
-              href="#traditions"
-              className="min-h-11 rounded-full border border-amber-400/40 px-6 py-3 text-xs uppercase tracking-[0.28em] text-amber-200 hover:border-amber-300 hover:bg-amber-500/10"
-            >
-              {copy.doorPeers}
-            </a>
+            <PeersCta
+              isSignedIn={isSignedIn}
+              lang={normalizeLang(lang)}
+              label={copy.doorPeers}
+              variant="outline"
+            />
             <button
               type="button"
               onClick={() => dispatch({ type: "fold" })}
@@ -326,6 +326,7 @@ export function CuratorLetter() {
       </section>
     );
   }
+
 
   // Active ritual — sealed or page 1..4. Any other kind (shouldn't happen
   // once folded/done are handled above) defaults to page 1 to keep the UI
