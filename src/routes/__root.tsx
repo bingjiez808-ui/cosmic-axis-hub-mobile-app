@@ -438,11 +438,12 @@ function SiteNav() {
     { to: "/community", label: t.nav_community },
   ];
 
-  const libraryEntries: Array<{ to: "/me/home" | "/me/profile" | "/me/friends" | "/me/echoes" | "/me/membership"; label: string; hint: string }> = [
+  const libraryEntries: Array<{ to: "/me/home" | "/me/profile" | "/me/friends" | "/me/echoes" | "/me/fun-library" | "/me/membership"; label: string; hint: string }> = [
     { to: "/me/home", label: isZh ? "书架主页" : "Library Home", hint: isZh ? "今日命运与主线" : "Today's fate & throughline" },
     { to: "/me/profile", label: isZh ? "命盘与报告" : "Charts & Reports", hint: isZh ? "主命盘 · 他人命盘 · 报告" : "Primary · others · reports" },
     { to: "/me/friends", label: isZh ? "关系与适配" : "Relationships", hint: isZh ? "好友 · 邀请 · 适配分析" : "Friends · invites · match" },
     { to: "/me/echoes", label: isZh ? "历史回声" : "Historical Echoes", hint: isZh ? "相似处境的历史人物" : "Figures with similar arcs" },
+    { to: "/me/fun-library", label: isZh ? "趣味图书馆" : "Fun Library", hint: isZh ? "藏书人格 · 领一本属于你的书" : "Reader-types · claim your book" },
     { to: "/me/membership", label: isZh ? "会员与订单" : "Membership & Orders", hint: isZh ? "会员 · 订单 · 工单" : "Plans · orders · tickets" },
   ];
 
