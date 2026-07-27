@@ -443,6 +443,11 @@ function LandingPage() {
       {/* ─────────── CURATOR'S LETTER ─────────── */}
       <CuratorLetter />
 
+      {/* ─────────── CONCERN → FEATURE MAPPING ─────────── */}
+      <ConcernSelector />
+
+
+
 
 
       {/* ─────────── FOUR TRADITIONS ─────────── */}
