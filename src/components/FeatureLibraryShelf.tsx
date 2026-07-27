@@ -28,6 +28,7 @@ import {
   type ShelfBookKey,
 } from "@/lib/concern-guidance-v1";
 import { CONCERN_EVENT } from "@/components/ConcernSelector";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 import coverSelf from "@/assets/shelf-books/self_knowledge.webp";
 import coverStudy from "@/assets/shelf-books/study_growth.webp";
@@ -170,7 +171,6 @@ export function FeatureLibraryShelf() {
               <li
                 key={b.key}
                 className={[
-                  // Mobile card width → ~1.3 per screen at 393px.
                   "shrink-0 basis-[72%] snap-start",
                   "sm:basis-auto sm:shrink",
                   "relative",
@@ -178,9 +178,9 @@ export function FeatureLibraryShelf() {
               >
                 <button
                   type="button"
-                  onClick={() => setOpenBook((v) => (v === b.key ? null : b.key))}
+                  onClick={() => setOpenBook(b.key)}
+                  aria-haspopup="dialog"
                   aria-expanded={isOpen}
-                  aria-controls={`shelf-book-${b.key}`}
                   className={[
                     "group relative flex w-full flex-col overflow-hidden rounded-md border text-left",
                     "transition-transform duration-300 ease-out will-change-transform",
@@ -194,7 +194,6 @@ export function FeatureLibraryShelf() {
                   ].join(" ")}
                   style={{ aspectRatio: "3 / 4" }}
                 >
-                  {/* Cover image */}
                   <img
                     src={cover}
                     alt=""
@@ -204,17 +203,14 @@ export function FeatureLibraryShelf() {
                     draggable={false}
                     className="absolute inset-0 h-full w-full object-cover"
                   />
-                  {/* Bottom gradient for legible caption */}
                   <div
                     aria-hidden
                     className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/85 via-black/55 to-transparent"
                   />
-                  {/* Gilt spine light */}
                   <span
                     aria-hidden
                     className="pointer-events-none absolute left-2 top-2 bottom-2 w-[2px] bg-gradient-to-b from-amber-200/80 via-amber-500/40 to-transparent"
                   />
-                  {/* Hover / focus gilt outline */}
                   <span
                     aria-hidden
                     className={[
@@ -225,7 +221,6 @@ export function FeatureLibraryShelf() {
                     ].join(" ")}
                   />
 
-                  {/* Text overlay */}
                   <div className="relative z-10 mt-auto p-3">
                     <div className="text-[10px] uppercase tracking-[0.24em] text-amber-200/80">
                       {isFeatured ? H.litForYou[lang] : H.volume[lang]}
@@ -238,26 +233,111 @@ export function FeatureLibraryShelf() {
                     </div>
                   </div>
                 </button>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
 
-                {isOpen ? (
+      <p className="mt-6 text-center text-xs text-amber-200/50">{H.closed[lang]}</p>
+
+      <Dialog
+        open={!!openBook}
+        onOpenChange={(v) => {
+          if (!v) setOpenBook(null);
+        }}
+      >
+        {(() => {
+          const b = openBook ? SHELF_BOOKS.find((x) => x.key === openBook) : null;
+          if (!b) return null;
+          const cover = COVERS[b.key];
+          const isFeatured = !!pickedConcern && CONCERNS[pickedConcern].featuredShelfBook === b.key;
+          const titleId = `shelf-book-title-${b.key}`;
+          const descId = `shelf-book-desc-${b.key}`;
+          return (
+            <DialogContent
+              aria-labelledby={titleId}
+              aria-describedby={descId}
+              className={[
+                "left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2",
+                "w-[calc(100vw-1.5rem)] max-w-[min(960px,calc(100vw-1.5rem))]",
+                "max-h-[85vh] p-0 gap-0 overflow-hidden",
+                "border-amber-200/25 bg-[#0b0710] text-amber-50",
+                "shadow-[0_30px_120px_rgba(0,0,0,0.75)]",
+                "sm:rounded-xl",
+              ].join(" ")}
+            >
+              <div className="grid max-h-[85vh] grid-rows-[1fr_auto] sm:grid-rows-1 sm:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
+                {/* Left / top: cover */}
+                <div className="relative hidden sm:block">
+                  <img
+                    src={cover}
+                    alt=""
+                    aria-hidden
+                    className="absolute inset-0 h-full w-full object-cover"
+                  />
                   <div
-                    id={`shelf-book-${b.key}`}
-                    className="mt-3 rounded-lg border border-amber-100/15 bg-black/70 p-4 text-sm shadow-[0_18px_60px_rgba(0,0,0,0.65)] backdrop-blur"
-                  >
-                    <div className="text-[11px] uppercase tracking-[0.22em] text-amber-200/70">
-                      {H.answers[lang]}
+                    aria-hidden
+                    className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent"
+                  />
+                  <div className="absolute inset-x-0 bottom-0 p-5">
+                    <div className="text-[10px] uppercase tracking-[0.24em] text-amber-200/80">
+                      {isFeatured ? H.litForYou[lang] : H.volume[lang]}
                     </div>
-                    <ul className="mt-2 space-y-1.5 text-amber-100/85">
-                      {b.answers[lang].map((a, i) => (
-                        <li key={i} className="flex gap-2">
-                          <span
-                            aria-hidden
-                            className="mt-2 h-1 w-1 shrink-0 rounded-full bg-amber-300/70"
-                          />
-                          <span>{a}</span>
-                        </li>
-                      ))}
-                    </ul>
+                    <DialogTitle
+                      id={titleId}
+                      className="mt-1 font-serif text-2xl leading-tight text-amber-50"
+                    >
+                      {b.title[lang]}
+                    </DialogTitle>
+                  </div>
+                </div>
+
+                {/* Right / main: scrollable body */}
+                <div className="flex min-h-0 flex-col">
+                  <div className="sm:hidden border-b border-amber-100/10 p-5">
+                    <div className="flex items-start gap-3">
+                      <img
+                        src={cover}
+                        alt=""
+                        aria-hidden
+                        className="h-20 w-16 rounded object-cover shadow-md"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[10px] uppercase tracking-[0.24em] text-amber-200/80">
+                          {isFeatured ? H.litForYou[lang] : H.volume[lang]}
+                        </div>
+                        <DialogTitle
+                          id={`${titleId}-mobile`}
+                          className="mt-1 font-serif text-xl leading-tight text-amber-50"
+                        >
+                          {b.title[lang]}
+                        </DialogTitle>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6 sm:py-6">
+                    <DialogDescription id={descId} className="text-sm text-amber-100/80">
+                      {b.oneLiner[lang]}
+                    </DialogDescription>
+
+                    <div className="mt-5">
+                      <div className="text-[11px] uppercase tracking-[0.22em] text-amber-200/70">
+                        {H.answers[lang]}
+                      </div>
+                      <ul className="mt-2 space-y-1.5 text-sm text-amber-100/85">
+                        {b.answers[lang].map((a, i) => (
+                          <li key={i} className="flex gap-2">
+                            <span
+                              aria-hidden
+                              className="mt-2 h-1 w-1 shrink-0 rounded-full bg-amber-300/70"
+                            />
+                            <span>{a}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
 
                     <div className="mt-4 rounded-md border border-amber-100/10 bg-black/40 p-3 text-[13px] italic leading-relaxed text-amber-100/80">
                       <div className="mb-1 text-[10px] not-italic uppercase tracking-[0.22em] text-amber-200/60">
@@ -276,28 +356,30 @@ export function FeatureLibraryShelf() {
                         <div className="mt-1 text-amber-100/75">{H.premiumBody[lang]}</div>
                       </div>
                     </div>
+                  </div>
 
+                  <div
+                    className="border-t border-amber-100/10 bg-[#0b0710]/95 px-5 py-3 sm:px-6"
+                    style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+                  >
                     <Link
                       to={resolveConcernRoute({
                         concern: b.ctaTarget,
                         isSignedIn,
                         hasPrimaryChart: false,
                       })}
-                      className="mt-4 inline-flex min-h-11 items-center justify-center rounded-full bg-gradient-to-r from-amber-300 to-amber-500 px-5 text-sm font-medium text-black transition hover:brightness-110"
+                      onClick={() => setOpenBook(null)}
+                      className="inline-flex min-h-11 w-full items-center justify-center rounded-full bg-gradient-to-r from-amber-300 to-amber-500 px-5 text-sm font-medium text-black transition hover:brightness-110 sm:w-auto"
                     >
                       {H.cta[lang]}
                     </Link>
                   </div>
-                ) : null}
-              </li>
-            );
-          })}
-        </ul>
-      </div>
-
-      {!openBook ? (
-        <p className="mt-6 text-center text-xs text-amber-200/50">{H.closed[lang]}</p>
-      ) : null}
+                </div>
+              </div>
+            </DialogContent>
+          );
+        })()}
+      </Dialog>
     </section>
   );
 }
