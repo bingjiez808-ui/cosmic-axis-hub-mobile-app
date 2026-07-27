@@ -8,6 +8,7 @@ import {
   ONBOARDING_INTENTS,
   curatorLetter,
   isOnboardingIntent,
+  normalizeLang,
   type OnboardingIntent,
 } from "@/lib/life-guidance-v1";
 import {
@@ -143,19 +144,19 @@ function writeSeen() {
 
 export function CuratorLetter() {
   const { lang } = useLang();
-  const copy = curatorLetter[lang];
+  const copy = curatorLetter[normalizeLang(lang)];
   const reduceMotion = useReducedMotion();
 
-  // Initial stage: first-time → sealed (auto-open ritual for first-time
-  // visitors), returning viewer → folded book spine. During SSR we always
-  // start folded to avoid hydration mismatches; a small effect promotes
-  // to sealed once we know this is a fresh visit.
-  const [stage, dispatch] = useReducer(reducer, { kind: "folded" as const });
-  const [hydrated, setHydrated] = useState(false);
+  // Initial stage is ALWAYS "sealed" so SSR and the very first client
+  // render agree on a fully-renderable stage (folded also renders safely
+  // but was previously gated on `hydrated`, which caused pre-hydration
+  // renders to fall through to the ritual body with pageIndex=0 and
+  // crash on `copy.pages[-1].title`). On hydration, returning viewers
+  // fold the letter and first-time viewers stay on the sealed cover.
+  const [stage, dispatch] = useReducer(reducer, { kind: "sealed" as const });
 
   useEffect(() => {
-    setHydrated(true);
-    if (!readSeen()) dispatch({ type: "open" });
+    if (readSeen()) dispatch({ type: "fold" });
   }, []);
 
   useEffect(() => {
@@ -253,7 +254,7 @@ export function CuratorLetter() {
 
   // Folded "book spine" state — one line + revisit button. Rendered once
   // the ritual has been finished or on returning sessions.
-  if (hydrated && stage.kind === "folded") {
+  if (stage.kind === "folded") {
     return (
       <section
         id="curator-letter"
@@ -326,9 +327,11 @@ export function CuratorLetter() {
     );
   }
 
-  // Active ritual — sealed or page 1..4.
-  const pageIndex =
-    stage.kind === "page" ? stage.index : stage.kind === "sealed" ? 0 : 0;
+  // Active ritual — sealed or page 1..4. Any other kind (shouldn't happen
+  // once folded/done are handled above) defaults to page 1 to keep the UI
+  // renderable rather than crashing on a negative array index.
+  const pageIndex: 1 | 2 | 3 | 4 =
+    stage.kind === "page" ? stage.index : 1;
 
   return (
     <section
@@ -504,7 +507,12 @@ function PageStage({
   onNext: () => void;
   onPrev: () => void;
 }) {
-  const page = copy.pages[index - 1];
+  const safeIndex = ((): 1 | 2 | 3 | 4 => {
+    const n = Number(index);
+    if (!Number.isFinite(n)) return 1;
+    return Math.max(1, Math.min(4, Math.floor(n))) as 1 | 2 | 3 | 4;
+  })();
+  const page = copy.pages[safeIndex - 1] ?? copy.pages[0];
   return (
     <motion.article
       initial={
@@ -514,12 +522,12 @@ function PageStage({
       exit={reduceMotion ? { opacity: 0 } : { opacity: 0, rotateY: -12, y: -10 }}
       transition={{ duration: reduceMotion ? 0.15 : 0.55, ease: [0.32, 0.72, 0, 1] }}
       className="mx-auto max-w-[58ch]"
-      data-testid={`curator-page-${index}`}
+      data-testid={`curator-page-${safeIndex}`}
       style={{ perspective: 1400 }}
     >
       <div className="rounded-2xl border border-amber-300/15 bg-[rgba(28,20,10,0.55)] p-6 backdrop-blur-[2px] md:p-10">
         <p className="text-[10px] uppercase tracking-[0.4em] text-amber-200/60">
-          {copy.pageOf(index, TOTAL_PAGES)}
+          {copy.pageOf(safeIndex, TOTAL_PAGES)}
         </p>
         <h3 className="mt-3 font-serif text-2xl italic leading-snug text-amber-50 md:text-4xl">
           {page.title}
@@ -530,7 +538,7 @@ function PageStage({
           ))}
         </div>
 
-        {index === 3 ? (
+        {safeIndex === 3 ? (
           <IntentPicker
             copy={copy}
             intent={intent}
@@ -539,7 +547,7 @@ function PageStage({
           />
         ) : null}
 
-        {index === 4 ? (
+        {safeIndex === 4 ? (
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <Link
               to="/ritual"

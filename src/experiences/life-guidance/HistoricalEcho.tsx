@@ -5,6 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useLang } from "@/lib/i18n";
 import {
   echoCopy,
+  normalizeLang,
   figuresFor,
   type DomainKey,
   type HistoricalFigure,
@@ -31,7 +32,7 @@ export type HistoricalEchoProps = {
  */
 export function HistoricalEcho({ stage, domain }: HistoricalEchoProps) {
   const { lang } = useLang();
-  const copy = echoCopy[lang];
+  const copy = echoCopy[normalizeLang(lang)];
 
   const list = useMemo(
     () => (stage ? figuresFor(stage, domain) : []),
@@ -230,17 +231,23 @@ export function HistoricalEcho({ stage, domain }: HistoricalEchoProps) {
             <div className="mt-5 flex items-center justify-between text-xs text-amber-200/70">
               <button
                 type="button"
-                onClick={() => setIdx((i) => (i - 1 + list.length) % list.length)}
+                onClick={() =>
+                  setIdx((i) =>
+                    list.length > 0 ? (i - 1 + list.length) % list.length : 0,
+                  )
+                }
                 className="min-h-9 rounded-full border border-amber-400/30 px-3 py-1 hover:border-amber-300"
               >
                 ← {copy.prev}
               </button>
               <div>
-                {idx + 1} / {list.length}
+                {list.length > 0 ? idx + 1 : 0} / {list.length}
               </div>
               <button
                 type="button"
-                onClick={() => setIdx((i) => (i + 1) % list.length)}
+                onClick={() =>
+                  setIdx((i) => (list.length > 0 ? (i + 1) % list.length : 0))
+                }
                 className="min-h-9 rounded-full border border-amber-400/30 px-3 py-1 hover:border-amber-300"
               >
                 {copy.next} →
