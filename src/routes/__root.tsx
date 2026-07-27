@@ -381,6 +381,21 @@ function SiteNav() {
 
   const NavLink = ({ to, label, ariaLabel }: { to: string; label: string; ariaLabel?: string }) => {
     const active = isActive(to);
+    // "My Home" — when signed-out, route through /auth so login lands back on /me/home.
+    const needsAuthGate = !session && to.startsWith("/me");
+    if (needsAuthGate) {
+      return (
+        <Link
+          to="/auth"
+          search={{ mode: "login", redirect: to }}
+          aria-label={ariaLabel}
+          title={ariaLabel}
+          className={`${linkBase} ${linkIdle}`}
+        >
+          {label}
+        </Link>
+      );
+    }
     return (
       <Link
         to={to}
@@ -399,37 +414,24 @@ function SiteNav() {
 
   const orbVisible = orbActive && !showTopBar && !drawerOpen;
 
-  // Core nav entries per auth state (mobile drawer mirrors these + "More")
-  const coreEntries: Array<{ to: string; label: string; ariaLabel?: string }> = session
-    ? [
-        { to: "/", label: libraryHomeLabel, ariaLabel: libraryHomeAria },
-        { to: "/me/home", label: myHomeLabel },
-        { to: "/ritual", label: t.nav_ritual },
-        { to: "/community", label: t.nav_community },
-      ]
-    : [
-        { to: "/", label: libraryHomeLabel, ariaLabel: libraryHomeAria },
-        { to: "/ritual", label: t.nav_ritual },
-        { to: "/traditions", label: t.nav_traditions },
-        { to: "/community", label: t.nav_community },
-      ];
-
-  // Personal-shelf shortcuts. When signed-out these redirect through /auth
-  // so the user lands on the target after login.
-  const shelfLink = (to: string) =>
-    session ? to : `/auth?mode=login&redirect=${encodeURIComponent(to)}`;
-  const shelfEntries: Array<{ href: string; label: string }> = [
-    { href: shelfLink("/me/home"), label: isZh ? "今日命运" : "Today's Fate" },
-    { href: shelfLink("/me/profile"), label: isZh ? "命盘与报告" : "Charts & Reports" },
-    { href: shelfLink("/me/friends"), label: isZh ? "好友" : "Friends" },
-    { href: shelfLink("/me/match"), label: isZh ? "适配分析" : "Match" },
-    { href: shelfLink("/me/home#echoes"), label: isZh ? "历史回声" : "Echoes" },
-    { href: shelfLink("/me/profile#membership-orders"), label: isZh ? "会员与订单" : "Membership" },
+  // Global IA — identical for signed-in and signed-out. Personal-shelf
+  // features (Today's Fate, Charts, Friends, Match, Echoes, Membership) do
+  // NOT live here; they belong to /me/home + PersonalWorkspaceNav.
+  const coreEntries: Array<{ to: string; label: string; ariaLabel?: string }> = [
+    { to: "/", label: libraryHomeLabel, ariaLabel: libraryHomeAria },
+    { to: "/ritual", label: t.nav_ritual },
+    { to: "/traditions", label: t.nav_traditions },
+    { to: "/community", label: t.nav_community },
+    { to: "/about", label: t.nav_about },
+    { to: "/me/home", label: myHomeLabel },
   ];
 
-  const moreEntries: Array<{ to: string; label: string }> = [
-    ...(session ? [{ to: "/traditions", label: t.nav_traditions }] : []),
-    { to: "/about", label: t.nav_about },
+  // "Learn · More" — informational/policy only. Never duplicate personal features here.
+  const moreEntries: Array<{ to?: string; href?: string; label: string; external?: boolean }> = [
+    { to: "/privacy", label: isZh ? "隐私政策" : "Privacy" },
+    { to: "/terms", label: isZh ? "服务条款" : "Terms" },
+    { to: "/delete-account", label: isZh ? "删除账户" : "Delete account" },
+    { href: "mailto:fatenexus.studio@gmail.com", label: isZh ? "联系支持" : "Contact support", external: true },
     ...(showAdmin ? [{ to: "/admin", label: adminLabel }] : []),
   ];
 
@@ -486,33 +488,36 @@ function SiteNav() {
                     role="menu"
                     className="absolute right-0 top-full mt-2 w-64 rounded-xl border border-gold-dust/25 bg-obsidian/95 p-2 backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.5)]"
                   >
-                    <div className="px-2 pt-1 pb-1 text-[9px] uppercase tracking-[0.28em] text-stone-warm/40">
-                      {isZh ? "个人书架" : "Personal Library"}
-                    </div>
-                    {shelfEntries.map((e) => (
-                      <a
-                        key={e.href}
-                        href={e.href}
-                        onClick={() => setMoreOpen(false)}
-                        className="block rounded-lg px-3 py-2 text-[12px] text-stone-warm/85 hover:bg-gold-dust/10 hover:text-gold-light"
-                      >
-                        {e.label}
-                      </a>
-                    ))}
-                    {moreEntries.length > 0 && <div className="my-2 h-px bg-white/10" />}
-                    {moreEntries.map((e) => (
-                      <Link
-                        key={e.to}
-                        to={e.to}
-                        onClick={() => setMoreOpen(false)}
-                        aria-current={isActive(e.to) ? "page" : undefined}
-                        className={`block rounded-lg px-3 py-2 text-[12px] ${
-                          isZh ? "tracking-normal" : "uppercase tracking-[0.24em]"
-                        } ${isActive(e.to) ? "text-gold-dust bg-gold-dust/10" : "text-stone-warm/80 hover:bg-gold-dust/10 hover:text-gold-light"}`}
-                      >
-                        {e.label}
-                      </Link>
-                    ))}
+                    {moreEntries.map((e) => {
+                      const key = e.to ?? e.href ?? e.label;
+                      const active = e.to ? isActive(e.to) : false;
+                      const cls = `block rounded-lg px-3 py-2 text-[12px] ${
+                        isZh ? "tracking-normal" : "uppercase tracking-[0.24em]"
+                      } ${active ? "text-gold-dust bg-gold-dust/10" : "text-stone-warm/80 hover:bg-gold-dust/10 hover:text-gold-light"}`;
+                      if (e.href) {
+                        return (
+                          <a
+                            key={key}
+                            href={e.href}
+                            onClick={() => setMoreOpen(false)}
+                            className={cls}
+                          >
+                            {e.label}
+                          </a>
+                        );
+                      }
+                      return (
+                        <Link
+                          key={key}
+                          to={e.to!}
+                          onClick={() => setMoreOpen(false)}
+                          aria-current={active ? "page" : undefined}
+                          className={cls}
+                        >
+                          {e.label}
+                        </Link>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -618,6 +623,25 @@ function SiteNav() {
       >
         {coreEntries.map((item) => {
           const active = isActive(item.to);
+          const gate = !session && item.to.startsWith("/me");
+          const cls = `flex min-h-11 items-center justify-end whitespace-nowrap rounded-lg px-4 py-3 text-right text-[13px] ${
+            isZh ? "tracking-normal" : "uppercase tracking-[0.24em]"
+          } ${active ? "bg-gold-dust/10 text-gold-light" : "text-stone-warm/85 hover:bg-gold-dust/10 hover:text-gold-light"}`;
+          if (gate) {
+            return (
+              <Link
+                key={item.to}
+                to="/auth"
+                search={{ mode: "login", redirect: item.to }}
+                onClick={() => setDrawerOpen(false)}
+                aria-label={item.ariaLabel}
+                title={item.ariaLabel}
+                className={cls}
+              >
+                {item.label}
+              </Link>
+            );
+          }
           return (
             <Link
               key={item.to}
@@ -626,40 +650,43 @@ function SiteNav() {
               aria-current={active ? "page" : undefined}
               aria-label={item.ariaLabel}
               title={item.ariaLabel}
-              className={`flex min-h-11 items-center justify-end whitespace-nowrap rounded-lg px-4 py-3 text-right text-[13px] ${
-                isZh ? "tracking-normal" : "uppercase tracking-[0.24em]"
-              } ${active ? "bg-gold-dust/10 text-gold-light" : "text-stone-warm/85 hover:bg-gold-dust/10 hover:text-gold-light"}`}
+              className={cls}
             >
               {item.label}
             </Link>
           );
         })}
-        <div className="my-1 h-px bg-white/10" />
-        <div className="px-3 pb-1 pt-1 text-right text-[9px] uppercase tracking-[0.28em] text-stone-warm/40">
-          {isZh ? "个人书架" : "Personal Library"}
-        </div>
-        {shelfEntries.map((e) => (
-          <a
-            key={e.href}
-            href={e.href}
-            onClick={() => setDrawerOpen(false)}
-            className="flex min-h-11 items-center justify-end whitespace-nowrap rounded-lg px-4 py-3 text-right text-[12px] text-stone-warm/80 hover:bg-gold-dust/10 hover:text-gold-light"
-          >
-            {e.label}
-          </a>
-        ))}
         {moreEntries.length > 0 && <div className="my-1 h-px bg-white/10" />}
+        {moreEntries.length > 0 && (
+          <div className="px-3 pb-1 pt-1 text-right text-[9px] uppercase tracking-[0.28em] text-stone-warm/40">
+            {isZh ? "了解 · 更多" : "Learn · More"}
+          </div>
+        )}
         {moreEntries.map((item) => {
-          const active = isActive(item.to);
+          const key = item.to ?? item.href ?? item.label;
+          const active = item.to ? isActive(item.to) : false;
+          const cls = `flex min-h-11 items-center justify-end whitespace-nowrap rounded-lg px-4 py-3 text-right text-[12px] ${
+            isZh ? "tracking-normal" : "uppercase tracking-[0.22em]"
+          } ${active ? "bg-gold-dust/10 text-gold-light" : "text-stone-warm/70 hover:bg-gold-dust/10 hover:text-gold-light"}`;
+          if (item.href) {
+            return (
+              <a
+                key={key}
+                href={item.href}
+                onClick={() => setDrawerOpen(false)}
+                className={cls}
+              >
+                {item.label}
+              </a>
+            );
+          }
           return (
             <Link
-              key={item.to}
-              to={item.to}
+              key={key}
+              to={item.to!}
               onClick={() => setDrawerOpen(false)}
               aria-current={active ? "page" : undefined}
-              className={`flex min-h-11 items-center justify-end whitespace-nowrap rounded-lg px-4 py-3 text-right text-[12px] ${
-                isZh ? "tracking-normal" : "uppercase tracking-[0.22em]"
-              } ${active ? "bg-gold-dust/10 text-gold-light" : "text-stone-warm/70 hover:bg-gold-dust/10 hover:text-gold-light"}`}
+              className={cls}
             >
               {item.label}
             </Link>
