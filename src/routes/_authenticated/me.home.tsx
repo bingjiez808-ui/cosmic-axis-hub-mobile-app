@@ -420,6 +420,17 @@ function DailyRoomPage() {
           focused={focus === "welcome"}
         />
 
+        {/* DailyCuratorCounsel — 3-layer deterministic message tied to the
+            user's picked concern + today's band + priority domain. */}
+        <DailyCuratorCounsel
+          lang={lang}
+          concern={concern}
+          band={score.overall.band as DailyBand}
+          priorityDomain={pickPriorityDomain(score.domains)}
+          onPickConcern={changeConcern}
+          onToggleEvidence={() => setShowEvidence((v) => !v)}
+        />
+
         {/* Reading-path breadcrumb — bookmarks pinned to today's page. */}
         <ReadingPath lang={lang} focus={focus} hasIntent={onboardingIntent != null} />
 
