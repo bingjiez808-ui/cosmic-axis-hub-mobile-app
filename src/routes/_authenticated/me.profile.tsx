@@ -153,3 +153,10 @@ function MyProfilePage() {
     </div>
   );
 }
+
+function TicketsBlock() {
+  const { lang } = useLang();
+  return <MyTicketsCard lang={lang} />;
+}
+
+}
