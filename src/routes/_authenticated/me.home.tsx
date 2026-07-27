@@ -429,8 +429,6 @@ function DailyRoomPage() {
           onToggleEvidence={() => setShowEvidence((v) => !v)}
         />
 
-        {/* Reading-path breadcrumb — bookmarks pinned to today's page. */}
-        <ReadingPath lang={lang} focus={focus} hasIntent={onboardingIntent != null} />
 
         {/* Overall + theme */}
 
