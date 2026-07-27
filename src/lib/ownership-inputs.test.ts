@@ -52,26 +52,21 @@ describe("AssignChartOwnershipInputSchema", () => {
     ).toThrow();
   });
 
-  test("relationship_label trims and caps at 80 chars", () => {
-    const long = "x".repeat(200);
-    // schema stores raw string; effective cap applied server-side. We only
-    // assert here that oversized input still parses (server trims), and
-    // that trimming whitespace does not blow up parse.
+  test("relationshipLabel trims whitespace and enforces 80-char cap", () => {
     const parsed = AssignChartOwnershipInputSchema.parse({
       ...base,
       role: "other",
-      relationship_label: `  伴侣  `,
+      relationshipLabel: "  伴侣  ",
     });
-    expect(parsed.relationship_label).toBe("  伴侣  ");
-    // sanity: raw long strings are accepted at the boundary; server-side
-    // slicing owns the 80-char cap.
+    expect(parsed.relationshipLabel).toBe("伴侣");
+
     expect(() =>
       AssignChartOwnershipInputSchema.parse({
         ...base,
         role: "other",
-        relationship_label: long,
+        relationshipLabel: "x".repeat(81),
       }),
-    ).not.toThrow();
+    ).toThrow();
   });
 
   test("role must be 'self' or 'other'", () => {
