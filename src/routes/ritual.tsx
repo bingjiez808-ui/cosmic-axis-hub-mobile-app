@@ -177,12 +177,13 @@ function RitualPage() {
     try {
       sessionStorage.setItem(
         RITUAL_STATE_KEY,
-        JSON.stringify({ values, quiz, step, skipQuiz }),
+        JSON.stringify({ values, quiz, step, skipQuiz, ownerRole, relationship, genderChosen }),
       );
     } catch {}
-  }, [values, quiz, step, skipQuiz, restored]);
+  }, [values, quiz, step, skipQuiz, restored, ownerRole, relationship, genderChosen]);
 
-  const totalSteps = (skipQuiz ? 0 : QUIZ.length) + 5;
+  const OWNERSHIP_STEP_COUNT = 1;
+  const totalSteps = OWNERSHIP_STEP_COUNT + 5;
 
   const questionSteps: {
     key: FieldKey;
@@ -191,28 +192,22 @@ function RitualPage() {
     placeholder: string;
     input: "text" | "date" | "time" | "gender";
   }[] = [
-    // Order matters: gender is asked up front alongside birth date/time so
-    // the Zi Wei calculator can run from the first synthesis. The label
-    // makes clear it is only used by traditional algorithms and is never
-    // publicly displayed. `place` intentionally comes last because it
-    // often needs a city picker and is less sensitive.
     { key: "name", prompt: t.q_name, hint: t.q_name_hint, placeholder: t.q_name_ph, input: "text" },
     { key: "date", prompt: t.q_date, hint: t.q_date_hint, placeholder: "", input: "date" },
     { key: "time", prompt: t.q_time, hint: t.q_time_hint, placeholder: "", input: "time" },
     { key: "gender", prompt: t.q_gender, hint: t.q_gender_hint, placeholder: "", input: "gender" },
     { key: "place", prompt: t.q_place, hint: t.q_place_hint, placeholder: t.q_place_ph, input: "text" },
-];
+  ];
 
-// `noOrphan` lives in @/lib/typography — imported at the top of the file.
-
-
-  const quizCount = skipQuiz ? 0 : QUIZ.length;
   const progress = useMemo(() => (step + 1) / totalSteps, [step, totalSteps]);
   const isLast = step === totalSteps - 1;
-  const isQuizStep = !skipQuiz && step < QUIZ.length;
-  const quizIdx = isQuizStep ? step : -1;
-  const isIntakeStep = step >= quizCount;
-  const intakeIdx = isIntakeStep ? step - quizCount : -1;
+  const isOwnershipStep = step === 0;
+  const isIntakeStep = step >= OWNERSHIP_STEP_COUNT;
+  const intakeIdx = isIntakeStep ? step - OWNERSHIP_STEP_COUNT : -1;
+  const currentQ = isIntakeStep ? questionSteps[intakeIdx] : null;
+  // Quiz retired — retained variables to preserve existing render/progress code.
+  const isQuizStep = false;
+  const quizIdx = -1;
   const currentQ = isIntakeStep ? questionSteps[intakeIdx] : null;
 
   // Per-step validation. Returns null when OK, or a localized error
