@@ -125,24 +125,49 @@ function LandingPage() {
           transition={{ duration: 1, delay: 1.2 }}
           className="relative z-10 mt-8 flex flex-col items-center gap-3 md:mt-10"
         >
-          <a
-            href="#concern"
-            data-testid="hero-cta-primary"
-            className="group relative inline-flex overflow-hidden rounded-full border border-gold-dust/40 bg-obsidian/80 px-10 py-4 backdrop-blur-sm transition-colors hover:border-gold-dust md:px-12 md:py-5"
-          >
-            <span className="relative z-10 text-xs font-medium uppercase tracking-[0.32em] text-gold-dust">
-              {isZh ? "选择我现在最想了解的问题" : "Pick the question I most want read"}
-            </span>
-            <span className="absolute inset-0 translate-y-full bg-gold-dust/10 transition-transform duration-500 group-hover:translate-y-0" />
-          </a>
-          <a
-            href="#feature-library"
-            data-testid="hero-cta-secondary"
-            className="text-[11px] uppercase tracking-[0.32em] text-stone-warm/60 hover:text-gold-dust"
-          >
-            {isZh ? "先看看图书馆能回答什么" : "See what the library can answer first"}
-          </a>
+          {isSignedIn ? (
+            <>
+              <Link
+                to="/me/home"
+                data-testid="hero-cta-primary"
+                className="group relative inline-flex overflow-hidden rounded-full border border-gold-dust/40 bg-obsidian/80 px-10 py-4 backdrop-blur-sm transition-colors hover:border-gold-dust md:px-12 md:py-5"
+              >
+                <span className="relative z-10 text-xs font-medium uppercase tracking-[0.32em] text-gold-dust">
+                  {isZh ? "回到我的阅览桌" : "Back to my reading desk"}
+                </span>
+                <span className="absolute inset-0 translate-y-full bg-gold-dust/10 transition-transform duration-500 group-hover:translate-y-0" />
+              </Link>
+              <Link
+                to="/ritual"
+                data-testid="hero-cta-secondary"
+                className="text-[11px] uppercase tracking-[0.32em] text-stone-warm/60 hover:text-gold-dust"
+              >
+                {isZh ? "新建 / 读取另一张命盘" : "Add or read another chart"}
+              </Link>
+            </>
+          ) : (
+            <>
+              <a
+                href="#concern"
+                data-testid="hero-cta-primary"
+                className="group relative inline-flex overflow-hidden rounded-full border border-gold-dust/40 bg-obsidian/80 px-10 py-4 backdrop-blur-sm transition-colors hover:border-gold-dust md:px-12 md:py-5"
+              >
+                <span className="relative z-10 text-xs font-medium uppercase tracking-[0.32em] text-gold-dust">
+                  {isZh ? "开启我的阅读" : "Begin my reading"}
+                </span>
+                <span className="absolute inset-0 translate-y-full bg-gold-dust/10 transition-transform duration-500 group-hover:translate-y-0" />
+              </a>
+              <a
+                href="#feature-library"
+                data-testid="hero-cta-secondary"
+                className="text-[11px] uppercase tracking-[0.32em] text-stone-warm/60 hover:text-gold-dust"
+              >
+                {isZh ? "先看看图书馆能回答什么" : "See what the library can answer first"}
+              </a>
+            </>
+          )}
         </motion.div>
+
 
         {/* Trust bar */}
         <motion.ul
