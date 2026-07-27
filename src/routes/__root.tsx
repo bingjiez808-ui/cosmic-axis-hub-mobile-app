@@ -428,15 +428,22 @@ function SiteNav() {
 
   const orbVisible = orbActive && !showTopBar && !drawerOpen;
 
-  // Global IA — identical for signed-in and signed-out. Personal-shelf
-  // features (Today's Fate, Charts, Friends, Match, Echoes, Membership) do
-  // NOT live here; they belong to /me/home + PersonalWorkspaceNav.
+  // Global IA — identical for signed-in and signed-out. "My Library" is a
+  // dropdown of the five shelf entries (mirrored by PersonalWorkspaceNav
+  // once inside /me/*), never a flat set of top-level links.
   const coreEntries: Array<{ to: string; label: string; ariaLabel?: string }> = [
     { to: "/", label: libraryHomeLabel, ariaLabel: libraryHomeAria },
     { to: "/ritual", label: t.nav_ritual },
     { to: "/traditions", label: t.nav_traditions },
     { to: "/community", label: t.nav_community },
-    { to: "/me/home", label: myHomeLabel },
+  ];
+
+  const libraryEntries: Array<{ to: "/me/home" | "/me/profile" | "/me/friends" | "/me/echoes" | "/me/membership"; label: string; hint: string }> = [
+    { to: "/me/home", label: isZh ? "书架主页" : "Library Home", hint: isZh ? "今日命运与主线" : "Today's fate & throughline" },
+    { to: "/me/profile", label: isZh ? "命盘与报告" : "Charts & Reports", hint: isZh ? "主命盘 · 他人命盘 · 报告" : "Primary · others · reports" },
+    { to: "/me/friends", label: isZh ? "关系与适配" : "Relationships", hint: isZh ? "好友 · 邀请 · 适配分析" : "Friends · invites · match" },
+    { to: "/me/echoes", label: isZh ? "历史回声" : "Historical Echoes", hint: isZh ? "相似处境的历史人物" : "Figures with similar arcs" },
+    { to: "/me/membership", label: isZh ? "会员与订单" : "Membership & Orders", hint: isZh ? "会员 · 订单 · 工单" : "Plans · orders · tickets" },
   ];
 
   // "Learn · More" — informational/policy only. Never duplicate personal features here.
@@ -448,6 +455,11 @@ function SiteNav() {
     { href: "mailto:fatenexus.studio@gmail.com", label: isZh ? "联系支持" : "Contact support", external: true },
     ...(showAdmin ? [{ to: "/admin", label: adminLabel }] : []),
   ];
+
+  const isLibraryActive = libraryEntries.some((e) => isActive(e.to));
+  const gatedShelfHref = (to: string) =>
+    !session ? { to: "/auth" as const, search: { mode: "login" as const, redirect: to } } : null;
+
 
   return (
     <>
