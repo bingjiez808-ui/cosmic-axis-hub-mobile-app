@@ -8,6 +8,7 @@ import baziImg from "@/assets/tradition-bazi.jpg";
 import ziweiImg from "@/assets/tradition-ziwei.jpg";
 import treeImg from "@/assets/tree-of-destiny.jpg";
 import { TraditionModal, type TraditionId } from "@/components/TraditionModal";
+import { CuratorLetter } from "@/components/CuratorLetter";
 import { useLang } from "@/lib/i18n";
 
 export const Route = createFileRoute("/")({
