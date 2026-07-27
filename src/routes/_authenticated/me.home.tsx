@@ -293,7 +293,7 @@ function DailyRoomPage() {
         {/* Page title — "My Home" is the personal reading desk. Today's Fate is its default first module. */}
         <header className="mb-6">
           <div className="text-[10px] uppercase tracking-[0.36em] text-amber-300/60">
-            {lang === "zh" ? "命运图书馆 · 个人阅览桌" : "Destiny Library · Personal desk"}
+            {lang === "zh" ? "命运图书馆 · 个人书架" : "Destiny Library · Personal Library"}
           </div>
           <h1 className="mt-2 font-serif text-3xl tracking-wide md:text-4xl">
             {lang === "zh" ? "我的主页" : "My Home"}
