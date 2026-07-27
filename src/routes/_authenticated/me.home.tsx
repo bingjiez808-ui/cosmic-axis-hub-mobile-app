@@ -287,17 +287,41 @@ function DailyRoomPage() {
 
 
 
-        {/* Secondary in-page nav */}
+        {/* Page title — "My Home" is the personal reading desk. Today's Fate is its default first module. */}
+        <header className="mb-6">
+          <div className="text-[10px] uppercase tracking-[0.36em] text-amber-300/60">
+            {lang === "zh" ? "命运图书馆 · 个人阅览桌" : "Destiny Library · Personal desk"}
+          </div>
+          <h1 className="mt-2 font-serif text-3xl tracking-wide md:text-4xl">
+            {lang === "zh" ? "我的主页" : "My Home"}
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm text-amber-100/70">
+            {lang === "zh"
+              ? "这是你每天回到图书馆的个人阅览桌。默认打开「今日命运」，也可从下方进入命盘、好友、历史回声与会员。"
+              : "This is your personal reading desk in the library. It opens with today's fate; use the cards below to reach charts, friends, historical echoes and membership."}
+          </p>
+        </header>
+
+        {/* Hub cards — clear next step for each personal module */}
+        <HomeHubCards real={real} lang={lang} />
+
+        {/* Secondary in-page nav — "Today" is the active module */}
         <nav
-          aria-label={d.nav_today}
+          aria-label={lang === "zh" ? "我的主页 · 模块" : "My Home · sections"}
           className="mb-6 flex flex-wrap items-center gap-2 text-xs"
         >
-          <Link
-            to="/me/home"
-            className="rounded-full border border-amber-300 bg-amber-300/10 px-3 py-1 text-amber-100"
+          <a
+            href="#today"
             aria-current="page"
+            className="rounded-full border border-amber-300 bg-amber-300/10 px-3 py-1 text-amber-100"
           >
-            {d.nav_today}
+            {lang === "zh" ? "今日命运" : "Today's Fate"}
+          </a>
+          <Link
+            to="/me/profile"
+            className="rounded-full border border-amber-400/25 px-3 py-1 text-amber-200/80 hover:border-amber-300/60"
+          >
+            {lang === "zh" ? "命盘与报告" : "Charts & Reports"}
           </Link>
           <Link
             to="/me/friends"
@@ -312,6 +336,8 @@ function DailyRoomPage() {
             {d.home_secondary_nav_match}
           </Link>
         </nav>
+        <div id="today" className="sr-only" aria-hidden />
+
 
         {/* Lightweight context bar — full chart management lives on /me/profile */}
         <section
