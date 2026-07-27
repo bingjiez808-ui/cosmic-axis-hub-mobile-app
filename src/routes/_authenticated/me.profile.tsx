@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 
 import { PersonalBookshelf } from "@/experiences/profile/PersonalBookshelf";
 import { MembershipCard } from "@/components/MembershipCard";
+import { MyTicketsCard } from "@/components/MyTicketsCard";
 import { DailyRoomError, DailyRoomPending } from "@/experiences/daily-room/fallback";
 import { supabase } from "@/integrations/supabase/client";
 import { listUserCharts, type ChartRow } from "@/lib/reports-store.functions";
