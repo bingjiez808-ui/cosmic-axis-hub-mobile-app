@@ -293,14 +293,15 @@ function DailyRoomPage() {
             {lang === "zh" ? "命运图书馆 · 我的书架" : "Destiny Library · My Library"}
           </div>
           <h1 className="mt-2 font-serif text-3xl tracking-wide md:text-4xl">
-            {lang === "zh" ? "书架主页" : "Library Home"}
+            {lang === "zh" ? "我的书架" : "My Library"}
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-amber-100/70">
             {lang === "zh"
-              ? "这是你每天回到图书馆的书架主页。默认打开「今日命运」；命盘、关系、历史回声与会员，从上方书架导航进入。"
-              : "This is your Library home. It opens with today's fate; use the library sub-nav above to reach charts, relationships, echoes and membership."}
+              ? "这里是你的个人书架主页，默认打开「今日命运」。命盘、关系、历史回声与会员，从上方书架导航进入。"
+              : "This is your personal library home; it opens with today's fate. Use the library sub-nav above to reach charts, relationships, echoes and membership."}
           </p>
         </header>
+
 
         {/* Shared personal-workspace sub-nav (Today's Fate active) */}
         <PersonalWorkspaceNav active="/me/home" />

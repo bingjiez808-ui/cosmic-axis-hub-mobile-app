@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
+
 
 import { useLang } from "@/lib/i18n";
 
@@ -29,7 +29,7 @@ type Item = {
 };
 
 const ITEMS: Item[] = [
-  { to: "/me/home", labelZh: "主页", labelEn: "Home", testId: "pwn-home" },
+  { to: "/me/home", labelZh: "书架主页", labelEn: "Library Home", testId: "pwn-home" },
   { to: "/me/profile", labelZh: "命盘与报告", labelEn: "Charts & Reports", testId: "pwn-profile" },
   {
     to: "/me/friends",
@@ -47,7 +47,6 @@ export function PersonalWorkspaceNav({ active }: { active?: string }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const current = active ?? pathname;
   const isZh = lang === "zh";
-  const isOnHome = current === "/me/home";
 
   const isItemActive = (it: Item) =>
     current === it.to || (it.alsoActiveFor?.some((p) => current === p) ?? false);
@@ -59,18 +58,7 @@ export function PersonalWorkspaceNav({ active }: { active?: string }) {
       className="sticky z-40 mb-6 -mx-4 border-b border-amber-400/10 bg-[#0a0a12]/85 px-4 py-3 backdrop-blur md:-mx-8 md:px-8"
     >
       <div className="mx-auto flex w-full max-w-[1100px] items-center gap-3">
-        {!isOnHome && (
-          <Link
-            to="/me/home"
-            data-testid="pwn-back-home"
-            aria-label={isZh ? "回到个人书架主页" : "Back to Personal Library home"}
-            className="inline-flex min-h-11 shrink-0 items-center gap-1 rounded-full border border-amber-400/25 px-3 py-2 text-[11px] uppercase tracking-[0.24em] text-amber-200/80 transition hover:border-amber-300/60 hover:text-amber-100"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
-            <span className="hidden sm:inline">{isZh ? "书架主页" : "Library home"}</span>
-            <span className="sm:hidden">{isZh ? "主页" : "Home"}</span>
-          </Link>
-        )}
+
 
         <div className="relative min-w-0 flex-1">
           <nav
