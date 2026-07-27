@@ -21,6 +21,12 @@ import {
 export type HistoricalEchoProps = {
   stage: LifeStage | null;
   domain: DomainKey | null;
+  /**
+   * When set, expands the deck on first render — used by focus=peers
+   * deep-links so the traveller doesn't have to guess which card holds
+   * "same-age peers". Only fires once per mount.
+   */
+  initialExpanded?: boolean;
 };
 
 /**
@@ -30,7 +36,7 @@ export type HistoricalEchoProps = {
  * page") and written response ("write in the margin"). Both save to
  * the signed-in user's private tables.
  */
-export function HistoricalEcho({ stage, domain }: HistoricalEchoProps) {
+export function HistoricalEcho({ stage, domain, initialExpanded }: HistoricalEchoProps) {
   const { lang } = useLang();
   const copy = echoCopy[normalizeLang(lang)];
 
@@ -38,7 +44,8 @@ export function HistoricalEcho({ stage, domain }: HistoricalEchoProps) {
     () => (stage ? figuresFor(stage, domain) : []),
     [stage, domain],
   );
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState<boolean>(Boolean(initialExpanded));
+
   const [idx, setIdx] = useState(0);
   const [bookmarks, setBookmarks] = useState<Set<string>>(new Set());
   const [response, setResponse] = useState<string>("");
@@ -156,10 +163,12 @@ export function HistoricalEcho({ stage, domain }: HistoricalEchoProps) {
 
   return (
     <section
+      id="historical-echo"
       aria-label={copy.title}
-      className="relative mb-8 overflow-hidden rounded-xl border border-amber-500/25 bg-black/60 p-6 md:p-7"
+      className="relative mb-8 overflow-hidden rounded-xl border border-amber-500/25 bg-black/60 p-6 md:p-7 scroll-mt-24"
       data-testid="historical-echo"
     >
+
       {/* Gallery of arched niches — sits behind text with a soft scrim */}
       <picture aria-hidden="true">
         <source
