@@ -653,28 +653,70 @@ function DailyRoomPage() {
                   ?.birth_date ?? null
               : null;
           const priority = pickPriorityDomain(score.domains);
+          const peersFocused = focus === "peers";
           return (
-            <>
-              <LifeChapterCard
-                primaryBirthDate={primaryBirthDate}
-                todayISO={today}
-                domainScores={score.domains}
-                domainLabels={{
-                  love: d.domain.love,
-                  study: d.domain.study,
-                  career: d.domain.career,
-                  body_mind: d.domain.body_mind,
-                  finance: d.domain.finance,
-                }}
-              />
-              <HistoricalEchoSlot
-                primaryBirthDate={primaryBirthDate}
-                todayISO={today}
-                priority={priority}
-              />
-            </>
+            <div
+              id="life-chapter"
+              data-focus={peersFocused ? "peers" : undefined}
+              className={`scroll-mt-24 ${peersFocused ? "rounded-2xl ring-2 ring-amber-300/60 ring-offset-2 ring-offset-[#0a0a12] transition-shadow" : ""}`}
+            >
+              {peersFocused ? (
+                <div
+                  className="mb-3 rounded-lg border border-amber-400/25 bg-amber-500/5 px-4 py-2 text-xs text-amber-100/85"
+                  data-testid="peers-path-hint"
+                >
+                  {lang === "zh"
+                    ? "你正在阅读：同龄人的人生章节 → 历史回声"
+                    : "You're reading: your peers' life chapter → historical echoes"}
+                </div>
+              ) : null}
+              {!primaryBirthDate && peersFocused ? (
+                <section
+                  className="mb-8 rounded-xl border border-amber-400/30 bg-black/40 p-6"
+                  data-testid="peers-empty-no-primary"
+                >
+                  <div className="text-[11px] uppercase tracking-widest text-amber-200/70">
+                    {lang === "zh" ? "同龄人的人生章节" : "Your peers' life chapter"}
+                  </div>
+                  <h3 className="mt-2 font-serif text-2xl text-amber-100">
+                    {lang === "zh"
+                      ? "先登记出生日期，图书馆才能找到与你处于相近人生阶段的回声。"
+                      : "Add your birth date first — the library then knows which chapter to open beside yours."}
+                  </h3>
+                  <Link
+                    to="/ritual"
+                    search={{ returnTo: "/me/home?focus=peers#life-chapter" } as never}
+                    className="mt-4 inline-flex min-h-11 rounded-full border border-amber-300/60 bg-amber-500/10 px-4 py-2 text-sm text-amber-100 hover:bg-amber-500/20"
+                  >
+                    {lang === "zh" ? "登记出生日期 →" : "Register your birth date →"}
+                  </Link>
+                </section>
+              ) : (
+                <>
+                  <LifeChapterCard
+                    primaryBirthDate={primaryBirthDate}
+                    todayISO={today}
+                    domainScores={score.domains}
+                    domainLabels={{
+                      love: d.domain.love,
+                      study: d.domain.study,
+                      career: d.domain.career,
+                      body_mind: d.domain.body_mind,
+                      finance: d.domain.finance,
+                    }}
+                  />
+                  <HistoricalEchoSlot
+                    primaryBirthDate={primaryBirthDate}
+                    todayISO={today}
+                    priority={priority}
+                    initialExpanded={peersFocused}
+                  />
+                </>
+              )}
+            </div>
           );
         })()}
+
 
 
 
