@@ -104,20 +104,69 @@ export function pickPriorityDomain(
   return (sorted[0]?.domain as DomainKey) ?? null;
 }
 
+/* ─────────────────────────── Onboarding intent ───────────────────────── */
+
+/**
+ * Onboarding "intent" — the traveller's answer to "what do you most want
+ * to reclaim right now" while opening the Curator's Letter. This is
+ * self-reported context, NEVER a chart reading. It influences the
+ * welcome sentence on /me/home and the connection line inside
+ * Historical Echoes; it never changes chart computation.
+ */
+export type OnboardingIntent = "direction" | "courage" | "calm" | "connection";
+
+export const ONBOARDING_INTENTS: readonly OnboardingIntent[] = [
+  "direction",
+  "courage",
+  "calm",
+  "connection",
+] as const;
+
+export function isOnboardingIntent(v: unknown): v is OnboardingIntent {
+  return (
+    typeof v === "string" &&
+    (ONBOARDING_INTENTS as readonly string[]).includes(v)
+  );
+}
+
 /* ─────────────────────────── Curator's Letter ────────────────────────── */
+
+export type CuratorPage = {
+  title: string;
+  body: string[]; // 1–3 short lines
+};
 
 export const curatorLetter: Record<
   Lang,
   {
     kicker: string;
-    intro: [string, string]; // two short teaser lines
+    intro: [string, string]; // two short teaser lines used in the folded state
     openCta: string;
     closeCta: string;
-    paragraphs: string[]; // 5 short paragraphs
+    skipCta: string;
+    continueCta: string;
+    pageOf: (i: number, n: number) => string;
+    // Full 5-paragraph long-form (kept for the folded/legacy view and tests).
+    paragraphs: string[];
+    // NEW: 4-page ritual arc — one short chapter per opening spread.
+    pages: [CuratorPage, CuratorPage, CuratorPage, CuratorPage];
+    // Intent picker (surfaces on page 3).
+    intentKicker: string;
+    intentPrompt: string;
+    intentOptions: Record<OnboardingIntent, { label: string; hint: string }>;
+    intentSavedLocal: string;
+    intentSavedCloud: string;
+    // Page-4 doors
+    doorSelf: string;
+    doorPeers: string;
     ctaRitual: string;
     ctaPeers: string;
     safety: string;
     seal: string;
+    revisitOpen: string;
+    revisitHint: string;
+    // Welcome line back on /me/home once intent is known.
+    welcomeBack: (intent: OnboardingIntent) => string;
   }
 > = {
   zh: {
@@ -126,8 +175,11 @@ export const curatorLetter: Record<
       "命盘不是判决书，而是一张帮助你辨认自己、理解处境、重新选择道路的地图。",
       "读懂命运，不是向命运投降，而是重新拿回选择。",
     ],
-    openCta: "翻开馆长序言",
+    openCta: "拆开封蜡，翻开来信",
     closeCta: "合上这封信",
+    skipCta: "跳过序言，直接进入图书馆",
+    continueCta: "继续翻页",
+    pageOf: (i, n) => `第 ${i} 页 / 共 ${n} 页`,
     paragraphs: [
       "旅人，欢迎来到命运图书馆。我们不做预言家，也不替你签下任何一张判决书。我们相信：命盘不是安排，而是一张让你看清自己的地图。",
       "太多的疲惫，其实来自把决策失误和认知盲区都包装成了「命该如此」。当你能分辨哪些属于处境、哪些属于选择、哪些是他人的期待，内耗自会松动。",
@@ -135,11 +187,66 @@ export const curatorLetter: Record<
       "命盘只能呈现倾向、条件与可能性——它不能决定你人生的上限。你与谁相遇、什么时候转弯、成为什么样的人，答案始终握在你自己手里。",
       "翻开下一页，去认识你自己。这个图书馆最重的那本书，是你正在写的那一本。",
     ],
+    pages: [
+      {
+        title: "命盘不是判决书",
+        body: [
+          "旅人，欢迎来到命运图书馆。",
+          "这里不签发任何一张关于你人生的判决书。",
+          "命盘是一张让你看清自己的地图，不是命令你走哪条路的圣旨。",
+        ],
+      },
+      {
+        title: "理解差异，不是停止努力",
+        body: [
+          "看清自己的倾向、节奏与盲点，不等于原地躺下。",
+          "反而，它让你把力气用在真正对得起自己的方向上。",
+          "读懂差异，是为了更少内耗地继续前行。",
+        ],
+      },
+      {
+        title: "不崇拜成功，也不赞美无意义的忍耐",
+        body: [
+          "这些书页里，愿意让你休息、转弯、换舞台的建议，永远多于让你硬扛的建议。",
+          "在继续翻页之前，可以先告诉图书馆：此刻你最想找回什么？",
+        ],
+      },
+      {
+        title: "下一页仍由你来写",
+        body: [
+          "命盘呈现的是倾向、条件与可能性，不是你人生的上限。",
+          "你与谁相遇、什么时候转弯、成为什么样的人——答案始终握在你自己手里。",
+          "这个图书馆最重的那本书，是你正在写的那一本。",
+        ],
+      },
+    ],
+    intentKicker: "只写给馆长看 · 不影响命盘计算",
+    intentPrompt: "此刻，你最想找回：",
+    intentOptions: {
+      direction: { label: "方向", hint: "想知道下一步往哪走" },
+      courage: { label: "勇气", hint: "已经知道，只是不敢开始" },
+      calm: { label: "平静", hint: "被消耗得太久，先想安放自己" },
+      connection: { label: "连接", hint: "想被理解，而不是被评价" },
+    },
+    intentSavedLocal: "已记在这次访问里。登录后会保存到你的图书馆。",
+    intentSavedCloud: "馆长已收到 —— 会在你的欢迎语里出现。",
+    doorSelf: "开始认识自己",
+    doorPeers: "看看与我同龄的人在困惑什么",
     ctaRitual: "开始认识自己",
     ctaPeers: "看看与我同龄的人，都在为什么困惑",
-    safety:
-      "文化与自我反思用途，不替代心理、医疗、法律或财务专业帮助。",
+    safety: "文化与自我反思用途，不替代心理、医疗、法律或财务专业帮助。",
     seal: "命运图书馆 · 馆长敬上",
+    revisitOpen: "再次翻开馆长来信",
+    revisitHint: "上次读过 —— 想要的话可以再打开。",
+    welcomeBack: (intent) => {
+      const map: Record<OnboardingIntent, string> = {
+        direction: "旅人，你上次说想找回方向；今天的这一页，先看看罗盘的偏移。",
+        courage: "旅人，你上次说想找回勇气；今天不用一次跨完，一步就够。",
+        calm: "旅人，你上次说想先安放自己；今天优先照顾节奏，其余可以慢一点。",
+        connection: "旅人，你上次说想被理解；今天的历史回声里，或许有人替你说过。",
+      };
+      return map[intent];
+    },
   },
   en: {
     kicker: "Curator's Letter · Destiny Library",
@@ -147,8 +254,11 @@ export const curatorLetter: Record<
       "A chart is not a verdict. It is a map that helps you recognise yourself, read your circumstances, and choose your next road again.",
       "Reading your fate is not surrender to fate — it is taking your choices back.",
     ],
-    openCta: "Open the Curator's Letter",
+    openCta: "Break the seal, open the letter",
     closeCta: "Close this letter",
+    skipCta: "Skip the preface — enter the library",
+    continueCta: "Turn the page",
+    pageOf: (i, n) => `Page ${i} of ${n}`,
     paragraphs: [
       "Traveller, welcome to the Destiny Library. We are not prophets, and we will not hand you any verdict. We believe a chart is not an arrangement — it is a map that lets you see yourself more clearly.",
       "So much exhaustion begins with dressing up misjudgement and blind spots as fate. When you can tell circumstance apart from choice, and both apart from other people's expectations, the noise inside you softens.",
@@ -156,13 +266,70 @@ export const curatorLetter: Record<
       "A chart shows tendencies, conditions and possibilities. It cannot decide the ceiling of your life. Who you meet, when you turn, and who you become — the answers stay in your own hands.",
       "Turn the page and begin knowing yourself. The heaviest book in this library is the one you are still writing.",
     ],
+    pages: [
+      {
+        title: "A chart is not a verdict",
+        body: [
+          "Traveller, welcome to the Destiny Library.",
+          "Nothing here is a verdict on your life.",
+          "A chart is a map that lets you see yourself — not an order about which road to take.",
+        ],
+      },
+      {
+        title: "Understanding difference is not giving up",
+        body: [
+          "Seeing your own tendencies, rhythm and blind spots is not lying down.",
+          "It lets you spend your effort where it actually pays you back.",
+          "Understanding difference is how you keep moving with less internal noise.",
+        ],
+      },
+      {
+        title: "We don't worship success — or romanticise silent endurance",
+        body: [
+          "On these pages, advice that lets you rest, turn away or change the stage will appear far more often than advice that tells you to push through.",
+          "Before you turn the next page, tell the Curator: what do you most want to reclaim right now?",
+        ],
+      },
+      {
+        title: "The next page is still yours to write",
+        body: [
+          "A chart shows tendencies, conditions and possibilities — not the ceiling of your life.",
+          "Who you meet, when you turn, who you become — the answers stay in your own hands.",
+          "The heaviest book in this library is the one you are still writing.",
+        ],
+      },
+    ],
+    intentKicker: "For the Curator only · does not affect any chart",
+    intentPrompt: "Right now, I most want to reclaim:",
+    intentOptions: {
+      direction: { label: "Direction", hint: "I want to know where to step next." },
+      courage: { label: "Courage", hint: "I know — I just can't quite start." },
+      calm: { label: "Calm", hint: "I've been drained too long; steady myself first." },
+      connection: { label: "Connection", hint: "I want to be understood, not judged." },
+    },
+    intentSavedLocal: "Kept for this visit. Sign in and the library will remember.",
+    intentSavedCloud: "The Curator noted this — it will appear in your welcome line.",
+    doorSelf: "Begin knowing yourself",
+    doorPeers: "See what peers my age are wrestling with",
     ctaRitual: "Begin knowing yourself",
     ctaPeers: "See what people my age are wrestling with",
     safety:
       "Cultural & self-reflection use only; not a substitute for professional mental-health, medical, legal or financial help.",
     seal: "The Curator · Destiny Library",
+    revisitOpen: "Re-open the Curator's Letter",
+    revisitHint: "You've read this before — open it again whenever you like.",
+    welcomeBack: (intent) => {
+      const map: Record<OnboardingIntent, string> = {
+        direction: "Traveller, last time you said you wanted direction. Start with where the compass has drifted today.",
+        courage: "Traveller, last time you asked for courage. Not the whole leap today — one step is enough.",
+        calm: "Traveller, last time you asked for calm. Care for your rhythm first; the rest can wait.",
+        connection: "Traveller, last time you asked for connection. Someone in today's echo may have already said it for you.",
+      };
+      return map[intent];
+    },
   },
 };
+
 
 /* ─────────────────────────── Stage templates ─────────────────────────── */
 
