@@ -143,7 +143,7 @@ function writeSeen() {
 
 export function CuratorLetter() {
   const { lang } = useLang();
-  const copy = curatorLetter[lang];
+  const copy = curatorLetter[normalizeLang(lang)];
   const reduceMotion = useReducedMotion();
 
   // Initial stage is ALWAYS "sealed" so SSR and the very first client
