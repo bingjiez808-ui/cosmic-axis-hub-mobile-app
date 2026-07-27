@@ -120,7 +120,24 @@ export const askOracle = createServerFn({ method: "POST" })
     if (!key) throw new Error("Missing LOVABLE_API_KEY");
     const gateway = createLovableAiGatewayProvider(key);
 
-    const chart = data.chart ?? {};
+    // Chart context — prefer DB truth when a chartId is supplied. Ownership
+    // is enforced by RLS (`.eq('user_id', userId)`); anything not owned
+    // is rejected outright rather than silently ignored.
+    let chart = data.chart ?? {};
+    if (data.chartId) {
+      const { data: owned, error: chartErr } = await supabase
+        .from("charts")
+        .select("id, name, birth_date, birth_time, birth_place")
+        .eq("id", data.chartId)
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (chartErr) throw new Error("Failed to load chart");
+      if (!owned) throw new Error("FORBIDDEN: You do not own this chart.");
+      chart = {
+        ...chart,
+        name: owned.name ?? chart.name,
+      };
+    }
     const chartLine = [
       chart.name ? `Name: ${chart.name}` : null,
       chart.astrology ? `Western Astrology: ${chart.astrology}` : null,
