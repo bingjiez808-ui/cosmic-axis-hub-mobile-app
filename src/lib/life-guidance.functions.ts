@@ -208,3 +208,55 @@ export const saveLifeResponse = createServerFn({ method: "POST" })
     if (error) throw error;
     return { ok: true as const };
   });
+
+/**
+ * Record today's daily_focus. Stored with a local-date key so
+ * yesterday's focus doesn't bleed into today's view. Pass `null` to
+ * clear (e.g. "no specific question").
+ */
+export const setDailyFocus = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((raw) =>
+    z
+      .object({
+        focus: dailyFocusSchema.nullable(),
+        localDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+      })
+      .parse(raw),
+  )
+  .handler(async ({ context, data }) => {
+    const day = data.localDate ?? localDateKey();
+    const { error } = await context.supabase
+      .from("user_preferences" as never)
+      .upsert(
+        {
+          user_id: context.userId,
+          daily_focus: data.focus,
+          daily_focus_date: data.focus ? day : null,
+        } as never,
+        { onConflict: "user_id" },
+      );
+    if (error) throw error;
+    return { ok: true as const };
+  });
+
+/**
+ * Record how the user wants the Sage companion to chat. Only used by
+ * the Sage/tree-hollow surface; never influences chart calculation.
+ */
+export const setSupportMode = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((raw) => z.object({ mode: supportModeSchema }).parse(raw))
+  .handler(async ({ context, data }) => {
+    const { error } = await context.supabase
+      .from("user_preferences" as never)
+      .upsert(
+        {
+          user_id: context.userId,
+          support_mode: data.mode,
+        } as never,
+        { onConflict: "user_id" },
+      );
+    if (error) throw error;
+    return { ok: true as const };
+  });
