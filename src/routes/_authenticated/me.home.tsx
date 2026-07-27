@@ -426,7 +426,7 @@ function DailyRoomPage() {
           lang={lang}
           concern={concern}
           band={score.overall.band as DailyBand}
-          priorityDomain={pickPriorityDomain(score.domains)}
+          priorityDomain={pickPriorityDomain(score.domains) ?? "overall"}
           onPickConcern={changeConcern}
           onToggleEvidence={() => setShowEvidence((v) => !v)}
         />
