@@ -1,4 +1,5 @@
-import { describe, it, expect, afterEach, beforeEach } from "vitest";
+// @ts-expect-error — bun:test
+import { describe, it, expect, afterEach, beforeEach } from "bun:test";
 
 import {
   getAuthRedirectUrl,
