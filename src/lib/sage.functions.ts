@@ -45,7 +45,14 @@ export type SageNextAction =
   | { kind: "upgrade_oracle"; source: "companion" }
   | { kind: "open_route"; href: string; label: { zh: string; en: string } }
   | { kind: "crisis_support" }
-  | { kind: "provide_order_id" };
+  | {
+      kind: "confirm_ticket_draft";
+      draft: {
+        category: "product" | "device" | "order" | "payment" | "subscription";
+        subject: string;
+        message: string;
+      };
+    };
 
 export type SageChatResponse = {
   intent: Intent;
@@ -54,7 +61,6 @@ export type SageChatResponse = {
   usedChart: boolean;
   chargedQuota: boolean;
   nextAction: SageNextAction;
-  feedbackTicket?: { id: string; category: "device" | "order" };
 };
 
 // ------------------------------------------------------------------
