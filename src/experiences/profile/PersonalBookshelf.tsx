@@ -18,6 +18,7 @@ import {
   deleteChart,
   listUserCharts,
   renameChart,
+  setChartRelationshipLabel,
   setChartRole,
   setPrimaryChart,
   type ChartRow,
