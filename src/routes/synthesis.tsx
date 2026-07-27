@@ -21,6 +21,7 @@ type SearchParams = {
   role?: "self" | "other";
   relationship?: string;
   relationshipLabel?: string;
+  primaryIntent?: "replace" | "keep" | "auto";
 };
 
 export const Route = createFileRoute("/synthesis")({
@@ -50,9 +51,14 @@ export const Route = createFileRoute("/synthesis")({
     role: s.role === "self" ? "self" : s.role === "other" ? "other" : undefined,
     relationship: typeof s.relationship === "string" ? s.relationship : undefined,
     relationshipLabel: typeof s.relationshipLabel === "string" ? s.relationshipLabel : undefined,
+    primaryIntent:
+      s.primaryIntent === "replace" || s.primaryIntent === "keep" || s.primaryIntent === "auto"
+        ? s.primaryIntent
+        : undefined,
   }),
   component: SynthesisPage,
 });
+
 
 const PHASES_EN = [
   { label: "Lighting the four candles", detail: "The elders take their seats around the table" },
