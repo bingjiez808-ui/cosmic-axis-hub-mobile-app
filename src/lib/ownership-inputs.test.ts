@@ -12,7 +12,7 @@ import {
 } from "./reports-store.functions";
 
 describe("AssignChartOwnershipInputSchema", () => {
-  const base = { chartId: "11111111-1111-1111-1111-111111111111" as const };
+  const base = { chartId: "11111111-1111-4111-8111-111111111111" as const };
 
   test("accepts self + replace intent (existing primary → replace)", () => {
     const parsed = AssignChartOwnershipInputSchema.parse({
