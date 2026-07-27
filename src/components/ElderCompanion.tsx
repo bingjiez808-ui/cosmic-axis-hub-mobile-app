@@ -1,26 +1,29 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Send, Loader2 } from "lucide-react";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useRouterState } from "@tanstack/react-router";
 
-import { elderChat } from "@/lib/elder.functions";
+import { sageChat, type SageChatResponse } from "@/lib/sage.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { SageAvatar } from "@/components/SageAvatar";
 
 /**
- * ElderCompanion — small floating "sage" avatar (bottom-left) that opens
- * a gentle tree-hole chat. Non-fortune-telling; device/order keywords are
- * forwarded to `user_feedback` on the backend.
+ * SageCompanion — the single, unified floating "Sage" avatar in the
+ * bottom-left of the app. Non-fortune-telling: routes every message
+ * through the server-side intent router in `sageChat`. Depending on
+ * intent the reply is emotional support (uses AI), a deterministic
+ * product / order / crisis / out-of-scope response (no AI), or a
+ * hand-off to the Oracle Reading Room (no AI, no reading here).
  */
 
-type ChatMsg = { role: "user" | "assistant"; content: string };
+type ChatMsg = {
+  role: "user" | "assistant";
+  content: string;
+  meta?: SageChatResponse;
+};
 
-const TIPS_ZH = [
-  "我在。想聊点什么？",
-  "小烦恼也可以说出来，我听。",
-  "不用完美，慢慢讲就好。",
-];
+const TIPS_ZH = ["我在。想聊点什么？", "小烦恼也可以说出来。", "不用完美，慢慢讲就好。"];
 const TIPS_EN = [
   "I'm here. What's on your mind?",
   "Small worries welcome — I'll listen.",
@@ -29,11 +32,11 @@ const TIPS_EN = [
 
 const OPENERS_ZH = [
   "夜色柔软。愿意告诉我，今天让你有点在意的是什么？",
-  "我在这里。想倒一点什么，都可以慢慢说。",
+  "我在这里。慢慢说，都可以。",
 ];
 const OPENERS_EN = [
-  "The night is soft. Tell me — what's been on your mind today?",
-  "I'm right here. Pour out whatever you need, at your own pace.",
+  "The night is soft. What's been on your mind today?",
+  "I'm right here — take your time.",
 ];
 
 export function ElderCompanion({ lang }: { lang: "en" | "zh" }) {
@@ -48,7 +51,7 @@ export function ElderCompanion({ lang }: { lang: "en" | "zh" }) {
   const [authed, setAuthed] = useState<boolean | null>(null);
   const [banner, setBanner] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const chat = useServerFn(elderChat);
+  const chat = useServerFn(sageChat);
 
   useEffect(() => {
     if (open) return;
@@ -75,7 +78,10 @@ export function ElderCompanion({ lang }: { lang: "en" | "zh" }) {
   }, [open, lang, messages.length]);
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    scrollRef.current?.scrollTo({
+      top: scrollRef.current.scrollHeight,
+      behavior: "smooth",
+    });
   }, [messages, busy]);
 
   const currentTip = useMemo(() => tips[tipIdx % tips.length], [tips, tipIdx]);
@@ -84,25 +90,27 @@ export function ElderCompanion({ lang }: { lang: "en" | "zh" }) {
     const text = draft.trim();
     if (!text || busy) return;
     if (!authed) {
-      setBanner(lang === "zh" ? "先登录，我才能听你慢慢说。" : "Please sign in first — then I can listen.");
+      setBanner(
+        lang === "zh"
+          ? "先登录，我才能听你慢慢说。"
+          : "Please sign in first — then I can listen.",
+      );
       return;
     }
     setBanner(null);
     setDraft("");
-    const history = messages.slice(-10).map((m) => ({ role: m.role, content: m.content }));
-    const nextUser: ChatMsg = { role: "user", content: text };
-    setMessages((prev) => [...prev, nextUser]);
+    const history = messages
+      .filter((m) => !m.meta || m.meta.usedAi)
+      .slice(-10)
+      .map((m) => ({ role: m.role, content: m.content }));
+    setMessages((prev) => [...prev, { role: "user", content: text }]);
     setBusy(true);
     try {
       const res = await chat({ data: { message: text, lang, history } });
-      setMessages((prev) => [...prev, { role: "assistant", content: res.text }]);
-      if (res.feedback.recorded) {
-        setBanner(
-          lang === "zh"
-            ? `已把这条${res.feedback.category === "device" ? "设备" : "订单"}反馈记入后台，团队会尽快跟进。`
-            : `Your ${res.feedback.category} note is now in our team inbox — we'll follow up.`,
-        );
-      }
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: res.text, meta: res },
+      ]);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       setMessages((prev) => [
@@ -122,7 +130,7 @@ export function ElderCompanion({ lang }: { lang: "en" | "zh" }) {
 
   if (hidden) return null;
 
-  const treeHoleLabel = lang === "zh" ? "智者树洞" : "Sage's tree hole";
+  const sageLabel = lang === "zh" ? "智者" : "Sage Companion";
 
   return (
     <div
@@ -138,8 +146,8 @@ export function ElderCompanion({ lang }: { lang: "en" | "zh" }) {
           setOpen((v) => !v);
           if (!open) setTipIdx((i) => (i + 1) % tips.length);
         }}
-        aria-label={treeHoleLabel}
-        title={treeHoleLabel}
+        aria-label={sageLabel}
+        title={sageLabel}
         className="pointer-events-auto group relative grid h-12 w-12 place-items-center rounded-full border border-gold-dust/40 bg-obsidian/80 p-0 shadow-[0_8px_20px_-8px_rgba(0,0,0,0.6)] backdrop-blur-md transition-transform hover:scale-[1.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-light sm:h-14 sm:w-14 motion-reduce:transition-none"
         initial={false}
         animate={{ opacity: 1, y: 0 }}
@@ -162,7 +170,9 @@ export function ElderCompanion({ lang }: { lang: "en" | "zh" }) {
             <div className="flex items-start justify-between gap-2 border-b border-gold-dust/20 px-4 py-3">
               <div>
                 <p className="text-[9px] uppercase tracking-[0.32em] text-gold-dust/80">
-                  {lang === "zh" ? "智者 · 树洞" : "Elder · tree hole"}
+                  {lang === "zh"
+                    ? "智者陪伴 · 情绪、产品与订单"
+                    : "Sage Companion · feelings, product & orders"}
                 </p>
                 <p className="mt-0.5 font-serif text-[13px] italic leading-snug text-stone-warm/95">
                   {currentTip}
@@ -180,8 +190,8 @@ export function ElderCompanion({ lang }: { lang: "en" | "zh" }) {
 
             <p className="border-b border-gold-dust/10 px-4 py-2 text-[10px] leading-relaxed text-stone-warm/55">
               {lang === "zh"
-                ? "这里聊小烦恼、小吐槽——不做命理解读。设备或订单问题会自动记入反馈。"
-                : "A place for small worries — not a reading. Device or order notes go to the team automatically."}
+                ? "这里不读取命盘。命理解读请进入「神谕者阅读室」。"
+                : "This companion does not read charts. For a chart reading, enter the Oracle Reading Room."}
             </p>
 
             <div
@@ -191,24 +201,29 @@ export function ElderCompanion({ lang }: { lang: "en" | "zh" }) {
               {messages.map((m, i) => (
                 <div
                   key={i}
-                  className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
+                  className={`flex flex-col ${m.role === "user" ? "items-end" : "items-start"}`}
                 >
                   <div
-                    className={`max-w-[85%] rounded-2xl px-3 py-2 text-[12.5px] leading-relaxed ${
+                    className={`max-w-[85%] whitespace-pre-line rounded-2xl px-3 py-2 text-[12.5px] leading-relaxed ${
                       m.role === "user"
                         ? "bg-gold-dust/20 text-stone-warm"
-                        : "bg-white/[0.04] font-serif italic text-stone-warm/95"
+                        : m.meta?.intent === "crisis"
+                          ? "border border-orange-400/40 bg-orange-500/10 text-orange-100"
+                          : "bg-white/[0.04] font-serif italic text-stone-warm/95"
                     }`}
                   >
                     {m.content}
                   </div>
+                  {m.role === "assistant" && m.meta && (
+                    <NextActionRow meta={m.meta} lang={lang} />
+                  )}
                 </div>
               ))}
               {busy && (
                 <div className="flex justify-start">
                   <div className="flex items-center gap-2 rounded-2xl bg-white/[0.04] px-3 py-2 text-[12px] text-stone-warm/70">
                     <Loader2 size={12} className="animate-spin" />
-                    {lang === "zh" ? "智者正在听你说……" : "The elder is listening…"}
+                    {lang === "zh" ? "智者正在听你说……" : "The Sage is listening…"}
                   </div>
                 </div>
               )}
@@ -246,12 +261,12 @@ export function ElderCompanion({ lang }: { lang: "en" | "zh" }) {
                       ? "说点什么…（Enter 发送）"
                       : "Say something… (Enter to send)"
                 }
-                disabled={authed === false || busy}
+                disabled={busy}
                 className="max-h-24 min-h-9 flex-1 resize-none rounded-lg border border-gold-dust/20 bg-obsidian/60 px-3 py-2 text-[12.5px] text-stone-warm placeholder:text-stone-warm/35 focus:border-gold-light/50 focus:outline-none disabled:opacity-50"
               />
               <button
                 type="submit"
-                disabled={!draft.trim() || busy || authed === false}
+                disabled={!draft.trim() || busy}
                 className="grid size-9 place-items-center rounded-lg bg-gold-dust/30 text-gold-light transition-colors hover:bg-gold-dust/45 disabled:opacity-40"
                 aria-label="send"
               >
@@ -263,4 +278,64 @@ export function ElderCompanion({ lang }: { lang: "en" | "zh" }) {
       </AnimatePresence>
     </div>
   );
+}
+
+function NextActionRow({
+  meta,
+  lang,
+}: {
+  meta: SageChatResponse;
+  lang: "en" | "zh";
+}) {
+  const na = meta.nextAction;
+  if (!na || na.kind === "none" || na.kind === "crisis_support") return null;
+
+  const zh = lang === "zh";
+  if (na.kind === "enter_oracle") {
+    return (
+      <Link
+        to="/me/oracle"
+        search={{ source: na.source } as never}
+        className="mt-1 inline-flex min-h-9 items-center rounded-full border border-gold-dust/40 px-3 py-1.5 text-[11px] text-gold-light hover:bg-gold-dust/10"
+      >
+        {zh ? "进入神谕者阅读室 →" : "Enter Oracle Reading Room →"}
+      </Link>
+    );
+  }
+  if (na.kind === "upgrade_oracle") {
+    return (
+      <Link
+        to="/report"
+        className="mt-1 inline-flex min-h-9 items-center rounded-full border border-gold-dust/30 px-3 py-1.5 text-[11px] text-gold-light/90 hover:bg-gold-dust/10"
+      >
+        {zh
+          ? "了解神谕者月度会员（模拟支付）"
+          : "About Oracle monthly (simulated payment)"}
+      </Link>
+    );
+  }
+  if (na.kind === "open_route") {
+    return (
+      <Link
+        to={na.href as never}
+        className="mt-1 inline-flex min-h-9 items-center rounded-full border border-gold-dust/25 px-3 py-1.5 text-[11px] text-stone-warm/85 hover:border-gold-dust/60"
+      >
+        {na.label[lang]} →
+      </Link>
+    );
+  }
+  if (na.kind === "provide_order_id") {
+    return (
+      <span className="mt-1 text-[10.5px] text-stone-warm/60">
+        {meta.feedbackTicket
+          ? zh
+            ? `已记入后台 · 工单 ${meta.feedbackTicket.id.slice(0, 8)}`
+            : `Filed · ticket ${meta.feedbackTicket.id.slice(0, 8)}`
+          : zh
+            ? "请把订单号发过来"
+            : "Please share the order number"}
+      </span>
+    );
+  }
+  return null;
 }
