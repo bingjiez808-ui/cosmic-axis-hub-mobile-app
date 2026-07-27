@@ -508,7 +508,12 @@ function PageStage({
   onNext: () => void;
   onPrev: () => void;
 }) {
-  const page = copy.pages[index - 1];
+  const safeIndex = ((): 1 | 2 | 3 | 4 => {
+    const n = Number(index);
+    if (!Number.isFinite(n)) return 1;
+    return Math.max(1, Math.min(4, Math.floor(n))) as 1 | 2 | 3 | 4;
+  })();
+  const page = copy.pages[safeIndex - 1] ?? copy.pages[0];
   return (
     <motion.article
       initial={
