@@ -947,6 +947,24 @@ function ReportPage() {
         return;
       }
 
+      // 2b. Persist ownership metadata coming from the ritual.
+      // Only assigns when the URL carries `role` (i.e. this chart was
+      // just created via /ritual). Never overrides an existing primary.
+      if (search.role === "self" || search.role === "other") {
+        try {
+          await assignChartOwnership({
+            data: {
+              chartId,
+              role: search.role,
+              relationshipLabel: search.relationshipLabel || undefined,
+              autoPromoteIfNoPrimary: search.role === "self",
+            },
+          });
+        } catch {
+          /* non-fatal: chart still exists; user can adjust in /me/profile */
+        }
+      }
+
       // Migrate a temporary/legacy readingId in the URL to the persisted
       // chart UUID that actually belongs to this user. Only rewrite when
       // (a) the URL param is present AND (b) it is not already a UUID.
