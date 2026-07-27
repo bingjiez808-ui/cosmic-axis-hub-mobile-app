@@ -56,7 +56,9 @@ function HeroLanguageChooser() {
 
 function LandingPage() {
   const { t, lang } = useLang();
+  const { session } = useSupabaseSession();
   const isZh = lang === "zh";
+  const isSignedIn = !!session;
 
   const valuePropZh =
     "不是替你决定命运，而是从学业、事业、爱情、关系、财富与人生阶段，帮你看清反复出现的模式与下一步选择。";
@@ -69,6 +71,7 @@ function LandingPage() {
     { zh: "一次生成永久保存", en: "Generated once, kept forever" },
     { zh: "文化娱乐与自我反思", en: "Cultural reading & self-reflection" },
   ];
+
 
   return (
     <>
