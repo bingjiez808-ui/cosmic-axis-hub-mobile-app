@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { PersonalWorkspaceNav } from "@/components/PersonalWorkspaceNav";
 
 import { loadDailyRoomFixture, type DailyRoomFixtureKey } from "@/experiences/daily-room/fixtures";
-import { ensureSocialPreviewAllowed } from "@/experiences/daily-room/route-guard";
+
 import { DailyRoomError } from "@/experiences/daily-room/fallback";
 import { PersonalShellPending } from "@/experiences/daily-room/personal-shell-pending";
 import { listUserCharts, type ChartRow } from "@/lib/reports-store.functions";
@@ -62,9 +62,6 @@ import {
  */
 export const Route = createFileRoute("/_authenticated/me/home")({
   head: () => ({ meta: [{ name: "robots", content: "noindex,nofollow" }] }),
-  beforeLoad: () => {
-    ensureSocialPreviewAllowed();
-  },
   validateSearch: (
     s: Record<string, unknown>,
   ): { focus?: "welcome" | "peers" } => {
