@@ -747,7 +747,43 @@ function SiteNav() {
             </Link>
           );
         })}
+        <div className="my-1 h-px bg-white/10" />
+        <div className="px-3 pb-1 pt-1 text-right text-[9px] uppercase tracking-[0.28em] text-stone-warm/40">
+          {myLibraryLabel}
+        </div>
+        {libraryEntries.map((e) => {
+          const active = isActive(e.to);
+          const gate = !session;
+          const cls = `flex min-h-11 items-center justify-end whitespace-nowrap rounded-lg px-4 py-3 text-right text-[12px] ${
+            isZh ? "tracking-normal" : "uppercase tracking-[0.22em]"
+          } ${active ? "bg-gold-dust/10 text-gold-light" : "text-stone-warm/80 hover:bg-gold-dust/10 hover:text-gold-light"}`;
+          if (gate) {
+            return (
+              <Link
+                key={e.to}
+                to="/auth"
+                search={{ mode: "login", redirect: e.to }}
+                onClick={() => setDrawerOpen(false)}
+                className={cls}
+              >
+                {e.label}
+              </Link>
+            );
+          }
+          return (
+            <Link
+              key={e.to}
+              to={e.to}
+              onClick={() => setDrawerOpen(false)}
+              aria-current={active ? "page" : undefined}
+              className={cls}
+            >
+              {e.label}
+            </Link>
+          );
+        })}
         {moreEntries.length > 0 && <div className="my-1 h-px bg-white/10" />}
+
         {moreEntries.length > 0 && (
           <div className="px-3 pb-1 pt-1 text-right text-[9px] uppercase tracking-[0.28em] text-stone-warm/40">
             {isZh ? "了解 · 更多" : "Learn · More"}
