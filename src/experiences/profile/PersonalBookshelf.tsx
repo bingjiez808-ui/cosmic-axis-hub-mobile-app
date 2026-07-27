@@ -567,6 +567,7 @@ function SpineCard(props: {
   onCommitRename: (id: string) => void;
   onSetPrimary: (id: string) => void;
   onFlipRole: (id: string) => void;
+  onEditRelationLabel?: (c: ChartRow) => void;
   onDelete: (c: ChartRow) => void;
 }) {
   const d = useDaily();
