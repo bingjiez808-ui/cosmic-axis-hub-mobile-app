@@ -129,6 +129,76 @@ export function isOnboardingIntent(v: unknown): v is OnboardingIntent {
   );
 }
 
+/* ─────────────────────────── Normalizers ─────────────────────────────── */
+
+/**
+ * Normalize any incoming "language" input (URL, DB row, localStorage,
+ * navigator, undefined) to the internal `Lang` union. Anything that
+ * looks Chinese-ish (`zh`, `zh-CN`, `zh-Hant`, `cn`, `chi`, `zho`) maps
+ * to `zh`. Explicit English tags map to `en`. Anything unknown / null
+ * / undefined falls back to `zh` — the primary market — never throws.
+ * This is a *safety net* for legacy / unknown values reaching the copy
+ * dictionaries; the LanguageProvider's own `useLang` still owns the
+ * canonical UI state.
+ */
+export function normalizeLang(v: unknown): Lang {
+  if (v === "en" || v === "zh") return v;
+  if (typeof v !== "string") return "zh";
+  const s = v.trim().toLowerCase();
+  if (!s) return "zh";
+  if (s === "en" || s.startsWith("en-") || s.startsWith("en_")) return "en";
+  if (
+    s === "zh" ||
+    s === "cn" ||
+    s === "chi" ||
+    s === "zho" ||
+    s.startsWith("zh-") ||
+    s.startsWith("zh_") ||
+    s.startsWith("cmn")
+  )
+    return "zh";
+  return "zh";
+}
+
+/** Legacy / unknown life_stage rows normalize to null so the caller falls back to age default. */
+export function normalizeLifeStage(v: unknown): LifeStage | null {
+  return typeof v === "string" && (LIFE_STAGES as readonly string[]).includes(v)
+    ? (v as LifeStage)
+    : null;
+}
+
+/** Unknown domain from DB or old client → null (caller uses body_mind fallback copy). */
+export function normalizeDomain(v: unknown): DomainKey | null {
+  const known = new Set<string>(["love", "study", "career", "body_mind", "finance"]);
+  return typeof v === "string" && known.has(v) ? (v as DomainKey) : null;
+}
+
+/** Unknown onboarding intent → null (welcome-back line is simply hidden). */
+export function normalizeOnboardingIntent(v: unknown): OnboardingIntent | null {
+  return isOnboardingIntent(v) ? v : null;
+}
+
+/** Clamp any (finite) index to 1..4 for the 4-page curator ritual. */
+export function clampCuratorPageIndex(v: unknown): 1 | 2 | 3 | 4 {
+  const n = typeof v === "number" ? v : Number(v);
+  if (!Number.isFinite(n)) return 1;
+  const i = Math.max(1, Math.min(4, Math.floor(n)));
+  return i as 1 | 2 | 3 | 4;
+}
+
+/**
+ * Safe accessor for a curator page. Never returns undefined; unknown
+ * language falls back to zh, index outside 1..4 clamps to the nearest
+ * valid page.
+ */
+export function getCuratorPage(lang: unknown, index: unknown): CuratorPage {
+  const L = normalizeLang(lang);
+  const i = clampCuratorPageIndex(index);
+  const p = curatorLetter[L].pages[i - 1];
+  // Belt-and-braces: pages is a fixed 4-tuple, but defend anyway.
+  return p ?? curatorLetter[L].pages[0] ?? curatorLetter.zh.pages[0];
+}
+
 /* ─────────────────────────── Curator's Letter ────────────────────────── */
 
 export type CuratorPage = {
