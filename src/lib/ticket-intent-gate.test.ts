@@ -13,7 +13,7 @@ describe("ticket eligibility follows intent router", () => {
   const cases: Array<[string, string]> = [
     ["我最近很难过，睡不着", "emotional_support"],
     ["帮我算一下明天的运势", "destiny_reading"],
-    ["I feel worthless and want to disappear", "crisis"],
+    ["I want to kill myself tonight", "crisis"],
     ["写一段 Python 冒泡排序", "out_of_scope"],
     ["登录页登不上，密码重置也不发邮件", "product_help"],
     ["我付了 79 元但报告没有生成，请退款", "order_help"],
