@@ -328,9 +328,11 @@ export function CuratorLetter() {
     );
   }
 
-  // Active ritual — sealed or page 1..4.
-  const pageIndex =
-    stage.kind === "page" ? stage.index : stage.kind === "sealed" ? 0 : 0;
+  // Active ritual — sealed or page 1..4. Any other kind (shouldn't happen
+  // once folded/done are handled above) defaults to page 1 to keep the UI
+  // renderable rather than crashing on a negative array index.
+  const pageIndex: 1 | 2 | 3 | 4 =
+    stage.kind === "page" ? stage.index : 1;
 
   return (
     <section
