@@ -95,12 +95,13 @@ export function PersonalWorkspaceNav({
   });
   const current = active ?? pathname;
   const isZh = lang === "zh";
-  const isOnHome = current === "/me/home" && !hash;
+  const isOnHome = current === "/me/home";
 
   return (
     <div
       data-testid="personal-workspace-nav"
-      className="sticky top-14 z-30 mb-6 -mx-4 border-b border-amber-400/10 bg-[#0a0a12]/85 px-4 py-3 backdrop-blur md:top-16 md:-mx-8 md:px-8"
+      style={{ top: "calc(var(--site-nav-height, 96px) + 8px)" }}
+      className="sticky z-40 mb-6 -mx-4 border-b border-amber-400/10 bg-[#0a0a12]/85 px-4 py-3 backdrop-blur md:-mx-8 md:px-8"
     >
       <div className="mx-auto flex w-full max-w-[1100px] items-center gap-3">
         {!isOnHome && (
