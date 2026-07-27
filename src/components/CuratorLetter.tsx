@@ -523,12 +523,12 @@ function PageStage({
       exit={reduceMotion ? { opacity: 0 } : { opacity: 0, rotateY: -12, y: -10 }}
       transition={{ duration: reduceMotion ? 0.15 : 0.55, ease: [0.32, 0.72, 0, 1] }}
       className="mx-auto max-w-[58ch]"
-      data-testid={`curator-page-${index}`}
+      data-testid={`curator-page-${safeIndex}`}
       style={{ perspective: 1400 }}
     >
       <div className="rounded-2xl border border-amber-300/15 bg-[rgba(28,20,10,0.55)] p-6 backdrop-blur-[2px] md:p-10">
         <p className="text-[10px] uppercase tracking-[0.4em] text-amber-200/60">
-          {copy.pageOf(index, TOTAL_PAGES)}
+          {copy.pageOf(safeIndex, TOTAL_PAGES)}
         </p>
         <h3 className="mt-3 font-serif text-2xl italic leading-snug text-amber-50 md:text-4xl">
           {page.title}
@@ -539,7 +539,7 @@ function PageStage({
           ))}
         </div>
 
-        {index === 3 ? (
+        {safeIndex === 3 ? (
           <IntentPicker
             copy={copy}
             intent={intent}
@@ -548,7 +548,7 @@ function PageStage({
           />
         ) : null}
 
-        {index === 4 ? (
+        {safeIndex === 4 ? (
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <Link
               to="/ritual"
