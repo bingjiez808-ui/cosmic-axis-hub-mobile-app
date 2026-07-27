@@ -4,98 +4,53 @@ import { ArrowLeft } from "lucide-react";
 import { useLang } from "@/lib/i18n";
 
 /**
- * PersonalWorkspaceNav — shared secondary navigation for every
- * `/me/*` page. Six tabs of the Personal Library.
+ * PersonalWorkspaceNav — the unified secondary nav for every `/me/*`
+ * page. Five first-class functions: Home / Charts & Reports /
+ * Relationships (friends + match subtabs) / Historical Echoes /
+ * Membership & Orders. Every entry is a real, direct-linkable route,
+ * so the shelf never depends on fragile home-page hash anchors.
  *
- * - Marks the active item with `aria-current="page"` from the live
- *   router pathname so refresh / back / forward restore the correct
- *   highlight without any local state.
- * - "Back to Personal Library" affordance is HIDDEN on `/me/home`
- *   itself (it *is* the home) and shown on every sub-page.
- * - Echoes and Membership don't have dedicated routes yet; they
- *   deep-link to well-known anchor IDs on `/me/home` and
- *   `/me/profile` respectively. Those anchors are guaranteed to
- *   exist on the target pages.
- * - 44px minimum tap targets, edge fade hints for mobile scrolling.
+ * Sticky offset uses --site-nav-height (published by the global nav)
+ * so the strip lands below the top bar without being covered on any
+ * viewport. z-40 so the global z-50 nav wins on overlap.
  */
 
 type Item = {
-  to:
-    | "/me/home"
-    | "/me/profile"
-    | "/me/friends"
-    | "/me/match"
-    | "/me/oracle";
-  hash?: string;
-  matchHash?: string;
+  to: "/me/home" | "/me/profile" | "/me/friends" | "/me/echoes" | "/me/membership";
+  /**
+   * Extra pathnames whose "active" state should light up this tab —
+   * used so /me/friends AND /me/match both highlight the
+   * "Relationships" entry, and old direct links stay coherent.
+   */
+  alsoActiveFor?: string[];
   labelZh: string;
   labelEn: string;
   testId: string;
 };
 
 const ITEMS: Item[] = [
-  {
-    to: "/me/home",
-    labelZh: "今日命运",
-    labelEn: "Today's Fate",
-    testId: "pwn-home",
-  },
-  {
-    to: "/me/profile",
-    labelZh: "命盘与报告",
-    labelEn: "Charts & Reports",
-    testId: "pwn-profile",
-  },
+  { to: "/me/home", labelZh: "主页", labelEn: "Home", testId: "pwn-home" },
+  { to: "/me/profile", labelZh: "命盘与报告", labelEn: "Charts & Reports", testId: "pwn-profile" },
   {
     to: "/me/friends",
-    labelZh: "好友",
-    labelEn: "Friends",
-    testId: "pwn-friends",
+    alsoActiveFor: ["/me/match", "/me/relationships"],
+    labelZh: "关系与适配",
+    labelEn: "Relationships",
+    testId: "pwn-relationships",
   },
-  {
-    to: "/me/match",
-    labelZh: "适配分析",
-    labelEn: "Match",
-    testId: "pwn-match",
-  },
-  {
-    to: "/me/home",
-    hash: "echoes",
-    matchHash: "echoes",
-    labelZh: "历史回声",
-    labelEn: "Echoes",
-    testId: "pwn-echoes",
-  },
-  {
-    to: "/me/profile",
-    hash: "membership-orders",
-    matchHash: "membership-orders",
-    labelZh: "会员与订单",
-    labelEn: "Membership",
-    testId: "pwn-membership",
-  },
+  { to: "/me/echoes", labelZh: "历史回声", labelEn: "Echoes", testId: "pwn-echoes" },
+  { to: "/me/membership", labelZh: "会员与订单", labelEn: "Membership", testId: "pwn-membership" },
 ];
 
-export function PersonalWorkspaceNav({
-  active,
-}: {
-  /**
-   * Explicit override for the active pathname. Falls back to the
-   * router's live pathname so refresh / history navigation always
-   * highlight the correct item.
-   */
-  active?: string;
-}) {
+export function PersonalWorkspaceNav({ active }: { active?: string }) {
   const { lang } = useLang();
-  const pathname = useRouterState({
-    select: (s) => s.location.pathname,
-  });
-  const hash = useRouterState({
-    select: (s) => s.location.hash,
-  });
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
   const current = active ?? pathname;
   const isZh = lang === "zh";
   const isOnHome = current === "/me/home";
+
+  const isItemActive = (it: Item) =>
+    current === it.to || (it.alsoActiveFor?.some((p) => current === p) ?? false);
 
   return (
     <div
@@ -108,55 +63,31 @@ export function PersonalWorkspaceNav({
           <Link
             to="/me/home"
             data-testid="pwn-back-home"
-            aria-label={isZh ? "回到个人书架" : "Back to Personal Library"}
+            aria-label={isZh ? "回到个人书架主页" : "Back to Personal Library home"}
             className="inline-flex min-h-11 shrink-0 items-center gap-1 rounded-full border border-amber-400/25 px-3 py-2 text-[11px] uppercase tracking-[0.24em] text-amber-200/80 transition hover:border-amber-300/60 hover:text-amber-100"
           >
             <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
-            <span className="hidden sm:inline">
-              {isZh ? "个人书架" : "My Library"}
-            </span>
-            <span className="sm:hidden">{isZh ? "书架" : "Library"}</span>
+            <span className="hidden sm:inline">{isZh ? "书架主页" : "Library home"}</span>
+            <span className="sm:hidden">{isZh ? "主页" : "Home"}</span>
           </Link>
         )}
 
         <div className="relative min-w-0 flex-1">
-          <div
+          <nav
             role="navigation"
             aria-label={isZh ? "个人书架导航" : "Personal Library"}
             className="flex snap-x snap-mandatory items-center gap-2 overflow-x-auto scroll-smooth pr-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           >
             {ITEMS.map((it) => {
-              const activePath =
-                it.hash != null
-                  ? current === it.to && hash === it.hash
-                  : current === it.to && !hash;
-              // Use plain <a> for hash-anchored items so the browser handles
-              // in-page scroll + history without any router preventDefault.
-              if (it.hash) {
-                return (
-                  <a
-                    key={`${it.to}#${it.hash}`}
-                    href={`${it.to}#${it.hash}`}
-                    data-testid={it.testId}
-                    aria-current={activePath ? "page" : undefined}
-                    className={`inline-flex min-h-11 shrink-0 snap-start items-center rounded-full px-4 py-2 text-xs transition ${
-                      activePath
-                        ? "border border-amber-300 bg-amber-300/10 text-amber-100"
-                        : "border border-amber-400/25 text-amber-200/80 hover:border-amber-300/60 hover:text-amber-100"
-                    }`}
-                  >
-                    {isZh ? it.labelZh : it.labelEn}
-                  </a>
-                );
-              }
+              const activeItem = isItemActive(it);
               return (
                 <Link
                   key={it.to}
                   to={it.to}
                   data-testid={it.testId}
-                  aria-current={activePath ? "page" : undefined}
+                  aria-current={activeItem ? "page" : undefined}
                   className={`inline-flex min-h-11 shrink-0 snap-start items-center rounded-full px-4 py-2 text-xs transition ${
-                    activePath
+                    activeItem
                       ? "border border-amber-300 bg-amber-300/10 text-amber-100"
                       : "border border-amber-400/25 text-amber-200/80 hover:border-amber-300/60 hover:text-amber-100"
                   }`}
@@ -165,14 +96,55 @@ export function PersonalWorkspaceNav({
                 </Link>
               );
             })}
-          </div>
-          {/* edge fades hint scroll on mobile */}
+          </nav>
           <div
             aria-hidden
             className="pointer-events-none absolute inset-y-0 right-0 w-6 bg-gradient-to-l from-[#0a0a12] to-transparent md:hidden"
           />
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * RelationshipsSubtabs — inline sub-tab strip rendered inside
+ * /me/friends and /me/match so the two views feel like one merged
+ * "Relationships" space, matching the shelf's single entry point.
+ */
+export function RelationshipsSubtabs({ current }: { current: "friends" | "match" }) {
+  const { lang } = useLang();
+  const isZh = lang === "zh";
+  const items = [
+    { key: "friends" as const, to: "/me/friends" as const, zh: "好友", en: "Friends" },
+    { key: "match" as const, to: "/me/match" as const, zh: "适配分析", en: "Match" },
+  ];
+  return (
+    <div
+      data-testid="relationships-subtabs"
+      className="mb-4 flex items-center gap-2"
+      role="tablist"
+      aria-label={isZh ? "关系与适配子标签" : "Relationships subtabs"}
+    >
+      {items.map((it) => {
+        const active = it.key === current;
+        return (
+          <Link
+            key={it.key}
+            to={it.to}
+            role="tab"
+            aria-selected={active}
+            data-testid={`relationships-subtab-${it.key}`}
+            className={`inline-flex min-h-9 items-center rounded-full px-3 py-1.5 text-[11px] uppercase tracking-[0.22em] transition ${
+              active
+                ? "bg-amber-300/15 text-amber-100 ring-1 ring-amber-300/50"
+                : "text-amber-200/70 hover:text-amber-100"
+            }`}
+          >
+            {isZh ? it.zh : it.en}
+          </Link>
+        );
+      })}
     </div>
   );
 }

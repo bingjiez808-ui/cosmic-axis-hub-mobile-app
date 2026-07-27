@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 
-import { PersonalWorkspaceNav } from "@/components/PersonalWorkspaceNav";
+import { PersonalWorkspaceNav, RelationshipsSubtabs } from "@/components/PersonalWorkspaceNav";
 
 import { computeCompatibility, type CompatResult } from "@/lib/compatibility-score";
 import { MATCH_DEMO, type MatchDemoKey } from "@/experiences/daily-room/match-fixtures";
@@ -98,6 +98,7 @@ function MatchPage() {
         </div>
 
         <PersonalWorkspaceNav active="/me/match" />
+        <RelationshipsSubtabs current="match" />
 
         <div className="mb-6">
           <SocialConsentGate />
