@@ -4,14 +4,17 @@ import { useServerFn } from "@tanstack/react-start";
 
 import { PersonalWorkspaceNav } from "@/components/PersonalWorkspaceNav";
 import { HistoricalEcho } from "@/experiences/life-guidance/HistoricalEcho";
+import { LifeChapterCard } from "@/experiences/life-guidance/LifeChapterCard";
 import { DailyRoomError } from "@/experiences/daily-room/fallback";
 import { PersonalShellPending } from "@/experiences/daily-room/personal-shell-pending";
+import { loadDailyRoomFixture } from "@/experiences/daily-room/fixtures";
 import { listUserCharts, type ChartRow } from "@/lib/reports-store.functions";
 import {
   computeAge,
   defaultStageForAge,
   type LifeStage,
 } from "@/lib/life-guidance-v1";
+import { useDaily } from "@/lib/i18n-daily";
 import { useLang } from "@/lib/i18n";
 
 /**
