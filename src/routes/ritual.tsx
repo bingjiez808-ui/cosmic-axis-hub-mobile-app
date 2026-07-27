@@ -215,6 +215,19 @@ function RitualPage() {
   // surfaces the reason inline, which is more discoverable than a
   // grey button with no explanation.
   const validateCurrentStep = (): string | null => {
+    if (isOwnershipStep) {
+      if (ownerRole !== "self" && ownerRole !== "other") {
+        return lang === "zh"
+          ? "请先选择这张命盘属于「我」还是「他人」。"
+          : "Please pick whether this chart is for you or someone else.";
+      }
+      if (ownerRole === "other" && !relationship) {
+        return lang === "zh"
+          ? "请选择你与对方的关系（仅保存在你的个人书架，不通知对方，不公开）。"
+          : "Please pick the relationship (kept privately in your library — never notified or public).";
+      }
+      return null;
+    }
     if (isQuizStep) {
       return quiz[quizIdx]
         ? null
