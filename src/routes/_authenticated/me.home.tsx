@@ -281,21 +281,26 @@ function DailyRoomPage() {
 
         {/* Page title — "My Library" is the personal reading desk. Today's Fate is its default first module. */}
         <header className="mb-6">
+          <div className="text-[10px] uppercase tracking-[0.36em] text-amber-300/60">
+            {lang === "zh" ? "命运图书馆 · 我的书架" : "Destiny Library · My Library"}
+          </div>
+          <h1 className="mt-2 font-serif text-3xl tracking-wide md:text-4xl">
+            {lang === "zh" ? "今日命运" : "Today's Fate"}
+          </h1>
           <p className="mt-2 max-w-2xl text-sm text-amber-100/70">
             {lang === "zh"
-              ? "这里是你的个人书架主页，默认打开「今日命运」。命盘、关系、历史回声与会员，从上方书架导航进入。"
-              : "This is your personal library home; it opens with today's fate. Use the library sub-nav above to reach charts, relationships, echoes and membership."}
+              ? "这里只做一件事：今天的重点、六领域白话建议、未来 7 天走向。历史回声、命盘、关系与会员从上方书架导航进入。"
+              : "This page does one thing: today's headline, plain-language notes across six domains, and the 7-day arc. Historical Echoes, charts, relationships and membership live on their own tabs above."}
           </p>
         </header>
-
 
         {/* Shared personal-workspace sub-nav (Today's Fate active) */}
         <PersonalWorkspaceNav active="/me/home" />
         <div id="today" className="sr-only" aria-hidden />
         <p className="mb-4 text-xs text-amber-200/60" data-testid="home-purpose-hint">
           {lang === "zh"
-            ? "这里显示今天的一件事：主线、六领域建议与 7 日走向。想去命盘/关系/历史回声/会员，用上面的书架导航。"
-            : "This page shows the one thing for today: your line, six-domain notes and the 7-day arc. Use the library sub-nav above for charts, relationships, echoes or membership."}
+            ? "本页专注今日命运，不再嵌入历史回声或命盘管理；请用上方书架导航切换模块。"
+            : "This page focuses on today's fate only — it no longer embeds Historical Echoes or chart management. Use the library sub-nav above to switch modules."}
         </p>
 
 
