@@ -292,11 +292,10 @@ function RitualPage() {
 
   const canAdvance = validateCurrentStep() === null;
 
-  const advance = () => {
+  const advance = async () => {
     const err = validateCurrentStep();
     if (err) {
       setFieldError(err);
-      // Scroll the input into view so mobile users notice the message.
       requestAnimationFrame(() => {
         const el = document.querySelector<HTMLElement>("[data-ritual-field]");
         el?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -305,7 +304,7 @@ function RitualPage() {
     }
     setFieldError(null);
     if (isLast) {
-      // Full-schema recheck before firing any calculation / navigation.
+      if (submitting) return;
       const finalErrors: string[] = [];
       if (ownerRole !== "self" && ownerRole !== "other") finalErrors.push("owner");
       if (ownerRole === "other" && !relationship) finalErrors.push("relationship");
@@ -351,12 +350,45 @@ function RitualPage() {
             }
           : {}),
       });
+
+      // If claiming this as "my chart" and a primary self-chart already
+      // exists, ask the user how to resolve the collision instead of
+      // silently overriding. Anonymous users / errors → proceed normally
+      // (they'll auth on /report; no primary yet).
+      if (ownerRole === "self") {
+        setSubmitting(true);
+        try {
+          const charts = await listUserCharts();
+          const hasPrimarySelf = charts.some(
+            (c) => c.is_primary && c.chart_role === "self",
+          );
+          if (hasPrimarySelf) {
+            setPrimaryConflict(params);
+            setSubmitting(false);
+            return;
+          }
+        } catch {
+          /* anonymous or transient — fall through to normal navigation */
+        }
+        setSubmitting(false);
+      }
+
       try { sessionStorage.removeItem(RITUAL_STATE_KEY); } catch {}
       navigate({ to: "/synthesis", search: () => Object.fromEntries(params) as never });
     } else {
       setStep((s) => s + 1);
     }
   };
+
+  const resolvePrimaryConflict = (intent: "replace" | "keep") => {
+    if (!primaryConflict) return;
+    const params = new URLSearchParams(primaryConflict);
+    params.set("primaryIntent", intent);
+    try { sessionStorage.removeItem(RITUAL_STATE_KEY); } catch {}
+    setPrimaryConflict(null);
+    navigate({ to: "/synthesis", search: () => Object.fromEntries(params) as never });
+  };
+
 
   // Clear stale error when the user moves to a different step or
   // updates the current field. Errors should never survive navigation.
