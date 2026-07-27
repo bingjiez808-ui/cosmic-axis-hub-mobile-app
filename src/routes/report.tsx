@@ -1486,6 +1486,9 @@ function ReportPage() {
       {/* Tarot — three cards as a second witness */}
       <TarotDraw />
 
+      {/* Unified entry point to the Oracle Reading Room */}
+      <OracleRoomBanner />
+
       {/* Membership tiers — Oracle unlocks Synastry + 90-day windows + Future watchlist */}
       <MembershipSection birthISO={search.date} search={search} />
 
