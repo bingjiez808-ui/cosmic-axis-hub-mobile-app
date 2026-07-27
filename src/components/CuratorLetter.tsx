@@ -550,6 +550,8 @@ function PageStage({
         {safeIndex === 3 ? (
           <IntentPicker
             copy={copy}
+            lang={lang}
+            isSignedIn={isSignedIn}
             intent={intent}
             intentSaved={intentSaved}
             onChoose={onChooseIntent}
@@ -557,19 +559,35 @@ function PageStage({
         ) : null}
 
         {safeIndex === 4 ? (
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            <Link
-              to="/ritual"
-              className="min-h-11 rounded-full bg-amber-400 px-6 py-3 text-center text-xs font-medium uppercase tracking-[0.3em] text-black hover:bg-amber-300"
-            >
-              {copy.doorSelf}
-            </Link>
-            <a
-              href="#traditions"
-              className="min-h-11 rounded-full border border-amber-400/50 px-6 py-3 text-center text-xs uppercase tracking-[0.28em] text-amber-200 hover:border-amber-300 hover:bg-amber-500/10"
-            >
-              {copy.doorPeers}
-            </a>
+          <div className="mt-8 flex flex-col gap-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <Link
+                to="/ritual"
+                className="min-h-11 rounded-full bg-amber-400 px-6 py-3 text-center text-xs font-medium uppercase tracking-[0.3em] text-black hover:bg-amber-300"
+              >
+                {copy.doorSelf}
+              </Link>
+              <PeersCta
+                isSignedIn={isSignedIn}
+                lang={lang}
+                label={copy.doorPeers}
+                variant="outline-strong"
+              />
+            </div>
+            <div className="grid gap-2 text-[11px] leading-relaxed text-amber-100/70 sm:grid-cols-2">
+              <p>
+                <span className="mr-2 text-amber-300/70">→ {copy.doorSelf}</span>
+                {lang === "zh"
+                  ? "登记命盘，进入你的全景阅读。"
+                  : "Register your chart, enter your full-panorama reading."}
+              </p>
+              <p>
+                <span className="mr-2 text-amber-300/70">→ {copy.doorPeers}</span>
+                {lang === "zh"
+                  ? "进入今日阅览室的人生页码与历史回声。"
+                  : "Enter today's Reading Room — your life chapter and its historical echoes."}
+              </p>
+            </div>
           </div>
         ) : null}
       </div>
@@ -608,17 +626,75 @@ function PageStage({
   );
 }
 
+/**
+ * Build a same-origin destination for the "peers" door. Signed-in
+ * visitors go straight to `/me/home?focus=peers#life-chapter`. Signed-out
+ * visitors bounce through `/auth?mode=signin&redirect=<encoded>` — the
+ * auth route validates the redirect is same-origin before honouring it.
+ * `null` (session still loading) is treated as signed-out for safety.
+ */
+function peersHref(isSignedIn: boolean | null): string {
+  const dest = "/me/home?focus=peers#life-chapter";
+  if (isSignedIn) return dest;
+  return `/auth?mode=signin&redirect=${encodeURIComponent(dest)}`;
+}
+
+function PeersCta({
+  isSignedIn,
+  lang,
+  label,
+  variant,
+}: {
+  isSignedIn: boolean | null;
+  lang: "en" | "zh";
+  label: string;
+  variant: "outline" | "outline-strong";
+}) {
+  const base =
+    variant === "outline-strong"
+      ? "border-amber-400/50"
+      : "border-amber-400/40";
+  const href = peersHref(isSignedIn);
+  const authNote =
+    isSignedIn === false
+      ? lang === "zh"
+        ? "（先登录再进入今日阅览室）"
+        : " (sign in first, then continue)"
+      : "";
+  return (
+    <a
+      href={href}
+      data-testid="curator-peers-cta"
+      className={`min-h-11 rounded-full border ${base} px-6 py-3 text-center text-xs uppercase tracking-[0.28em] text-amber-200 hover:border-amber-300 hover:bg-amber-500/10`}
+    >
+      {label}
+      {authNote ? (
+        <span className="ml-1 text-[10px] normal-case tracking-normal text-amber-200/60">
+          {authNote}
+        </span>
+      ) : null}
+    </a>
+  );
+}
+
 function IntentPicker({
   copy,
+  lang,
+  isSignedIn,
   intent,
   intentSaved,
   onChoose,
 }: {
   copy: (typeof curatorLetter)["en"];
+  lang: "en" | "zh";
+  isSignedIn: boolean | null;
   intent: OnboardingIntent | null;
   intentSaved: "idle" | "cloud" | "local";
   onChoose: (v: OnboardingIntent) => void;
 }) {
+  const previewDest = isSignedIn
+    ? "/me/home?focus=welcome#curator-welcome"
+    : `/auth?mode=signin&redirect=${encodeURIComponent("/me/home?focus=welcome#curator-welcome")}`;
   return (
     <div
       className="mt-8 rounded-xl border border-amber-300/20 bg-black/35 p-5"
@@ -661,13 +737,57 @@ function IntentPicker({
         })}
       </div>
       {intent ? (
-        <p
-          className="mt-3 text-[11px] text-amber-200/70"
-          data-testid="curator-intent-saved"
+        <div
+          className="mt-4 rounded-lg border border-amber-400/30 bg-gradient-to-br from-black/60 to-amber-950/20 p-4"
+          data-testid="curator-intent-preview"
         >
-          {intentSaved === "cloud" ? copy.intentSavedCloud : copy.intentSavedLocal}
-        </p>
+          <div className="flex items-start gap-3">
+            <span
+              aria-hidden
+              className="mt-1 inline-block h-2 w-2 flex-none rounded-full bg-amber-400 shadow-[0_0_10px_rgba(255,200,80,0.7)]"
+            />
+            <div>
+              <div className="text-[10px] uppercase tracking-[0.32em] text-amber-300/70">
+                {lang === "zh"
+                  ? "你进入今日阅览室后，会看到："
+                  : "When you enter today's Reading Room, you'll see:"}
+              </div>
+              <p
+                className="mt-2 font-serif text-base italic leading-relaxed text-amber-50"
+                data-testid="curator-welcome-preview"
+              >
+                {curatorLetter[lang].welcomeBack(intent)}
+              </p>
+              <div className="mt-3 flex flex-wrap items-center gap-3 text-[11px] text-amber-200/75">
+                <span data-testid="curator-intent-saved">
+                  {isSignedIn
+                    ? lang === "zh"
+                      ? "已保存到你的图书馆，可在「今日命运」顶部查看或修改。"
+                      : "Saved to your library — view or change it at the top of Today's Reading Room."
+                    : lang === "zh"
+                      ? "本次访问已记住；登录后保存到你的图书馆。"
+                      : "Remembered for this visit — sign in and the library will keep it."}
+                </span>
+                <a
+                  href={previewDest}
+                  className="min-h-9 rounded-full border border-amber-400/40 px-3 py-1 text-amber-200 hover:border-amber-300 hover:bg-amber-500/10"
+                  data-testid="curator-welcome-preview-link"
+                >
+                  {lang === "zh"
+                    ? "预览我的今日欢迎语 →"
+                    : "Preview my welcome line →"}
+                </a>
+              </div>
+              <p className="mt-2 text-[10px] text-amber-100/40">
+                {lang === "zh"
+                  ? "* 此选择只影响馆长的叙事欢迎语，不参与任何命盘计算。"
+                  : "* This choice only shapes the Curator's welcome line — it never affects chart calculations."}
+              </p>
+            </div>
+          </div>
+        </div>
       ) : null}
     </div>
   );
 }
+
