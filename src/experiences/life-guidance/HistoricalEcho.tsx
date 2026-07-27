@@ -47,14 +47,35 @@ export type HistoricalEchoProps = {
  * page") and written response ("write in the margin"). Both save to
  * the signed-in user's private tables.
  */
-export function HistoricalEcho({ stage, domain, initialExpanded }: HistoricalEchoProps) {
+export function HistoricalEcho({
+  stage,
+  domain,
+  concern,
+  domainSignal,
+  domainLabel,
+  initialExpanded,
+}: HistoricalEchoProps) {
   const { lang } = useLang();
-  const copy = echoCopy[normalizeLang(lang)];
+  const nlang = normalizeLang(lang);
+  const copy = echoCopy[nlang];
+  const bannerCopy = echoCoverageBanner[nlang];
+  const reasonHeading = echoReasonHeading[nlang];
 
-  const list = useMemo(
-    () => (stage ? figuresFor(stage, domain) : []),
-    [stage, domain],
+  const recs: FigureRecommendation[] = useMemo(
+    () =>
+      stage
+        ? recommendFigures({
+            stage,
+            concern: concern ?? null,
+            domain: domain ?? null,
+            domainSignal: domainSignal ?? null,
+            domainLabel: domainLabel ?? null,
+          })
+        : [],
+    [stage, concern, domain, domainSignal, domainLabel],
   );
+  const list = useMemo(() => recs.map((r) => r.figure), [recs]);
+  const stageOnly = recs.length > 0 && recs.every((r) => r.matchLevel === "stage_only");
   const [expanded, setExpanded] = useState<boolean>(Boolean(initialExpanded));
 
   const [idx, setIdx] = useState(0);
@@ -89,9 +110,10 @@ export function HistoricalEcho({ stage, domain, initialExpanded }: HistoricalEch
   // Reset carousel when list identity changes.
   useEffect(() => {
     setIdx(0);
-  }, [stage, domain]);
+  }, [stage, domain, concern, domainSignal]);
 
   const current = list[idx] ?? null;
+  const currentRec = recs[idx] ?? null;
 
   useEffect(() => {
     if (!expanded || !current) return;
@@ -111,6 +133,7 @@ export function HistoricalEcho({ stage, domain, initialExpanded }: HistoricalEch
       cancelled = true;
     };
   }, [expanded, current, getResponseFn]);
+
 
   if (!stage || list.length === 0) {
     return null;
