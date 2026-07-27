@@ -271,6 +271,19 @@ export function HistoricalEcho({
               {copy.disclaimer}
             </p>
 
+            {stageOnly ? (
+              <div
+                className="mt-4 rounded-md border border-amber-400/25 bg-amber-500/5 px-3 py-2 text-xs text-amber-100/80"
+                data-testid="historical-echo-coverage-banner"
+              >
+                <div className="text-[11px] uppercase tracking-widest text-amber-200/70">
+                  {bannerCopy.title}
+                </div>
+                <p className="mt-1">{bannerCopy.body}</p>
+              </div>
+            ) : null}
+
+
             <div className="mt-5 flex items-center justify-between text-xs text-amber-200/70">
               <button
                 type="button"
