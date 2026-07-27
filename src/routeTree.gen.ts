@@ -34,6 +34,7 @@ import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as AuthenticatedMeProfileRouteImport } from './routes/_authenticated/me.profile'
+import { Route as AuthenticatedMeOracleRouteImport } from './routes/_authenticated/me.oracle'
 import { Route as AuthenticatedMeMatchRouteImport } from './routes/_authenticated/me.match'
 import { Route as AuthenticatedMeHomeRouteImport } from './routes/_authenticated/me.home'
 import { Route as AuthenticatedMeFriendsRouteImport } from './routes/_authenticated/me.friends'
@@ -166,6 +167,11 @@ const AuthenticatedMeProfileRoute = AuthenticatedMeProfileRouteImport.update({
   path: '/me/profile',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedMeOracleRoute = AuthenticatedMeOracleRouteImport.update({
+  id: '/me/oracle',
+  path: '/me/oracle',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedMeMatchRoute = AuthenticatedMeMatchRouteImport.update({
   id: '/me/match',
   path: '/me/match',
@@ -222,6 +228,7 @@ export interface FileRoutesByFullPath {
   '/me/friends': typeof AuthenticatedMeFriendsRoute
   '/me/home': typeof AuthenticatedMeHomeRoute
   '/me/match': typeof AuthenticatedMeMatchRoute
+  '/me/oracle': typeof AuthenticatedMeOracleRoute
   '/me/profile': typeof AuthenticatedMeProfileRoute
 }
 export interface FileRoutesByTo {
@@ -252,6 +259,7 @@ export interface FileRoutesByTo {
   '/me/friends': typeof AuthenticatedMeFriendsRoute
   '/me/home': typeof AuthenticatedMeHomeRoute
   '/me/match': typeof AuthenticatedMeMatchRoute
+  '/me/oracle': typeof AuthenticatedMeOracleRoute
   '/me/profile': typeof AuthenticatedMeProfileRoute
 }
 export interface FileRoutesById {
@@ -285,6 +293,7 @@ export interface FileRoutesById {
   '/_authenticated/me/friends': typeof AuthenticatedMeFriendsRoute
   '/_authenticated/me/home': typeof AuthenticatedMeHomeRoute
   '/_authenticated/me/match': typeof AuthenticatedMeMatchRoute
+  '/_authenticated/me/oracle': typeof AuthenticatedMeOracleRoute
   '/_authenticated/me/profile': typeof AuthenticatedMeProfileRoute
 }
 export interface FileRouteTypes {
@@ -318,6 +327,7 @@ export interface FileRouteTypes {
     | '/me/friends'
     | '/me/home'
     | '/me/match'
+    | '/me/oracle'
     | '/me/profile'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -348,6 +358,7 @@ export interface FileRouteTypes {
     | '/me/friends'
     | '/me/home'
     | '/me/match'
+    | '/me/oracle'
     | '/me/profile'
   id:
     | '__root__'
@@ -380,6 +391,7 @@ export interface FileRouteTypes {
     | '/_authenticated/me/friends'
     | '/_authenticated/me/home'
     | '/_authenticated/me/match'
+    | '/_authenticated/me/oracle'
     | '/_authenticated/me/profile'
   fileRoutesById: FileRoutesById
 }
@@ -586,6 +598,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMeProfileRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/me/oracle': {
+      id: '/_authenticated/me/oracle'
+      path: '/me/oracle'
+      fullPath: '/me/oracle'
+      preLoaderRoute: typeof AuthenticatedMeOracleRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/me/match': {
       id: '/_authenticated/me/match'
       path: '/me/match'
@@ -629,6 +648,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMeFriendsRoute: typeof AuthenticatedMeFriendsRoute
   AuthenticatedMeHomeRoute: typeof AuthenticatedMeHomeRoute
   AuthenticatedMeMatchRoute: typeof AuthenticatedMeMatchRoute
+  AuthenticatedMeOracleRoute: typeof AuthenticatedMeOracleRoute
   AuthenticatedMeProfileRoute: typeof AuthenticatedMeProfileRoute
 }
 
@@ -637,6 +657,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMeFriendsRoute: AuthenticatedMeFriendsRoute,
   AuthenticatedMeHomeRoute: AuthenticatedMeHomeRoute,
   AuthenticatedMeMatchRoute: AuthenticatedMeMatchRoute,
+  AuthenticatedMeOracleRoute: AuthenticatedMeOracleRoute,
   AuthenticatedMeProfileRoute: AuthenticatedMeProfileRoute,
 }
 
