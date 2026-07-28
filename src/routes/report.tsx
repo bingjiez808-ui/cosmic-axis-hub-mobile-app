@@ -1768,15 +1768,20 @@ function ReportPage() {
       </section>
 
       {/* Life Timeline — 大运 */}
-      <div className="mt-24">
+      <div id="life-timeline" className="mt-24 scroll-mt-[calc(var(--site-nav-height,96px)+72px)]">
         <LifeTimeline birthISO={search.date} search={search} chartId={reportChartId} />
       </div>
 
       {/* Key life events verification */}
-      <KeyEventsVerification birthISO={search.date} search={search} />
+      <div id="key-events" className="scroll-mt-[calc(var(--site-nav-height,96px)+72px)]">
+        <KeyEventsVerification birthISO={search.date} search={search} />
+      </div>
 
       {/* Tarot — three cards as a second witness */}
-      <TarotDraw />
+      <div id="tarot" className="scroll-mt-[calc(var(--site-nav-height,96px)+72px)]">
+        <TarotDraw />
+      </div>
+
 
       {/* Membership tiers — Oracle unlocks Synastry + 90-day windows + Future watchlist */}
       <MembershipSection birthISO={search.date} search={search} />
