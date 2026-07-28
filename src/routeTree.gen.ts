@@ -37,6 +37,7 @@ import { Route as ApiGenerateAvatarRouteImport } from './routes/api/generate-ava
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
+import { Route as AuthenticatedMeSageRouteImport } from './routes/_authenticated/me.sage'
 import { Route as AuthenticatedMeRelationshipsRouteImport } from './routes/_authenticated/me.relationships'
 import { Route as AuthenticatedMeProfileRouteImport } from './routes/_authenticated/me.profile'
 import { Route as AuthenticatedMeOracleRouteImport } from './routes/_authenticated/me.oracle'
@@ -189,6 +190,11 @@ const Char91DotmcpChar93ListToolsRoute =
     path: '/.mcp/list-tools',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AuthenticatedMeSageRoute = AuthenticatedMeSageRouteImport.update({
+  id: '/me/sage',
+  path: '/me/sage',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedMeRelationshipsRoute =
   AuthenticatedMeRelationshipsRouteImport.update({
     id: '/me/relationships',
@@ -281,6 +287,7 @@ export interface FileRoutesByFullPath {
   '/me/oracle': typeof AuthenticatedMeOracleRoute
   '/me/profile': typeof AuthenticatedMeProfileRoute
   '/me/relationships': typeof AuthenticatedMeRelationshipsRoute
+  '/me/sage': typeof AuthenticatedMeSageRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -318,6 +325,7 @@ export interface FileRoutesByTo {
   '/me/oracle': typeof AuthenticatedMeOracleRoute
   '/me/profile': typeof AuthenticatedMeProfileRoute
   '/me/relationships': typeof AuthenticatedMeRelationshipsRoute
+  '/me/sage': typeof AuthenticatedMeSageRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -359,6 +367,7 @@ export interface FileRoutesById {
   '/_authenticated/me/oracle': typeof AuthenticatedMeOracleRoute
   '/_authenticated/me/profile': typeof AuthenticatedMeProfileRoute
   '/_authenticated/me/relationships': typeof AuthenticatedMeRelationshipsRoute
+  '/_authenticated/me/sage': typeof AuthenticatedMeSageRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -400,6 +409,7 @@ export interface FileRouteTypes {
     | '/me/oracle'
     | '/me/profile'
     | '/me/relationships'
+    | '/me/sage'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -437,6 +447,7 @@ export interface FileRouteTypes {
     | '/me/oracle'
     | '/me/profile'
     | '/me/relationships'
+    | '/me/sage'
   id:
     | '__root__'
     | '/'
@@ -477,6 +488,7 @@ export interface FileRouteTypes {
     | '/_authenticated/me/oracle'
     | '/_authenticated/me/profile'
     | '/_authenticated/me/relationships'
+    | '/_authenticated/me/sage'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -704,6 +716,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotmcpChar93ListToolsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/me/sage': {
+      id: '/_authenticated/me/sage'
+      path: '/me/sage'
+      fullPath: '/me/sage'
+      preLoaderRoute: typeof AuthenticatedMeSageRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/me/relationships': {
       id: '/_authenticated/me/relationships'
       path: '/me/relationships'
@@ -787,6 +806,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMeOracleRoute: typeof AuthenticatedMeOracleRoute
   AuthenticatedMeProfileRoute: typeof AuthenticatedMeProfileRoute
   AuthenticatedMeRelationshipsRoute: typeof AuthenticatedMeRelationshipsRoute
+  AuthenticatedMeSageRoute: typeof AuthenticatedMeSageRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -799,6 +819,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMeOracleRoute: AuthenticatedMeOracleRoute,
   AuthenticatedMeProfileRoute: AuthenticatedMeProfileRoute,
   AuthenticatedMeRelationshipsRoute: AuthenticatedMeRelationshipsRoute,
+  AuthenticatedMeSageRoute: AuthenticatedMeSageRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
