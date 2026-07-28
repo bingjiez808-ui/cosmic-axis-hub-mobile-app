@@ -1540,13 +1540,23 @@ export function recommendFigures(input: RecommendFiguresInput): FigureRecommenda
   };
 
   const scored: FigureRecommendation[] = stageMatches.map((figure) => {
-    const meta = FIGURE_META[figure.key] ?? {
+    const base = FIGURE_META[figure.key] ?? {
       tags: [] as readonly SituationTag[],
       signal: "neutral" as const,
       curatedRank: 999,
       sourceUrl: "",
     };
+    const patch = metaOverride?.[figure.key];
+    const meta: FigureMeta = patch
+      ? {
+          tags: patch.tags ?? base.tags,
+          signal: patch.signal ?? base.signal,
+          curatedRank: patch.curatedRank ?? base.curatedRank,
+          sourceUrl: patch.sourceUrl ?? base.sourceUrl,
+        }
+      : base;
     const tagSet = new Set(meta.tags);
+
     const reasons: FigureReason[] = [{ key: "stage", label: stageLabel }];
     let score = 0;
 
