@@ -439,12 +439,14 @@ function SiteNav() {
     { to: "/community", label: t.nav_community },
   ];
 
-  const libraryEntries: Array<{ to: "/me/home" | "/me/profile" | "/me/friends" | "/me/echoes" | "/me/membership"; label: string; hint: string }> = [
-    { to: "/me/home", label: isZh ? "书架主页" : "Library Home", hint: isZh ? "今日命运与主线" : "Today's fate & throughline" },
-    { to: "/me/profile", label: isZh ? "命盘与报告" : "Charts & Reports", hint: isZh ? "主命盘 · 他人命盘 · 报告" : "Primary · others · reports" },
-    { to: "/me/friends", label: isZh ? "关系与适配" : "Relationships", hint: isZh ? "好友 · 邀请 · 适配分析" : "Friends · invites · match" },
-    { to: "/me/echoes", label: isZh ? "历史回声" : "Historical Echoes", hint: isZh ? "相似处境的历史人物" : "Figures with similar arcs" },
-    { to: "/me/membership", label: isZh ? "会员与订单" : "Membership & Orders", hint: isZh ? "会员 · 订单 · 工单" : "Plans · orders · tickets" },
+  const libraryEntries: Array<{ to: "/me/home" | "/me/profile" | "/me/friends" | "/me/echoes" | "/me/membership" | "/me/sage" | "/me/oracle"; label: string; hint: string; group?: "core" | "rooms" }> = [
+    { to: "/me/home", label: isZh ? "书架主页" : "Library Home", hint: isZh ? "今日命运与主线" : "Today's fate & throughline", group: "core" },
+    { to: "/me/profile", label: isZh ? "命盘与报告" : "Charts & Reports", hint: isZh ? "主命盘 · 他人命盘 · 报告" : "Primary · others · reports", group: "core" },
+    { to: "/me/friends", label: isZh ? "关系与适配" : "Relationships", hint: isZh ? "好友 · 邀请 · 适配分析" : "Friends · invites · match", group: "core" },
+    { to: "/me/echoes", label: isZh ? "历史回声" : "Historical Echoes", hint: isZh ? "相似处境的历史人物" : "Figures with similar arcs", group: "core" },
+    { to: "/me/membership", label: isZh ? "会员与订单" : "Membership & Orders", hint: isZh ? "会员 · 订单 · 工单" : "Plans · orders · tickets", group: "core" },
+    { to: "/me/sage", label: isZh ? "贤者阅览室" : "Sage Reading Room", hint: isZh ? "时间轴 · 合盘 · 塔罗" : "Timeline · synastry · tarot", group: "rooms" },
+    { to: "/me/oracle", label: isZh ? "神谕者阅览室" : "Oracle Reading Room", hint: isZh ? "追问 · 合盘 · 90 天" : "Follow-up · synastry · 90-day", group: "rooms" },
   ];
 
   // "Learn · More" — informational/policy only. Never duplicate personal features here.
