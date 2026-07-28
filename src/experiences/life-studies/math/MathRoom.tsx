@@ -301,6 +301,7 @@ export function MathRoom({
                     data-testid={`math-slider-${k}`}
                     className="mt-2 h-1 w-full"
                     style={{ accentColor: VARIABLE_COLORS[k] }}
+                    suppressHydrationWarning
                   />
                 </div>
               );
