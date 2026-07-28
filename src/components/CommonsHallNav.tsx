@@ -1,11 +1,18 @@
+import { useEffect, useRef } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useLang } from "@/lib/i18n";
 
 /**
  * CommonsHallNav — the sub-navigation for 命运通识馆 / Commons of Destiny.
- * Distinct from PersonalWorkspaceNav (which belongs under /me/*). Used
- * by the Math Hall, Literature Hall, and the Commons index so the
- * personal-library shelf tabs do not leak into public/commons pages.
+ *
+ * Layout contract (do NOT regress):
+ *  - Global SiteNav is `fixed top-0` and publishes `--site-nav-height`.
+ *  - This bar is ALSO `fixed`, pinned at `top: var(--site-nav-height)`, so
+ *    it always sits flush below the global nav regardless of scroll.
+ *  - It measures its own height and publishes `--commons-nav-height` so
+ *    every commons page can reserve
+ *    `padding-top: calc(var(--site-nav-height) + var(--commons-nav-height) + gap)`
+ *    and keep Hero content out of the pinned area.
  */
 type Item = {
   to: "/life-studies" | "/life-studies/math" | "/me/literature";
@@ -33,12 +40,35 @@ export function CommonsHallNav({ active }: { active?: Item["to"] }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const current = active ?? pathname;
   const isZh = lang === "zh";
+  const ref = useRef<HTMLDivElement | null>(null);
+
+  // Publish the real rendered height so pages can reserve top padding.
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const write = () => {
+      const h = Math.ceil(el.getBoundingClientRect().height);
+      if (h > 0) {
+        document.documentElement.style.setProperty("--commons-nav-height", `${h}px`);
+      }
+    };
+    write();
+    const ro = new ResizeObserver(write);
+    ro.observe(el);
+    window.addEventListener("resize", write);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", write);
+      document.documentElement.style.removeProperty("--commons-nav-height");
+    };
+  }, []);
 
   return (
     <div
+      ref={ref}
       data-testid="commons-hall-nav"
-      style={{ top: "calc(var(--site-nav-height, 96px) + 8px)" }}
-      className="sticky z-40 mb-6 -mx-4 border-b border-amber-400/10 bg-[#0a0a12]/85 px-4 py-3 backdrop-blur md:-mx-8 md:px-8"
+      style={{ top: "var(--site-nav-height, 96px)" }}
+      className="fixed inset-x-0 z-40 border-b border-amber-400/10 bg-[#0a0a12]/90 px-4 py-3 backdrop-blur md:px-8"
     >
       <nav
         role="navigation"
