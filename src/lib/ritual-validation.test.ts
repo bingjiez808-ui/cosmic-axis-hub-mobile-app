@@ -7,6 +7,7 @@ import { describe, expect, test } from "bun:test";
 import {
   FIELD_STEP,
   firstMissingStep,
+  isResolvablePlace,
   missingFields,
   nameStepCopy,
   validateField,
@@ -141,5 +142,63 @@ describe("firstMissingStep — focuses first true miss", () => {
   });
   test("complete → -1", () => {
     expect(firstMissingStep(complete, "en")).toBe(-1);
+  });
+});
+
+describe("place resolution — free-text must not slip through (regression)", () => {
+  test("empty / whitespace-only place fails", () => {
+    const s = { ...complete, place: "   " };
+    expect(validateField("place", s, "en")).not.toBeNull();
+    expect(validateField("place", { ...complete, place: "" }, "zh")).not.toBeNull();
+  });
+  test("unresolvable free text fails", () => {
+    expect(isResolvablePlace("Neverland")).toBe(false);
+    expect(isResolvablePlace("xx")).toBe(false);
+    const s = { ...complete, place: "Neverland" };
+    expect(validateField("place", s, "en")).not.toBeNull();
+    expect(validateField("place", s, "zh")).not.toBeNull();
+  });
+  test("dropdown-formatted city passes in both languages", () => {
+    expect(isResolvablePlace("Shanghai, China")).toBe(true);
+    expect(isResolvablePlace("上海, 中国")).toBe(true);
+    expect(validateField("place", { ...complete, place: "Shanghai, China" }, "en")).toBeNull();
+    expect(validateField("place", { ...complete, place: "上海, 中国" }, "zh")).toBeNull();
+  });
+  test("plain city token from the curated list passes", () => {
+    expect(isResolvablePlace("Beijing")).toBe(true);
+    expect(isResolvablePlace("北京")).toBe(true);
+  });
+});
+
+describe("bypass-guard regressions (whitespace / invalid / Enter / restore)", () => {
+  test("whitespace-only name fails in both langs", () => {
+    const s: RitualState = { ...complete, name: "   " };
+    expect(validateField("name", s, "en")).not.toBeNull();
+    expect(validateField("name", s, "zh")).not.toBeNull();
+  });
+  test("invalid date strings fail", () => {
+    for (const bad of ["", "   ", "1990-13-40", "not-a-date", "1990-5-1", "0000-01-01"]) {
+      expect(validateField("date", { ...complete, date: bad }, "en")).not.toBeNull();
+    }
+  });
+  test("invalid time strings fail", () => {
+    for (const bad of ["", "   ", "25:00", "12:60", "1:00", "abcd"]) {
+      expect(validateField("time", { ...complete, time: bad }, "en")).not.toBeNull();
+    }
+  });
+  test("restored-but-cleared state still reports the miss on submit", () => {
+    // Simulate: user restored draft, went back, cleared name, hit Enter.
+    const s: RitualState = { ...complete, name: "" };
+    const miss = missingFields(s, "en");
+    expect(miss).toContain("name");
+    expect(firstMissingStep(s, "en")).toBe(FIELD_STEP.name);
+  });
+  test("URL-tampered submit missing time still blocks", () => {
+    const s: RitualState = { ...complete, time: "" };
+    expect(missingFields(s, "en").length).toBeGreaterThan(0);
+  });
+  test("full valid state passes end-to-end (EN + ZH)", () => {
+    expect(missingFields(complete, "en").length).toBe(0);
+    expect(missingFields(complete, "zh").length).toBe(0);
   });
 });

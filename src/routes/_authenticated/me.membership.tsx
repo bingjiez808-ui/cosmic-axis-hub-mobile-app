@@ -102,6 +102,7 @@ function MembershipPage() {
             </Link>
             <Link
               to="/me/oracle"
+              search={{ source: "membership" } as never}
               className="min-h-9 inline-flex items-center rounded-full border border-amber-400/30 px-3 py-1.5 text-[11px] text-amber-100/85 hover:border-amber-300/60"
             >
               {isZh ? "进入神谕者阅览室" : "Enter Oracle Room"}

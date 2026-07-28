@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import treeImg from "@/assets/tree-of-destiny.jpg";
 import { generateReport } from "@/lib/report.functions";
 import { buildReportCacheKey, buildReportFingerprint, buildReportRequest } from "@/lib/report-input";
+import { missingFields, type RitualState } from "@/lib/ritual-validation";
 
 type SearchParams = {
   name?: string;
@@ -98,6 +99,31 @@ function SynthesisPage() {
   const lang: "en" | "zh" = search.lang === "zh" ? "zh" : "en";
   const phases = lang === "zh" ? PHASES_ZH : PHASES_EN;
   const reportFingerprint = buildReportFingerprint(search, lang);
+
+  // URL-level guard: even if a user bookmarks /synthesis, refreshes,
+  // pastes an incomplete URL, or manipulates state to skip the ritual,
+  // re-run the same missingFields validator here and bounce back to
+  // /ritual before we ever call the generator or persist anything.
+  useEffect(() => {
+    const state: RitualState = {
+      ownerRole: search.role === "self" || search.role === "other" ? search.role : "",
+      relationship: (search.relationship as RitualState["relationship"]) ?? "",
+      name: search.name ?? "",
+      date: search.date ?? "",
+      time: search.time ?? "",
+      place: search.place ?? "",
+      gender: search.gender ?? "",
+      genderChosen: search.gender === "male" || search.gender === "female" || search.gender === undefined ? search.gender !== undefined || false : true,
+    };
+    // gender: allow undefined only if the ritual explicitly stored a
+    // "prefer not to say" choice; the ritual only omits `gender` for
+    // that case, so we can't tell here — accept it and rely on the
+    // ritual's own explicit-pick UX.
+    state.genderChosen = true;
+    if (missingFields(state, lang).length > 0) {
+      navigate({ to: "/ritual", replace: true } as never);
+    }
+  }, [search, lang, navigate]);
 
   useEffect(() => {
     if (!search.date) {
