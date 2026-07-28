@@ -5,9 +5,12 @@ import { CuratorLetter } from "@/components/CuratorLetter";
 import { ConcernSelector } from "@/components/ConcernSelector";
 import { FeatureLibraryShelf } from "@/components/FeatureLibraryShelf";
 import { HomePersonalDeskTeaser } from "@/components/HomePersonalDeskTeaser";
+import { PlayfulLibrarySection } from "@/components/PlayfulLibrarySection";
+import { PostRitualRoomsSection } from "@/components/PostRitualRoomsSection";
 import { PremiumReportCta } from "@/components/PremiumReportCta";
 import { useLang } from "@/lib/i18n";
 import { useSupabaseSession } from "@/lib/session";
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
