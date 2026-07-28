@@ -2265,34 +2265,23 @@ export function MembershipSection({
 
 
         <p className="mb-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
-          {lang === "zh" ? "两扇阅览室之门" : "Two reading-room doors"}
+          {lang === "zh" ? "两间阅览室 · 门牌入口" : "Two reading rooms · doorways"}
         </p>
         <h2 className="mb-2 font-serif text-2xl italic text-stone-warm md:text-3xl">
           {lang === "zh" ? "进入阅览室" : "Enter a reading room"}
         </h2>
         <p className="mb-6 text-sm text-stone-warm/60">
           {lang === "zh"
-            ? "两扇门对应贤者与神谕者的会员权益；神谕者严格包含贤者的全部权益。"
-            : "The two doors mirror the Sage and Oracle benefits above. Oracle strictly includes every Sage benefit."}
+            ? "这两扇门只做跳转，不再是第二个支付入口。是否已开通会员由房间内部判断；升级请回到上方三档方案。"
+            : "These doors only navigate — they are not a second checkout. Access is judged inside each room. Upgrade above in the three-tier plans."}
         </p>
-
 
         <div
           data-testid="membership-doors"
-          className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2"
+          className="flex flex-col gap-4"
         >
-          <DoorCard
-            id="sage"
-            lang={lang}
-            currentPlan={plan}
-            onOpen={() => handleDoorClick("sage")}
-          />
-          <DoorCard
-            id="oracle"
-            lang={lang}
-            currentPlan={plan}
-            onOpen={() => handleDoorClick("oracle")}
-          />
+          <DoorCard id="sage" lang={lang} />
+          <DoorCard id="oracle" lang={lang} />
         </div>
       </div>
 
