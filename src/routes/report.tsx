@@ -1433,7 +1433,24 @@ function ReportPage() {
 
       <AccountModal open={accOpen} onClose={() => setAccOpen(false)} />
 
-      <section className="mx-auto mb-24 max-w-6xl px-4 sm:px-6">
+      {(() => {
+        const li = lang === "zh" ? 1 : 0;
+        const toc: TocItem[] = [
+          {
+            id: "natal-chart",
+            label: lang === "zh" ? "你的命盘" : "Your natal chart",
+            hint: lang === "zh" ? "九颗行星 · 十二宫" : "Nine planets · twelve houses",
+          },
+          ...displayed.map((d) => ({
+            id: d.key,
+            label: d.title[li],
+            hint: d.headline[li],
+          })),
+        ];
+        return <ReportToc items={toc} lang={lang} />;
+      })()}
+
+      <section id="natal-chart" className="mx-auto mb-24 max-w-6xl scroll-mt-32 px-4 sm:px-6">
         <div className="glass-card rounded-3xl p-4 sm:p-8 md:p-12">
           {/* Intro block — always full width so mobile sees context first */}
           <div className="mb-6 min-w-0 lg:mb-8">
