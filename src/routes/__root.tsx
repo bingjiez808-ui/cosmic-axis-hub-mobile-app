@@ -495,7 +495,7 @@ function SiteNav() {
           </Link>
 
           {/* Core nav (desktop) */}
-          <div className="hidden items-center justify-center gap-4 xl:flex xl:justify-self-center xl:gap-8">
+          <div className="hidden min-w-0 flex-1 items-center justify-center gap-4 xl:flex xl:gap-6">
             {coreEntries.map((e) => (
               <NavLink key={e.to} to={e.to} label={e.label} ariaLabel={e.ariaLabel} />
             ))}
