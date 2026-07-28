@@ -2165,17 +2165,103 @@ export function MembershipSection({
   return (
     <section className="mx-auto max-w-5xl px-6 pb-24 md:px-12 print:hidden">
       <div className="glass-card rounded-3xl p-6 md:p-10">
-        {/* Basic-access note (¥0 — not a plan) */}
-        <div className="mb-8 rounded-2xl border border-white/10 bg-white/[0.02] px-5 py-4">
-          <p className="mb-1 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
-            {lang === "zh" ? "基础阅览权限 · ¥0" : "Basic access · ¥0"}
-          </p>
-          <p className="text-sm leading-relaxed text-stone-warm/70">
-            {lang === "zh"
-              ? "你现在看到的综合解读与当前十年大运，是永久免费的基础阅览权限 —— 不是会员套餐。若想更深地读你自己，请进入下面的两扇阅览室之门。"
-              : "The unified reading you're viewing and your current-decade luck cycle are the free basic access — not a plan. Step through one of the two reading-room doors below to read yourself more deeply."}
-          </p>
+        {/* Three-tier plan selector — Seeker / Sage / Oracle */}
+        <p className="mb-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+          {t.mem_kicker}
+        </p>
+        <h2 className="mb-2 font-serif text-2xl italic text-stone-warm md:text-3xl">
+          {t.mem_title}
+        </h2>
+        <p className="mb-6 text-sm text-stone-warm/60">
+          {lang === "zh"
+            ? "选择适合你的会员等级；求索者永久免费，贤者与神谕者按月订阅，到期自动降级不会未经确认扣款。"
+            : "Pick the plan that fits. Seeker is free forever; Sage and Oracle bill monthly and lapse automatically at expiry — no silent renewal."}
+        </p>
+        {account && firstTime && (
+          <div className="mb-6 flex flex-wrap items-center gap-3 rounded-2xl border border-nebula-purple/40 bg-nebula-purple/[0.10] px-5 py-3">
+            <span className="rounded-full bg-nebula-purple/40 px-3 py-0.5 text-[9px] uppercase tracking-[0.32em] text-stone-warm">
+              {lang === "zh" ? "首次优惠" : "First-time offer"}
+            </span>
+            <p className="text-sm text-stone-warm/80">
+              {lang === "zh"
+                ? "新账户首次升级享 -30% 折扣 —— 结算时自动应用（模拟支付，不会真实扣款）。"
+                : "New accounts get 30% off their first upgrade — applied at checkout (mock payment, no real charge)."}
+            </p>
+          </div>
+        )}
+        <div
+          data-testid="membership-plans"
+          className="mb-10 grid grid-cols-1 items-stretch gap-4 md:grid-cols-3"
+        >
+          {plans.map((p) => {
+            const isCurrent = plan === p.id;
+            const rank = (x: Plan) => (x === "oracle" ? 2 : x === "sage" ? 1 : 0);
+            const isDowngrade = rank(p.id) < rank(plan);
+            return (
+              <div
+                key={p.id}
+                data-testid={`membership-plan-${p.id}`}
+                className={`relative flex flex-col rounded-2xl border p-6 transition-colors ${
+                  p.highlight
+                    ? "border-gold-dust/60 bg-gold-dust/[0.06]"
+                    : "border-white/10 bg-white/[0.02]"
+                } ${isCurrent ? "ring-1 ring-gold-light/60" : ""}`}
+              >
+                {p.highlight && (
+                  <span className="absolute -top-2 right-4 rounded-full bg-gold-dust px-2 py-0.5 text-[9px] uppercase tracking-[0.28em] text-obsidian">
+                    {lang === "zh" ? "推荐" : "Popular"}
+                  </span>
+                )}
+                <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+                  {p.name}
+                </p>
+                <p className="mt-1 font-serif text-2xl text-gold-light">{p.price}</p>
+                <p className="mt-3 mb-5 flex-1 text-sm leading-relaxed text-stone-warm/75">
+                  {p.desc}
+                </p>
+                {isCurrent ? (
+                  <p
+                    data-testid={`membership-plan-current-${p.id}`}
+                    className="mt-auto rounded-full border border-gold-light/50 px-4 py-2 text-center text-[10px] uppercase tracking-[0.32em] text-gold-light"
+                  >
+                    ✓ {t.mem_current}
+                  </p>
+                ) : p.id === "free" || isDowngrade ? (
+                  <p className="mt-auto rounded-full border border-white/10 px-4 py-2 text-center text-[10px] uppercase tracking-[0.32em] text-stone-warm/40">
+                    {p.id === "free"
+                      ? lang === "zh" ? "基础阅览权限" : "Basic access"
+                      : lang === "zh" ? "已包含" : "Included"}
+                  </p>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleDoorClick(p.id as "sage" | "oracle")}
+                    data-testid={`membership-plan-cta-${p.id}`}
+                    className={`mt-auto min-h-11 rounded-full px-4 py-2 text-[10px] uppercase tracking-[0.32em] transition-colors ${
+                      p.highlight
+                        ? "bg-gold-dust text-obsidian hover:bg-gold-light"
+                        : "border border-gold-dust/40 text-gold-dust hover:bg-gold-dust hover:text-obsidian"
+                    }`}
+                  >
+                    {t.mem_upgrade}
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
+
+        {/* Ask-the-Sage — private-oracle conversation entry (restored) */}
+        <div className="mb-10">
+          <AskSageCard
+            lang={lang}
+            locked={lang === "zh" ? "神谕者会员专属" : "Oracle members only"}
+            onOpen={() => setChatOpen(true)}
+          />
+        </div>
+
+        <div className="mb-6 h-px w-full bg-gold-dust/15" />
+
 
         <p className="mb-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
           {lang === "zh" ? "两扇阅览室之门" : "Two reading-room doors"}
