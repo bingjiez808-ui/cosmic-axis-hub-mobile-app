@@ -266,8 +266,14 @@ function LiteratureHallPage() {
   /* ── render ───────────────────────────────────────────────────── */
   return (
     <div className="min-h-screen bg-[#0a0a12] text-amber-50">
-      <div className="mx-auto w-full max-w-[1240px] px-4 py-8 md:px-8 md:py-12">
-        <CommonsHallNav active="/me/literature" />
+      <CommonsHallNav active="/me/literature" />
+      <div
+        className="mx-auto w-full max-w-[1240px] px-4 pb-12 md:px-8 md:pb-16"
+        style={{
+          paddingTop:
+            "calc(var(--site-nav-height, 96px) + var(--commons-nav-height, 64px) + 24px)",
+        }}
+      >
         <HeaderBlock isZh={isZh} />
 
         {status === "loading" && <LoadingBox isZh={isZh} />}

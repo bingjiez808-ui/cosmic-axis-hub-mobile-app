@@ -48,6 +48,7 @@ function MathRoomPage() {
 
   return (
     <SubjectRoomShell
+      active="/life-studies/math"
       eyebrow={{ zh: "数学馆", en: "Mathematics" }}
       title={{ zh: "人生函数 · Life as a Function", en: "Life as a Function" }}
       subtitle={{

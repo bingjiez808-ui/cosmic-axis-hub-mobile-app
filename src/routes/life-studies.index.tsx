@@ -1,5 +1,7 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 
+import { CommonsHallNav } from "@/components/CommonsHallNav";
+
 import { DestinyCommonsGrid } from "@/components/destiny-commons/DestinyCommonsGrid";
 import {
   DESTINY_COMMONS_HALLS,
@@ -44,7 +46,14 @@ function DestinyCommonsPage() {
   const comingN = comingHallCount();
 
   return (
-    <main className="relative min-h-screen bg-obsidian pb-24 pt-32 text-stone-warm">
+    <main
+      className="relative min-h-screen bg-obsidian pb-24 text-stone-warm"
+      style={{
+        paddingTop:
+          "calc(var(--site-nav-height, 96px) + var(--commons-nav-height, 64px) + 24px)",
+      }}
+    >
+      <CommonsHallNav active="/life-studies" />
       <div className="mx-auto max-w-[1280px] px-5 sm:px-8">
         {/* Breadcrumb */}
         <nav aria-label={isZh ? "面包屑" : "Breadcrumb"} className="mb-6 text-[11px] uppercase tracking-[0.28em] text-stone-warm/45">
