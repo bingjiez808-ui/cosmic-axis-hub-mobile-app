@@ -16,6 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { HALL_IMAGE } from "@/components/destiny-commons/hall-images";
 import type { DestinyCommonsHall } from "@/lib/destiny-commons";
 
 type Props = {
