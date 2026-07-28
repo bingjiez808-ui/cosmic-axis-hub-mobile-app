@@ -317,36 +317,53 @@ function ProfileHeader({
     </section>
   );
 }
-
 /* -------------------- atlas tab (star map + detail drawer + list toggle) -------------------- */
+
+let candidatesCache: { items: CandidateCard[] | null; at: number } = { items: null, at: 0 };
+
 
 function AtlasTab({ paused, selfAlias }: { paused: boolean; selfAlias: string }) {
   const c = useCommunityMatchCopy();
   const list = useServerFn(listCommunityMatchCandidates);
   const invite = useServerFn(sendCommunityMatchInvite);
   const report = useServerFn(reportCommunityMatchAlias);
-  const [items, setItems] = useState<CandidateCard[] | null>(null);
+  const [items, setItems] = useState<CandidateCard[] | null>(() => candidatesCache.items);
   const [err, setErr] = useState<string | null>(null);
   const [invited, setInvited] = useState<Record<string, "sent" | "err">>({});
   const [loading, setLoading] = useState(false);
   const [view, setView] = useState<"atlas" | "list">("atlas");
-  const [focusedAlias, setFocusedAlias] = useState<string | null>(null);
+  const [focusedAlias, setFocusedAlias] = useState<string | null>(
+    () => candidatesCache.items?.[0]?.alias ?? null,
+  );
   const [flightFor, setFlightFor] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (force = false) => {
     if (paused) return;
+    // DB enforces a 60s server-side cooldown; skip if we just fetched.
+    if (!force && candidatesCache.items && Date.now() - candidatesCache.at < 60_000) {
+      setItems(candidatesCache.items);
+      return;
+    }
     setLoading(true);
     setErr(null);
     try {
       const rows = await list({ data: { limit: 10, mode: "friendship", lang: "en" } });
+      candidatesCache = { items: rows, at: Date.now() };
       setItems(rows);
       if (rows.length > 0 && !focusedAlias) setFocusedAlias(rows[0].alias);
     } catch (e) {
-      setErr(c.errFor(e instanceof Error ? e.message : "generic"));
+      const msg = e instanceof Error ? e.message : "generic";
+      // Rate-limit is expected when navigating back within 60s — keep stale list.
+      if (msg === "rate_limited" && candidatesCache.items) {
+        setItems(candidatesCache.items);
+      } else {
+        setErr(c.errFor(msg));
+      }
     } finally {
       setLoading(false);
     }
   }, [list, paused, c, focusedAlias]);
+
 
   useEffect(() => {
     void refresh();
@@ -418,7 +435,7 @@ function AtlasTab({ paused, selfAlias }: { paused: boolean; selfAlias: string })
         </div>
         <button
           type="button"
-          onClick={refresh}
+          onClick={() => void refresh(true)}
           className="rounded-full border border-amber-400/40 px-3 py-1 text-xs text-amber-200 hover:bg-amber-300/10"
         >
           {c.t("candidates_refresh")}
