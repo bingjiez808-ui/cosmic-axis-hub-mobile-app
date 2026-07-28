@@ -179,6 +179,7 @@ const GetReportInput = z.object({
   chartId: z.string().uuid(),
   kind: z.enum(["report", "outlook"]),
   reportVersion: z.string().min(1).max(120),
+  inputHash: z.string().min(8).max(128).optional(),
 });
 
 export type SavedReportRow = {
@@ -187,6 +188,9 @@ export type SavedReportRow = {
   report_json: Json | null;
   generated_at: string | null;
   updated_at: string;
+  input_hash?: string | null;
+  content_hash?: string | null;
+  calculation_version?: string | null;
 };
 
 export const getSavedReport = createServerFn({ method: "POST" })
@@ -196,22 +200,28 @@ export const getSavedReport = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { data: row } = await supabase
       .from("reports")
-      .select("id, status, report_json, generated_at, updated_at")
+      .select(
+        "id, status, report_json, generated_at, updated_at, input_hash, content_hash, calculation_version",
+      )
       .eq("user_id", userId)
       .eq("chart_id", data.chartId)
       .eq("kind", data.kind)
       .eq("report_version", data.reportVersion)
       .maybeSingle();
     if (!row) return null;
+    // If caller pinned an input_hash and the stored row was generated
+    // from a different snapshot, treat as a miss so the client can
+    // decide to regenerate. When no hash is pinned (legacy call sites)
+    // fall back to version-only reuse.
+    if (data.inputHash && row.input_hash && row.input_hash !== data.inputHash) {
+      return null;
+    }
     return row as SavedReportRow;
   });
 
-/* --------------------------------------------------------------------- */
-/* Report begin (atomic pending claim)                                   */
-/* --------------------------------------------------------------------- */
-
 const BeginReportInput = GetReportInput.extend({
   input_snapshot: z.record(z.string(), z.unknown()).default({}),
+  calculationVersion: z.string().min(1).max(60).optional(),
 });
 
 export const beginReport = createServerFn({ method: "POST" })
