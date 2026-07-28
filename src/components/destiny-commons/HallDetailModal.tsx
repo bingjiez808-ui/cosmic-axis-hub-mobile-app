@@ -95,13 +95,21 @@ function HallBody({ hall, isZh }: { hall: DestinyCommonsHall; isZh: boolean }) {
           <span
             className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 ${
               isOpen
-                ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-200"
-                : "border-white/15 bg-white/5 text-stone-warm/55"
+                ? "border-emerald-400/45 bg-emerald-400/10 text-emerald-200"
+                : "border-amber-200/30 bg-amber-100/[0.05] text-amber-100/80"
             }`}
           >
-            <span aria-hidden className="h-1 w-1 rounded-full bg-current" />
+            <span
+              aria-hidden
+              className={`h-1.5 w-1.5 rounded-full ${
+                isOpen
+                  ? "bg-emerald-300 shadow-[0_0_8px_rgba(110,231,183,0.9)] animate-pulse"
+                  : "bg-amber-200/80 animate-pulse"
+              }`}
+            />
             {statusLabel}
           </span>
+
         </div>
         <DialogTitle className="mt-3 font-serif text-2xl leading-tight text-stone-warm">
           {isZh ? hall.nameZh : hall.nameEn} ·{" "}
