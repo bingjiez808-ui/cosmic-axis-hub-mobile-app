@@ -2336,130 +2336,59 @@ export function MembershipSection({
 }
 
 /**
- * DoorCard — a single reading-room door on /report. Copy is exhaustive
- * (适合谁 / 能做什么 / CTA) and matches the real benefit list confirmed
- * in this refactor. Oracle explicitly notes it inherits every Sage
- * benefit; no benefit is silently duplicated across cards.
+ * DoorCard — a horizontal, immersive doorway banner. It is a pure
+ * navigation link — no price, no upgrade button, no checkout modal.
+ * Whether the caller is actually entitled is decided inside /me/sage
+ * or /me/oracle. Visual language mirrors OracleRoomBanner.
  */
-function DoorCard({
-  id,
-  lang,
-  currentPlan,
-  onOpen,
-}: {
-  id: "sage" | "oracle";
-  lang: Lang;
-  currentPlan: "free" | "sage" | "oracle";
-  onOpen: () => void;
-}) {
+function DoorCard({ id, lang }: { id: "sage" | "oracle"; lang: Lang }) {
   const isZh = lang === "zh";
   const isSage = id === "sage";
-  const rank = (x: "free" | "sage" | "oracle") =>
-    x === "oracle" ? 2 : x === "sage" ? 1 : 0;
-  const owned = rank(currentPlan) >= rank(id);
-
-  const title = isSage
+  const to = isSage ? "/me/sage" : "/me/oracle";
+  const kicker = isSage
     ? isZh ? "贤者阅览室" : "Sage Reading Room"
     : isZh ? "神谕者阅览室" : "Oracle Reading Room";
-  const price = isSage ? "¥19.9" : "¥39.9";
-  const audience = isSage
-    ? isZh
-      ? "适合：想真正读懂自己 —— 完整时间轴、关系合盘、月度塔罗辅助。"
-      : "For: readers who want the full timeline, synastry and a monthly tarot cadence."
-    : isZh
-      ? "适合：想同时驾驭四体系、要无限追问与近 90 天关键节点的深度使用者。"
-      : "For: deep users who want unlimited follow-up and 90-day keystone windows across all four traditions.";
-  const bullets: string[] = isSage
-    ? isZh
-      ? [
-          "站内深度阅读体验",
-          "完整生命时间轴（包括其他十年阶段）",
-          "关系与合盘分析",
-          "每月 10 次塔罗 AI 解读",
-        ]
-      : [
-          "In-app deep reading experience",
-          "Full life timeline (including other decades)",
-          "Synastry & relationship reading",
-          "10 tarot AI readings each month",
-        ]
-    : isZh
-      ? [
-          "包含贤者阅览室全部权益",
-          "无限 AI 追问",
-          "无限塔罗 AI 解读",
-          "近 90 天状态与关键时间节点分析",
-        ]
-      : [
-          "Includes everything in the Sage Reading Room",
-          "Unlimited AI follow-up",
-          "Unlimited tarot AI readings",
-          "90-day state & keystone-window analysis",
-        ];
-
-  const ctaLabel = owned
-    ? isSage
-      ? isZh ? "进入贤者阅览室" : "Enter Sage Reading Room"
-      : isZh ? "进入神谕者阅览室" : "Enter Oracle Reading Room"
-    : currentPlan === "sage" && !isSage
-      ? isZh ? "从贤者升级为神谕者" : "Upgrade from Sage to Oracle"
-      : isZh ? `升级 · ${price}/月` : `Upgrade · ${price}/mo`;
-
+  const title = isSage
+    ? isZh ? "完整生命时间轴 · 合盘 · 每月塔罗" : "Full life timeline · Synastry · Monthly tarot"
+    : isZh ? "命理追问 · 命盘选择 · 合盘对照 · 90 天窗口" : "Chart follow-up · Chart picker · Synastry · 90-day windows";
+  const includes = !isSage
+    ? isZh ? "已包含贤者阅览室全部权益" : "Includes every Sage benefit"
+    : null;
+  const enter = isZh ? "进入 →" : "Enter →";
   return (
-    <div
+    <Link
+      to={to}
+      {...(!isSage ? { search: { source: "report" } as never } : {})}
       data-testid={`membership-door-${id}`}
-      className={`relative flex flex-col overflow-hidden rounded-2xl border p-6 transition-colors ${
+      className={`group relative flex items-center justify-between gap-4 overflow-hidden rounded-2xl border p-5 transition-colors md:p-6 ${
         isSage
-          ? "border-gold-dust/40 bg-gold-dust/[0.05]"
-          : "border-nebula-purple/50 bg-nebula-purple/[0.08]"
+          ? "border-gold-dust/40 bg-gradient-to-r from-obsidian/70 via-obsidian/50 to-gold-dust/[0.06] hover:border-gold-dust/70"
+          : "border-nebula-purple/50 bg-gradient-to-r from-obsidian/70 via-obsidian/55 to-nebula-purple/[0.15] hover:border-nebula-purple/80"
       }`}
     >
-      <div className="mb-3 flex items-baseline justify-between gap-2">
-        <div>
-          <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
-            {isSage ? (isZh ? "贤者" : "Sage") : isZh ? "神谕者" : "Oracle"}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_10%_20%,rgba(255,255,255,0.05),transparent_40%)]"
+      />
+      <div className="relative min-w-0">
+        <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">{kicker}</p>
+        <h3 className="mt-1 truncate font-serif text-lg italic text-stone-warm md:text-xl">
+          {isSage ? (isZh ? "贤者阅览室" : "Sage Reading Room") : isZh ? "神谕者阅览室" : "Oracle Reading Room"}
+        </h3>
+        <p className="mt-1 text-xs text-stone-warm/70 md:text-sm">{title}</p>
+        {includes && (
+          <p className="mt-2 inline-block rounded-full border border-gold-dust/40 px-2 py-0.5 text-[9px] uppercase tracking-[0.28em] text-gold-dust">
+            {includes}
           </p>
-          <h3 className="mt-1 font-serif text-xl italic text-stone-warm">{title}</h3>
-        </div>
-        <div className="text-right">
-          <p className="font-serif text-2xl text-gold-light">{price}</p>
-          <p className="text-[10px] uppercase tracking-[0.28em] text-stone-warm/50">
-            / {isZh ? "月" : "mo"}
-          </p>
-        </div>
+        )}
       </div>
-      {!isSage && (
-        <p className="mb-3 inline-block w-fit rounded-full border border-gold-dust/40 bg-obsidian/40 px-3 py-0.5 text-[9px] uppercase tracking-[0.28em] text-gold-dust">
-          {isZh ? "包含贤者阅览室全部权益" : "Includes everything in Sage"}
-        </p>
-      )}
-      <p className="mb-4 text-sm italic text-stone-warm/70">{audience}</p>
-      <ul className="mb-6 flex-1 space-y-2 text-sm text-stone-warm/80">
-        {bullets.map((b) => (
-          <li key={b} className="flex gap-2">
-            <span className="mt-1 size-1.5 shrink-0 rounded-full bg-gold-dust/70" />
-            <span>{b}</span>
-          </li>
-        ))}
-      </ul>
-      <button
-        type="button"
-        onClick={onOpen}
+      <span
         data-testid={`membership-door-cta-${id}`}
-        className={`mt-auto w-full min-h-11 rounded-full px-5 py-2.5 text-[10px] uppercase tracking-[0.32em] transition-colors ${
-          isSage
-            ? "bg-gold-dust text-obsidian hover:bg-gold-light"
-            : "bg-nebula-purple text-stone-warm hover:opacity-90"
-        }`}
+        className="relative shrink-0 whitespace-nowrap rounded-full border border-gold-dust/40 px-4 py-2 text-[11px] uppercase tracking-[0.28em] text-gold-dust transition-colors group-hover:bg-gold-dust group-hover:text-obsidian"
       >
-        {ctaLabel}
-      </button>
-      {owned && (
-        <p className="mt-3 text-center text-[10px] uppercase tracking-[0.28em] text-gold-light">
-          {isZh ? "✓ 已开通" : "✓ Active"}
-        </p>
-      )}
-    </div>
+        {enter}
+      </span>
+    </Link>
   );
 }
 
