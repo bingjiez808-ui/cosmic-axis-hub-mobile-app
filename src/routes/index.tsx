@@ -220,11 +220,14 @@ function LandingPage() {
       {/* ─────────── CONCERN → FEATURE MAPPING ─────────── */}
       <ConcernSelector />
 
-      {/* ─────────── FEATURE LIBRARY SHELF ─────────── */}
+      {/* ─────────── SIX THEMED BOOKS ─────────── */}
       <FeatureLibraryShelf />
 
-      {/* ─────────── PERSONAL READING DESK teaser (after-signin value) ─────── */}
-      <HomePersonalDeskTeaser />
+      {/* ─────────── PLAYFUL LIBRARY (cross-discipline exhibits) ─────── */}
+      <PlayfulLibrarySection />
+
+      {/* ─────────── AFTER-RITUAL · FOUR PRIVATE ROOMS ─────────── */}
+      <PostRitualRoomsSection />
 
       {/* ─────────── TRUST BRIDGE → traditions detail page ─────────── */}
       <section
@@ -253,10 +256,10 @@ function LandingPage() {
         </p>
       </section>
 
-      {/* ─────────── HISTORICAL ECHO PREVIEW (Curator's letter) ─────────── */}
-      <CuratorLetter />
+      {/* ─────────── PERSONAL READING DESK teaser (after-signin value) ─────── */}
+      <HomePersonalDeskTeaser />
 
-      {/* ─────────── MEMBERSHIP HINT ─────────── */}
+      {/* ─────────── MEMBERSHIP HINT (single canonical entry) ─────────── */}
       <section className="relative z-10 mx-auto max-w-3xl px-6 py-16 text-center">
         <p className="text-[10px] uppercase tracking-[0.36em] text-gold-dust/80">
           {isZh ? "会员能力" : "Membership"}
@@ -281,31 +284,9 @@ function LandingPage() {
         </p>
       </section>
 
-      {/* ─────────── FINAL CTA ─────────── */}
-      <section className="relative z-10 mx-auto max-w-3xl px-6 py-24 text-center">
-        <h2 className="mb-8 font-serif text-4xl italic leading-tight text-stone-warm md:text-5xl">
-          {t.cta_a}
-          <br />
-          <span className="gold-gradient-text">{t.cta_em}</span>
-        </h2>
-        <p className="mx-auto mb-10 max-w-xl font-light text-stone-warm/60">{t.cta_body}</p>
-        <div className="flex flex-col items-center gap-3">
-          <a
-            href="#concern"
-            className="group inline-flex overflow-hidden rounded-full border border-gold-dust/30 px-12 py-5 transition-colors hover:border-gold-dust"
-          >
-            <span className="relative z-10 text-xs font-medium uppercase tracking-[0.32em] text-gold-dust">
-              {isZh ? "选择我的问题" : "Pick my question"}
-            </span>
-          </a>
-          <Link
-            to="/ritual"
-            className="text-[10px] uppercase tracking-[0.32em] text-stone-warm/50 hover:text-gold-dust"
-          >
-            {t.cta_btn}
-          </Link>
-        </div>
-      </section>
+      {/* ─────────── HISTORICAL ECHO PREVIEW (Curator's letter) ─────────── */}
+      <CuratorLetter />
     </>
   );
 }
+
