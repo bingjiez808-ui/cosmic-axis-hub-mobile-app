@@ -1450,7 +1450,7 @@ function ReportPage() {
         return <ReportToc items={toc} lang={lang} />;
       })()}
 
-      <section id="natal-chart" className="mx-auto mb-24 max-w-6xl scroll-mt-32 px-4 sm:px-6">
+      <section id="natal-chart" className="mx-auto mb-24 max-w-6xl scroll-mt-[calc(var(--site-nav-height,96px)+72px)] px-4 sm:px-6">
         <div className="glass-card rounded-3xl p-4 sm:p-8 md:p-12">
           {/* Intro block — always full width so mobile sees context first */}
           <div className="mb-6 min-w-0 lg:mb-8">
