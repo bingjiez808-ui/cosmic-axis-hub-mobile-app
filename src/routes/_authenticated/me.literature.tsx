@@ -267,7 +267,7 @@ function LiteratureHallPage() {
   return (
     <div className="min-h-screen bg-[#0a0a12] text-amber-50">
       <div className="mx-auto w-full max-w-[1240px] px-4 py-8 md:px-8 md:py-12">
-        <PersonalWorkspaceNav active={"/me/echoes" as never} />
+        <CommonsHallNav active="/me/literature" />
         <HeaderBlock isZh={isZh} />
 
         {status === "loading" && <LoadingBox isZh={isZh} />}
