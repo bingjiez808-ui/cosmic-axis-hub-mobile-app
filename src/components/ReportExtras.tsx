@@ -2190,8 +2190,9 @@ export function MembershipSection({
           </div>
         )}
         <div
+          id="membership-plans"
           data-testid="membership-plans"
-          className="mb-10 grid grid-cols-1 items-stretch gap-4 md:grid-cols-3"
+          className="mb-10 grid scroll-mt-[calc(var(--site-nav-height,96px)+24px)] grid-cols-1 items-stretch gap-4 md:grid-cols-3"
         >
           {plans.map((p) => {
             const isCurrent = plan === p.id;
