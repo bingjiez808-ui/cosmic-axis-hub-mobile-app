@@ -168,14 +168,36 @@ function HallCard({
       type="button"
       onClick={onOpen}
       aria-haspopup="dialog"
+      aria-label={
+        isOpen
+          ? isZh
+            ? `${hall.nameZh} · 已开放，点击查看`
+            : `${hall.nameEn} · Open, view details`
+          : isZh
+            ? `${hall.nameZh} · 馆藏整理中，点击查看预告`
+            : `${hall.nameEn} · Coming soon, view preview`
+      }
       className={cn(
         "group relative flex min-h-[196px] flex-col overflow-hidden rounded-2xl border p-5 text-left transition",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-dust/60",
         isOpen
-          ? "border-white/10 bg-obsidian/70 hover:border-gold-dust/45 hover:bg-obsidian/85 hover:shadow-[0_18px_44px_-24px_rgba(212,162,74,0.35)]"
+          ? "border-gold-dust/35 bg-obsidian/70 shadow-[0_10px_30px_-18px_rgba(212,162,74,0.35)] hover:border-gold-dust/60 hover:bg-obsidian/85 hover:shadow-[0_22px_50px_-22px_rgba(212,162,74,0.55)]"
           : "border-white/5 bg-obsidian/40 hover:border-white/15",
       )}
     >
+      {/* Open-state golden halo — soft pulse behind the card */}
+      {isOpen && (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute -inset-px rounded-2xl opacity-60 group-hover:opacity-100 transition-opacity duration-500"
+          style={{
+            background:
+              "radial-gradient(120% 80% at 50% 0%, rgba(224,182,90,0.18), transparent 60%)",
+            animation: "hall-halo 4.6s ease-in-out infinite",
+          }}
+        />
+      )}
+
       {/* Ambient hall image — sits behind content, subtly parallaxes on hover */}
       <span aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
         <img
@@ -187,7 +209,7 @@ function HallCard({
           className={cn(
             "h-full w-full object-cover transition-all duration-700 ease-out",
             isOpen
-              ? "opacity-25 group-hover:scale-[1.08] group-hover:opacity-40"
+              ? "opacity-30 group-hover:scale-[1.08] group-hover:opacity-45"
               : "opacity-10 grayscale group-hover:opacity-20",
           )}
         />
@@ -206,7 +228,14 @@ function HallCard({
 
       <div className="relative z-[1] flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
-          <span className="grid h-9 w-9 place-items-center rounded-full border border-gold-dust/30 bg-obsidian/70">
+          <span
+            className={cn(
+              "grid h-9 w-9 place-items-center rounded-full border bg-obsidian/70 transition",
+              isOpen
+                ? "border-gold-dust/55 shadow-[0_0_18px_-4px_rgba(224,182,90,0.55)]"
+                : "border-white/15",
+            )}
+          >
             <HallSymbol id={hall.id} />
           </span>
           <span className="text-[10px] uppercase tracking-[0.32em] text-gold-dust/60">
@@ -215,12 +244,21 @@ function HallCard({
         </div>
         <span
           className={cn(
-            "shrink-0 rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-[0.24em]",
+            "shrink-0 inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-[0.24em]",
             isOpen
-              ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-200"
-              : "border-white/10 bg-white/5 text-stone-warm/50",
+              ? "border-emerald-400/45 bg-emerald-400/10 text-emerald-200"
+              : "border-amber-200/25 bg-amber-100/[0.04] text-amber-100/75",
           )}
         >
+          <span
+            aria-hidden
+            className={cn(
+              "h-1.5 w-1.5 rounded-full",
+              isOpen
+                ? "bg-emerald-300 shadow-[0_0_8px_rgba(110,231,183,0.9)] animate-pulse"
+                : "bg-amber-200/70 animate-pulse",
+            )}
+          />
           {statusLabel}
         </span>
       </div>
@@ -250,14 +288,43 @@ function HallCard({
         {isZh ? hall.summaryZh : hall.summaryEn}
       </p>
 
+      {/* Coming-soon shimmer placeholder — “敬请期待” 动效, no route */}
+      {!isOpen && (
+        <span
+          aria-hidden
+          className="relative z-[1] mt-3 block h-[3px] w-full overflow-hidden rounded-full bg-white/5"
+        >
+          <span
+            className="absolute inset-y-0 left-0 w-1/3 rounded-full bg-gradient-to-r from-transparent via-gold-dust/70 to-transparent"
+            style={{ animation: "hall-shimmer 2.8s ease-in-out infinite" }}
+          />
+        </span>
+      )}
+
       <span
         className={cn(
           "relative z-[1] mt-4 text-[11px] uppercase tracking-[0.28em]",
-          isOpen ? "text-gold-dust/85" : "text-stone-warm/45",
+          isOpen ? "text-gold-dust/90" : "text-stone-warm/45",
         )}
       >
-        {enterLabel}
+        {isOpen
+          ? enterLabel
+          : isZh
+            ? "敬请期待 · 查看预告"
+            : "Opening soon · Preview"}
       </span>
+
+      <style>{`
+        @keyframes hall-halo {
+          0%,100% { opacity: 0.45; }
+          50% { opacity: 0.85; }
+        }
+        @keyframes hall-shimmer {
+          0% { transform: translateX(-120%); }
+          100% { transform: translateX(360%); }
+        }
+      `}</style>
     </button>
   );
 }
+
