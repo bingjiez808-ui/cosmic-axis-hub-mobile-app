@@ -227,7 +227,7 @@ function HallCard({
 
       <h3
         className={cn(
-          "mt-3 font-serif text-lg leading-snug",
+          "relative z-[1] mt-3 font-serif text-lg leading-snug",
           isOpen ? "text-stone-warm" : "text-stone-warm/75",
         )}
       >
