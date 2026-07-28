@@ -447,7 +447,7 @@ export function resolveConcernRoute(args: ResolveArgs): string {
   if (existingReportId) {
     return `/report?id=${encodeURIComponent(existingReportId)}&focus=${encodeURIComponent(
       section,
-    )}`;
+    )}&concern=${encodeURIComponent(concern)}`;
   }
   return `/me/home?concern=${encodeURIComponent(concern)}#curator-welcome`;
 }
