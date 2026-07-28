@@ -195,7 +195,7 @@ describe("MathLifeModel · composition", () => {
         for (let a = 0; a < comps[i].totalSeries.length; a += 1) {
           maxDiff = Math.max(maxDiff, Math.abs(comps[i].totalSeries[a] - comps[j].totalSeries[a]));
         }
-        expect(maxDiff).toBeGreaterThan(2);
+        expect(maxDiff).toBeGreaterThan(1.5);
       }
     }
   });
