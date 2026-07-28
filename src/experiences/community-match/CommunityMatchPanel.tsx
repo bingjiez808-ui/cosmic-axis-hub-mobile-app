@@ -433,7 +433,7 @@ function AtlasTab({ paused, selfAlias }: { paused: boolean; selfAlias: string })
         </div>
         <button
           type="button"
-          onClick={refresh}
+          onClick={() => void refresh(true)}
           className="rounded-full border border-amber-400/40 px-3 py-1 text-xs text-amber-200 hover:bg-amber-300/10"
         >
           {c.t("candidates_refresh")}
