@@ -17,6 +17,7 @@ import { Route as RitualRouteImport } from './routes/ritual'
 import { Route as ReportRouteImport } from './routes/report'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as McpRouteImport } from './routes/mcp'
+import { Route as LifeStudiesRouteImport } from './routes/life-studies'
 import { Route as DeleteAccountRouteImport } from './routes/delete-account'
 import { Route as CommunityRouteImport } from './routes/community'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -24,6 +25,7 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthIndexRouteImport } from './routes/auth.index'
+import { Route as LifeStudiesMathRouteImport } from './routes/life-studies.math'
 import { Route as DevReaderHarnessRouteImport } from './routes/dev.reader-harness'
 import { Route as DevPanoramaTourRouteImport } from './routes/dev.panorama-tour'
 import { Route as DevGuidedLibraryV2RouteImport } from './routes/dev.guided-library-v2'
@@ -85,6 +87,11 @@ const McpRoute = McpRouteImport.update({
   path: '/mcp',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LifeStudiesRoute = LifeStudiesRouteImport.update({
+  id: '/life-studies',
+  path: '/life-studies',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DeleteAccountRoute = DeleteAccountRouteImport.update({
   id: '/delete-account',
   path: '/delete-account',
@@ -118,6 +125,11 @@ const AuthIndexRoute = AuthIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AuthRoute,
+} as any)
+const LifeStudiesMathRoute = LifeStudiesMathRouteImport.update({
+  id: '/math',
+  path: '/math',
+  getParentRoute: () => LifeStudiesRoute,
 } as any)
 const DevReaderHarnessRoute = DevReaderHarnessRouteImport.update({
   id: '/dev/reader-harness',
@@ -231,6 +243,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRouteWithChildren
   '/community': typeof CommunityRoute
   '/delete-account': typeof DeleteAccountRoute
+  '/life-studies': typeof LifeStudiesRouteWithChildren
   '/mcp': typeof McpRoute
   '/privacy': typeof PrivacyRoute
   '/report': typeof ReportRoute
@@ -249,6 +262,7 @@ export interface FileRoutesByFullPath {
   '/dev/guided-library-v2': typeof DevGuidedLibraryV2Route
   '/dev/panorama-tour': typeof DevPanoramaTourRoute
   '/dev/reader-harness': typeof DevReaderHarnessRoute
+  '/life-studies/math': typeof LifeStudiesMathRoute
   '/auth/': typeof AuthIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -266,6 +280,7 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/community': typeof CommunityRoute
   '/delete-account': typeof DeleteAccountRoute
+  '/life-studies': typeof LifeStudiesRouteWithChildren
   '/mcp': typeof McpRoute
   '/privacy': typeof PrivacyRoute
   '/report': typeof ReportRoute
@@ -284,6 +299,7 @@ export interface FileRoutesByTo {
   '/dev/guided-library-v2': typeof DevGuidedLibraryV2Route
   '/dev/panorama-tour': typeof DevPanoramaTourRoute
   '/dev/reader-harness': typeof DevReaderHarnessRoute
+  '/life-studies/math': typeof LifeStudiesMathRoute
   '/auth': typeof AuthIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -304,6 +320,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRouteWithChildren
   '/community': typeof CommunityRoute
   '/delete-account': typeof DeleteAccountRoute
+  '/life-studies': typeof LifeStudiesRouteWithChildren
   '/mcp': typeof McpRoute
   '/privacy': typeof PrivacyRoute
   '/report': typeof ReportRoute
@@ -322,6 +339,7 @@ export interface FileRoutesById {
   '/dev/guided-library-v2': typeof DevGuidedLibraryV2Route
   '/dev/panorama-tour': typeof DevPanoramaTourRoute
   '/dev/reader-harness': typeof DevReaderHarnessRoute
+  '/life-studies/math': typeof LifeStudiesMathRoute
   '/auth/': typeof AuthIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -342,6 +360,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/community'
     | '/delete-account'
+    | '/life-studies'
     | '/mcp'
     | '/privacy'
     | '/report'
@@ -360,6 +379,7 @@ export interface FileRouteTypes {
     | '/dev/guided-library-v2'
     | '/dev/panorama-tour'
     | '/dev/reader-harness'
+    | '/life-studies/math'
     | '/auth/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -377,6 +397,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/community'
     | '/delete-account'
+    | '/life-studies'
     | '/mcp'
     | '/privacy'
     | '/report'
@@ -395,6 +416,7 @@ export interface FileRouteTypes {
     | '/dev/guided-library-v2'
     | '/dev/panorama-tour'
     | '/dev/reader-harness'
+    | '/life-studies/math'
     | '/auth'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -414,6 +436,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/community'
     | '/delete-account'
+    | '/life-studies'
     | '/mcp'
     | '/privacy'
     | '/report'
@@ -432,6 +455,7 @@ export interface FileRouteTypes {
     | '/dev/guided-library-v2'
     | '/dev/panorama-tour'
     | '/dev/reader-harness'
+    | '/life-studies/math'
     | '/auth/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -452,6 +476,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRouteWithChildren
   CommunityRoute: typeof CommunityRoute
   DeleteAccountRoute: typeof DeleteAccountRoute
+  LifeStudiesRoute: typeof LifeStudiesRouteWithChildren
   McpRoute: typeof McpRoute
   PrivacyRoute: typeof PrivacyRoute
   ReportRoute: typeof ReportRoute
@@ -529,6 +554,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof McpRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/life-studies': {
+      id: '/life-studies'
+      path: '/life-studies'
+      fullPath: '/life-studies'
+      preLoaderRoute: typeof LifeStudiesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/delete-account': {
       id: '/delete-account'
       path: '/delete-account'
@@ -577,6 +609,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/auth/'
       preLoaderRoute: typeof AuthIndexRouteImport
       parentRoute: typeof AuthRoute
+    }
+    '/life-studies/math': {
+      id: '/life-studies/math'
+      path: '/math'
+      fullPath: '/life-studies/math'
+      preLoaderRoute: typeof LifeStudiesMathRouteImport
+      parentRoute: typeof LifeStudiesRoute
     }
     '/dev/reader-harness': {
       id: '/dev/reader-harness'
@@ -762,6 +801,18 @@ const AuthRouteChildren: AuthRouteChildren = {
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
+interface LifeStudiesRouteChildren {
+  LifeStudiesMathRoute: typeof LifeStudiesMathRoute
+}
+
+const LifeStudiesRouteChildren: LifeStudiesRouteChildren = {
+  LifeStudiesMathRoute: LifeStudiesMathRoute,
+}
+
+const LifeStudiesRouteWithChildren = LifeStudiesRoute._addFileChildren(
+  LifeStudiesRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
@@ -769,6 +820,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRouteWithChildren,
   CommunityRoute: CommunityRoute,
   DeleteAccountRoute: DeleteAccountRoute,
+  LifeStudiesRoute: LifeStudiesRouteWithChildren,
   McpRoute: McpRoute,
   PrivacyRoute: PrivacyRoute,
   ReportRoute: ReportRoute,
