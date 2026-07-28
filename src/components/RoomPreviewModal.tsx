@@ -31,42 +31,145 @@ type Props = {
 };
 
 function CorridorDemo() {
-  const lines = [
-    { color: "#f5c26b", d: "M0,70 C60,50 120,80 180,55 C240,35 300,60 360,45" },
-    { color: "#a3b8ff", d: "M0,90 C60,75 120,100 180,80 C240,55 300,90 360,70" },
-    { color: "#c7a3ff", d: "M0,55 C60,80 120,45 180,70 C240,90 300,55 360,85" },
-    { color: "#7dd3c0", d: "M0,110 C60,95 120,120 180,100 C240,80 300,115 360,95" },
+  // Life-lines chart: six domain trajectories across an age axis with a
+  // "today" cursor. Reads as a real polyline chart, not four decorative arcs.
+  const W = 360;
+  const H = 180;
+  const padL = 34;
+  const padR = 14;
+  const padT = 14;
+  const padB = 30;
+  const innerW = W - padL - padR;
+  const innerH = H - padT - padB;
+  const ages = [0, 15, 30, 45, 60, 75];
+  const domains: { key: string; labelZh: string; labelEn: string; color: string; samples: number[] }[] = [
+    { key: "career", labelZh: "事业", labelEn: "Career", color: "#f5c26b", samples: [0.32, 0.52, 0.8, 0.72, 0.55, 0.42] },
+    { key: "health", labelZh: "健康", labelEn: "Health", color: "#7dd3c0", samples: [0.62, 0.74, 0.6, 0.5, 0.6, 0.7] },
+    { key: "love", labelZh: "爱情", labelEn: "Love", color: "#c7a3ff", samples: [0.48, 0.7, 0.74, 0.66, 0.55, 0.46] },
+    { key: "family", labelZh: "家庭", labelEn: "Family", color: "#f88fa2", samples: [0.4, 0.58, 0.5, 0.64, 0.72, 0.6] },
+    { key: "study", labelZh: "学业", labelEn: "Study", color: "#8ab8ff", samples: [0.72, 0.8, 0.6, 0.46, 0.38, 0.34] },
+    { key: "wealth", labelZh: "财富", labelEn: "Wealth", color: "#e6d27a", samples: [0.28, 0.44, 0.6, 0.74, 0.68, 0.58] },
   ];
+  const x = (i: number) => padL + (i / (ages.length - 1)) * innerW;
+  const y = (v: number) => padT + (1 - v) * innerH;
+  const pathFor = (s: number[]) =>
+    s.map((v, i) => `${i === 0 ? "M" : "L"} ${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(" ");
+  const { lang } = useLang();
+  const isZh = lang === "zh";
   return (
-    <svg viewBox="0 0 360 160" className="w-full">
-      {[0, 1, 2, 3, 4, 5].map((i) => (
-        <line key={i} x1={i * 60} y1="0" x2={i * 60} y2="160" stroke="rgba(255,255,255,0.05)" />
-      ))}
-      {lines.map((l, i) => (
-        <motion.path
-          key={i}
-          d={l.d}
-          fill="none"
-          stroke={l.color}
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          initial={{ pathLength: 0, opacity: 0 }}
-          animate={{ pathLength: 1, opacity: 0.85 }}
-          transition={{ duration: 1.6, delay: i * 0.15, ease: "easeInOut" }}
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full">
+      {/* horizontal gridlines */}
+      {[0, 0.25, 0.5, 0.75, 1].map((g) => (
+        <line
+          key={g}
+          x1={padL}
+          x2={W - padR}
+          y1={y(g)}
+          y2={y(g)}
+          stroke={g === 0.5 ? "rgba(245,194,107,0.18)" : "rgba(255,255,255,0.06)"}
+          strokeDasharray={g === 0.5 ? "3 4" : undefined}
         />
       ))}
+      {/* y axis marks */}
+      {[0, 50, 100].map((v) => (
+        <text
+          key={v}
+          x={padL - 6}
+          y={y(v / 100)}
+          textAnchor="end"
+          dominantBaseline="middle"
+          fontSize="8"
+          fill="rgba(232,220,196,0.45)"
+        >
+          {v}
+        </text>
+      ))}
+      {/* x axis ticks */}
+      {ages.map((a, i) => (
+        <g key={a}>
+          <line x1={x(i)} x2={x(i)} y1={H - padB} y2={H - padB + 3} stroke="rgba(255,255,255,0.15)" />
+          <text x={x(i)} y={H - padB + 12} textAnchor="middle" fontSize="9" fill="rgba(232,220,196,0.55)">
+            {a}
+          </text>
+        </g>
+      ))}
+      <text
+        x={W - padR}
+        y={H - 4}
+        textAnchor="end"
+        fontSize="8"
+        fill="rgba(232,220,196,0.4)"
+      >
+        {isZh ? "年龄" : "age"}
+      </text>
+      {/* life lines */}
+      {domains.map((d, i) => (
+        <motion.path
+          key={d.key}
+          d={pathFor(d.samples)}
+          fill="none"
+          stroke={d.color}
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          initial={{ pathLength: 0, opacity: 0 }}
+          animate={{ pathLength: 1, opacity: 0.9 }}
+          transition={{ duration: 1.6, delay: i * 0.12, ease: "easeInOut" }}
+        />
+      ))}
+      {/* "today" cursor at age 30 */}
+      <motion.line
+        x1={x(2)}
+        x2={x(2)}
+        y1={padT}
+        y2={H - padB}
+        stroke="#f5c26b"
+        strokeOpacity="0.55"
+        strokeDasharray="3 3"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1.4, duration: 0.6 }}
+      />
       <motion.circle
-        cx="180"
-        cy="70"
+        cx={x(2)}
+        cy={y(0.8)}
         r="4"
         fill="#f5c26b"
         initial={{ scale: 0 }}
         animate={{ scale: [0, 1.4, 1] }}
-        transition={{ duration: 1.2, delay: 1.6 }}
+        transition={{ duration: 1, delay: 1.6 }}
+        style={{ filter: "drop-shadow(0 0 4px #f5c26b)" }}
       />
+      <text
+        x={x(2)}
+        y={padT + 8}
+        textAnchor="middle"
+        fontSize="8"
+        fill="#f5c26b"
+      >
+        {isZh ? "此刻" : "today"}
+      </text>
+      {/* legend */}
+      <g>
+        {domains.map((d, i) => {
+          const col = i % 3;
+          const row = Math.floor(i / 3);
+          const lx = padL + col * 100;
+          const ly = padT - 4 + row * 0; // legend sits above; use two rows if needed
+          return (
+            <g key={d.key} transform={`translate(${lx}, ${ly})`}>
+              <circle cx={0} cy={0} r={2.4} fill={d.color} />
+              <text x={6} y={2.6} fontSize="7.5" fill="rgba(232,220,196,0.7)">
+                {isZh ? d.labelZh : d.labelEn}
+              </text>
+            </g>
+          );
+        })}
+      </g>
     </svg>
   );
 }
+
 
 function VerificationDemo() {
   const marks = [
