@@ -471,7 +471,7 @@ function SiteNav() {
         aria-hidden={!orbVisible}
         tabIndex={orbVisible ? 0 : -1}
         onClick={() => setDrawerOpen(true)}
-        className={`fixed right-4 top-4 z-[60] flex h-11 w-11 items-center justify-center rounded-full border border-gold-dust/40 bg-obsidian/70 backdrop-blur-md transition-all duration-300 hover:border-gold-dust hover:bg-gold-dust/10 lg:right-6 lg:top-6 ${
+        className={`fixed right-4 top-4 z-[60] flex h-11 w-11 items-center justify-center rounded-full border border-gold-dust/40 bg-obsidian/70 backdrop-blur-md transition-all duration-300 hover:border-gold-dust hover:bg-gold-dust/10 xl:right-6 xl:top-6 ${
           orbVisible ? "opacity-100" : "pointer-events-none scale-75 opacity-0"
         }`}
       >
@@ -480,22 +480,22 @@ function SiteNav() {
 
       <nav
         ref={navRef}
-        className={`fixed left-1/2 top-0 z-50 w-full max-w-[100vw] -translate-x-1/2 px-3 py-3 lg:p-6 transition-all duration-500 ${
+        className={`fixed left-1/2 top-0 z-50 w-full max-w-[100vw] -translate-x-1/2 px-3 py-3 xl:p-6 transition-all duration-500 ${
           showTopBar ? "opacity-100 translate-y-0" : "-translate-y-full opacity-0 pointer-events-none"
         }`}
       >
-        <div className="glass-card mx-auto flex w-full max-w-[calc(100vw-1.5rem)] items-center gap-2 rounded-full px-3 py-2 lg:grid lg:w-auto lg:max-w-[min(96vw,72rem)] lg:grid-cols-[1fr_auto_1fr] lg:items-center lg:gap-4 lg:px-5 lg:py-2 lg:gap-8 lg:px-7">
+        <div className="glass-card mx-auto flex w-full max-w-[calc(100vw-1.5rem)] items-center gap-2 rounded-full px-3 py-2 xl:grid xl:w-auto xl:max-w-[min(96vw,72rem)] xl:grid-cols-[1fr_auto_1fr] xl:items-center xl:gap-4 xl:px-5 xl:py-2 xl:gap-8 xl:px-7">
           {/* Brand — returns to library home; not the only home entry */}
           <Link
             to="/"
             aria-label={libraryHomeAria}
-            className="min-w-0 flex-1 truncate font-serif text-sm tracking-normal text-stone-warm lg:flex-none lg:justify-self-start lg:whitespace-nowrap lg:text-base"
+            className="min-w-0 flex-1 truncate font-serif text-sm tracking-normal text-stone-warm xl:flex-none xl:justify-self-start xl:whitespace-nowrap xl:text-base"
           >
             Destiny<span className="text-gold-dust">·</span>Library
           </Link>
 
           {/* Core nav (desktop) */}
-          <div className="hidden items-center justify-center gap-4 lg:flex lg:justify-self-center lg:gap-8">
+          <div className="hidden items-center justify-center gap-4 xl:flex xl:justify-self-center xl:gap-8">
             {coreEntries.map((e) => (
               <NavLink key={e.to} to={e.to} label={e.label} ariaLabel={e.ariaLabel} />
             ))}
@@ -617,13 +617,13 @@ function SiteNav() {
           </div>
 
           {/* Right side */}
-          <div className="flex items-center gap-2 lg:justify-self-end lg:gap-3">
+          <div className="flex items-center gap-2 xl:justify-self-end xl:gap-3">
             {session ? (
               <button
                 type="button"
                 onClick={openAcc}
                 aria-label={isZh ? "账户菜单" : "Account menu"}
-                className="hidden flex-none items-center gap-2 whitespace-nowrap rounded-full border border-gold-dust/40 px-3 py-1 text-[10px] tracking-[0.24em] text-gold-dust transition-colors hover:bg-gold-dust/10 lg:flex"
+                className="hidden flex-none items-center gap-2 whitespace-nowrap rounded-full border border-gold-dust/40 px-3 py-1 text-[10px] tracking-[0.24em] text-gold-dust transition-colors hover:bg-gold-dust/10 xl:flex"
               >
                 {avatarUrl ? (
                   <img
@@ -641,7 +641,7 @@ function SiteNav() {
                 <span className="whitespace-nowrap">{isZh ? "账户" : "Account"}</span>
               </button>
             ) : (
-              <div className="hidden items-center gap-2 lg:flex">
+              <div className="hidden items-center gap-2 xl:flex">
                 <Link
                   to="/auth"
                   search={{ mode: "login", redirect: undefined }}
@@ -658,14 +658,14 @@ function SiteNav() {
                 </Link>
               </div>
             )}
-            <div className="hidden lg:block"><LanguageToggle /></div>
+            <div className="hidden xl:block"><LanguageToggle /></div>
 
             {/* Mobile-only account chip */}
             <button
               type="button"
               onClick={openAcc}
               aria-label={accountLabel}
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-gold-dust/40 text-gold-dust lg:hidden"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-gold-dust/40 text-gold-dust xl:hidden"
             >
               {avatarUrl ? (
                 <img src={avatarUrl!} alt="" loading="lazy" decoding="async" className="h-7 w-7 rounded-full object-cover" />
@@ -680,7 +680,7 @@ function SiteNav() {
               aria-label={isZh ? "打开菜单" : "Open menu"}
               aria-expanded={drawerOpen}
               onClick={() => setDrawerOpen((v) => !v)}
-              className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-gold-dust/40 text-gold-dust lg:hidden"
+              className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-gold-dust/40 text-gold-dust xl:hidden"
             >
               <span className="flex flex-col items-center gap-[3px]">
                 <span className="block h-[1.5px] w-4 bg-current" />
@@ -696,7 +696,7 @@ function SiteNav() {
       <div
         aria-hidden="true"
         onClick={() => setDrawerOpen(false)}
-        className={`fixed inset-0 z-[70] bg-obsidian/60 backdrop-blur-sm transition-opacity lg:hidden ${
+        className={`fixed inset-0 z-[70] bg-obsidian/60 backdrop-blur-sm transition-opacity xl:hidden ${
           drawerOpen ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
       />
@@ -707,7 +707,7 @@ function SiteNav() {
         aria-hidden={!drawerOpen}
         onMouseLeave={() => setDrawerOpen(false)}
         style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}
-        className={`fixed right-3 top-16 z-[75] flex max-h-[calc(100dvh-5rem)] w-56 flex-col items-stretch gap-1 overflow-y-auto rounded-2xl border border-gold-dust/25 bg-obsidian/95 p-2 backdrop-blur-xl shadow-[-10px_10px_40px_rgba(0,0,0,0.5)] transition-all duration-300 lg:top-20 lg:w-auto lg:bg-obsidian/85 ${
+        className={`fixed right-3 top-16 z-[75] flex max-h-[calc(100dvh-5rem)] w-56 flex-col items-stretch gap-1 overflow-y-auto rounded-2xl border border-gold-dust/25 bg-obsidian/95 p-2 backdrop-blur-xl shadow-[-10px_10px_40px_rgba(0,0,0,0.5)] transition-all duration-300 xl:top-20 xl:w-auto xl:bg-obsidian/85 ${
           drawerOpen
             ? "translate-x-0 opacity-100"
             : "pointer-events-none translate-x-6 opacity-0"
