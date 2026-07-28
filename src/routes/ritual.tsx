@@ -565,6 +565,7 @@ function RitualPage() {
                       placeholder={currentQ.placeholder}
                       className="ritual-input w-full"
                       aria-invalid={fieldError ? true : undefined}
+                      aria-describedby={fieldError ? "ritual-error" : undefined}
                       min={currentQ.input === "date" ? "1900-01-01" : undefined}
                       max={currentQ.input === "date" ? "2099-12-31" : undefined}
                       value={values[currentQ.key]}
