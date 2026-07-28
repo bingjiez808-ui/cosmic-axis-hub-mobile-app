@@ -1819,33 +1819,6 @@ function ReportPage() {
   );
 }
 
-function OracleRoomBanner() {
-  const { lang } = useLang();
-  const zh = lang === "zh";
-  return (
-    <div className="mx-auto mt-12 max-w-4xl px-6 print:hidden">
-      <Link
-        to="/me/oracle"
-        search={{ source: "report_membership" } as never}
-        className="group flex flex-col gap-2 rounded-2xl border border-gold-dust/30 bg-gradient-to-br from-nebula-purple/20 to-obsidian/60 px-6 py-5 text-left transition-colors hover:border-gold-light/60 md:flex-row md:items-center md:justify-between"
-      >
-        <div>
-          <div className="text-[10px] uppercase tracking-[0.32em] text-gold-dust/80">
-            {zh ? "神谕者阅读室" : "Oracle Reading Room"}
-          </div>
-          <div className="mt-1 font-serif text-lg text-stone-warm">
-            {zh
-              ? "所有命理提问 · 命盘选择 · 合盘对照 · 90 天窗口 —— 一个入口"
-              : "One doorway for chart questions, synastry and 90-day windows"}
-          </div>
-        </div>
-        <span className="text-xs uppercase tracking-widest text-gold-light group-hover:text-gold-light">
-          {zh ? "进入 →" : "Enter →"}
-        </span>
-      </Link>
-    </div>
-  );
-}
 
 function DimensionDetailModal({
   dimension,
