@@ -22,6 +22,7 @@ import {
 } from "@/lib/compatibility-facts-adapter";
 import { CommunityMatchPanel } from "@/experiences/community-match/CommunityMatchPanel";
 import { useCommunityMatchCopy } from "@/lib/i18n-community-match";
+import { SageLockedInsights } from "@/components/SageLockedInsights";
 
 
 import { PersonalShellPending } from "@/experiences/daily-room/personal-shell-pending";
