@@ -235,7 +235,7 @@ function HallCard({
       </h3>
       <p
         className={cn(
-          "mt-1 text-xs italic",
+          "relative z-[1] mt-1 text-xs italic",
           isOpen ? "text-gold-light/80" : "text-stone-warm/45",
         )}
       >
@@ -243,7 +243,7 @@ function HallCard({
       </p>
       <p
         className={cn(
-          "mt-2 flex-1 text-[13px] leading-relaxed",
+          "relative z-[1] mt-2 flex-1 text-[13px] leading-relaxed",
           isOpen ? "text-stone-warm/70" : "text-stone-warm/50",
         )}
       >
@@ -252,7 +252,7 @@ function HallCard({
 
       <span
         className={cn(
-          "mt-4 text-[11px] uppercase tracking-[0.28em]",
+          "relative z-[1] mt-4 text-[11px] uppercase tracking-[0.28em]",
           isOpen ? "text-gold-dust/85" : "text-stone-warm/45",
         )}
       >
