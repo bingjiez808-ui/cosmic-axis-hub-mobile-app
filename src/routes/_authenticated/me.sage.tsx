@@ -141,7 +141,7 @@ function SagePage() {
                     : "The Oracle Reading Room adds unlimited AI follow-up, unlimited tarot, and 90-day state & keystone-window analysis on top of Sage."}
                 </p>
                 <Link
-                  to="/report"
+                  to="/report" hash="membership-plans"
                   className="mt-4 inline-flex min-h-11 items-center rounded-full border border-amber-300/50 px-4 py-2 text-xs text-amber-100 hover:bg-amber-500/10"
                 >
                   {isZh ? "查看神谕者阅览室" : "See Oracle Reading Room"}
@@ -206,7 +206,7 @@ function LockedPanel({ lang }: { lang: "en" | "zh" }) {
       </p>
       <div className="mt-5 flex flex-wrap gap-2">
         <Link
-          to="/report"
+          to="/report" hash="membership-plans"
           className="min-h-11 inline-flex items-center rounded-full bg-amber-300 px-4 py-2 text-xs uppercase tracking-[0.28em] text-[#0a0a12] hover:bg-amber-200"
         >
           {isZh ? "进入贤者阅览室之门" : "Open the Sage door"}

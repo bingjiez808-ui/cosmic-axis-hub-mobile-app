@@ -439,12 +439,14 @@ function SiteNav() {
     { to: "/community", label: t.nav_community },
   ];
 
-  const libraryEntries: Array<{ to: "/me/home" | "/me/profile" | "/me/friends" | "/me/echoes" | "/me/membership"; label: string; hint: string }> = [
-    { to: "/me/home", label: isZh ? "书架主页" : "Library Home", hint: isZh ? "今日命运与主线" : "Today's fate & throughline" },
-    { to: "/me/profile", label: isZh ? "命盘与报告" : "Charts & Reports", hint: isZh ? "主命盘 · 他人命盘 · 报告" : "Primary · others · reports" },
-    { to: "/me/friends", label: isZh ? "关系与适配" : "Relationships", hint: isZh ? "好友 · 邀请 · 适配分析" : "Friends · invites · match" },
-    { to: "/me/echoes", label: isZh ? "历史回声" : "Historical Echoes", hint: isZh ? "相似处境的历史人物" : "Figures with similar arcs" },
-    { to: "/me/membership", label: isZh ? "会员与订单" : "Membership & Orders", hint: isZh ? "会员 · 订单 · 工单" : "Plans · orders · tickets" },
+  const libraryEntries: Array<{ to: "/me/home" | "/me/profile" | "/me/friends" | "/me/echoes" | "/me/membership" | "/me/sage" | "/me/oracle"; label: string; hint: string; group?: "core" | "rooms" }> = [
+    { to: "/me/home", label: isZh ? "书架主页" : "Library Home", hint: isZh ? "今日命运与主线" : "Today's fate & throughline", group: "core" },
+    { to: "/me/profile", label: isZh ? "命盘与报告" : "Charts & Reports", hint: isZh ? "主命盘 · 他人命盘 · 报告" : "Primary · others · reports", group: "core" },
+    { to: "/me/friends", label: isZh ? "关系与适配" : "Relationships", hint: isZh ? "好友 · 邀请 · 适配分析" : "Friends · invites · match", group: "core" },
+    { to: "/me/echoes", label: isZh ? "历史回声" : "Historical Echoes", hint: isZh ? "相似处境的历史人物" : "Figures with similar arcs", group: "core" },
+    { to: "/me/membership", label: isZh ? "会员与订单" : "Membership & Orders", hint: isZh ? "会员 · 订单 · 工单" : "Plans · orders · tickets", group: "core" },
+    { to: "/me/sage", label: isZh ? "贤者阅览室" : "Sage Reading Room", hint: isZh ? "时间轴 · 合盘 · 塔罗" : "Timeline · synastry · tarot", group: "rooms" },
+    { to: "/me/oracle", label: isZh ? "神谕者阅览室" : "Oracle Reading Room", hint: isZh ? "追问 · 合盘 · 90 天" : "Follow-up · synastry · 90-day", group: "rooms" },
   ];
 
   // "Learn · More" — informational/policy only. Never duplicate personal features here.
@@ -521,7 +523,9 @@ function SiteNav() {
                   aria-labelledby="library-menu-trigger"
                   className="absolute right-0 top-full mt-2 w-72 rounded-xl border border-gold-dust/25 bg-obsidian/95 p-2 backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.5)]"
                 >
-                  {libraryEntries.map((e) => {
+                  {libraryEntries.map((e, idx) => {
+                    const prev = libraryEntries[idx - 1];
+                    const showRoomsHeader = e.group === "rooms" && prev?.group !== "rooms";
                     const active = isActive(e.to);
                     const gated = gatedShelfHref(e.to);
                     const cls = `block rounded-lg px-3 py-2 ${
@@ -533,28 +537,24 @@ function SiteNav() {
                         <div className="mt-0.5 text-[10px] text-stone-warm/55">{e.hint}</div>
                       </>
                     );
-                    return gated ? (
-                      <Link
-                        key={e.to}
-                        to={gated.to}
-                        search={gated.search}
-                        onClick={() => setLibraryOpen(false)}
-                        className={cls}
-                        role="menuitem"
-                      >
+                    const link = gated ? (
+                      <Link key={e.to} to={gated.to} search={gated.search} onClick={() => setLibraryOpen(false)} className={cls} role="menuitem">
                         {inner}
                       </Link>
                     ) : (
-                      <Link
-                        key={e.to}
-                        to={e.to}
-                        onClick={() => setLibraryOpen(false)}
-                        aria-current={active ? "page" : undefined}
-                        className={cls}
-                        role="menuitem"
-                      >
+                      <Link key={e.to} to={e.to} onClick={() => setLibraryOpen(false)} aria-current={active ? "page" : undefined} className={cls} role="menuitem">
                         {inner}
                       </Link>
+                    );
+                    return (
+                      <div key={e.to}>
+                        {showRoomsHeader && (
+                          <div className="mt-2 border-t border-white/10 px-3 pb-1 pt-2 text-[9px] uppercase tracking-[0.28em] text-gold-dust/70">
+                            {isZh ? "会员阅览室" : "Membership Rooms"}
+                          </div>
+                        )}
+                        {link}
+                      </div>
                     );
                   })}
                 </div>
@@ -752,35 +752,32 @@ function SiteNav() {
         <div className="px-3 pb-1 pt-1 text-right text-[9px] uppercase tracking-[0.28em] text-stone-warm/40">
           {myLibraryLabel}
         </div>
-        {libraryEntries.map((e) => {
+        {libraryEntries.map((e, idx) => {
+          const prev = libraryEntries[idx - 1];
+          const showRoomsHeader = e.group === "rooms" && prev?.group !== "rooms";
           const active = isActive(e.to);
           const gate = !session;
           const cls = `flex min-h-11 items-center justify-end whitespace-nowrap rounded-lg px-4 py-3 text-right text-[12px] ${
             isZh ? "tracking-normal" : "uppercase tracking-[0.22em]"
           } ${active ? "bg-gold-dust/10 text-gold-light" : "text-stone-warm/80 hover:bg-gold-dust/10 hover:text-gold-light"}`;
-          if (gate) {
-            return (
-              <Link
-                key={e.to}
-                to="/auth"
-                search={{ mode: "login", redirect: e.to }}
-                onClick={() => setDrawerOpen(false)}
-                className={cls}
-              >
-                {e.label}
-              </Link>
-            );
-          }
-          return (
-            <Link
-              key={e.to}
-              to={e.to}
-              onClick={() => setDrawerOpen(false)}
-              aria-current={active ? "page" : undefined}
-              className={cls}
-            >
+          const link = gate ? (
+            <Link key={e.to} to="/auth" search={{ mode: "login", redirect: e.to }} onClick={() => setDrawerOpen(false)} className={cls}>
               {e.label}
             </Link>
+          ) : (
+            <Link key={e.to} to={e.to} onClick={() => setDrawerOpen(false)} aria-current={active ? "page" : undefined} className={cls}>
+              {e.label}
+            </Link>
+          );
+          return (
+            <div key={e.to}>
+              {showRoomsHeader && (
+                <div className="mt-1 border-t border-white/10 px-3 pb-1 pt-2 text-right text-[9px] uppercase tracking-[0.28em] text-gold-dust/70">
+                  {isZh ? "会员阅览室" : "Membership Rooms"}
+                </div>
+              )}
+              {link}
+            </div>
           );
         })}
         {moreEntries.length > 0 && <div className="my-1 h-px bg-white/10" />}
