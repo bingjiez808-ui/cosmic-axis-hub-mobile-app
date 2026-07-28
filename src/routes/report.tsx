@@ -1827,6 +1827,21 @@ function ReportPage() {
         t={t}
       />
 
+      {/* Post-ritual priority preview — one-shot per report generation */}
+      {isConcernKey(search.concern) ? (
+        <PriorityPreviewModal
+          concern={search.concern}
+          lang={lang}
+          displayed={displayed}
+          reportKey={
+            aiState === "ready"
+              ? `${reportChartId ?? search.readingId ?? seed}::${REPORT_AI_VERSION}`
+              : null
+          }
+          ready={aiState === "ready" && !!ai}
+        />
+      ) : null}
+
       {/* Floating sage companion is provided globally in __root.tsx */}
     </div>
   );
