@@ -317,8 +317,10 @@ function ProfileHeader({
     </section>
   );
 }
-
 /* -------------------- atlas tab (star map + detail drawer + list toggle) -------------------- */
+
+let candidatesCache: { items: CandidateCard[] | null; at: number } = { items: null, at: 0 };
+
 
 function AtlasTab({ paused, selfAlias }: { paused: boolean; selfAlias: string }) {
   const c = useCommunityMatchCopy();
