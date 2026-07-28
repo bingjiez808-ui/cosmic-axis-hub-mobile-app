@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useLang } from "@/lib/i18n";
 import { MainChartGate, type GateState } from "../MainChartGate";
 import { GenerationMethod } from "../GenerationMethod";
 import { AgeCrossSection, LifeLinesChart } from "./LifeLinesChart";
 import { ChoiceLab } from "./ChoiceLab";
+import { LifeMathBookmarks } from "./LifeMathBookmarks";
+import { ageDomainVariance } from "./LifeMathBookmarks";
 import { LifeYearModal } from "./LifeYearModal";
 import {
   DOMAIN_COLORS,
@@ -39,6 +41,8 @@ export function MathRoom({
   const [modalOpen, setModalOpen] = useState(false);
   const [branches, setBranches] = useState<Array<{ branch: ScenarioBranch; color: string }>>([]);
   const [modelOpen, setModelOpen] = useState(false);
+  const [chartHighlight, setChartHighlight] = useState(false);
+  const chartRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (gate.kind !== "ready" && mode === "personal") setMode("demo");
