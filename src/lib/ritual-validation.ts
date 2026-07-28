@@ -95,6 +95,32 @@ function trimStr(v: string) {
   return (v ?? "").trim();
 }
 
+/**
+ * True when the string matches a known city from the curated CITIES
+ * list — either as an exact `formatCity()` output in either language,
+ * or unambiguously via searchCities. This is what unlocks resolvable
+ * lat/lon and timezone downstream; free-text places must NOT pass.
+ */
+export function isResolvablePlace(raw: string): boolean {
+  const q = (raw ?? "").trim();
+  if (q.length < 2) return false;
+  for (const c of CITIES) {
+    if (q === formatCity(c, "en") || q === formatCity(c, "zh")) return true;
+    if (q === c.en || q === c.zh) return true;
+  }
+  const en = searchCities(q, "en");
+  const zh = searchCities(q, "zh");
+  const hit = (en[0] ?? zh[0]) as (typeof CITIES)[number] | undefined;
+  if (!hit) return false;
+  const qLower = q.toLowerCase();
+  return (
+    qLower === hit.en.toLowerCase() ||
+    q === hit.zh ||
+    qLower === formatCity(hit, "en").toLowerCase() ||
+    q === formatCity(hit, "zh")
+  );
+}
+
 /** Validates a single field, returning null when OK or a localized message. */
 export function validateField(
   key: RitualFieldKey,
