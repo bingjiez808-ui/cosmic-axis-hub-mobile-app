@@ -728,7 +728,7 @@ export function PlayfulLibrarySection() {
             hovered={hoverId === book.id}
             onToggle={() => setOpenId((id) => (id === book.id ? null : book.id))}
             onComingClick={notifyComing}
-            onHoverChange={(h) => setHoverId(h ? book.id : (prev) => (prev === book.id ? null : prev) as BookId | null)}
+            onHoverChange={(h) => setHoverId(h ? book.id : null)}
             isSignedIn={isSignedIn}
             hasPrimaryChart={hasPrimaryChart}
             tier={tier}
