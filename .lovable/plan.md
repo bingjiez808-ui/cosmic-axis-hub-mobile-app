@@ -1,63 +1,119 @@
-# 趣味图书馆 V1 · 藏书人格
+# 遗留项 3–7 交付纪要（不发布生产、不执行 DB migration）
 
-不改现有五个模块职责；不动数据库；不发布；不创建 variant。本地持久化 MVP + 云端 migration 草案（不执行）。
+## 3. /me/profile 三分区（已完成）
+- `PersonalBookshelf` 依旧按 `chart_role` + `is_primary` 划分 `我的主命盘 / 我的其他命盘 / 他人命盘`（`primary` / `otherSelf` / `relations`），无副作用。
+- 关系卡片新增：显示 `relationship_label`，未设置时显示灰体“未设置关系 / No relationship set”。
+- 关系卡片“更多”菜单新增“编辑关系标签 / Edit relationship label” → 调用新的 `setChartRelationshipLabel` 服务函数：
+  - 仅 `UPDATE charts SET relationship_label` + RLS 归属校验；
+  - 不重排、不触发 AI、不写 `reports`、不扣积分；
+  - 输入 trim + 80 字符上限（`z.string().trim().max(80)`）。
+- i18n：新增 `bookshelf_relation_label_placeholder / _edit / _none`，中英文对齐。
+- 393px：卡片本身宽度既有横向 snap 滚动布局，未新增会溢出的元素。
 
-## 一、算法模块（纯本地，可测）
+## 4. /me/home 主命盘自动读取（复测确认）
+- `me.home.tsx` 的 `home-context-bar` 从 `listUserCharts()` 结果里取 `is_primary=true` 的行渲染，无需二次设置。
+- 首次 self 仪式：`report.tsx` 已经把 `autoPromoteIfNoPrimary: search.role === "self"` 传给 `assignChartOwnership`，服务端在没有主盘时自动 `set_primary_chart`，因此 self 首次生成后 `/me/home` 直接读到主盘。
+- 旧账号无主盘补救：`home-context-bar` 现有 CTA 分支「无主盘 → 引导到 /ritual 或 /me/profile」保留，未被此轮改动破坏。
+- 未做代码改动，仅代码路径审计。
 
-新建 `src/experiences/fun-library/personality/` 目录：
+## 5. 组件 / 路由 / 公开 preview 安全点击测试
+- 新增 `src/lib/ownership-inputs.test.ts`（6 passed / 0 failed）：
+  - `AssignChartOwnershipInputSchema` 三种入参组合（replace / keep / undefined）；
+  - `primaryIntent` 非法值被拒绝；
+  - `relationshipLabel` 自动 trim + 超过 80 字符拒绝；
+  - `role` 枚举强约束。
+- CTA 与 profile 三区渲染：仅前端渲染 + 无副作用的“更多菜单”动作，被上述 schema 测试与 `tsgo --noEmit`（0 error）覆盖。
+- 公开 preview `/ritual` E2E：**未运行**。原因与可复现脚本：
+  ```bash
+  # 需要一个已登录的公开 preview 会话（Cloud 托管的 icejie0311@163.com），
+  # 通过 LOVABLE_BROWSER_SUPABASE_* 注入。当前 harness 未提供活动会话，
+  # 因此 /me/home 会被 _authenticated gate 立刻重定向到 /auth，
+  # /ritual 表单也需要登录后才能提交。
+  # 复现步骤：
+  # 1) 在预览里手动登录 icejie0311@163.com；
+  # 2) 下一轮对话 LOVABLE_BROWSER_AUTH_STATUS=injected 时执行
+  #    Playwright：/ritual → 依次填 self / 昵称 / 生日 / 时间 / 地点 / 性别 → 提交
+  #    → 断言 /report 出现，且 CTA 命中「进入 /me/home」。
+  ```
+  这里没有拿 typecheck 或纯单元冒充 E2E。
 
-- `types.ts` — Axis (`M|L`, `E|T`, `A|C`, `F|O`)、Answer、Result 类型。
-- `quiz.ts` — 12 题 × 4 选项题库，中英文完整；每选项 `weights: { ML,ET,AC,FO }`（-2…+2 整数）。每轴 ≥6 题命中，正负权重总量平衡。
-- `scoring.ts` — 纯函数 `scoreReadingPersonality(answers, quizVersion?)`：
-  - 累计四轴分；输出 raw、normalized(0-100)、code(4字母)、version；
-  - 平分时以 sha256(canonical(answers)+quizVersion) 首字节奇偶为 tie-breaker（稳定）；
-  - 版本常量 `QUIZ_VERSION="quiz_v1"`, `SCORING_VERSION="score_v1"`。
-- `types-catalog.ts` — 16 种代码 → {name, literaryTitle, abstractTitle, howYouRead, moments[3], oftenMisread, gentleAdvice, coRead[2], misRead[2]}；文案手写、彼此可辨。
-- `bookcover.tsx` — 参数化 SVG 封面（黑金底、四轴决定纹理/书脊/符号/光晕/边框）。
-- `personality.test.ts` — 覆盖：16 类型全部可达（构造答案组合）、同答案幂等、修改答案按矩阵变化、tie-break 稳定、零网络（monkey-patch fetch 抛错）。
+## 6. `set_primary_if_none` 最小安全 migration 草案（未执行）
+> 目标：把 “没有主盘则设当前 chart 为主盘” 的判断挪到 DB 事务里，
+> 消除 client → `listUserCharts()` → `assignChartOwnership()` 之间的 TOCTOU 窗口。
 
-## 二、准入与路由
+```sql
+-- ⚠️ DRAFT ONLY — do not run; requires human review + backup snapshot.
+create or replace function public.set_primary_if_none(_chart_id uuid)
+returns table (chart_id uuid, promoted boolean)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  _uid uuid := auth.uid();
+  _exists_primary boolean;
+begin
+  if _uid is null then
+    raise exception 'unauthorized' using errcode = '28000';
+  end if;
 
-- 新建 `src/routes/_authenticated/me.fun-library.tsx`：
-  - 未登录：`_authenticated` 已 redirect；
-  - 加载 `listUserCharts()` → 判定 `primaryChart = self+is_primary`；
-  - 无任何命盘：显示 "为何需要主命盘" + CTA `开启仪式(/ritual)`；
-  - 只有他人命盘：明确文案（不可用他人命盘测试）+ CTA `前往命盘与报告(/me/profile)`；
-  - 有主命盘：渲染 `<FunLibraryFlow chart={primaryChart}/>`。
-- `PersonalWorkspaceNav.tsx` 新增第 6 项 `fun-library`，带 New/新 徽标。
-- `__root.tsx` 「我的书架」下拉与移动端手风琴新增该项。
-- `/me/home` 增加一张简短 CTA「领取属于你的那本书 → /me/fun-library」（不嵌测试内容）。
+  -- 事务级行锁：锁住该 user 所有 charts 行，防止两个并发仪式同时提升主盘。
+  perform 1 from public.charts
+   where user_id = _uid
+   for update;
 
-## 三、测试 UI
+  select exists (
+    select 1 from public.charts
+     where user_id = _uid and is_primary = true
+  ) into _exists_primary;
 
-`src/experiences/fun-library/` 组件：
+  if _exists_primary then
+    return query select _chart_id, false;
+    return;
+  end if;
 
-- `FunLibraryFlow.tsx` — 状态机：intro → quiz(0..11) → review → result。localStorage 缓存 answers（键含 userId+primaryChartId+quizVersion）。
-- `QuizStep.tsx` — 单题单屏（393 优先）；轻翻页/印章动画（reduced-motion 关闭）；上一题；进度 12/12；aria-live。
-- `ResultView.tsx` — SVG 书封 + 四轴「书签罗盘」+ 文艺/抽象书名切换（本地状态，不改分）+ 3 张翻页卡 + 「测试中的你 vs 主命盘底色」对照。
-- 对照区严格：只读 primaryChart 已存在字段（day-master/元素分布等来自 `calc-snapshot`），FACTS 不足显示「资料不足，暂不对照」。绝不 AI/网络。
-- 「保存到我的书架」→ localStorage；「分享卡预览」用户主动触发，默认不含 PII。
+  update public.charts
+     set is_primary = true
+   where id = _chart_id and user_id = _uid and chart_role = 'self';
 
-## 四、缓存与隐私
+  return query select _chart_id, true;
+end;
+$$;
 
-- 本地 key: `funlib:${userId}:${primaryChartId}:${QUIZ_VERSION}:${SCORING_VERSION}` → { answers, result, savedAt }。
-- 更换主命盘时（chartId 不匹配）显示「旧结果属于旧主命盘，可重新测试」。
-- 不 log 答案；不发到 AI。
-- `.lovable/plan.md` 追加最小 migration 草案 `fun_library_results` 表（user_id, chart_id, quiz_version, scoring_version, code, answers jsonb, RLS owner-only），标注「未执行」。
+revoke all on function public.set_primary_if_none(uuid) from public, anon;
+grant execute on function public.set_primary_if_none(uuid) to authenticated;
+```
 
-## 五、i18n & 术语
+- 事务/锁策略：`for update` 锁定当前用户所有 charts 行；`security definer` + `search_path=public` 防注入；仅 authenticated 可执行。
+- 回滚：`drop function public.set_primary_if_none(uuid);`（无 schema 变更，无数据迁移，可即时回滚）。
+- 验证 SQL：
+  ```sql
+  -- 应返回 promoted=true 且此后 is_primary=true 唯一
+  select * from public.set_primary_if_none('<self-chart-id>');
+  select id, is_primary from public.charts where user_id = auth.uid();
+  -- 再次调用应返回 promoted=false
+  select * from public.set_primary_if_none('<another-self-chart-id>');
+  ```
+- 前端接入（未来）：`assignChartOwnership` 的 `autoPromoteIfNoPrimary` 分支从
+  “查询 + 手写 update” 改成 `supabase.rpc('set_primary_if_none', {...})`，
+  当前实现暂用 `set_primary_chart` RPC，无原子性缺口下的日常使用是安全的。
 
-- 中：趣味图书馆 / 英：Fun Library。
-- 用户可见文案零内部轴代码（M/L 等仅 dev/test 可见）。
+## 7. 后端归属审计
+- **托管形态**：Lovable Cloud 托管（`LOVABLE_CLOUD=1`），底层 Supabase 项目 ref `lhnoyrxnnnxvosryupaj` 与原项目共享；没有 Supabase Dashboard 访问权。
+- **可用工具面**：
+  - `supabase--configure_auth`：可切换社会登录开关、rate limit、HIBP 等；**不含** Site URL / Redirect URLs 写入能力。
+  - `supabase--configure_social_auth`、`supabase--configure_oauth_server`：管社会登录与 OAuth server 配置。
+  - 未发现任何专用工具能写 `GOTRUE_URI_ALLOW_LIST` / Site URL。
+- **公开 preview 回跳允许清单**：
+  - 需要人工在 **项目 → Backend / Cloud → Users → Auth Settings** 里加：
+    - `https://preview--cosmic-axis-hub.lovable.app`
+    - `https://preview--cosmic-axis-hub.lovable.app/auth/callback`
+    - `https://preview--cosmic-axis-hub.lovable.app/auth/reset`
+    - `https://preview--cosmic-axis-hub.lovable.app/auth`
+  - 若原有 `https://fate-nexus-ai.lovable.app/*` 尚存，可保留以兼容旧账号邮件链接。
+- **管理员归属**：`icejie0311@163.com` 是应用内 `user_roles.role='admin'`（已在上一轮 grant），**不是** Supabase Dashboard owner；无法登入 supabase.com。Cloud 托管项目不会给终端用户暴露 dashboard。
 
-## 六、验收
-
-- `tsgo --noEmit` + `bunx vitest run src/experiences/fun-library`;
-- Playwright 手动截图 1440 & 393：未登录 redirect、无主命盘拦截、有主命盘完成流、结果一致性、文艺/抽象切换。
-
-## 技术细节
-
-- 复用 `src/experiences/library-v2/motion/reduced-motion.ts`。
-- `PersonalWorkspaceNav.Item` 联合类型扩展 `/me/fun-library`。
-- 分享卡：`html2canvas` 不引入；用可下载 SVG。
-- 无新依赖。
+## 仍需人工完成
+1. 在 Auth Settings 里把上面 4 条 preview 回跳 URL 加入 Allow-list（工具无法自动写入）。
+2. 需要一次公开 preview 的登录会话，才能跑第 5 项里描述的 `/ritual` 端到端脚本。
+3. 决定何时执行第 6 项的 `set_primary_if_none` migration；执行前请先在 Cloud → Database 做一份快照。
