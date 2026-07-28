@@ -901,7 +901,7 @@ function MatchesTab() {
               )}
             </header>
             {live && (
-              <>
+              <SageLockedInsights source="anonymous_match" testId="anon-match-live-lock">
                 <div className="mt-3">
                   <ResonanceRadar
                     facets={radar}
@@ -914,7 +914,7 @@ function MatchesTab() {
                     <div key={i}>· {s}</div>
                   ))}
                 </div>
-              </>
+              </SageLockedInsights>
             )}
             <footer className="mt-4 flex flex-wrap gap-2">
               <button
