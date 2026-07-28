@@ -9,6 +9,8 @@
  * All strings are pre-localized here to keep the UI thin.
  */
 
+import { CITIES, formatCity, searchCities } from "@/lib/cities";
+
 export type Lang = "en" | "zh";
 export type OwnerRole = "self" | "other" | "";
 export type Relationship =
