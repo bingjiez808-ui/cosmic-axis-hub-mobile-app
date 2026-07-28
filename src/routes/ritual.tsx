@@ -499,7 +499,7 @@ function RitualPage() {
                   </div>
                 )}
                 {fieldError && (
-                  <p role="alert" data-testid="ritual-field-error" className="mx-auto mt-6 max-w-md rounded-lg border border-rose-400/40 bg-rose-500/10 px-4 py-2 text-left text-[12px] leading-relaxed text-rose-100">
+                  <p role="alert" id="ritual-error" data-testid="ritual-field-error" className="mx-auto mt-6 max-w-md rounded-lg border border-rose-400/40 bg-rose-500/10 px-4 py-2 text-left text-[12px] leading-relaxed text-rose-100">
                     {fieldError}
                   </p>
                 )}
@@ -621,7 +621,7 @@ function RitualPage() {
                 {fieldError && (
                   <p
                     role="alert"
-                    data-testid="ritual-field-error"
+                    id="ritual-error" data-testid="ritual-field-error"
                     className="mx-auto mt-4 max-w-md rounded-lg border border-rose-400/40 bg-rose-500/10 px-4 py-2 text-left text-[12px] leading-relaxed text-rose-100"
                   >
                     {fieldError}
