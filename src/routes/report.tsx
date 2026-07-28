@@ -229,6 +229,9 @@ export const Route = createFileRoute("/report")({
       s.primaryIntent === "replace" || s.primaryIntent === "keep" || s.primaryIntent === "auto"
         ? s.primaryIntent
         : undefined,
+    concern: pickStr(s.concern),
+    focus: pickStr(s.focus),
+    id: pickStr(s.id),
   }),
   component: ReportPage,
 });
