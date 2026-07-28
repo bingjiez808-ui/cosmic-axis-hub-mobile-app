@@ -17,7 +17,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { HALL_IMAGE } from "@/components/destiny-commons/hall-images";
+import { HallGallery } from "@/components/destiny-commons/HallGallery";
 import type { DestinyCommonsHall } from "@/lib/destiny-commons";
+
 
 type Props = {
   hall: DestinyCommonsHall | null;
