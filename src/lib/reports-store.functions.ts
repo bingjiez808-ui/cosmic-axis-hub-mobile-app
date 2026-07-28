@@ -235,18 +235,51 @@ export const beginReport = createServerFn({ method: "POST" })
     // First: is there already a row? Return whatever it says.
     const { data: existing } = await supabaseAdmin
       .from("reports")
-      .select("id, status, report_json")
+      .select("id, status, report_json, input_hash")
       .eq("user_id", userId)
       .eq("chart_id", data.chartId)
       .eq("kind", data.kind)
       .eq("report_version", data.reportVersion)
       .maybeSingle();
     if (existing) {
+      // Cache hit: same (user, chart, kind, version). Reuse the row —
+      // an unlock or re-open must never trigger a rerun.
+      // If the caller's input_hash differs, the snapshot changed under
+      // the same version. We keep the row but signal a fresh start so
+      // the caller can regenerate; ownership of the row is preserved.
+      const stale =
+        !!data.inputHash && !!existing.input_hash && existing.input_hash !== data.inputHash;
+      if (!stale) {
+        return {
+          reportId: existing.id,
+          status: existing.status as "pending" | "completed" | "failed",
+          report_json: existing.report_json,
+          didStart: false,
+          reused: true,
+        };
+      }
+      // Snapshot drifted — reset the row to pending so the caller regenerates.
+      await supabaseAdmin
+        .from("reports")
+        .update({
+          status: "pending",
+          report_json: null,
+          error_message: null,
+          input_snapshot: data.input_snapshot as never,
+          input_hash: data.inputHash ?? null,
+          calculation_version: data.calculationVersion ?? null,
+          content_hash: null,
+          token_usage: null,
+          generated_at: null,
+        })
+        .eq("id", existing.id)
+        .eq("user_id", userId);
       return {
         reportId: existing.id,
-        status: existing.status as "pending" | "completed" | "failed",
-        report_json: existing.report_json,
-        didStart: false,
+        status: "pending" as const,
+        report_json: null,
+        didStart: true,
+        reused: false,
       };
     }
 
@@ -261,6 +294,8 @@ export const beginReport = createServerFn({ method: "POST" })
         report_version: data.reportVersion,
         status: "pending",
         input_snapshot: data.input_snapshot as never,
+        input_hash: data.inputHash ?? null,
+        calculation_version: data.calculationVersion ?? null,
       })
       .select("id")
       .single();
@@ -279,11 +314,18 @@ export const beginReport = createServerFn({ method: "POST" })
           status: race.status as "pending" | "completed" | "failed",
           report_json: race.report_json,
           didStart: false,
+          reused: true,
         };
       }
       throw new Error("Could not start report");
     }
-    return { reportId: inserted.id, status: "pending" as const, report_json: null, didStart: true };
+    return {
+      reportId: inserted.id,
+      status: "pending" as const,
+      report_json: null,
+      didStart: true,
+      reused: false,
+    };
   });
 
 /* --------------------------------------------------------------------- */
