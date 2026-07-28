@@ -204,7 +204,7 @@ function HallCard({
         )}
       />
 
-      <div className="flex items-start justify-between gap-3">
+      <div className="relative z-[1] flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <span className="grid h-9 w-9 place-items-center rounded-full border border-gold-dust/30 bg-obsidian/70">
             <HallSymbol id={hall.id} />
