@@ -1471,6 +1471,15 @@ export type RecommendFiguresInput = {
   domainSignal?: DomainSignalBand | null;
   /** Localized domain label (e.g. "事业" / "Career") for reason chips. */
   domainLabel?: string | null;
+  /**
+   * Optional override for the figure pool (e.g. rows loaded from the
+   * historical-figures knowledge base). Additional per-key metadata may
+   * be supplied to complement (or override) `FIGURE_META`. When absent
+   * we fall back to the static bundled `historicalFigures` array so the
+   * function stays synchronous and SSR-safe.
+   */
+  figuresOverride?: HistoricalFigure[];
+  metaOverride?: Record<string, Partial<FigureMeta>>;
 };
 
 /**
@@ -1489,15 +1498,16 @@ export type RecommendFiguresInput = {
  * both domain and signal hit); otherwise "stage_only" so the UI can
  * disclose "recommended by life stage only".
  *
- * Tie-break: curatedRank ascending, then insertion order in
- * `historicalFigures` — never insertion order in `FIGURE_META`.
+ * Tie-break: curatedRank ascending, then insertion order in the pool.
  */
 export function recommendFigures(input: RecommendFiguresInput): FigureRecommendation[] {
-  const { stage, concern, domain, domainSignal, domainLabel } = input;
+  const { stage, concern, domain, domainSignal, domainLabel, figuresOverride, metaOverride } = input;
+  const pool = figuresOverride && figuresOverride.length > 0 ? figuresOverride : historicalFigures;
   const insertionIndex = new Map<string, number>();
-  historicalFigures.forEach((f, i) => insertionIndex.set(f.key, i));
+  pool.forEach((f, i) => insertionIndex.set(f.key, i));
 
-  const stageMatches = historicalFigures.filter((f) => f.stage === stage);
+  const stageMatches = pool.filter((f) => f.stage === stage);
+
   const concernTags = new Set<SituationTag>(
     concern && CONCERN_TAG_MAP[concern] ? CONCERN_TAG_MAP[concern] : [],
   );
@@ -1530,13 +1540,23 @@ export function recommendFigures(input: RecommendFiguresInput): FigureRecommenda
   };
 
   const scored: FigureRecommendation[] = stageMatches.map((figure) => {
-    const meta = FIGURE_META[figure.key] ?? {
+    const base = FIGURE_META[figure.key] ?? {
       tags: [] as readonly SituationTag[],
       signal: "neutral" as const,
       curatedRank: 999,
       sourceUrl: "",
     };
+    const patch = metaOverride?.[figure.key];
+    const meta: FigureMeta = patch
+      ? {
+          tags: patch.tags ?? base.tags,
+          signal: patch.signal ?? base.signal,
+          curatedRank: patch.curatedRank ?? base.curatedRank,
+          sourceUrl: patch.sourceUrl ?? base.sourceUrl,
+        }
+      : base;
     const tagSet = new Set(meta.tags);
+
     const reasons: FigureReason[] = [{ key: "stage", label: stageLabel }];
     let score = 0;
 

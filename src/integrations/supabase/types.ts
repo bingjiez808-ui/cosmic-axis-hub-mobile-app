@@ -579,6 +579,211 @@ export type Database = {
           },
         ]
       }
+      historical_figures: {
+        Row: {
+          created_at: string
+          era_en: string
+          era_zh: string
+          id: string
+          name_en: string
+          name_zh: string
+          person_key: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          era_en: string
+          era_zh: string
+          id?: string
+          name_en: string
+          name_zh: string
+          person_key: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          era_en?: string
+          era_zh?: string
+          id?: string
+          name_en?: string
+          name_zh?: string
+          person_key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      historical_life_events: {
+        Row: {
+          borrow_en: string
+          borrow_zh: string
+          choice_en: string
+          choice_zh: string
+          content_version: string
+          created_at: string
+          curated_rank: number
+          domains: string[]
+          dont_copy_en: string
+          dont_copy_zh: string
+          event_key: string
+          id: string
+          is_active: boolean
+          person_key: string
+          signal: string
+          situation_en: string
+          situation_zh: string
+          stage: string
+          tags: string[]
+          tension_en: string
+          tension_zh: string
+          updated_at: string
+        }
+        Insert: {
+          borrow_en: string
+          borrow_zh: string
+          choice_en: string
+          choice_zh: string
+          content_version?: string
+          created_at?: string
+          curated_rank?: number
+          domains?: string[]
+          dont_copy_en: string
+          dont_copy_zh: string
+          event_key: string
+          id?: string
+          is_active?: boolean
+          person_key: string
+          signal?: string
+          situation_en: string
+          situation_zh: string
+          stage: string
+          tags?: string[]
+          tension_en: string
+          tension_zh: string
+          updated_at?: string
+        }
+        Update: {
+          borrow_en?: string
+          borrow_zh?: string
+          choice_en?: string
+          choice_zh?: string
+          content_version?: string
+          created_at?: string
+          curated_rank?: number
+          domains?: string[]
+          dont_copy_en?: string
+          dont_copy_zh?: string
+          event_key?: string
+          id?: string
+          is_active?: boolean
+          person_key?: string
+          signal?: string
+          situation_en?: string
+          situation_zh?: string
+          stage?: string
+          tags?: string[]
+          tension_en?: string
+          tension_zh?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historical_life_events_person_key_fkey"
+            columns: ["person_key"]
+            isOneToOne: false
+            referencedRelation: "historical_figures"
+            referencedColumns: ["person_key"]
+          },
+        ]
+      }
+      historical_reflections: {
+        Row: {
+          body_en: string
+          body_zh: string
+          created_at: string
+          event_key: string
+          id: string
+          tone: string
+        }
+        Insert: {
+          body_en: string
+          body_zh: string
+          created_at?: string
+          event_key: string
+          id?: string
+          tone?: string
+        }
+        Update: {
+          body_en?: string
+          body_zh?: string
+          created_at?: string
+          event_key?: string
+          id?: string
+          tone?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historical_reflections_event_key_fkey"
+            columns: ["event_key"]
+            isOneToOne: false
+            referencedRelation: "historical_life_events"
+            referencedColumns: ["event_key"]
+          },
+        ]
+      }
+      historical_sources: {
+        Row: {
+          created_at: string
+          event_key: string | null
+          id: string
+          is_primary: boolean
+          kind: string
+          license: string | null
+          notes: string | null
+          person_key: string
+          title: string
+          url: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_key?: string | null
+          id?: string
+          is_primary?: boolean
+          kind?: string
+          license?: string | null
+          notes?: string | null
+          person_key: string
+          title: string
+          url?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_key?: string | null
+          id?: string
+          is_primary?: boolean
+          kind?: string
+          license?: string | null
+          notes?: string | null
+          person_key?: string
+          title?: string
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historical_sources_event_key_fkey"
+            columns: ["event_key"]
+            isOneToOne: false
+            referencedRelation: "historical_life_events"
+            referencedColumns: ["event_key"]
+          },
+          {
+            foreignKeyName: "historical_sources_person_key_fkey"
+            columns: ["person_key"]
+            isOneToOne: false
+            referencedRelation: "historical_figures"
+            referencedColumns: ["person_key"]
+          },
+        ]
+      }
       life_bookmarks: {
         Row: {
           created_at: string

@@ -12,9 +12,11 @@ import {
   recommendFigures,
   type DomainKey,
   type DomainSignalBand,
+  type FigureMeta,
   type FigureRecommendation,
   type HistoricalFigure,
   type LifeStage,
+  type SituationTag,
 } from "@/lib/life-guidance-v1";
 import {
   getLifeResponse,
@@ -22,6 +24,8 @@ import {
   saveLifeResponse,
   toggleLifeBookmark,
 } from "@/lib/life-guidance.functions";
+import { listHistoricalEventsForStage } from "@/lib/historical-figures.functions";
+
 
 export type HistoricalEchoProps = {
   stage: LifeStage | null;
@@ -61,6 +65,59 @@ export function HistoricalEcho({
   const bannerCopy = echoCoverageBanner[nlang];
   const reasonHeading = echoReasonHeading[nlang];
 
+  /**
+   * DB-backed override of the figure pool. When the historical-figures
+   * knowledge base returns rows we prefer them over the bundled static
+   * data so admin-curated updates surface without a redeploy. The static
+   * `historicalFigures` array remains the SSR fallback: nothing regresses
+   * if the fetch fails, if the tables are empty, or before hydration.
+   */
+  const [dbFigures, setDbFigures] = useState<HistoricalFigure[] | null>(null);
+  const [dbMeta, setDbMeta] = useState<Record<string, Partial<FigureMeta>> | null>(null);
+  const [dbSources, setDbSources] = useState<Record<string, { title: string; url: string | null }[]>>({});
+  const listEventsFn = useServerFn(listHistoricalEventsForStage);
+
+  useEffect(() => {
+    if (!stage) return;
+    let cancelled = false;
+    listEventsFn({ data: { stage } })
+      .then((rows) => {
+        if (cancelled || !rows || rows.length === 0) return;
+        const figs: HistoricalFigure[] = rows.map((r) => ({
+          key: r.event_key,
+          stage: r.stage,
+          domains: r.domains as DomainKey[],
+          name: { zh: r.person.name_zh, en: r.person.name_en },
+          era: { zh: r.person.era_zh, en: r.person.era_en },
+          situation: { zh: r.situation_zh, en: r.situation_en },
+          tension: { zh: r.tension_zh, en: r.tension_en },
+          choice: { zh: r.choice_zh, en: r.choice_en },
+          borrow: { zh: r.borrow_zh, en: r.borrow_en },
+          dontCopy: { zh: r.dont_copy_zh, en: r.dont_copy_en },
+        }));
+        const metaMap: Record<string, Partial<FigureMeta>> = {};
+        const srcMap: Record<string, { title: string; url: string | null }[]> = {};
+        for (const r of rows) {
+          metaMap[r.event_key] = {
+            tags: r.tags as readonly SituationTag[],
+            signal: r.signal,
+            curatedRank: r.curated_rank,
+            sourceUrl: r.sources.find((s) => s.is_primary)?.url ?? r.sources[0]?.url ?? "",
+          };
+          srcMap[r.event_key] = r.sources.map((s) => ({ title: s.title, url: s.url }));
+        }
+        setDbFigures(figs);
+        setDbMeta(metaMap);
+        setDbSources(srcMap);
+      })
+      .catch(() => {
+        /* silent — bundled fallback keeps working */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [stage, listEventsFn]);
+
   const recs: FigureRecommendation[] = useMemo(
     () =>
       stage
@@ -70,9 +127,11 @@ export function HistoricalEcho({
             domain: domain ?? null,
             domainSignal: domainSignal ?? null,
             domainLabel: domainLabel ?? null,
+            figuresOverride: dbFigures ?? undefined,
+            metaOverride: dbMeta ?? undefined,
           })
         : [],
-    [stage, concern, domain, domainSignal, domainLabel],
+    [stage, concern, domain, domainSignal, domainLabel, dbFigures, dbMeta],
   );
   const list = useMemo(() => recs.map((r) => r.figure), [recs]);
   const stageOnly = recs.length > 0 && recs.every((r) => r.matchLevel === "stage_only");
@@ -90,6 +149,7 @@ export function HistoricalEcho({
   const toggleBookmarkFn = useServerFn(toggleLifeBookmark);
   const getResponseFn = useServerFn(getLifeResponse);
   const saveResponseFn = useServerFn(saveLifeResponse);
+
 
   useEffect(() => {
     if (!expanded) return;
