@@ -38,6 +38,7 @@ import { ResonanceAtlas } from "./atlas/ResonanceAtlas";
 import { ResonanceRadar, type RadarFacet } from "./atlas/ResonanceRadar";
 import { BookmarkGlyphIcon } from "./atlas/BookmarkGlyph";
 import { glyphFor } from "./atlas/bookmark";
+import { SageLockedInsights } from "@/components/SageLockedInsights";
 
 type SubTab = "atlas" | "invites" | "matches" | "privacy";
 
