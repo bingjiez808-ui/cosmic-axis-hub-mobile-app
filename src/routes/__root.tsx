@@ -489,7 +489,7 @@ function SiteNav() {
           <Link
             to="/"
             aria-label={libraryHomeAria}
-            className="min-w-0 flex-1 truncate font-serif text-sm tracking-normal text-stone-warm xl:flex-none xl:justify-self-start xl:whitespace-nowrap xl:text-base"
+            className="min-w-0 flex-none truncate font-serif text-sm tracking-normal text-stone-warm xl:whitespace-nowrap xl:text-base"
           >
             Destiny<span className="text-gold-dust">·</span>Library
           </Link>
