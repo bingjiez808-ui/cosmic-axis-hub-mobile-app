@@ -12,9 +12,11 @@ import {
   recommendFigures,
   type DomainKey,
   type DomainSignalBand,
+  type FigureMeta,
   type FigureRecommendation,
   type HistoricalFigure,
   type LifeStage,
+  type SituationTag,
 } from "@/lib/life-guidance-v1";
 import {
   getLifeResponse,
@@ -22,6 +24,8 @@ import {
   saveLifeResponse,
   toggleLifeBookmark,
 } from "@/lib/life-guidance.functions";
+import { listHistoricalEventsForStage } from "@/lib/historical-figures.functions";
+
 
 export type HistoricalEchoProps = {
   stage: LifeStage | null;
