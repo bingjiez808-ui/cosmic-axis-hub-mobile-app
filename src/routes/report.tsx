@@ -192,6 +192,9 @@ type SearchParams = {
   relationship?: string;
   relationshipLabel?: string;
   primaryIntent?: "replace" | "keep" | "auto";
+  concern?: string;
+  focus?: string;
+  id?: string;
 };
 
 const pickStr = (v: unknown) => (typeof v === "string" ? v : undefined);
