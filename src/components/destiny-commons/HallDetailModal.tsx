@@ -95,13 +95,21 @@ function HallBody({ hall, isZh }: { hall: DestinyCommonsHall; isZh: boolean }) {
           <span
             className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 ${
               isOpen
-                ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-200"
-                : "border-white/15 bg-white/5 text-stone-warm/55"
+                ? "border-emerald-400/45 bg-emerald-400/10 text-emerald-200"
+                : "border-amber-200/30 bg-amber-100/[0.05] text-amber-100/80"
             }`}
           >
-            <span aria-hidden className="h-1 w-1 rounded-full bg-current" />
+            <span
+              aria-hidden
+              className={`h-1.5 w-1.5 rounded-full ${
+                isOpen
+                  ? "bg-emerald-300 shadow-[0_0_8px_rgba(110,231,183,0.9)] animate-pulse"
+                  : "bg-amber-200/80 animate-pulse"
+              }`}
+            />
             {statusLabel}
           </span>
+
         </div>
         <DialogTitle className="mt-3 font-serif text-2xl leading-tight text-stone-warm">
           {isZh ? hall.nameZh : hall.nameEn} ·{" "}
@@ -148,11 +156,31 @@ function HallBody({ hall, isZh }: { hall: DestinyCommonsHall; isZh: boolean }) {
         </section>
 
         {!isOpen && (
-          <p className="mt-5 text-[12px] leading-relaxed text-stone-warm/50">
-            {isZh
-              ? "开放后，这里的馆灯会亮起。你可以先探索已经开放的馆室。"
-              : "When this hall opens its lamp will light. In the meantime you can explore the halls that are already open."}
-          </p>
+          <div className="mt-5 space-y-3">
+            <div className="flex items-center gap-3">
+              <span
+                aria-hidden
+                className="relative block h-[3px] flex-1 overflow-hidden rounded-full bg-white/5"
+              >
+                <span
+                  className="absolute inset-y-0 left-0 w-1/3 rounded-full bg-gradient-to-r from-transparent via-gold-dust/70 to-transparent"
+                  style={{ animation: "hall-shimmer-modal 2.8s ease-in-out infinite" }}
+                />
+              </span>
+              <span className="shrink-0 text-[10px] uppercase tracking-[0.32em] text-amber-100/70">
+                {isZh ? "敬请期待" : "Opening soon"}
+              </span>
+            </div>
+            <p className="text-[12px] leading-relaxed text-stone-warm/55">
+              {isZh
+                ? "开放后，这里的馆灯会亮起。你可以先探索已经开放的馆室。"
+                : "When this hall opens its lamp will light. In the meantime you can explore the halls that are already open."}
+            </p>
+            <style>{`@keyframes hall-shimmer-modal {
+              0% { transform: translateX(-120%); }
+              100% { transform: translateX(360%); }
+            }`}</style>
+          </div>
         )}
       </div>
 
@@ -161,14 +189,15 @@ function HallBody({ hall, isZh }: { hall: DestinyCommonsHall; isZh: boolean }) {
           <div className="flex flex-wrap items-center justify-end gap-3">
             <Link
               to={hall.route}
-              className="inline-flex min-h-[44px] items-center rounded-full border border-gold-dust/50 bg-obsidian/80 px-6 py-2.5 text-[11px] uppercase tracking-[0.28em] text-gold-dust transition hover:bg-gold-dust/10"
+              className="inline-flex min-h-[44px] items-center rounded-full border border-gold-dust/50 bg-obsidian/80 px-6 py-2.5 text-[11px] uppercase tracking-[0.28em] text-gold-dust shadow-[0_0_24px_-8px_rgba(224,182,90,0.6)] transition hover:bg-gold-dust/10"
             >
               {isZh ? `进入${hall.nameZh}` : `Enter the ${hall.nameEn}`}
             </Link>
           </div>
         ) : (
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <span className="text-[11px] uppercase tracking-[0.28em] text-stone-warm/45">
+            <span className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.28em] text-amber-100/70">
+              <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-amber-200/80 animate-pulse" />
               {isZh ? "馆藏整理中" : "Collection in progress"}
             </span>
             <div className="flex flex-wrap items-center gap-2">
@@ -188,6 +217,7 @@ function HallBody({ hall, isZh }: { hall: DestinyCommonsHall; isZh: boolean }) {
           </div>
         )}
       </footer>
+
     </div>
   );
 }
