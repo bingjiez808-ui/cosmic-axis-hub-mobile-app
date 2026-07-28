@@ -176,11 +176,29 @@ function HallCard({
           : "border-white/5 bg-obsidian/40 hover:border-white/15",
       )}
     >
+      {/* Ambient hall image — sits behind content, subtly parallaxes on hover */}
+      <span aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+        <img
+          src={HALL_IMAGE[hall.id]}
+          alt=""
+          width={1280}
+          height={720}
+          loading="lazy"
+          className={cn(
+            "h-full w-full object-cover transition-all duration-700 ease-out",
+            isOpen
+              ? "opacity-25 group-hover:scale-[1.08] group-hover:opacity-40"
+              : "opacity-10 grayscale group-hover:opacity-20",
+          )}
+        />
+        <span className="absolute inset-0 bg-gradient-to-t from-obsidian via-obsidian/85 to-obsidian/40" />
+      </span>
+
       {/* Accent side-strip */}
       <span
         aria-hidden
         className={cn(
-          "absolute left-0 top-0 h-full w-[3px] bg-gradient-to-b",
+          "absolute left-0 top-0 z-[1] h-full w-[3px] bg-gradient-to-b",
           hall.accent,
           !isOpen && "opacity-40",
         )}
