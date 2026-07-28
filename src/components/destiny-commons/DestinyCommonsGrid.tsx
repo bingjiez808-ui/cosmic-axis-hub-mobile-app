@@ -9,6 +9,7 @@
 import { useState } from "react";
 
 import { HallDetailModal } from "@/components/destiny-commons/HallDetailModal";
+import { HALL_IMAGE } from "@/components/destiny-commons/hall-images";
 import {
   DESTINY_COMMONS_HALLS,
   type DestinyCommonsHall,
