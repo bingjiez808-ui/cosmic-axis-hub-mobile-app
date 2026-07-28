@@ -2210,13 +2210,13 @@ export function MembershipSection({
             id="sage"
             lang={lang}
             currentPlan={plan}
-            onOpen={() => handleUpgradeClick("sage")}
+            onOpen={() => handleDoorClick("sage")}
           />
           <DoorCard
             id="oracle"
             lang={lang}
             currentPlan={plan}
-            onOpen={() => handleUpgradeClick("oracle")}
+            onOpen={() => handleDoorClick("oracle")}
           />
         </div>
       </div>
