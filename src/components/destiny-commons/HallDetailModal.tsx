@@ -17,7 +17,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { HALL_IMAGE } from "@/components/destiny-commons/hall-images";
+import { HallGallery } from "@/components/destiny-commons/HallGallery";
 import type { DestinyCommonsHall } from "@/lib/destiny-commons";
+
 
 type Props = {
   hall: DestinyCommonsHall | null;
@@ -52,6 +54,8 @@ function HallHero({ hall, isZh }: { hall: DestinyCommonsHall; isZh: boolean }) {
       />
       {/* Vignette + top gradient for text legibility of header below */}
       <div aria-hidden className="absolute inset-0 bg-gradient-to-b from-obsidian/40 via-obsidian/20 to-obsidian/95" />
+      {/* Per-hall dynamic gallery overlay — cross-fades on hall switch via key */}
+      <HallGallery hallId={hall.id} dim={!isOpen} />
       {/* Golden particle shimmer */}
       <div
         aria-hidden
@@ -68,6 +72,7 @@ function HallHero({ hall, isZh }: { hall: DestinyCommonsHall; isZh: boolean }) {
     </div>
   );
 }
+
 
 function HallBody({ hall, isZh }: { hall: DestinyCommonsHall; isZh: boolean }) {
   const isOpen = hall.status === "open";
