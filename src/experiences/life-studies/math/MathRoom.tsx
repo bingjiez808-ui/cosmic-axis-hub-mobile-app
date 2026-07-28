@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useLang } from "@/lib/i18n";
 import { MainChartGate, type GateState } from "../MainChartGate";
 import { GenerationMethod } from "../GenerationMethod";
 import { AgeCrossSection, LifeLinesChart } from "./LifeLinesChart";
 import { ChoiceLab } from "./ChoiceLab";
+import { LifeMathBookmarks } from "./LifeMathBookmarks";
+import { ageDomainVariance } from "./LifeMathBookmarks";
 import { LifeYearModal } from "./LifeYearModal";
 import {
   DOMAIN_COLORS,
@@ -39,6 +41,8 @@ export function MathRoom({
   const [modalOpen, setModalOpen] = useState(false);
   const [branches, setBranches] = useState<Array<{ branch: ScenarioBranch; color: string }>>([]);
   const [modelOpen, setModelOpen] = useState(false);
+  const [chartHighlight, setChartHighlight] = useState(false);
+  const chartRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (gate.kind !== "ready" && mode === "personal") setMode("demo");
@@ -157,7 +161,7 @@ export function MathRoom({
       </div>
 
       {/* Chart */}
-      <section className="grid grid-cols-1 gap-4">
+      <section ref={chartRef} className="grid grid-cols-1 gap-4 scroll-mt-24">
         <LifeLinesChart
           result={result}
           visibleDomains={visible}
@@ -166,7 +170,9 @@ export function MathRoom({
           branches={branches}
           ariaLabel={isZh ? "人生七线图" : "Seven life lines chart"}
           lang={lang}
+          highlight={chartHighlight}
         />
+
 
         {/* Domain toggles */}
         <div className="rounded-2xl border border-amber-400/15 bg-[#0b0b14]/70 p-4">
@@ -269,7 +275,33 @@ export function MathRoom({
         </div>
       </section>
 
-      <ChoiceLab focusAge={focusAge} onBranchesChange={setBranches} lang={lang} />
+      <LifeMathBookmarks
+        input={{
+          activeBranchCount: branches.length,
+          ageVarianceHigh: ageDomainVariance(currentScores) > 120,
+          wealthRiskScore: currentScores.wealthRisk ?? 50,
+          studyOrLongTerm: focusAge < 30 || (currentScores.study ?? 50) > 60,
+        }}
+        lang={lang}
+      />
+
+      <ChoiceLab
+        focusAge={focusAge}
+        activeBranchCount={branches.length}
+        onBranchesChange={setBranches}
+        onCompareRequest={() => {
+          if (typeof window !== "undefined") {
+            const prefersReduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+            chartRef.current?.scrollIntoView({
+              behavior: prefersReduced ? "auto" : "smooth",
+              block: "start",
+            });
+          }
+          setChartHighlight(true);
+          setTimeout(() => setChartHighlight(false), 1800);
+        }}
+        lang={lang}
+      />
 
       <LifeYearModal
         snapshot={modalOpen ? snapshot : null}
