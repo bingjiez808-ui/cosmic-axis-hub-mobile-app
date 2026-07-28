@@ -2267,26 +2267,14 @@ export function MembershipSection({
           {lang === "zh" ? "两扇阅览室之门" : "Two reading-room doors"}
         </p>
         <h2 className="mb-2 font-serif text-2xl italic text-stone-warm md:text-3xl">
-          {t.mem_title}
+          {lang === "zh" ? "进入阅览室" : "Enter a reading room"}
         </h2>
         <p className="mb-6 text-sm text-stone-warm/60">
           {lang === "zh"
-            ? "月度会员，到期自动降级，不会未经确认扣款。神谕者严格包含贤者的全部权益。"
-            : "Monthly memberships lapse automatically at expiry — no silent renewal. Oracle strictly includes every Sage benefit."}
+            ? "两扇门对应贤者与神谕者的会员权益；神谕者严格包含贤者的全部权益。"
+            : "The two doors mirror the Sage and Oracle benefits above. Oracle strictly includes every Sage benefit."}
         </p>
 
-        {account && firstTime && (
-          <div className="mb-6 flex flex-wrap items-center gap-3 rounded-2xl border border-nebula-purple/40 bg-nebula-purple/[0.10] px-5 py-3">
-            <span className="rounded-full bg-nebula-purple/40 px-3 py-0.5 text-[9px] uppercase tracking-[0.32em] text-stone-warm">
-              {lang === "zh" ? "首次优惠" : "First-time offer"}
-            </span>
-            <p className="text-sm text-stone-warm/80">
-              {lang === "zh"
-                ? "新账户首次升级享 -30% 折扣 —— 结算时自动应用（模拟支付，不会真实扣款）。"
-                : "New accounts get 30% off their first upgrade — applied at checkout (mock payment, no real charge)."}
-            </p>
-          </div>
-        )}
 
         <div
           data-testid="membership-doors"
