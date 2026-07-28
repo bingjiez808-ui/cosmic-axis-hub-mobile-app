@@ -44,7 +44,9 @@ export function ConcernSelector({ hasPrimaryChart = false, existingReportId = nu
 
   // `explicit` = user actually chose. `null` → fall back to overview.
   const [explicit, setExplicit] = useState<ConcernKey | null>(null);
+  const [modalKey, setModalKey] = useState<ConcernKey | null>(null);
   const responseRef = useRef<HTMLDivElement | null>(null);
+  const closeBtnRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -56,12 +58,25 @@ export function ConcernSelector({ hasPrimaryChart = false, existingReportId = nu
     }
   }, []);
 
+  // Close modal on Escape + return focus.
+  useEffect(() => {
+    if (!modalKey) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setModalKey(null);
+    };
+    window.addEventListener("keydown", onKey);
+    // Focus the close button when the modal opens.
+    setTimeout(() => closeBtnRef.current?.focus(), 30);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [modalKey]);
+
   const picked: ConcernKey = explicit ?? "overview";
 
   const onPick = useCallback(
     (k: ConcernKey) => {
       const first = explicit !== k;
       setExplicit(k);
+      setModalKey(k);
       try {
         window.sessionStorage.setItem(CONCERN_STORAGE_KEY, k);
       } catch {
