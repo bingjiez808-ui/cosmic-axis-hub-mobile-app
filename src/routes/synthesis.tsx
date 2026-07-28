@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import treeImg from "@/assets/tree-of-destiny.jpg";
 import { generateReport } from "@/lib/report.functions";
 import { buildReportCacheKey, buildReportFingerprint, buildReportRequest } from "@/lib/report-input";
+import { missingFields, type RitualState } from "@/lib/ritual-validation";
 
 type SearchParams = {
   name?: string;
