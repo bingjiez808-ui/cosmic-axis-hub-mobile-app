@@ -434,6 +434,7 @@ function SiteNav() {
   const coreEntries: Array<{ to: string; label: string; ariaLabel?: string }> = [
     { to: "/", label: libraryHomeLabel, ariaLabel: libraryHomeAria },
     { to: "/ritual", label: t.nav_ritual },
+    { to: "/life-studies", label: isZh ? "命运通识馆" : "Life Studies", ariaLabel: isZh ? "命运通识馆（五种读法）" : "Life Studies (five readings)" },
     { to: "/traditions", label: t.nav_traditions },
     { to: "/community", label: t.nav_community },
   ];
