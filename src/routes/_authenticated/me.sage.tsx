@@ -1,5 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState } from "react";
 
+import { MembershipCheckoutModal } from "@/components/MembershipCheckoutModal";
 import { PersonalWorkspaceNav } from "@/components/PersonalWorkspaceNav";
 import {
   LockedActionButton,
@@ -97,6 +99,8 @@ function SagePage() {
   const tier = mem.kind === "ready" ? mem.tier : "none";
   const access = roomAccess(tier, "sage");
   const tiles = buildTiles(lang);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const openCheckout = () => setCheckoutOpen(true);
 
   return (
     <div className="min-h-screen bg-[#0a0a12] text-amber-50">
@@ -135,7 +139,7 @@ function SagePage() {
                 access.entitled ? (
                   <EntitledTile key={t.testId} spec={t} lang={lang} />
                 ) : (
-                  <LockedTile key={t.testId} spec={t} lang={lang} />
+                  <LockedTile key={t.testId} spec={t} lang={lang} onUpgrade={openCheckout} />
                 ),
               )}
             </div>
@@ -150,19 +154,28 @@ function SagePage() {
                     ? "神谕者阅览室在贤者的基础上增加：无限 AI 追问、无限塔罗、近 90 天状态与关键时间节点。"
                     : "The Oracle Reading Room adds unlimited AI follow-up, unlimited tarot, and 90-day state & keystone-window analysis on top of Sage."}
                 </p>
-                <Link
-                  to="/report"
-                  hash="membership-plans"
+                <button
+                  type="button"
+                  onClick={openCheckout}
+                  data-testid="sage-upsell-oracle"
                   className="mt-4 inline-flex min-h-11 items-center rounded-full border border-amber-300/50 px-4 py-2 text-xs text-amber-100 hover:bg-amber-500/10"
                 >
-                  {isZh ? "查看神谕者阅览室" : "See Oracle Reading Room"}
-                </Link>
+                  {isZh ? "升级到神谕者" : "Upgrade to Oracle"}
+                </button>
               </div>
             )}
 
-            {!access.entitled && <LockedCtaAnchor lang={lang} />}
+            {!access.entitled && <LockedCtaAnchor lang={lang} onUpgrade={openCheckout} />}
           </>
         )}
+
+        <MembershipCheckoutModal
+          open={checkoutOpen}
+          targetTier={tier === "sage" ? "oracle" : "sage"}
+          source="sage_room"
+          lang={lang}
+          onClose={() => setCheckoutOpen(false)}
+        />
       </div>
     </div>
   );
@@ -186,7 +199,15 @@ function EntitledTile({ spec, lang }: { spec: TileSpec; lang: "en" | "zh" }) {
   );
 }
 
-function LockedTile({ spec, lang }: { spec: TileSpec; lang: "en" | "zh" }) {
+function LockedTile({
+  spec,
+  lang,
+  onUpgrade,
+}: {
+  spec: TileSpec;
+  lang: "en" | "zh";
+  onUpgrade: () => void;
+}) {
   return (
     <div
       data-testid={spec.testId}
@@ -197,7 +218,12 @@ function LockedTile({ spec, lang }: { spec: TileSpec; lang: "en" | "zh" }) {
       <p className="text-[11px] uppercase tracking-[0.28em] text-amber-300/70">{spec.kicker}</p>
       <p className="mt-2 font-serif text-lg italic text-amber-100/85">{spec.title}</p>
       <p className="mt-2 flex-1 text-sm leading-relaxed text-amber-100/60">{spec.body}</p>
-      <LockedActionButton testId={`${spec.testId}-action`} lang={lang} className="mt-4 inline-flex min-h-10 items-center gap-2 self-start rounded-full border border-amber-400/30 bg-black/40 px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-amber-100/70 hover:border-amber-300/60 hover:text-amber-100">
+      <LockedActionButton
+        testId={`${spec.testId}-action`}
+        lang={lang}
+        onUpgrade={onUpgrade}
+        className="mt-4 inline-flex min-h-10 items-center gap-2 self-start rounded-full border border-amber-400/30 bg-black/40 px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-amber-100/70 hover:border-amber-300/60 hover:text-amber-100"
+      >
         {spec.actionLabel}
       </LockedActionButton>
     </div>

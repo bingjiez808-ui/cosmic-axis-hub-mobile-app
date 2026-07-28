@@ -39,6 +39,7 @@ const TINT_CLASSES: Record<string, { border: string; bg: string; text: string; d
 
 import { useLang, type Lang } from "@/lib/i18n";
 import { useAccount } from "@/lib/account";
+import { MembershipCheckoutModal } from "@/components/MembershipCheckoutModal";
 import { ChartZoomModal } from "@/components/charts/DestinyCharts";
 import { PremiumPdfCard } from "@/components/PremiumPdfCard";
 import { SageAvatar } from "@/components/SageAvatar";
@@ -2309,17 +2310,19 @@ export function MembershipSection({
         onClose={() => setSignInPrompt(false)}
         lang={lang}
       />
-      <UpgradeCheckoutModal
-        target={upgradeTarget}
-        firstTime={firstTime}
+      <MembershipCheckoutModal
+        open={upgradeTarget === "sage" || upgradeTarget === "oracle"}
+        targetTier={(upgradeTarget === "oracle" ? "oracle" : "sage") as "sage" | "oracle"}
+        source="report"
         lang={lang}
         onClose={() => setUpgradeTarget(null)}
-        onConfirm={() => {
-          if (upgradeTarget) {
+        onSuccess={() => {
+          if (upgradeTarget === "sage" || upgradeTarget === "oracle") {
+            // Keep the legacy client-side account cache in sync for
+            // any UI that still reads useAccount().plan.
             setPlan(upgradeTarget);
             setFirstTime(false);
           }
-          setUpgradeTarget(null);
         }}
       />
       <AIFollowupModal

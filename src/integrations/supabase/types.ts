@@ -639,6 +639,63 @@ export type Database = {
         }
         Relationships: []
       }
+      membership_orders: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          currency: string
+          granted_expires_at: string
+          granted_started_at: string
+          id: string
+          idempotency_key: string
+          payment_method: string
+          previous_expires_at: string | null
+          previous_tier: string
+          provider: string
+          provider_order_id: string
+          status: string
+          target_tier: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          currency?: string
+          granted_expires_at: string
+          granted_started_at: string
+          id?: string
+          idempotency_key: string
+          payment_method: string
+          previous_expires_at?: string | null
+          previous_tier: string
+          provider?: string
+          provider_order_id: string
+          status?: string
+          target_tier: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          currency?: string
+          granted_expires_at?: string
+          granted_started_at?: string
+          id?: string
+          idempotency_key?: string
+          payment_method?: string
+          previous_expires_at?: string | null
+          previous_tier?: string
+          provider?: string
+          provider_order_id?: string
+          status?: string
+          target_tier?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       phone_otps: {
         Row: {
           attempts: number
@@ -954,6 +1011,7 @@ export type Database = {
           email: string
           id: string
           membership_expires_at: string | null
+          membership_started_at: string | null
           membership_tier: Database["public"]["Enums"]["membership_tier"]
           phone: string | null
           updated_at: string
@@ -964,6 +1022,7 @@ export type Database = {
           email: string
           id: string
           membership_expires_at?: string | null
+          membership_started_at?: string | null
           membership_tier?: Database["public"]["Enums"]["membership_tier"]
           phone?: string | null
           updated_at?: string
@@ -974,6 +1033,7 @@ export type Database = {
           email?: string
           id?: string
           membership_expires_at?: string | null
+          membership_started_at?: string | null
           membership_tier?: Database["public"]["Enums"]["membership_tier"]
           phone?: string | null
           updated_at?: string
@@ -1448,6 +1508,14 @@ export type Database = {
         Returns: boolean
       }
       set_primary_chart: { Args: { _chart_id: string }; Returns: boolean }
+      simulate_mock_membership_upgrade: {
+        Args: {
+          _idempotency_key: string
+          _payment_method: string
+          _target_tier: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "admin" | "user"
