@@ -135,22 +135,107 @@ function AccessChip({ tag, isZh }: { tag: AccessTag; isZh: boolean }) {
 /** Tiny per-card visual — a stylised, quiet SVG loop themed to the room. */
 function CardVisual({ kind, accent }: { kind: RoomPreviewKind; accent: string }) {
   if (kind === "corridor") {
+    // Life-lines chart: six domain curves across an age axis, deterministic
+    // shapes that read as a proper polyline chart rather than four parallel arcs.
+    const W = 200;
+    const H = 80;
+    const padL = 14;
+    const padR = 6;
+    const padT = 6;
+    const padB = 12;
+    const innerW = W - padL - padR;
+    const innerH = H - padT - padB;
+    const ages = [0, 15, 30, 45, 60, 75];
+    // Six domains with distinct colors + deterministic normalized samples (0..1)
+    const lines: { color: string; samples: number[] }[] = [
+      { color: "#f5c26b", samples: [0.35, 0.55, 0.78, 0.7, 0.55, 0.42] }, // career
+      { color: "#7dd3c0", samples: [0.6, 0.72, 0.6, 0.5, 0.62, 0.7] }, // health
+      { color: "#c7a3ff", samples: [0.5, 0.68, 0.72, 0.66, 0.55, 0.48] }, // love
+      { color: "#f88fa2", samples: [0.42, 0.58, 0.5, 0.62, 0.7, 0.6] }, // family
+      { color: "#8ab8ff", samples: [0.7, 0.78, 0.6, 0.48, 0.4, 0.36] }, // study
+      { color: "#e6d27a", samples: [0.3, 0.45, 0.6, 0.72, 0.68, 0.58] }, // wealth
+    ];
+    const x = (i: number) => padL + (i / (ages.length - 1)) * innerW;
+    const y = (v: number) => padT + (1 - v) * innerH;
+    const pathFor = (samples: number[]) =>
+      samples.map((v, i) => `${i === 0 ? "M" : "L"} ${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(" ");
     return (
-      <svg viewBox="0 0 200 80" className="h-full w-full">
-        {[0, 1, 2, 3].map((i) => (
+      <svg viewBox={`0 0 ${W} ${H}`} className="h-full w-full" aria-hidden>
+        {/* soft gridlines */}
+        {[0.25, 0.5, 0.75].map((g) => (
+          <line
+            key={g}
+            x1={padL}
+            x2={W - padR}
+            y1={y(g)}
+            y2={y(g)}
+            stroke="rgba(255,255,255,0.05)"
+            strokeDasharray={g === 0.5 ? undefined : "2 3"}
+          />
+        ))}
+        {/* age ticks */}
+        {ages.map((a, i) => (
+          <g key={a}>
+            <line
+              x1={x(i)}
+              x2={x(i)}
+              y1={H - padB}
+              y2={H - padB + 2}
+              stroke="rgba(255,255,255,0.15)"
+            />
+            <text
+              x={x(i)}
+              y={H - 2}
+              textAnchor="middle"
+              fontSize="6"
+              fill="rgba(232,220,196,0.45)"
+            >
+              {a}
+            </text>
+          </g>
+        ))}
+        {/* life lines */}
+        {lines.map((ln, i) => (
           <motion.path
             key={i}
-            d={`M0,${20 + i * 12} C50,${10 + i * 12} 100,${30 + i * 10} 150,${18 + i * 12} L200,${22 + i * 12}`}
+            d={pathFor(ln.samples)}
             fill="none"
-            stroke={accent}
-            strokeOpacity={0.5 - i * 0.08}
-            strokeWidth="1.2"
+            stroke={ln.color}
+            strokeOpacity={0.85}
+            strokeWidth="1.3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
             initial={{ pathLength: 0 }}
             whileInView={{ pathLength: 1 }}
             viewport={{ once: true }}
-            transition={{ duration: 1.4, delay: i * 0.15 }}
+            transition={{ duration: 1.6, delay: i * 0.12, ease: "easeOut" }}
           />
         ))}
+        {/* "today" cursor at age 30 */}
+        <motion.line
+          x1={x(2)}
+          x2={x(2)}
+          y1={padT}
+          y2={H - padB}
+          stroke={accent}
+          strokeOpacity="0.55"
+          strokeDasharray="2 2"
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ delay: 1.2, duration: 0.5 }}
+        />
+        <motion.circle
+          cx={x(2)}
+          cy={y(0.78)}
+          r="2.4"
+          fill={accent}
+          initial={{ scale: 0 }}
+          whileInView={{ scale: 1 }}
+          viewport={{ once: true }}
+          transition={{ delay: 1.4, type: "spring", stiffness: 180 }}
+          style={{ filter: `drop-shadow(0 0 3px ${accent})` }}
+        />
       </svg>
     );
   }
