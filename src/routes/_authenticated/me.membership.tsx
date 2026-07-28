@@ -139,7 +139,7 @@ function MembershipPage() {
                 </p>
                 {p.id !== "free" && (
                   <Link
-                    to="/report"
+                    to="/report" hash="membership-plans"
                     className="mt-3 inline-flex min-h-9 items-center justify-center rounded-full border border-amber-300/40 px-3 py-1.5 text-[11px] text-amber-100 hover:bg-amber-500/10"
                   >
                     {isZh ? "去选择方案" : "Choose plan"}
@@ -165,7 +165,7 @@ function MembershipPage() {
               {isZh ? "进入神谕者阅览室" : "Enter Oracle Room"}
             </Link>
             <Link
-              to="/report"
+              to="/report" hash="membership-plans"
               className="min-h-9 inline-flex items-center rounded-full border border-amber-400/30 px-3 py-1.5 text-[11px] text-amber-100/85 hover:border-amber-300/60"
             >
               {isZh ? "查看三档方案 / 升级" : "See plans / upgrade"}
@@ -204,7 +204,7 @@ function MembershipPage() {
                     : "You haven't purchased a ¥79 premium report yet."}
                 </p>
                 <Link
-                  to="/report"
+                  to="/report" hash="membership-plans"
                   className="mt-3 inline-flex min-h-11 items-center rounded-full border border-amber-300/50 px-4 py-2 text-xs text-amber-100 hover:bg-amber-500/10"
                 >
                   {isZh ? "了解并购买 ¥79 报告" : "Learn & purchase the ¥79 report"}
@@ -232,7 +232,7 @@ function MembershipPage() {
                       </p>
                     </div>
                     <Link
-                      to="/report"
+                      to="/report" hash="membership-plans"
                       className="min-h-9 inline-flex items-center rounded-full border border-amber-300/40 px-3 py-1.5 text-[11px] text-amber-100 hover:bg-amber-500/10"
                     >
                       {r.status === "completed"

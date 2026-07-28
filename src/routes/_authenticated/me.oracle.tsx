@@ -292,7 +292,7 @@ function OraclePage() {
             )}
             <div className="mt-5 flex flex-wrap gap-2">
               <Link
-                to="/report"
+                to="/report" hash="membership-plans"
                 className="min-h-11 inline-flex items-center rounded-full border border-amber-300/50 px-4 py-2 text-xs text-amber-100 hover:bg-amber-500/10"
               >
                 {lang === "zh" ? "查看会员方案" : "See membership options"}
