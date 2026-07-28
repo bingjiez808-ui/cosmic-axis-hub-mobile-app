@@ -142,6 +142,7 @@ describe("firstMissingStep — focuses first true miss", () => {
   });
   test("complete → -1", () => {
     expect(firstMissingStep(complete, "en")).toBe(-1);
+  });
 });
 
 describe("place resolution — free-text must not slip through (regression)", () => {
