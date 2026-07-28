@@ -43,6 +43,7 @@ import { Route as AuthenticatedMeProfileRouteImport } from './routes/_authentica
 import { Route as AuthenticatedMeOracleRouteImport } from './routes/_authenticated/me.oracle'
 import { Route as AuthenticatedMeMembershipRouteImport } from './routes/_authenticated/me.membership'
 import { Route as AuthenticatedMeMatchRouteImport } from './routes/_authenticated/me.match'
+import { Route as AuthenticatedMeLiteratureRouteImport } from './routes/_authenticated/me.literature'
 import { Route as AuthenticatedMeHomeRouteImport } from './routes/_authenticated/me.home'
 import { Route as AuthenticatedMeFriendsRouteImport } from './routes/_authenticated/me.friends'
 import { Route as AuthenticatedMeEchoesRouteImport } from './routes/_authenticated/me.echoes'
@@ -222,6 +223,12 @@ const AuthenticatedMeMatchRoute = AuthenticatedMeMatchRouteImport.update({
   path: '/me/match',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedMeLiteratureRoute =
+  AuthenticatedMeLiteratureRouteImport.update({
+    id: '/me/literature',
+    path: '/me/literature',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedMeHomeRoute = AuthenticatedMeHomeRouteImport.update({
   id: '/me/home',
   path: '/me/home',
@@ -282,6 +289,7 @@ export interface FileRoutesByFullPath {
   '/me/echoes': typeof AuthenticatedMeEchoesRoute
   '/me/friends': typeof AuthenticatedMeFriendsRoute
   '/me/home': typeof AuthenticatedMeHomeRoute
+  '/me/literature': typeof AuthenticatedMeLiteratureRoute
   '/me/match': typeof AuthenticatedMeMatchRoute
   '/me/membership': typeof AuthenticatedMeMembershipRoute
   '/me/oracle': typeof AuthenticatedMeOracleRoute
@@ -320,6 +328,7 @@ export interface FileRoutesByTo {
   '/me/echoes': typeof AuthenticatedMeEchoesRoute
   '/me/friends': typeof AuthenticatedMeFriendsRoute
   '/me/home': typeof AuthenticatedMeHomeRoute
+  '/me/literature': typeof AuthenticatedMeLiteratureRoute
   '/me/match': typeof AuthenticatedMeMatchRoute
   '/me/membership': typeof AuthenticatedMeMembershipRoute
   '/me/oracle': typeof AuthenticatedMeOracleRoute
@@ -362,6 +371,7 @@ export interface FileRoutesById {
   '/_authenticated/me/echoes': typeof AuthenticatedMeEchoesRoute
   '/_authenticated/me/friends': typeof AuthenticatedMeFriendsRoute
   '/_authenticated/me/home': typeof AuthenticatedMeHomeRoute
+  '/_authenticated/me/literature': typeof AuthenticatedMeLiteratureRoute
   '/_authenticated/me/match': typeof AuthenticatedMeMatchRoute
   '/_authenticated/me/membership': typeof AuthenticatedMeMembershipRoute
   '/_authenticated/me/oracle': typeof AuthenticatedMeOracleRoute
@@ -404,6 +414,7 @@ export interface FileRouteTypes {
     | '/me/echoes'
     | '/me/friends'
     | '/me/home'
+    | '/me/literature'
     | '/me/match'
     | '/me/membership'
     | '/me/oracle'
@@ -442,6 +453,7 @@ export interface FileRouteTypes {
     | '/me/echoes'
     | '/me/friends'
     | '/me/home'
+    | '/me/literature'
     | '/me/match'
     | '/me/membership'
     | '/me/oracle'
@@ -483,6 +495,7 @@ export interface FileRouteTypes {
     | '/_authenticated/me/echoes'
     | '/_authenticated/me/friends'
     | '/_authenticated/me/home'
+    | '/_authenticated/me/literature'
     | '/_authenticated/me/match'
     | '/_authenticated/me/membership'
     | '/_authenticated/me/oracle'
@@ -758,6 +771,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMeMatchRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/me/literature': {
+      id: '/_authenticated/me/literature'
+      path: '/me/literature'
+      fullPath: '/me/literature'
+      preLoaderRoute: typeof AuthenticatedMeLiteratureRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/me/home': {
       id: '/_authenticated/me/home'
       path: '/me/home'
@@ -801,6 +821,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMeEchoesRoute: typeof AuthenticatedMeEchoesRoute
   AuthenticatedMeFriendsRoute: typeof AuthenticatedMeFriendsRoute
   AuthenticatedMeHomeRoute: typeof AuthenticatedMeHomeRoute
+  AuthenticatedMeLiteratureRoute: typeof AuthenticatedMeLiteratureRoute
   AuthenticatedMeMatchRoute: typeof AuthenticatedMeMatchRoute
   AuthenticatedMeMembershipRoute: typeof AuthenticatedMeMembershipRoute
   AuthenticatedMeOracleRoute: typeof AuthenticatedMeOracleRoute
@@ -814,6 +835,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMeEchoesRoute: AuthenticatedMeEchoesRoute,
   AuthenticatedMeFriendsRoute: AuthenticatedMeFriendsRoute,
   AuthenticatedMeHomeRoute: AuthenticatedMeHomeRoute,
+  AuthenticatedMeLiteratureRoute: AuthenticatedMeLiteratureRoute,
   AuthenticatedMeMatchRoute: AuthenticatedMeMatchRoute,
   AuthenticatedMeMembershipRoute: AuthenticatedMeMembershipRoute,
   AuthenticatedMeOracleRoute: AuthenticatedMeOracleRoute,
