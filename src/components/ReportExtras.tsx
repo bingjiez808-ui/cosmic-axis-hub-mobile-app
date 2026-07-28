@@ -2141,17 +2141,26 @@ export function MembershipSection({
   );
 
 
-  const handleUpgradeClick = (target: Plan) => {
+  const handleDoorClick = (target: "sage" | "oracle") => {
     if (!account) {
       if (typeof window !== "undefined") window.dispatchEvent(new Event("lod:open-account"));
       return;
     }
-    if (target === "free") {
-      setPlan("free");
+    const rank = (x: Plan) => (x === "oracle" ? 2 : x === "sage" ? 1 : 0);
+    if (rank(plan) >= rank(target)) {
+      // Already entitled — navigate into the room.
+      if (typeof window !== "undefined") {
+        window.location.assign(target === "sage" ? "/me/sage" : "/me/oracle");
+      }
       return;
     }
     setUpgradeTarget(target);
   };
+  // Legacy alias kept so any remaining internal callers (TierTeasers /
+  // AIFollowupModal) that used `handleUpgradeClick` still compile.
+  const handleUpgradeClick = handleDoorClick;
+  void handleUpgradeClick;
+
 
   return (
     <section className="mx-auto max-w-5xl px-6 pb-24 md:px-12 print:hidden">
