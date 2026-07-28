@@ -639,6 +639,164 @@ export type Database = {
         }
         Relationships: []
       }
+      literature_passages: {
+        Row: {
+          action_prompt_en: string | null
+          action_prompt_zh: string | null
+          active: boolean
+          citation_label: string | null
+          concern_tags: string[]
+          context_en: string | null
+          context_zh: string | null
+          created_at: string
+          default_interpretation_en: string | null
+          default_interpretation_zh: string | null
+          display_text_en: string | null
+          display_text_zh: string | null
+          id: string
+          life_stage_tags: string[]
+          original_text: string
+          question_en: string | null
+          question_zh: string | null
+          reading_path: string | null
+          rights_status: string
+          slug: string
+          text_type: string
+          tone_tags: string[]
+          translator: string | null
+          updated_at: string
+          weight: number
+          work_id: string
+        }
+        Insert: {
+          action_prompt_en?: string | null
+          action_prompt_zh?: string | null
+          active?: boolean
+          citation_label?: string | null
+          concern_tags?: string[]
+          context_en?: string | null
+          context_zh?: string | null
+          created_at?: string
+          default_interpretation_en?: string | null
+          default_interpretation_zh?: string | null
+          display_text_en?: string | null
+          display_text_zh?: string | null
+          id?: string
+          life_stage_tags?: string[]
+          original_text: string
+          question_en?: string | null
+          question_zh?: string | null
+          reading_path?: string | null
+          rights_status?: string
+          slug: string
+          text_type?: string
+          tone_tags?: string[]
+          translator?: string | null
+          updated_at?: string
+          weight?: number
+          work_id: string
+        }
+        Update: {
+          action_prompt_en?: string | null
+          action_prompt_zh?: string | null
+          active?: boolean
+          citation_label?: string | null
+          concern_tags?: string[]
+          context_en?: string | null
+          context_zh?: string | null
+          created_at?: string
+          default_interpretation_en?: string | null
+          default_interpretation_zh?: string | null
+          display_text_en?: string | null
+          display_text_zh?: string | null
+          id?: string
+          life_stage_tags?: string[]
+          original_text?: string
+          question_en?: string | null
+          question_zh?: string | null
+          reading_path?: string | null
+          rights_status?: string
+          slug?: string
+          text_type?: string
+          tone_tags?: string[]
+          translator?: string | null
+          updated_at?: string
+          weight?: number
+          work_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "literature_passages_work_id_fkey"
+            columns: ["work_id"]
+            isOneToOne: false
+            referencedRelation: "literature_works"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      literature_works: {
+        Row: {
+          author_original: string | null
+          author_zh: string | null
+          country_or_region: string | null
+          created_at: string
+          era: string | null
+          id: string
+          is_public_domain: boolean
+          language: string
+          literary_form: string | null
+          publication_year: string | null
+          rights_note: string | null
+          slug: string
+          source_name: string | null
+          source_url: string | null
+          title_original: string | null
+          title_zh: string | null
+          updated_at: string
+          verification_status: string
+        }
+        Insert: {
+          author_original?: string | null
+          author_zh?: string | null
+          country_or_region?: string | null
+          created_at?: string
+          era?: string | null
+          id?: string
+          is_public_domain?: boolean
+          language: string
+          literary_form?: string | null
+          publication_year?: string | null
+          rights_note?: string | null
+          slug: string
+          source_name?: string | null
+          source_url?: string | null
+          title_original?: string | null
+          title_zh?: string | null
+          updated_at?: string
+          verification_status?: string
+        }
+        Update: {
+          author_original?: string | null
+          author_zh?: string | null
+          country_or_region?: string | null
+          created_at?: string
+          era?: string | null
+          id?: string
+          is_public_domain?: boolean
+          language?: string
+          literary_form?: string | null
+          publication_year?: string | null
+          rights_note?: string | null
+          slug?: string
+          source_name?: string | null
+          source_url?: string | null
+          title_original?: string | null
+          title_zh?: string | null
+          updated_at?: string
+          verification_status?: string
+        }
+        Relationships: []
+      }
       membership_orders: {
         Row: {
           amount_cents: number
@@ -1223,6 +1381,158 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "premium_report_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_literature_annotations: {
+        Row: {
+          annotation: string
+          created_at: string
+          id: string
+          recommendation_id: string
+          updated_at: string
+          user_id: string
+          visibility: string
+        }
+        Insert: {
+          annotation: string
+          created_at?: string
+          id?: string
+          recommendation_id: string
+          updated_at?: string
+          user_id: string
+          visibility?: string
+        }
+        Update: {
+          annotation?: string
+          created_at?: string
+          id?: string
+          recommendation_id?: string
+          updated_at?: string
+          user_id?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_literature_annotations_recommendation_id_fkey"
+            columns: ["recommendation_id"]
+            isOneToOne: false
+            referencedRelation: "user_literature_recommendations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_literature_preferences: {
+        Row: {
+          created_at: string
+          preferred_regions: string[]
+          preferred_tones: string[]
+          prefers_classical: boolean
+          prefers_modern: boolean
+          show_age_on_share: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          preferred_regions?: string[]
+          preferred_tones?: string[]
+          prefers_classical?: boolean
+          prefers_modern?: boolean
+          show_age_on_share?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          preferred_regions?: string[]
+          preferred_tones?: string[]
+          prefers_classical?: boolean
+          prefers_modern?: boolean
+          show_age_on_share?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_literature_recommendations: {
+        Row: {
+          ai_model: string | null
+          chart_id: string | null
+          concern: string | null
+          content_version: string
+          dismissed: boolean
+          generated_at: string
+          id: string
+          last_viewed_at: string
+          life_stage: string | null
+          passage_id: string
+          personalized_bridge_en: string | null
+          personalized_bridge_zh: string | null
+          prompt_version: string | null
+          ranking_reasons: Json
+          ranking_score: number | null
+          reading_tone: string | null
+          saved: boolean
+          unique_key: string
+          user_id: string
+        }
+        Insert: {
+          ai_model?: string | null
+          chart_id?: string | null
+          concern?: string | null
+          content_version?: string
+          dismissed?: boolean
+          generated_at?: string
+          id?: string
+          last_viewed_at?: string
+          life_stage?: string | null
+          passage_id: string
+          personalized_bridge_en?: string | null
+          personalized_bridge_zh?: string | null
+          prompt_version?: string | null
+          ranking_reasons?: Json
+          ranking_score?: number | null
+          reading_tone?: string | null
+          saved?: boolean
+          unique_key: string
+          user_id: string
+        }
+        Update: {
+          ai_model?: string | null
+          chart_id?: string | null
+          concern?: string | null
+          content_version?: string
+          dismissed?: boolean
+          generated_at?: string
+          id?: string
+          last_viewed_at?: string
+          life_stage?: string | null
+          passage_id?: string
+          personalized_bridge_en?: string | null
+          personalized_bridge_zh?: string | null
+          prompt_version?: string | null
+          ranking_reasons?: Json
+          ranking_score?: number | null
+          reading_tone?: string | null
+          saved?: boolean
+          unique_key?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_literature_recommendations_chart_id_fkey"
+            columns: ["chart_id"]
+            isOneToOne: false
+            referencedRelation: "charts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_literature_recommendations_passage_id_fkey"
+            columns: ["passage_id"]
+            isOneToOne: false
+            referencedRelation: "literature_passages"
             referencedColumns: ["id"]
           },
         ]
