@@ -1,64 +1,108 @@
-## 审计结论
 
-**现有真实状态**
-- `src/lib/account.tsx`：`Plan = "free" | "sage" | "oracle"`，`useAccount().plan` 存 localStorage，用于 UI 判权。
-- `src/components/MembershipCard.tsx` + `me.oracle.tsx`：读 `profiles.membership_tier`（真实后端），带过期判断。
-- `src/lib/access-level.ts`：已有 `hasAccess(feature, ctx)` fail-closed，含 `sage`/`oracle` 层级；这是唯一权威。
-- `src/components/ReportExtras.tsx#MembershipSection`（L2088-2332）：当前 /report 的三列价格卡 + `TierTeasers` + Sage/Oracle-exclusive 组件 + `UpgradeCheckoutModal`（模拟支付）。
-- `firstTime` -30% 折扣：只作为本地 state，`UpgradeCheckoutModal` 内确实按此对显示价格打折 → 保留。
-- `/me/oracle.tsx`：已有四体系交叉、命盘选择、合盘等 —— 保留内容，重排为神谕者仪表盘。
-- `/me/membership.tsx`：仅 `MembershipCard` + `MyTicketsCard`，需要拆两类。
-- 塔罗真实用量在 `tarot_usage` 表 + `src/lib/tarot-quota.ts`（本地）；不伪造剩余数。
+## 目标
+让首次访问者 6 秒看懂产品，在滚动中发现「趣味图书馆」与「四间特别藏室」两个差异化亮点，同时始终知道「从哪里进、需要什么、点击后会发生什么」。仅改首页展示层与路由指引，不动算法/支付/数据库/权限底座。
 
-**冲突项 —— 不自行覆盖，仅列出等确认**
-- 现有 i18n `mem_sage_desc` 写 "12 个月运势推演"，`mem_oracle_desc` 写"未来观察名单 · 优先计算"—— 与本轮真实权益不同。计划替换 i18n copy 为真实权益（属文案，不改后端）。
-- 现 `TierTeasers` 三卡（Synastry / 90-day / Ask Sage）在 /report 直接展示；将从 /report 移除，仅在 /me/sage、/me/oracle 中出现。若你希望保留 Ask Sage 入口在 /report，请说明。
+## 一、新的首页信息架构（`src/routes/index.tsx`）
 
-## 目标结构
-
-```
-/report
-  ├─ 顶部：基础阅览权限说明（¥0，紧凑一行）
-  ├─ 两扇门：SageDoorCard(¥19.9/月) │ OracleDoorCard(¥39.9/月，含贤者)
-  └─ 单次馆藏：PremiumPdfCard (¥79，独立)
-
-/me/sage  (新)
-  ├─ 权限门禁：free → 升级弹窗；sage/oracle → 进入
-  └─ 4 入口卡：完整生命时间轴 / 关系合盘 / 塔罗阅览 / 会员使用状态
-
-/me/oracle  (重排现有)
-  ├─ 权限门禁：free/sage → 对应升级弹窗
-  ├─ "已包含贤者阅览室"横条 + 进入 /me/sage 入口
-  └─ 神谕者独享：无限追问 / 无限塔罗 / 90 天窗口 / 关键节点 / 四体系交叉
-
-/me/membership
-  ├─ 分区①：月度阅读室会员 (MembershipCard 现状 + 到期/降级)
-  ├─ 分区②：¥79 单次报告 (列出用户已购报告/入口)
-  └─ 订单 & 工单
+```text
+1. Hero: 品牌主张 + 语言切换 + 开启仪式主 CTA
+2. ConcernSelector: 今天你带着什么问题（保留）
+3. FeatureLibraryShelf: 六本主题书（保留，去掉与藏室重复的会员话术）
+4. PlayfulLibrarySection (新增) — 跨学科馆藏桌
+5. PostRitualRoomsSection (新增) — 仪式之后四间特别藏室
+6. TraditionsBridge: 四大体系专业计算说明（复用现 trust-bridge → /traditions）
+7. HomePersonalDeskTeaser: 登录后的个人书架（保留）
+8. MembershipHint + PremiumReportCta: 唯一的会员/¥79 入口（保留，删掉现在 CuratorLetter 前后的重复文案）
+9. CuratorLetter + 页脚
 ```
 
-## 实施步骤
+删除现有位于 8 与 9 之间的重复 Final CTA（`#concern` 已在第 2 步出现）。
 
-1. **统一 capability**：扩展 `src/lib/access-level.ts` 增加 feature key `sage_room_enter`, `oracle_room_enter`；`me.sage`/`me.oracle` 页面统一走 `hasAccess`。真实 tier 从 `profiles.membership_tier` 读取（复用 `MembershipCard` 里的查询逻辑抽成 hook `useMembershipTier`）。
-2. **i18n**：替换 `mem_sage_desc` / `mem_oracle_desc` 为真实权益，新增 `sage_room_*`, `oracle_room_*`, `room_included_in_oracle`, `basic_access_*` 等键；中英对齐。
-3. **/report 重构**：将 `MembershipSection` 中的三列价格卡改为 `BasicAccessNote` + `<div class="grid md:grid-cols-2">SageDoorCard OracleDoorCard</div>` + `PremiumPdfCard`（独立区）。移除内嵌 `TierTeasers`。保留 `UpgradeCheckoutModal` + firstTime -30% 逻辑。
-4. **新建 `src/routes/_authenticated/me.sage.tsx`**：`PersonalWorkspaceNav`（需先加"贤者阅览室"入口）+ 4 张仪表卡。塔罗剩余用真实数据（`useSupabaseSession` + `tarot_usage` 或本地 quota，如无真实字段显示"以账户记录为准"）。
-5. **重排 `me.oracle.tsx`**：顶部"已包含贤者"横条 + 神谕者独享模块（现有 `SynastryPreview`/`RecentWindows`/`FutureWatchlist` 复用）；移除与贤者层重复的卡片。
-6. **/me/membership**：分两块 section；¥79 报告块查询 `premium_pdf_reports` 显示已购列表 + 入口。
-7. **PersonalWorkspaceNav**：加入"贤者阅览室 / 神谕者阅览室"两项还是并入现 5 项？我倾向：不加入 nav（避免 7 项过长），入口通过 /report 的两扇门 + 全局导航"了解·更多"访问；`/me/sage` `/me/oracle` 自身页面顶部渲染 `PersonalWorkspaceNav`。
-8. **测试**：
-   - unit：新 access-level feature key + i18n 对称性 + `useMembershipTier` fail-closed。
-   - E2E (Playwright)：signed-out → /report 显示两门；点击 Sage 门 → 登录提示；作为 free 登录用户点击进入 → 弹升级；模拟支付成功 → tier=sage 后再点击 Sage 门直接进入 /me/sage；oracle 同理；¥79 报告不受影响。
-   - 响应式：1440/768/393 三门/两门/¥79 卡布局无横向溢出。
+## 二、趣味图书馆板块（新组件 `src/components/PlayfulLibrarySection.tsx`）
 
-## 技术风险
+**视觉：** 深色图书馆桌面、金色馆藏编号、SVG 手稿/公式/诗句/地图线条，复用现有 `bg-obsidian` `gold-dust` `nebula-purple` 语义 token；不生成新的 AI 图片。
 
-- 后端 `profiles.membership_tier` 是权威；`useAccount().plan`（localStorage）是遗留、只用于模拟支付驱动 UI 切换。两者需要对齐 —— 我会新增 `useMembershipTier()` 作为 UI 的单一读取源，`useAccount().setPlan()` 仅作为模拟支付成功后的乐观 UI 更新（不写后端 —— 后端由既有 admin/webhook 写入）。
-- 模拟支付路径不变，不做真实结算。
+**桌面端交互：** 横向「跨学科馆藏桌」
+- 中央「我的命盘馆藏卡」（登录+主命盘状态自适应）
+- 周围 5 本书脊，一次只展开一本，展开在原位下方（不横向溢出）
+- 展开内容：这本书如何解释人生 / 用户会看到什么 / 微型可视化 / 状态 / 入口 / CTA 说明
 
-## 约束确认
+**移动端交互：** 纵向书脊列表，点击就地展开，一次一本，CTA ≥44px。
 
-- 不改 DB schema、不动 AI 计算、不改支付后端、不发布、无 variant。
-- 冲突项已在上方"冲突"列出，需你确认是否替换 i18n 现有 `mem_sage_desc/mem_oracle_desc` 与是否保留 Ask Sage 卡在 /report。
+**已开放（真实路由映射，代码搜索确认后使用）：**
+| 书 | 状态 | 未登录 CTA | 无主命盘 CTA | 有主命盘 CTA | 真实路由 |
+|---|---|---|---|---|---|
+| 数学馆 | 已开放 | 去登录→仪式 | 完成仪式 | 进入数学馆 | `/life-studies/math` |
+| 语文馆·人生哲学 | 已开放 | 去登录→仪式 | 完成仪式 | 进入语文馆 | 复用现有 life-guidance 真实路由（探测后填） |
 
-批准后我按 1→8 顺序实施并汇报测试结果。
+**筹备中（不放可点入口，只显示「馆藏整理中」）：**
+- 地理馆·人生迁移地图
+- 历史馆·与你同龄的回声（如现有历史回声真实可用则标「已有基础馆藏」并指向真实路由）
+- 物理馆·惯性与转向成本
+- 经济馆·选择、机会成本与风险
+- 生物馆·节律、适应与恢复
+
+**微型可视化：**
+- 数学馆：SVG 主曲线 + 6 维（学业/事业/爱情关系/财富/家庭/健康）悬停高亮 + 「人生分支」示例按钮（就地展示曲线变化示意；标明「情景模拟，不是预测」）
+- 语文馆：桌面上一封未拆信 → 点开一句诗 → 「为什么是这句话」展开时代背景 → 「换一页」。首页仅示例，标注「示例馆藏」
+
+**「如何进入」三步图：** 完成仪式 → 设为主命盘 → 从顶部导航或个人书架进入。
+
+**主导航不新增顶级项**（避免与品牌名/账号/语言按钮遮挡），只在 hero 与 `/me/home` 增加「趣味图书馆」入口锚点；避免与「我的书架/四大体系」职责重叠。
+
+## 三、仪式之后·四间特别藏室（新组件 `src/components/PostRitualRoomsSection.tsx`）
+
+标题「仪式之后，图书馆会为你打开四间特别藏室」。桌面端探索地图（2×2 或轨道），移动端纵向路线。
+
+| 藏室 | 对应功能 | 权限标签 | 真实路由（探测后填） |
+|---|---|---|---|
+| 时间回廊 | 生命时间轴·大运（多维折线预览） | 基础馆藏 | `/me/timeline` 或等效 |
+| 验证档案室 | 关键节点·反向验证 | 基础馆藏 | 现有验证功能真实路由 |
+| 第二证人室 | 塔罗·第二位证人 | 基础馆藏（每月配额沿用现状） | `/me/tarot` 或等效 |
+| 私人阅览室 | 贤者/神谕者阅览室 | 贤者功能 / 神谕者功能 | `/me/sage` `/me/oracle` |
+
+每间藏室卡：是什么 / 回答什么 / 会看到什么 / 权限标签 / 从哪里进 / CTA 小字说明。**首页不重复展示价格卡与支付弹窗**，「私人阅览室」CTA 直达 `/me/sage`（未开通时由该页现有 `RoomLockedShell` + `MembershipCheckoutModal` 处理）。
+
+## 四、权限标签统一
+
+首页所有徽章只用：`基础馆藏` / `贤者功能` / `神谕者功能`；趣味图书馆开放态另用：`已开放` / `基础馆藏已开放` / `馆藏整理中`。Tooltip 文案按用户给定四条。全部经 `useMembershipTier` + 现有配置，不硬编码。
+
+## 五、CTA 路由闭环
+
+在新组件中集中一个 `resolveCta(target, { session, hasPrimaryChart, tier })` helper：
+- 未登录 → `/auth?next=<target>`
+- 已登录无主命盘 → `/ritual?next=<target>`
+- 有主命盘 → 目标真实路由
+- 权限不足 → 目标页面（由目标页现有锁屏 + `MembershipCheckoutModal` 承接）
+- 筹备中 → 不可点
+
+每个按钮附小字（例：「进入仪式·建立主命盘后返回数学馆」）。
+
+## 六、i18n / 响应式 / 无障碍
+
+- 所有新文案进 `src/lib/i18n.ts` 现有字典（新增 key 前缀 `home_playful_*`、`home_rooms_*`），英文单独校对不逐字翻。
+- clamp 标题；书脊/藏室卡在 1440/1200/1024/768/430/390/375 全部无横向滚动。
+- 展开：`aria-expanded` / `aria-controls`，键盘 Tab/Enter/Space/Esc，`prefers-reduced-motion` 关闭翻页动画。
+- 桌面主导航不加新项，避免遮挡。
+
+## 七、不做的事（防倒退）
+
+不恢复：三档方案底部按钮、重复 OracleRoomBanner、第二套价格卡、第二个支付弹窗、首页内直接支付、空白路由。继续复用 `MembershipCheckoutModal` / `simulate_mock_membership_upgrade` / `membership-plans` / `useMembershipTier`。
+
+## 八、修改文件
+
+- `src/routes/index.tsx` — 板块顺序与去重
+- `src/components/PlayfulLibrarySection.tsx`（新）+ 子文件 `PlayfulBookCard.tsx`、`MathBookPreview.tsx`（迷你 SVG 曲线）、`ChineseBookPreview.tsx`（示例信笺）
+- `src/components/PostRitualRoomsSection.tsx`（新）+ `RoomCard.tsx`
+- `src/lib/home-cta.ts`（新）— `resolveCta` + 状态→路由 helper
+- `src/lib/i18n.ts` — 新 key
+- 单测：`src/lib/home-cta.test.ts` 覆盖 5 种状态；`PlayfulLibrarySection.test.tsx` 覆盖徽章/展开互斥/筹备卡不可点
+
+## 九、验收
+
+`bun test`（预期 738+ 全绿）+ `bunx tsgo --noEmit` + 手动 6 秒可读性 + 未登录/无命盘/有命盘 × free/sage/oracle 组合走查 + 6 个断点无横向滚动 + reduced motion。**不发布生产**。
+
+## 十、需要你先确认
+
+1. 真实路由映射：让我在实现前先 `rg` 探测「语文馆/哲学解读/历史回声/时间轴/塔罗/验证」现有真实路由并汇报，再落 CTA。可以直接开始吗？
+2. 「趣味图书馆」是否需要新增顶级导航？我的建议：**不新增**（避免遮挡），只在首页与 `/me/home` 提供入口。你偏好？
