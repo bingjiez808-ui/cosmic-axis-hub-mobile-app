@@ -24,6 +24,8 @@ import {
 } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ReportToc, type TocItem } from "@/components/ReportToc";
+import { PriorityPreviewModal } from "@/components/PriorityPreviewModal";
+import { isConcernKey } from "@/lib/concern-guidance-v1";
 // Sage tree-hole is mounted globally in src/routes/__root.tsx.
 
 const DIM_ICONS: Record<string, LucideIcon> = {
