@@ -154,7 +154,7 @@ function MembershipPage() {
             ))}
           </div>
 
-          {/* Reading-room shortcuts — extras only, do NOT replace tier selection */}
+          {/* Reading-room shortcuts — direct entry only, no cross-links back to /report */}
           <div className="mt-3 flex flex-wrap gap-2">
             <Link
               to="/me/sage"
@@ -169,13 +169,9 @@ function MembershipPage() {
             >
               {isZh ? "进入神谕者阅览室" : "Enter Oracle Room"}
             </Link>
-            <Link
-              to="/report" hash="membership-plans"
-              className="min-h-9 inline-flex items-center rounded-full border border-amber-400/30 px-3 py-1.5 text-[11px] text-amber-100/85 hover:border-amber-300/60"
-            >
-              {isZh ? "查看三档方案 / 升级" : "See plans / upgrade"}
-            </Link>
           </div>
+
+
 
         </section>
 
