@@ -45,10 +45,14 @@ export function useSocialConsent(): {
   ackPrivacy: () => void;
   revokeAll: () => void;
 } {
-  const [state, setState] = useState<SocialConsent>(EMPTY);
+  // Lazy initializer reads localStorage on the first render. Every caller
+  // lives under `/_authenticated` which is `ssr: false`, so this is
+  // client-only and there is no hydration mismatch to worry about. This
+  // avoids a visible flip between the "not consented" gate and the
+  // "confirmed" banner on every route mount.
+  const [state, setState] = useState<SocialConsent>(() => readSocialConsent());
 
   useEffect(() => {
-    setState(readSocialConsent());
     const handler = () => setState(readSocialConsent());
     window.addEventListener("fn:social-consent-changed", handler);
     window.addEventListener("storage", handler);
@@ -57,6 +61,7 @@ export function useSocialConsent(): {
       window.removeEventListener("storage", handler);
     };
   }, []);
+
 
   const gated = state.ageConfirmed && state.privacyAck;
 
