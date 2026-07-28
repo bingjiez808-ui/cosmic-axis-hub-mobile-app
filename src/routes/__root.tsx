@@ -484,7 +484,7 @@ function SiteNav() {
           showTopBar ? "opacity-100 translate-y-0" : "-translate-y-full opacity-0 pointer-events-none"
         }`}
       >
-        <div className="glass-card mx-auto flex w-full max-w-[calc(100vw-1.5rem)] items-center gap-2 rounded-full px-3 py-2 xl:grid xl:w-auto xl:max-w-[min(96vw,72rem)] xl:grid-cols-[1fr_auto_1fr] xl:items-center xl:gap-4 xl:px-5 xl:py-2 xl:gap-8 xl:px-7">
+        <div className="glass-card mx-auto flex w-full max-w-[calc(100vw-1.5rem)] items-center justify-between gap-3 rounded-full px-3 py-2 xl:max-w-[min(98vw,84rem)] xl:gap-6 xl:px-6 xl:py-2">
           {/* Brand — returns to library home; not the only home entry */}
           <Link
             to="/"
