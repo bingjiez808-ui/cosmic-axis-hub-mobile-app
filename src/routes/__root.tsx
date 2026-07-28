@@ -617,7 +617,7 @@ function SiteNav() {
           </div>
 
           {/* Right side */}
-          <div className="flex items-center gap-2 xl:justify-self-end xl:gap-3">
+          <div className="flex flex-none items-center gap-2 xl:gap-3">
             {session ? (
               <button
                 type="button"
