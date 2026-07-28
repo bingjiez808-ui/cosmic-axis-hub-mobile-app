@@ -119,7 +119,7 @@ function choiceDelta(vars: Record<VariableKey, number>): number {
  */
 export function buildLifeSeries(input: BuildInput): LifePoint[] {
   const { seed, fromAge, toAge, scenario } = input;
-  if (!Number.isFinite(fromAge) || !Number.isFinite(toAge) || toAge <= fromAge) return [];
+  if (!Number.isFinite(fromAge) || !Number.isFinite(toAge) || toAge < fromAge) return [];
   const { baseline, phase1, phase2 } = seedFromString(seed);
   const delta = choiceDelta(scenario.variables);
   const bandHalf = clamp(scenario.noise, 0, 1) * 12;
