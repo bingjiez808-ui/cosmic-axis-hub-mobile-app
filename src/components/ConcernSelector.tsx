@@ -304,6 +304,87 @@ export function ConcernSelector({ hasPrimaryChart = false, existingReportId = nu
           </article>
         </div>
       </div>
+
+      {modalKey ? (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="concern-modal-title"
+          className="fixed inset-0 z-[70] flex items-end justify-center bg-black/70 p-0 backdrop-blur-sm sm:items-center sm:p-6"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setModalKey(null);
+          }}
+        >
+          <div className="w-full max-w-lg rounded-t-2xl border border-amber-200/25 bg-[#100a06] p-6 text-amber-50 shadow-[0_25px_80px_rgba(0,0,0,0.6)] sm:rounded-2xl">
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.28em] text-amber-300/70">
+                  {lang === "zh" ? "你想先读的，是这一章" : "This is the chapter to open first"}
+                </p>
+                <h3 id="concern-modal-title" className="mt-2 font-serif text-xl text-amber-100">
+                  {CONCERNS[modalKey].chip[lang]}
+                </h3>
+              </div>
+              <button
+                ref={closeBtnRef}
+                type="button"
+                onClick={() => setModalKey(null)}
+                aria-label={lang === "zh" ? "关闭" : "Close"}
+                className="min-h-11 min-w-11 rounded-full border border-amber-200/20 text-amber-100/70 hover:text-amber-100"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="text-sm leading-relaxed text-amber-100/80">
+              {CONCERNS[modalKey].question[lang]}
+            </p>
+            <p className="mt-3 text-[13px] leading-relaxed text-amber-100/65">
+              {CONCERNS[modalKey].nextStepHint[lang]}
+            </p>
+            <p className="mt-4 text-[11px] leading-snug text-amber-100/45">
+              {lang === "zh"
+                ? "你的选择只决定先从哪一章读起，不会改变命盘计算结果。"
+                : "Your pick only decides which chapter opens first — it never changes what the chart calculates."}
+            </p>
+            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setModalKey(null)}
+                className="inline-flex min-h-11 items-center justify-center rounded-lg border border-amber-200/25 px-4 text-sm text-amber-100/80 hover:border-amber-200/50"
+              >
+                {isSignedIn && hasPrimaryChart
+                  ? lang === "zh"
+                    ? "更换问题"
+                    : "Pick another"
+                  : lang === "zh"
+                    ? "先看看示例"
+                    : "See sample first"}
+              </button>
+              <Link
+                to={ctaHref}
+                onClick={() => setModalKey(null)}
+                className="inline-flex min-h-11 items-center justify-center rounded-lg bg-gradient-to-r from-amber-300 to-amber-500 px-5 text-sm font-medium text-black shadow-[0_10px_30px_rgba(251,191,36,0.25)] hover:brightness-110"
+              >
+                {!isSignedIn
+                  ? lang === "zh"
+                    ? "登录并保存这次选择"
+                    : "Sign in & save this pick"
+                  : !hasPrimaryChart
+                    ? lang === "zh"
+                      ? "开始仪式，生成我的命盘"
+                      : "Start ritual & generate my chart"
+                    : existingReportId
+                      ? lang === "zh"
+                        ? "打开我的优先解读"
+                        : "Open my priority reading"
+                      : lang === "zh"
+                        ? "生成并打开这一章"
+                        : "Generate & open this chapter"}
+              </Link>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }
