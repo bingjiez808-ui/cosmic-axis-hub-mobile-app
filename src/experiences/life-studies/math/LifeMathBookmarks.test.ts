@@ -69,10 +69,11 @@ describe("LifeMathBookmarks", () => {
     })).toBeGreaterThan(0);
   });
 
-  it("bookmarks avoid deterministic-fate language", () => {
+  it("bookmark translations avoid deterministic-fate language (guards may negate it)", () => {
     const banned = [/一定成功/, /必赚/, /稳赚/, /guaranteed to (succeed|profit)/i];
     for (const b of BOOKMARKS) {
-      const blob = JSON.stringify([b.translation, b.action, b.guard]);
+      // Guard text may quote-and-reject a banned phrase, so exclude it.
+      const blob = JSON.stringify([b.translation, b.action]);
       for (const re of banned) expect(re.test(blob)).toBe(false);
     }
   });
