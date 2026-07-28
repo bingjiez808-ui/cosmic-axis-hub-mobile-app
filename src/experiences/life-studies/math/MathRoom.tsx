@@ -275,7 +275,33 @@ export function MathRoom({
         </div>
       </section>
 
-      <ChoiceLab focusAge={focusAge} onBranchesChange={setBranches} lang={lang} />
+      <LifeMathBookmarks
+        input={{
+          activeBranchCount: branches.length,
+          ageVarianceHigh: ageDomainVariance(currentScores) > 120,
+          wealthRiskScore: currentScores.wealthRisk ?? 50,
+          studyOrLongTerm: focusAge < 30 || (currentScores.study ?? 50) > 60,
+        }}
+        lang={lang}
+      />
+
+      <ChoiceLab
+        focusAge={focusAge}
+        activeBranchCount={branches.length}
+        onBranchesChange={setBranches}
+        onCompareRequest={() => {
+          if (typeof window !== "undefined") {
+            const prefersReduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+            chartRef.current?.scrollIntoView({
+              behavior: prefersReduced ? "auto" : "smooth",
+              block: "start",
+            });
+          }
+          setChartHighlight(true);
+          setTimeout(() => setChartHighlight(false), 1800);
+        }}
+        lang={lang}
+      />
 
       <LifeYearModal
         snapshot={modalOpen ? snapshot : null}
