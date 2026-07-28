@@ -523,7 +523,9 @@ function SiteNav() {
                   aria-labelledby="library-menu-trigger"
                   className="absolute right-0 top-full mt-2 w-72 rounded-xl border border-gold-dust/25 bg-obsidian/95 p-2 backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.5)]"
                 >
-                  {libraryEntries.map((e) => {
+                  {libraryEntries.map((e, idx) => {
+                    const prev = libraryEntries[idx - 1];
+                    const showRoomsHeader = e.group === "rooms" && prev?.group !== "rooms";
                     const active = isActive(e.to);
                     const gated = gatedShelfHref(e.to);
                     const cls = `block rounded-lg px-3 py-2 ${
@@ -535,28 +537,24 @@ function SiteNav() {
                         <div className="mt-0.5 text-[10px] text-stone-warm/55">{e.hint}</div>
                       </>
                     );
-                    return gated ? (
-                      <Link
-                        key={e.to}
-                        to={gated.to}
-                        search={gated.search}
-                        onClick={() => setLibraryOpen(false)}
-                        className={cls}
-                        role="menuitem"
-                      >
+                    const link = gated ? (
+                      <Link key={e.to} to={gated.to} search={gated.search} onClick={() => setLibraryOpen(false)} className={cls} role="menuitem">
                         {inner}
                       </Link>
                     ) : (
-                      <Link
-                        key={e.to}
-                        to={e.to}
-                        onClick={() => setLibraryOpen(false)}
-                        aria-current={active ? "page" : undefined}
-                        className={cls}
-                        role="menuitem"
-                      >
+                      <Link key={e.to} to={e.to} onClick={() => setLibraryOpen(false)} aria-current={active ? "page" : undefined} className={cls} role="menuitem">
                         {inner}
                       </Link>
+                    );
+                    return (
+                      <div key={e.to}>
+                        {showRoomsHeader && (
+                          <div className="mt-2 border-t border-white/10 px-3 pb-1 pt-2 text-[9px] uppercase tracking-[0.28em] text-gold-dust/70">
+                            {isZh ? "会员阅览室" : "Membership Rooms"}
+                          </div>
+                        )}
+                        {link}
+                      </div>
                     );
                   })}
                 </div>
