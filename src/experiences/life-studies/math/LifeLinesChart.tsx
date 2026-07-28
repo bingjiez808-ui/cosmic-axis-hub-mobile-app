@@ -10,9 +10,11 @@ import {
 import type { BuildDomainResult, ScenarioBranch, TurningPoint } from "./LifeDomainModel";
 
 /**
- * Seven-line composite chart. Always draws the composite ribbon; per-domain
- * lines only when toggled on. Turning-point markers only render when the
- * model emitted them (i.e. a period-boundary caused the jump).
+ * Seven-line composite chart. Composite ribbon always visible; per-domain
+ * lines only when toggled on. Branch overlays draw from the focus age
+ * forward — dashed lines on the composite AND, when a domain is visible,
+ * on each domain the branch actually modifies. Legend + status bar surface
+ * which branches are on the chart.
  */
 export function LifeLinesChart({
   result,
@@ -22,6 +24,7 @@ export function LifeLinesChart({
   branches = [],
   ariaLabel,
   lang,
+  highlight = false,
 }: {
   result: BuildDomainResult;
   visibleDomains: Set<DomainKey>;
@@ -30,13 +33,16 @@ export function LifeLinesChart({
   branches?: Array<{ branch: ScenarioBranch; color: string }>;
   ariaLabel: string;
   lang: "zh" | "en";
+  highlight?: boolean;
 }) {
   const width = 760;
   const height = 300;
   const padL = 40;
-  const padR = 16;
+  const padR = 60; // extra room for end labels
   const padT = 20;
   const padB = 30;
+  const isZh = lang === "zh";
+  const clamp01 = (v: number) => Math.max(0, Math.min(100, v));
 
   const view = useMemo(() => {
     if (result.ages.length === 0) return null;
@@ -54,24 +60,65 @@ export function LifeLinesChart({
     const domainPaths: Record<DomainKey, string> = {} as Record<DomainKey, string>;
     for (const k of DOMAIN_KEYS) domainPaths[k] = line(result.domainSeries[k]);
 
-    // Branch overlays start from focusAge; shift each branch's series against
-    // the current composite baseline.
-    const branchPaths = branches.map(({ branch, color }) => {
-      const idx = Math.max(0, ages.indexOf(focusAge));
-      const points: string[] = [];
-      let running = result.compositeSeries[idx];
-      points.push(`M${sx(ages[idx]).toFixed(1)},${sy(running).toFixed(1)}`);
+    const idx = Math.max(0, ages.indexOf(focusAge));
+    const startAge = ages[idx];
+    const startComposite = result.compositeSeries[idx];
+
+    const branchOverlays = branches.map(({ branch, color }) => {
+      // Composite branch path.
+      let running = startComposite;
+      const cPts: string[] = [`M${sx(startAge).toFixed(1)},${sy(running).toFixed(1)}`];
+      let baseline = startComposite;
+      let ended = startAge;
       for (let y = 0; y < branch.perYearDeltas.length; y += 1) {
         const targetAge = ages[idx + 1 + y];
         if (targetAge == null) break;
         const total = Object.values(branch.perYearDeltas[y]).reduce((a, b) => a + (b ?? 0), 0);
-        running = Math.max(0, Math.min(100, result.compositeSeries[idx + 1 + y] + total * 0.6));
-        points.push(`L${sx(targetAge).toFixed(1)},${sy(running).toFixed(1)}`);
+        running = clamp01(result.compositeSeries[idx + 1 + y] + total * 0.6);
+        baseline = result.compositeSeries[idx + 1 + y];
+        cPts.push(`L${sx(targetAge).toFixed(1)},${sy(running).toFixed(1)}`);
+        ended = targetAge;
       }
-      return { path: points.join(" "), color, label: branch.label[lang] };
+      const diff = running - baseline;
+
+      // Per-domain branch paths (only for domains actually affected).
+      const perDomainPaths: Partial<Record<DomainKey, string>> = {};
+      const perDomainHasEffect: Partial<Record<DomainKey, boolean>> = {};
+      for (const k of DOMAIN_KEYS) {
+        const pts: string[] = [];
+        let v = result.domainSeries[k][idx];
+        pts.push(`M${sx(startAge).toFixed(1)},${sy(v).toFixed(1)}`);
+        let hasEffect = false;
+        for (let y = 0; y < branch.perYearDeltas.length; y += 1) {
+          const ta = ages[idx + 1 + y];
+          if (ta == null) break;
+          const d = branch.perYearDeltas[y][k] ?? 0;
+          if (Math.abs(d) > 0.05) hasEffect = true;
+          v = clamp01(result.domainSeries[k][idx + 1 + y] + d);
+          pts.push(`L${sx(ta).toFixed(1)},${sy(v).toFixed(1)}`);
+        }
+        perDomainPaths[k] = pts.join(" ");
+        perDomainHasEffect[k] = hasEffect;
+      }
+
+      return {
+        color,
+        label: branch.label[lang],
+        compositePath: cPts.join(" "),
+        endX: sx(ended),
+        endY: sy(running),
+        diff,
+        perDomainPaths,
+        perDomainHasEffect,
+      };
     });
 
-    return { ages, minAge, maxAge, sx, sy, compositePath, domainPaths, branchPaths };
+    return {
+      ages, minAge, maxAge, sx, sy,
+      compositePath, domainPaths,
+      startAge, startX: sx(startAge),
+      branchOverlays,
+    };
   }, [result, focusAge, branches, lang]);
 
   if (!view) {
@@ -92,8 +139,59 @@ export function LifeLinesChart({
   ];
   const focusX = view.sx(focusAge);
 
+  // "No direct modification" note when a single domain is visible and none
+  // of the active branches modify it.
+  let noEffectNote: string | null = null;
+  if (branches.length > 0 && visibleDomains.size === 1) {
+    const only = [...visibleDomains][0];
+    const anyEffect = view.branchOverlays.some((b) => b.perDomainHasEffect[only]);
+    if (!anyEffect) {
+      noEffectNote = isZh
+        ? `此方案对「${DOMAIN_LABELS[only].zh}」无直接修正。`
+        : `These branches make no direct modification to "${DOMAIN_LABELS[only].en}".`;
+    }
+  }
+
   return (
-    <div className="w-full overflow-x-auto rounded-xl border border-amber-400/15 bg-[#0b0b14]/70">
+    <div
+      data-testid="life-lines-chart-wrap"
+      className={`w-full overflow-x-auto rounded-xl border bg-[#0b0b14]/70 transition ${
+        highlight
+          ? "border-cyan-300/70 shadow-[0_0_0_2px_rgba(103,232,249,0.35)] motion-safe:animate-pulse"
+          : "border-amber-400/15"
+      }`}
+    >
+      {branches.length > 0 && (
+        <div
+          data-testid="life-branch-status"
+          className="flex flex-wrap items-center justify-between gap-2 border-b border-cyan-300/20 bg-cyan-300/5 px-3 py-2 text-[11px] text-cyan-100"
+        >
+          <span>
+            {isZh
+              ? `正在比较 ${branches.length} 条人生分支 · 从 ${view.startAge} 岁开始 · 未来 ${branches[0]?.branch.perYearDeltas.length ?? 5} 年`
+              : `Comparing ${branches.length} life branch${branches.length === 1 ? "" : "es"} · starting age ${view.startAge} · next ${branches[0]?.branch.perYearDeltas.length ?? 5} years`}
+          </span>
+          <div className="flex flex-wrap gap-2">
+            <span className="inline-flex items-center gap-1">
+              <span aria-hidden className="inline-block h-[2px] w-4" style={{ background: "#fde68a" }} />
+              {isZh ? "当前轨迹" : "Current path"}
+            </span>
+            {view.branchOverlays.map((b, i) => (
+              <span key={i} className="inline-flex items-center gap-1">
+                <span
+                  aria-hidden
+                  className="inline-block h-[2px] w-4"
+                  style={{ background: b.color, borderTop: `2px dashed ${b.color}` }}
+                />
+                {b.label}
+                <span className="text-cyan-200/70">
+                  {b.diff > 0 ? "+" : ""}{b.diff.toFixed(1)}
+                </span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
       <svg
         role="img"
         aria-label={ariaLabel}
@@ -130,10 +228,55 @@ export function LifeLinesChart({
           ) : null,
         )}
 
-        {/* Branch overlays */}
-        {view.branchPaths.map((b, i) => (
-          <path key={i} d={b.path} fill="none" stroke={b.color} strokeWidth={2} strokeDasharray="3 4" strokeLinecap="round" opacity={0.85} />
+        {/* Branch overlays: composite + per-visible-domain if affected */}
+        {view.branchOverlays.map((b, i) => (
+          <g key={`branch-${i}`}>
+            <path
+              d={b.compositePath}
+              fill="none"
+              stroke={b.color}
+              strokeWidth={2.2}
+              strokeDasharray="4 4"
+              strokeLinecap="round"
+              opacity={0.9}
+              data-testid={`branch-composite-${i}`}
+            />
+            {DOMAIN_KEYS.map((k) => {
+              if (!visibleDomains.has(k)) return null;
+              if (!b.perDomainHasEffect[k]) return null;
+              return (
+                <path
+                  key={`branch-${i}-${k}`}
+                  d={b.perDomainPaths[k]}
+                  fill="none"
+                  stroke={b.color}
+                  strokeOpacity={0.75}
+                  strokeWidth={1.4}
+                  strokeDasharray="2 4"
+                  strokeLinecap="round"
+                  data-testid={`branch-domain-${i}-${k}`}
+                />
+              );
+            })}
+            <text
+              x={b.endX + 4}
+              y={b.endY}
+              fill={b.color}
+              fontSize={9}
+              dominantBaseline="middle"
+            >
+              {b.label} {b.diff > 0 ? "+" : ""}{b.diff.toFixed(1)}
+            </text>
+          </g>
         ))}
+
+        {/* Start-of-branch marker */}
+        {branches.length > 0 && (
+          <line
+            x1={view.startX} x2={view.startX} y1={padT} y2={height - padB}
+            stroke="rgba(103,232,249,0.5)" strokeDasharray="3 3" strokeWidth={1}
+          />
+        )}
 
         {/* Turning points */}
         {result.turningPoints.map((tp: TurningPoint) => (
@@ -148,6 +291,11 @@ export function LifeLinesChart({
         {/* Focus cursor */}
         <line x1={focusX} x2={focusX} y1={padT} y2={height - padB} stroke="rgba(252,211,77,0.5)" strokeDasharray="2 3" />
       </svg>
+      {noEffectNote && (
+        <div className="border-t border-amber-400/10 px-3 py-2 text-[11px] text-amber-200/70">
+          {noEffectNote}
+        </div>
+      )}
     </div>
   );
 }
