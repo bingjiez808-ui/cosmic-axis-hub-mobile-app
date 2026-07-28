@@ -428,6 +428,7 @@ export function MathRoom({
                   aria-label={factorLabel(k)}
                   className="h-1 w-full"
                   style={{ accentColor: VARIABLE_COLORS[k] }}
+                  suppressHydrationWarning
                 />
               </div>
             );
