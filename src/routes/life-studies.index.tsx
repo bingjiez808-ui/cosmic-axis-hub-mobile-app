@@ -1,5 +1,7 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 
+import { CommonsHallNav } from "@/components/CommonsHallNav";
+
 import { DestinyCommonsGrid } from "@/components/destiny-commons/DestinyCommonsGrid";
 import {
   DESTINY_COMMONS_HALLS,
