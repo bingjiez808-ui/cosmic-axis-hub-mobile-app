@@ -337,6 +337,15 @@ const SaveReportInput = z.object({
   report_json: z.custom<Json>((v) => v !== undefined),
   model: z.string().max(120).optional(),
   provider: z.string().max(120).optional(),
+  contentHash: z.string().min(8).max(128).optional(),
+  tokenUsage: z
+    .object({
+      input_tokens: z.number().int().nonnegative().optional(),
+      output_tokens: z.number().int().nonnegative().optional(),
+      total_tokens: z.number().int().nonnegative().optional(),
+    })
+    .partial()
+    .optional(),
 });
 
 export const saveReport = createServerFn({ method: "POST" })
@@ -354,6 +363,8 @@ export const saveReport = createServerFn({ method: "POST" })
         provider: data.provider ?? null,
         error_message: null,
         generated_at: new Date().toISOString(),
+        content_hash: data.contentHash ?? null,
+        token_usage: (data.tokenUsage ?? null) as never,
       })
       .eq("id", data.reportId)
       .eq("user_id", userId); // ownership guard
