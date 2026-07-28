@@ -25,8 +25,32 @@ export type MembershipState =
       active: boolean;
     };
 
+// Cross-component refresh signal. `refreshMembershipTier()` triggers
+// every mounted `useMembershipTier` to reload — used after a successful
+// in-place membership checkout so gated views unlock without a route change.
+const listeners = new Set<() => void>();
+
+export async function refreshMembershipTier(): Promise<void> {
+  listeners.forEach((fn) => {
+    try {
+      fn();
+    } catch {
+      // ignore
+    }
+  });
+}
+
 export function useMembershipTier(): MembershipState {
   const [state, setState] = useState<MembershipState>({ kind: "loading" });
+  const [nonce, setNonce] = useState(0);
+
+  useEffect(() => {
+    const bump = () => setNonce((n) => n + 1);
+    listeners.add(bump);
+    return () => {
+      listeners.delete(bump);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -71,7 +95,7 @@ export function useMembershipTier(): MembershipState {
       cancelled = true;
       sub.subscription.unsubscribe();
     };
-  }, []);
+  }, [nonce]);
 
   return state;
 }

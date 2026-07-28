@@ -55,7 +55,19 @@ export function LockedBanner({ banner, lang }: { banner: RoomBanner; lang: "en" 
   );
 }
 
-export function LockedCtaAnchor({ lang }: { lang: "en" | "zh" }) {
+/**
+ * LockedCtaAnchor — bottom CTA on a locked room page.
+ * If `onUpgrade` is supplied, the button opens the shared in-place
+ * `MembershipCheckoutModal` on this page. If not, it falls back to
+ * navigating to /report#membership-plans (legacy behaviour).
+ */
+export function LockedCtaAnchor({
+  lang,
+  onUpgrade,
+}: {
+  lang: "en" | "zh";
+  onUpgrade?: () => void;
+}) {
   const isZh = lang === "zh";
   return (
     <section
@@ -64,21 +76,32 @@ export function LockedCtaAnchor({ lang }: { lang: "en" | "zh" }) {
       className="mt-8 scroll-mt-[calc(var(--site-nav-height,96px)+24px)] rounded-2xl border border-amber-300/50 bg-black/30 p-5 text-center"
     >
       <p className="text-[11px] uppercase tracking-[0.28em] text-amber-300/80">
-        {isZh ? "唯一支付入口" : "Single payment path"}
+        {isZh ? "会员阅览室" : "Member reading room"}
       </p>
       <p className="mx-auto mt-2 max-w-lg text-sm text-amber-100/80">
         {isZh
-          ? "所有付费升级都在报告页的三档方案区完成，避免两个支付窗口。"
-          : "All paid upgrades happen in the three-tier plan panel on the report page — never a second checkout."}
+          ? "开通对应月度会员即可原地解锁本阅览室的全部功能，已开通的内容立即可读。"
+          : "Activate the matching monthly membership and this room unlocks in place — no page hop, no second checkout."}
       </p>
-      <Link
-        to="/report"
-        hash="membership-plans"
-        data-testid="room-locked-cta-link"
-        className="mt-4 inline-flex min-h-11 items-center rounded-full bg-amber-300 px-5 py-2 text-xs uppercase tracking-[0.28em] text-[#0a0a12] hover:bg-amber-200"
-      >
-        {ctaLabel(lang)}
-      </Link>
+      {onUpgrade ? (
+        <button
+          type="button"
+          onClick={onUpgrade}
+          data-testid="room-locked-cta-button"
+          className="mt-4 inline-flex min-h-11 items-center rounded-full bg-amber-300 px-5 py-2 text-xs uppercase tracking-[0.28em] text-[#0a0a12] hover:bg-amber-200"
+        >
+          {ctaLabel(lang)}
+        </button>
+      ) : (
+        <Link
+          to="/report"
+          hash="membership-plans"
+          data-testid="room-locked-cta-link"
+          className="mt-4 inline-flex min-h-11 items-center rounded-full bg-amber-300 px-5 py-2 text-xs uppercase tracking-[0.28em] text-[#0a0a12] hover:bg-amber-200"
+        >
+          {ctaLabel(lang)}
+        </Link>
+      )}
     </section>
   );
 }
@@ -100,21 +123,30 @@ export function scrollToRoomCta() {
   );
   const y = el.getBoundingClientRect().top + window.scrollY - (nav + 16);
   window.scrollTo({ top: y, behavior: "smooth" });
-  // Move focus for keyboard users.
-  const link = el.querySelector<HTMLElement>('[data-testid="room-locked-cta-link"]');
+  const link =
+    el.querySelector<HTMLElement>('[data-testid="room-locked-cta-button"]') ??
+    el.querySelector<HTMLElement>('[data-testid="room-locked-cta-link"]');
   link?.focus({ preventScroll: true });
 }
 
+/**
+ * LockedActionButton — a would-be "execute" affordance rendered in a
+ * disabled/locked state. If `onUpgrade` is supplied, clicking it opens
+ * the shared in-place checkout modal; otherwise it scrolls to the
+ * room's CTA anchor.
+ */
 export function LockedActionButton({
   testId,
   lang,
   children,
   className,
+  onUpgrade,
 }: {
   testId?: string;
   lang: "en" | "zh";
   children: ReactNode;
   className?: string;
+  onUpgrade?: () => void;
 }) {
   return (
     <button
@@ -124,7 +156,8 @@ export function LockedActionButton({
       aria-disabled="true"
       onClick={(e) => {
         e.preventDefault();
-        scrollToRoomCta();
+        if (onUpgrade) onUpgrade();
+        else scrollToRoomCta();
       }}
       title={lockedButtonLabel(lang)}
       className={

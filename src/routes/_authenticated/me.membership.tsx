@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
+import { MembershipCheckoutModal } from "@/components/MembershipCheckoutModal";
 import { PersonalWorkspaceNav } from "@/components/PersonalWorkspaceNav";
 import { MembershipCard } from "@/components/MembershipCard";
 import { MyTicketsCard } from "@/components/MyTicketsCard";
@@ -8,6 +9,7 @@ import { DailyRoomError } from "@/experiences/daily-room/fallback";
 import { PersonalShellPending } from "@/experiences/daily-room/personal-shell-pending";
 import { supabase } from "@/integrations/supabase/client";
 import { useLang } from "@/lib/i18n";
+import type { MembershipTierId } from "@/lib/membership-plans";
 
 /**
  * /me/membership — split cleanly into two entitlement kinds:
@@ -40,6 +42,7 @@ function MembershipPage() {
   const { lang } = useLang();
   const isZh = lang === "zh";
   const [premium, setPremium] = useState<PremiumRow[] | null>(null);
+  const [checkoutTarget, setCheckoutTarget] = useState<MembershipTierId | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -138,12 +141,14 @@ function MembershipPage() {
                   {p.desc}
                 </p>
                 {p.id !== "free" && (
-                  <Link
-                    to="/report" hash="membership-plans"
+                  <button
+                    type="button"
+                    onClick={() => setCheckoutTarget(p.id as MembershipTierId)}
+                    data-testid={`me-membership-plan-cta-${p.id}`}
                     className="mt-3 inline-flex min-h-9 items-center justify-center rounded-full border border-amber-300/40 px-3 py-1.5 text-[11px] text-amber-100 hover:bg-amber-500/10"
                   >
-                    {isZh ? "去选择方案" : "Choose plan"}
-                  </Link>
+                    {isZh ? "开通 / 续订" : "Activate / renew"}
+                  </button>
                 )}
               </div>
             ))}
@@ -259,6 +264,13 @@ function MembershipPage() {
           <MyTicketsCard lang={lang} />
         </section>
       </div>
+      <MembershipCheckoutModal
+        open={checkoutTarget !== null}
+        targetTier={checkoutTarget ?? "sage"}
+        source="membership"
+        lang={lang}
+        onClose={() => setCheckoutTarget(null)}
+      />
     </div>
   );
 }

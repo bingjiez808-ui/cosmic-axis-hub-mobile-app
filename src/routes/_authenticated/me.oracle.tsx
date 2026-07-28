@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, Lock, Send } from "lucide-react";
 
+import { MembershipCheckoutModal } from "@/components/MembershipCheckoutModal";
 import { PersonalWorkspaceNav } from "@/components/PersonalWorkspaceNav";
 import {
   LockedActionButton,
@@ -79,6 +80,9 @@ function OraclePage() {
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [memNonce, setMemNonce] = useState(0);
+  const openCheckout = () => setCheckoutOpen(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -98,8 +102,6 @@ function OraclePage() {
       if (active) {
         setMem({ kind: "oracle", expiresAt: exp });
         try {
-          // Only entitled callers ever load charts — this prevents any
-          // possibility of leaking chart names/ids to non-Oracle users.
           const list = await listUserCharts();
           if (!cancelled) setCharts(list);
         } catch {
@@ -113,7 +115,7 @@ function OraclePage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [memNonce]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({
@@ -230,8 +232,8 @@ function OraclePage() {
         {mem.kind !== "loading" && !access.entitled && (
           <>
             <LockedBanner banner={access.banner} lang={lang} />
-            <OracleLockedPreview lang={lang} tier={tier as "none" | "sage"} />
-            <LockedCtaAnchor lang={lang} />
+            <OracleLockedPreview lang={lang} tier={tier as "none" | "sage"} onUpgrade={openCheckout} />
+            <LockedCtaAnchor lang={lang} onUpgrade={openCheckout} />
           </>
         )}
 
@@ -396,6 +398,14 @@ function OraclePage() {
             )}
           </>
         )}
+        <MembershipCheckoutModal
+          open={checkoutOpen}
+          targetTier="oracle"
+          source="oracle_room"
+          lang={lang}
+          onClose={() => setCheckoutOpen(false)}
+          onSuccess={() => setMemNonce((n) => n + 1)}
+        />
       </div>
     </div>
   );
@@ -406,7 +416,15 @@ function OraclePage() {
  * shape and a chat composer, but every actionable control is a
  * `LockedActionButton` — clicks scroll to the canonical CTA.
  */
-function OracleLockedPreview({ lang, tier }: { lang: "en" | "zh"; tier: "none" | "sage" }) {
+function OracleLockedPreview({
+  lang,
+  tier,
+  onUpgrade,
+}: {
+  lang: "en" | "zh";
+  tier: "none" | "sage";
+  onUpgrade: () => void;
+}) {
   const isZh = lang === "zh";
   void tier;
   const sampleRows = [
@@ -492,6 +510,7 @@ function OracleLockedPreview({ lang, tier }: { lang: "en" | "zh"; tier: "none" |
           <LockedActionButton
             testId="oracle-locked-send"
             lang={lang}
+            onUpgrade={onUpgrade}
             className="grid size-10 place-items-center rounded-lg border border-amber-400/30 bg-black/40 text-amber-100/70 hover:border-amber-300/60"
           >
             <Send size={12} aria-hidden />
@@ -541,6 +560,7 @@ function OracleLockedPreview({ lang, tier }: { lang: "en" | "zh"; tier: "none" |
             <LockedActionButton
               testId={`oracle-locked-tile-${c.id}-action`}
               lang={lang}
+              onUpgrade={onUpgrade}
               className="mt-3 inline-flex min-h-10 items-center gap-2 self-start rounded-full border border-amber-400/30 bg-black/40 px-3 py-1.5 text-[11px] uppercase tracking-[0.24em] text-amber-100/70 hover:border-amber-300/60 hover:text-amber-100"
             >
               {c.action}
