@@ -24,6 +24,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as LifeStudiesIndexRouteImport } from './routes/life-studies.index'
 import { Route as AuthIndexRouteImport } from './routes/auth.index'
 import { Route as LifeStudiesMathRouteImport } from './routes/life-studies.math'
 import { Route as DevReaderHarnessRouteImport } from './routes/dev.reader-harness'
@@ -120,6 +121,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const LifeStudiesIndexRoute = LifeStudiesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => LifeStudiesRoute,
 } as any)
 const AuthIndexRoute = AuthIndexRouteImport.update({
   id: '/',
@@ -264,6 +270,7 @@ export interface FileRoutesByFullPath {
   '/dev/reader-harness': typeof DevReaderHarnessRoute
   '/life-studies/math': typeof LifeStudiesMathRoute
   '/auth/': typeof AuthIndexRoute
+  '/life-studies/': typeof LifeStudiesIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/me/echoes': typeof AuthenticatedMeEchoesRoute
@@ -280,7 +287,6 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/community': typeof CommunityRoute
   '/delete-account': typeof DeleteAccountRoute
-  '/life-studies': typeof LifeStudiesRouteWithChildren
   '/mcp': typeof McpRoute
   '/privacy': typeof PrivacyRoute
   '/report': typeof ReportRoute
@@ -301,6 +307,7 @@ export interface FileRoutesByTo {
   '/dev/reader-harness': typeof DevReaderHarnessRoute
   '/life-studies/math': typeof LifeStudiesMathRoute
   '/auth': typeof AuthIndexRoute
+  '/life-studies': typeof LifeStudiesIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/me/echoes': typeof AuthenticatedMeEchoesRoute
@@ -341,6 +348,7 @@ export interface FileRoutesById {
   '/dev/reader-harness': typeof DevReaderHarnessRoute
   '/life-studies/math': typeof LifeStudiesMathRoute
   '/auth/': typeof AuthIndexRoute
+  '/life-studies/': typeof LifeStudiesIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/_authenticated/me/echoes': typeof AuthenticatedMeEchoesRoute
@@ -381,6 +389,7 @@ export interface FileRouteTypes {
     | '/dev/reader-harness'
     | '/life-studies/math'
     | '/auth/'
+    | '/life-studies/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/me/echoes'
@@ -397,7 +406,6 @@ export interface FileRouteTypes {
     | '/about'
     | '/community'
     | '/delete-account'
-    | '/life-studies'
     | '/mcp'
     | '/privacy'
     | '/report'
@@ -418,6 +426,7 @@ export interface FileRouteTypes {
     | '/dev/reader-harness'
     | '/life-studies/math'
     | '/auth'
+    | '/life-studies'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/me/echoes'
@@ -457,6 +466,7 @@ export interface FileRouteTypes {
     | '/dev/reader-harness'
     | '/life-studies/math'
     | '/auth/'
+    | '/life-studies/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/_authenticated/me/echoes'
@@ -602,6 +612,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/life-studies/': {
+      id: '/life-studies/'
+      path: '/'
+      fullPath: '/life-studies/'
+      preLoaderRoute: typeof LifeStudiesIndexRouteImport
+      parentRoute: typeof LifeStudiesRoute
     }
     '/auth/': {
       id: '/auth/'
@@ -803,10 +820,12 @@ const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
 interface LifeStudiesRouteChildren {
   LifeStudiesMathRoute: typeof LifeStudiesMathRoute
+  LifeStudiesIndexRoute: typeof LifeStudiesIndexRoute
 }
 
 const LifeStudiesRouteChildren: LifeStudiesRouteChildren = {
   LifeStudiesMathRoute: LifeStudiesMathRoute,
+  LifeStudiesIndexRoute: LifeStudiesIndexRoute,
 }
 
 const LifeStudiesRouteWithChildren = LifeStudiesRoute._addFileChildren(
