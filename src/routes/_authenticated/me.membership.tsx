@@ -93,6 +93,63 @@ function MembershipPage() {
             </p>
           </div>
           <MembershipCard />
+
+          {/* Three-tier plan comparison — kept as a selector, not replaced by doors */}
+          <div
+            data-testid="membership-plans-compare"
+            className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3"
+          >
+            {[
+              {
+                id: "free",
+                name: isZh ? "求索者" : "Seeker",
+                price: isZh ? "¥0" : "$0",
+                desc: isZh
+                  ? "永久免费的综合解读与当前十年大运。"
+                  : "The unified reading and current decade — free forever.",
+              },
+              {
+                id: "sage",
+                name: isZh ? "贤者" : "Sage",
+                price: isZh ? "¥19.9 / 月" : "$2.99 / mo",
+                desc: isZh
+                  ? "完整生命时间轴 · 合盘关系分析 · 每月 10 次塔罗 AI。"
+                  : "Full life timeline · synastry · 10 tarot AI readings / month.",
+              },
+              {
+                id: "oracle",
+                name: isZh ? "神谕者" : "Oracle",
+                price: isZh ? "¥39.9 / 月" : "$5.99 / mo",
+                desc: isZh
+                  ? "包含贤者全部权益 · 无限追问 · 无限塔罗 · 90 天窗口。"
+                  : "Includes Sage · unlimited follow-up · unlimited tarot · 90-day windows.",
+              },
+            ].map((p) => (
+              <div
+                key={p.id}
+                data-testid={`me-membership-plan-${p.id}`}
+                className="flex flex-col rounded-xl border border-amber-400/20 bg-black/25 p-4"
+              >
+                <p className="text-[10px] uppercase tracking-[0.28em] text-amber-300/70">
+                  {p.name}
+                </p>
+                <p className="mt-1 font-serif text-lg text-amber-100">{p.price}</p>
+                <p className="mt-2 flex-1 text-xs leading-relaxed text-amber-100/70">
+                  {p.desc}
+                </p>
+                {p.id !== "free" && (
+                  <Link
+                    to="/report"
+                    className="mt-3 inline-flex min-h-9 items-center justify-center rounded-full border border-amber-300/40 px-3 py-1.5 text-[11px] text-amber-100 hover:bg-amber-500/10"
+                  >
+                    {isZh ? "去选择方案" : "Choose plan"}
+                  </Link>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Reading-room shortcuts — extras only, do NOT replace tier selection */}
           <div className="mt-3 flex flex-wrap gap-2">
             <Link
               to="/me/sage"
@@ -111,9 +168,10 @@ function MembershipPage() {
               to="/report"
               className="min-h-9 inline-flex items-center rounded-full border border-amber-400/30 px-3 py-1.5 text-[11px] text-amber-100/85 hover:border-amber-300/60"
             >
-              {isZh ? "查看两扇门 / 升级" : "See doors / upgrade"}
+              {isZh ? "查看三档方案 / 升级" : "See plans / upgrade"}
             </Link>
           </div>
+
         </section>
 
         {/* Section 2 — One-time ¥79 premium report */}
