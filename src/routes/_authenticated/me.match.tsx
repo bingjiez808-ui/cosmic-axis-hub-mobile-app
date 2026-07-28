@@ -307,41 +307,46 @@ function ResultPanel({
         ))}
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2">
-        <BulletCard title={d.match_resonances} items={result.resonances} tone="emerald" />
-        <BulletCard title={d.match_complements} items={result.complements} tone="amber" />
-        <BulletCard title={d.match_frictions} items={result.frictions} tone="rose" />
-        <BulletCard title={d.match_suggestions} items={result.suggestions} tone="amber" />
-      </section>
+      <SageLockedInsights source="relationship" testId="compat-deep-lock">
+        <div className="space-y-6">
+          <section className="grid gap-4 md:grid-cols-2">
+            <BulletCard title={d.match_resonances} items={result.resonances} tone="emerald" />
+            <BulletCard title={d.match_complements} items={result.complements} tone="amber" />
+            <BulletCard title={d.match_frictions} items={result.frictions} tone="rose" />
+            <BulletCard title={d.match_suggestions} items={result.suggestions} tone="amber" />
+          </section>
 
-      {result.evidence_refs && result.evidence_refs.length > 0 && (
-        <section className="rounded-xl border border-amber-400/15 bg-black/20 p-5 text-xs leading-relaxed text-amber-100/80">
-          <div className="mb-2 text-amber-200/70">{d.match_evidence_title}</div>
-          <div className="flex flex-wrap gap-2">
-            {result.evidence_refs.map((r) => (
-              <code
-                key={r}
-                className="rounded border border-amber-400/20 bg-black/40 px-2 py-0.5 text-amber-200/80"
-              >
-                {r}
-              </code>
-            ))}
-          </div>
-          <div className="mt-2 text-amber-200/60">
-            {result.source_systems && result.source_systems.length > 0
-              ? d.match_evidence_source(
-                  result.source_systems.join(" / "),
-                  !!result.cross_system_support,
-                )
-              : d.match_evidence_source_fallback}
-          </div>
-          {result.missing_facts && result.missing_facts.length > 0 && (
-            <div className="mt-2 text-amber-200/50">
-              {d.match_evidence_missing(result.missing_facts.join(", "))}
-            </div>
+          {result.evidence_refs && result.evidence_refs.length > 0 && (
+            <section className="rounded-xl border border-amber-400/15 bg-black/20 p-5 text-xs leading-relaxed text-amber-100/80">
+              <div className="mb-2 text-amber-200/70">{d.match_evidence_title}</div>
+              <div className="flex flex-wrap gap-2">
+                {result.evidence_refs.map((r) => (
+                  <code
+                    key={r}
+                    className="rounded border border-amber-400/20 bg-black/40 px-2 py-0.5 text-amber-200/80"
+                  >
+                    {r}
+                  </code>
+                ))}
+              </div>
+              <div className="mt-2 text-amber-200/60">
+                {result.source_systems && result.source_systems.length > 0
+                  ? d.match_evidence_source(
+                      result.source_systems.join(" / "),
+                      !!result.cross_system_support,
+                    )
+                  : d.match_evidence_source_fallback}
+              </div>
+              {result.missing_facts && result.missing_facts.length > 0 && (
+                <div className="mt-2 text-amber-200/50">
+                  {d.match_evidence_missing(result.missing_facts.join(", "))}
+                </div>
+              )}
+            </section>
           )}
-        </section>
-      )}
+        </div>
+      </SageLockedInsights>
+
 
       <section className="rounded-xl border border-amber-400/15 bg-black/20 p-5 text-xs leading-relaxed text-amber-100/70">
         {result.disclaimer}
