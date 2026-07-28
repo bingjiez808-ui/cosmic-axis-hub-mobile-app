@@ -161,7 +161,7 @@ export function MathRoom({
       </div>
 
       {/* Chart */}
-      <section className="grid grid-cols-1 gap-4">
+      <section ref={chartRef} className="grid grid-cols-1 gap-4 scroll-mt-24">
         <LifeLinesChart
           result={result}
           visibleDomains={visible}
@@ -170,7 +170,9 @@ export function MathRoom({
           branches={branches}
           ariaLabel={isZh ? "人生七线图" : "Seven life lines chart"}
           lang={lang}
+          highlight={chartHighlight}
         />
+
 
         {/* Domain toggles */}
         <div className="rounded-2xl border border-amber-400/15 bg-[#0b0b14]/70 p-4">
