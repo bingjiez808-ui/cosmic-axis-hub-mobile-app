@@ -129,15 +129,18 @@ export function MembershipCard() {
       </div>
       <p className="mt-3 text-xs leading-relaxed text-amber-100/65">{t("auto_lapse")}</p>
       <p className="mt-1 text-xs leading-relaxed text-amber-100/50">{t("reports_note")}</p>
-      <div className="mt-4 flex flex-wrap gap-2">
-        <Link
-          to="/me/oracle"
-          search={{ source: "profile_membership" } as never}
-          className="min-h-11 inline-flex items-center rounded-full border border-amber-300/50 px-4 py-2 text-xs text-amber-100 hover:bg-amber-500/10"
-        >
-          {state.tier === "oracle" ? t("open_oracle") : t("learn_oracle")}
-        </Link>
-      </div>
+      {state.tier === "oracle" && (
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Link
+            to="/me/oracle"
+            search={{ source: "profile_membership" } as never}
+            className="min-h-11 inline-flex items-center rounded-full border border-amber-300/50 px-4 py-2 text-xs text-amber-100 hover:bg-amber-500/10"
+          >
+            {t("open_oracle")}
+          </Link>
+        </div>
+      )}
+
     </section>
   );
 }
