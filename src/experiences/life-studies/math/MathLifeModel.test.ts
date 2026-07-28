@@ -181,18 +181,21 @@ describe("MathLifeModel · composition", () => {
     expect(topN).toBeGreaterThan(bottomN);
   });
 
-  it("three presets produce visibly different totals at age 30", () => {
-    const totals = (Object.keys(PRESETS) as (keyof typeof PRESETS)[]).map((id) => {
-      const comp = buildComposition({
-        seed, fromAge: 30, toAge: 30,
+  it("three presets produce visibly different totals across the lifespan", () => {
+    const comps = (Object.keys(PRESETS) as (keyof typeof PRESETS)[]).map((id) =>
+      buildComposition({
+        seed, fromAge: 0, toAge: 80,
         scenario: { ...DEFAULT_SCENARIO, variables: { ...PRESETS[id].variables } },
-      });
-      return comp.totalSeries[0];
-    });
-    // all three totals should differ pairwise by >= 1
-    for (let i = 0; i < totals.length; i += 1) {
-      for (let j = i + 1; j < totals.length; j += 1) {
-        expect(Math.abs(totals[i] - totals[j])).toBeGreaterThan(0.5);
+      }),
+    );
+    // Between any two presets, at least one age must show a >=2 total difference.
+    for (let i = 0; i < comps.length; i += 1) {
+      for (let j = i + 1; j < comps.length; j += 1) {
+        let maxDiff = 0;
+        for (let a = 0; a < comps[i].totalSeries.length; a += 1) {
+          maxDiff = Math.max(maxDiff, Math.abs(comps[i].totalSeries[a] - comps[j].totalSeries[a]));
+        }
+        expect(maxDiff).toBeGreaterThan(2);
       }
     }
   });
