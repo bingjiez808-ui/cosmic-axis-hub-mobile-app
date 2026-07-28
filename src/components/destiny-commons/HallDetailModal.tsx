@@ -80,8 +80,9 @@ function HallBody({ hall, isZh }: { hall: DestinyCommonsHall; isZh: boolean }) {
       : "Collection in progress";
 
   return (
-    <div className="flex max-h-[80vh] flex-col">
-      <DialogHeader className="shrink-0 border-b border-white/5 px-6 pb-4 pt-6 text-left sm:px-8">
+    <div className="flex max-h-[85vh] flex-col">
+      <HallHero hall={hall} isZh={isZh} />
+      <DialogHeader className="shrink-0 border-b border-white/5 px-6 pb-4 pt-5 text-left sm:px-8">
         <div className="flex flex-wrap items-center gap-3 text-[10px] uppercase tracking-[0.32em]">
           <span className="text-gold-dust/70">
             {isZh ? "命运通识馆" : "General Knowledge Hall"} · {hall.code}
