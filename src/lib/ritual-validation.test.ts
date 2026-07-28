@@ -7,6 +7,7 @@ import { describe, expect, test } from "bun:test";
 import {
   FIELD_STEP,
   firstMissingStep,
+  isResolvablePlace,
   missingFields,
   nameStepCopy,
   validateField,
