@@ -248,6 +248,32 @@ function OraclePage() {
           </p>
         </header>
 
+        {/* Oracle ⊇ Sage — surface the inheritance instead of duplicating
+            Sage cards inside this room. Any member here can also enter
+            the Sage Reading Room. */}
+        <section
+          data-testid="oracle-includes-sage"
+          className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-300/30 bg-gradient-to-br from-[#2a1a08] to-[#1a1226] px-4 py-3"
+        >
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.28em] text-amber-300/80">
+              {lang === "zh" ? "已包含贤者阅览室" : "Includes Sage Reading Room"}
+            </p>
+            <p className="mt-1 text-xs text-amber-100/75">
+              {lang === "zh"
+                ? "神谕者严格包含贤者的全部权益：完整生命时间轴、合盘、每月塔罗。"
+                : "Oracle strictly inherits every Sage benefit: full life timeline, synastry, monthly tarot."}
+            </p>
+          </div>
+          <Link
+            to="/me/sage"
+            className="min-h-9 inline-flex items-center rounded-full border border-amber-300/50 px-3 py-1.5 text-[11px] uppercase tracking-[0.22em] text-amber-100 hover:bg-amber-500/10"
+          >
+            {lang === "zh" ? "进入贤者阅览室" : "Enter Sage Room"}
+          </Link>
+        </section>
+
+
         {/* Membership status */}
         {mem.kind === "loading" && <div className="text-sm text-amber-100/70">{t("loading")}</div>}
 

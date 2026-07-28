@@ -1,68 +1,64 @@
-# Life Function → Seven Life Lines
+## 审计结论
 
-Refactor `/life-studies/math` from four abstract sliders into an age-driven, evidence-backed view of seven life domains: study, career, love, family, social, wealthRisk, health. Keep old chart primitives, do not touch DB, no AI, no publish.
+**现有真实状态**
+- `src/lib/account.tsx`：`Plan = "free" | "sage" | "oracle"`，`useAccount().plan` 存 localStorage，用于 UI 判权。
+- `src/components/MembershipCard.tsx` + `me.oracle.tsx`：读 `profiles.membership_tier`（真实后端），带过期判断。
+- `src/lib/access-level.ts`：已有 `hasAccess(feature, ctx)` fail-closed，含 `sage`/`oracle` 层级；这是唯一权威。
+- `src/components/ReportExtras.tsx#MembershipSection`（L2088-2332）：当前 /report 的三列价格卡 + `TierTeasers` + Sage/Oracle-exclusive 组件 + `UpgradeCheckoutModal`（模拟支付）。
+- `firstTime` -30% 折扣：只作为本地 state，`UpgradeCheckoutModal` 内确实按此对显示价格打折 → 保留。
+- `/me/oracle.tsx`：已有四体系交叉、命盘选择、合盘等 —— 保留内容，重排为神谕者仪表盘。
+- `/me/membership.tsx`：仅 `MembershipCard` + `MyTicketsCard`，需要拆两类。
+- 塔罗真实用量在 `tarot_usage` 表 + `src/lib/tarot-quota.ts`（本地）；不伪造剩余数。
 
-## 1. New pure model (`src/experiences/life-studies/math/`)
+**冲突项 —— 不自行覆盖，仅列出等确认**
+- 现有 i18n `mem_sage_desc` 写 "12 个月运势推演"，`mem_oracle_desc` 写"未来观察名单 · 优先计算"—— 与本轮真实权益不同。计划替换 i18n copy 为真实权益（属文案，不改后端）。
+- 现 `TierTeasers` 三卡（Synastry / 90-day / Ask Sage）在 /report 直接展示；将从 /report 移除，仅在 /me/sage、/me/oracle 中出现。若你希望保留 Ask Sage 入口在 /report，请说明。
 
-New files (old `MathLifeModel.ts` kept and re-exported for the scenario lab; renamed conceptually to "scenario engine"):
+## 目标结构
 
-- `domains.ts` — domain keys, labels (zh/en), colors, line styles, definitions ("interpretive index 0–100, 50 = neutral").
-- `LifeDomainModel.ts` — deterministic scoring from supplied FACTS only. Exports:
-  - `buildDomainSeries({ facts, mode, fromAge, toAge })` → `{ ages, domainSeries, compositeSeries, turningPoints, dataCoverage }`
-  - `ageSnapshot(age, series, facts)` → per-domain `{ score, band, positiveSignals, frictionSignals, evidenceRefs, confidence, dataCoverage }`
-  - `crossDomainEffects(snapshot)` → 2–4 triggered arrows with fixed rules
-  - `scenarioBranches(age, choice, series)` → 2–3 branches over next 3–5 years
-- `evidence.ts` — resolves evidence refs to supplied FACTS (bazi pillars/十神/五行/大运流年; ziwei 宫/星/四化/大限流年; vedic Mahadasha/Antardasha; western natal aspects only). Missing → returns `data_coverage: 'partial' | 'insufficient'`, never fabricates.
-- `demoFacts.ts` — clearly-labelled demo FACTS used when no primary chart or in demo mode.
+```
+/report
+  ├─ 顶部：基础阅览权限说明（¥0，紧凑一行）
+  ├─ 两扇门：SageDoorCard(¥19.9/月) │ OracleDoorCard(¥39.9/月，含贤者)
+  └─ 单次馆藏：PremiumPdfCard (¥79，独立)
 
-Rules (fixed, no AI):
-- Base per domain = seed-derived neutral 50 ± bazi 五行 balance signal.
-- Period modifiers per system add/subtract in fixed weights (documented in a `SCORING.md` comment block).
-- Cross-domain: career pressure → health realisability −; study accumulation → career choice-space + (lag 3y); family responsibility → risk tolerance −; health low → damps top-2 domains' "realisability"; social friction → career execution cost +; high wealth risk exposure → family safety −.
-- Composite = weighted (study .12, career .22, love .12, family .14, social .10, wealthRisk .12, health .18) then apply health realisability cap.
-- Terminology: never "小人" — use 合作摩擦/权责不清/竞争压力/信息不对称. Wealth = 风险管理环境/风险承受空间, never predictions. Health = 作息/恢复/压力/就医提醒, never diagnosis.
+/me/sage  (新)
+  ├─ 权限门禁：free → 升级弹窗；sage/oracle → 进入
+  └─ 4 入口卡：完整生命时间轴 / 关系合盘 / 塔罗阅览 / 会员使用状态
 
-Old `MathLifeModel.ts` kept: `buildComposition`, `reactionForChange`, presets remain — used only inside the Choice Lab as scenario stress tests. Remove from primary-chart claims.
+/me/oracle  (重排现有)
+  ├─ 权限门禁：free/sage → 对应升级弹窗
+  ├─ "已包含贤者阅览室"横条 + 进入 /me/sage 入口
+  └─ 神谕者独享：无限追问 / 无限塔罗 / 90 天窗口 / 关键节点 / 四体系交叉
 
-## 2. UI (`MathRoom.tsx` rebuild, reusing chart primitives)
+/me/membership
+  ├─ 分区①：月度阅读室会员 (MembershipCard 现状 + 到期/降级)
+  ├─ 分区②：¥79 单次报告 (列出用户已购报告/入口)
+  └─ 订单 & 工单
+```
 
-Sections top→bottom (desktop two-column past section 3):
+## 实施步骤
 
-1. **Header**: title "人生函数 / Life Function", new subtitle. Demo/personalized badge. Collapsible "模型与计算说明" (moves old equation + assumptions there).
-2. **Seven Life Lines chart** (`LifeLinesChart.tsx`, new) — SVG using existing gradient/axis helpers from `LifeFunctionChart.tsx`:
-   - Composite "总览带" always on, with dominant-domain color per age.
-   - 7 domain toggles + quick presets ("只看事业", "事业+财富", "爱情+家庭", "全部").
-   - Draggable age cursor.
-   - Turning point markers only when a deterministic period change fires.
-3. **Age Cross-Section** (`AgeCrossSection.tsx`, new) — radar/flower of 7 scores at cursor age; top opportunity / top friction chips; "打开这一年" opens modal.
-4. **Year modal** (`YearInsightModal.tsx`, new local one — do not touch existing global one) — 机会/损耗/警惕/证据/进入选择实验室. Cross-domain arrows list rendered from `crossDomainEffects`.
-5. **Choice Lab** (`ChoiceLab.tsx`, new) — pick age + one real question (career/study/love/family/wealth) with conditional-text options; renders 2–3 dashed branch overlays on main chart + a comparison table (resource cost, pressure, reversibility, cycle fit). Reset button. Old four sliders live here as an "advanced" collapsible for user-controlled scenario comparison, clearly labelled "情景假设，不是命盘结论".
-6. Existing `GenerationMethod` block reused at bottom.
+1. **统一 capability**：扩展 `src/lib/access-level.ts` 增加 feature key `sage_room_enter`, `oracle_room_enter`；`me.sage`/`me.oracle` 页面统一走 `hasAccess`。真实 tier 从 `profiles.membership_tier` 读取（复用 `MembershipCard` 里的查询逻辑抽成 hook `useMembershipTier`）。
+2. **i18n**：替换 `mem_sage_desc` / `mem_oracle_desc` 为真实权益，新增 `sage_room_*`, `oracle_room_*`, `room_included_in_oracle`, `basic_access_*` 等键；中英对齐。
+3. **/report 重构**：将 `MembershipSection` 中的三列价格卡改为 `BasicAccessNote` + `<div class="grid md:grid-cols-2">SageDoorCard OracleDoorCard</div>` + `PremiumPdfCard`（独立区）。移除内嵌 `TierTeasers`。保留 `UpgradeCheckoutModal` + firstTime -30% 逻辑。
+4. **新建 `src/routes/_authenticated/me.sage.tsx`**：`PersonalWorkspaceNav`（需先加"贤者阅览室"入口）+ 4 张仪表卡。塔罗剩余用真实数据（`useSupabaseSession` + `tarot_usage` 或本地 quota，如无真实字段显示"以账户记录为准"）。
+5. **重排 `me.oracle.tsx`**：顶部"已包含贤者"横条 + 神谕者独享模块（现有 `SynastryPreview`/`RecentWindows`/`FutureWatchlist` 复用）；移除与贤者层重复的卡片。
+6. **/me/membership**：分两块 section；¥79 报告块查询 `premium_pdf_reports` 显示已购列表 + 入口。
+7. **PersonalWorkspaceNav**：加入"贤者阅览室 / 神谕者阅览室"两项还是并入现 5 项？我倾向：不加入 nav（避免 7 项过长），入口通过 /report 的两扇门 + 全局导航"了解·更多"访问；`/me/sage` `/me/oracle` 自身页面顶部渲染 `PersonalWorkspaceNav`。
+8. **测试**：
+   - unit：新 access-level feature key + i18n 对称性 + `useMembershipTier` fail-closed。
+   - E2E (Playwright)：signed-out → /report 显示两门；点击 Sage 门 → 登录提示；作为 free 登录用户点击进入 → 弹升级；模拟支付成功 → tier=sage 后再点击 Sage 门直接进入 /me/sage；oracle 同理；¥79 报告不受影响。
+   - 响应式：1440/768/393 三门/两门/¥79 卡布局无横向溢出。
 
-Mobile (393px): stack — overview chart → domain toggles → cross-section → choice lab.
+## 技术风险
 
-## 3. Tests
+- 后端 `profiles.membership_tier` 是权威；`useAccount().plan`（localStorage）是遗留、只用于模拟支付驱动 UI 切换。两者需要对齐 —— 我会新增 `useMembershipTier()` 作为 UI 的单一读取源，`useAccount().setPlan()` 仅作为模拟支付成功后的乐观 UI 更新（不写后端 —— 后端由既有 admin/webhook 写入）。
+- 模拟支付路径不变，不做真实结算。
 
-Extend `MathLifeModel.test.ts` and add `LifeDomainModel.test.ts`:
+## 约束确认
 
-- deterministic replay (same FACTS + version → identical output)
-- missing yearly facts → `data_coverage: 'insufficient'`, no fabrication
-- composite ≠ arithmetic mean of 7
-- low health → caps top-2 realisability
-- high career pressure → family/health negative delta present
-- high wealth risk exposure → risk-note friction signal, no return prediction strings
-- friction signals never contain deterministic malice terms (regex ban list)
-- three career choices produce visibly-different branches without "will succeed" language
-- every `evidence_refs` entry resolves through `evidence.ts`
-- zh/en label parity + 393px snapshot
+- 不改 DB schema、不动 AI 计算、不改支付后端、不发布、无 variant。
+- 冲突项已在上方"冲突"列出，需你确认是否替换 i18n 现有 `mem_sage_desc/mem_oracle_desc` 与是否保留 Ask Sage 卡在 /report。
 
-## 4. Verify
-
-`bunx tsgo --noEmit` + `bunx vitest run src/experiences/life-studies`. Playwright: toggle 2 domains, drag cursor to 2 ages, open year modal, run one career branch comparison. Report counts + any uncovered FACTS gaps. No publish.
-
-## Technical notes
-
-- Reuse `LifeFunctionChart.tsx` SVG axis/gradient helpers by exporting internals; do not duplicate.
-- FACTS input: read from existing calc-snapshot / report-input shape for personalized mode via a thin adapter; demo mode uses `demoFacts.ts`. No new server functions.
-- No route changes; still `/life-studies/math`.
-- Terminology guard: shared `BANNED_TERMS` array asserted by tests.
+批准后我按 1→8 顺序实施并汇报测试结果。

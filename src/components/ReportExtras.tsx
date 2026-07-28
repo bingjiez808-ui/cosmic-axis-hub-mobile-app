@@ -2141,174 +2141,104 @@ export function MembershipSection({
   );
 
 
-  const handleUpgradeClick = (target: Plan) => {
+  const handleDoorClick = (target: "sage" | "oracle") => {
     if (!account) {
       if (typeof window !== "undefined") window.dispatchEvent(new Event("lod:open-account"));
       return;
     }
-    if (target === "free") {
-      setPlan("free");
+    const rank = (x: Plan) => (x === "oracle" ? 2 : x === "sage" ? 1 : 0);
+    if (rank(plan) >= rank(target)) {
+      // Already entitled — navigate into the room.
+      if (typeof window !== "undefined") {
+        window.location.assign(target === "sage" ? "/me/sage" : "/me/oracle");
+      }
       return;
     }
     setUpgradeTarget(target);
   };
+  // Legacy alias kept so any remaining internal callers (TierTeasers /
+  // AIFollowupModal) that used `handleUpgradeClick` still compile.
+  const handleUpgradeClick = handleDoorClick;
+  void handleUpgradeClick;
+
 
   return (
     <section className="mx-auto max-w-5xl px-6 pb-24 md:px-12 print:hidden">
-      <div className="glass-card rounded-3xl p-8 md:p-12">
+      <div className="glass-card rounded-3xl p-6 md:p-10">
+        {/* Basic-access note (¥0 — not a plan) */}
+        <div className="mb-8 rounded-2xl border border-white/10 bg-white/[0.02] px-5 py-4">
+          <p className="mb-1 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+            {lang === "zh" ? "基础阅览权限 · ¥0" : "Basic access · ¥0"}
+          </p>
+          <p className="text-sm leading-relaxed text-stone-warm/70">
+            {lang === "zh"
+              ? "你现在看到的综合解读与当前十年大运，是永久免费的基础阅览权限 —— 不是会员套餐。若想更深地读你自己，请进入下面的两扇阅览室之门。"
+              : "The unified reading you're viewing and your current-decade luck cycle are the free basic access — not a plan. Step through one of the two reading-room doors below to read yourself more deeply."}
+          </p>
+        </div>
+
         <p className="mb-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
-          {t.mem_kicker}
+          {lang === "zh" ? "两扇阅览室之门" : "Two reading-room doors"}
         </p>
-        <h2 className="mb-6 font-serif text-2xl italic text-stone-warm md:text-3xl">
+        <h2 className="mb-2 font-serif text-2xl italic text-stone-warm md:text-3xl">
           {t.mem_title}
         </h2>
-
-        {/* Login gate */}
-        {!account && (
-          <div className="mb-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-gold-dust/40 bg-gold-dust/[0.06] p-5">
-            <div>
-              <p className="mb-1 text-[10px] uppercase tracking-[0.32em] text-gold-light">
-                {lang === "zh" ? "请先登录以升级" : "Sign in to upgrade"}
-              </p>
-              <p className="text-sm text-stone-warm/70">
-                {lang === "zh"
-                  ? "会员权益需要账户来承载 —— 登录或创建账号后即可选择支付方式。首次升级享专属优惠。"
-                  : "Membership requires an account. Sign in or create one to pick a payment method — first-time upgrades get an exclusive discount."}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                if (typeof window !== "undefined") window.dispatchEvent(new Event("lod:open-account"));
-              }}
-              className="rounded-full bg-gold-dust px-5 py-2.5 text-[10px] uppercase tracking-[0.32em] text-obsidian hover:bg-gold-light"
-            >
-              {lang === "zh" ? "登录 / 创建账号" : "Sign in / Create"}
-            </button>
-          </div>
-        )}
+        <p className="mb-6 text-sm text-stone-warm/60">
+          {lang === "zh"
+            ? "月度会员，到期自动降级，不会未经确认扣款。神谕者严格包含贤者的全部权益。"
+            : "Monthly memberships lapse automatically at expiry — no silent renewal. Oracle strictly includes every Sage benefit."}
+        </p>
 
         {account && firstTime && (
-          <div className="mb-8 flex flex-wrap items-center gap-3 rounded-2xl border border-nebula-purple/40 bg-nebula-purple/[0.10] px-5 py-3">
+          <div className="mb-6 flex flex-wrap items-center gap-3 rounded-2xl border border-nebula-purple/40 bg-nebula-purple/[0.10] px-5 py-3">
             <span className="rounded-full bg-nebula-purple/40 px-3 py-0.5 text-[9px] uppercase tracking-[0.32em] text-stone-warm">
               {lang === "zh" ? "首次优惠" : "First-time offer"}
             </span>
             <p className="text-sm text-stone-warm/80">
               {lang === "zh"
-                ? "新账户首次升级享 -30% 折扣 —— 结算时自动应用。"
-                : "New accounts get 30% off their first upgrade — applied automatically at checkout."}
+                ? "新账户首次升级享 -30% 折扣 —— 结算时自动应用（模拟支付，不会真实扣款）。"
+                : "New accounts get 30% off their first upgrade — applied at checkout (mock payment, no real charge)."}
             </p>
           </div>
         )}
 
-        <div className="mb-10 grid grid-cols-1 gap-4 md:grid-cols-3">
-          {plans.map((p) => {
-            const rank = (x: Plan) => (x === "oracle" ? 2 : x === "sage" ? 1 : 0);
-            const userRank = rank(plan);
-            const tierRank = rank(p.id);
-            const isCurrent = p.id === plan;
-            const isIncluded = !isCurrent && tierRank < userRank;
-            const disabled = isCurrent || isIncluded;
-            const label = isCurrent
-              ? t.mem_current
-              : isIncluded
-                ? lang === "zh" ? "已包含" : "Included"
-                : t.mem_upgrade;
-            return (
-              <div
-                key={p.id}
-                className={`relative flex flex-col rounded-2xl border p-6 transition-colors ${
-                  isCurrent
-                    ? "border-gold-dust/70 bg-gold-dust/[0.10]"
-                    : isIncluded
-                      ? "border-gold-dust/25 bg-gold-dust/[0.03]"
-                      : p.highlight
-                        ? "border-gold-dust/50 bg-gold-dust/[0.06]"
-                        : "border-white/10 bg-white/[0.02]"
-                }`}
-              >
-                {p.highlight && !isIncluded && (
-                  <span className="absolute -top-3 left-6 rounded-full bg-gold-dust px-3 py-0.5 text-[9px] uppercase tracking-[0.32em] text-obsidian">
-                    ★
-                  </span>
-                )}
-                {isIncluded && (
-                  <span className="absolute -top-3 left-6 rounded-full border border-gold-dust/40 bg-obsidian px-3 py-0.5 text-[9px] uppercase tracking-[0.32em] text-gold-dust">
-                    {lang === "zh" ? "已包含" : "Included"}
-                  </span>
-                )}
-                <p className="mb-1 font-serif text-xl text-stone-warm">{p.name}</p>
-                <p className="mb-4 text-[10px] uppercase tracking-[0.28em] text-gold-dust/70">
-                  {p.price}
-                </p>
-                <p className="mb-6 flex-1 text-sm leading-relaxed text-stone-warm/60">
-                  {p.desc}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => handleUpgradeClick(p.id)}
-                  disabled={disabled}
-                  className={`rounded-full px-5 py-2.5 text-[10px] uppercase tracking-[0.28em] transition-colors ${
-                    disabled
-                      ? "cursor-default border border-white/10 text-stone-warm/40"
-                      : p.highlight
-                        ? "bg-gold-dust text-obsidian hover:bg-gold-light"
-                        : "border border-gold-dust/40 text-gold-dust hover:bg-gold-dust/10"
-                  }`}
-                >
-                  {label}
-                </button>
-              </div>
-            );
-          })}
+        <div
+          data-testid="membership-doors"
+          className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2"
+        >
+          <DoorCard
+            id="sage"
+            lang={lang}
+            currentPlan={plan}
+            onOpen={() => handleDoorClick("sage")}
+          />
+          <DoorCard
+            id="oracle"
+            lang={lang}
+            currentPlan={plan}
+            onOpen={() => handleDoorClick("oracle")}
+          />
         </div>
-
-        {/* Top row — three equal-width cards: Synastry teaser, 90-day teaser, Ask Sage. */}
-        <TierTeasers
-          lang={lang}
-          li={li}
-          plan={plan}
-          onUpgrade={handleUpgradeClick}
-          onOpenChat={() => setChatOpen(true)}
-          chatLocked={t.mem_ai_locked}
-        />
-
-        {/* Full-width premium PDF bar below the three cards. */}
-        <PremiumPdfCard search={search} variant="bar" />
-
       </div>
 
-
-      {/* Sage-exclusive: Synastry relationship reading */}
-      {(plan === "sage" || plan === "oracle") && (
-        <div className="mt-10">
-          <div className="mx-auto mb-6 flex max-w-5xl items-center gap-3 px-6 md:px-12">
-            <span className="h-px flex-1 bg-gold-dust/30" />
-            <p className="text-[10px] uppercase tracking-[0.42em] text-gold-dust">
-              {lang === "zh" ? "贤者专属 · 合盘分析" : "Sage exclusive · Synastry"}
-            </p>
-            <span className="h-px flex-1 bg-gold-dust/30" />
-          </div>
-          <SynastryPreview userBirthISO={birthISO} />
+      {/* One-time acquisitions — the ¥79 premium deep report lives in its
+          own section, entirely independent of monthly membership. */}
+      <div className="mt-10">
+        <div className="mx-auto mb-4 flex max-w-5xl items-center gap-3">
+          <span className="h-px flex-1 bg-gold-dust/30" />
+          <p className="text-[10px] uppercase tracking-[0.42em] text-gold-dust">
+            {lang === "zh" ? "单次馆藏 · 一次性解锁" : "One-time acquisition"}
+          </p>
+          <span className="h-px flex-1 bg-gold-dust/30" />
         </div>
-      )}
+        <p className="mx-auto mb-4 max-w-3xl text-center text-xs text-stone-warm/55">
+          {lang === "zh"
+            ? "¥79 综合深度报告是一次性购买 · 24 章 · 四体系综合 · 证据可追溯 · 永久保存，与月度会员完全独立。"
+            : "The ¥79 premium deep report is a one-time purchase — 24 chapters, four traditions, evidence-traceable, kept forever. Entirely independent of monthly membership."}
+        </p>
+        <PremiumPdfCard search={search} variant="bar" />
+      </div>
 
-      {/* Oracle-exclusive: 90-day windows + future watchlist */}
-      {plan === "oracle" && (
-        <div className="mt-4">
-          <div className="mx-auto mb-6 flex max-w-5xl items-center gap-3 px-6 md:px-12">
-            <span className="h-px flex-1 bg-gold-dust/30" />
-            <p className="text-[10px] uppercase tracking-[0.42em] text-gold-dust">
-              {lang === "zh" ? "神谕者专属 · 近 90 天状态分析" : "Oracle exclusive · 90-day analysis"}
-            </p>
-            <span className="h-px flex-1 bg-gold-dust/30" />
-          </div>
-          <RecentWindows birthISO={birthISO} search={search} />
-          <FutureWatchlist search={search} />
-        </div>
-      )}
-
-      <AIFollowupModal open={chatOpen} onClose={() => setChatOpen(false)} lang={lang} plan={plan} onUpgrade={() => { setChatOpen(false); setUpgradeTarget("oracle"); }} />
       <SignInPromptModal
         open={signInPrompt}
         onClose={() => setSignInPrompt(false)}
@@ -2327,9 +2257,148 @@ export function MembershipSection({
           setUpgradeTarget(null);
         }}
       />
+      <AIFollowupModal
+        open={chatOpen}
+        onClose={() => setChatOpen(false)}
+        lang={lang}
+        plan={plan}
+        onUpgrade={() => {
+          setChatOpen(false);
+          setUpgradeTarget("oracle");
+        }}
+      />
     </section>
   );
 }
+
+/**
+ * DoorCard — a single reading-room door on /report. Copy is exhaustive
+ * (适合谁 / 能做什么 / CTA) and matches the real benefit list confirmed
+ * in this refactor. Oracle explicitly notes it inherits every Sage
+ * benefit; no benefit is silently duplicated across cards.
+ */
+function DoorCard({
+  id,
+  lang,
+  currentPlan,
+  onOpen,
+}: {
+  id: "sage" | "oracle";
+  lang: Lang;
+  currentPlan: "free" | "sage" | "oracle";
+  onOpen: () => void;
+}) {
+  const isZh = lang === "zh";
+  const isSage = id === "sage";
+  const rank = (x: "free" | "sage" | "oracle") =>
+    x === "oracle" ? 2 : x === "sage" ? 1 : 0;
+  const owned = rank(currentPlan) >= rank(id);
+
+  const title = isSage
+    ? isZh ? "贤者阅览室" : "Sage Reading Room"
+    : isZh ? "神谕者阅览室" : "Oracle Reading Room";
+  const price = isSage ? "¥19.9" : "¥39.9";
+  const audience = isSage
+    ? isZh
+      ? "适合：想真正读懂自己 —— 完整时间轴、关系合盘、月度塔罗辅助。"
+      : "For: readers who want the full timeline, synastry and a monthly tarot cadence."
+    : isZh
+      ? "适合：想同时驾驭四体系、要无限追问与近 90 天关键节点的深度使用者。"
+      : "For: deep users who want unlimited follow-up and 90-day keystone windows across all four traditions.";
+  const bullets: string[] = isSage
+    ? isZh
+      ? [
+          "站内深度阅读体验",
+          "完整生命时间轴（包括其他十年阶段）",
+          "关系与合盘分析",
+          "每月 10 次塔罗 AI 解读",
+        ]
+      : [
+          "In-app deep reading experience",
+          "Full life timeline (including other decades)",
+          "Synastry & relationship reading",
+          "10 tarot AI readings each month",
+        ]
+    : isZh
+      ? [
+          "包含贤者阅览室全部权益",
+          "无限 AI 追问",
+          "无限塔罗 AI 解读",
+          "近 90 天状态与关键时间节点分析",
+        ]
+      : [
+          "Includes everything in the Sage Reading Room",
+          "Unlimited AI follow-up",
+          "Unlimited tarot AI readings",
+          "90-day state & keystone-window analysis",
+        ];
+
+  const ctaLabel = owned
+    ? isSage
+      ? isZh ? "进入贤者阅览室" : "Enter Sage Reading Room"
+      : isZh ? "进入神谕者阅览室" : "Enter Oracle Reading Room"
+    : currentPlan === "sage" && !isSage
+      ? isZh ? "从贤者升级为神谕者" : "Upgrade from Sage to Oracle"
+      : isZh ? `升级 · ${price}/月` : `Upgrade · ${price}/mo`;
+
+  return (
+    <div
+      data-testid={`membership-door-${id}`}
+      className={`relative flex flex-col overflow-hidden rounded-2xl border p-6 transition-colors ${
+        isSage
+          ? "border-gold-dust/40 bg-gold-dust/[0.05]"
+          : "border-nebula-purple/50 bg-nebula-purple/[0.08]"
+      }`}
+    >
+      <div className="mb-3 flex items-baseline justify-between gap-2">
+        <div>
+          <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+            {isSage ? (isZh ? "贤者" : "Sage") : isZh ? "神谕者" : "Oracle"}
+          </p>
+          <h3 className="mt-1 font-serif text-xl italic text-stone-warm">{title}</h3>
+        </div>
+        <div className="text-right">
+          <p className="font-serif text-2xl text-gold-light">{price}</p>
+          <p className="text-[10px] uppercase tracking-[0.28em] text-stone-warm/50">
+            / {isZh ? "月" : "mo"}
+          </p>
+        </div>
+      </div>
+      {!isSage && (
+        <p className="mb-3 inline-block w-fit rounded-full border border-gold-dust/40 bg-obsidian/40 px-3 py-0.5 text-[9px] uppercase tracking-[0.28em] text-gold-dust">
+          {isZh ? "包含贤者阅览室全部权益" : "Includes everything in Sage"}
+        </p>
+      )}
+      <p className="mb-4 text-sm italic text-stone-warm/70">{audience}</p>
+      <ul className="mb-6 flex-1 space-y-2 text-sm text-stone-warm/80">
+        {bullets.map((b) => (
+          <li key={b} className="flex gap-2">
+            <span className="mt-1 size-1.5 shrink-0 rounded-full bg-gold-dust/70" />
+            <span>{b}</span>
+          </li>
+        ))}
+      </ul>
+      <button
+        type="button"
+        onClick={onOpen}
+        data-testid={`membership-door-cta-${id}`}
+        className={`mt-auto w-full min-h-11 rounded-full px-5 py-2.5 text-[10px] uppercase tracking-[0.32em] transition-colors ${
+          isSage
+            ? "bg-gold-dust text-obsidian hover:bg-gold-light"
+            : "bg-nebula-purple text-stone-warm hover:opacity-90"
+        }`}
+      >
+        {ctaLabel}
+      </button>
+      {owned && (
+        <p className="mt-3 text-center text-[10px] uppercase tracking-[0.28em] text-gold-light">
+          {isZh ? "✓ 已开通" : "✓ Active"}
+        </p>
+      )}
+    </div>
+  );
+}
+
 
 /* Tier teasers — three equal-width cards on the report page:
    1. Sage · Synastry teaser
