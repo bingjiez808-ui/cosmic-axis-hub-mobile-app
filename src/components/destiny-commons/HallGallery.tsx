@@ -12,7 +12,9 @@
  * `animate-fade-in` utility already defined in tailwind config.
  */
 
+import type React from "react";
 import { useMemo } from "react";
+
 
 import type { DestinyCommonsHall } from "@/lib/destiny-commons";
 
