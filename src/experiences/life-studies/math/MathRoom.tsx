@@ -282,16 +282,7 @@ export function MathRoom({
         lang={lang}
       />
 
-      <GenerationMethod
-        heading={{ zh: "我们如何计算这七条线", en: "How these seven lines are computed" }}
-        bullets={[
-          { zh: "只读取现有四大体系的确定性事实：八字/紫微/印度 Mahadasha/西方本命。", en: "Reads only deterministic facts from the four systems (bazi / ziwei / Vedic mahadasha / western natal)." },
-          { zh: "领域基础分 + 周期修正 + 跨维折损/增益，规则透明。", en: "Domain base + period modifier + cross-domain damp/boost, all fixed rules." },
-          { zh: "健康低时自动折损综合分与前两个领域，避免高分幻觉。", en: "Low health automatically damps composite and the year's top two domains — no runaway highs." },
-          { zh: "西方系统目前只提供本命底色，不做年度行运加权。", en: "Western system contributes natal-only tone — no yearly transit weighting yet." },
-          { zh: "不调用 AI，重复计算完全一致。", en: "No AI call. Repeated computation is bit-identical." },
-        ]}
-      />
+      <GenerationMethod />
     </div>
   );
 }

@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+// @ts-expect-error — bun:test
+import { describe, expect, test as it } from "bun:test";
 
 import { BANNED_TERMS, COMPOSITE_WEIGHTS, DOMAIN_KEYS, DOMAIN_LABELS, type DomainKey } from "./domains";
 import { DEMO_FACTS, factsFromSeed } from "./demoFacts";
