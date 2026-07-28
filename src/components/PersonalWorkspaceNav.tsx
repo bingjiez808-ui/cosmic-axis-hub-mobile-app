@@ -39,7 +39,13 @@ const ITEMS: Item[] = [
     testId: "pwn-relationships",
   },
   { to: "/me/echoes", labelZh: "历史回声", labelEn: "Echoes", testId: "pwn-echoes" },
-  { to: "/me/membership", labelZh: "会员与订单", labelEn: "Membership", testId: "pwn-membership" },
+  {
+    to: "/me/membership",
+    alsoActiveFor: ["/me/sage", "/me/oracle"],
+    labelZh: "会员与订单",
+    labelEn: "Membership",
+    testId: "pwn-membership",
+  },
 ];
 
 export function PersonalWorkspaceNav({ active }: { active?: string }) {
