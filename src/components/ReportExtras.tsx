@@ -2266,15 +2266,15 @@ export function MembershipSection({
 
 
         <p className="mb-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
-          {lang === "zh" ? "两间阅览室 · 门牌入口" : "Two reading rooms · doorways"}
+          {lang === "zh" ? "会员阅览室" : "Member reading rooms"}
         </p>
         <h2 className="mb-2 font-serif text-2xl italic text-stone-warm md:text-3xl">
-          {lang === "zh" ? "进入阅览室" : "Enter a reading room"}
+          {lang === "zh" ? "两间阅览室" : "Two reading rooms"}
         </h2>
         <p className="mb-6 text-sm text-stone-warm/60">
           {lang === "zh"
-            ? "这两扇门只做跳转，不再是第二个支付入口。是否已开通会员由房间内部判断；升级请回到上方三档方案。"
-            : "These doors only navigate — they are not a second checkout. Access is judged inside each room. Upgrade above in the three-tier plans."}
+            ? "选择一间阅览室，查看与你当前阶段相关的专属功能与开放状态。已开通的内容可直接阅读，尚未开放的内容也会保留完整介绍。"
+            : "Step into a room to see the features and openings that belong to your current stage. What you have unlocked opens directly; what is not yet yours keeps its full description in view."}
         </p>
 
         <div
