@@ -9,6 +9,7 @@
 import { useState } from "react";
 
 import { HallDetailModal } from "@/components/destiny-commons/HallDetailModal";
+import { HALL_IMAGE } from "@/components/destiny-commons/hall-images";
 import {
   DESTINY_COMMONS_HALLS,
   type DestinyCommonsHall,
@@ -175,17 +176,35 @@ function HallCard({
           : "border-white/5 bg-obsidian/40 hover:border-white/15",
       )}
     >
+      {/* Ambient hall image — sits behind content, subtly parallaxes on hover */}
+      <span aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+        <img
+          src={HALL_IMAGE[hall.id]}
+          alt=""
+          width={1280}
+          height={720}
+          loading="lazy"
+          className={cn(
+            "h-full w-full object-cover transition-all duration-700 ease-out",
+            isOpen
+              ? "opacity-25 group-hover:scale-[1.08] group-hover:opacity-40"
+              : "opacity-10 grayscale group-hover:opacity-20",
+          )}
+        />
+        <span className="absolute inset-0 bg-gradient-to-t from-obsidian via-obsidian/85 to-obsidian/40" />
+      </span>
+
       {/* Accent side-strip */}
       <span
         aria-hidden
         className={cn(
-          "absolute left-0 top-0 h-full w-[3px] bg-gradient-to-b",
+          "absolute left-0 top-0 z-[1] h-full w-[3px] bg-gradient-to-b",
           hall.accent,
           !isOpen && "opacity-40",
         )}
       />
 
-      <div className="flex items-start justify-between gap-3">
+      <div className="relative z-[1] flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <span className="grid h-9 w-9 place-items-center rounded-full border border-gold-dust/30 bg-obsidian/70">
             <HallSymbol id={hall.id} />
@@ -208,7 +227,7 @@ function HallCard({
 
       <h3
         className={cn(
-          "mt-3 font-serif text-lg leading-snug",
+          "relative z-[1] mt-3 font-serif text-lg leading-snug",
           isOpen ? "text-stone-warm" : "text-stone-warm/75",
         )}
       >
@@ -216,7 +235,7 @@ function HallCard({
       </h3>
       <p
         className={cn(
-          "mt-1 text-xs italic",
+          "relative z-[1] mt-1 text-xs italic",
           isOpen ? "text-gold-light/80" : "text-stone-warm/45",
         )}
       >
@@ -224,7 +243,7 @@ function HallCard({
       </p>
       <p
         className={cn(
-          "mt-2 flex-1 text-[13px] leading-relaxed",
+          "relative z-[1] mt-2 flex-1 text-[13px] leading-relaxed",
           isOpen ? "text-stone-warm/70" : "text-stone-warm/50",
         )}
       >
@@ -233,7 +252,7 @@ function HallCard({
 
       <span
         className={cn(
-          "mt-4 text-[11px] uppercase tracking-[0.28em]",
+          "relative z-[1] mt-4 text-[11px] uppercase tracking-[0.28em]",
           isOpen ? "text-gold-dust/85" : "text-stone-warm/45",
         )}
       >

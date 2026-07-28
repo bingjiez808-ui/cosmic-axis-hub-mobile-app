@@ -16,6 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { HALL_IMAGE } from "@/components/destiny-commons/hall-images";
 import type { DestinyCommonsHall } from "@/lib/destiny-commons";
 
 type Props = {
@@ -28,10 +29,43 @@ export function HallDetailModal({ hall, isZh, onOpenChange }: Props) {
   const open = !!hall;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[80vh] max-w-[780px] overflow-hidden border-gold-dust/25 bg-obsidian/95 p-0 text-stone-warm">
+      <DialogContent className="max-h-[85vh] max-w-[780px] overflow-hidden border-gold-dust/25 bg-obsidian/95 p-0 text-stone-warm">
         {hall && <HallBody hall={hall} isZh={isZh} />}
       </DialogContent>
     </Dialog>
+  );
+}
+
+function HallHero({ hall, isZh }: { hall: DestinyCommonsHall; isZh: boolean }) {
+  const isOpen = hall.status === "open";
+  return (
+    <div className="relative h-40 w-full overflow-hidden sm:h-52">
+      <img
+        src={HALL_IMAGE[hall.id]}
+        alt={isZh ? hall.nameZh : hall.nameEn}
+        width={1280}
+        height={720}
+        loading="lazy"
+        className={`h-full w-full object-cover transition-transform duration-[8000ms] ease-out ${
+          isOpen ? "scale-105 animate-[hall-drift_18s_ease-in-out_infinite]" : "scale-100 grayscale-[0.35]"
+        }`}
+      />
+      {/* Vignette + top gradient for text legibility of header below */}
+      <div aria-hidden className="absolute inset-0 bg-gradient-to-b from-obsidian/40 via-obsidian/20 to-obsidian/95" />
+      {/* Golden particle shimmer */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-70 mix-blend-screen"
+        style={{
+          background:
+            "radial-gradient(circle at 20% 30%, rgba(224,182,90,0.18), transparent 40%), radial-gradient(circle at 80% 70%, rgba(180,120,255,0.14), transparent 45%)",
+        }}
+      />
+      <style>{`@keyframes hall-drift {
+        0%,100% { transform: scale(1.05) translate3d(0,0,0); }
+        50% { transform: scale(1.08) translate3d(-1.5%, -1%, 0); }
+      }`}</style>
+    </div>
   );
 }
 
@@ -46,8 +80,9 @@ function HallBody({ hall, isZh }: { hall: DestinyCommonsHall; isZh: boolean }) {
       : "Collection in progress";
 
   return (
-    <div className="flex max-h-[80vh] flex-col">
-      <DialogHeader className="shrink-0 border-b border-white/5 px-6 pb-4 pt-6 text-left sm:px-8">
+    <div className="flex max-h-[85vh] flex-col">
+      <HallHero hall={hall} isZh={isZh} />
+      <DialogHeader className="shrink-0 border-b border-white/5 px-6 pb-4 pt-5 text-left sm:px-8">
         <div className="flex flex-wrap items-center gap-3 text-[10px] uppercase tracking-[0.32em]">
           <span className="text-gold-dust/70">
             {isZh ? "命运通识馆" : "General Knowledge Hall"} · {hall.code}
