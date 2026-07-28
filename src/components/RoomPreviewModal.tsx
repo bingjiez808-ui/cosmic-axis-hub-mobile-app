@@ -31,142 +31,200 @@ type Props = {
 };
 
 function CorridorDemo() {
-  // Life-lines chart: six domain trajectories across an age axis with a
-  // "today" cursor. Reads as a real polyline chart, not four decorative arcs.
-  const W = 360;
-  const H = 180;
-  const padL = 34;
-  const padR = 14;
-  const padT = 14;
-  const padB = 30;
-  const innerW = W - padL - padR;
-  const innerH = H - padT - padB;
-  const ages = [0, 15, 30, 45, 60, 75];
-  const domains: { key: string; labelZh: string; labelEn: string; color: string; samples: number[] }[] = [
-    { key: "career", labelZh: "事业", labelEn: "Career", color: "#f5c26b", samples: [0.32, 0.52, 0.8, 0.72, 0.55, 0.42] },
-    { key: "health", labelZh: "健康", labelEn: "Health", color: "#7dd3c0", samples: [0.62, 0.74, 0.6, 0.5, 0.6, 0.7] },
-    { key: "love", labelZh: "爱情", labelEn: "Love", color: "#c7a3ff", samples: [0.48, 0.7, 0.74, 0.66, 0.55, 0.46] },
-    { key: "family", labelZh: "家庭", labelEn: "Family", color: "#f88fa2", samples: [0.4, 0.58, 0.5, 0.64, 0.72, 0.6] },
-    { key: "study", labelZh: "学业", labelEn: "Study", color: "#8ab8ff", samples: [0.72, 0.8, 0.6, 0.46, 0.38, 0.34] },
-    { key: "wealth", labelZh: "财富", labelEn: "Wealth", color: "#e6d27a", samples: [0.28, 0.44, 0.6, 0.74, 0.68, 0.58] },
-  ];
-  const x = (i: number) => padL + (i / (ages.length - 1)) * innerW;
-  const y = (v: number) => padT + (1 - v) * innerH;
-  const pathFor = (s: number[]) =>
-    s.map((v, i) => `${i === 0 ? "M" : "L"} ${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(" ");
+  // Match the real "Life Timeline · 大运能量趋势" chart on /report:
+  // a single golden energy line across the user's current decade with an
+  // area gradient, dot markers, a dashed "此刻" cursor + tooltip, and a
+  // yearly theme list underneath.
   const { lang } = useLang();
   const isZh = lang === "zh";
+
+  const decadeStart = 20;
+  const themesZh = [
+    "播种 —— 安静的起点",
+    "开门 —— 第一次机会",
+    "扎根 —— 一项能力落地",
+    "磨合 —— 阻力中习得的功课",
+    "突破 —— 可见度上升",
+    "收获 —— 被看见与回响",
+    "巩固 —— 留下真正有用的",
+    "剥离 —— 放下不再合身的",
+    "转向 —— 方向悄然改变",
+    "整合 —— 十年的收束",
+  ];
+  const themesEn = [
+    "seeding — a quiet beginning",
+    "opening — a first door",
+    "learning — a skill takes root",
+    "friction — a lesson through resistance",
+    "breakthrough — visibility rises",
+    "harvest — recognition and return",
+    "consolidation — you keep what works",
+    "shedding — release what no longer fits",
+    "pivot — direction quietly changes",
+    "integration — the decade completes",
+  ];
+  const themes = isZh ? themesZh : themesEn;
+  const scores = [49, 52, 54, 49, 46, 55, 48, 51, 54, 50];
+  const years = scores.map((s, i) => ({
+    age: decadeStart + i,
+    score: s,
+    theme: themes[i],
+  }));
+  const nowIdx = 3; // age 23 — matches the tooltip in the real screenshot
+
+  const W = 360;
+  const H = 180;
+  const padL = 26;
+  const padR = 14;
+  const padT = 18;
+  const padB = 26;
+  const innerW = W - padL - padR;
+  const innerH = H - padT - padB;
+  const minS = Math.min(...scores) - 6;
+  const maxS = Math.max(...scores) + 6;
+  const span = Math.max(1, maxS - minS);
+  const x = (i: number) => padL + (i / (years.length - 1)) * innerW;
+  const y = (v: number) => padT + ((maxS - v) / span) * innerH;
+  const linePath = years
+    .map((p, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(p.score).toFixed(1)}`)
+    .join(" ");
+  const areaPath = `${linePath} L${x(years.length - 1).toFixed(1)},${H - padB} L${x(0).toFixed(1)},${H - padB} Z`;
+  const nowP = { x: x(nowIdx), y: y(years[nowIdx].score) };
+  const tipX = Math.min(W - padR - 148, Math.max(padL, nowP.x + 8));
+  const tipY = Math.max(padT, nowP.y - 32);
+
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full">
-      {/* horizontal gridlines */}
-      {[0, 0.25, 0.5, 0.75, 1].map((g) => (
-        <line
-          key={g}
-          x1={padL}
-          x2={W - padR}
-          y1={y(g)}
-          y2={y(g)}
-          stroke={g === 0.5 ? "rgba(245,194,107,0.18)" : "rgba(255,255,255,0.06)"}
-          strokeDasharray={g === 0.5 ? "3 4" : undefined}
+    <div className="space-y-3">
+      <div className="flex items-baseline justify-between">
+        <p className="text-[10px] uppercase tracking-[0.28em] text-gold-dust/70">
+          {isZh ? "生命时间轴 · 大运能量趋势" : "Life timeline · relative energy trend"}
+        </p>
+        <p className="text-[10px] uppercase tracking-[0.22em] text-stone-warm/45">
+          {decadeStart}–{decadeStart + 9}
+        </p>
+      </div>
+      <p className="text-[11px] leading-relaxed text-stone-warm/55">
+        {isZh
+          ? "仅为相对趋势，用于观察阶段变化，不代表绝对吉凶。"
+          : "Relative trend only — for observing phase shifts, not absolute fortune."}
+      </p>
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="corridor-area" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="#f5c26b" stopOpacity="0.32" />
+            <stop offset="100%" stopColor="#f5c26b" stopOpacity="0.02" />
+          </linearGradient>
+        </defs>
+        {[0.25, 0.5, 0.75].map((g) => (
+          <line
+            key={g}
+            x1={padL}
+            x2={W - padR}
+            y1={padT + g * innerH}
+            y2={padT + g * innerH}
+            stroke="rgba(255,255,255,0.06)"
+            strokeDasharray={g === 0.5 ? "3 4" : undefined}
+          />
+        ))}
+        <line x1={padL} x2={W - padR} y1={H - padB} y2={H - padB} stroke="rgba(255,255,255,0.1)" />
+        <motion.line
+          x1={nowP.x}
+          x2={nowP.x}
+          y1={padT - 2}
+          y2={H - padB}
+          stroke="#f5c26b"
+          strokeOpacity="0.5"
+          strokeDasharray="3 4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.3, duration: 0.5 }}
         />
-      ))}
-      {/* y axis marks */}
-      {[0, 50, 100].map((v) => (
-        <text
-          key={v}
-          x={padL - 6}
-          y={y(v / 100)}
-          textAnchor="end"
-          dominantBaseline="middle"
-          fontSize="8"
-          fill="rgba(232,220,196,0.45)"
-        >
-          {v}
-        </text>
-      ))}
-      {/* x axis ticks */}
-      {ages.map((a, i) => (
-        <g key={a}>
-          <line x1={x(i)} x2={x(i)} y1={H - padB} y2={H - padB + 3} stroke="rgba(255,255,255,0.15)" />
-          <text x={x(i)} y={H - padB + 12} textAnchor="middle" fontSize="9" fill="rgba(232,220,196,0.55)">
-            {a}
-          </text>
-        </g>
-      ))}
-      <text
-        x={W - padR}
-        y={H - 4}
-        textAnchor="end"
-        fontSize="8"
-        fill="rgba(232,220,196,0.4)"
-      >
-        {isZh ? "年龄" : "age"}
-      </text>
-      {/* life lines */}
-      {domains.map((d, i) => (
         <motion.path
-          key={d.key}
-          d={pathFor(d.samples)}
+          d={areaPath}
+          fill="url(#corridor-area)"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1, delay: 0.6 }}
+        />
+        <motion.path
+          d={linePath}
           fill="none"
-          stroke={d.color}
-          strokeWidth="1.6"
+          stroke="#f5c26b"
+          strokeWidth="1.8"
           strokeLinecap="round"
           strokeLinejoin="round"
-          initial={{ pathLength: 0, opacity: 0 }}
-          animate={{ pathLength: 1, opacity: 0.9 }}
-          transition={{ duration: 1.6, delay: i * 0.12, ease: "easeInOut" }}
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: 1.4, ease: "easeInOut" }}
         />
-      ))}
-      {/* "today" cursor at age 30 */}
-      <motion.line
-        x1={x(2)}
-        x2={x(2)}
-        y1={padT}
-        y2={H - padB}
-        stroke="#f5c26b"
-        strokeOpacity="0.55"
-        strokeDasharray="3 3"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1.4, duration: 0.6 }}
-      />
-      <motion.circle
-        cx={x(2)}
-        cy={y(0.8)}
-        r="4"
-        fill="#f5c26b"
-        initial={{ scale: 0 }}
-        animate={{ scale: [0, 1.4, 1] }}
-        transition={{ duration: 1, delay: 1.6 }}
-        style={{ filter: "drop-shadow(0 0 4px #f5c26b)" }}
-      />
-      <text
-        x={x(2)}
-        y={padT + 8}
-        textAnchor="middle"
-        fontSize="8"
-        fill="#f5c26b"
-      >
-        {isZh ? "此刻" : "today"}
-      </text>
-      {/* legend */}
-      <g>
-        {domains.map((d, i) => {
-          const col = i % 3;
-          const row = Math.floor(i / 3);
-          const lx = padL + col * 100;
-          const ly = padT - 4 + row * 0; // legend sits above; use two rows if needed
-          return (
-            <g key={d.key} transform={`translate(${lx}, ${ly})`}>
-              <circle cx={0} cy={0} r={2.4} fill={d.color} />
-              <text x={6} y={2.6} fontSize="7.5" fill="rgba(232,220,196,0.7)">
-                {isZh ? d.labelZh : d.labelEn}
-              </text>
-            </g>
-          );
-        })}
-      </g>
-    </svg>
+        {years.map((p, i) => (
+          <circle
+            key={p.age}
+            cx={x(i)}
+            cy={y(p.score)}
+            r={i === nowIdx ? 4 : 2.4}
+            fill="#f5c26b"
+            fillOpacity={i === nowIdx ? 1 : 0.7}
+            style={i === nowIdx ? { filter: "drop-shadow(0 0 4px #f5c26b)" } : undefined}
+          />
+        ))}
+        {years.map((p, i) => (
+          <text
+            key={p.age}
+            x={x(i)}
+            y={H - padB + 12}
+            textAnchor="middle"
+            fontSize="9"
+            fill={i === nowIdx ? "#f5c26b" : "rgba(232,220,196,0.5)"}
+          >
+            {p.age}
+          </text>
+        ))}
+        <motion.g
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.7, duration: 0.4 }}
+        >
+          <rect
+            x={tipX}
+            y={tipY}
+            width="140"
+            height="28"
+            rx="4"
+            fill="rgba(15,13,28,0.92)"
+            stroke="rgba(245,194,107,0.4)"
+          />
+          <text x={tipX + 8} y={tipY + 11} fontSize="8" fill="rgba(245,194,107,0.85)">
+            {isZh
+              ? `${years[nowIdx].age} 岁 · 能量 ${years[nowIdx].score}`
+              : `age ${years[nowIdx].age} · energy ${years[nowIdx].score}`}
+          </text>
+          <text x={tipX + 8} y={tipY + 22} fontSize="7.5" fill="rgba(232,220,196,0.7)">
+            {years[nowIdx].theme}
+          </text>
+        </motion.g>
+      </svg>
+
+      <div className="grid grid-cols-1 gap-1 text-[11px] sm:grid-cols-2">
+        {years.map((p, i) => (
+          <div
+            key={p.age}
+            className={`flex items-center justify-between gap-2 rounded border px-2 py-1 ${
+              i === nowIdx
+                ? "border-gold-dust/40 bg-gold-dust/10 text-gold-light"
+                : "border-white/5 bg-white/[0.02] text-stone-warm/70"
+            }`}
+          >
+            <span className="shrink-0 tabular-nums text-stone-warm/55">
+              {p.age}
+              {isZh ? " 岁" : ""}
+            </span>
+            <span className="flex-1 truncate">{p.theme}</span>
+            <span className="shrink-0 tabular-nums text-stone-warm/45">{p.score}</span>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
