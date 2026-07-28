@@ -1633,7 +1633,7 @@ function ReportPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-80px" }}
               transition={{ duration: 0.8, delay: idx * 0.04, ease: [0.32, 0.72, 0, 1] }}
-              className={`glass-card scroll-mt-24 overflow-hidden rounded-3xl p-4 sm:p-8 md:p-12 ${pending ? "opacity-70" : ""}`}
+              className={`glass-card scroll-mt-[calc(var(--site-nav-height,96px)+72px)] overflow-hidden rounded-3xl p-4 sm:p-8 md:p-12 ${pending ? "opacity-70" : ""}`}
             >
               <div className="mb-8 flex flex-wrap items-start justify-between gap-4 border-b border-white/10 pb-6">
                 <div className="flex min-w-0 items-start gap-4">
