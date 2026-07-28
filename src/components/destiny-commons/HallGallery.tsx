@@ -282,11 +282,12 @@ function BiologyGallery() {
 
 /* ---------------------------------- Map ----------------------------------- */
 
-const GALLERY_BY_ID: Record<DestinyCommonsHall["id"], () => JSX.Element> = {
-  math: MathGallery,
+const GALLERY_BY_ID: Record<DestinyCommonsHall["id"], () => React.ReactElement> = {
+  mathematics: MathGallery,
   literature: LiteratureGallery,
   geography: GeographyGallery,
   physics: PhysicsGallery,
   economics: EconomicsGallery,
   biology: BiologyGallery,
 };
+
