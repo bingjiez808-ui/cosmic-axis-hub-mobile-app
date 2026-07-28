@@ -1,14 +1,9 @@
 /**
  * PlayfulLibrarySection — "趣味图书馆 · 换一种学科，重新读懂人生"
  *
- * Cross-disciplinary exhibits that translate the long-form chart into
- * languages the visitor already knows (functions, curves, poems, maps).
- *
- * Interaction model
- *   - Desktop: horizontal exhibit table, one book expands in place.
- *   - Mobile: vertical spine list, one book expands in place.
- *   - Only ONE book open at a time; the rest collapse.
- *   - Coming-soon books are visually dimmed and NOT clickable.
+ * Layout: an "exploration corridor". A gently S-curved dashed spine runs
+ * down the section; hall cards alternate left/right along it. Nodes on
+ * the spine light up per hall status; short connectors reach each card.
  *
  * We do not open any payment modal here. CTA routing is delegated to
  * `resolveCta` (see `src/lib/home-cta.ts`); paid pages own their own
@@ -18,6 +13,7 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
+import { toast } from "sonner";
 
 import {
   accessTagLabel,
@@ -134,10 +130,9 @@ const BOOKS: BookDef[] = [
 ];
 
 // ─────────────────────────────────────────────────────────────
-// Mini visualisations
+// Mini visualisations (unchanged)
 // ─────────────────────────────────────────────────────────────
 
-/** Math book preview — main life curve + six dimension chips + branch demo. */
 function MathBookPreview({ isZh }: { isZh: boolean }) {
   const [branch, setBranch] = useState<"base" | "job" | "relation" | "move" | "risk">("base");
   const [hoverAge, setHoverAge] = useState<number | null>(null);
@@ -150,7 +145,6 @@ function MathBookPreview({ isZh }: { isZh: boolean }) {
     [isZh],
   );
 
-  // Deterministic pseudo-curves (age 18..70). Not a prediction — a demo.
   const width = 520;
   const height = 140;
   const ages = Array.from({ length: 53 }, (_, i) => 18 + i);
@@ -263,7 +257,6 @@ function MathBookPreview({ isZh }: { isZh: boolean }) {
   );
 }
 
-/** Chinese book preview — a sealed letter that opens to one sample line. */
 function ChineseBookPreview({ isZh }: { isZh: boolean }) {
   const samples = isZh
     ? [
@@ -350,21 +343,40 @@ function AccessChip({ tag, isZh }: { tag: AccessTag; isZh: boolean }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Book row
+// Hall card (rendered inside a corridor slot)
 // ─────────────────────────────────────────────────────────────
 
-type BookRowProps = {
+type HallCardProps = {
   book: BookDef;
+  side: "left" | "right"; // desktop side; mobile is always right
   open: boolean;
+  hovered: boolean;
   onToggle: () => void;
+  onComingClick: () => void;
+  onHoverChange: (h: boolean) => void;
   isSignedIn: boolean;
   hasPrimaryChart: boolean;
   tier: "none" | "sage" | "oracle";
   isZh: boolean;
   reduce: boolean;
+  index: number;
 };
 
-function BookRow({ book, open, onToggle, isSignedIn, hasPrimaryChart, tier, isZh, reduce }: BookRowProps) {
+function HallCard({
+  book,
+  side,
+  open,
+  hovered,
+  onToggle,
+  onComingClick,
+  onHoverChange,
+  isSignedIn,
+  hasPrimaryChart,
+  tier,
+  isZh,
+  reduce,
+  index,
+}: HallCardProps) {
   const isComing = book.status === "coming";
   const cta = book.target
     ? resolveCta({
@@ -380,29 +392,51 @@ function BookRow({ book, open, onToggle, isSignedIn, hasPrimaryChart, tier, isZh
   const tagline = isZh ? book.taglineZh : book.taglineEn;
   const targetLabel = { zh: book.targetLabelZh ?? "", en: book.targetLabelEn ?? "" };
 
+  const handleKey = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      if (isComing) onComingClick();
+      else onToggle();
+    }
+  };
+
+  // Accent strip lives on the side facing the corridor (mobile: always left;
+  // desktop-left cards: right edge; desktop-right cards: left edge).
+  const stripSide = side === "left" ? "md:right-0 md:left-auto left-0" : "left-0";
+
   return (
-    <div
-      className={`overflow-hidden rounded-2xl border transition ${
+    <motion.div
+      initial={reduce ? false : { opacity: 0, x: side === "left" ? -18 : 18 }}
+      whileInView={{ opacity: 1, x: 0 }}
+      viewport={{ once: true, margin: "-80px" }}
+      transition={{ duration: 0.55, ease: [0.32, 0.72, 0, 1], delay: index * 0.04 }}
+      onMouseEnter={() => onHoverChange(true)}
+      onMouseLeave={() => onHoverChange(false)}
+      onFocus={() => onHoverChange(true)}
+      onBlur={() => onHoverChange(false)}
+      className={`relative overflow-hidden rounded-2xl border transition ${
         isComing
-          ? "border-white/5 bg-obsidian/40 opacity-70"
-          : "border-white/10 bg-obsidian/60 hover:border-gold-dust/30"
-      }`}
+          ? "border-white/5 bg-obsidian/40"
+          : hovered
+            ? "border-gold-dust/40 bg-obsidian/70 shadow-[0_18px_44px_-24px_rgba(212,162,74,0.35)]"
+            : "border-white/10 bg-obsidian/60 hover:border-gold-dust/30"
+      } ${isComing ? "opacity-70" : ""}`}
+      style={reduce ? undefined : { transform: hovered ? "translateY(-3px)" : undefined, transition: "transform .3s ease" }}
     >
-      <button
-        type="button"
-        onClick={isComing ? undefined : onToggle}
-        aria-expanded={open}
-        aria-controls={`book-panel-${book.id}`}
-        disabled={isComing}
-        className={`flex w-full items-center gap-4 px-4 py-4 text-left transition ${
-          isComing ? "cursor-not-allowed" : "cursor-pointer"
-        }`}
+      {/* Corridor-side vertical color strip */}
+      <span
+        aria-hidden
+        className={`absolute top-0 h-full w-[3px] bg-gradient-to-b ${book.accent} ${stripSide}`}
+      />
+      <div
+        role="button"
+        tabIndex={0}
+        aria-expanded={isComing ? undefined : open}
+        aria-controls={isComing ? undefined : `book-panel-${book.id}`}
+        onClick={() => (isComing ? onComingClick() : onToggle())}
+        onKeyDown={handleKey}
+        className="flex w-full cursor-pointer items-start gap-4 px-5 py-5 text-left outline-none focus-visible:ring-2 focus-visible:ring-gold-dust/60"
       >
-        {/* Spine strip */}
-        <div
-          aria-hidden
-          className={`h-14 w-2.5 shrink-0 rounded-sm bg-gradient-to-b ${book.accent}`}
-        />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-[10px] uppercase tracking-[0.32em] text-gold-dust/60">
@@ -410,20 +444,32 @@ function BookRow({ book, open, onToggle, isSignedIn, hasPrimaryChart, tier, isZh
             </span>
             <AccessChip tag={book.status} isZh={isZh} />
           </div>
-          <p className="mt-1.5 font-serif text-base leading-snug text-stone-warm sm:text-lg">
+          <p className="mt-2 font-serif text-base leading-snug text-stone-warm sm:text-lg">
             {title}
           </p>
-          <p className="mt-1 text-xs leading-relaxed text-stone-warm/55">{tagline}</p>
+          <p className="mt-1.5 text-xs leading-relaxed text-stone-warm/55">{tagline}</p>
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-[0.28em]">
+            {isComing ? (
+              <span className="text-stone-warm/45">
+                {isZh ? "馆藏整理中" : "Collection in progress"}
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-gold-dust/80">
+                {isZh ? "进入此馆" : "Enter this hall"}
+                <span aria-hidden>→</span>
+              </span>
+            )}
+            {!isComing && (
+              <span
+                aria-hidden
+                className={`text-gold-dust/50 transition-transform ${open ? "rotate-180" : ""}`}
+              >
+                ▾
+              </span>
+            )}
+          </div>
         </div>
-        {!isComing && (
-          <span
-            aria-hidden
-            className={`text-gold-dust/60 transition-transform ${open ? "rotate-180" : ""}`}
-          >
-            ▾
-          </span>
-        )}
-      </button>
+      </div>
 
       <AnimatePresence initial={false}>
         {open && !isComing && (
@@ -435,7 +481,7 @@ function BookRow({ book, open, onToggle, isSignedIn, hasPrimaryChart, tier, isZh
             transition={{ duration: 0.35, ease: [0.32, 0.72, 0, 1] }}
             className="overflow-hidden border-t border-white/5"
           >
-            <div className="grid gap-5 px-4 py-5 md:grid-cols-[1fr_1.15fr] md:gap-6">
+            <div className="grid gap-5 px-5 py-5">
               <div className="text-sm leading-relaxed text-stone-warm/70">
                 {book.id === "math" && (
                   <>
@@ -445,21 +491,9 @@ function BookRow({ book, open, onToggle, isSignedIn, hasPrimaryChart, tier, isZh
                         : "Life is not a fixed straight line. Study, career, love, wealth, family and health each carry different weight at different ages — and choice, opportunity and chance bend the same chart down different curves."}
                     </p>
                     <ul className="mt-3 space-y-1.5 text-xs text-stone-warm/55">
-                      <li>
-                        {isZh
-                          ? "· 悬停曲线查看某个年龄哪些维度贡献大、哪些正在消耗"
-                          : "· Hover the curve to see which dimensions contribute or drain at each age"}
-                      </li>
-                      <li>
-                        {isZh
-                          ? "· 点击「人生分支」看同一张命盘在不同选择下的走势"
-                          : "· Try the branches to see how the same chart bends under different choices"}
-                      </li>
-                      <li>
-                        {isZh
-                          ? "· 大数定律、幸存者偏差、辛普森悖论、墨菲定律、回归均值 — 五张人生卡片"
-                          : "· Five cards: law of large numbers, survivorship bias, Simpson's paradox, Murphy, regression to the mean"}
-                      </li>
+                      <li>{isZh ? "· 悬停曲线查看某个年龄哪些维度贡献大、哪些正在消耗" : "· Hover the curve to see which dimensions contribute or drain at each age"}</li>
+                      <li>{isZh ? "· 点击「人生分支」看同一张命盘在不同选择下的走势" : "· Try the branches to see how the same chart bends under different choices"}</li>
+                      <li>{isZh ? "· 大数定律、幸存者偏差、辛普森悖论、墨菲定律、回归均值 — 五张人生卡片" : "· Five cards: law of large numbers, survivorship bias, Simpson's paradox, Murphy, regression to the mean"}</li>
                     </ul>
                   </>
                 )}
@@ -471,21 +505,9 @@ function BookRow({ book, open, onToggle, isSignedIn, hasPrimaryChart, tier, isZh
                         : "Some lines you only recite as a child — and only years later discover they had already named the thing you're struggling with."}
                     </p>
                     <ul className="mt-3 space-y-1.5 text-xs text-stone-warm/55">
-                      <li>
-                        {isZh
-                          ? "· 根据年龄阶段、当前关注领域和命盘长期结构推荐一句"
-                          : "· A line chosen for your life stage, current focus and long-term chart pattern"}
-                      </li>
-                      <li>
-                        {isZh
-                          ? "· 解释它原本在说什么、为什么此刻可能与你共鸣"
-                          : "· What it originally meant, and why it may resonate now"}
-                      </li>
-                      <li>
-                        {isZh
-                          ? "· 一条可以带回现实生活的反思问题"
-                          : "· One reflection question to carry into the day"}
-                      </li>
+                      <li>{isZh ? "· 根据年龄阶段、当前关注领域和命盘长期结构推荐一句" : "· A line chosen for your life stage, current focus and long-term chart pattern"}</li>
+                      <li>{isZh ? "· 解释它原本在说什么、为什么此刻可能与你共鸣" : "· What it originally meant, and why it may resonate now"}</li>
+                      <li>{isZh ? "· 一条可以带回现实生活的反思问题" : "· One reflection question to carry into the day"}</li>
                     </ul>
                   </>
                 )}
@@ -498,7 +520,7 @@ function BookRow({ book, open, onToggle, isSignedIn, hasPrimaryChart, tier, isZh
                 )}
               </div>
             </div>
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/5 px-4 py-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/5 px-5 py-4">
               <span className="text-[11px] leading-relaxed text-stone-warm/50">
                 {ctaMicroCopy(cta.state, targetLabel, isZh)}
               </span>
@@ -514,7 +536,7 @@ function BookRow({ book, open, onToggle, isSignedIn, hasPrimaryChart, tier, isZh
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </motion.div>
   );
 }
 
@@ -525,14 +547,95 @@ function ctaLabel(state: string, book: BookDef, isZh: boolean): string {
       ? book.id === "math"
         ? "完成仪式 · 生成我的人生函数"
         : "完成仪式 · 领取此刻的句子"
-      : book.id === "math"
-        ? "Complete the ritual"
-        : "Complete the ritual";
+      : "Complete the ritual";
   return isZh
     ? `进入${book.id === "math" ? "数学馆" : "语文馆"}`
     : book.id === "math"
       ? "Open the Math Hall"
       : "Open the Letters Hall";
+}
+
+// ─────────────────────────────────────────────────────────────
+// Corridor row — three-column desktop, two-column mobile.
+// ─────────────────────────────────────────────────────────────
+
+type CorridorRowProps = HallCardProps & { total: number };
+
+function CorridorRow(props: CorridorRowProps) {
+  const { book, side, hovered, index, total, isZh, reduce } = props;
+  const isComing = book.status === "coming";
+  const isLast = index === total - 1;
+
+  const nodeClasses = [
+    "relative z-10 grid h-6 w-6 place-items-center rounded-full border-2 transition",
+    isComing
+      ? "border-gold-dust/25 bg-obsidian"
+      : hovered
+        ? "border-gold-light bg-gold-dust/30 shadow-[0_0_18px_2px_rgba(224,182,90,0.55)]"
+        : "border-gold-dust/70 bg-obsidian",
+    !isComing && !reduce ? "animate-pulse-gold" : "",
+  ].join(" ");
+
+  const connectorBase =
+    "pointer-events-none absolute top-1/2 hidden h-px -translate-y-1/2 md:block transition-opacity";
+  const connectorTone = hovered && !isComing ? "opacity-90" : "opacity-40";
+
+  return (
+    <div
+      className="grid items-center gap-4 md:grid-cols-[minmax(0,1fr)_96px_minmax(0,1fr)] md:gap-6"
+      style={{ gridTemplateColumns: undefined }}
+    >
+      {/* Mobile: left node gutter */}
+      <div className="relative flex md:hidden">
+        <div className="relative flex w-11 shrink-0 items-center justify-center">
+          <div className={nodeClasses} aria-hidden>
+            <span className="text-[9px] font-medium tracking-widest text-gold-dust/80">
+              {String(index + 1).padStart(2, "0")}
+            </span>
+          </div>
+        </div>
+        <div className="min-w-0 flex-1">
+          <HallCard {...props} />
+        </div>
+      </div>
+
+      {/* Desktop: three-column layout */}
+      <div className={`hidden md:block ${side === "left" ? "" : "md:invisible"}`}>
+        {side === "left" ? <HallCard {...props} /> : null}
+      </div>
+      <div className="relative hidden md:flex md:h-full md:items-center md:justify-center">
+        {/* Node */}
+        <div className={nodeClasses} aria-hidden>
+          <span className="text-[9px] font-medium tracking-widest text-gold-dust/80">
+            {String(index + 1).padStart(2, "0")}
+          </span>
+        </div>
+        {/* Connector to left card */}
+        {side === "left" && (
+          <span
+            aria-hidden
+            className={`${connectorBase} right-1/2 mr-3 w-10 bg-gradient-to-l from-gold-dust/70 to-transparent ${connectorTone}`}
+          />
+        )}
+        {/* Connector to right card */}
+        {side === "right" && (
+          <span
+            aria-hidden
+            className={`${connectorBase} left-1/2 ml-3 w-10 bg-gradient-to-r from-gold-dust/70 to-transparent ${connectorTone}`}
+          />
+        )}
+        {/* Vertical dashed spine segment through this row */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-y-0 left-1/2 -translate-x-1/2 border-l border-dashed border-gold-dust/25"
+          style={isLast ? { bottom: "50%" } : undefined}
+        />
+      </div>
+      <div className={`hidden md:block ${side === "right" ? "" : "md:invisible"}`}>
+        {side === "right" ? <HallCard {...props} /> : null}
+      </div>
+    </div>
+  );
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -568,30 +671,35 @@ export function PlayfulLibrarySection() {
     };
   }, [isSignedIn]);
 
-  // Only one open at a time. Default first open book on desktop for
-  // 6-second scan; mobile starts collapsed to avoid a tall first paint.
   const [openId, setOpenId] = useState<BookId | null>(null);
+  const [hoverId, setHoverId] = useState<BookId | null>(null);
   const reduce = !!useReducedMotion();
+
+  const notifyComing = () => {
+    toast(
+      isZh
+        ? "此馆仍在整理馆藏，开放后会在导览室亮灯。"
+        : "This hall is still arranging its collection. Its light will appear in the Guide Hall when ready.",
+    );
+  };
 
   return (
     <section
       id="playful-library"
       data-testid="playful-library"
-      className="relative z-10 mx-auto max-w-6xl px-5 py-24 sm:px-6"
+      className="relative z-10 mx-auto max-w-[1440px] px-5 py-24 sm:px-8 lg:px-16"
     >
       <header className="mx-auto max-w-3xl text-center">
         <p className="text-[10px] uppercase tracking-[0.42em] text-gold-dust/80">
           {isZh ? "跨学科馆藏" : "Cross-discipline exhibits"}
         </p>
         <h2 className="mt-3 font-serif text-3xl leading-tight text-stone-warm md:text-4xl">
-          {isZh
-            ? "趣味图书馆 · 换一种学科，重新读懂人生"
-            : "Playful Library — read your life in another discipline"}
+          {isZh ? "趣味图书馆" : "The Curious Library"}
         </h2>
         <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-stone-warm/60">
           {isZh
-            ? "如果命理术语离生活太远，就换一种你熟悉的语言。这里把命盘中的长期结构，翻译成函数、曲线、诗句、地图与可以分享的人生卡片。"
-            : "When the traditional vocabulary feels far from daily life, switch to a language you already know. Here the long-term structure of the chart is translated into functions, curves, poems, maps — and small cards worth sharing."}
+            ? "沿着馆内长廊，选择一种新的语言重新阅读自己。"
+            : "Follow the library corridor and choose a new language for reading your life."}
         </p>
         <p className="mx-auto mt-3 max-w-xl text-[11px] leading-relaxed text-stone-warm/40">
           {isZh
@@ -600,30 +708,27 @@ export function PlayfulLibrarySection() {
         </p>
       </header>
 
-      {/* How to enter — three steps */}
-      <ol className="mx-auto mt-8 grid max-w-3xl gap-3 text-[11px] uppercase tracking-[0.24em] text-stone-warm/55 sm:grid-cols-3">
-        {[
-          isZh ? "01 · 完成出生信息仪式" : "01 · Complete the ritual",
-          isZh ? "02 · 命盘设为主命盘" : "02 · Set as your primary chart",
-          isZh ? "03 · 从这里进入已开放馆藏" : "03 · Open any available exhibit",
-        ].map((step) => (
-          <li
-            key={step}
-            className="rounded-xl border border-white/5 bg-obsidian/50 px-4 py-3 text-center"
-          >
-            {step}
-          </li>
-        ))}
-      </ol>
+      {/* Corridor start marker */}
+      <div className="mt-14 flex items-center justify-center gap-3 text-[10px] uppercase tracking-[0.42em] text-gold-dust/60">
+        <span aria-hidden className="h-px w-10 bg-gold-dust/40" />
+        <span>{isZh ? "探索从这里开始" : "Your exploration begins here"}</span>
+        <span aria-hidden className="h-px w-10 bg-gold-dust/40" />
+      </div>
 
-      {/* Book stack */}
-      <div className="mt-10 grid gap-3">
-        {BOOKS.map((b) => (
-          <BookRow
-            key={b.id}
-            book={b}
-            open={openId === b.id}
-            onToggle={() => setOpenId((id) => (id === b.id ? null : b.id))}
+      {/* Corridor rows */}
+      <div className="relative mt-10 space-y-14 md:space-y-16">
+        {BOOKS.map((book, i) => (
+          <CorridorRow
+            key={book.id}
+            book={book}
+            side={i % 2 === 0 ? "left" : "right"}
+            index={i}
+            total={BOOKS.length}
+            open={openId === book.id}
+            hovered={hoverId === book.id}
+            onToggle={() => setOpenId((id) => (id === book.id ? null : book.id))}
+            onComingClick={notifyComing}
+            onHoverChange={(h) => setHoverId(h ? book.id : null)}
             isSignedIn={isSignedIn}
             hasPrimaryChart={hasPrimaryChart}
             tier={tier}
@@ -631,6 +736,13 @@ export function PlayfulLibrarySection() {
             reduce={reduce}
           />
         ))}
+      </div>
+
+      {/* Corridor end marker */}
+      <div className="mt-14 flex items-center justify-center gap-3 text-[10px] uppercase tracking-[0.42em] text-stone-warm/40">
+        <span aria-hidden className="h-px w-10 bg-stone-warm/20" />
+        <span>{isZh ? "更多馆室，仍在整理馆藏。" : "More halls are still arranging their collections."}</span>
+        <span aria-hidden className="h-px w-10 bg-stone-warm/20" />
       </div>
     </section>
   );
