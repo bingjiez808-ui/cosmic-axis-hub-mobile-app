@@ -1042,11 +1042,14 @@ export type Database = {
       }
       reports: {
         Row: {
+          calculation_version: string | null
           chart_id: string
+          content_hash: string | null
           created_at: string
           error_message: string | null
           generated_at: string | null
           id: string
+          input_hash: string | null
           input_snapshot: Json
           kind: string
           model: string | null
@@ -1054,15 +1057,19 @@ export type Database = {
           report_json: Json | null
           report_version: string
           status: string
+          token_usage: Json | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          calculation_version?: string | null
           chart_id: string
+          content_hash?: string | null
           created_at?: string
           error_message?: string | null
           generated_at?: string | null
           id?: string
+          input_hash?: string | null
           input_snapshot?: Json
           kind: string
           model?: string | null
@@ -1070,15 +1077,19 @@ export type Database = {
           report_json?: Json | null
           report_version: string
           status?: string
+          token_usage?: Json | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          calculation_version?: string | null
           chart_id?: string
+          content_hash?: string | null
           created_at?: string
           error_message?: string | null
           generated_at?: string | null
           id?: string
+          input_hash?: string | null
           input_snapshot?: Json
           kind?: string
           model?: string | null
@@ -1086,6 +1097,7 @@ export type Database = {
           report_json?: Json | null
           report_version?: string
           status?: string
+          token_usage?: Json | null
           updated_at?: string
           user_id?: string
         }
