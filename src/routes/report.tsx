@@ -24,6 +24,8 @@ import {
 } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ReportToc, type TocItem } from "@/components/ReportToc";
+import { PriorityPreviewModal } from "@/components/PriorityPreviewModal";
+import { isConcernKey } from "@/lib/concern-guidance-v1";
 // Sage tree-hole is mounted globally in src/routes/__root.tsx.
 
 const DIM_ICONS: Record<string, LucideIcon> = {
@@ -192,6 +194,9 @@ type SearchParams = {
   relationship?: string;
   relationshipLabel?: string;
   primaryIntent?: "replace" | "keep" | "auto";
+  concern?: string;
+  focus?: string;
+  id?: string;
 };
 
 const pickStr = (v: unknown) => (typeof v === "string" ? v : undefined);
@@ -226,6 +231,9 @@ export const Route = createFileRoute("/report")({
       s.primaryIntent === "replace" || s.primaryIntent === "keep" || s.primaryIntent === "auto"
         ? s.primaryIntent
         : undefined,
+    concern: pickStr(s.concern),
+    focus: pickStr(s.focus),
+    id: pickStr(s.id),
   }),
   component: ReportPage,
 });
@@ -1818,6 +1826,21 @@ function ReportPage() {
         lang={lang}
         t={t}
       />
+
+      {/* Post-ritual priority preview — one-shot per report generation */}
+      {isConcernKey(search.concern) ? (
+        <PriorityPreviewModal
+          concern={search.concern}
+          lang={lang}
+          displayed={displayed}
+          reportKey={
+            aiState === "ready"
+              ? `${reportChartId ?? search.readingId ?? seed}::${REPORT_AI_VERSION}`
+              : null
+          }
+          ready={aiState === "ready" && !!ai}
+        />
+      ) : null}
 
       {/* Floating sage companion is provided globally in __root.tsx */}
     </div>

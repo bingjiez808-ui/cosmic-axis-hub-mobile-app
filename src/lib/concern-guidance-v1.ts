@@ -48,6 +48,29 @@ export function isReportSection(v: unknown): v is ReportSection {
   return typeof v === "string" && (REPORT_SECTION_WHITELIST as readonly string[]).includes(v);
 }
 
+/**
+ * Map a whitelisted report section to the actual DOM anchor id used on
+ * the `/report` page. The overview reader uses dimension keys as
+ * anchors (character/academic/vocation/wealth/love/health/parents/
+ * children/mission), and the natal wheel section is `natal-chart`.
+ * Sections without a native anchor fall back to `character` so the
+ * priority-preview CTA never scrolls to nothing.
+ */
+export function reportSectionAnchor(section: ReportSection): string {
+  switch (section) {
+    case "chart_map":
+      return "natal-chart";
+    case "relationships":
+      return "love";
+    case "family":
+      return "parents";
+    case "year_and_windows":
+      return "character";
+    default:
+      return section;
+  }
+}
+
 type Bi = { zh: string; en: string };
 type BiList = { zh: string[]; en: string[] };
 
@@ -424,7 +447,7 @@ export function resolveConcernRoute(args: ResolveArgs): string {
   if (existingReportId) {
     return `/report?id=${encodeURIComponent(existingReportId)}&focus=${encodeURIComponent(
       section,
-    )}`;
+    )}&concern=${encodeURIComponent(concern)}`;
   }
   return `/me/home?concern=${encodeURIComponent(concern)}#curator-welcome`;
 }
