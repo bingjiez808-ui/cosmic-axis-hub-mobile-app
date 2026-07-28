@@ -23,6 +23,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { ReportToc, type TocItem } from "@/components/ReportToc";
 // Sage tree-hole is mounted globally in src/routes/__root.tsx.
 
 const DIM_ICONS: Record<string, LucideIcon> = {
@@ -1432,7 +1433,24 @@ function ReportPage() {
 
       <AccountModal open={accOpen} onClose={() => setAccOpen(false)} />
 
-      <section className="mx-auto mb-24 max-w-6xl px-4 sm:px-6">
+      {(() => {
+        const li = lang === "zh" ? 1 : 0;
+        const toc: TocItem[] = [
+          {
+            id: "natal-chart",
+            label: lang === "zh" ? "你的命盘" : "Your natal chart",
+            hint: lang === "zh" ? "九颗行星 · 十二宫" : "Nine planets · twelve houses",
+          },
+          ...displayed.map((d) => ({
+            id: d.key,
+            label: d.title[li],
+            hint: d.headline[li],
+          })),
+        ];
+        return <ReportToc items={toc} lang={lang} />;
+      })()}
+
+      <section id="natal-chart" className="mx-auto mb-24 max-w-6xl scroll-mt-[calc(var(--site-nav-height,96px)+72px)] px-4 sm:px-6">
         <div className="glass-card rounded-3xl p-4 sm:p-8 md:p-12">
           {/* Intro block — always full width so mobile sees context first */}
           <div className="mb-6 min-w-0 lg:mb-8">
@@ -1615,7 +1633,7 @@ function ReportPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-80px" }}
               transition={{ duration: 0.8, delay: idx * 0.04, ease: [0.32, 0.72, 0, 1] }}
-              className={`glass-card scroll-mt-24 overflow-hidden rounded-3xl p-4 sm:p-8 md:p-12 ${pending ? "opacity-70" : ""}`}
+              className={`glass-card scroll-mt-[calc(var(--site-nav-height,96px)+72px)] overflow-hidden rounded-3xl p-4 sm:p-8 md:p-12 ${pending ? "opacity-70" : ""}`}
             >
               <div className="mb-8 flex flex-wrap items-start justify-between gap-4 border-b border-white/10 pb-6">
                 <div className="flex min-w-0 items-start gap-4">
