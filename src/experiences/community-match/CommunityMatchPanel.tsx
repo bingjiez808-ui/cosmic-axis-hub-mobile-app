@@ -38,6 +38,7 @@ import { ResonanceAtlas } from "./atlas/ResonanceAtlas";
 import { ResonanceRadar, type RadarFacet } from "./atlas/ResonanceRadar";
 import { BookmarkGlyphIcon } from "./atlas/BookmarkGlyph";
 import { glyphFor } from "./atlas/bookmark";
+import { SageLockedInsights } from "@/components/SageLockedInsights";
 
 type SubTab = "atlas" | "invites" | "matches" | "privacy";
 
@@ -561,33 +562,35 @@ function CandidateDetail({
           </span>
         </div>
       </header>
-      <div className="mt-3">
-        <ResonanceRadar
-          facets={radar}
-          size={240}
-          disclaimer={c.t("drawer_radar_disclaimer")}
-        />
-      </div>
-      {resonances.length > 0 && (
-        <section className="mt-3 rounded border border-amber-400/15 bg-black/30 p-2 text-[11px] text-amber-100/80">
-          <div className="mb-1 text-amber-200/70">{c.t("drawer_group_resonance")}</div>
-          <ul className="space-y-1">
-            {resonances.map((s, i) => (
-              <li key={i}>· {s}</li>
-            ))}
-          </ul>
-        </section>
-      )}
-      {complements.length > 0 && (
-        <section className="mt-2 rounded border border-violet-400/20 bg-violet-500/5 p-2 text-[11px] text-violet-100/80">
-          <div className="mb-1 text-violet-200/70">{c.t("drawer_group_complement")}</div>
-          <ul className="space-y-1">
-            {complements.map((s, i) => (
-              <li key={i}>· {s}</li>
-            ))}
-          </ul>
-        </section>
-      )}
+      <SageLockedInsights source="anonymous_match" testId="anon-match-candidate-lock">
+        <div className="mt-3">
+          <ResonanceRadar
+            facets={radar}
+            size={240}
+            disclaimer={c.t("drawer_radar_disclaimer")}
+          />
+        </div>
+        {resonances.length > 0 && (
+          <section className="mt-3 rounded border border-amber-400/15 bg-black/30 p-2 text-[11px] text-amber-100/80">
+            <div className="mb-1 text-amber-200/70">{c.t("drawer_group_resonance")}</div>
+            <ul className="space-y-1">
+              {resonances.map((s, i) => (
+                <li key={i}>· {s}</li>
+              ))}
+            </ul>
+          </section>
+        )}
+        {complements.length > 0 && (
+          <section className="mt-2 rounded border border-violet-400/20 bg-violet-500/5 p-2 text-[11px] text-violet-100/80">
+            <div className="mb-1 text-violet-200/70">{c.t("drawer_group_complement")}</div>
+            <ul className="space-y-1">
+              {complements.map((s, i) => (
+                <li key={i}>· {s}</li>
+              ))}
+            </ul>
+          </section>
+        )}
+      </SageLockedInsights>
       {cand.partial && (
         <div className="mt-2 text-[11px] text-amber-200/60">{c.t("candidates_partial")}</div>
       )}
@@ -898,7 +901,7 @@ function MatchesTab() {
               )}
             </header>
             {live && (
-              <>
+              <SageLockedInsights source="anonymous_match" testId="anon-match-live-lock">
                 <div className="mt-3">
                   <ResonanceRadar
                     facets={radar}
@@ -911,7 +914,7 @@ function MatchesTab() {
                     <div key={i}>· {s}</div>
                   ))}
                 </div>
-              </>
+              </SageLockedInsights>
             )}
             <footer className="mt-4 flex flex-wrap gap-2">
               <button
