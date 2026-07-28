@@ -158,12 +158,18 @@ export function validateField(
         return lang === "zh" ? "时间无效。" : "Invalid time.";
       return null;
     }
-    case "place":
-      if (trimStr(state.place).length < 2)
+    case "place": {
+      const raw = trimStr(state.place);
+      if (raw.length < 2)
         return lang === "zh"
-          ? "请选择或输入可解析的出生地点（国家 + 城市）。"
-          : "Please pick or enter a resolvable birth place (country + city).";
+          ? "请从下拉列表选择一个可解析的出生地点（国家 + 城市）。"
+          : "Please pick a resolvable birth place (country + city) from the list.";
+      if (!isResolvablePlace(raw))
+        return lang === "zh"
+          ? "尚未识别的地点，请从下拉列表中选择一个城市，以便解析经纬度与时区。"
+          : "Unrecognized place — pick a city from the dropdown so we can resolve its coordinates and timezone.";
       return null;
+    }
     case "gender":
       if (!state.genderChosen)
         return lang === "zh"
