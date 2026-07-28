@@ -439,11 +439,12 @@ function SiteNav() {
     { to: "/community", label: t.nav_community },
   ];
 
-  const libraryEntries: Array<{ to: "/me/home" | "/me/profile" | "/me/friends" | "/me/echoes" | "/me/literature" | "/me/membership" | "/me/sage" | "/me/oracle"; label: string; hint: string; group?: "core" | "rooms" }> = [
+  // Literature Hall belongs to Commons (命运通识馆), NOT to Personal Library.
+  // Do not add subject halls (语文馆/数学馆/…) here — they live under CommonsHallNav.
+  const libraryEntries: Array<{ to: "/me/home" | "/me/profile" | "/me/friends" | "/me/echoes" | "/me/membership" | "/me/sage" | "/me/oracle"; label: string; hint: string; group?: "core" | "rooms" }> = [
     { to: "/me/home", label: isZh ? "书架主页" : "Library Home", hint: isZh ? "今日命运与主线" : "Today's fate & throughline", group: "core" },
     { to: "/me/profile", label: isZh ? "命盘与报告" : "Charts & Reports", hint: isZh ? "主命盘 · 他人命盘 · 报告" : "Primary · others · reports", group: "core" },
     { to: "/me/friends", label: isZh ? "关系与适配" : "Relationships", hint: isZh ? "好友 · 邀请 · 适配分析" : "Friends · invites · match", group: "core" },
-    { to: "/me/literature", label: isZh ? "语文馆" : "Literature Hall", hint: isZh ? "为你此刻翻开一页" : "A page turned for this chapter", group: "core" },
     { to: "/me/echoes", label: isZh ? "历史回声" : "Historical Echoes", hint: isZh ? "相似处境的历史人物" : "Figures with similar arcs", group: "core" },
     { to: "/me/membership", label: isZh ? "会员与订单" : "Membership & Orders", hint: isZh ? "会员 · 订单 · 工单" : "Plans · orders · tickets", group: "core" },
     { to: "/me/sage", label: isZh ? "贤者阅览室" : "Sage Reading Room", hint: isZh ? "时间轴 · 合盘 · 塔罗" : "Timeline · synastry · tarot", group: "rooms" },
