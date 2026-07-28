@@ -5,7 +5,7 @@ import { SubjectRoomCard } from "@/experiences/life-studies/SubjectRoomCard";
 import { SubjectRoomShell } from "@/experiences/life-studies/SubjectRoomShell";
 import { SUBJECT_ROOMS } from "@/experiences/life-studies/subjects";
 import { useLang } from "@/lib/i18n";
-import { useSession } from "@/lib/session";
+import { useSupabaseSession } from "@/lib/session";
 
 export const Route = createFileRoute("/life-studies")({
   head: () => ({
@@ -30,7 +30,7 @@ export const Route = createFileRoute("/life-studies")({
 function LifeStudiesHome() {
   const { lang } = useLang();
   const isZh = lang === "zh";
-  const { session } = useSession();
+  const { session } = useSupabaseSession();
   const signedIn = !!session;
   const openRoom = SUBJECT_ROOMS.find((r) => r.status === "open");
 

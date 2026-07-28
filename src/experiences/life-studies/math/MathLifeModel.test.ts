@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, test as it } from "bun:test";
 
 import {
   DEFAULT_SCENARIO,

@@ -6,7 +6,7 @@ import { MathRoom } from "@/experiences/life-studies/math/MathRoom";
 import { SubjectRoomShell } from "@/experiences/life-studies/SubjectRoomShell";
 import type { GateState } from "@/experiences/life-studies/MainChartGate";
 import { listUserCharts } from "@/lib/reports-store.functions";
-import { useSession } from "@/lib/session";
+import { useSupabaseSession } from "@/lib/session";
 
 export const Route = createFileRoute("/life-studies/math")({
   head: () => ({
@@ -29,7 +29,7 @@ export const Route = createFileRoute("/life-studies/math")({
 });
 
 function MathRoomPage() {
-  const { session } = useSession();
+  const { session } = useSupabaseSession();
   const fetchCharts = useServerFn(listUserCharts);
   const isSignedIn = !!session;
   const chartsQuery = useQuery({
