@@ -76,7 +76,7 @@ export const DESTINY_COMMONS_HALLS: DestinyCommonsHall[] = [
     summaryEn:
       "Match a line of poetry to your current life stage, situation and long-term tendencies — and read its annotation.",
     status: "open",
-    route: "/me/echoes",
+    route: "/me/literature",
     accent: "from-gold-dust/55 via-gold-dust/25 to-transparent",
     requiresPrimaryChart: true,
     capabilities: [
