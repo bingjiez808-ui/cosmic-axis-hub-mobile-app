@@ -53,10 +53,10 @@ const ROOMS: RoomDef[] = [
     accessTag: "basic",
     titleZh: "时间回廊",
     titleEn: "Time Corridor",
-    taglineZh: "六条并行的生命曲线，随年龄流动。",
-    taglineEn: "Six life lines flowing across the years.",
-    answersZh: "「不同年龄，我的事业、学业、关系、财富、家庭与健康会经历什么？」",
-    answersEn: "\"What does each age hold for study, career, love, wealth, family and health?\"",
+    taglineZh: "一条金色能量线，走完你此刻的十年。",
+    taglineEn: "A single golden energy line across your current decade.",
+    answersZh: "「未来十年，我的每一年会经历什么阶段？此刻我在哪一段？」",
+    answersEn: "\"What phase does each year of my current decade hold — and where am I standing right now?\"",
     targetLabelZh: "时间回廊",
     targetLabelEn: "the Time Corridor",
     ctaZh: "打开时间回廊",
@@ -135,86 +135,81 @@ function AccessChip({ tag, isZh }: { tag: AccessTag; isZh: boolean }) {
 /** Tiny per-card visual — a stylised, quiet SVG loop themed to the room. */
 function CardVisual({ kind, accent }: { kind: RoomPreviewKind; accent: string }) {
   if (kind === "corridor") {
-    // Life-lines chart: six domain curves across an age axis, deterministic
-    // shapes that read as a proper polyline chart rather than four parallel arcs.
+    // Single golden energy line across the current decade — matches the
+    // real Life Timeline chart on /report, not a six-line math model.
     const W = 200;
     const H = 80;
-    const padL = 14;
+    const padL = 10;
     const padR = 6;
-    const padT = 6;
-    const padB = 12;
+    const padT = 8;
+    const padB = 14;
     const innerW = W - padL - padR;
     const innerH = H - padT - padB;
-    const ages = [0, 15, 30, 45, 60, 75];
-    // Six domains with distinct colors + deterministic normalized samples (0..1)
-    const lines: { color: string; samples: number[] }[] = [
-      { color: "#f5c26b", samples: [0.35, 0.55, 0.78, 0.7, 0.55, 0.42] }, // career
-      { color: "#7dd3c0", samples: [0.6, 0.72, 0.6, 0.5, 0.62, 0.7] }, // health
-      { color: "#c7a3ff", samples: [0.5, 0.68, 0.72, 0.66, 0.55, 0.48] }, // love
-      { color: "#f88fa2", samples: [0.42, 0.58, 0.5, 0.62, 0.7, 0.6] }, // family
-      { color: "#8ab8ff", samples: [0.7, 0.78, 0.6, 0.48, 0.4, 0.36] }, // study
-      { color: "#e6d27a", samples: [0.3, 0.45, 0.6, 0.72, 0.68, 0.58] }, // wealth
-    ];
-    const x = (i: number) => padL + (i / (ages.length - 1)) * innerW;
-    const y = (v: number) => padT + (1 - v) * innerH;
-    const pathFor = (samples: number[]) =>
-      samples.map((v, i) => `${i === 0 ? "M" : "L"} ${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(" ");
+    const decadeStart = 20;
+    const scores = [49, 52, 54, 49, 46, 55, 48, 51, 54, 50];
+    const minS = Math.min(...scores) - 6;
+    const maxS = Math.max(...scores) + 6;
+    const span = Math.max(1, maxS - minS);
+    const x = (i: number) => padL + (i / (scores.length - 1)) * innerW;
+    const y = (v: number) => padT + ((maxS - v) / span) * innerH;
+    const linePath = scores
+      .map((v, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(v).toFixed(1)}`)
+      .join(" ");
+    const areaPath = `${linePath} L${x(scores.length - 1).toFixed(1)},${H - padB} L${x(0).toFixed(1)},${H - padB} Z`;
+    const nowIdx = 3;
     return (
       <svg viewBox={`0 0 ${W} ${H}`} className="h-full w-full" aria-hidden>
-        {/* soft gridlines */}
+        <defs>
+          <linearGradient id="corridor-card-area" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor={accent} stopOpacity="0.32" />
+            <stop offset="100%" stopColor={accent} stopOpacity="0.02" />
+          </linearGradient>
+        </defs>
         {[0.25, 0.5, 0.75].map((g) => (
           <line
             key={g}
             x1={padL}
             x2={W - padR}
-            y1={y(g)}
-            y2={y(g)}
+            y1={padT + g * innerH}
+            y2={padT + g * innerH}
             stroke="rgba(255,255,255,0.05)"
-            strokeDasharray={g === 0.5 ? undefined : "2 3"}
+            strokeDasharray={g === 0.5 ? "2 3" : undefined}
           />
         ))}
-        {/* age ticks */}
-        {ages.map((a, i) => (
-          <g key={a}>
-            <line
-              x1={x(i)}
-              x2={x(i)}
-              y1={H - padB}
-              y2={H - padB + 2}
-              stroke="rgba(255,255,255,0.15)"
-            />
-            <text
-              x={x(i)}
-              y={H - 2}
-              textAnchor="middle"
-              fontSize="6"
-              fill="rgba(232,220,196,0.45)"
-            >
-              {a}
-            </text>
-          </g>
-        ))}
-        {/* life lines */}
-        {lines.map((ln, i) => (
-          <motion.path
+        <line x1={padL} x2={W - padR} y1={H - padB} y2={H - padB} stroke="rgba(255,255,255,0.1)" />
+        <motion.path
+          d={areaPath}
+          fill="url(#corridor-card-area)"
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8, delay: 0.3 }}
+        />
+        <motion.path
+          d={linePath}
+          fill="none"
+          stroke={accent}
+          strokeWidth="1.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          initial={{ pathLength: 0 }}
+          whileInView={{ pathLength: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 1.4, ease: "easeInOut" }}
+        />
+        {scores.map((v, i) => (
+          <circle
             key={i}
-            d={pathFor(ln.samples)}
-            fill="none"
-            stroke={ln.color}
-            strokeOpacity={0.85}
-            strokeWidth="1.3"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            initial={{ pathLength: 0 }}
-            whileInView={{ pathLength: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 1.6, delay: i * 0.12, ease: "easeOut" }}
+            cx={x(i)}
+            cy={y(v)}
+            r={i === nowIdx ? 2.6 : 1.6}
+            fill={accent}
+            fillOpacity={i === nowIdx ? 1 : 0.7}
           />
         ))}
-        {/* "today" cursor at age 30 */}
         <motion.line
-          x1={x(2)}
-          x2={x(2)}
+          x1={x(nowIdx)}
+          x2={x(nowIdx)}
           y1={padT}
           y2={H - padB}
           stroke={accent}
@@ -223,19 +218,20 @@ function CardVisual({ kind, accent }: { kind: RoomPreviewKind; accent: string })
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          transition={{ delay: 1.2, duration: 0.5 }}
+          transition={{ delay: 1.1, duration: 0.4 }}
         />
-        <motion.circle
-          cx={x(2)}
-          cy={y(0.78)}
-          r="2.4"
-          fill={accent}
-          initial={{ scale: 0 }}
-          whileInView={{ scale: 1 }}
-          viewport={{ once: true }}
-          transition={{ delay: 1.4, type: "spring", stiffness: 180 }}
-          style={{ filter: `drop-shadow(0 0 3px ${accent})` }}
-        />
+        {[0, 3, 6, 9].map((i) => (
+          <text
+            key={i}
+            x={x(i)}
+            y={H - 3}
+            textAnchor="middle"
+            fontSize="6"
+            fill={i === nowIdx ? accent : "rgba(232,220,196,0.5)"}
+          >
+            {decadeStart + i}
+          </text>
+        ))}
       </svg>
     );
   }
