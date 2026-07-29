@@ -17,8 +17,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 export type EntrancePhase = "idle" | "visible" | "exiting-enter" | "exiting-skip" | "done";
 
 const STORAGE_KEY = "destiny_library_entrance_seen_v1";
-const ENTER_DURATION = 1900;
-const ENTER_DURATION_REDUCED = 350;
+const ENTER_DURATION = 1500;
+const ENTER_DURATION_REDUCED = 300;
 const SKIP_DURATION = 400;
 
 function prefersReducedMotion(): boolean {
