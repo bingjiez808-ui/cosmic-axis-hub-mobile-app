@@ -213,6 +213,11 @@ export function FeatureLibraryShelf({
         >
           {H.heading[lang]}
         </h2>
+        {H.subHeading ? (
+          <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-amber-100/65">
+            {H.subHeading[lang]}
+          </p>
+        ) : null}
         <p className="mt-3 text-[11px] uppercase tracking-[0.28em] text-amber-200/50 sm:hidden">
           {H.hintScroll[lang]}
         </p>
