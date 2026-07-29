@@ -1,16 +1,28 @@
-/* Destiny Library — scratch-glass entrance overlay
+/* Destiny Library — "Lantern at the Gate" entrance overlay.
  *
  * Layers (bottom → top):
- *   .le-clear    — untouched video/poster
- *   .le-glass    — canvas: blurred+fog, erased by hover / click / drag
- *   .le-scratch  — transparent pointer surface
- *   .le-stars    — SVG starmarks + connection lines
- *   .le-lantern  — custom desktop cursor
- *   .le-vignette / .le-seam — cinematic edges
- *   .le-top / .le-content — brand, language, title, CTA
+ *   .le-media-clear  — clear background media (poster/video)
+ *   .le-media-dim    — dimmed+blurred copy; masked by lantern CSS variables
+ *   .le-door-*       — clip-path halves used only during enter animation
+ *   .le-doorlight    — amber core light revealed as doors split
+ *   .le-seam         — vertical golden light line
+ *   .le-vignette     — edge falloff
+ *   .le-breathe      — subtle ambient breathing glow
+ *   .le-top / .le-content — brand, language, title, CTA (always readable)
+ *
+ * Motion state comes from JS-updated CSS custom properties:
+ *   --le-lx / --le-ly            lantern position (px)
+ *   --le-lantern-opacity         0..1
+ *   --le-px / --le-py            parallax normalized offset -1..1
  */
 
 .le-root {
+  --le-lx: 50vw;
+  --le-ly: 55vh;
+  --le-lantern-opacity: 0;
+  --le-px: 0;
+  --le-py: 0;
+
   position: fixed;
   inset: 0;
   width: 100dvw;
@@ -24,176 +36,207 @@
   contain: strict;
   transition: opacity 0.6s ease;
 }
-/* Desktop: hide system cursor everywhere inside the overlay; UI controls
-   restore pointer explicitly. */
-@media (hover: hover) and (pointer: fine) {
-  .le-root { cursor: none; }
-  .le-root button,
-  .le-root [role="button"],
-  .le-root .le-lang,
-  .le-root .le-top { cursor: pointer; }
-}
 
 .le-root[data-phase="exiting-enter"],
 .le-root[data-phase="exiting-skip"] { pointer-events: none; }
 .le-root[data-phase="exiting-skip"] { opacity: 0; transition: opacity 0.4s ease; }
-.le-root[data-phase="exiting-enter"] { opacity: 0; transition: opacity 0.55s ease 0.85s; }
+.le-root[data-phase="exiting-enter"] {
+  opacity: 1;
+  transition: opacity 0.4s ease 1.5s;
+}
+.le-root[data-phase="exiting-enter"].le-root { opacity: 0; }
 
-/* Layer A — clear video / poster (slight cinematic grade) */
-.le-clear {
+/* ------------------------------------------------------------------ */
+/* Media layers                                                       */
+/* ------------------------------------------------------------------ */
+.le-media {
   position: absolute;
   inset: 0;
   overflow: hidden;
+  pointer-events: none;
   transform-origin: center 55%;
-  transition:
-    transform 1200ms cubic-bezier(0.22, 0.61, 0.36, 1),
-    filter 1200ms ease;
 }
-.le-clear > video,
-.le-clear > img {
+.le-media > video,
+.le-media > img {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
   object-position: center 55%;
-  pointer-events: none;
   user-select: none;
-  filter: brightness(0.76) saturate(0.86) contrast(1.04);
-}
-.le-root[data-phase="exiting-enter"] .le-clear {
-  transform: scale(1.035);
-  filter: brightness(1.08);
+  pointer-events: none;
 }
 
-/* Layer B — foggy glass canvas */
-.le-glass {
+/* Layer A — clear */
+.le-media-clear > video,
+.le-media-clear > img {
+  filter: brightness(0.94) saturate(0.98) contrast(1.02);
+  transform: translate3d(
+    calc(var(--le-px) * -4px),
+    calc(var(--le-py) * -3px),
+    0
+  );
+  transition: transform 400ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+/* Layer B — dimmed/blurred fog copy, masked to show clear layer through it */
+.le-media-dim {
+  /* CSS radial mask: transparent center = fog hidden = clear layer visible */
+  --le-radius: 180px;
+  -webkit-mask-image: radial-gradient(
+    circle var(--le-radius) at var(--le-lx) var(--le-ly),
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, calc(0.15 * var(--le-lantern-opacity))) 25%,
+    rgba(0, 0, 0, calc(0.55 * var(--le-lantern-opacity))) 55%,
+    rgba(0, 0, 0, 1) 100%
+  );
+  mask-image: radial-gradient(
+    circle var(--le-radius) at var(--le-lx) var(--le-ly),
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, calc(0.15 * var(--le-lantern-opacity))) 25%,
+    rgba(0, 0, 0, calc(0.55 * var(--le-lantern-opacity))) 55%,
+    rgba(0, 0, 0, 1) 100%
+  );
+}
+@media (min-width: 641px) {
+  .le-media-dim { --le-radius: 190px; }
+}
+.le-media-dim > video,
+.le-media-dim > img {
+  filter: brightness(0.56) saturate(0.72) contrast(1) blur(2px);
+  transform: translate3d(
+    calc(var(--le-px) * -2px),
+    calc(var(--le-py) * -2px),
+    0
+  );
+  transition: transform 500ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.le-media-tint {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse at 50% 55%,
+      rgba(10, 8, 22, 0) 30%,
+      rgba(8, 6, 18, 0.22) 70%,
+      rgba(4, 3, 10, 0.42) 100%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(10, 12, 24, 0.18) 0%,
+      rgba(6, 8, 20, 0.1) 50%,
+      rgba(4, 4, 10, 0.2) 100%
+    );
+  -webkit-mask-image: inherit;
+  mask-image: inherit;
+}
+
+/* Warm glow above the mask hole — the lantern's own light on the gate. */
+.le-media::after {
+  content: "";
+  position: absolute;
+  left: var(--le-lx);
+  top: var(--le-ly);
+  width: 380px;
+  height: 380px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(
+    circle,
+    rgba(242, 217, 149, calc(0.12 * var(--le-lantern-opacity))) 0%,
+    rgba(215, 183, 102, calc(0.08 * var(--le-lantern-opacity))) 35%,
+    transparent 70%
+  );
+  mix-blend-mode: screen;
+  opacity: var(--le-lantern-opacity);
+  transition: opacity 400ms ease;
+}
+.le-media-clear::after { display: none; }
+
+/* ------------------------------------------------------------------ */
+/* Door split overlays (enter animation)                              */
+/* ------------------------------------------------------------------ */
+.le-door {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 3;
+  opacity: 0;
+  transition: opacity 250ms ease;
+}
+.le-door > img {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  pointer-events: none;
-  transition: opacity 0.7s ease;
+  object-fit: cover;
+  object-position: center 55%;
+  filter: brightness(0.9) saturate(0.95);
 }
-.le-root[data-phase="exiting-enter"] .le-glass {
-  opacity: 0;
-  transition: opacity 0.55s ease 0.35s;
+.le-door-left {
+  clip-path: polygon(0 0, 50% 0, 50% 100%, 0 100%);
+  transform: translateX(0);
 }
-
-/* Pointer capture surface */
-.le-scratch {
+.le-door-right {
+  clip-path: polygon(50% 0, 100% 0, 100% 100%, 50% 100%);
+  transform: translateX(0);
+}
+.le-doorlight {
   position: absolute;
   inset: 0;
-  z-index: 3;
-  touch-action: none;
-  background: transparent;
-}
-.le-root[data-phase="exiting-enter"] .le-scratch,
-.le-root[data-phase="exiting-skip"] .le-scratch { pointer-events: none; }
-
-/* Starmarks & connection lines */
-.le-stars {
-  position: absolute;
-  inset: 0;
-  z-index: 4;
-  pointer-events: none;
-  overflow: visible;
-}
-.le-star-core {
-  fill: #f6d77a;
-  filter: drop-shadow(0 0 6px rgba(246, 215, 122, 0.85));
-  opacity: 0.85;
-}
-.le-star-halo {
-  fill: rgba(246, 215, 122, 0.18);
-  opacity: 0.6;
-}
-.le-star-line {
-  stroke: rgba(246, 215, 122, 0.42);
-  stroke-width: 1;
-  stroke-dasharray: 220;
-  stroke-dashoffset: 220;
-  opacity: 0;
-}
-.le-root[data-connecting="true"] .le-star-line {
-  animation: le-line-draw 480ms cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
-  opacity: 0.45;
-}
-.le-root[data-connecting="true"] .le-star-core {
-  animation: le-star-brighten 380ms ease forwards;
-}
-@keyframes le-line-draw {
-  from { stroke-dashoffset: 220; opacity: 0; }
-  to   { stroke-dashoffset: 0;   opacity: 0.45; }
-}
-@keyframes le-star-brighten {
-  from { opacity: 0.85; filter: drop-shadow(0 0 6px rgba(246,215,122,0.85)); }
-  to   { opacity: 1;    filter: drop-shadow(0 0 14px rgba(246,215,122,1)); }
-}
-
-/* Custom lantern cursor (desktop only) */
-.le-lantern {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 210px;
-  height: 210px;
-  z-index: 7;
+  z-index: 2;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 0.3s ease;
-  mix-blend-mode: screen;
-  will-change: transform;
-}
-.le-root.le-hovering .le-lantern { opacity: 1; }
-.le-lantern-outer,
-.le-lantern-mid,
-.le-lantern-core {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-}
-.le-lantern-outer {
-  width: 210px;
-  height: 210px;
   background: radial-gradient(
-    circle,
-    rgba(205, 185, 140, 0.08) 0%,
-    rgba(205, 185, 140, 0.03) 55%,
-    transparent 75%
+    ellipse 40vw 80vh at 50% 55%,
+    rgba(255, 226, 158, 0.9) 0%,
+    rgba(220, 170, 90, 0.55) 25%,
+    rgba(130, 80, 30, 0.35) 55%,
+    rgba(10, 6, 4, 0.9) 100%
   );
 }
-.le-lantern-mid {
-  width: 52px;
-  height: 52px;
-  background: radial-gradient(
-    circle,
-    rgba(221, 176, 75, 0.42) 0%,
-    rgba(221, 176, 75, 0.16) 55%,
-    transparent 80%
-  );
-  filter: blur(2px);
+
+/* Enter sequence */
+.le-root[data-phase="exiting-enter"] .le-media-clear > video,
+.le-root[data-phase="exiting-enter"] .le-media-clear > img {
+  transform: scale(1.015);
+  transition: transform 750ms cubic-bezier(0.22, 0.61, 0.36, 1);
 }
-.le-lantern-core {
-  width: 8px;
-  height: 8px;
-  background: #f6d77a;
-  box-shadow: 0 0 12px 3px rgba(246, 215, 122, 0.9);
+.le-root[data-phase="exiting-enter"] .le-media-dim {
+  opacity: 0;
+  transition: opacity 500ms ease 250ms;
+}
+.le-root[data-phase="exiting-enter"] .le-door { opacity: 1; }
+.le-root[data-phase="exiting-enter"] .le-door-left {
+  animation: le-door-left 900ms cubic-bezier(0.6, 0.05, 0.3, 1) 700ms both;
+}
+.le-root[data-phase="exiting-enter"] .le-door-right {
+  animation: le-door-right 900ms cubic-bezier(0.6, 0.05, 0.3, 1) 700ms both;
+}
+.le-root[data-phase="exiting-enter"] .le-doorlight {
+  animation: le-doorlight 1200ms ease-out 500ms both;
+}
+@keyframes le-door-left {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-105%); }
+}
+@keyframes le-door-right {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(105%); }
+}
+@keyframes le-doorlight {
+  0%   { opacity: 0; }
+  40%  { opacity: 0.6; }
+  100% { opacity: 0; }
 }
 
-/* Edge vignette */
-.le-vignette {
-  position: absolute;
-  inset: 0;
-  z-index: 5;
-  pointer-events: none;
-  background:
-    radial-gradient(ellipse at 50% 55%, transparent 45%, rgba(6, 4, 10, 0.4) 85%, rgba(6, 4, 10, 0.72) 100%);
-}
-
-/* Door-seam glow during enter */
+/* ------------------------------------------------------------------ */
+/* Gate accents                                                       */
+/* ------------------------------------------------------------------ */
 .le-seam {
   position: absolute;
   left: 50%;
@@ -202,24 +245,64 @@
   height: 100%;
   margin-left: -1px;
   pointer-events: none;
-  background: linear-gradient(to bottom, transparent 0%, rgba(246, 220, 140, 0.92) 50%, transparent 100%);
-  box-shadow: 0 0 40px 20px rgba(246, 220, 140, 0.35);
-  opacity: 0;
-  transform: scaleX(1);
-  transform-origin: center;
-  z-index: 6;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(246, 220, 140, 0.55) 50%,
+    transparent 100%
+  );
+  box-shadow: 0 0 30px 8px rgba(246, 220, 140, 0.18);
+  opacity: calc(0.25 + 0.3 * var(--le-lantern-opacity));
+  z-index: 4;
+  transition: opacity 350ms ease, box-shadow 350ms ease;
+}
+.le-root[data-le-centered="true"] .le-seam {
+  opacity: 0.65;
+  box-shadow: 0 0 50px 14px rgba(246, 220, 140, 0.35);
 }
 .le-root[data-phase="exiting-enter"] .le-seam {
-  opacity: 1;
-  animation: le-seam-widen 1s cubic-bezier(0.22, 0.61, 0.36, 1) 0.35s forwards;
+  animation: le-seam-flash 800ms ease-out 300ms both;
 }
-@keyframes le-seam-widen {
-  0%   { transform: scaleX(1); filter: blur(0); }
-  60%  { transform: scaleX(60); filter: blur(6px); }
-  100% { transform: scaleX(220); filter: blur(30px); opacity: 0; }
+@keyframes le-seam-flash {
+  0%   { opacity: 0.7; box-shadow: 0 0 40px 10px rgba(246,220,140,0.35); }
+  60%  { opacity: 1;   box-shadow: 0 0 90px 30px rgba(246,220,140,0.6); }
+  100% { opacity: 0; }
 }
 
-/* Top bar — centered brand + right-aligned language toggle */
+.le-vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse at 50% 55%,
+      transparent 45%,
+      rgba(6, 4, 10, 0.4) 85%,
+      rgba(6, 4, 10, 0.72) 100%
+    );
+}
+.le-breathe {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at 50% 55%,
+    rgba(215, 183, 102, 0.08) 0%,
+    transparent 55%
+  );
+  opacity: 0.5;
+  animation: le-breathe 6.5s ease-in-out infinite;
+}
+@keyframes le-breathe {
+  0%, 100% { opacity: 0.35; }
+  50%      { opacity: 0.6; }
+}
+
+/* ------------------------------------------------------------------ */
+/* Top bar                                                            */
+/* ------------------------------------------------------------------ */
 .le-top {
   position: absolute;
   top: calc(env(safe-area-inset-top, 0) + 20px);
@@ -262,13 +345,16 @@
   font-size: 11px;
   letter-spacing: 0.28em;
   transition: color 0.2s ease, background 0.2s ease;
+  cursor: pointer;
 }
 .le-lang button[aria-pressed="true"] {
   background: rgba(218, 181, 88, 0.28);
   color: #f4e7bd;
 }
 
-/* Content — vertically stacked title, actions, hint */
+/* ------------------------------------------------------------------ */
+/* Content — title, CTA, hint                                         */
+/* ------------------------------------------------------------------ */
 .le-content {
   position: absolute;
   inset: 0;
@@ -288,6 +374,7 @@
 .le-root[data-phase="exiting-enter"] .le-content {
   opacity: 0;
   transform: translateY(-14px);
+  transition: opacity 250ms ease, transform 300ms ease;
 }
 .le-root[data-phase="exiting-skip"] .le-content { opacity: 0; }
 
@@ -302,13 +389,13 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 32px;
-  padding: 28px 44px;
+  gap: 26px;
+  padding: 24px 40px;
   border-radius: 40px;
   background: radial-gradient(
     ellipse at center,
-    rgba(8, 7, 9, 0.5) 0%,
-    rgba(8, 7, 9, 0.22) 60%,
+    rgba(6, 5, 12, 0.55) 0%,
+    rgba(6, 5, 12, 0.28) 55%,
     transparent 82%
   );
 }
@@ -316,22 +403,22 @@
   font-family: "EB Garamond", "Songti SC", "Noto Serif SC", serif;
   font-weight: 500;
   color: #f4e7bd;
-  font-size: clamp(58px, 5.6vw, 98px);
-  line-height: 1.08;
-  letter-spacing: -0.02em;
+  font-size: clamp(44px, 5vw, 88px);
+  line-height: 1.12;
+  letter-spacing: -0.015em;
   margin: 0;
-  max-width: min(900px, 70vw);
+  max-width: min(820px, 66vw);
   text-shadow:
     0 2px 18px rgba(0, 0, 0, 0.88),
-    0 0 42px rgba(0, 0, 0, 0.55);
+    0 0 32px rgba(0, 0, 0, 0.5);
 }
 .le-title[data-lang="en"] {
-  font-size: clamp(46px, 4.8vw, 82px);
-  max-width: min(960px, 72vw);
+  font-size: clamp(36px, 4.2vw, 72px);
+  max-width: min(880px, 68vw);
 }
 .le-sub {
   color: rgba(245, 235, 205, 0.94);
-  font-size: clamp(17px, 1.25vw, 22px);
+  font-size: clamp(16px, 1.15vw, 20px);
   line-height: 1.6;
   max-width: 52ch;
   margin: 0;
@@ -347,40 +434,83 @@
   padding-bottom: 6px;
 }
 
+/* Magnetic CTA */
 .le-cta {
+  --le-mag-x: 0px;
+  --le-mag-y: 0px;
+  position: relative;
   min-height: 58px;
-  padding: 0 42px;
+  padding: 0 44px;
   border-radius: 999px;
   border: 1px solid rgba(218, 181, 88, 0.75);
-  background: rgba(12, 10, 12, 0.68);
+  background: linear-gradient(
+    135deg,
+    rgba(20, 14, 10, 0.9) 0%,
+    rgba(46, 32, 16, 0.82) 100%
+  );
   color: #f4df9b;
   font-family: "EB Garamond", Georgia, serif;
   font-size: 16px;
   letter-spacing: 0.34em;
   text-transform: uppercase;
   backdrop-filter: blur(12px);
+  cursor: pointer;
+  overflow: hidden;
+  transform: translate3d(var(--le-mag-x), var(--le-mag-y), 0);
   transition:
-    transform 0.25s ease,
+    transform 260ms cubic-bezier(0.22, 0.9, 0.32, 1),
+    border-color 0.25s ease,
     box-shadow 0.25s ease,
-    background 0.25s ease,
-    border-color 0.25s ease;
-  box-shadow: 0 0 0 rgba(218, 181, 88, 0);
+    background 0.35s ease;
+  box-shadow: 0 6px 20px -10px rgba(0, 0, 0, 0.7);
 }
 .le-cta:hover:not(:disabled) {
-  transform: translateY(-1px);
-  border-color: rgba(232, 205, 140, 1);
-  box-shadow: 0 12px 40px -12px rgba(218, 181, 88, 0.6);
-  background: rgba(20, 16, 20, 0.78);
+  border-color: rgba(240, 210, 140, 1);
+  background: linear-gradient(
+    135deg,
+    rgba(28, 20, 12, 0.92) 0%,
+    rgba(90, 60, 24, 0.85) 100%
+  );
+  box-shadow: 0 14px 42px -14px rgba(218, 181, 88, 0.55);
 }
-.le-root.le-cta-glow .le-cta {
-  border-color: rgba(232, 205, 140, 1);
-  box-shadow: 0 0 32px -4px rgba(218, 181, 88, 0.55);
+.le-cta-label {
+  position: relative;
+  z-index: 2;
+}
+.le-cta-shine {
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    transparent 320deg,
+    rgba(246, 220, 140, 0.9) 355deg,
+    transparent 360deg
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 250ms ease;
+}
+.le-cta:hover .le-cta-shine {
+  opacity: 1;
+  animation: le-cta-shine 1.6s linear;
+}
+@keyframes le-cta-shine {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }
 .le-cta:focus-visible {
   outline: 2px solid rgba(232, 205, 140, 0.95);
   outline-offset: 4px;
 }
-.le-cta:disabled { opacity: 0.6; }
+.le-cta:disabled { opacity: 0.6; cursor: default; }
 
 .le-skip {
   background: transparent;
@@ -391,6 +521,7 @@
   text-transform: uppercase;
   padding: 8px 14px;
   transition: color 0.2s ease;
+  cursor: pointer;
 }
 .le-skip:hover { color: #f4e7bd; }
 .le-skip:focus-visible {
@@ -400,60 +531,34 @@
 
 .le-hint {
   margin-top: 14px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  transition: opacity 0.5s ease, transform 0.5s ease;
-}
-.le-hint[data-dismissed="true"] {
-  opacity: 0;
-  transform: translateY(6px);
-  pointer-events: none;
-}
-.le-hint p { margin: 0; }
-.le-hint-line1 {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  color: rgba(246, 224, 163, 0.88);
-  font-size: clamp(14px, 1.05vw, 17px);
-  letter-spacing: 0.06em;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.85);
-}
-.le-hint-line2 {
-  color: rgba(236, 226, 205, 0.62);
+  color: rgba(246, 224, 163, 0.7);
   font-size: clamp(12px, 0.9vw, 14px);
-  letter-spacing: 0.04em;
+  letter-spacing: 0.12em;
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.85);
-}
-.le-hint-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #f6d77a;
-  box-shadow: 0 0 8px 2px rgba(246, 215, 122, 0.75);
-  animation: le-dot-drift 2.4s ease-in-out infinite;
-}
-@keyframes le-dot-drift {
-  0%, 100% { transform: translateX(-6px); opacity: 0.75; }
-  50%      { transform: translateX(6px);  opacity: 1; }
 }
 
-/* Mobile */
+/* ------------------------------------------------------------------ */
+/* Mobile                                                             */
+/* ------------------------------------------------------------------ */
 @media (max-width: 640px) {
-  .le-title-block { padding: 20px 16px; gap: 22px; }
+  .le-title-block { padding: 20px 16px; gap: 20px; }
   .le-title {
-    font-size: clamp(38px, 10.5vw, 58px);
+    font-size: clamp(30px, 8.4vw, 48px);
     max-width: calc(100vw - 48px);
+    word-break: keep-all;
+    overflow-wrap: normal;
   }
   .le-title[data-lang="en"] {
-    font-size: clamp(34px, 9vw, 52px);
+    font-size: clamp(28px, 7.8vw, 44px);
     max-width: calc(100vw - 48px);
   }
-  .le-sub { max-width: calc(100vw - 48px); font-size: 15px; line-height: 1.55; }
+  .le-sub {
+    max-width: calc(100vw - 48px);
+    font-size: 15px;
+    line-height: 1.55;
+  }
   .le-cta {
-    width: min(80%, 340px);
+    width: min(84%, 340px);
     padding: 0 24px;
     letter-spacing: 0.28em;
     font-size: 15px;
@@ -461,18 +566,24 @@
   .le-top { padding: 0 14px; }
   .le-brand-center { font-size: 10px; letter-spacing: 0.34em; }
   .le-content { padding-top: calc(env(safe-area-inset-top, 0) + 72px); }
-  .le-hint-line1 { font-size: 14px; }
-  .le-hint-line2 { font-size: 12px; }
+  .le-media-dim { --le-radius: 150px; }
 }
 
-/* Reduced motion */
+/* ------------------------------------------------------------------ */
+/* Reduced motion + low-perf                                          */
+/* ------------------------------------------------------------------ */
 @media (prefers-reduced-motion: reduce) {
-  .le-clear { transition: none; }
-  .le-lantern { display: none; }
-  .le-hint-dot { animation: none; }
+  .le-media-clear > video,
+  .le-media-clear > img,
+  .le-media-dim > video,
+  .le-media-dim > img { transition: none; transform: none; }
+  .le-breathe { animation: none; opacity: 0.4; }
+  .le-cta { transition: opacity 0.2s ease; transform: none; }
   .le-root[data-phase="exiting-enter"] { transition: opacity 0.25s ease; }
-  .le-root[data-phase="exiting-enter"] .le-seam { animation-duration: 0.3s; }
-  .le-star-line, .le-root[data-connecting="true"] .le-star-line { animation: none; opacity: 0; }
+  .le-root[data-phase="exiting-enter"] .le-door-left,
+  .le-root[data-phase="exiting-enter"] .le-door-right,
+  .le-root[data-phase="exiting-enter"] .le-doorlight,
+  .le-root[data-phase="exiting-enter"] .le-seam { animation: none; }
 }
 
 /* Hide global chrome while entrance is up */
