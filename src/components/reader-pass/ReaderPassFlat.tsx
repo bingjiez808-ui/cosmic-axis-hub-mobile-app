@@ -3,11 +3,11 @@
  * mobile, when prefers-reduced-motion is set, when saveData is on,
  * when WebGL is unavailable, or when the 3D Canvas crashes.
  *
- * Includes a pointer-drag interaction: drag the card sideways, release
- * and it swings back with a damped spring so the 2D card still feels
- * physical without a physics engine.
+ * Pointer-drag interaction: drag the card sideways, release, and it
+ * swings back with a spring easing so the 2D card still feels physical
+ * without a physics engine. Tap (no drag) opens the drawer.
  */
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { useLang } from "@/lib/i18n";
 import type { ReaderPassData } from "./useReaderPassData";
 import { useReaderPassSvg } from "./useReaderPassSvg";
@@ -17,93 +17,46 @@ type Props = {
   onOpen: () => void;
 };
 
-// Simple critically-damped-ish spring loop returning to (0,0).
-function useSpringBack(target: { x: number; rot: number }, setTarget: (v: { x: number; rot: number }) => void) {
-  const rafRef = useRef<number | null>(null);
-  const velRef = useRef({ x: 0, rot: 0 });
-  const runningRef = useRef(false);
-
-  useEffect(() => {
-    return () => {
-      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
-    };
-  }, []);
-
-  const start = () => {
-    if (runningRef.current) return;
-    runningRef.current = true;
-    const stiffness = 0.18;
-    const damping = 0.72;
-    let last = performance.now();
-    const step = (t: number) => {
-      const dt = Math.min(32, t - last) / 16;
-      last = t;
-      // read latest state via functional update
-      setTarget((current) => {
-        const ax = -current.x * stiffness;
-        const arot = -current.rot * stiffness;
-        velRef.current.x = (velRef.current.x + ax) * damping;
-        velRef.current.rot = (velRef.current.rot + arot) * damping;
-        const nx = current.x + velRef.current.x * dt;
-        const nrot = current.rot + velRef.current.rot * dt;
-        if (Math.abs(nx) < 0.3 && Math.abs(nrot) < 0.05 && Math.abs(velRef.current.x) < 0.3) {
-          runningRef.current = false;
-          velRef.current = { x: 0, rot: 0 };
-          return { x: 0, rot: 0 };
-        }
-        rafRef.current = requestAnimationFrame(step);
-        return { x: nx, rot: nrot };
-      } as unknown as { x: number; rot: number });
-    };
-    rafRef.current = requestAnimationFrame(step);
-  };
-
-  return { start, velRef };
-}
-
 export function ReaderPassFlat({ data, onOpen }: Props) {
   const { lang } = useLang();
   const isZh = lang === "zh";
   const { frontUrl, backUrl } = useReaderPassSvg(data, isZh);
   const [flipped, setFlipped] = useState(false);
-  const [offset, setOffset] = useState<{ x: number; rot: number }>({ x: 0, rot: 0 });
-  // Wrap setter to accept function too.
-  const setOffsetAny = (v: { x: number; rot: number } | ((c: { x: number; rot: number }) => { x: number; rot: number })) => {
-    setOffset(typeof v === "function" ? (v as (c: { x: number; rot: number }) => { x: number; rot: number }) : () => v);
-  };
-  const dragRef = useRef<{ active: boolean; startX: number; startY: number; moved: boolean; pointerId: number | null }>({
-    active: false,
+  const [offset, setOffset] = useState({ x: 0, rot: 0 });
+  const [dragging, setDragging] = useState(false);
+  const dragRef = useRef<{ startX: number; startY: number; moved: boolean }>({
     startX: 0,
     startY: 0,
     moved: false,
-    pointerId: null,
   });
-  const { start } = useSpringBack(offset, setOffsetAny);
 
   const onPointerDown = (e: ReactPointerEvent<HTMLButtonElement>) => {
-    dragRef.current = { active: true, startX: e.clientX, startY: e.clientY, moved: false, pointerId: e.pointerId };
+    dragRef.current = { startX: e.clientX, startY: e.clientY, moved: false };
+    setDragging(true);
     e.currentTarget.setPointerCapture?.(e.pointerId);
   };
   const onPointerMove = (e: ReactPointerEvent<HTMLButtonElement>) => {
-    const d = dragRef.current;
-    if (!d.active) return;
-    const dx = e.clientX - d.startX;
-    const dy = e.clientY - d.startY;
-    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) d.moved = true;
+    if (!dragging) return;
+    const dx = e.clientX - dragRef.current.startX;
+    const dy = e.clientY - dragRef.current.startY;
+    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) dragRef.current.moved = true;
     setOffset({ x: dx * 0.55, rot: Math.max(-14, Math.min(14, dx * 0.08)) });
   };
   const onPointerUp = (e: ReactPointerEvent<HTMLButtonElement>) => {
-    const d = dragRef.current;
-    if (!d.active) return;
-    d.active = false;
-    try { e.currentTarget.releasePointerCapture?.(e.pointerId); } catch { /* noop */ }
-    // spring back
-    start();
-    // tap (no meaningful movement) opens the drawer
-    if (!d.moved) {
-      onOpen();
+    if (!dragging) return;
+    setDragging(false);
+    try {
+      e.currentTarget.releasePointerCapture?.(e.pointerId);
+    } catch {
+      /* noop */
     }
+    setOffset({ x: 0, rot: 0 });
+    if (!dragRef.current.moved) onOpen();
   };
+
+  // Spring-back easing (cubic-bezier with slight overshoot) used only on release.
+  const releaseTransition =
+    "transform 900ms cubic-bezier(0.22, 1.4, 0.36, 1)";
 
   return (
     <div className="pointer-events-auto relative flex flex-col items-end gap-2">
@@ -121,7 +74,8 @@ export function ReaderPassFlat({ data, onOpen }: Props) {
           perspective: "1200px",
           transform: `translateX(${offset.x}px) rotate(${offset.rot}deg)`,
           transformOrigin: "top center",
-          transition: dragRef.current.active ? "none" : undefined,
+          transition: dragging ? "none" : releaseTransition,
+          willChange: "transform",
         }}
       >
         <div
@@ -134,13 +88,14 @@ export function ReaderPassFlat({ data, onOpen }: Props) {
           <FlatFace url={frontUrl} />
           <FlatFace url={backUrl} back />
         </div>
-        {/* Cord stub that stretches/tilts with drag to hint at the lanyard. */}
+        {/* Cord stub that tilts with the drag to hint at the lanyard. */}
         <span
           aria-hidden
           className="absolute -top-6 left-1/2 h-6 w-[3px] rounded-full bg-gradient-to-b from-gold-dust/60 to-obsidian"
           style={{
             transform: `translateX(-50%) translateX(${-offset.x * 0.3}px) rotate(${-offset.rot * 0.4}deg)`,
             transformOrigin: "top center",
+            transition: dragging ? "none" : releaseTransition,
           }}
         />
       </button>
