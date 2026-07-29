@@ -215,7 +215,7 @@ export function LibraryEntrance() {
       {/* Layer A — clear video / poster */}
       <div className="le-clear" aria-hidden="true">
         {reducedMotion ? (
-          <img ref={imgRef} src={media.poster} alt="" crossOrigin="anonymous" />
+          <img ref={imgRef} src={media.poster} alt="" />
         ) : (
           <video
             ref={videoRef}
@@ -226,14 +226,14 @@ export function LibraryEntrance() {
             loop
             playsInline
             preload="metadata"
-            crossOrigin="anonymous"
+           
             onError={(e) => {
               const t = e.currentTarget;
               t.style.display = "none";
               const img = document.createElement("img");
               img.src = media.poster;
               img.alt = "";
-              img.crossOrigin = "anonymous";
+              
               imgRef.current = img;
               t.parentElement?.appendChild(img);
             }}
