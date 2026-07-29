@@ -57,12 +57,12 @@ export const HOME_GUIDE_CARDS: readonly HomeGuideCard[] = [
     number: "01",
     titleZh: "今天你带着什么问题来到这里",
     titleEn: "What question brings you today?",
-    taglineZh: "问题接待台 · 六种最常被问的困惑",
-    taglineEn: "Reception desk · six most-asked questions",
+    taglineZh: "问题接待台 · 六种困惑 → 图书馆的六本书",
+    taglineEn: "Reception desk · six questions → six books of the library",
     descriptionZh:
-      "先把今天最想读懂的困惑挑出来，图书馆据此为你安排接下来的阅读顺序：学业、事业、爱情、人际、财富、自我。",
+      "先在接待台挑出今天最想读懂的困惑，图书馆据此为你从六本书中推出一本合适的：学业、事业、爱情、人际、财富、自我。两步在同一扇门里完成。",
     descriptionEn:
-      "Name today's real question — study, career, love, relationships, wealth, or self — and the library orders the rest of your reading around it.",
+      "Name today's real question at the reception desk, then flip open one of the six books the library hands you — study, career, love, relationships, wealth, self. Both steps live behind one door.",
     ctaZh: "打开问题接待台",
     ctaEn: "Open reception desk",
     access: "open",
@@ -107,25 +107,8 @@ export const HOME_GUIDE_CARDS: readonly HomeGuideCard[] = [
     visual: "report",
   },
   {
-    id: "books",
-    number: "04",
-    titleZh: "今日借阅 · 图书馆的六本书",
-    titleEn: "Today's picks · six books of the library",
-    taglineZh: "自我、学业、事业、爱情、财富、时间轴",
-    taglineEn: "Self · study · career · love · wealth · timeline",
-    descriptionZh:
-      "根据你在问题接待台挑选的困惑,馆员为你准备好六本书。翻开任意一本,直接进入对应的深度阅读。",
-    descriptionEn:
-      "Based on the question you picked at the reception desk, the curator has laid out six books. Open any one to jump into the matching deep reading.",
-    ctaZh: "翻开今日书单",
-    ctaEn: "Open today's shelf",
-    access: "basic",
-    mode: "drawer",
-    visual: "timeline",
-  },
-  {
     id: "commons",
-    number: "05",
+    number: "04",
     titleZh: "命运通识馆 · 六馆总览",
     titleEn: "Commons hall of destiny · six halls",
     taglineZh: "数学、语文、地理、物理、经济、生物六馆",
@@ -142,7 +125,7 @@ export const HOME_GUIDE_CARDS: readonly HomeGuideCard[] = [
   },
   {
     id: "rooms",
-    number: "06",
+    number: "05",
     titleZh: "仪式之后 · 四间特别藏室",
     titleEn: "After the ritual · four special rooms",
     taglineZh: "时间轴、验证、塔罗、会员",
@@ -159,7 +142,7 @@ export const HOME_GUIDE_CARDS: readonly HomeGuideCard[] = [
   },
   {
     id: "desk",
-    number: "07",
+    number: "06",
     titleZh: "我的书架 · 每天回来的地方",
     titleEn: "Personal Library · come back each day",
     taglineZh: "今日命运、命盘管理、好友与订单",
