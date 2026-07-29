@@ -361,6 +361,21 @@ function CreateCodesModal({ onClose, onCreated }: { onClose: () => void; onCreat
                 className="w-full rounded-lg border border-white/10 bg-obsidian/40 px-3 py-2"
               />
             </Field>
+            <Field label="定向账号邮箱（可选，填写后仅此邮箱可兑换）">
+              <input
+                type="email"
+                inputMode="email"
+                autoComplete="off"
+                maxLength={254}
+                placeholder="user@example.com"
+                value={assignedEmail}
+                onChange={(e) => setAssignedEmail(e.target.value)}
+                className="w-full rounded-lg border border-white/10 bg-obsidian/40 px-3 py-2"
+              />
+              <p className="mt-1 text-[10px] leading-relaxed text-stone-warm/50">
+                留空 = 任意登录用户可兑换。填写后其他账号会收到「此码未指派给你」错误。建议单码使用（数量=1，次数=1）。
+              </p>
+            </Field>
             <Field label="到期日期（可选）">
               <input
                 type="datetime-local"
