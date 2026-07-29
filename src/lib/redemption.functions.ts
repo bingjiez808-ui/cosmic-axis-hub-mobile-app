@@ -69,6 +69,7 @@ const CreateInput = z.object({
   reportScope: z.enum(["current_chart", "next_selected_chart"]).nullable().optional(),
   campaignName: z.string().trim().max(80).nullable().optional(),
   internalNote: z.string().trim().max(500).nullable().optional(),
+  assignedEmail: z.string().trim().email().max(254).nullable().optional(),
 });
 
 export type CreatedCode = { id: string; code: string; codePrefix: string; codeLast4: string };
