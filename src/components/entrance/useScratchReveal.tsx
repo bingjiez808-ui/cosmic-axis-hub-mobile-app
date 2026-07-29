@@ -36,6 +36,19 @@ export interface StarPoint {
 
 const MAX_STARS = 8;
 
+/** Detect low-end devices — coarse heuristic based on device memory,
+ *  logical CPU cores, and the Save-Data hint. Used to throttle paints
+ *  and skip transient effects that only serve high-end hardware. */
+function detectLowEnd(): boolean {
+  if (typeof navigator === "undefined") return false;
+  const n = navigator as Navigator & { deviceMemory?: number; connection?: { saveData?: boolean } };
+  if (n.connection?.saveData) return true;
+  if (typeof n.deviceMemory === "number" && n.deviceMemory > 0 && n.deviceMemory <= 3) return true;
+  if (typeof n.hardwareConcurrency === "number" && n.hardwareConcurrency > 0 && n.hardwareConcurrency <= 3) return true;
+  return false;
+}
+
+
 export function useScratchReveal(opts: UseScratchRevealOptions) {
   const glassRef = useRef<HTMLCanvasElement | null>(null);
   const scratchRef = useRef<HTMLDivElement | null>(null);
