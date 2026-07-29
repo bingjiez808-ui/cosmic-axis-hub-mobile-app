@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 
-import { MathRoom } from "@/experiences/life-studies/math/MathRoom";
+import { MathRoomV2 as MathRoom } from "@/experiences/life-studies/math/v2/MathRoomV2";
 import { SubjectRoomShell } from "@/experiences/life-studies/SubjectRoomShell";
 import type { GateState } from "@/experiences/life-studies/MainChartGate";
 import { listUserCharts } from "@/lib/reports-store.functions";
