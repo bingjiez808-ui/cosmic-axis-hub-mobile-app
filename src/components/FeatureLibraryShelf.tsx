@@ -244,6 +244,7 @@ export function FeatureLibraryShelf({
             const isFeatured =
               !!pickedConcern && CONCERNS[pickedConcern].featuredShelfBook === b.key;
             const isOpen = openBook === b.key;
+            const isPulsing = focusPulseKey === b.key;
             const cover = COVERS[b.key];
             return (
               <li
@@ -256,7 +257,7 @@ export function FeatureLibraryShelf({
               >
                 <button
                   type="button"
-                  onClick={() => setOpenBook(b.key)}
+                  onClick={() => onOpenBook(b.key)}
                   aria-haspopup="dialog"
                   aria-expanded={isOpen}
                   className={[
@@ -268,6 +269,7 @@ export function FeatureLibraryShelf({
                       ? "border-amber-300/80 shadow-[0_0_28px_rgba(251,191,36,0.35)]"
                       : "border-amber-100/15 hover:border-amber-300/40 focus-visible:border-amber-300/60",
                     isOpen ? "ring-2 ring-amber-300/60" : "",
+                    isPulsing ? "animate-pulse ring-2 ring-amber-300/80" : "",
                     "focus:outline-none",
                   ].join(" ")}
                   style={{ aspectRatio: "3 / 4" }}
@@ -289,6 +291,12 @@ export function FeatureLibraryShelf({
                     aria-hidden
                     className="pointer-events-none absolute left-2 top-2 bottom-2 w-[2px] bg-gradient-to-b from-amber-200/80 via-amber-500/40 to-transparent"
                   />
+                  {isFeatured ? (
+                    <span
+                      aria-hidden
+                      className="pointer-events-none absolute right-3 -top-1 z-20 h-8 w-4 origin-top rounded-b-sm bg-gradient-to-b from-amber-300 to-amber-500 shadow-[0_4px_10px_rgba(0,0,0,0.5)] animate-in slide-in-from-top duration-500 before:absolute before:bottom-0 before:left-0 before:h-2 before:w-full before:content-[''] before:[clip-path:polygon(0_0,100%_0,100%_100%,50%_60%,0_100%)] before:bg-inherit"
+                    />
+                  ) : null}
                   <span
                     aria-hidden
                     className={[
