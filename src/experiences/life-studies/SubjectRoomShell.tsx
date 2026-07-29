@@ -53,7 +53,7 @@ export function SubjectRoomShell({
         </header>
         {children}
       </div>
-    </>
+    </div>
   );
 }
 
