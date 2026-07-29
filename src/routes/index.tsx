@@ -8,6 +8,7 @@ import { HomePersonalDeskTeaser } from "@/components/HomePersonalDeskTeaser";
 import { PlayfulLibrarySection } from "@/components/PlayfulLibrarySection";
 import { PostRitualRoomsSection } from "@/components/PostRitualRoomsSection";
 import { PremiumReportCta } from "@/components/PremiumReportCta";
+import { LibraryEntrance } from "@/components/entrance/LibraryEntrance";
 import { useLang } from "@/lib/i18n";
 import { useSupabaseSession } from "@/lib/session";
 
