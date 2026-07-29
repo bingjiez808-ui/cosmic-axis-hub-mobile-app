@@ -2,20 +2,17 @@
  * LibraryEntrance — session-gated immersive scratch-glass entrance.
  *
  * Composition (bottom → top):
- *   1. Clear video / poster (Layer A) — always visible, only slightly dimmed.
- *   2. Foggy-glass <canvas> (Layer B) — every frame is repainted with the
- *      blurred video + cool-white fog tint, then the accumulated stroke
- *      mask is composited via `destination-out` to reveal Layer A wherever
- *      the user has dragged.
- *   3. Transparent scratch surface (captures pointer/touch drags).
- *   4. Cursor-follow soft glow hint (visible only until first stroke).
- *   5. Edge vignette + door-seam (for enter transition).
- *   6. UI content — brand, language toggle, kicker, title, sub, CTA, skip.
- *
- * All UI text is in its own layer above every visual layer; the blur only
- * touches the glass canvas, never the text. See `useScratchReveal`.
+ *   1. Clear video / poster (Layer A) — always visible, slightly dimmed.
+ *   2. Foggy-glass <canvas> (Layer B) — blurred source + fog tint, with
+ *      transient hover mask (temporary reveal) and permanent scratch mask
+ *      (click + drag) composited via `destination-out`.
+ *   3. Transparent scratch surface (captures pointer / touch).
+ *   4. Starmarks + connection SVG (persistent click sparks).
+ *   5. Custom lantern cursor (desktop only).
+ *   6. Edge vignette + door seam (enter transition).
+ *   7. UI content — brand, language toggle, title, sub, CTA, secondary entry.
  */
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLang } from "@/lib/i18n";
 import desktopVideoAsset from "@/assets/entrance/entrance-desktop.mp4.asset.json";
 import mobileVideoAsset from "@/assets/entrance/entrance-mobile.mp4.asset.json";
@@ -27,25 +24,23 @@ import "./library-entrance.css";
 
 const COPY = {
   zh: {
-    brand: "命运图书馆 · Destiny Library",
-    kicker: "序 · Prologue",
-    title: "每一种文明，\n都在追问同一个问题。",
-    sub: "这里不替你决定命运，\n而是陪你读懂自己正在书写的那一页。",
+    brand: "DESTINY LIBRARY · 命运图书馆",
+    title: "万卷命运之中，\n有一本以你为名。",
+    sub: "这里不收藏既定的答案，\n只陪你照亮那些尚未读懂的自己。",
     cta: "推开馆门",
-    skip: "跳过序幕",
-    scratchHint: "按住并移动，拭去门前的雾",
-    doorSeen: "馆门已经看见",
+    skip: "直接进入",
+    hint1: "移动提灯，看看雾后藏着什么",
+    hint2: "点击留下光 · 按住移动可以拭去雾气",
     langHint: "图书馆将以此语言与你对话",
   },
   en: {
-    brand: "Destiny Library",
-    kicker: "Prologue",
-    title: "Every civilization\nhas asked the same question.",
-    sub: "This library does not decide your fate.\nIt helps you read the page you are writing.",
-    cta: "Enter the Library",
-    skip: "Skip Introduction",
-    scratchHint: "Press and drag to wipe the fog away",
-    doorSeen: "The door is in sight",
+    brand: "DESTINY LIBRARY",
+    title: "Among countless stories of fate,\none bears your name.",
+    sub: "This library does not preserve predetermined answers.\nIt helps illuminate the parts of yourself not yet understood.",
+    cta: "Open the Library",
+    skip: "Enter directly",
+    hint1: "Move the lantern to see beyond the mist",
+    hint2: "Click to leave a light · hold and drag to clear the glass",
     langHint: "The library will speak with you in this language",
   },
 } as const;
@@ -58,8 +53,8 @@ export function LibraryEntrance() {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
-  const hintGlowRef = useRef<HTMLDivElement | null>(null);
-  const progressRef = useRef<HTMLDivElement | null>(null);
+  const lanternRef = useRef<HTMLDivElement | null>(null);
+  const [connecting, setConnecting] = useState(false);
   const overlayVisible = phase === "visible" || phase === "exiting-enter" || phase === "exiting-skip";
 
   const media = useMemo(() => {
@@ -76,6 +71,11 @@ export function LibraryEntrance() {
     return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
   }, []);
 
+  const isCoarse = useMemo(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia?.("(pointer: coarse)").matches ?? false;
+  }, []);
+
   const getSource = useCallback(
     () => (reducedMotion ? imgRef.current : videoRef.current) as
       | HTMLVideoElement
@@ -90,39 +90,50 @@ export function LibraryEntrance() {
     maskCanvas,
     revealRatio,
     eraseAll,
+    stars,
+    starsVersion,
   } = useScratchReveal({
     getSource,
     disabled: !overlayVisible,
-    brushRadius: 130,
-    brushRadiusMobile: 110,
+    brushRadius: 210,
+    brushRadiusMobile: 150,
+    reducedMotion,
     onFirstStroke: () => {
       rootRef.current?.classList.add("le-scratched");
     },
   });
 
-  // Cursor-follow hint glow (before first stroke).
+  // Lantern cursor tracking (desktop only).
   useEffect(() => {
-    if (!overlayVisible) return;
+    if (!overlayVisible || isCoarse || reducedMotion) return;
     const root = rootRef.current;
-    const glow = hintGlowRef.current;
-    if (!root || !glow) return;
+    const lantern = lanternRef.current;
+    if (!root || !lantern) return;
     let raf = 0;
-    let x = window.innerWidth / 2;
-    let y = window.innerHeight / 2;
+    let tx = window.innerWidth / 2;
+    let ty = window.innerHeight / 2;
+    let cx = tx;
+    let cy = ty;
     let pending = false;
-    const flush = () => {
+    const loop = () => {
       pending = false;
-      glow.style.setProperty("--le-mx", `${x}px`);
-      glow.style.setProperty("--le-my", `${y}px`);
+      // Soft follow (~80ms trailing).
+      cx += (tx - cx) * 0.25;
+      cy += (ty - cy) * 0.25;
+      lantern.style.transform = `translate3d(${cx}px, ${cy}px, 0) translate(-50%, -50%)`;
+      if (Math.abs(tx - cx) > 0.5 || Math.abs(ty - cy) > 0.5) {
+        raf = window.requestAnimationFrame(loop);
+        pending = true;
+      }
     };
     const onMove = (e: PointerEvent) => {
-      x = e.clientX;
-      y = e.clientY;
+      tx = e.clientX;
+      ty = e.clientY;
+      root.classList.add("le-hovering");
       if (!pending) {
         pending = true;
-        raf = window.requestAnimationFrame(flush);
+        raf = window.requestAnimationFrame(loop);
       }
-      root.classList.add("le-hovering");
     };
     const onLeave = () => root.classList.remove("le-hovering");
     root.addEventListener("pointermove", onMove, { passive: true });
@@ -132,9 +143,8 @@ export function LibraryEntrance() {
       root.removeEventListener("pointerleave", onLeave);
       if (raf) window.cancelAnimationFrame(raf);
     };
-  }, [overlayVisible]);
+  }, [overlayVisible, isCoarse, reducedMotion]);
 
-  // Toggle global body attribute so root layout hides its own nav/footer/companion.
   useEffect(() => {
     if (!overlayVisible) return;
     const prev = document.body.style.overflow;
@@ -146,7 +156,6 @@ export function LibraryEntrance() {
     };
   }, [overlayVisible]);
 
-  // Keyboard: Escape → skip, Enter → enter (unless focus is on skip).
   useEffect(() => {
     if (phase !== "visible") return;
     const onKey = (e: KeyboardEvent) => {
@@ -162,7 +171,6 @@ export function LibraryEntrance() {
     return () => window.removeEventListener("keydown", onKey);
   }, [phase, enter, skip]);
 
-  // Pause video when tab hidden.
   useEffect(() => {
     if (!overlayVisible) return;
     const v = videoRef.current;
@@ -175,44 +183,60 @@ export function LibraryEntrance() {
     return () => document.removeEventListener("visibilitychange", sync);
   }, [overlayVisible]);
 
-  // Reveal-ratio hint text (imperative — avoids re-rendering the whole overlay).
+  // Auto-hide first-run hint once the user interacts.
+  const [hintDismissed, setHintDismissed] = useState(false);
   useEffect(() => {
-    const el = progressRef.current;
-    if (!el) return;
-    if (revealRatio >= 0.35) {
-      el.textContent = copy.doorSeen;
-      el.style.opacity = "1";
-      rootRef.current?.classList.add("le-cta-glow");
-    } else if (revealRatio >= 0.25) {
-      el.textContent = "";
-      el.style.opacity = "0";
-      rootRef.current?.classList.add("le-cta-glow");
-    } else {
-      el.textContent = "";
-      el.style.opacity = "0";
-      rootRef.current?.classList.remove("le-cta-glow");
+    if (revealRatio > 0.02 || starsVersion > 0) {
+      const t = window.setTimeout(() => setHintDismissed(true), 500);
+      return () => window.clearTimeout(t);
     }
-  }, [revealRatio, copy.doorSeen]);
+  }, [revealRatio, starsVersion]);
+
+  useEffect(() => {
+    if (revealRatio >= 0.25) rootRef.current?.classList.add("le-cta-glow");
+    else rootRef.current?.classList.remove("le-cta-glow");
+  }, [revealRatio]);
 
   const handleCta = useCallback(() => {
     if (phase !== "visible") return;
-    eraseAll(500);
-    enter();
-  }, [phase, enter, eraseAll]);
+    if (stars.length >= 2 && !reducedMotion) {
+      setConnecting(true);
+      window.setTimeout(() => {
+        eraseAll(500);
+        enter();
+      }, 420);
+    } else {
+      eraseAll(500);
+      enter();
+    }
+  }, [phase, enter, eraseAll, stars.length, reducedMotion]);
 
   if (!overlayVisible) return null;
+
+  // Build connection lines between stars for enter animation.
+  const starLines: Array<{ x1: number; y1: number; x2: number; y2: number }> = [];
+  if (connecting && stars.length >= 2) {
+    for (let i = 0; i < stars.length - 1; i++) {
+      starLines.push({
+        x1: stars[i].x,
+        y1: stars[i].y,
+        x2: stars[i + 1].x,
+        y2: stars[i + 1].y,
+      });
+    }
+  }
 
   return (
     <div
       ref={rootRef}
       className="le-root"
       data-phase={phase}
+      data-connecting={connecting ? "true" : "false"}
       role="dialog"
       aria-modal="true"
       aria-labelledby="le-title"
       aria-describedby="le-sub"
     >
-      {/* Layer A — clear video / poster */}
       <div className="le-clear" aria-hidden="true">
         {reducedMotion ? (
           <img ref={imgRef} src={media.poster} alt="" />
@@ -226,14 +250,12 @@ export function LibraryEntrance() {
             loop
             playsInline
             preload="metadata"
-           
             onError={(e) => {
               const t = e.currentTarget;
               t.style.display = "none";
               const img = document.createElement("img");
               img.src = media.poster;
               img.alt = "";
-              
               imgRef.current = img;
               t.parentElement?.appendChild(img);
             }}
@@ -241,25 +263,53 @@ export function LibraryEntrance() {
         )}
       </div>
 
-      {/* Layer B — foggy glass canvas (repainted every frame) */}
       <canvas ref={glassRef} className="le-glass" aria-hidden="true" />
       {maskCanvas}
 
-      {/* Scratch input surface */}
       <div ref={scratchRef} className="le-scratch" aria-hidden="true" />
 
-      {/* Cursor-follow hint glow */}
-      <div ref={hintGlowRef} className="le-hint-glow" aria-hidden="true" />
+      {/* Persistent starmarks + connection SVG */}
+      <svg
+        className="le-stars"
+        aria-hidden="true"
+        width="100%"
+        height="100%"
+        viewBox={`0 0 ${typeof window !== "undefined" ? window.innerWidth : 1280} ${typeof window !== "undefined" ? window.innerHeight : 800}`}
+        preserveAspectRatio="none"
+      >
+        {starLines.map((l, i) => (
+          <line
+            key={i}
+            className="le-star-line"
+            x1={l.x1}
+            y1={l.y1}
+            x2={l.x2}
+            y2={l.y2}
+          />
+        ))}
+        {stars.map((s) => (
+          <g key={s.id} className="le-star" transform={`translate(${s.x} ${s.y})`}>
+            <circle r={5} className="le-star-halo" />
+            <circle r={1.6} className="le-star-core" />
+          </g>
+        ))}
+      </svg>
 
-      {/* Edge vignette */}
+      {/* Lantern cursor (desktop) */}
+      {!isCoarse && !reducedMotion && (
+        <div ref={lanternRef} className="le-lantern" aria-hidden="true">
+          <div className="le-lantern-outer" />
+          <div className="le-lantern-mid" />
+          <div className="le-lantern-core" />
+        </div>
+      )}
+
       <div className="le-vignette" aria-hidden="true" />
-
-      {/* Door-seam glow (only lights up during enter transition) */}
       <div className="le-seam" aria-hidden="true" />
 
       {/* Top bar */}
       <div className="le-top">
-        <span className="le-brand">{copy.brand}</span>
+        <div className="le-brand-center">{copy.brand}</div>
         <div className="le-lang" role="group" aria-label={copy.langHint}>
           {(["zh", "en"] as const).map((l) => (
             <button
@@ -274,28 +324,29 @@ export function LibraryEntrance() {
         </div>
       </div>
 
-      {/* UI content */}
+      {/* Title & CTA */}
       <div className="le-content">
         <div className="le-inner">
-          <div className="le-title-halo">
-            <p className="le-kicker">{copy.kicker}</p>
+          <div className="le-title-block">
             <h1
               id="le-title"
               className="le-title"
               data-lang={lang}
-              style={{ whiteSpace: "pre-line", marginTop: 18 }}
+              style={{ whiteSpace: "pre-line" }}
             >
               {copy.title}
             </h1>
             <p
               id="le-sub"
               className="le-sub"
-              style={{ whiteSpace: "pre-line", marginTop: 22 }}
+              style={{ whiteSpace: "pre-line" }}
             >
               {copy.sub}
             </p>
           </div>
-          <p className="le-scratch-hint">{copy.scratchHint}</p>
+        </div>
+
+        <div className="le-actions">
           <button
             type="button"
             className="le-cta"
@@ -306,7 +357,6 @@ export function LibraryEntrance() {
           >
             {copy.cta}
           </button>
-          <div ref={progressRef} className="le-progress" aria-live="polite" />
           <button
             type="button"
             className="le-skip"
@@ -316,6 +366,18 @@ export function LibraryEntrance() {
           >
             {copy.skip}
           </button>
+        </div>
+
+        <div
+          className="le-hint"
+          data-dismissed={hintDismissed ? "true" : "false"}
+          aria-live="polite"
+        >
+          <p className="le-hint-line1">
+            <span className="le-hint-dot" aria-hidden="true" />
+            {copy.hint1}
+          </p>
+          <p className="le-hint-line2">{copy.hint2}</p>
         </div>
       </div>
     </div>
