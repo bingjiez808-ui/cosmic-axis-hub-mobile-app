@@ -237,6 +237,7 @@ function CreateCodesModal({ onClose, onCreated }: { onClose: () => void; onCreat
   const [maxRedemptions, setMaxRedemptions] = useState(1);
   const [campaignName, setCampaignName] = useState("");
   const [internalNote, setInternalNote] = useState("");
+  const [assignedEmail, setAssignedEmail] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<CreatedCode[] | null>(null);
