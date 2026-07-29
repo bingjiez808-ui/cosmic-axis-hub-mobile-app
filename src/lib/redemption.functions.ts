@@ -152,6 +152,7 @@ export type AdminCodeRow = {
   internal_note: string | null;
   created_by: string;
   created_at: string;
+  assigned_email: string | null;
 };
 
 export const adminListRedemptionCodes = createServerFn({ method: "POST" })
