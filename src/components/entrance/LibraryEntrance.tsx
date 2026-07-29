@@ -403,6 +403,7 @@ export function LibraryEntrance() {
 
         <div className="le-actions">
           <button
+            ref={ctaRef}
             type="button"
             className="le-cta"
             onClick={handleCta}
