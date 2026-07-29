@@ -31,7 +31,7 @@ function detectMode(): Mode {
     connection?: { saveData?: boolean };
     deviceMemory?: number;
   };
-  if (window.innerWidth < 768) return "flat";
+  if (window.innerWidth < 640) return "flat";
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return "flat";
   if (nav.connection?.saveData) return "flat";
   if (nav.deviceMemory && nav.deviceMemory < 4) return "flat";
@@ -141,9 +141,9 @@ export function ReaderPassCard() {
       className="pointer-events-none absolute z-20 transition-all duration-500 ease-out"
       style={{
         top: "clamp(12px, 4vh, 48px)",
-        right: "clamp(12px, 4vw, 72px)",
-        width: mode === "flat" ? "clamp(180px, 30vw, 220px)" : "clamp(240px, 22vw, 360px)",
-        height: mode === "flat" ? "clamp(260px, 42vw, 320px)" : "clamp(320px, 58vh, 620px)",
+        left: "clamp(8px, 2vw, 32px)",
+        width: mode === "flat" ? "clamp(150px, 26vw, 200px)" : "clamp(220px, 20vw, 320px)",
+        height: mode === "flat" ? "clamp(220px, 38vw, 300px)" : "clamp(320px, 58vh, 620px)",
         opacity: dimmed ? 0 : 1,
         transform: dimmed ? "scale(0.92)" : "scale(1)",
       }}
