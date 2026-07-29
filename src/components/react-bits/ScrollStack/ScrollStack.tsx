@@ -66,6 +66,8 @@ type ScrollStackProps = {
   rotationAmount?: number;
   blurAmount?: number;
   onStackComplete?: () => void;
+  /** When true, skip Lenis + all transforms. Cards render as a plain vertical list. */
+  stableMode?: boolean;
 };
 
 const ScrollStack = ({
@@ -80,6 +82,7 @@ const ScrollStack = ({
   rotationAmount = 0,
   blurAmount = 0,
   onStackComplete,
+  stableMode = false,
 }: ScrollStackProps) => {
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const stackCompletedRef = useRef(false);
@@ -221,8 +224,9 @@ const ScrollStack = ({
     if (!scroller) return;
     if (typeof window === "undefined") return;
 
-    const reduced =
+    const prefersReduced =
       window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reduced = stableMode || prefersReduced;
 
     const cards = Array.from(
       scroller.querySelectorAll<HTMLElement>(".scroll-stack-card")
@@ -230,19 +234,28 @@ const ScrollStack = ({
     cardsRef.current = cards;
     const transformsCache = lastTransformsRef.current;
 
-    cards.forEach((card, i) => {
-      if (i < cards.length - 1) card.style.marginBottom = `${itemDistance}px`;
-      card.style.willChange = "transform, filter";
-      card.style.transformOrigin = "top center";
-      card.style.backfaceVisibility = "hidden";
-      card.style.transform = "translateZ(0)";
-      card.style.perspective = "1000px";
-    });
+    if (reduced) {
+      // Reset any inline styles that a previous smooth-mode mount may have applied.
+      cards.forEach((card, i) => {
+        card.style.transform = "";
+        card.style.filter = "";
+        card.style.willChange = "";
+        card.style.marginBottom = i < cards.length - 1 ? "2rem" : "";
+      });
+    } else {
+      cards.forEach((card, i) => {
+        if (i < cards.length - 1) card.style.marginBottom = `${itemDistance}px`;
+        card.style.willChange = "transform, filter";
+        card.style.transformOrigin = "top center";
+        card.style.backfaceVisibility = "hidden";
+        card.style.transform = "translateZ(0)";
+        card.style.perspective = "1000px";
+      });
+    }
 
     let onNativeScroll: (() => void) | null = null;
     if (reduced) {
-      // No Lenis, no transforms — CSS resets card transforms.
-      // We still track scroll cheaply in case future features want it.
+      // No Lenis, no transforms — cards render as a normal vertical list.
     } else {
       const lenis = new Lenis({
         duration: 1.1,
@@ -284,6 +297,7 @@ const ScrollStack = ({
     blurAmount,
     handleScroll,
     updateCardTransforms,
+    stableMode,
   ]);
 
   return (

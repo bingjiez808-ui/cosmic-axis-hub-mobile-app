@@ -30,6 +30,8 @@ import LineSidebar from "@/components/react-bits/LineSidebar/LineSidebar";
 import { LibraryInteriorBackdrop } from "./LibraryInteriorBackdrop";
 import { HomeCardVisual } from "./HomeCardVisual";
 import { LibraryFeatureDrawer } from "./LibraryFeatureDrawer";
+import { MotionModeToggle } from "./MotionModeToggle";
+import { useStableMotion } from "@/lib/motion-preference";
 
 import { ConcernSelector } from "@/components/ConcernSelector";
 import { FeatureLibraryShelf } from "@/components/FeatureLibraryShelf";
@@ -53,6 +55,7 @@ export function HomeScrollStack() {
   const { lang } = useLang();
   const isZh = lang === "zh";
   const facts = useHomeFacts();
+  const { stable } = useStableMotion();
 
   const [openId, setOpenId] = useState<HomeCardId | null>(null);
 
@@ -130,6 +133,7 @@ export function HomeScrollStack() {
         scaleEndPosition="8%"
         baseScale={0.88}
         itemScale={0.02}
+        stableMode={stable}
       >
         {HOME_GUIDE_CARDS.map((card) => (
           <ScrollStackItem key={card.id}>
@@ -150,6 +154,8 @@ export function HomeScrollStack() {
         activeIndex={activeIndex}
         isZh={isZh}
       />
+
+      <MotionModeToggle />
 
       <FeatureDrawerHost
         card={activeCard}
