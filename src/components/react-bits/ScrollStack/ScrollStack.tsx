@@ -297,6 +297,7 @@ const ScrollStack = ({
     blurAmount,
     handleScroll,
     updateCardTransforms,
+    stableMode,
   ]);
 
   return (
