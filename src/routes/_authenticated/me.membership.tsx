@@ -10,6 +10,7 @@ import { PersonalShellPending } from "@/experiences/daily-room/personal-shell-pe
 import { supabase } from "@/integrations/supabase/client";
 import { useLang } from "@/lib/i18n";
 import type { MembershipTierId } from "@/lib/membership-plans";
+import { listMyRedemptionUses, type MyRedemptionUse } from "@/lib/redemption.functions";
 
 /**
  * /me/membership — split cleanly into two entitlement kinds:
