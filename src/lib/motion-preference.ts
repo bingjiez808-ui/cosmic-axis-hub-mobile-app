@@ -171,38 +171,20 @@ export function useStableMotion(): { stable: boolean; setting: MotionSetting } {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    // Clear any prior FPS auto-stable flag from earlier builds so users get
+    // the smooth stacking effect back by default. Auto mode now only defers
+    // to prefers-reduced-motion; the user can still force "stable" via the
+    // toggle if their device jitters.
+    try { window.sessionStorage.removeItem(SESSION_FPS_FLAG); } catch { /* ignore */ }
     const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
-    let fpsTripped = false;
-    try {
-      fpsTripped = window.sessionStorage.getItem(SESSION_FPS_FLAG) === "1";
-    } catch { /* ignore */ }
-    const compute = () => setAutoStable(mql.matches || detectLowEnd() || fpsTripped);
+    const compute = () => setAutoStable(mql.matches);
     compute();
     mql.addEventListener?.("change", compute);
     return () => mql.removeEventListener?.("change", compute);
   }, []);
 
-  // Only watch FPS when the user is in "auto" AND we're currently running the
-  // smooth path. If they're already stable (explicit or auto-detected), nothing
-  // to downgrade.
   const currentlyStable =
     setting === "stable" ? true : setting === "smooth" ? false : autoStable;
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (setting !== "auto" || currentlyStable) return;
-    let flagged = false;
-    try {
-      flagged = window.sessionStorage.getItem(SESSION_FPS_FLAG) === "1";
-    } catch { /* ignore */ }
-    if (flagged) return;
-
-    const stop = startFpsWatchdog(() => {
-      try { window.sessionStorage.setItem(SESSION_FPS_FLAG, "1"); } catch { /* ignore */ }
-      setAutoStable(true);
-    });
-    return stop;
-  }, [setting, currentlyStable]);
 
   return { stable: currentlyStable, setting };
 }
