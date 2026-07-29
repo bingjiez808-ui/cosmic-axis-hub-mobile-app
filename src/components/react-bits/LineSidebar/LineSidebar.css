@@ -44,6 +44,22 @@
   inset: -8px -10px -8px -8px;
 }
 
+.line-sidebar__button {
+  position: absolute;
+  inset: -8px -10px -8px -8px;
+  display: block;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: inherit;
+  cursor: pointer;
+}
+
+.line-sidebar__button:focus-visible {
+  outline: 1px solid color-mix(in srgb, var(--accent-color) 70%, transparent);
+  outline-offset: 4px;
+}
+
 .line-sidebar__label {
   position: absolute;
   top: 50%;

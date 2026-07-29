@@ -188,17 +188,23 @@ export default function LineSidebar({
             }}
             className="line-sidebar__item"
             aria-current={controlledActive === index ? "true" : undefined}
-            onClick={() => handleClick(index, label)}
           >
-            {showMarker ? <span className="line-sidebar__marker" aria-hidden="true" /> : null}
-            <span className="line-sidebar__label">
-              {showIndex ? (
-                <span className="line-sidebar__index">
-                  {String(index + 1).padStart(2, "0")}
-                </span>
-              ) : null}
-              <span className="line-sidebar__text">{label}</span>
-            </span>
+            <button
+              type="button"
+              className="line-sidebar__button"
+              aria-label={label}
+              onClick={() => handleClick(index, label)}
+            >
+              {showMarker ? <span className="line-sidebar__marker" aria-hidden="true" /> : null}
+              <span className="line-sidebar__label" aria-hidden="true">
+                {showIndex ? (
+                  <span className="line-sidebar__index">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                ) : null}
+                <span className="line-sidebar__text">{label}</span>
+              </span>
+            </button>
           </li>
         ))}
       </ul>
