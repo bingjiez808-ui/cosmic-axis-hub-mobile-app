@@ -685,5 +685,3 @@ export function HomeBentoMap() {
 }
 
 export default HomeBentoMap;
-// Suppress unused-import warning for supabase (kept for future auth-scoped fetches)
-export const __supabase_ref = supabase;
