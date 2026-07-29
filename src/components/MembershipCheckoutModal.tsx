@@ -95,7 +95,7 @@ export function MembershipCheckoutModal({
   void source; // kept for analytics attribution once wired in.
   const titleId = useId();
   const plan = MEMBERSHIP_PLANS[targetTier];
-  const [method, setMethod] = useState<MembershipPaymentMethod>("wechat");
+  const [method, setMethod] = useState<ExtendedMethod>("wechat");
   const [phase, setPhase] = useState<"idle" | "busy" | "success" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
   const idempotencyKeyRef = useRef<string>("");
