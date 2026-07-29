@@ -220,6 +220,9 @@ function LandingPage() {
         </div>
       </section>
 
+      {/* ─────────── LIBRARY GUIDE · BENTO MAP ─────────── */}
+      <HomeBentoMap />
+
       {/* ─────────── CONCERN → FEATURE MAPPING ─────────── */}
       <ConcernSelector />
 
