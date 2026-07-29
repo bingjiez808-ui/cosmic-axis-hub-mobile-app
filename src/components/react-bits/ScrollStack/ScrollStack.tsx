@@ -225,7 +225,7 @@ const ScrollStack = ({
       window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     const cards = Array.from(
-      document.querySelectorAll<HTMLElement>(".scroll-stack-card")
+      scroller.querySelectorAll<HTMLElement>(".scroll-stack-card")
     );
     cardsRef.current = cards;
     const transformsCache = lastTransformsRef.current;
