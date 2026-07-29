@@ -54,6 +54,7 @@ export function LibraryEntrance() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
   const lanternRef = useRef<HTMLDivElement | null>(null);
+  const ctaRef = useRef<HTMLButtonElement | null>(null);
   const [connecting, setConnecting] = useState(false);
   const overlayVisible = phase === "visible" || phase === "exiting-enter" || phase === "exiting-skip";
 
