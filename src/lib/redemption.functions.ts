@@ -78,7 +78,7 @@ export const adminCreateRedemptionCodes = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => CreateInput.parse(data))
   .handler(async ({ data, context }): Promise<{ codes: CreatedCode[] }> => {
     enforceRateLimit(`admin_code_create:${context.userId}`, 20, 60_000, "code batches");
-    const supabase = context.supabase as {
+    const supabase = context.supabase as unknown as {
       rpc: (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>;
     };
     const rng = seededRng();
@@ -156,7 +156,7 @@ export const adminListRedemptionCodes = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => ListCodesInput.parse(data ?? {}))
   .handler(async ({ data, context }): Promise<AdminCodeRow[]> => {
-    const supabase = context.supabase as {
+    const supabase = context.supabase as unknown as {
       rpc: (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>;
     };
     const { data: rows, error } = await supabase.rpc("admin_list_redemption_codes", {
@@ -174,7 +174,7 @@ export const adminDisableRedemptionCode = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => DisableInput.parse(data))
   .handler(async ({ data, context }) => {
-    const supabase = context.supabase as {
+    const supabase = context.supabase as unknown as {
       rpc: (name: string, args: Record<string, unknown>) => Promise<{ error: { message: string } | null }>;
     };
     const { error } = await supabase.rpc("admin_disable_redemption_code", { _code_id: data.codeId });
@@ -207,7 +207,7 @@ export const adminListRedemptionUses = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => ListUsesInput.parse(data ?? {}))
   .handler(async ({ data, context }): Promise<AdminUseRow[]> => {
-    const supabase = context.supabase as {
+    const supabase = context.supabase as unknown as {
       rpc: (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>;
     };
     const { data: rows, error } = await supabase.rpc("admin_list_redemption_uses", {
@@ -293,7 +293,7 @@ export const redeemCode = createServerFn({ method: "POST" })
       }
     })();
 
-    const supabase = context.supabase as {
+    const supabase = context.supabase as unknown as {
       rpc: (
         name: string,
         args: Record<string, unknown>,
@@ -359,7 +359,7 @@ export type MyRedemptionUse = {
 export const listMyRedemptionUses = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<MyRedemptionUse[]> => {
-    const supabase = context.supabase as {
+    const supabase = context.supabase as unknown as {
       rpc: (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>;
     };
     const { data, error } = await supabase.rpc("list_my_redemption_uses", {});
