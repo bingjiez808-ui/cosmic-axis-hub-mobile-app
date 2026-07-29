@@ -253,6 +253,9 @@ export function RedemptionCheckoutForm({
             </option>
           ))}
         </select>
+        <p className="mt-2 text-[10px] leading-relaxed text-stone-warm/50">
+          {pick(T.chart_hint, lang)}
+        </p>
       </label>
 
       {error && (
