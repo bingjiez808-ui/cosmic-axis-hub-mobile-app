@@ -133,6 +133,10 @@ export function FeatureLibraryShelf({
   );
 
 
+  const recommendedBook = recommendedKey
+    ? SHELF_BOOKS.find((b) => b.key === recommendedKey) ?? null
+    : null;
+
   const H = {
     kicker: {
       zh: "图书馆的六本书",
@@ -144,6 +148,20 @@ export function FeatureLibraryShelf({
         ? "Based on your question, start with the highlighted spine first"
         : "Pick the book you'd like to open first",
     },
+    subHeading:
+      recommendedBook && pickedConcern
+        ? {
+            zh: `你选择了「${CONCERNS[pickedConcern].chip.zh}」。图书馆先为你递来《${recommendedBook.title.zh}》，其余书仍可随时翻阅。`,
+            en: `You picked «${CONCERNS[pickedConcern].chip.en}». The library hands you «${recommendedBook.title.en}» first — the others remain open to you.`,
+          }
+        : null,
+    alsoOpenNote:
+      recommendedBook && pickedConcern
+        ? {
+            zh: `你也可以从这里开始。刚才推荐的《${recommendedBook.title.zh}》仍留在书架上。`,
+            en: `You can also start from here. «${recommendedBook.title.en}» is still on the shelf whenever you want.`,
+          }
+        : null,
     hintScroll: {
       zh: "← 横向滑动书架 →",
       en: "← swipe the shelf →",
@@ -161,10 +179,23 @@ export function FeatureLibraryShelf({
       en: "Full 24 chapters with cross-tradition comparison and yearly windows.",
     },
     cta: { zh: "带着这本书阅读我的命盘", en: "Read my chart with this book" },
+    ctaSignIn: { zh: "登录并带上这本书", en: "Sign in and take this book" },
+    ctaRitual: { zh: "开始仪式，生成我的命盘", en: "Start ritual & generate my chart" },
+    ctaOpenReport: { zh: "打开我的这一章", en: "Open my chapter now" },
     closed: { zh: "点击书脊翻开这本书", en: "Tap a spine to open the book" },
-    litForYou: { zh: "为你亮起", en: "Lit for you" },
+    litForYou: { zh: "为你先翻", en: "Opened for you" },
     volume: { zh: "第 卷", en: "Vol." },
   };
+
+  const ctaLabel = (target: ConcernKey) => {
+    if (!isSignedIn) return H.ctaSignIn[lang];
+    if (!hasPrimaryChart) return H.ctaRitual[lang];
+    if (existingReportId) return H.ctaOpenReport[lang];
+    return H.cta[lang];
+  };
+  // silence unused warning if concern-based routing changes ctaTarget later
+  void ctaLabel;
+
 
   return (
     <section
