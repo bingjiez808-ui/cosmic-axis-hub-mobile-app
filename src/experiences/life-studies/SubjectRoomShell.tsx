@@ -9,9 +9,9 @@ import { useLang } from "@/lib/i18n";
  * room becomes a dead-end: every page carries a visible path back to
  * 命运通识馆 and a subtitle explaining the room's angle.
  *
- * Renders the fixed CommonsHallNav and reserves enough top padding so
- * neither the global site-nav nor the commons sub-nav can overlap the
- * Hero on any viewport.
+ * Renders the inline CommonsHallNav below the global site-nav; the
+ * commons nav now participates in normal document flow so it cannot
+ * overlap the Hero.
  */
 export function SubjectRoomShell({
   eyebrow,
@@ -29,15 +29,9 @@ export function SubjectRoomShell({
   const { lang } = useLang();
   const isZh = lang === "zh";
   return (
-    <>
+    <div style={{ paddingTop: "var(--site-nav-height, 96px)" }}>
       <CommonsHallNav active={active} />
-      <div
-        className="mx-auto w-full max-w-[1100px] px-4 pb-24 md:px-8"
-        style={{
-          paddingTop:
-            "calc(var(--site-nav-height, 96px) + var(--commons-nav-height, 64px) + 24px)",
-        }}
-      >
+      <div className="mx-auto w-full max-w-[1100px] px-4 pb-24 pt-6 md:px-8">
         <div className="mb-6 flex items-center gap-3 text-[11px] uppercase tracking-[0.28em] text-amber-200/70">
           <Link
             to="/life-studies"
@@ -59,7 +53,7 @@ export function SubjectRoomShell({
         </header>
         {children}
       </div>
-    </>
+    </div>
   );
 }
 

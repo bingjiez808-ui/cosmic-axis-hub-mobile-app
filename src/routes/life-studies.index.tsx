@@ -48,12 +48,8 @@ function DestinyCommonsPage() {
   return (
     <main
       className="relative min-h-screen bg-obsidian pb-24 text-stone-warm"
-      style={{
-        paddingTop:
-          "calc(var(--site-nav-height, 96px) + var(--commons-nav-height, 64px) + 24px)",
-      }}
+      style={{ paddingTop: "calc(var(--site-nav-height, 96px) + 24px)" }}
     >
-      <CommonsHallNav active="/life-studies" />
       <div className="mx-auto max-w-[1280px] px-5 sm:px-8">
         {/* Breadcrumb */}
         <nav aria-label={isZh ? "面包屑" : "Breadcrumb"} className="mb-6 text-[11px] uppercase tracking-[0.28em] text-stone-warm/45">
@@ -95,11 +91,19 @@ function DestinyCommonsPage() {
               {isZh ? "已开放" : "Open"}
             </span>
             <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-stone-warm/60">
-              <span aria-hidden className="h-1.5 w-1.5 rounded-full border border-current" />
+            <span aria-hidden className="h-1.5 w-1.5 rounded-full border border-current" />
               {isZh ? "馆藏整理中" : "Collection in progress"}
             </span>
           </div>
         </header>
+      </div>
+
+      {/* Sub-navigation renders inline between Hero and grid so it never
+          overlaps the title on any viewport; side bookmark takes over
+          after the user scrolls past it. */}
+      <CommonsHallNav active="/life-studies" />
+
+      <div className="mx-auto max-w-[1280px] px-5 sm:px-8">
 
         <div className="mt-14">
           <DestinyCommonsGrid isZh={isZh} />
