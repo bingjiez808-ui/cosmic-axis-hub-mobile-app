@@ -172,14 +172,10 @@ const SplitText = ({
     willChange: "transform, opacity",
     ...style,
   };
-  const Tag = tag as ElementType;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const Tag = tag as any;
   return (
-    <Tag
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ref={ref as any}
-      style={mergedStyle}
-      className={`split-parent ${className}`}
-    >
+    <Tag ref={ref} style={mergedStyle} className={`split-parent ${className}`}>
       {text}
     </Tag>
   );
