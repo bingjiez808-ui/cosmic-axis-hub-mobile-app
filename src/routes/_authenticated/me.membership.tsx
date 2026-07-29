@@ -255,6 +255,61 @@ function MembershipPage() {
           </div>
         </section>
 
+        {/* Section 2.5 — Redemption history */}
+        <section aria-labelledby="mem-redemptions" className="mb-8">
+          <div className="mb-3 flex items-baseline gap-3">
+            <h2
+              id="mem-redemptions"
+              className="text-[11px] uppercase tracking-[0.28em] text-amber-300/70"
+            >
+              {isZh ? "③ 兑换码记录" : "③ Redemption history"}
+            </h2>
+            <p className="text-xs text-amber-100/50">
+              {isZh ? "仅显示脱敏摘要" : "Only masked summaries are shown"}
+            </p>
+          </div>
+          <div
+            data-testid="redemption-history-panel"
+            className="rounded-xl border border-amber-400/20 bg-black/25 p-5"
+          >
+            {redemptions === null && (
+              <p className="text-sm text-amber-100/60">{isZh ? "读取中…" : "Loading…"}</p>
+            )}
+            {redemptions && redemptions.length === 0 && (
+              <p className="text-sm text-amber-100/70">
+                {isZh ? "你还没有使用过兑换码。" : "You haven't redeemed any codes yet."}
+              </p>
+            )}
+            {redemptions && redemptions.length > 0 && (
+              <ul className="space-y-2">
+                {redemptions.map((r) => (
+                  <li
+                    key={r.id}
+                    className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-400/15 bg-black/25 px-3 py-2 text-sm"
+                  >
+                    <div>
+                      <p className="font-mono text-amber-100">
+                        {r.code_prefix}-•••• {r.code_last4}
+                      </p>
+                      <p className="text-[11px] text-amber-100/55">
+                        {r.benefit_type}
+                        {r.duration_days ? ` · ${r.duration_days}${isZh ? "天" : "d"}` : ""}
+                        {" · "}
+                        {new Date(r.redeemed_at).toLocaleDateString(isZh ? "zh-CN" : "en-US")}
+                        {" · "}
+                        {r.status}
+                      </p>
+                    </div>
+                    {r.campaign_name && (
+                      <span className="text-[11px] text-amber-100/55">{r.campaign_name}</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </section>
+
         {/* Section 3 — Orders / tickets */}
         <section aria-labelledby="mem-tickets">
           <div className="mb-3 flex items-baseline gap-3">
