@@ -35,6 +35,7 @@ import { FeatureLibraryShelf } from "@/components/FeatureLibraryShelf";
 import { PlayfulLibrarySection } from "@/components/PlayfulLibrarySection";
 import { PostRitualRoomsSection } from "@/components/PostRitualRoomsSection";
 import { HomePersonalDeskTeaser } from "@/components/HomePersonalDeskTeaser";
+import { ReaderPassCard } from "@/components/reader-pass/ReaderPassCard";
 
 const DRAWER_IDS = new Set<HomeCardId>(["concern", "commons", "rooms", "desk"]);
 
@@ -148,6 +149,7 @@ export function HomeScrollStack() {
 function GuideDeskHero({ isZh }: { isZh: boolean }) {
   return (
     <header className="relative mx-auto flex min-h-[62vh] max-w-4xl flex-col items-center justify-center px-6 pb-14 pt-24 text-center sm:min-h-[70vh]">
+      <ReaderPassCard />
       <p className="text-[10px] uppercase tracking-[0.5em] text-gold-dust/70 sm:text-xs">
         {isZh ? "命运图书馆 · 导览室" : "Destiny Library · Guide Desk"}
       </p>
