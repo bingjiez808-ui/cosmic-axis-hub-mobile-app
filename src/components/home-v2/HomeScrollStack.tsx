@@ -193,9 +193,10 @@ function GuideDeskHero({ isZh }: { isZh: boolean }) {
         {eyebrow}
       </p>
       <h1 className="mt-6 font-serif text-3xl leading-tight text-stone-warm sm:text-5xl md:text-6xl [text-shadow:0_2px_24px_rgba(0,0,0,0.9),0_0_2px_rgba(0,0,0,0.6)]">
-        <span className="block whitespace-nowrap">{headingParts[0]}</span>
-        <span className="block whitespace-nowrap">{headingParts[1]}</span>
+        <span className="block">{headingParts[0]}</span>
+        <span className="block">{headingParts[1]}</span>
       </h1>
+
       <p className="mt-6 max-w-2xl text-sm leading-relaxed text-stone-warm/90 sm:text-base [text-shadow:0_1px_14px_rgba(0,0,0,0.85)]">
         {body}
       </p>
