@@ -276,8 +276,8 @@ export const redeemCode = createServerFn({ method: "POST" })
     // IP-hash rate limit (best-effort — worker sees x-forwarded-for).
     let ipHash: string | null = null;
     try {
-      const headers = getRequestHeaders();
-      const rawIp = getRequestIP({ xForwardedFor: true }) ?? (headers["cf-connecting-ip"] as string | undefined) ?? null;
+      const headers = getRequestHeaders() as unknown as Record<string, string | undefined>;
+      const rawIp = getRequestIP({ xForwardedFor: true }) ?? headers["cf-connecting-ip"] ?? null;
       ipHash = hashIp(rawIp ?? null);
       if (ipHash) enforceRateLimit(`redeem:ip:${ipHash}:hr`, 60, 3_600_000, "redemption attempts");
     } catch {
@@ -286,7 +286,8 @@ export const redeemCode = createServerFn({ method: "POST" })
 
     const uaSummary = (() => {
       try {
-        const ua = String(getRequestHeaders()["user-agent"] ?? "").slice(0, 120);
+        const headers = getRequestHeaders() as unknown as Record<string, string | undefined>;
+        const ua = String(headers["user-agent"] ?? "").slice(0, 120);
         return ua || null;
       } catch {
         return null;
