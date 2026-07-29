@@ -127,14 +127,14 @@ export function MembershipCheckoutModal({
   const priceCny = useMemo(() => (plan.priceCents / 100).toFixed(2).replace(/\.00$/, ""), [plan]);
 
   const confirm = async () => {
-    if (phase === "busy") return;
+    if (phase === "busy" || method === "redemption") return;
     setPhase("busy");
     setError(null);
     try {
       await simulateMockMembershipUpgrade({
         data: {
           targetTier,
-          paymentMethod: method,
+          paymentMethod: method as MembershipPaymentMethod,
           idempotencyKey: idempotencyKeyRef.current,
         },
       });
