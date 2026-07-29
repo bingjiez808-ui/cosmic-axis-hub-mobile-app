@@ -161,6 +161,11 @@ export function AdminRedemptionSection() {
             >
               <div className="font-mono text-[12px] text-stone-warm">
                 {c.code_prefix}-•••• {c.code_last4}
+                {c.assigned_email && (
+                  <div className="mt-0.5 font-sans text-[10px] normal-case text-amber-200/80">
+                    → {c.assigned_email}
+                  </div>
+                )}
               </div>
               <div className="text-xs text-stone-warm/75">{BENEFIT_LABELS[c.benefit_type]}</div>
               <div className="text-xs text-stone-warm/70">
