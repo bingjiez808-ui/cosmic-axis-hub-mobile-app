@@ -235,8 +235,17 @@ export function LibraryEntrance() {
       else v.play().catch(() => { /* noop */ });
     };
     document.addEventListener("visibilitychange", sync);
-    return () => document.removeEventListener("visibilitychange", sync);
+    return () => {
+      document.removeEventListener("visibilitychange", sync);
+      // Fully release the media element so decoders/GPU buffers are freed.
+      try {
+        v.pause();
+        v.removeAttribute("src");
+        v.load();
+      } catch { /* noop */ }
+    };
   }, [overlayVisible]);
+
 
   // Auto-hide first-run hint once the user interacts.
   const [hintDismissed, setHintDismissed] = useState(false);
