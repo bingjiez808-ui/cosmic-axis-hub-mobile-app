@@ -226,7 +226,9 @@ function AuthPage() {
     e.preventDefault();
     if (busy || cooldown > 0) return;
     const addr = email.trim().toLowerCase();
+    const name = displayName.trim();
     if (!EMAIL_RE.test(addr) || addr.length > 254) return toast.error(t.invalidEmail);
+    if (name.length < 2 || name.length > 40) return toast.error(t.invalidName);
     if (!pwValid) return toast.error(t.weakPassword);
     if (!confirmValid) return toast.error(t.mismatch);
     if (!agreed) return toast.error(t.needAgree);
@@ -235,7 +237,10 @@ function AuthPage() {
       await supabase.auth.signUp({
         email: addr,
         password,
-        options: { emailRedirectTo: getAuthRedirectUrl(search.redirect) },
+        options: {
+          emailRedirectTo: getAuthRedirectUrl(search.redirect),
+          data: { name, full_name: name, display_name: name },
+        },
       });
     } catch {
       // Neutral messaging — never reveal whether the address is registered.
