@@ -66,6 +66,8 @@ type ScrollStackProps = {
   rotationAmount?: number;
   blurAmount?: number;
   onStackComplete?: () => void;
+  /** When true, skip Lenis + all transforms. Cards render as a plain vertical list. */
+  stableMode?: boolean;
 };
 
 const ScrollStack = ({
@@ -80,6 +82,7 @@ const ScrollStack = ({
   rotationAmount = 0,
   blurAmount = 0,
   onStackComplete,
+  stableMode = false,
 }: ScrollStackProps) => {
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const stackCompletedRef = useRef(false);
