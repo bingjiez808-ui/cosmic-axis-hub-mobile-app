@@ -169,9 +169,9 @@ export function HomeScrollStack() {
 
 function GuideDeskHero({ isZh }: { isZh: boolean }) {
   const eyebrow = isZh ? "命运图书馆 · 导览室" : "Destiny Library · Guide Desk";
-  const heading = isZh
-    ? "每一个文明,都在问同一个问题。"
-    : "Every civilization has been asking the same question.";
+  const headingParts = isZh
+    ? ["每一个文明,", "都在问同一个问题。"]
+    : ["Every civilization has been asking", "the same question."];
   const body = isZh
     ? "跟着下面七块导览牌一路向下:从今天的问题、命盘与综合解读,到六本书、通识馆、四间藏室,最后回到你的个人书架。每一张卡片都会告诉你现在能读什么、需要先做什么。"
     : "Follow the seven guide plates below: from today's question, primary chart and panorama, to six books, the commons, four special rooms, and finally your Personal Library. Each plate tells you what you can read now and what needs to happen first.";
@@ -193,8 +193,10 @@ function GuideDeskHero({ isZh }: { isZh: boolean }) {
         {eyebrow}
       </p>
       <h1 className="mt-6 font-serif text-3xl leading-tight text-stone-warm sm:text-5xl md:text-6xl [text-shadow:0_2px_24px_rgba(0,0,0,0.9),0_0_2px_rgba(0,0,0,0.6)]">
-        {heading}
+        <span className="block">{headingParts[0]}</span>
+        <span className="block">{headingParts[1]}</span>
       </h1>
+
       <p className="mt-6 max-w-2xl text-sm leading-relaxed text-stone-warm/90 sm:text-base [text-shadow:0_1px_14px_rgba(0,0,0,0.85)]">
         {body}
       </p>
@@ -205,6 +207,7 @@ function GuideDeskHero({ isZh }: { isZh: boolean }) {
     </header>
   );
 }
+
 
 const ACCESS_STYLE: Record<AccessTag, string> = {
   open: "border-emerald-300/40 text-emerald-200/90 bg-emerald-500/10",
