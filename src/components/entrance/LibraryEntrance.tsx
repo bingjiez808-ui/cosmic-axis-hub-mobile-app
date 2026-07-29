@@ -146,6 +146,60 @@ export function LibraryEntrance() {
     };
   }, [overlayVisible, isCoarse, reducedMotion]);
 
+  // Magnetic CTA — subtle spring pull (max 10px), desktop + motion only.
+  useEffect(() => {
+    if (!overlayVisible || isCoarse || reducedMotion) return;
+    const el = ctaRef.current;
+    if (!el) return;
+    const MAX = 10;
+    const ACTIVATE = 90; // px beyond bounding box where pull begins
+    let raf = 0;
+    let tx = 0, ty = 0, cx = 0, cy = 0;
+    const tick = () => {
+      cx += (tx - cx) * 0.18;
+      cy += (ty - cy) * 0.18;
+      el.style.transform = `translate3d(${cx.toFixed(2)}px, ${cy.toFixed(2)}px, 0)`;
+      if (Math.abs(tx - cx) > 0.05 || Math.abs(ty - cy) > 0.05) {
+        raf = window.requestAnimationFrame(tick);
+      } else {
+        raf = 0;
+      }
+    };
+    const onMove = (e: PointerEvent) => {
+      const r = el.getBoundingClientRect();
+      const mx = r.left + r.width / 2;
+      const my = r.top + r.height / 2;
+      const dx = e.clientX - mx;
+      const dy = e.clientY - my;
+      // Distance from button edge (approx via inset rect).
+      const edgeDx = Math.max(0, Math.abs(dx) - r.width / 2);
+      const edgeDy = Math.max(0, Math.abs(dy) - r.height / 2);
+      const edgeDist = Math.hypot(edgeDx, edgeDy);
+      if (edgeDist > ACTIVATE) {
+        tx = 0; ty = 0;
+      } else {
+        const strength = 1 - edgeDist / ACTIVATE; // 0..1
+        tx = dx * 0.18 * strength;
+        ty = dy * 0.18 * strength;
+        const m = Math.hypot(tx, ty);
+        if (m > MAX) { tx = (tx / m) * MAX; ty = (ty / m) * MAX; }
+      }
+      if (!raf) raf = window.requestAnimationFrame(tick);
+    };
+    const onLeaveWin = () => {
+      tx = 0; ty = 0;
+      if (!raf) raf = window.requestAnimationFrame(tick);
+    };
+    window.addEventListener("pointermove", onMove, { passive: true });
+    window.addEventListener("pointerleave", onLeaveWin);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerleave", onLeaveWin);
+      if (raf) window.cancelAnimationFrame(raf);
+      el.style.transform = "";
+    };
+  }, [overlayVisible, isCoarse, reducedMotion]);
+
   useEffect(() => {
     if (!overlayVisible) return;
     const prev = document.body.style.overflow;
