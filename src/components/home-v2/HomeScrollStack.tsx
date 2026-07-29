@@ -1,40 +1,105 @@
 /**
  * HomeScrollStack — the seven-card guide-desk experience shown after
- * the entrance overlay dismisses. Composes:
+ * the entrance overlay dismisses.
  *
+ * Layout:
  *   LibraryInteriorBackdrop (fixed video)
- *   ├── Guide Desk hero          (welcome text + curator-desk feel)
- *   ├── ScrollStack (7 cards)    (see HOME_GUIDE_CARDS for data)
- *   └── StackProgress            (right rail on desktop, bottom pill on mobile)
+ *   ├── GuideDeskHero              (welcome + brand copy)
+ *   ├── ScrollStack (7 index cards)  — React Bits ScrollStack + Lenis
+ *   └── StackProgress               (right rail desktop / bottom pill mobile)
  *
- * Every card CTA runs through resolveCta so the five signed-out / no
- * primary chart / ready / locked_sage / locked_oracle / coming_soon
- * paths are consistent. Card 01 (Concern) is the only card that opens
- * a dialog rather than navigating.
+ * Each card is a bookmark. Clicking a card opens LibraryFeatureDrawer
+ * with the corresponding existing feature module (ConcernSelector,
+ * FeatureLibraryShelf, PlayfulLibrarySection, PostRitualRoomsSection,
+ * HomePersonalDeskTeaser). Cards 02 (ritual) and 03 (report) navigate
+ * to routes because their downstream flow owns its own state machine.
+ * The drawer state is mirrored to the URL as ?feature=<id> so the back
+ * button closes the drawer.
  */
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+
 import { useLang } from "@/lib/i18n";
 import { resolveCta, ctaMicroCopy, accessTagLabel, type AccessTag } from "@/lib/home-cta";
-import { HOME_GUIDE_CARDS, type HomeGuideCard } from "@/lib/home-guide-cards";
+import { HOME_GUIDE_CARDS, type HomeGuideCard, type HomeCardId } from "@/lib/home-guide-cards";
 import { useHomeFacts } from "@/lib/use-home-facts";
-import { ConcernSelector } from "@/components/ConcernSelector";
+
+import ScrollStack, { ScrollStackItem } from "@/components/react-bits/ScrollStack/ScrollStack";
 import { LibraryInteriorBackdrop } from "./LibraryInteriorBackdrop";
-import { ScrollStack, ScrollStackItem } from "./ScrollStack";
 import { StackProgress } from "./StackProgress";
 import { HomeCardVisual } from "./HomeCardVisual";
+import { LibraryFeatureDrawer } from "./LibraryFeatureDrawer";
+
+import { ConcernSelector } from "@/components/ConcernSelector";
+import { FeatureLibraryShelf } from "@/components/FeatureLibraryShelf";
+import { PlayfulLibrarySection } from "@/components/PlayfulLibrarySection";
+import { PostRitualRoomsSection } from "@/components/PostRitualRoomsSection";
+import { HomePersonalDeskTeaser } from "@/components/HomePersonalDeskTeaser";
+
+const DRAWER_IDS = new Set<HomeCardId>(["concern", "books", "commons", "rooms", "desk"]);
+
+function readHashFeature(): HomeCardId | null {
+  if (typeof window === "undefined") return null;
+  const hash = window.location.hash.replace(/^#/, "");
+  const match = hash.match(/^feature=([\w-]+)$/);
+  if (!match) return null;
+  const id = match[1] as HomeCardId;
+  return DRAWER_IDS.has(id) ? id : null;
+}
 
 export function HomeScrollStack() {
   const { lang } = useLang();
   const isZh = lang === "zh";
   const facts = useHomeFacts();
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [concernOpen, setConcernOpen] = useState(false);
 
-  const onActiveChange = useCallback((_id: string, index: number) => {
-    setActiveIndex(index);
+  const [openId, setOpenId] = useState<HomeCardId | null>(null);
+
+  // Hydrate + follow browser back / forward.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setOpenId(readHashFeature());
+    const onHash = () => setOpenId(readHashFeature());
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
   }, []);
+
+  const openCard = useCallback((id: HomeCardId | null) => {
+    if (typeof window !== "undefined") {
+      const nextHash = id ? `#feature=${id}` : "";
+      const url = `${window.location.pathname}${window.location.search}${nextHash}`;
+      window.history.replaceState(null, "", url);
+    }
+    setOpenId(id);
+  }, []);
+
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  // Track which card is closest to viewport top for StackProgress.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const cards = HOME_GUIDE_CARDS.map((c) => document.getElementById(c.id)).filter(
+      Boolean
+    ) as HTMLElement[];
+    if (!cards.length) return;
+    const onScroll = () => {
+      let bestIdx = 0;
+      let bestDist = Infinity;
+      cards.forEach((el, i) => {
+        const rect = el.getBoundingClientRect();
+        const dist = Math.abs(rect.top - window.innerHeight * 0.3);
+        if (dist < bestDist) {
+          bestDist = dist;
+          bestIdx = i;
+        }
+      });
+      setActiveIndex(bestIdx);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const activeCard = openId ? HOME_GUIDE_CARDS.find((c) => c.id === openId) ?? null : null;
 
   return (
     <div className="relative">
@@ -42,39 +107,36 @@ export function HomeScrollStack() {
 
       <GuideDeskHero isZh={isZh} />
 
-      <ScrollStack onActiveChange={onActiveChange}>
+      <ScrollStack
+        itemDistance={80}
+        itemStackDistance={26}
+        stackPosition="18%"
+        scaleEndPosition="8%"
+        baseScale={0.88}
+        itemScale={0.02}
+      >
         {HOME_GUIDE_CARDS.map((card) => (
-          <ScrollStackItem
-            key={card.id}
-            id={`stack-${card.id}`}
-            index={0}
-            total={HOME_GUIDE_CARDS.length}
-          >
-            <HomeCard
-              card={card}
-              isZh={isZh}
-              facts={facts}
-              onConcernOpen={() => setConcernOpen(true)}
-            />
+          <ScrollStackItem key={card.id}>
+            <div id={card.id}>
+              <HomeCard
+                card={card}
+                isZh={isZh}
+                facts={facts}
+                onOpenDrawer={() => openCard(card.id)}
+              />
+            </div>
           </ScrollStackItem>
         ))}
       </ScrollStack>
 
       <StackProgress cards={HOME_GUIDE_CARDS} activeIndex={activeIndex} isZh={isZh} />
 
-      <Dialog open={concernOpen} onOpenChange={setConcernOpen}>
-        <DialogContent className="max-h-[92vh] w-[min(96vw,1180px)] max-w-none overflow-y-auto border-gold-dust/25 bg-obsidian/95 p-4 sm:p-6">
-          <DialogTitle className="sr-only">
-            {isZh ? "今天你带着什么问题来到这里" : "What question brings you today?"}
-          </DialogTitle>
-          <DialogDescription className="sr-only">
-            {isZh
-              ? "选择今天最想理解的问题，图书馆据此为你安排阅读顺序。"
-              : "Pick today's real question; the library orders your reading around it."}
-          </DialogDescription>
-          <ConcernSelector />
-        </DialogContent>
-      </Dialog>
+      <FeatureDrawerHost
+        card={activeCard}
+        isZh={isZh}
+        facts={facts}
+        onClose={() => openCard(null)}
+      />
     </div>
   );
 }
@@ -88,22 +150,22 @@ function GuideDeskHero({ isZh }: { isZh: boolean }) {
       <h1 className="mt-6 font-serif text-3xl leading-tight text-stone-warm sm:text-5xl md:text-6xl">
         {isZh ? (
           <>
-            走进图书馆，
+            每一个文明,
             <br className="hidden sm:block" />
-            馆员正在为你摆好今天的书。
+            都在问同一个问题。
           </>
         ) : (
           <>
-            Step inside the library.
+            Every civilization has been
             <br className="hidden sm:block" />
-            The curator is laying out today's books for you.
+            asking the same question.
           </>
         )}
       </h1>
       <p className="mt-6 max-w-2xl text-sm leading-relaxed text-stone-warm/75 sm:text-base">
         {isZh
-          ? "顺着下面七块导览牌，从「今天的问题」一路走到「两间阅览室」，每一步都会告诉你现在能读什么、需要先做什么。"
-          : "Follow the seven guide plates below, from today's question to the two reading rooms. Each one tells you what you can read now and what needs to happen first."}
+          ? "跟着下面七块导览牌一路向下:从今天的问题、命盘与综合解读,到六本书、通识馆、四间藏室,最后回到你的个人书架。每一张卡片都会告诉你现在能读什么、需要先做什么。"
+          : "Follow the seven guide plates below: from today's question, primary chart and panorama, to six books, the commons, four special rooms, and finally your Personal Library. Each plate tells you what you can read now and what needs to happen first."}
       </p>
       <div className="mt-8 flex items-center gap-3 text-[10px] uppercase tracking-[0.42em] text-gold-dust/50">
         <span aria-hidden>↓</span>
@@ -125,16 +187,19 @@ function HomeCard({
   card,
   isZh,
   facts,
-  onConcernOpen,
+  onOpenDrawer,
 }: {
   card: HomeGuideCard;
   isZh: boolean;
   facts: ReturnType<typeof useHomeFacts>;
-  onConcernOpen: () => void;
+  onOpenDrawer: () => void;
 }) {
+  const isDrawer = card.mode === "drawer";
+  const routeTarget = card.target ?? "/";
+
   const plan = resolveCta({
-    target: card.target,
-    requiresAuth: card.id !== "concern" && card.id !== "commons",
+    target: routeTarget,
+    requiresAuth: !(card.id === "concern" || card.id === "commons"),
     requiresPrimaryChart: !!card.requiresPrimaryChart,
     requiresTier: card.requiresTier,
     isSignedIn: facts.isSignedIn,
@@ -146,30 +211,21 @@ function HomeCard({
   const micro = ctaMicroCopy(plan.state, targetLabel, isZh);
   const accessTag = card.access as AccessTag;
 
-  const ctaText =
-    card.id === "concern"
-      ? isZh
-        ? "选择我的问题"
-        : "Pick my question"
-      : plan.state === "signed_out"
-      ? isZh
-        ? "先登录再进入"
-        : "Sign in to enter"
-      : plan.state === "no_primary"
-      ? isZh
-        ? "先建立命盘"
-        : "Build the chart first"
-      : plan.state === "locked_oracle"
-      ? isZh
-        ? "预览神谕者阅览室"
-        : "Preview the Oracle room"
-      : plan.state === "locked_sage"
-      ? isZh
-        ? "预览贤者阅览室"
-        : "Preview the Sage room"
-      : isZh
-      ? `进入 · ${card.titleZh}`
-      : `Enter · ${card.titleEn}`;
+  const ctaText = isDrawer
+    ? isZh
+      ? card.ctaZh
+      : card.ctaEn
+    : plan.state === "signed_out"
+    ? isZh
+      ? "先登录再进入"
+      : "Sign in to enter"
+    : plan.state === "no_primary"
+    ? isZh
+      ? "先建立命盘"
+      : "Build the chart first"
+    : isZh
+    ? card.ctaZh
+    : card.ctaEn;
 
   const ctaClasses =
     "inline-flex min-h-[46px] items-center justify-center rounded-full border border-gold-dust/50 bg-gold-dust/15 px-6 py-2.5 text-xs uppercase tracking-[0.28em] text-gold-light transition hover:bg-gold-dust/25 focus:outline-none focus:ring-2 focus:ring-gold-dust/40";
@@ -179,7 +235,6 @@ function HomeCard({
       className="relative overflow-hidden rounded-3xl border border-gold-dust/20 bg-obsidian/70 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.7)] backdrop-blur-xl"
       data-testid={`home-card-${card.id}`}
     >
-      {/* Card sheen */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 opacity-60"
@@ -212,8 +267,8 @@ function HomeCard({
             </p>
           </div>
           <div className="space-y-3">
-            {card.id === "concern" ? (
-              <button type="button" className={ctaClasses} onClick={onConcernOpen}>
+            {isDrawer ? (
+              <button type="button" className={ctaClasses} onClick={onOpenDrawer}>
                 {ctaText}
               </button>
             ) : plan.disabled || !plan.href ? (
@@ -237,4 +292,70 @@ function HomeCard({
       </div>
     </article>
   );
+}
+
+function FeatureDrawerHost({
+  card,
+  isZh,
+  facts,
+  onClose,
+}: {
+  card: HomeGuideCard | null;
+  isZh: boolean;
+  facts: ReturnType<typeof useHomeFacts>;
+  onClose: () => void;
+}) {
+  const open = !!card;
+  const titleZh = card?.titleZh ?? "";
+  const titleEn = card?.titleEn ?? "";
+  const taglineZh = card?.taglineZh ?? "";
+  const taglineEn = card?.taglineEn ?? "";
+  const numberBadge = card?.number ?? "";
+
+  return (
+    <LibraryFeatureDrawer
+      open={open}
+      onOpenChange={(v) => (v ? undefined : onClose())}
+      eyebrow={
+        numberBadge
+          ? isZh
+            ? `导览牌 ${numberBadge}`
+            : `Guide plate ${numberBadge}`
+          : undefined
+      }
+      title={isZh ? titleZh : titleEn}
+      description={isZh ? taglineZh : taglineEn}
+    >
+      {card ? <DrawerBody card={card} facts={facts} isZh={isZh} /> : null}
+    </LibraryFeatureDrawer>
+  );
+}
+
+function DrawerBody({
+  card,
+  facts,
+  isZh,
+}: {
+  card: HomeGuideCard;
+  facts: ReturnType<typeof useHomeFacts>;
+  isZh: boolean;
+}) {
+  switch (card.id) {
+    case "concern":
+      return <ConcernSelector hasPrimaryChart={facts.hasPrimaryChart} />;
+    case "books":
+      return <FeatureLibraryShelf />;
+    case "commons":
+      return <PlayfulLibrarySection />;
+    case "rooms":
+      return <PostRitualRoomsSection />;
+    case "desk":
+      return <HomePersonalDeskTeaser />;
+    default:
+      return (
+        <p className="text-sm text-stone-warm/70">
+          {isZh ? "此卡片直接跳转,不在抽屉内显示。" : "This card navigates directly."}
+        </p>
+      );
+  }
 }
