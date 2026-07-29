@@ -31,7 +31,7 @@ function detectMode(): Mode {
     connection?: { saveData?: boolean };
     deviceMemory?: number;
   };
-  if (window.innerWidth < 768) return "flat";
+  if (window.innerWidth < 640) return "flat";
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return "flat";
   if (nav.connection?.saveData) return "flat";
   if (nav.deviceMemory && nav.deviceMemory < 4) return "flat";
