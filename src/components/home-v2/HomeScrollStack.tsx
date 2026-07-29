@@ -491,11 +491,10 @@ function HomeSideRail({
 
   return (
     <>
-      {/* Desktop rail: fixed narrow width, proximity-driven labels.
-          Hidden until the user scrolls or hovers the right edge, so it
-          never overlaps card copy while reading. */}
+      {/* Desktop rail: narrow edge ticks while scrolling; labels only expand
+          on direct hover/focus so the card text remains unobstructed. */}
       <div
-        className={`pointer-events-auto fixed right-3 top-1/2 z-40 hidden -translate-y-1/2 transition-opacity duration-300 xl:block ${
+        className={`pointer-events-auto fixed right-1 top-1/2 z-40 hidden -translate-y-1/2 transition-opacity duration-300 2xl:right-3 xl:block ${
           railVisible ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
         aria-label={isZh ? "馆藏索引" : "Card index"}
@@ -505,8 +504,8 @@ function HomeSideRail({
           activeIndex={activeIndex}
           onItemClick={(i) => scrollToIndex(i)}
           proximityRadius={140}
-          maxShift={22}
-          markerLength={34}
+          maxShift={8}
+          markerLength={30}
           itemGap={16}
           fontSize={0.68}
           ariaLabel={isZh ? "馆藏索引" : "Card index"}
