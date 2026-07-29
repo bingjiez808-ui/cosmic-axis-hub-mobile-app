@@ -48,7 +48,7 @@
   position: absolute;
   top: 50%;
   right: calc(var(--marker-length) + 14px);
-  display: inline-flex;
+  display: none;
   align-items: baseline;
   font-size: var(--font-size);
   line-height: 1.2;
@@ -116,8 +116,3 @@
   transform: translateY(-50%) scaleX(calc(0.7 + var(--effect, 0) * 0.6));
 }
 
-@media (max-width: 1535px) {
-  .line-sidebar__label {
-    display: none;
-  }
-}
