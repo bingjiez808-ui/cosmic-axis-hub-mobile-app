@@ -459,7 +459,7 @@ function AuthPage() {
             </label>
             <button
               type="submit"
-              disabled={busy || cooldown > 0 || !pwValid || !confirmValid || !agreed}
+              disabled={busy || cooldown > 0 || !pwValid || !confirmValid || !agreed || displayName.trim().length < 2}
               className="w-full rounded-full bg-gold-dust px-6 py-3 text-xs uppercase tracking-[0.28em] text-obsidian transition-colors hover:bg-gold-light disabled:opacity-50"
             >
               {cooldown > 0 ? `${cooldown}s` : t.submitSignup}
