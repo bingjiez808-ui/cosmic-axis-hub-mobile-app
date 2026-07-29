@@ -16,10 +16,8 @@
  * The drawer state is mirrored to the URL as ?feature=<id> so the back
  * button closes the drawer.
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate, useSearch } from "@tanstack/react-router";
-import { z } from "zod";
-import { fallback, zodValidator } from "@tanstack/zod-adapter";
+import { useCallback, useEffect, useState } from "react";
+import { Link } from "@tanstack/react-router";
 
 import { useLang } from "@/lib/i18n";
 import { resolveCta, ctaMicroCopy, accessTagLabel, type AccessTag } from "@/lib/home-cta";
@@ -38,34 +36,41 @@ import { PlayfulLibrarySection } from "@/components/PlayfulLibrarySection";
 import { PostRitualRoomsSection } from "@/components/PostRitualRoomsSection";
 import { HomePersonalDeskTeaser } from "@/components/HomePersonalDeskTeaser";
 
-// Validated at the route level (see src/routes/index.tsx). Re-declared
-// here just to type `useSearch`.
-export const homeSearchSchema = z.object({
-  feature: fallback(z.string(), "").default(""),
-});
-export const homeSearchValidator = zodValidator(homeSearchSchema);
-
 const DRAWER_IDS = new Set<HomeCardId>(["concern", "books", "commons", "rooms", "desk"]);
+
+function readHashFeature(): HomeCardId | null {
+  if (typeof window === "undefined") return null;
+  const hash = window.location.hash.replace(/^#/, "");
+  const match = hash.match(/^feature=([\w-]+)$/);
+  if (!match) return null;
+  const id = match[1] as HomeCardId;
+  return DRAWER_IDS.has(id) ? id : null;
+}
 
 export function HomeScrollStack() {
   const { lang } = useLang();
   const isZh = lang === "zh";
   const facts = useHomeFacts();
-  const navigate = useNavigate({ from: "/" });
-  const search = useSearch({ from: "/" }) as { feature?: string };
 
-  const openId = useMemo<HomeCardId | null>(() => {
-    const f = search.feature;
-    if (!f) return null;
-    return DRAWER_IDS.has(f as HomeCardId) ? (f as HomeCardId) : null;
-  }, [search.feature]);
+  const [openId, setOpenId] = useState<HomeCardId | null>(null);
 
-  const openCard = useCallback(
-    (id: HomeCardId | null) => {
-      navigate({ search: (prev) => ({ ...prev, feature: id ?? "" }), replace: true });
-    },
-    [navigate]
-  );
+  // Hydrate + follow browser back / forward.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setOpenId(readHashFeature());
+    const onHash = () => setOpenId(readHashFeature());
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+
+  const openCard = useCallback((id: HomeCardId | null) => {
+    if (typeof window !== "undefined") {
+      const nextHash = id ? `#feature=${id}` : "";
+      const url = `${window.location.pathname}${window.location.search}${nextHash}`;
+      window.history.replaceState(null, "", url);
+    }
+    setOpenId(id);
+  }, []);
 
   const [activeIndex, setActiveIndex] = useState(0);
 
