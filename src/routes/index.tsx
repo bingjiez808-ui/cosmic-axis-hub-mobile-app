@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import { CuratorLetter } from "@/components/CuratorLetter";
 import { ConcernSelector } from "@/components/ConcernSelector";
 import { FeatureLibraryShelf } from "@/components/FeatureLibraryShelf";
-import { HomeBentoMap } from "@/components/home/HomeBentoMap";
 import { HomePersonalDeskTeaser } from "@/components/HomePersonalDeskTeaser";
 import { PlayfulLibrarySection } from "@/components/PlayfulLibrarySection";
 import { PostRitualRoomsSection } from "@/components/PostRitualRoomsSection";
@@ -219,9 +218,6 @@ function LandingPage() {
           </span>
         </div>
       </section>
-
-      {/* ─────────── LIBRARY GUIDE · BENTO MAP ─────────── */}
-      <HomeBentoMap />
 
       {/* ─────────── CONCERN → FEATURE MAPPING ─────────── */}
       <ConcernSelector />
