@@ -1,11 +1,9 @@
 /**
- * ReaderPassFlat — 2D fallback for the Reader's Pass. Rendered on
- * mobile, when prefers-reduced-motion is set, when saveData is on,
- * when WebGL is unavailable, or when the 3D Canvas crashes.
+ * ReaderPassFlat — 2D fallback for the Reader's Pass.
  *
- * Pointer-drag interaction: drag the card sideways, release, and it
- * swings back with a spring easing so the 2D card still feels physical
- * without a physics engine. Tap (no drag) opens the drawer.
+ * Full 2D pointer drag on both axes with a spring-back release that
+ * simulates gravity: after release the card overshoots slightly on Y,
+ * then settles. Tap (no drag) opens the drawer.
  */
 import { useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { useLang } from "@/lib/i18n";
@@ -17,31 +15,54 @@ type Props = {
   onOpen: () => void;
 };
 
+type Offset = { x: number; y: number; rot: number };
+
 export function ReaderPassFlat({ data, onOpen }: Props) {
   const { lang } = useLang();
   const isZh = lang === "zh";
   const { frontUrl, backUrl } = useReaderPassSvg(data, isZh);
   const [flipped, setFlipped] = useState(false);
-  const [offset, setOffset] = useState({ x: 0, rot: 0 });
+  const [offset, setOffset] = useState<Offset>({ x: 0, y: 0, rot: 0 });
   const [dragging, setDragging] = useState(false);
+  const [settling, setSettling] = useState<"none" | "bounce" | "rest">("none");
   const dragRef = useRef<{ startX: number; startY: number; moved: boolean }>({
     startX: 0,
     startY: 0,
     moved: false,
   });
+  const settleTimer = useRef<number | null>(null);
+
+  const clearSettle = () => {
+    if (settleTimer.current !== null) {
+      window.clearTimeout(settleTimer.current);
+      settleTimer.current = null;
+    }
+  };
 
   const onPointerDown = (e: ReactPointerEvent<HTMLButtonElement>) => {
+    clearSettle();
+    setSettling("none");
     dragRef.current = { startX: e.clientX, startY: e.clientY, moved: false };
     setDragging(true);
     e.currentTarget.setPointerCapture?.(e.pointerId);
   };
+
   const onPointerMove = (e: ReactPointerEvent<HTMLButtonElement>) => {
     if (!dragging) return;
     const dx = e.clientX - dragRef.current.startX;
     const dy = e.clientY - dragRef.current.startY;
     if (Math.abs(dx) > 4 || Math.abs(dy) > 4) dragRef.current.moved = true;
-    setOffset({ x: dx * 0.55, rot: Math.max(-14, Math.min(14, dx * 0.08)) });
+    // Horizontal: follow with a damped factor + small rotation for a pendulum feel.
+    // Vertical: down easier than up (gravity feel), clamped so it doesn't run away.
+    const px = dx * 0.55;
+    const py = dy > 0 ? Math.min(dy * 0.7, 180) : Math.max(dy * 0.35, -80);
+    setOffset({
+      x: px,
+      y: py,
+      rot: Math.max(-16, Math.min(16, dx * 0.09 - dy * 0.02)),
+    });
   };
+
   const onPointerUp = (e: ReactPointerEvent<HTMLButtonElement>) => {
     if (!dragging) return;
     setDragging(false);
@@ -50,16 +71,31 @@ export function ReaderPassFlat({ data, onOpen }: Props) {
     } catch {
       /* noop */
     }
-    setOffset({ x: 0, rot: 0 });
-    if (!dragRef.current.moved) onOpen();
+    if (!dragRef.current.moved) {
+      setOffset({ x: 0, y: 0, rot: 0 });
+      onOpen();
+      return;
+    }
+    // Two-stage settle: quick overshoot (bounce) then a soft rest, so the
+    // card feels like it swings past origin under gravity, then relaxes.
+    const overshootY = offset.y > 0 ? -12 : 6;
+    const overshootRot = offset.rot * -0.25;
+    setSettling("bounce");
+    setOffset({ x: 0, y: overshootY, rot: overshootRot });
+    settleTimer.current = window.setTimeout(() => {
+      setSettling("rest");
+      setOffset({ x: 0, y: 0, rot: 0 });
+      settleTimer.current = window.setTimeout(() => setSettling("none"), 420);
+    }, 340);
   };
 
-  // Spring-back easing (cubic-bezier with slight overshoot) used only on release.
   const releaseTransition =
-    "transform 900ms cubic-bezier(0.22, 1.4, 0.36, 1)";
+    settling === "bounce"
+      ? "transform 340ms cubic-bezier(0.34, 1.56, 0.64, 1)"
+      : "transform 420ms cubic-bezier(0.22, 1, 0.36, 1)";
 
   return (
-    <div className="pointer-events-auto relative flex flex-col items-end gap-2">
+    <div className="pointer-events-auto relative flex flex-col items-start gap-2">
       <button
         type="button"
         aria-label={isZh ? "打开我的借阅证" : "Open my reader's pass"}
@@ -69,10 +105,10 @@ export function ReaderPassFlat({ data, onOpen }: Props) {
         onPointerCancel={onPointerUp}
         onMouseEnter={() => setFlipped(true)}
         onMouseLeave={() => setFlipped(false)}
-        className="group relative block h-[clamp(200px,36vw,300px)] w-[clamp(140px,24vw,200px)] cursor-grab touch-none select-none rounded-[18px] border border-gold-dust/25 bg-obsidian/50 p-0 shadow-[0_18px_40px_-14px_rgba(0,0,0,0.75)] active:cursor-grabbing"
+        className="group relative block h-[clamp(170px,26vw,240px)] w-[clamp(118px,17vw,168px)] cursor-grab touch-none select-none rounded-[18px] border border-gold-dust/25 bg-obsidian/50 p-0 shadow-[0_18px_40px_-14px_rgba(0,0,0,0.75)] active:cursor-grabbing"
         style={{
           perspective: "1200px",
-          transform: `translateX(${offset.x}px) rotate(${offset.rot}deg)`,
+          transform: `translate3d(${offset.x}px, ${offset.y}px, 0) rotate(${offset.rot}deg)`,
           transformOrigin: "top center",
           transition: dragging ? "none" : releaseTransition,
           willChange: "transform",
@@ -88,12 +124,12 @@ export function ReaderPassFlat({ data, onOpen }: Props) {
           <FlatFace url={frontUrl} />
           <FlatFace url={backUrl} back />
         </div>
-        {/* Cord stub that tilts with the drag to hint at the lanyard. */}
+        {/* Cord stub that swings with the card. */}
         <span
           aria-hidden
           className="absolute -top-6 left-1/2 h-6 w-[3px] rounded-full bg-gradient-to-b from-gold-dust/60 to-obsidian"
           style={{
-            transform: `translateX(-50%) translateX(${-offset.x * 0.3}px) rotate(${-offset.rot * 0.4}deg)`,
+            transform: `translateX(-50%) translateX(${-offset.x * 0.3}px) translateY(${-Math.max(0, offset.y * 0.15)}px) rotate(${-offset.rot * 0.4}deg)`,
             transformOrigin: "top center",
             transition: dragging ? "none" : releaseTransition,
           }}
@@ -113,12 +149,7 @@ function FlatFace({ url, back }: { url: string; back?: boolean }) {
       }}
     >
       {url ? (
-        <img
-          src={url}
-          alt=""
-          className="h-full w-full object-cover"
-          draggable={false}
-        />
+        <img src={url} alt="" className="h-full w-full object-cover" draggable={false} />
       ) : (
         <div className="h-full w-full animate-pulse bg-gradient-to-b from-obsidian/60 to-obsidian" />
       )}

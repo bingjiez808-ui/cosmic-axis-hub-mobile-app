@@ -140,10 +140,10 @@ export function ReaderPassCard() {
       ref={containerRef}
       className="pointer-events-none absolute z-20 transition-all duration-500 ease-out"
       style={{
-        top: "clamp(12px, 4vh, 48px)",
-        left: "clamp(8px, 2vw, 32px)",
-        width: mode === "flat" ? "clamp(150px, 26vw, 200px)" : "clamp(220px, 20vw, 320px)",
-        height: mode === "flat" ? "clamp(220px, 38vw, 300px)" : "clamp(320px, 58vh, 620px)",
+        top: "clamp(8px, 3vh, 40px)",
+        left: "clamp(2px, 0.6vw, 14px)",
+        width: mode === "flat" ? "clamp(120px, 18vw, 172px)" : "clamp(180px, 16vw, 260px)",
+        height: mode === "flat" ? "clamp(180px, 28vw, 260px)" : "clamp(280px, 52vh, 560px)",
         opacity: dimmed ? 0 : 1,
         transform: dimmed ? "scale(0.92)" : "scale(1)",
       }}
@@ -153,7 +153,7 @@ export function ReaderPassCard() {
         <ThreeErrorBoundary
           onError={() => setMode("flat")}
           fallback={
-            <div className="pointer-events-auto flex h-full items-start justify-center">
+            <div className="pointer-events-auto flex h-full items-start justify-start">
               <ReaderPassFlat data={data} onOpen={onTap} />
             </div>
           }
@@ -161,7 +161,7 @@ export function ReaderPassCard() {
           <ReaderPassLanyard data={data} onTap={onTap} paused={dimmed} />
         </ThreeErrorBoundary>
       ) : mounted && !dimmed && mode === "flat" ? (
-        <div className="pointer-events-auto flex h-full items-start justify-center">
+        <div className="pointer-events-auto flex h-full items-start justify-start">
           <ReaderPassFlat data={data} onOpen={onTap} />
         </div>
       ) : null}
