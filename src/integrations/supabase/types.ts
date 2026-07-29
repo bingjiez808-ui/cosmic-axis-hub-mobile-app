@@ -1468,6 +1468,7 @@ export type Database = {
       }
       redemption_codes: {
         Row: {
+          assigned_email: string | null
           benefit_type: string
           campaign_name: string | null
           code_hash: string
@@ -1488,6 +1489,7 @@ export type Database = {
           status: string
         }
         Insert: {
+          assigned_email?: string | null
           benefit_type: string
           campaign_name?: string | null
           code_hash: string
@@ -1508,6 +1510,7 @@ export type Database = {
           status?: string
         }
         Update: {
+          assigned_email?: string | null
           benefit_type?: string
           campaign_name?: string | null
           code_hash?: string
@@ -2084,22 +2087,40 @@ export type Database = {
           user_id: string
         }[]
       }
-      admin_create_redemption_code: {
-        Args: {
-          _benefit_type: string
-          _campaign_name: string
-          _code_hash: string
-          _code_last4: string
-          _code_prefix: string
-          _duration_days: number
-          _expires_at: string
-          _internal_note: string
-          _max_redemptions: number
-          _report_scope: string
-          _starts_at: string
-        }
-        Returns: string
-      }
+      admin_create_redemption_code:
+        | {
+            Args: {
+              _benefit_type: string
+              _campaign_name: string
+              _code_hash: string
+              _code_last4: string
+              _code_prefix: string
+              _duration_days: number
+              _expires_at: string
+              _internal_note: string
+              _max_redemptions: number
+              _report_scope: string
+              _starts_at: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              _assigned_email?: string
+              _benefit_type: string
+              _campaign_name: string
+              _code_hash: string
+              _code_last4: string
+              _code_prefix: string
+              _duration_days: number
+              _expires_at: string
+              _internal_note: string
+              _max_redemptions: number
+              _report_scope: string
+              _starts_at: string
+            }
+            Returns: string
+          }
       admin_disable_redemption_code: {
         Args: { _code_id: string }
         Returns: undefined
@@ -2112,6 +2133,7 @@ export type Database = {
           _status?: string
         }
         Returns: {
+          assigned_email: string
           benefit_type: string
           campaign_name: string
           code_last4: string
