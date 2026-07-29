@@ -89,6 +89,7 @@ export function LifeFunctionChart({
   });
   const [hoveredLine, setHoveredLine] = useState<LifeDimensionKey | "current" | "baseline" | "experiment" | null>(null);
   const [openDim, setOpenDim] = useState<LifeDimensionKey | null>(null);
+  const svgRef = useRef<SVGSVGElement | null>(null);
 
   useEffect(() => { saveFilter({ mode, visible: Array.from(visible) }); }, [mode, visible]);
 
@@ -120,8 +121,6 @@ export function LifeFunctionChart({
   }, [points]);
 
   if (!view) return null;
-
-  const svgRef = useRef<SVGSVGElement | null>(null);
   const handleMove = (clientX: number) => {
     const svg = svgRef.current; if (!svg) return;
     const rect = svg.getBoundingClientRect();
