@@ -53,6 +53,10 @@ const T = {
       zh: "你已经用过这枚兑换码。",
       en: "You've already redeemed this code.",
     },
+    code_not_assigned_to_you: {
+      zh: "此兑换码已指派给其他账号邮箱，无法使用当前账号兑换。",
+      en: "This code is assigned to another account. Sign in with the intended email.",
+    },
     chart_required: { zh: "报告码需要选择要绑定的命盘。", en: "Report codes require a chart selection." },
     chart_not_owned: { zh: "该命盘不属于你。", en: "This chart does not belong to you." },
     report_already_owned: {
