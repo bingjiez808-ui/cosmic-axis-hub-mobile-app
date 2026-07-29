@@ -1,4 +1,11 @@
-/* Destiny Library — immersive entrance overlay */
+/* Destiny Library — scratch-glass entrance overlay
+ *
+ * Two-layer same-source composition:
+ *   Layer A (clear video)   — always visible below
+ *   Layer B (foggy glass)   — canvas painted each frame with blurred video
+ *                             + soft cool-white fog; user-drag erases it
+ * All UI text lives in a separate content layer above both, never blurred.
+ */
 
 .le-root {
   position: fixed;
@@ -9,7 +16,7 @@
   z-index: 9998;
   background: #06040a;
   isolation: isolate;
-  color: #e8dbb2;
+  color: #f4e7bd;
   font-family: inherit;
   contain: strict;
   transition: opacity 0.6s ease;
@@ -19,19 +26,17 @@
 .le-root[data-phase="exiting-skip"] {
   pointer-events: none;
 }
-
 .le-root[data-phase="exiting-skip"] {
   opacity: 0;
   transition: opacity 0.4s ease;
 }
-
 .le-root[data-phase="exiting-enter"] {
   opacity: 0;
-  transition: opacity 0.5s ease 1s;
+  transition: opacity 0.55s ease 0.75s;
 }
 
-/* Layer 1 — video/poster background */
-.le-video-wrap {
+/* Layer A — clear background video / poster */
+.le-clear {
   position: absolute;
   inset: 0;
   overflow: hidden;
@@ -40,12 +45,8 @@
     transform 1200ms cubic-bezier(0.22, 0.61, 0.36, 1),
     filter 1200ms ease;
 }
-.le-root[data-phase="exiting-enter"] .le-video-wrap {
-  transform: scale(1.06);
-  filter: brightness(1.25);
-}
-.le-video-wrap > video,
-.le-video-wrap > img {
+.le-clear > video,
+.le-clear > img {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -54,253 +55,76 @@
   object-position: center 55%;
   pointer-events: none;
   user-select: none;
+  filter: brightness(0.78) saturate(0.86) contrast(1.03);
+}
+.le-root[data-phase="exiting-enter"] .le-clear {
+  transform: scale(1.035);
+  filter: brightness(1.08);
 }
 
-/* Layer 2 — cinematic vignette */
+/* Layer B — foggy glass canvas (blurred video redrawn each frame + fog tint).
+   Erased via destination-out from an accumulated stroke mask. */
+.le-glass {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  transition: opacity 0.7s ease;
+}
+.le-root[data-phase="exiting-enter"] .le-glass {
+  opacity: 0;
+  transition: opacity 0.55s ease 0.2s;
+}
+
+/* Scratch input surface — sits above the glass to capture pointer/touch.
+   Transparent; forwards drags to the reveal hook. */
+.le-scratch {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  cursor: grab;
+  touch-action: none;
+  background: transparent;
+}
+.le-scratch:active { cursor: grabbing; }
+.le-root[data-phase="exiting-enter"] .le-scratch,
+.le-root[data-phase="exiting-skip"] .le-scratch {
+  pointer-events: none;
+}
+
+/* Soft pointer glow — visible only before user has started scratching */
+.le-hint-glow {
+  position: absolute;
+  z-index: 4;
+  left: 0;
+  top: 0;
+  width: 240px;
+  height: 240px;
+  margin-left: -120px;
+  margin-top: -120px;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(246, 220, 140, 0.18) 0%, rgba(246, 220, 140, 0.06) 40%, transparent 70%);
+  opacity: 0;
+  transform: translate3d(var(--le-mx, 50vw), var(--le-my, 50vh), 0);
+  transition: opacity 0.35s ease;
+  will-change: transform, opacity;
+  mix-blend-mode: screen;
+}
+.le-root.le-hovering:not(.le-scratched) .le-hint-glow { opacity: 1; }
+
+/* Layer — cinematic edge vignette (keeps focus in middle, not black overlay) */
 .le-vignette {
   position: absolute;
   inset: 0;
+  z-index: 5;
   pointer-events: none;
   background:
-    radial-gradient(ellipse at 50% 55%, transparent 30%, rgba(6, 4, 10, 0.55) 78%, rgba(6, 4, 10, 0.92) 100%),
-    linear-gradient(to bottom, rgba(6, 4, 10, 0.55) 0%, transparent 25%, transparent 60%, rgba(6, 4, 10, 0.75) 100%);
+    radial-gradient(ellipse at 50% 55%, transparent 45%, rgba(6, 4, 10, 0.4) 85%, rgba(6, 4, 10, 0.72) 100%);
 }
 
-/* Layer 3 — animated fog (CSS-only, degrade-friendly) */
-.le-fog {
-  position: absolute;
-  inset: -6%;
-  pointer-events: none;
-  background:
-    radial-gradient(ellipse 60% 40% at 20% 35%, rgba(205, 192, 164, 0.14), transparent 60%),
-    radial-gradient(ellipse 50% 45% at 80% 25%, rgba(115, 107, 134, 0.12), transparent 60%),
-    radial-gradient(ellipse 70% 50% at 50% 80%, rgba(45, 42, 51, 0.28), transparent 65%),
-    radial-gradient(ellipse 40% 30% at 30% 90%, rgba(205, 192, 164, 0.08), transparent 60%);
-  filter: blur(18px);
-  animation: le-fog-drift 22s ease-in-out infinite alternate;
-  mix-blend-mode: screen;
-  opacity: 0.9;
-  transition: opacity 0.35s ease;
-}
-.le-root[data-phase="exiting-enter"] .le-fog,
-.le-root[data-phase="exiting-skip"] .le-fog {
-  opacity: 0;
-}
-
-@keyframes le-fog-drift {
-  0%   { transform: translate3d(-2%, -1%, 0) scale(1.02); }
-  50%  { transform: translate3d(3%, 2%, 0) scale(1.06); }
-  100% { transform: translate3d(-1%, 1%, 0) scale(1.03); }
-}
-
-/* Layer 4 — pointer reveal spotlight (erases fog above via mix-blend-mode) */
-.le-reveal {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 460px;
-  height: 460px;
-  margin-left: -230px;
-  margin-top: -230px;
-  border-radius: 50%;
-  pointer-events: none;
-  background: radial-gradient(circle, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.85) 22%, rgba(0, 0, 0, 0) 65%);
-  mix-blend-mode: destination-out;
-  opacity: 0;
-  transform: translate3d(var(--le-mx, 50vw), var(--le-my, 50vh), 0);
-  transition: opacity 1.6s ease;
-  will-change: transform, opacity;
-}
-.le-root.le-hovering .le-reveal {
-  opacity: 1;
-  transition: opacity 0.28s ease;
-}
-
-/* Layer 5 — soft dust particles */
-.le-dust {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background-image:
-    radial-gradient(1px 1px at 12% 30%, rgba(232, 219, 178, 0.55), transparent 60%),
-    radial-gradient(1px 1px at 78% 22%, rgba(232, 219, 178, 0.45), transparent 60%),
-    radial-gradient(1px 1px at 45% 70%, rgba(232, 219, 178, 0.5), transparent 60%),
-    radial-gradient(1px 1px at 88% 62%, rgba(232, 219, 178, 0.35), transparent 60%),
-    radial-gradient(1px 1px at 25% 82%, rgba(232, 219, 178, 0.4), transparent 60%),
-    radial-gradient(1px 1px at 62% 40%, rgba(232, 219, 178, 0.35), transparent 60%);
-  animation: le-dust-float 26s linear infinite;
-  opacity: 0.7;
-}
-@keyframes le-dust-float {
-  0%   { transform: translate3d(0, 0, 0); }
-  100% { transform: translate3d(0, -60px, 0); }
-}
-
-/* Layer 6 — content */
-.le-content {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding:
-    calc(env(safe-area-inset-top, 0) + 24px)
-    24px
-    calc(env(safe-area-inset-bottom, 0) + 32px);
-  text-align: center;
-  z-index: 2;
-  transition:
-    opacity 0.35s ease,
-    transform 0.35s ease;
-}
-.le-root[data-phase="exiting-enter"] .le-content {
-  opacity: 0;
-  transform: translateY(-14px);
-}
-.le-root[data-phase="exiting-skip"] .le-content {
-  opacity: 0;
-}
-
-.le-top {
-  position: absolute;
-  top: calc(env(safe-area-inset-top, 0) + 20px);
-  left: 0;
-  right: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 22px;
-  gap: 12px;
-  z-index: 3;
-}
-
-.le-brand {
-  font-family: "EB Garamond", Georgia, serif;
-  font-size: 11px;
-  letter-spacing: 0.42em;
-  color: rgba(232, 219, 178, 0.7);
-  text-transform: uppercase;
-}
-
-.le-lang {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  padding: 4px;
-  border-radius: 999px;
-  border: 1px solid rgba(212, 175, 110, 0.28);
-  background: rgba(10, 8, 14, 0.42);
-  backdrop-filter: blur(6px);
-}
-.le-lang button {
-  border: 0;
-  background: transparent;
-  color: rgba(232, 219, 178, 0.55);
-  padding: 6px 12px;
-  border-radius: 999px;
-  font-size: 11px;
-  letter-spacing: 0.28em;
-  cursor: pointer;
-  transition: color 0.2s ease, background 0.2s ease;
-}
-.le-lang button[aria-pressed="true"] {
-  background: rgba(212, 175, 110, 0.18);
-  color: #f2d98d;
-}
-
-.le-inner {
-  max-width: 780px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 22px;
-}
-.le-kicker {
-  font-family: "EB Garamond", Georgia, serif;
-  font-size: 10px;
-  letter-spacing: 0.5em;
-  text-transform: uppercase;
-  color: rgba(212, 175, 110, 0.75);
-}
-.le-title {
-  font-family: "EB Garamond", "Songti SC", "Noto Serif SC", serif;
-  font-weight: 500;
-  color: #f4e6bc;
-  font-size: clamp(34px, 6vw, 74px);
-  line-height: 1.15;
-  margin: 0;
-  letter-spacing: 0.01em;
-  text-shadow: 0 4px 40px rgba(0, 0, 0, 0.65);
-  max-width: 18ch;
-}
-.le-title[data-lang="en"] {
-  font-size: clamp(30px, 4.6vw, 56px);
-  max-width: 22ch;
-}
-.le-sub {
-  color: rgba(232, 219, 178, 0.78);
-  font-size: clamp(14px, 1.6vw, 18px);
-  line-height: 1.7;
-  max-width: 44ch;
-  margin: 0;
-  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.65);
-}
-
-.le-cta {
-  margin-top: 12px;
-  min-height: 56px;
-  padding: 0 34px;
-  border-radius: 999px;
-  border: 1px solid rgba(212, 175, 110, 0.55);
-  background: linear-gradient(180deg, rgba(212, 175, 110, 0.22), rgba(140, 108, 60, 0.15));
-  color: #f6e6b0;
-  font-family: "EB Garamond", Georgia, serif;
-  font-size: 16px;
-  letter-spacing: 0.34em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition:
-    transform 0.25s ease,
-    box-shadow 0.25s ease,
-    background 0.25s ease,
-    border-color 0.25s ease;
-  box-shadow: 0 0 0 rgba(212, 175, 110, 0);
-}
-.le-cta:hover:not(:disabled) {
-  transform: translateY(-1px);
-  border-color: rgba(232, 205, 140, 0.85);
-  box-shadow: 0 12px 40px -12px rgba(212, 175, 110, 0.55);
-  background: linear-gradient(180deg, rgba(212, 175, 110, 0.32), rgba(140, 108, 60, 0.22));
-}
-.le-cta:focus-visible {
-  outline: 2px solid rgba(232, 205, 140, 0.9);
-  outline-offset: 4px;
-}
-.le-cta:disabled {
-  cursor: default;
-  opacity: 0.6;
-}
-
-.le-skip {
-  margin-top: 8px;
-  background: transparent;
-  border: 0;
-  color: rgba(232, 219, 178, 0.55);
-  font-size: 11px;
-  letter-spacing: 0.32em;
-  text-transform: uppercase;
-  padding: 8px 14px;
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
-.le-skip:hover { color: #f2d98d; }
-.le-skip:focus-visible {
-  outline: 1px dashed rgba(232, 205, 140, 0.7);
-  outline-offset: 3px;
-}
-
-/* Layer 7 — door-seam gold glow, appears during enter transition */
+/* Door-seam glow that widens during enter */
 .le-seam {
   position: absolute;
   left: 50%;
@@ -309,13 +133,12 @@
   height: 100%;
   margin-left: -1px;
   pointer-events: none;
-  background: linear-gradient(to bottom, transparent 0%, rgba(246, 220, 140, 0.9) 50%, transparent 100%);
+  background: linear-gradient(to bottom, transparent 0%, rgba(246, 220, 140, 0.92) 50%, transparent 100%);
   box-shadow: 0 0 40px 20px rgba(246, 220, 140, 0.35);
   opacity: 0;
   transform: scaleX(1);
   transform-origin: center;
-  transition: opacity 0.35s ease;
-  z-index: 5;
+  z-index: 6;
 }
 .le-root[data-phase="exiting-enter"] .le-seam {
   opacity: 1;
@@ -327,17 +150,241 @@
   100% { transform: scaleX(220); filter: blur(30px); opacity: 0; }
 }
 
+/* Top bar — brand + language toggle */
+.le-top {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0) + 20px);
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 22px;
+  gap: 12px;
+  z-index: 10;
+}
+.le-brand {
+  font-family: "EB Garamond", Georgia, serif;
+  font-size: 11px;
+  letter-spacing: 0.42em;
+  color: rgba(244, 231, 189, 0.82);
+  text-transform: uppercase;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.85);
+}
+.le-lang {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 999px;
+  border: 1px solid rgba(218, 181, 88, 0.55);
+  background: rgba(12, 10, 14, 0.55);
+  backdrop-filter: blur(10px);
+}
+.le-lang button {
+  border: 0;
+  background: transparent;
+  color: rgba(244, 231, 189, 0.7);
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  cursor: pointer;
+  transition: color 0.2s ease, background 0.2s ease;
+}
+.le-lang button[aria-pressed="true"] {
+  background: rgba(218, 181, 88, 0.28);
+  color: #f4e7bd;
+}
+
+/* Content — text and CTAs, sit above everything, never blurred */
+.le-content {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding:
+    calc(env(safe-area-inset-top, 0) + 24px)
+    24px
+    calc(env(safe-area-inset-bottom, 0) + 32px);
+  text-align: center;
+  pointer-events: none; /* let scratch surface receive drags; children opt in */
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+.le-content > * { pointer-events: auto; }
+.le-root[data-phase="exiting-enter"] .le-content {
+  opacity: 0;
+  transform: translateY(-14px);
+}
+.le-root[data-phase="exiting-skip"] .le-content { opacity: 0; }
+
+.le-title-halo {
+  position: relative;
+  padding: 42px 56px;
+  border-radius: 40px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(8, 7, 9, 0.55) 0%,
+    rgba(8, 7, 9, 0.28) 55%,
+    transparent 78%
+  );
+}
+.le-inner {
+  max-width: 780px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+}
+.le-kicker {
+  font-family: "EB Garamond", Georgia, serif;
+  font-size: 11px;
+  letter-spacing: 0.5em;
+  text-transform: uppercase;
+  color: rgba(246, 220, 140, 0.9);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.85);
+  margin: 0;
+}
+.le-title {
+  font-family: "EB Garamond", "Songti SC", "Noto Serif SC", serif;
+  font-weight: 500;
+  color: #f4e7bd;
+  font-size: clamp(38px, 6vw, 96px);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin: 0;
+  max-width: min(1080px, 76vw);
+  text-shadow:
+    0 2px 18px rgba(0, 0, 0, 0.88),
+    0 0 42px rgba(0, 0, 0, 0.55);
+}
+.le-title[data-lang="en"] {
+  font-size: clamp(32px, 4.8vw, 72px);
+  max-width: 22ch;
+}
+.le-sub {
+  color: rgba(245, 235, 205, 0.92);
+  font-size: clamp(16px, 1.35vw, 22px);
+  line-height: 1.7;
+  max-width: 46ch;
+  margin: 0;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.95);
+}
+
+.le-scratch-hint {
+  font-family: "EB Garamond", Georgia, serif;
+  font-size: 12px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: rgba(245, 235, 205, 0.75);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9);
+  margin: 0;
+  transition: opacity 0.4s ease;
+}
+.le-root.le-scratched .le-scratch-hint { opacity: 0; }
+
+.le-cta {
+  margin-top: 6px;
+  min-height: 58px;
+  padding: 0 42px;
+  border-radius: 999px;
+  border: 1px solid rgba(218, 181, 88, 0.75);
+  background: rgba(12, 10, 12, 0.68);
+  color: #f4df9b;
+  font-family: "EB Garamond", Georgia, serif;
+  font-size: 16px;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    background 0.25s ease,
+    border-color 0.25s ease;
+  box-shadow: 0 0 0 rgba(218, 181, 88, 0);
+}
+.le-cta:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(232, 205, 140, 1);
+  box-shadow: 0 12px 40px -12px rgba(218, 181, 88, 0.6);
+  background: rgba(20, 16, 20, 0.78);
+}
+.le-root.le-cta-glow .le-cta {
+  border-color: rgba(232, 205, 140, 1);
+  box-shadow: 0 0 32px -4px rgba(218, 181, 88, 0.55);
+}
+.le-cta:focus-visible {
+  outline: 2px solid rgba(232, 205, 140, 0.95);
+  outline-offset: 4px;
+}
+.le-cta:disabled { cursor: default; opacity: 0.6; }
+
+.le-skip {
+  margin-top: 4px;
+  background: transparent;
+  border: 0;
+  color: rgba(245, 235, 205, 0.7);
+  font-size: 11px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+.le-skip:hover { color: #f4e7bd; }
+.le-skip:focus-visible {
+  outline: 1px dashed rgba(232, 205, 140, 0.8);
+  outline-offset: 3px;
+}
+
+.le-progress {
+  margin-top: 2px;
+  font-size: 10px;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: rgba(246, 220, 140, 0.85);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.85);
+  min-height: 14px;
+  transition: opacity 0.35s ease;
+}
+
 @media (max-width: 640px) {
+  .le-title-halo { padding: 28px 24px; }
   .le-inner { gap: 18px; }
-  .le-title { max-width: 16ch; }
-  .le-cta { width: min(100%, 320px); padding: 0 24px; letter-spacing: 0.28em; font-size: 15px; }
+  .le-title {
+    font-size: clamp(38px, 11vw, 62px);
+    max-width: calc(100vw - 40px);
+  }
+  .le-sub { max-width: calc(100vw - 48px); }
+  .le-cta {
+    width: min(80%, 340px);
+    padding: 0 24px;
+    letter-spacing: 0.28em;
+    font-size: 15px;
+  }
   .le-top { padding: 0 16px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .le-fog { animation: none; }
-  .le-dust { animation: none; }
-  .le-video-wrap { transition: none; }
+  .le-clear { transition: none; }
   .le-root[data-phase="exiting-enter"] { transition: opacity 0.25s ease; }
   .le-root[data-phase="exiting-enter"] .le-seam { animation-duration: 0.3s; }
+}
+
+/* Hide global chrome (nav, footer, elder companion) while entrance is up.
+   Body attribute is toggled by LibraryEntrance. */
+body[data-le-active="true"] > * > header,
+body[data-le-active="true"] > * > nav,
+body[data-le-active="true"] nav[aria-label="Primary"],
+body[data-le-active="true"] .site-footer,
+body[data-le-active="true"] footer {
+  visibility: hidden !important;
+}
+body[data-le-active="true"] .fixed.bottom-2.left-2,
+body[data-le-active="true"] .fixed.bottom-6.left-4 {
+  display: none !important;
 }
