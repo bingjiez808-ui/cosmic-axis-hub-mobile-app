@@ -1,30 +1,42 @@
 /**
  * ConcernSelector — "带着我的问题开始阅读" homepage module.
  *
- * Behaviour (Phase 1):
- * - Derives `overview` as the default selection when nothing is stored,
- *   so the response side is never empty on first paint.
- * - Only writes to sessionStorage / cloud when the user actually clicks.
- * - Broadcasts picks via a custom event so the shelf reacts instantly
- *   in the same tab without polling.
+ * Role in the two-module funnel:
+ *   A. ConcernSelector (this file) — identify the user's question,
+ *      offer a warm response, and recommend ONE specific book on
+ *      the shelf below.
+ *   B. FeatureLibraryShelf — turn that recommendation into a real
+ *      entrance to the ritual / report via a unified book dialog.
+ *
+ * This module no longer:
+ *   - lists every report chapter / feature bullet
+ *   - shows a sample AI excerpt (belongs to the book dialog)
+ *   - opens a modal — the CTA scrolls to the shelf and highlights
+ *     the recommended book instead
+ *
+ * State handoff:
+ *   - `fate.concern.v1` (sessionStorage) — the picked concern
+ *   - `fate:concern-changed` event — same-tab broadcast
+ *   - `fate:focus-shelf` event — asks the shelf to pulse the
+ *     recommended spine after the user scrolls down
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 
 import { useLang } from "@/lib/i18n";
 import {
   CONCERNS,
   CONCERN_KEYS,
+  SHELF_BOOKS,
   type ConcernKey,
   isConcernKey,
-  resolveConcernRoute,
 } from "@/lib/concern-guidance-v1";
 import { setConcern as setConcernFn } from "@/lib/life-guidance.functions";
 import { useSupabaseSession } from "@/lib/session";
 
 const CONCERN_STORAGE_KEY = "fate.concern.v1";
 export const CONCERN_EVENT = "fate:concern-changed";
+export const FOCUS_SHELF_EVENT = "fate:focus-shelf";
 
 type Props = {
   hasPrimaryChart?: boolean;
@@ -36,17 +48,14 @@ function prefersReducedMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-export function ConcernSelector({ hasPrimaryChart = false, existingReportId = null }: Props) {
+export function ConcernSelector(_props: Props = {}) {
   const { lang } = useLang();
   const session = useSupabaseSession();
   const isSignedIn = !!session?.user?.id;
   const saveConcern = useServerFn(setConcernFn);
 
-  // `explicit` = user actually chose. `null` → fall back to overview.
   const [explicit, setExplicit] = useState<ConcernKey | null>(null);
-  const [modalKey, setModalKey] = useState<ConcernKey | null>(null);
   const responseRef = useRef<HTMLDivElement | null>(null);
-  const closeBtnRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -58,25 +67,18 @@ export function ConcernSelector({ hasPrimaryChart = false, existingReportId = nu
     }
   }, []);
 
-  // Close modal on Escape + return focus.
-  useEffect(() => {
-    if (!modalKey) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setModalKey(null);
-    };
-    window.addEventListener("keydown", onKey);
-    // Focus the close button when the modal opens.
-    setTimeout(() => closeBtnRef.current?.focus(), 30);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [modalKey]);
-
   const picked: ConcernKey = explicit ?? "overview";
+  const rec = CONCERNS[picked];
+  const recommendedBookKey = rec.featuredShelfBook;
+  const recommendedBook = useMemo(
+    () => SHELF_BOOKS.find((b) => b.key === recommendedBookKey) ?? SHELF_BOOKS[0],
+    [recommendedBookKey],
+  );
 
   const onPick = useCallback(
     (k: ConcernKey) => {
       const first = explicit !== k;
       setExplicit(k);
-      setModalKey(k);
       try {
         window.sessionStorage.setItem(CONCERN_STORAGE_KEY, k);
       } catch {
@@ -92,7 +94,6 @@ export function ConcernSelector({ hasPrimaryChart = false, existingReportId = nu
           /* keep local pick */
         });
       }
-      // Mobile: scroll response into view once per fresh pick.
       if (first && typeof window !== "undefined" && window.innerWidth < 1024) {
         setTimeout(() => {
           responseRef.current?.scrollIntoView({
@@ -105,59 +106,45 @@ export function ConcernSelector({ hasPrimaryChart = false, existingReportId = nu
     [explicit, isSignedIn, saveConcern],
   );
 
-  const rec = CONCERNS[picked];
-  const ctaHref = useMemo(
-    () =>
-      resolveConcernRoute({
-        concern: picked,
-        isSignedIn,
-        hasPrimaryChart,
-        existingReportId,
-      }),
-    [picked, isSignedIn, hasPrimaryChart, existingReportId],
-  );
+  const onGoToBook = useCallback(() => {
+    if (typeof window === "undefined") return;
+    const target = document.getElementById("feature-library");
+    if (target) {
+      target.scrollIntoView({
+        behavior: prefersReducedMotion() ? "auto" : "smooth",
+        block: "start",
+      });
+    }
+    try {
+      window.dispatchEvent(
+        new CustomEvent(FOCUS_SHELF_EVENT, { detail: recommendedBookKey }),
+      );
+    } catch {
+      /* ignore */
+    }
+  }, [recommendedBookKey]);
 
   const H = {
-    kicker: {
-      zh: "带着你的问题，开始阅读",
-      en: "Read with your question in mind",
-    },
-    heading: {
-      zh: "今天你带着什么问题来到这里？",
-      en: "What question brings you here today?",
-    },
+    kicker: { zh: "带着你的问题，开始阅读", en: "Read with your question in mind" },
+    heading: { zh: "今天你带着什么问题来到这里？", en: "What question brings you here today?" },
     sub: {
-      zh: "选择一个更靠近你此刻的问题，右侧会立即出现图书馆的回应；如果暂时说不清，我们会先从认识自己开始。",
-      en: "Pick the question closest to you right now — the library's response appears at the side. If you can't put it into words yet, we start by helping you meet yourself.",
+      zh: "选一个更靠近你此刻的问题，图书馆会先递给你一本适合的书；选完就到下方书架翻开它。",
+      en: "Pick the question closest to you right now — the library will hand you one suitable book. Then open it on the shelf below.",
     },
     picked: { zh: "你选择了", en: "You picked" },
     default: { zh: "默认起点", en: "Default starting point" },
-    responseTitle: { zh: "命运图书馆可以陪你看：", en: "The library can read this with you:" },
-    sampleTitle: { zh: "样例节选", en: "Sample excerpt" },
-    journeyTitle: { zh: "接下来会经过", en: "Your journey from here" },
+    recPrefix: { zh: "图书馆先为你递来：", en: "The library hands you first:" },
+    goToBook: { zh: "去看看这本书 ↓", en: "Go see this book ↓" },
     signedOutNote: {
       zh: "本次访问已记住这个问题；登录后我们会保存到你的图书馆。",
       en: "This choice is remembered for this visit; sign in and we'll save it to your library.",
     },
-    signedInNote: {
-      zh: "已保存到你的图书馆。",
-      en: "Saved to your library.",
-    },
-    boundary: {
-      zh: "免费包含综合解读中的对应章节；¥79 高级 AI 深度报告解锁 24 章完整版本。",
-      en: "Free includes the matching chapter in the panorama; the ¥79 premium report unlocks the full 24-chapter version.",
+    signedInNote: { zh: "已保存到你的图书馆。", en: "Saved to your library." },
+    disclaimer: {
+      zh: "选择只决定先翻哪一本，不会改变命盘计算结果。",
+      en: "Your pick only decides which book opens first — it never changes the chart calculation.",
     },
   };
-
-  const journeyStages = useMemo(
-    () => [
-      { zh: "你现在的问题", en: "Your question now" },
-      { zh: "登记出生资料", en: "Register birth details" },
-      { zh: `优先打开【${rec.chip.zh}】阅读`, en: `Open «${rec.chip.en}» first` },
-      { zh: "可继续全景与年度报告", en: "Continue to panorama & yearly report" },
-    ],
-    [rec],
-  );
 
   const isDerivedDefault = explicit === null;
 
@@ -231,62 +218,30 @@ export function ConcernSelector({ hasPrimaryChart = false, existingReportId = nu
               {rec.situationalResponse[lang]}
             </p>
 
-            <div className="mt-6">
-              <h3 className="font-serif text-sm uppercase tracking-[0.18em] text-amber-200/70">
-                {H.responseTitle[lang]}
-              </h3>
-              <ul className="mt-3 space-y-2">
-                {rec.featureBullets[lang].map((b, i) => (
-                  <li key={i} className="flex gap-3 text-sm leading-relaxed text-amber-100/85">
-                    <span
-                      aria-hidden
-                      className="mt-2 h-1 w-1 shrink-0 rounded-full bg-amber-300/70"
-                    />
-                    <span>{b}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="mt-6 rounded-lg border border-amber-100/10 bg-black/25 p-4">
-              <div className="mb-1 text-[11px] uppercase tracking-[0.2em] text-amber-200/60">
-                {H.sampleTitle[lang]}
+            <div className="mt-6 flex flex-col gap-4 rounded-lg border border-amber-300/25 bg-amber-500/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <div className="text-[10px] uppercase tracking-[0.22em] text-amber-300/70">
+                  {H.recPrefix[lang]}
+                </div>
+                <div className="mt-1 font-serif text-lg text-amber-50">
+                  《{recommendedBook.title[lang]}》
+                </div>
+                <div className="mt-1 line-clamp-2 text-[12.5px] leading-snug text-amber-100/70">
+                  {recommendedBook.oneLiner[lang]}
+                </div>
               </div>
-              <p className="text-[13.5px] italic leading-relaxed text-amber-100/80">
-                {rec.sampleOutput[lang]}
-              </p>
+              <button
+                type="button"
+                onClick={onGoToBook}
+                data-testid="concern-go-to-book"
+                className="inline-flex min-h-[48px] shrink-0 items-center justify-center rounded-lg bg-gradient-to-r from-amber-300 to-amber-500 px-6 text-sm font-medium text-black shadow-[0_10px_30px_rgba(251,191,36,0.25)] transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
+              >
+                {H.goToBook[lang]}
+              </button>
             </div>
 
-            <div className="mt-6">
-              <div className="text-[11px] uppercase tracking-[0.22em] text-amber-200/60">
-                {H.journeyTitle[lang]}
-              </div>
-              <ol className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-amber-100/75">
-                {journeyStages.map((s, i) => (
-                  <li key={i} className="flex items-center gap-2">
-                    {i > 0 ? (
-                      <span aria-hidden className="text-amber-300/50">
-                        →
-                      </span>
-                    ) : null}
-                    <span
-                      className={
-                        i === 0
-                          ? "rounded-full border border-amber-300/60 bg-amber-500/10 px-2 py-0.5 text-amber-100"
-                          : ""
-                      }
-                    >
-                      {s[lang]}
-                    </span>
-                  </li>
-                ))}
-              </ol>
-            </div>
-
-            <p className="mt-5 text-[11px] leading-snug text-amber-100/50">{H.boundary[lang]}</p>
-
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="text-[12px] leading-snug text-amber-100/55">
+            <div className="mt-5 flex flex-col gap-2 text-[12px] leading-snug text-amber-100/55 sm:flex-row sm:items-baseline sm:justify-between">
+              <div>
                 {rec.nextStepHint[lang]}
                 {!isDerivedDefault ? (
                   <div className="mt-1 text-amber-100/40">
@@ -294,97 +249,11 @@ export function ConcernSelector({ hasPrimaryChart = false, existingReportId = nu
                   </div>
                 ) : null}
               </div>
-              <Link
-                to={ctaHref}
-                className="inline-flex min-h-[48px] items-center justify-center rounded-lg bg-gradient-to-r from-amber-300 to-amber-500 px-6 text-sm font-medium text-black shadow-[0_10px_30px_rgba(251,191,36,0.25)] transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
-              >
-                {rec.ctaLabel[lang]}
-              </Link>
+              <p className="text-amber-100/40">{H.disclaimer[lang]}</p>
             </div>
           </article>
         </div>
       </div>
-
-      {modalKey ? (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="concern-modal-title"
-          className="fixed inset-0 z-[70] flex items-end justify-center bg-black/70 p-0 backdrop-blur-sm sm:items-center sm:p-6"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setModalKey(null);
-          }}
-        >
-          <div className="w-full max-w-lg rounded-t-2xl border border-amber-200/25 bg-[#100a06] p-6 text-amber-50 shadow-[0_25px_80px_rgba(0,0,0,0.6)] sm:rounded-2xl">
-            <div className="mb-4 flex items-start justify-between gap-3">
-              <div>
-                <p className="text-[10px] uppercase tracking-[0.28em] text-amber-300/70">
-                  {lang === "zh" ? "你想先读的，是这一章" : "This is the chapter to open first"}
-                </p>
-                <h3 id="concern-modal-title" className="mt-2 font-serif text-xl text-amber-100">
-                  {CONCERNS[modalKey].chip[lang]}
-                </h3>
-              </div>
-              <button
-                ref={closeBtnRef}
-                type="button"
-                onClick={() => setModalKey(null)}
-                aria-label={lang === "zh" ? "关闭" : "Close"}
-                className="min-h-11 min-w-11 rounded-full border border-amber-200/20 text-amber-100/70 hover:text-amber-100"
-              >
-                ✕
-              </button>
-            </div>
-            <p className="text-sm leading-relaxed text-amber-100/80">
-              {CONCERNS[modalKey].question[lang]}
-            </p>
-            <p className="mt-3 text-[13px] leading-relaxed text-amber-100/65">
-              {CONCERNS[modalKey].nextStepHint[lang]}
-            </p>
-            <p className="mt-4 text-[11px] leading-snug text-amber-100/45">
-              {lang === "zh"
-                ? "你的选择只决定先从哪一章读起，不会改变命盘计算结果。"
-                : "Your pick only decides which chapter opens first — it never changes what the chart calculates."}
-            </p>
-            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                onClick={() => setModalKey(null)}
-                className="inline-flex min-h-11 items-center justify-center rounded-lg border border-amber-200/25 px-4 text-sm text-amber-100/80 hover:border-amber-200/50"
-              >
-                {isSignedIn && hasPrimaryChart
-                  ? lang === "zh"
-                    ? "更换问题"
-                    : "Pick another"
-                  : lang === "zh"
-                    ? "先看看示例"
-                    : "See sample first"}
-              </button>
-              <Link
-                to={ctaHref}
-                onClick={() => setModalKey(null)}
-                className="inline-flex min-h-11 items-center justify-center rounded-lg bg-gradient-to-r from-amber-300 to-amber-500 px-5 text-sm font-medium text-black shadow-[0_10px_30px_rgba(251,191,36,0.25)] hover:brightness-110"
-              >
-                {!isSignedIn
-                  ? lang === "zh"
-                    ? "登录并保存这次选择"
-                    : "Sign in & save this pick"
-                  : !hasPrimaryChart
-                    ? lang === "zh"
-                      ? "开始仪式，生成我的命盘"
-                      : "Start ritual & generate my chart"
-                    : existingReportId
-                      ? lang === "zh"
-                        ? "打开我的优先解读"
-                        : "Open my priority reading"
-                      : lang === "zh"
-                        ? "生成并打开这一章"
-                        : "Generate & open this chapter"}
-              </Link>
-            </div>
-          </div>
-        </div>
-      ) : null}
     </section>
   );
 }
