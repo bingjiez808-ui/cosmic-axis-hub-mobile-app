@@ -30,6 +30,8 @@ export const FOCUS_SHELF_EVENT = "fate:focus-shelf";
 type Props = {
   hasPrimaryChart?: boolean;
   existingReportId?: string | null;
+  /** Override the "See what this book answers" CTA (used inside drawer). */
+  onGoToBook?: () => void;
 };
 
 function prefersReducedMotion() {
@@ -37,7 +39,7 @@ function prefersReducedMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-export function ConcernSelector({ hasPrimaryChart = false }: Props = {}) {
+export function ConcernSelector({ hasPrimaryChart = false, onGoToBook: onGoToBookOverride }: Props = {}) {
   const { lang } = useLang();
   const session = useSupabaseSession();
   const isSignedIn = !!session?.user?.id;
@@ -165,6 +167,19 @@ export function ConcernSelector({ hasPrimaryChart = false }: Props = {}) {
   );
 
   const onGoToBook = useCallback(() => {
+    if (onGoToBookOverride) {
+      try {
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent(FOCUS_SHELF_EVENT, { detail: recommendedBookKey }),
+          );
+        }
+      } catch {
+        /* ignore */
+      }
+      onGoToBookOverride();
+      return;
+    }
     if (typeof window === "undefined") return;
     const target = document.getElementById("feature-library");
     if (target) {
@@ -180,7 +195,7 @@ export function ConcernSelector({ hasPrimaryChart = false }: Props = {}) {
     } catch {
       /* ignore */
     }
-  }, [recommendedBookKey]);
+  }, [onGoToBookOverride, recommendedBookKey]);
 
   const H = {
     kicker: { zh: "带着你的问题，开始阅读", en: "Read with your question in mind" },

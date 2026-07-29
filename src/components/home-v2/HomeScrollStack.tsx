@@ -25,8 +25,8 @@ import { HOME_GUIDE_CARDS, type HomeGuideCard, type HomeCardId } from "@/lib/hom
 import { useHomeFacts } from "@/lib/use-home-facts";
 
 import ScrollStack, { ScrollStackItem } from "@/components/react-bits/ScrollStack/ScrollStack";
+import LineSidebar from "@/components/react-bits/LineSidebar/LineSidebar";
 import { LibraryInteriorBackdrop } from "./LibraryInteriorBackdrop";
-import { StackProgress } from "./StackProgress";
 import { HomeCardVisual } from "./HomeCardVisual";
 import { LibraryFeatureDrawer } from "./LibraryFeatureDrawer";
 
@@ -36,7 +36,7 @@ import { PlayfulLibrarySection } from "@/components/PlayfulLibrarySection";
 import { PostRitualRoomsSection } from "@/components/PostRitualRoomsSection";
 import { HomePersonalDeskTeaser } from "@/components/HomePersonalDeskTeaser";
 
-const DRAWER_IDS = new Set<HomeCardId>(["concern", "books", "commons", "rooms", "desk"]);
+const DRAWER_IDS = new Set<HomeCardId>(["concern", "commons", "rooms", "desk"]);
 
 function readHashFeature(): HomeCardId | null {
   if (typeof window === "undefined") return null;
@@ -129,7 +129,11 @@ export function HomeScrollStack() {
         ))}
       </ScrollStack>
 
-      <StackProgress cards={HOME_GUIDE_CARDS} activeIndex={activeIndex} isZh={isZh} />
+      <HomeSideRail
+        cards={HOME_GUIDE_CARDS}
+        activeIndex={activeIndex}
+        isZh={isZh}
+      />
 
       <FeatureDrawerHost
         card={activeCard}
@@ -340,11 +344,39 @@ function DrawerBody({
   facts: ReturnType<typeof useHomeFacts>;
   isZh: boolean;
 }) {
+  const [concernStep, setConcernStep] = useState<"question" | "books">("question");
+
+  // Reset step whenever the drawer opens a different card.
+  useEffect(() => {
+    if (card.id === "concern") setConcernStep("question");
+  }, [card.id]);
+
   switch (card.id) {
     case "concern":
-      return <ConcernSelector hasPrimaryChart={facts.hasPrimaryChart} />;
-    case "books":
-      return <FeatureLibraryShelf />;
+      return (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between gap-3 rounded-full border border-gold-dust/25 bg-obsidian/60 p-1">
+            <StepChip
+              active={concernStep === "question"}
+              label={isZh ? "01 · 挑一个问题" : "01 · Pick a question"}
+              onClick={() => setConcernStep("question")}
+            />
+            <StepChip
+              active={concernStep === "books"}
+              label={isZh ? "02 · 翻开六本书" : "02 · Open the six books"}
+              onClick={() => setConcernStep("books")}
+            />
+          </div>
+          {concernStep === "question" ? (
+            <ConcernSelector
+              hasPrimaryChart={facts.hasPrimaryChart}
+              onGoToBook={() => setConcernStep("books")}
+            />
+          ) : (
+            <FeatureLibraryShelf />
+          )}
+        </div>
+      );
     case "commons":
       return <PlayfulLibrarySection />;
     case "rooms":
@@ -358,4 +390,93 @@ function DrawerBody({
         </p>
       );
   }
+}
+
+function StepChip({
+  active,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`flex-1 rounded-full px-4 py-2 text-[11px] uppercase tracking-[0.24em] transition ${
+        active
+          ? "bg-gold-dust/25 text-gold-light shadow-[inset_0_0_0_1px_rgba(220,180,90,0.4)]"
+          : "text-stone-warm/60 hover:text-stone-warm/90"
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
+function HomeSideRail({
+  cards,
+  activeIndex,
+  isZh,
+}: {
+  cards: readonly HomeGuideCard[];
+  activeIndex: number;
+  isZh: boolean;
+}) {
+  const items = cards.map((c) => (isZh ? c.titleZh : c.titleEn));
+  const total = cards.length;
+  const active = cards[activeIndex] ?? cards[0];
+
+  const scrollToIndex = (i: number) => {
+    const el = document.getElementById(cards[i].id);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  return (
+    <>
+      {/* Desktop rail: fixed narrow width, proximity-driven labels. */}
+      <div
+        className="pointer-events-auto fixed right-4 top-1/2 z-40 hidden -translate-y-1/2 xl:block"
+        style={{ width: 220 }}
+        aria-label={isZh ? "馆藏索引" : "Card index"}
+      >
+        <div className="rounded-2xl border border-gold-dust/15 bg-obsidian/55 px-3 py-4 backdrop-blur-md">
+          <p className="mb-3 text-center text-[9px] uppercase tracking-[0.28em] text-gold-dust/60">
+            {String(activeIndex + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
+          </p>
+          <LineSidebar
+            items={items}
+            activeIndex={activeIndex}
+            onItemClick={(i) => scrollToIndex(i)}
+            proximityRadius={120}
+            maxShift={18}
+            markerLength={36}
+            itemGap={12}
+            fontSize={0.7}
+            ariaLabel={isZh ? "馆藏索引" : "Card index"}
+          />
+        </div>
+      </div>
+
+      {/* Mobile pill: cycles to next card. */}
+      <div className="pointer-events-none fixed inset-x-0 bottom-4 z-40 flex justify-center xl:hidden">
+        <button
+          type="button"
+          onClick={() => scrollToIndex((activeIndex + 1) % total)}
+          className="pointer-events-auto flex max-w-[92vw] items-center gap-3 rounded-full border border-gold-dust/30 bg-obsidian/85 px-4 py-2 text-[11px] uppercase tracking-[0.22em] text-stone-warm/85 backdrop-blur-md"
+        >
+          <span className="text-gold-dust">
+            {String(activeIndex + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
+          </span>
+          <span className="max-w-[55vw] truncate">
+            {isZh ? active.titleZh : active.titleEn}
+          </span>
+          <span aria-hidden className="text-gold-dust/60">→</span>
+        </button>
+      </div>
+    </>
+  );
 }
