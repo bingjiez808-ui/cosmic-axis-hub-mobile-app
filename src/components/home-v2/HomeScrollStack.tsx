@@ -465,11 +465,39 @@ function HomeSideRail({
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
+  // Rail visibility: hide by default, reveal while user is actively scrolling
+  // (or hovering the right edge), then fade back out ~900ms after scroll stops.
+  const [railVisible, setRailVisible] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    let idleTimer: number | null = null;
+    const show = () => {
+      setRailVisible(true);
+      if (idleTimer) window.clearTimeout(idleTimer);
+      idleTimer = window.setTimeout(() => setRailVisible(false), 900);
+    };
+    const onScroll = () => show();
+    const onMove = (e: MouseEvent) => {
+      if (e.clientX > window.innerWidth - 120) show();
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("mousemove", onMove, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("mousemove", onMove);
+      if (idleTimer) window.clearTimeout(idleTimer);
+    };
+  }, []);
+
   return (
     <>
-      {/* Desktop rail: fixed narrow width, proximity-driven labels. */}
+      {/* Desktop rail: fixed narrow width, proximity-driven labels.
+          Hidden until the user scrolls or hovers the right edge, so it
+          never overlaps card copy while reading. */}
       <div
-        className="pointer-events-auto fixed right-4 top-1/2 z-40 hidden -translate-y-1/2 xl:block"
+        className={`pointer-events-auto fixed right-3 top-1/2 z-40 hidden -translate-y-1/2 transition-opacity duration-300 xl:block ${
+          railVisible ? "opacity-100" : "pointer-events-none opacity-0"
+        }`}
         aria-label={isZh ? "馆藏索引" : "Card index"}
       >
         <LineSidebar
