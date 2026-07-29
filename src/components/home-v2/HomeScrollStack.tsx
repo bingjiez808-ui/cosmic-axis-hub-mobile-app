@@ -162,35 +162,67 @@ export function HomeScrollStack() {
 }
 
 function GuideDeskHero({ isZh }: { isZh: boolean }) {
+  const eyebrow = isZh ? "命运图书馆 · 导览室" : "Destiny Library · Guide Desk";
+  const heading = isZh
+    ? "每一个文明,都在问同一个问题。"
+    : "Every civilization has been asking the same question.";
+  const body = isZh
+    ? "跟着下面七块导览牌一路向下:从今天的问题、命盘与综合解读,到六本书、通识馆、四间藏室,最后回到你的个人书架。每一张卡片都会告诉你现在能读什么、需要先做什么。"
+    : "Follow the seven guide plates below: from today's question, primary chart and panorama, to six books, the commons, four special rooms, and finally your Personal Library. Each plate tells you what you can read now and what needs to happen first.";
+  const scrollHint = isZh ? "向下走进书架" : "Scroll into the shelves";
+
   return (
     <header className="relative mx-auto flex min-h-[62vh] max-w-4xl flex-col items-center justify-center px-6 pb-14 pt-24 text-center sm:min-h-[70vh]">
       <ReaderPassCard />
-      <p className="text-[10px] uppercase tracking-[0.5em] text-gold-dust/70 sm:text-xs">
-        {isZh ? "命运图书馆 · 导览室" : "Destiny Library · Guide Desk"}
-      </p>
-      <h1 className="mt-6 font-serif text-3xl leading-tight text-stone-warm sm:text-5xl md:text-6xl">
-        {isZh ? (
-          <>
-            每一个文明,
-            <br className="hidden sm:block" />
-            都在问同一个问题。
-          </>
-        ) : (
-          <>
-            Every civilization has been
-            <br className="hidden sm:block" />
-            asking the same question.
-          </>
-        )}
-      </h1>
-      <p className="mt-6 max-w-2xl text-sm leading-relaxed text-stone-warm/75 sm:text-base">
-        {isZh
-          ? "跟着下面七块导览牌一路向下:从今天的问题、命盘与综合解读,到六本书、通识馆、四间藏室,最后回到你的个人书架。每一张卡片都会告诉你现在能读什么、需要先做什么。"
-          : "Follow the seven guide plates below: from today's question, primary chart and panorama, to six books, the commons, four special rooms, and finally your Personal Library. Each plate tells you what you can read now and what needs to happen first."}
-      </p>
-      <div className="mt-8 flex items-center gap-3 text-[10px] uppercase tracking-[0.42em] text-gold-dust/50">
+      {/* Vignette scrim behind copy so text never dissolves into the library backdrop. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-1/2 -z-10 h-[70%] -translate-y-1/2"
+        style={{
+          background:
+            "radial-gradient(ellipse at center, rgba(8,10,18,0.72) 0%, rgba(8,10,18,0.45) 45%, rgba(8,10,18,0) 75%)",
+        }}
+      />
+      <SplitText
+        tag="p"
+        text={eyebrow}
+        className="text-[10px] uppercase tracking-[0.5em] text-gold-dust/80 sm:text-xs [text-shadow:0_1px_12px_rgba(0,0,0,0.85)]"
+        splitType="chars"
+        delay={30}
+        duration={0.7}
+        from={{ opacity: 0, y: 14 }}
+        to={{ opacity: 1, y: 0 }}
+        threshold={0.2}
+        rootMargin="0px"
+      />
+      <SplitText
+        tag="h1"
+        text={heading}
+        className="mt-6 font-serif text-3xl leading-tight text-stone-warm sm:text-5xl md:text-6xl [text-shadow:0_2px_24px_rgba(0,0,0,0.9),0_0_2px_rgba(0,0,0,0.6)]"
+        splitType="chars"
+        delay={55}
+        duration={1.1}
+        ease="power3.out"
+        from={{ opacity: 0, y: 48, filter: "blur(6px)" }}
+        to={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+        threshold={0.15}
+        rootMargin="0px"
+      />
+      <SplitText
+        tag="p"
+        text={body}
+        className="mt-6 max-w-2xl text-sm leading-relaxed text-stone-warm/90 sm:text-base [text-shadow:0_1px_14px_rgba(0,0,0,0.85)]"
+        splitType="words"
+        delay={18}
+        duration={0.9}
+        from={{ opacity: 0, y: 20 }}
+        to={{ opacity: 1, y: 0 }}
+        threshold={0.15}
+        rootMargin="0px"
+      />
+      <div className="mt-8 flex items-center gap-3 text-[10px] uppercase tracking-[0.42em] text-gold-dust/60 [text-shadow:0_1px_10px_rgba(0,0,0,0.8)]">
         <span aria-hidden>↓</span>
-        <span>{isZh ? "向下走进书架" : "Scroll into the shelves"}</span>
+        <span>{scrollHint}</span>
       </div>
     </header>
   );
