@@ -489,3 +489,43 @@ h1, h2, h3, h4 {
     linear-gradient(180deg, color-mix(in oklab, oklch(0.82 0.14 75) 6%, transparent), transparent 60%),
     color-mix(in oklab, var(--obsidian) 42%, transparent);
 }
+
+/* ─── ConcernSelector · stable-height dual pane ─────────────────────
+   Right shell locks to left column height on desktop; body is the
+   only scroll surface. Header + footer stay pinned. */
+.concern-response-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(210, 174, 92, 0.45) transparent;
+  scrollbar-gutter: stable;
+}
+.concern-response-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.concern-response-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.concern-response-scroll::-webkit-scrollbar-thumb {
+  background: rgba(210, 174, 92, 0.35);
+  border-radius: 999px;
+}
+.concern-response-content {
+  animation: concernContentIn 180ms ease-out;
+}
+@keyframes concernContentIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .concern-response-content { animation: none; }
+}
+/* Mobile: undo the desktop inline height + inner scroll. */
+@media (max-width: 1023px) {
+  .concern-response-shell {
+    height: auto !important;
+    overflow: visible;
+  }
+  .concern-response-scroll {
+    overflow: visible;
+    max-height: none;
+  }
+}
