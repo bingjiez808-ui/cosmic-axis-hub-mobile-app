@@ -225,7 +225,7 @@ const ScrollStack = ({
       window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     const cards = Array.from(
-      document.querySelectorAll<HTMLElement>(".scroll-stack-card")
+      scroller.querySelectorAll<HTMLElement>(".scroll-stack-card")
     );
     cardsRef.current = cards;
     const transformsCache = lastTransformsRef.current;
@@ -245,15 +245,14 @@ const ScrollStack = ({
       // We still track scroll cheaply in case future features want it.
     } else {
       const lenis = new Lenis({
-        duration: 1.2,
+        duration: 1.1,
         easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
         smoothWheel: true,
-        touchMultiplier: 2,
+        touchMultiplier: 1.5,
         infinite: false,
         wheelMultiplier: 1,
-        lerp: 0.1,
-        syncTouch: true,
-        syncTouchLerp: 0.075,
+        lerp: 0.12,
+        syncTouch: false,
       });
       lenis.on("scroll", handleScroll);
       const raf = (time: number) => {

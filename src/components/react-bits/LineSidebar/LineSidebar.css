@@ -49,7 +49,9 @@
   white-space: nowrap;
   color: color-mix(in srgb, var(--accent-color) calc(var(--effect, 0) * 100%), var(--text-color));
   transform: translateX(calc(var(--effect, 0) * var(--max-shift)));
-  opacity: calc(0.35 + var(--effect, 0) * 0.65);
+  opacity: var(--effect, 0);
+  transition: opacity 160ms ease-out;
+  pointer-events: none;
 }
 
 .line-sidebar__item[aria-current="true"] .line-sidebar__label {
