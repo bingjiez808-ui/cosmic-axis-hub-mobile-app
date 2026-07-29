@@ -282,6 +282,8 @@ function AdminPage() {
 
       <AdminTicketsSection />
 
+      <AdminRedemptionSection />
+
       {editing && (
         <EditDrawer
           row={editing}
