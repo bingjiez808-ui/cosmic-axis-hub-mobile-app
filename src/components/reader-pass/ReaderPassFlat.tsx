@@ -32,7 +32,7 @@ export function ReaderPassFlat({ data, onOpen }: Props) {
         onClick={onOpen}
         onMouseEnter={() => setFlipped(true)}
         onMouseLeave={() => setFlipped(false)}
-        className="group relative block h-[clamp(260px,42vw,320px)] w-[clamp(180px,30vw,220px)] cursor-pointer select-none rounded-[18px] border border-gold-dust/25 bg-obsidian/50 p-0 shadow-[0_18px_40px_-14px_rgba(0,0,0,0.75)] transition-transform duration-500"
+        className="group relative block h-[clamp(200px,36vw,300px)] w-[clamp(140px,24vw,200px)] cursor-pointer select-none rounded-[18px] border border-gold-dust/25 bg-obsidian/50 p-0 shadow-[0_18px_40px_-14px_rgba(0,0,0,0.75)] transition-transform duration-500"
         style={{
           perspective: "1200px",
         }}
