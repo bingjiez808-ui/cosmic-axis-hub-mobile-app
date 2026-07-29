@@ -1,0 +1,48 @@
+.scroll-stack-scroller {
+  position: relative;
+  width: 100%;
+  overflow: visible;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  will-change: scroll-position;
+}
+
+.scroll-stack-inner {
+  padding: 12vh 1rem 40vh;
+  min-height: 100vh;
+}
+
+@media (min-width: 768px) {
+  .scroll-stack-inner {
+    padding: 18vh 3rem 48vh;
+  }
+}
+
+.scroll-stack-card-wrapper {
+  position: relative;
+}
+
+.scroll-stack-card {
+  transform-origin: top center;
+  will-change: transform, filter;
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
+  width: 100%;
+  box-sizing: border-box;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  position: relative;
+}
+
+.scroll-stack-end {
+  width: 100%;
+  height: 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-stack-card {
+    transform: none !important;
+    filter: none !important;
+    margin-bottom: 2rem !important;
+  }
+}
