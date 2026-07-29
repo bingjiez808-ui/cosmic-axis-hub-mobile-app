@@ -129,7 +129,11 @@ export function HomeScrollStack() {
         ))}
       </ScrollStack>
 
-      <StackProgress cards={HOME_GUIDE_CARDS} activeIndex={activeIndex} isZh={isZh} />
+      <HomeSideRail
+        cards={HOME_GUIDE_CARDS}
+        activeIndex={activeIndex}
+        isZh={isZh}
+      />
 
       <FeatureDrawerHost
         card={activeCard}
