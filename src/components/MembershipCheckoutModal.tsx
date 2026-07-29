@@ -70,6 +70,7 @@ const T = {
     en: "Please sign in first before activating a membership.",
   },
   benefits: { zh: "包含", en: "Includes" },
+  method_redemption: { zh: "兑换码", en: "Redemption code" },
 } as const;
 
 function pick(t: { zh: string; en: string }, lang: Lang) {
