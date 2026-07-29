@@ -334,7 +334,13 @@ export const redeemCode = createServerFn({ method: "POST" })
       entitlementId: result.entitlement_id,
       codePrefix: result.code_prefix ?? meta.prefix,
       codeLast4: result.code_last4 ?? "",
-      membership: result.membership,
+      membership: result.membership
+        ? {
+            tier: result.membership.tier,
+            expiresAt: result.membership.expires_at,
+            startedAt: result.membership.started_at,
+          }
+        : null,
       report: result.report ? { orderId: result.report.order_id, chartId: result.report.chart_id } : null,
     };
   });
