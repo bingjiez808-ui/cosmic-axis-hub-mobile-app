@@ -225,9 +225,9 @@ export function HomeBentoMap() {
         const rows = await listUserCharts();
         if (cancelled) return;
         // Try to identify a primary chart. Fallback: user's own first row.
-        const list = (rows ?? []) as Array<{ id: string; display_name?: string | null; is_primary?: boolean | null; role?: string | null }>;
-        const primary = list.find((r) => r.is_primary) ?? list.find((r) => r.role === "self") ?? list[0];
-        if (primary) setPrimaryChart({ id: primary.id, name: primary.display_name || (isZh ? "我的主命盘" : "My primary chart") });
+        const list = (rows ?? []) as Array<{ id: string; name?: string | null; is_primary?: boolean | null; chart_role?: string | null }>;
+        const primary = list.find((r) => r.is_primary) ?? list.find((r) => r.chart_role === "self") ?? list[0];
+        if (primary) setPrimaryChart({ id: primary.id, name: primary.name || (isZh ? "我的主命盘" : "My primary chart") });
         else setPrimaryChart(null);
       } catch {
         // Fail-closed: treat as no primary chart. Bento is a nav, not blocking.
