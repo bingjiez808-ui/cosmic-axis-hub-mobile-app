@@ -2,14 +2,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useLang } from "@/lib/i18n";
 
-import { MainChartGate, type GateState } from "../MainChartGate";
-import { GenerationMethod } from "../GenerationMethod";
-import { seedForChart } from "../math/MathLifeModel";
+import { MainChartGate, type GateState } from "@/experiences/life-studies/MainChartGate";
+import { GenerationMethod } from "@/experiences/life-studies/GenerationMethod";
+import { seedForChart } from "@/experiences/life-studies/math/MathLifeModel";
 import { BookmarkStrip, useSelectedBookmark } from "./BookmarkStrip";
 import { ExperimentLab } from "./ExperimentLab";
 import { LifeFunctionChart } from "./LifeFunctionChart";
-import { MATH_BOOKMARKS, bookmarkById } from "./bookmarks";
-import { LIFE_EXPERIMENTS, experimentById } from "./experiments";
+import { bookmarkById } from "./bookmarks";
+import { experimentById } from "./experiments";
 import { computeLifeMath } from "./computeSeries";
 import { AGE_PHASES } from "./types";
 
@@ -81,7 +81,7 @@ export function MathRoomV2({
     });
   };
 
-  const scrollTo = (ref: React.RefObject<HTMLElement>) => {
+  const scrollTo = (ref: React.RefObject<HTMLDivElement | null>) => {
     if (typeof window === "undefined") return;
     const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     ref.current?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
