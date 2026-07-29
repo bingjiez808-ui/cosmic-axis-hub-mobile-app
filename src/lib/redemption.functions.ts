@@ -108,6 +108,7 @@ export const adminCreateRedemptionCodes = createServerFn({ method: "POST" })
           _report_scope: data.reportScope ?? null,
           _campaign_name: data.campaignName ?? null,
           _internal_note: data.internalNote ?? null,
+          _assigned_email: data.assignedEmail ?? null,
         });
         if (error) {
           if (/redemption_codes_code_hash_key/i.test(error.message)) continue;
