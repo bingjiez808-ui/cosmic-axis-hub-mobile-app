@@ -54,13 +54,18 @@ type Props = {
   existingReportId?: string | null;
 };
 
-export function FeatureLibraryShelf() {
+export function FeatureLibraryShelf({
+  hasPrimaryChart = false,
+  existingReportId = null,
+}: Props = {}) {
   const { lang } = useLang();
   const session = useSupabaseSession();
   const isSignedIn = !!session?.user?.id;
 
   const [pickedConcern, setPickedConcern] = useState<ConcernKey | null>(null);
   const [openBook, setOpenBook] = useState<string | null>(null);
+  const [focusPulseKey, setFocusPulseKey] = useState<ShelfBookKey | null>(null);
+  const focusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -81,21 +86,52 @@ export function FeatureLibraryShelf() {
     const onStorage = (e: StorageEvent) => {
       if (e.key === CONCERN_STORAGE_KEY) read();
     };
+    const onFocusShelf = (e: Event) => {
+      const detail = (e as CustomEvent<unknown>).detail;
+      const key = typeof detail === "string" ? (detail as ShelfBookKey) : null;
+      if (!key || !(key in COVERS)) return;
+      setFocusPulseKey(key);
+      if (focusTimerRef.current) clearTimeout(focusTimerRef.current);
+      focusTimerRef.current = setTimeout(() => setFocusPulseKey(null), 2400);
+    };
     window.addEventListener(CONCERN_EVENT, onEvent as EventListener);
     window.addEventListener("storage", onStorage);
+    window.addEventListener(FOCUS_SHELF_EVENT, onFocusShelf as EventListener);
     return () => {
       window.removeEventListener(CONCERN_EVENT, onEvent as EventListener);
       window.removeEventListener("storage", onStorage);
+      window.removeEventListener(FOCUS_SHELF_EVENT, onFocusShelf as EventListener);
+      if (focusTimerRef.current) clearTimeout(focusTimerRef.current);
     };
   }, []);
 
+  const recommendedKey: ShelfBookKey | null = pickedConcern
+    ? CONCERNS[pickedConcern].featuredShelfBook
+    : null;
+
   const orderedBooks = useMemo<ShelfBook[]>(() => {
-    if (!pickedConcern) return SHELF_BOOKS;
-    const featured = CONCERNS[pickedConcern].featuredShelfBook;
-    const featuredBook = SHELF_BOOKS.find((b) => b.key === featured);
+    if (!recommendedKey) return SHELF_BOOKS;
+    const featuredBook = SHELF_BOOKS.find((b) => b.key === recommendedKey);
     if (!featuredBook) return SHELF_BOOKS;
-    return [featuredBook, ...SHELF_BOOKS.filter((b) => b.key !== featured)];
-  }, [pickedConcern]);
+    return [featuredBook, ...SHELF_BOOKS.filter((b) => b.key !== recommendedKey)];
+  }, [recommendedKey]);
+
+  const rememberChosenBook = useCallback((key: ShelfBookKey) => {
+    try {
+      window.sessionStorage.setItem(CHOSEN_BOOK_KEY, key);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const onOpenBook = useCallback(
+    (key: ShelfBookKey) => {
+      setOpenBook(key);
+      rememberChosenBook(key);
+    },
+    [rememberChosenBook],
+  );
+
 
   const H = {
     kicker: {
