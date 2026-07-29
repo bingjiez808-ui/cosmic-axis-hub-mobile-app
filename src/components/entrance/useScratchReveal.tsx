@@ -176,25 +176,46 @@ export function useScratchReveal(opts: UseScratchRevealOptions) {
     if (opts.disabled) return;
     let alive = true;
     let last = 0;
+    // Low-end devices → ~20fps cap. Otherwise ~30fps.
+    const frameBudget = lowEndRef.current ? 48 : 33;
     const loop = (t: number) => {
       if (!alive) return;
+      // Tab hidden → fully pause; visibilitychange will restart.
       if (document.hidden) {
-        rafRef.current = window.requestAnimationFrame(loop);
+        rafRef.current = null;
         return;
       }
-      if (t - last > 33) {
+      if (t - last > frameBudget) {
         last = t;
         paint();
       }
       rafRef.current = window.requestAnimationFrame(loop);
     };
     rafRef.current = window.requestAnimationFrame(loop);
+    const onVis = () => {
+      if (!alive) return;
+      if (!document.hidden && rafRef.current === null) {
+        rafRef.current = window.requestAnimationFrame(loop);
+      }
+    };
+    document.addEventListener("visibilitychange", onVis);
     return () => {
       alive = false;
+      document.removeEventListener("visibilitychange", onVis);
       if (rafRef.current) window.cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
+      // Release canvas backing stores to free GPU/CPU memory.
+      for (const c of [glassRef.current, maskRef.current, hoverMaskRef.current]) {
+        if (!c) continue;
+        try {
+          c.getContext("2d")?.clearRect(0, 0, c.width, c.height);
+          c.width = 0;
+          c.height = 0;
+        } catch { /* noop */ }
+      }
     };
   }, [paint, opts.disabled]);
+
 
   const brushAt = useCallback(
     (x: number, y: number, opts2?: { radiusScale?: number; alpha?: number }) => {
