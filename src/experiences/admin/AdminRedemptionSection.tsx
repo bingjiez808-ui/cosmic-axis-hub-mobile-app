@@ -161,6 +161,11 @@ export function AdminRedemptionSection() {
             >
               <div className="font-mono text-[12px] text-stone-warm">
                 {c.code_prefix}-•••• {c.code_last4}
+                {c.assigned_email && (
+                  <div className="mt-0.5 font-sans text-[10px] normal-case text-amber-200/80">
+                    → {c.assigned_email}
+                  </div>
+                )}
               </div>
               <div className="text-xs text-stone-warm/75">{BENEFIT_LABELS[c.benefit_type]}</div>
               <div className="text-xs text-stone-warm/70">
@@ -237,6 +242,7 @@ function CreateCodesModal({ onClose, onCreated }: { onClose: () => void; onCreat
   const [maxRedemptions, setMaxRedemptions] = useState(1);
   const [campaignName, setCampaignName] = useState("");
   const [internalNote, setInternalNote] = useState("");
+  const [assignedEmail, setAssignedEmail] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<CreatedCode[] | null>(null);
@@ -262,6 +268,7 @@ function CreateCodesModal({ onClose, onCreated }: { onClose: () => void; onCreat
           reportScope: benefitType === "premium_report" ? "current_chart" : null,
           campaignName: campaignName.trim() || null,
           internalNote: internalNote.trim() || null,
+          assignedEmail: assignedEmail.trim().toLowerCase() || null,
         },
       });
       setResult(res.codes);
@@ -358,6 +365,21 @@ function CreateCodesModal({ onClose, onCreated }: { onClose: () => void; onCreat
                 onChange={(e) => setInternalNote(e.target.value)}
                 className="w-full rounded-lg border border-white/10 bg-obsidian/40 px-3 py-2"
               />
+            </Field>
+            <Field label="定向账号邮箱（可选，填写后仅此邮箱可兑换）">
+              <input
+                type="email"
+                inputMode="email"
+                autoComplete="off"
+                maxLength={254}
+                placeholder="user@example.com"
+                value={assignedEmail}
+                onChange={(e) => setAssignedEmail(e.target.value)}
+                className="w-full rounded-lg border border-white/10 bg-obsidian/40 px-3 py-2"
+              />
+              <p className="mt-1 text-[10px] leading-relaxed text-stone-warm/50">
+                留空 = 任意登录用户可兑换。填写后其他账号会收到「此码未指派给你」错误。建议单码使用（数量=1，次数=1）。
+              </p>
             </Field>
             <Field label="到期日期（可选）">
               <input

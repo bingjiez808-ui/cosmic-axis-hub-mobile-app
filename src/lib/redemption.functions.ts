@@ -69,6 +69,7 @@ const CreateInput = z.object({
   reportScope: z.enum(["current_chart", "next_selected_chart"]).nullable().optional(),
   campaignName: z.string().trim().max(80).nullable().optional(),
   internalNote: z.string().trim().max(500).nullable().optional(),
+  assignedEmail: z.string().trim().email().max(254).nullable().optional(),
 });
 
 export type CreatedCode = { id: string; code: string; codePrefix: string; codeLast4: string };
@@ -107,6 +108,7 @@ export const adminCreateRedemptionCodes = createServerFn({ method: "POST" })
           _report_scope: data.reportScope ?? null,
           _campaign_name: data.campaignName ?? null,
           _internal_note: data.internalNote ?? null,
+          _assigned_email: data.assignedEmail ?? null,
         });
         if (error) {
           if (/redemption_codes_code_hash_key/i.test(error.message)) continue;
@@ -150,6 +152,7 @@ export type AdminCodeRow = {
   internal_note: string | null;
   created_by: string;
   created_at: string;
+  assigned_email: string | null;
 };
 
 export const adminListRedemptionCodes = createServerFn({ method: "POST" })
@@ -258,6 +261,7 @@ const KNOWN_ERROR_CODES = new Set([
   "not_authenticated",
   "invalid_request_id",
   "rate_limited",
+  "code_not_assigned_to_you",
 ]);
 
 export const redeemCode = createServerFn({ method: "POST" })
