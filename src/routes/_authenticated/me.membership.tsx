@@ -317,7 +317,7 @@ function MembershipPage() {
               id="mem-tickets"
               className="text-[11px] uppercase tracking-[0.28em] text-amber-300/70"
             >
-              {isZh ? "③ 订单与工单" : "③ Orders & support tickets"}
+              {isZh ? "④ 订单与工单" : "④ Orders & support tickets"}
             </h2>
           </div>
           <MyTicketsCard lang={lang} />
