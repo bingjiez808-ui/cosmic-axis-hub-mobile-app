@@ -189,43 +189,15 @@ function GuideDeskHero({ isZh }: { isZh: boolean }) {
             "radial-gradient(ellipse at center, rgba(8,10,18,0.72) 0%, rgba(8,10,18,0.45) 45%, rgba(8,10,18,0) 75%)",
         }}
       />
-      <SplitText
-        tag="p"
-        text={eyebrow}
-        className="text-[10px] uppercase tracking-[0.5em] text-gold-dust/80 sm:text-xs [text-shadow:0_1px_12px_rgba(0,0,0,0.85)]"
-        splitType="chars"
-        delay={30}
-        duration={0.7}
-        from={{ opacity: 0, y: 14 }}
-        to={{ opacity: 1, y: 0 }}
-        threshold={0.2}
-        rootMargin="0px"
-      />
-      <SplitText
-        tag="h1"
-        text={heading}
-        className="mt-6 font-serif text-3xl leading-tight text-stone-warm sm:text-5xl md:text-6xl [text-shadow:0_2px_24px_rgba(0,0,0,0.9),0_0_2px_rgba(0,0,0,0.6)]"
-        splitType="words, chars"
-        delay={55}
-        duration={1.1}
-        ease="power3.out"
-        from={{ opacity: 0, y: 48, filter: "blur(6px)" }}
-        to={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-        threshold={0.15}
-        rootMargin="0px"
-      />
-      <SplitText
-        tag="p"
-        text={body}
-        className="mt-6 max-w-2xl text-sm leading-relaxed text-stone-warm/90 sm:text-base [text-shadow:0_1px_14px_rgba(0,0,0,0.85)]"
-        splitType="words"
-        delay={18}
-        duration={0.9}
-        from={{ opacity: 0, y: 20 }}
-        to={{ opacity: 1, y: 0 }}
-        threshold={0.15}
-        rootMargin="0px"
-      />
+      <p className="text-[10px] uppercase tracking-[0.5em] text-gold-dust/80 sm:text-xs [text-shadow:0_1px_12px_rgba(0,0,0,0.85)]">
+        {eyebrow}
+      </p>
+      <h1 className="mt-6 font-serif text-3xl leading-tight text-stone-warm sm:text-5xl md:text-6xl [text-shadow:0_2px_24px_rgba(0,0,0,0.9),0_0_2px_rgba(0,0,0,0.6)]">
+        {heading}
+      </h1>
+      <p className="mt-6 max-w-2xl text-sm leading-relaxed text-stone-warm/90 sm:text-base [text-shadow:0_1px_14px_rgba(0,0,0,0.85)]">
+        {body}
+      </p>
       <div className="mt-8 flex items-center gap-3 text-[10px] uppercase tracking-[0.42em] text-gold-dust/60 [text-shadow:0_1px_10px_rgba(0,0,0,0.8)]">
         <span aria-hidden>↓</span>
         <span>{scrollHint}</span>
