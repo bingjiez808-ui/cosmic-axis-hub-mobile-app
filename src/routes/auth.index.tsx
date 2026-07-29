@@ -149,6 +149,8 @@ function AuthPage() {
       ? zh ? "创建你的图书馆账号" : "Create your library account"
       : zh ? "重返图书馆" : "Return to the library",
     email: zh ? "邮箱" : "Email",
+    displayName: zh ? "用户名（对管理员与好友可见）" : "Display name (visible to admins and friends)",
+    displayNamePlaceholder: zh ? "如：望舒" : "e.g. Alex",
     password: zh ? "密码" : "Password",
     confirm: zh ? "确认密码" : "Confirm password",
     show: zh ? "显示" : "Show",
@@ -163,6 +165,7 @@ function AuthPage() {
       : "First-time Google users get an account created automatically. Returning users are signed in.",
     or: zh ? "或" : "or",
     invalidEmail: zh ? "请输入有效邮箱。" : "Please enter a valid email.",
+    invalidName: zh ? "请填写用户名（2-40 字）。" : "Please enter a display name (2–40 characters).",
     weakPassword: zh ? "密码不符合要求。" : "Password does not meet the requirements.",
     mismatch: zh ? "两次输入的密码不一致。" : "Passwords do not match.",
     needAgree: zh ? "请先同意《服务条款》与《隐私政策》。" : "Please accept the Terms of Service and Privacy Policy first.",
