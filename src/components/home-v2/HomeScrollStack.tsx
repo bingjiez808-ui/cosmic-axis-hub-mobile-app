@@ -133,6 +133,7 @@ export function HomeScrollStack() {
         scaleEndPosition="8%"
         baseScale={0.88}
         itemScale={0.02}
+        stableMode={stable}
       >
         {HOME_GUIDE_CARDS.map((card) => (
           <ScrollStackItem key={card.id}>
@@ -153,6 +154,8 @@ export function HomeScrollStack() {
         activeIndex={activeIndex}
         isZh={isZh}
       />
+
+      <MotionModeToggle />
 
       <FeatureDrawerHost
         card={activeCard}
