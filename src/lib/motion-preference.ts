@@ -78,9 +78,92 @@ function detectLowEnd(): boolean {
 }
 
 /**
+ * FPS watchdog — non-disruptive frame-drop detector.
+ *
+ * Runs a lightweight rAF loop that samples FPS in 1s windows. If the device
+ * sustains poor frame rates (3 consecutive windows under `sustainedFps`, or a
+ * single window under `hardFloor`), it calls `onLowFps()` once and stops.
+ *
+ * Ignores the first 1.5s (warm-up + hydration cost) and any window while the
+ * tab is hidden. Never mutates persisted settings, so the user's explicit
+ * "smooth" choice is respected — this only nudges the in-memory `autoStable`
+ * signal so cards stop floating this session.
+ */
+function startFpsWatchdog(onLowFps: () => void, opts?: {
+  sustainedFps?: number;
+  hardFloor?: number;
+  windowMs?: number;
+  requiredWindows?: number;
+  warmUpMs?: number;
+}): () => void {
+  if (typeof window === "undefined") return () => {};
+  const sustainedFps = opts?.sustainedFps ?? 40;
+  const hardFloor = opts?.hardFloor ?? 24;
+  const windowMs = opts?.windowMs ?? 1000;
+  const requiredWindows = opts?.requiredWindows ?? 3;
+  const warmUpMs = opts?.warmUpMs ?? 1500;
+
+  let raf = 0;
+  let started = 0;
+  let windowStart = 0;
+  let frames = 0;
+  let poorWindows = 0;
+  let stopped = false;
+
+  const tick = (t: number) => {
+    if (stopped) return;
+    if (!started) {
+      started = t;
+      windowStart = t;
+    }
+    frames++;
+    const elapsed = t - windowStart;
+    if (elapsed >= windowMs) {
+      const fps = (frames * 1000) / elapsed;
+      // Skip warm-up window and any hidden-tab window (rAF is throttled → false low).
+      const warmingUp = t - started < warmUpMs;
+      if (!warmingUp && !document.hidden) {
+        if (fps < hardFloor) {
+          trigger();
+          return;
+        }
+        if (fps < sustainedFps) {
+          poorWindows++;
+          if (poorWindows >= requiredWindows) {
+            trigger();
+            return;
+          }
+        } else {
+          poorWindows = 0;
+        }
+      }
+      frames = 0;
+      windowStart = t;
+    }
+    raf = requestAnimationFrame(tick);
+  };
+
+  const trigger = () => {
+    if (stopped) return;
+    stopped = true;
+    cancelAnimationFrame(raf);
+    try { onLowFps(); } catch { /* ignore */ }
+  };
+
+  raf = requestAnimationFrame(tick);
+  return () => {
+    stopped = true;
+    cancelAnimationFrame(raf);
+  };
+}
+
+const SESSION_FPS_FLAG = "destiny-library:auto-stable-fps";
+
+/**
  * Resolve the user's setting into a boolean stable flag.
  * SSR always returns `stable: false` so the smooth path can hydrate.
- * After mount the auto-detected value swaps in.
+ * After mount the auto-detected value swaps in — from reduced-motion,
+ * low-end hardware heuristics, or the live FPS watchdog.
  */
 export function useStableMotion(): { stable: boolean; setting: MotionSetting } {
   const setting = useMotionSetting();
@@ -89,14 +172,38 @@ export function useStableMotion(): { stable: boolean; setting: MotionSetting } {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const compute = () => setAutoStable(mql.matches || detectLowEnd());
+    let fpsTripped = false;
+    try {
+      fpsTripped = window.sessionStorage.getItem(SESSION_FPS_FLAG) === "1";
+    } catch { /* ignore */ }
+    const compute = () => setAutoStable(mql.matches || detectLowEnd() || fpsTripped);
     compute();
     mql.addEventListener?.("change", compute);
     return () => mql.removeEventListener?.("change", compute);
   }, []);
 
-  const stable =
+  // Only watch FPS when the user is in "auto" AND we're currently running the
+  // smooth path. If they're already stable (explicit or auto-detected), nothing
+  // to downgrade.
+  const currentlyStable =
     setting === "stable" ? true : setting === "smooth" ? false : autoStable;
 
-  return { stable, setting };
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (setting !== "auto" || currentlyStable) return;
+    let flagged = false;
+    try {
+      flagged = window.sessionStorage.getItem(SESSION_FPS_FLAG) === "1";
+    } catch { /* ignore */ }
+    if (flagged) return;
+
+    const stop = startFpsWatchdog(() => {
+      try { window.sessionStorage.setItem(SESSION_FPS_FLAG, "1"); } catch { /* ignore */ }
+      setAutoStable(true);
+    });
+    return stop;
+  }, [setting, currentlyStable]);
+
+  return { stable: currentlyStable, setting };
 }
+
