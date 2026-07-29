@@ -66,6 +66,9 @@ export function useScratchReveal(opts: UseScratchRevealOptions) {
   const starsRef = useRef<StarPoint[]>([]);
   const starIdRef = useRef(1);
   const [starsVersion, setStarsVersion] = useState(0);
+  const lowEndRef = useRef<boolean>(false);
+  useEffect(() => { lowEndRef.current = detectLowEnd(); }, []);
+
 
   const resize = useCallback(() => {
     const glass = glassRef.current;
