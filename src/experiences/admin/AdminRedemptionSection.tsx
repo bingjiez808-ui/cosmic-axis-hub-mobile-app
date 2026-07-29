@@ -263,6 +263,7 @@ function CreateCodesModal({ onClose, onCreated }: { onClose: () => void; onCreat
           reportScope: benefitType === "premium_report" ? "current_chart" : null,
           campaignName: campaignName.trim() || null,
           internalNote: internalNote.trim() || null,
+          assignedEmail: assignedEmail.trim().toLowerCase() || null,
         },
       });
       setResult(res.codes);
