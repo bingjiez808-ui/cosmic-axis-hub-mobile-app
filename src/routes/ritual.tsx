@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 
 import { CityCombobox } from "@/components/CityCombobox";
+import RitualMagicRings from "@/components/reactbits/RitualMagicRings";
 import { useLang } from "@/lib/i18n";
 import { solarToLunarInfo } from "@/lib/lunar";
 import { noOrphan } from "@/lib/typography";
@@ -376,19 +377,19 @@ function RitualPage() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-x-hidden px-6 pt-32 pb-24">
-      {/* Ceremonial rings */}
-      <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-        <div
-          className="rounded-full border border-gold-dust/20 transition-all duration-1000"
-          style={{ width: `${520 + step * 60}px`, height: `${520 + step * 60}px` }}
-        />
-        <div
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-nebula-purple/25 transition-all duration-1000"
-          style={{ width: `${340 + step * 40}px`, height: `${340 + step * 40}px` }}
-        />
-      </div>
+      {/* Magic Rings — single WebGL instance, masked to left/right on desktop, ambient halo on mobile. */}
+      <RitualMagicRings currentStep={step} />
 
       <div className="relative z-10 w-full max-w-2xl text-center">
+        {/* Reading safe-zone scrim behind the question column so text never dissolves into the rings. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute left-1/2 top-1/2 -z-[1] h-[130%] w-[130%] -translate-x-1/2 -translate-y-1/2"
+          style={{
+            background:
+              "radial-gradient(circle at center, rgba(8,8,11,0.94) 0%, rgba(8,8,11,0.82) 35%, rgba(8,8,11,0.28) 58%, transparent 76%)",
+          }}
+        />
         {/* Progress — quiz bar (5 segs, hidden if skipped) · intake dots */}
         <div className="mb-14 flex items-center justify-center gap-3">
           {!skipQuiz && (
