@@ -529,3 +529,20 @@ h1, h2, h3, h4 {
     max-height: none;
   }
 }
+
+/* React Bits SplitText — allow CJK to wrap per-char.
+ * GSAP wraps chars inside .split-word with white-space:nowrap by default,
+ * which turns a whole Chinese heading (no spaces) into one giant unbreakable line.
+ */
+.split-parent {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.split-parent .split-word {
+  white-space: normal !important;
+  display: inline;
+}
+.split-parent .split-char {
+  display: inline-block;
+  will-change: transform, opacity;
+}
