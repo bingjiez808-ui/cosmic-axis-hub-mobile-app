@@ -380,6 +380,18 @@ function AuthPage() {
               onChange={(e) => setEmail(e.target.value)}
               className="w-full rounded-lg border border-white/10 bg-obsidian/40 px-4 py-3 text-base text-stone-warm placeholder:text-stone-warm/30 focus:border-gold-dust focus:outline-none"
             />
+            <input
+              type="text"
+              autoComplete="nickname"
+              required
+              minLength={2}
+              maxLength={40}
+              placeholder={t.displayName}
+              aria-label={t.displayName}
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              className="w-full rounded-lg border border-white/10 bg-obsidian/40 px-4 py-3 text-base text-stone-warm placeholder:text-stone-warm/30 focus:border-gold-dust focus:outline-none"
+            />
             <div className="relative">
               <input
                 type={showPw ? "text" : "password"}
