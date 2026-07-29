@@ -60,6 +60,12 @@ function MembershipPage() {
         .eq("user_id", sess.session.user.id)
         .order("created_at", { ascending: false });
       if (!cancelled) setPremium((data ?? []) as PremiumRow[]);
+      try {
+        const rows = await listMyRedemptionUses();
+        if (!cancelled) setRedemptions(rows);
+      } catch {
+        if (!cancelled) setRedemptions([]);
+      }
     })();
     return () => {
       cancelled = true;
