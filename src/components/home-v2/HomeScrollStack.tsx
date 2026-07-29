@@ -25,8 +25,8 @@ import { HOME_GUIDE_CARDS, type HomeGuideCard, type HomeCardId } from "@/lib/hom
 import { useHomeFacts } from "@/lib/use-home-facts";
 
 import ScrollStack, { ScrollStackItem } from "@/components/react-bits/ScrollStack/ScrollStack";
+import LineSidebar from "@/components/react-bits/LineSidebar/LineSidebar";
 import { LibraryInteriorBackdrop } from "./LibraryInteriorBackdrop";
-import { StackProgress } from "./StackProgress";
 import { HomeCardVisual } from "./HomeCardVisual";
 import { LibraryFeatureDrawer } from "./LibraryFeatureDrawer";
 
@@ -36,7 +36,7 @@ import { PlayfulLibrarySection } from "@/components/PlayfulLibrarySection";
 import { PostRitualRoomsSection } from "@/components/PostRitualRoomsSection";
 import { HomePersonalDeskTeaser } from "@/components/HomePersonalDeskTeaser";
 
-const DRAWER_IDS = new Set<HomeCardId>(["concern", "books", "commons", "rooms", "desk"]);
+const DRAWER_IDS = new Set<HomeCardId>(["concern", "commons", "rooms", "desk"]);
 
 function readHashFeature(): HomeCardId | null {
   if (typeof window === "undefined") return null;
