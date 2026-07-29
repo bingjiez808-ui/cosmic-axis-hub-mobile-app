@@ -8,6 +8,7 @@ import { HomePersonalDeskTeaser } from "@/components/HomePersonalDeskTeaser";
 import { PlayfulLibrarySection } from "@/components/PlayfulLibrarySection";
 import { PostRitualRoomsSection } from "@/components/PostRitualRoomsSection";
 import { PremiumReportCta } from "@/components/PremiumReportCta";
+import { LibraryEntrance } from "@/components/entrance/LibraryEntrance";
 import { useLang } from "@/lib/i18n";
 import { useSupabaseSession } from "@/lib/session";
 
@@ -80,6 +81,7 @@ function LandingPage() {
 
   return (
     <>
+      <LibraryEntrance />
       {/* ─────────── HERO ─────────── */}
       <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-5 pt-24 text-center sm:px-6">
         <div className="pointer-events-none absolute h-[820px] w-[820px] rounded-full border border-white/5 animate-slow-rotate" />
