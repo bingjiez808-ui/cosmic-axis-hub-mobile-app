@@ -31,6 +31,7 @@ import {
   type AdminUserChartRow,
 } from "@/lib/premium.functions";
 import { AdminTicketsSection } from "@/components/AdminTicketsSection";
+import { AdminRedemptionSection } from "@/experiences/admin/AdminRedemptionSection";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -280,6 +281,8 @@ function AdminPage() {
       <PremiumOrdersSection reloadKey={reload} onReload={() => setReload((n) => n + 1)} />
 
       <AdminTicketsSection />
+
+      <AdminRedemptionSection />
 
       {editing && (
         <EditDrawer

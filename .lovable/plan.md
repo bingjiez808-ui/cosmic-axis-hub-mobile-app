@@ -1,179 +1,150 @@
+# 兑换码开通权益 · 审计报告与交付方案
 
-## Goal
+按你要求的顺序，先完成 **第一步（只汇报，不修改）** 与 **第二步（migration + 权益交付复用方案）**。批准后我按 3→8 逐步执行，本轮不接入真实微信/支付宝、不发布生产。
 
-Restore the seven-dimension life-function architecture in `/life-studies/math`. The previous refactor collapsed everything into three composite lines (Baseline / Current / Experiment) and deleted the multi-domain curves + yearly radar. This plan reinstates the full chain:
+---
 
-**Seven-domain main chart → age cursor → yearly radar cross-section → experiment overlay → bookmarks**
+## 一、现有权益真实来源审计（只读结论）
 
-The composite lines survive only as an optional overlay mode inside the main chart, never as a replacement.
+### 1. 会员等级唯一真实来源
+- **DB 字段**：`profiles.membership_tier` (`none|sage|oracle`) + `profiles.membership_expires_at`
+- **前端读取**：`src/lib/use-membership-tier.ts`（`useMembershipTier()` 已带过期回落 + `refreshMembershipTier()` 广播）
+- **写入路径**：**唯一**通过 DB RPC `simulate_mock_membership_upgrade`（SECURITY DEFINER，事务内 insert `membership_orders` + update `profiles`），前端由 `src/lib/membership.functions.ts::simulateMockMembershipUpgrade` 调用
+- **写保护**：DB 触发器 `profiles_membership_write_guard` 已经拒绝任何非 `app.membership_writer=on` 的会员列写入（含管理员豁免），任何绕过 RPC 的直改都会被拒
+- **模拟支付订单表**：`membership_orders`（已存在，`provider='mock'`）
 
-## Scope guard
+### 2. ¥79 高级报告权益唯一真实来源
+- **订单表**：`premium_report_orders`（`status='paid'` 视为该 `chart_id` 的一次性权益）
+- **报告表**：`premium_pdf_reports`（一 `chart_id` 一份最新报告）
+- **入口**：`src/lib/premium.functions.ts`（`getPremiumStatus/createOrder/markPaid` 等）
+- **绑定粒度**：`(user_id, chart_id)`
 
-Do NOT touch: chart calculation kernels for the primary destiny chart, membership permissions, other Commons halls, global navigation, database schema.
+### 3. 管理员角色唯一真实来源
+- **DB**：`user_roles` 表 + `app_role` 枚举（`admin|user`）+ `private.has_role()` SECURITY DEFINER
+- **服务端校验**：`admin.functions.ts::ensureAdmin` 与 `premium.functions.ts::ensureAdmin` 均查 `user_roles`
+- 前端**不存在**任何按 email 硬编码的管理员判断；`icejie0311@163.com` 已经通过 `handle_new_user`/`handle_user_updated` 触发器自动写入 `user_roles`
 
-Only edit files under `src/experiences/life-studies/math/v2/**` and closely related composition. Keep the v2 folder; rebuild its internals.
+### 4. 共享购买 UI
+- **唯一弹窗**：`src/components/MembershipCheckoutModal.tsx`（被 /report、/me/sage、/me/oracle、/me/membership、关系深度分析、匿名匹配复用）
+- 支付方式 4 个（wechat/alipay/visa/unionpay）全部走同一 `simulateMockMembershipUpgrade`
 
-## Seven dimensions & fixed color map
+### 结论
+现有会员与报告权益是**单一真实来源**，不存在需要合并的第二套 state。**兑换码要复用同一路径**：会员类兑换码复用 `simulate_mock_membership_upgrade` 的时长顺延与不降级逻辑；报告类兑换码复用 `premium_report_orders` 已购判定。绝不建立第二套 `membership state`。
 
-| key | zh | en | color | marker |
-|---|---|---|---|---|
-| study | 学业与成长 | Study & Growth | `#a78bfa` (violet) | circle |
-| career | 事业与选择 | Career & Choices | `#f59e0b` (amber) | triangle |
-| love | 爱情与亲密 | Love & Intimacy | `#f472b6` (rose) | diamond |
-| family | 家庭与责任 | Family & Duty | `#fb923c` (orange) | square |
-| social | 人际协作 | Social & Collaboration | `#38bdf8` (sky) | pentagon |
-| wealth | 财富与风险 | Wealth & Risk | `#facc15` (yellow) | hexagon |
-| health | 健康与恢复 | Health & Recovery | `#34d399` (teal) | plus |
+---
 
-Same map is used by chart legend, tooltip, radar axes, quick-combos and domain buttons — ZH/EN both.
+## 二、数据库 migration 方案（第二步 · 待批准）
 
-## Data model changes
+### 新增表
+1. **`redemption_codes`**（管理员创建；仅服务端可读）
+   - `code_hash text unique`（HMAC-SHA256(normalized_code, REDEMPTION_CODE_PEPPER)）
+   - `code_prefix text`, `code_last4 text`（脱敏辨识）
+   - `benefit_type text check in ('sage_membership','oracle_membership','premium_report','test_access','support_compensation')`
+   - `duration_days int null`, `report_scope text null check in ('current_chart','next_selected_chart')`
+   - `max_redemptions int default 1`, `redemption_count int default 0`
+   - `starts_at/expires_at timestamptz null`
+   - `status text default 'active' check in ('active','disabled','exhausted','expired')`
+   - `campaign_name/internal_note text null`
+   - `created_by/disabled_by uuid`, `created_at/disabled_at`
 
-Update `v2/types.ts`:
+2. **`redemption_uses`**（每次兑换一行）
+   - `redemption_code_id`, `user_id`, `benefit_type`, `chart_id nullable`, `order_id nullable`
+   - `status text check in ('processing','fulfilled','failed','reversed')`
+   - `entitlement_id text null`（指向 `membership_orders.id` 或 `premium_report_orders.id`）
+   - `failure_code text null`
+   - `request_id text unique`（幂等键，`(user_id, request_id)` 幂等）
+   - `ip_hash/user_agent_summary text null`
+   - `redeemed_at/fulfilled_at`
 
-```ts
-export type LifeDimensionKey =
-  | "study" | "career" | "love" | "family" | "social" | "wealth" | "health";
+3. **`redemption_attempts`**（限流与安全审计）
+   - `user_id nullable`, `code_prefix`, `outcome text`, `ip_hash`, `rate_limited bool`, `error_code`, `created_at`
 
-export const LIFE_DIMENSIONS: LifeDimensionKey[] = [...];
+4. **`admin_audit_logs`**（管理员操作全审计：创建/批量/禁用/恢复/查看/撤销）
 
-export type LifeDimensionPoint = {
-  score: number;   // 0-100
-  low: number;
-  high: number;
-  baseline: number; // long-run personal baseline
-};
+### RLS / GRANT
+- `redemption_codes`：**只 `service_role`**（管理员通过 RPC 读取；无 `authenticated` SELECT）
+- `redemption_uses`：`authenticated` 仅 SELECT 自己（`user_id = auth.uid()`），无 UPDATE/DELETE/INSERT；`service_role` 全权
+- `redemption_attempts`：无 `authenticated` 权限；`service_role` 全权
+- `admin_audit_logs`：无 `authenticated`；`service_role` 全权
 
-export type LifeEvent = {
-  id: string;
-  age: number;
-  type: "peak" | "low" | "rise" | "drop" | "crossing"
-      | "resonance" | "tension" | "branch";
-  dimensions: LifeDimensionKey[];
-  severity: "low" | "medium" | "high";
-  title: { zh: string; en: string };
-  shortHint: { zh: string; en: string };
-  caution?: { zh: string; en: string };
-};
+### 新增 DB 函数（SECURITY DEFINER，均通过 `private.has_role` 校验管理员）
+- `admin_create_redemption_codes(...)` → 返回**本次明文**（仅一次）+ 元数据
+- `admin_list_redemption_codes(...)` / `admin_disable_redemption_code(id)` / `admin_list_redemption_uses(...)`
+- `redeem_code(_code_hash, _chart_id, _request_id, _ip_hash, _ua)` → 单事务：`FOR UPDATE` 锁行 → 校验状态/时窗/次数/用户去重/chart 归属 → `redemption_uses` insert(processing) → 根据 benefit_type 分派：
+  - 会员类：内部调用与 `simulate_mock_membership_upgrade` **相同的顺延/不降级逻辑**（抽成 `apply_membership_grant(_user_id, _tier, _days, _source, _source_ref)`），并在 `membership_orders` 写一条 `provider='redemption'` 订单
+  - 报告类：在 `premium_report_orders` 写 `provider='redemption', status='paid'`（若该 chart 已 paid → 返回 `report_already_owned`，**不消耗次数**）
+- 完成后 `redemption_uses.status='fulfilled'`，`entitlement_id=<新订单id>`，`redemption_codes.redemption_count += 1`，达上限 → `status='exhausted'`
+- **任何异常整笔回滚，`redemption_count` 不增加**
 
-export type LifeMathPoint = {
-  age: number;
-  stage: string;
-  dimensions: Record<LifeDimensionKey, LifeDimensionPoint>;
-  composite: {
-    baseline: number;
-    currentPath: number;
-    experimentPath?: number;
-  };
-  events?: LifeEvent[];
-};
-```
+### 复用抽取
+将现有 RPC 中"顺延/不降级"逻辑抽成 `public.apply_membership_grant(...)` 内部函数；`simulate_mock_membership_upgrade` 与新 `redeem_code` 均调用它 —— 这是"未来微信/支付宝也复用同一 entitlement fulfillment service"的落点。
 
-`relationship` is retired; `love` and `social` are now separate first-class dimensions, matching the seven original domains in `LifeDomainModel`.
+### Secret
+- 新增 `REDEMPTION_CODE_PEPPER`（≥32字节高强度随机）—— 需要你在 Lovable Secret 后台手动填写；DB 通过 `current_setting('app.settings.redemption_pepper')` 由 Edge 层注入（或改为在服务端函数计算 HMAC，DB 只接收 `code_hash`）。**推荐后者**（DB 不接触 pepper），我在下一节确认。
 
-## computeSeries rebuild
+### 服务端函数（TanStack `createServerFn` + `requireSupabaseAuth`）
+- `src/lib/redemption.functions.ts`
+  - `adminCreateRedemptionCodes` / `adminListRedemptionCodes` / `adminDisableRedemptionCode` / `adminListRedemptionUses`
+  - `redeemCode({ code, chartId?, requestId })` —— 服务端 normalize + HMAC + rate limit（复用 `enforceRateLimit`：5/min & 15/hour/user，IP-hash 每小时上限）+ 调用 `redeem_code` RPC，只把 `code_hash` 传入 DB
+  - `listMyRedemptionUses`
 
-`v2/computeSeries.ts`:
+---
 
-1. Consume `buildDomainSeries` for all seven domains directly (no love+social merge).
-2. For each age, emit per-dimension `{score, low, high, baseline}` (baseline = 11-year rolling mean of that dimension).
-3. Compute composite lines from weighted sum of seven dimensions (equal weight or existing weights) — keep current/baseline distinct.
-4. Experiment: apply per-dimension effect ramps to BOTH dimension series AND recompute composite from the resulting dimensions. Old approach that only shifted composite is removed.
-5. Event detection now runs per-dimension: peak/low/rise/drop/crossing/resonance (two dims up together)/tension (one up, one down)/branch. Cap at 5 desktop / 3 mobile via severity sort. Templates deterministic, bilingual.
-6. Memoize by `mode::seed::experimentId`.
+## 三、UI 交付计划（第 4–7 步）
 
-## Component rebuild
+### 管理员端 `/admin`（已有页面新增 Tab）
+- "兑换码管理"：创建单/批（选权益类型/时长/次数/时窗/活动名/内部备注/report_scope）→ 弹窗显示**本次生成的明文列表**（一次可见）+ 复制/导出 CSV
+- 列表：脱敏显示 `FN-SAGE-••••-Q8WT`、状态、次数、时窗、活动、创建人
+- 使用记录：按码/按用户查询、脱敏用户信息
 
-### `v2/LifeFunctionChart.tsx` — full rewrite
+### 用户端 · 共享弹窗 `MembershipCheckoutModal`
+- 支付方式区新增第五个按钮 **兑换码**（微信/支付宝显示"暂未开放"角标但不删除）
+- 选中后切换到兑换码子视图：输入框（自动大写/连字符/粘贴清洗）、说明、客服邮箱、"立即验证并开通"
+- 成功后：`refreshMembershipTier()` + 弹出成功卡（贤者/神谕者/报告文案分支）+ CTA 按来源跳转 or 留在当前页
 
-Three view modes (segmented control at top of chart):
-- **七维领域 (default)** — draw all seven dimension lines; visibility controlled by filter state.
-- **综合总览** — three composite lines (baseline dashed, current solid, experiment if any). Behind them draw seven dims at 12% opacity so context isn't lost.
-- **实验对照** — enabled only when an experiment is active. Shows current vs experiment composite + top-3 dimensions with largest deltas at full opacity.
+### 报告类兑换成功
+- 若当前上下文已有 `chartId` → 直接绑定
+- 若无 → 显示"选择要绑定的主命盘"（复用现有 chart 选择）
+- 该 chart 已购 → 返回 `report_already_owned`，**不消耗**，允许换 chart
 
-Under the chart:
-- **Quick combos row**: 只看总览 / 只看事业 / 事业+财富 / 爱情+家庭 / 全部七条
-- **Seven domain toggle buttons** (multi-select, min-1-visible guard, state persisted to `localStorage` `fate.math.filter.v1`)
-- **Age slider** 0–80, live-updates vertical cursor + summary card ("34 岁 · 综合 49.1 · 主要推动: 事业 · 主要摩擦: 健康") + "打开这一年" button that scrolls to and updates the radar.
+### `/me/membership` 新增"权益记录"分区
+- 与"订单"（真实付款/模拟支付订单）**分开**
+- 兑换来源：脱敏码、时间、绑定 chart、有效期、状态；测试/补偿明确标注
 
-Hover / touch:
-- Nearest-age snap on mouseover. Highlight hovered line (stroke width 3, glow), dim others to 15%.
-- Vertical age guideline + marker dot per visible line at that age.
-- Tooltip with: age, stage, line name (ZH/EN, not internal key), value, delta vs personal baseline, top-2 co-moving dimensions, one-sentence explanation, one-sentence caution.
-- Mobile: tap-to-lock, info card below chart, no hover.
+---
 
-Click line → open right side sheet (desktop) or bottom sheet (mobile) with:
-- Domain description ("这条线观察 / 它不代表 / 与它联动最明显的领域")
-- Buttons: 只看这条线 / 加入对照 / 关闭
+## 四、错误码与限速
 
-Event markers: small colored glyphs at up to 5 (desktop) / 3 (mobile) severity-top events; click → tooltip with title + shortHint + caution.
+- 统一错误码：`code_invalid`（合并"不存在/哈希不匹配"防枚举）、`code_not_yet_active`、`code_expired`、`code_exhausted`、`already_redeemed_by_user`、`chart_required`、`chart_not_owned`、`report_already_owned`、`rate_limited`、`fulfillment_failed`（回滚）、`already_fulfilled`（幂等）
+- 限速：`enforceRateLimit(user, 5, 60_000)`、`(user, 15, 3_600_000)`、`(ip_hash, 60, 3_600_000)`；连续失败递增等待（在 attempts 表基础上）
 
-Bookmark overlay: `activeBookmarkRanges` still renders a soft golden band over the composite view; on 七维 view render as thin vertical guides only.
+---
 
-### `v2/YearlyRadar.tsx` — new file
+## 五、测试矩阵（第 8 步）
 
-Radar chart of seven dimensions at focus age. Same color map. Values labeled outside axes. Includes:
-- Header: `这一年的生活横截面` + explanatory subtitle (from spec, exactly).
-- Right/below: `<age> 岁 · 综合 <n>` + 最值得投入 / 最需防摩擦 (derived: highest positive delta vs baseline / lowest).
-- "How to read" card (80–150 chars, deterministic template).
-- Buttons: 回到折线图看前后变化 / 查看上一年 / 查看下一年.
-- Click axis → highlights that dim on main chart via lifted state.
+- 单元：normalize / HMAC / 顺延与不降级（vs 现有 `simulate_mock_membership_upgrade` 行为对齐）
+- 集成（bun test + DB）：
+  - 单次码复用被拒 / 同 user 重复被拒 / requestId 幂等 / 并发 `FOR UPDATE` 只允许一个
+  - 贤者顺延、神谕者不被降级、贤者→神谕升级、报告绑定/换 chart / 已购不消耗
+  - 过期码/未生效码/禁用码/非管理员创建/普通用户读表全部被拒
+- E2E（Playwright 现有 harness）：弹窗输入→成功→原地解锁 + 刷新后仍在
+- Typecheck + build
 
-### `v2/ExperimentLab.tsx` — updated
+---
 
-Cards unchanged, but the impact panel now shows seven per-dimension before/after values with color dots, plus composite before/after. Experiment application still gradual (500-800ms via CSS transition on the SVG path).
+## 六、需要你手动配置
 
-### `v2/MathRoomV2.tsx` — new order
+1. Lovable Secret 后台填写 `REDEMPTION_CODE_PEPPER`（≥32 字节高强度随机字符串；生成即用，不发聊天/截图）
 
-1. 开场说明 (existing)
-2. 模式切换 demo/personal (existing)
-3. **七维人生函数主图** (`LifeFunctionChart` new)
-4. 领域筛选、年龄游标、年度详情摘要 (inside chart)
-5. **年度生活横截面雷达图** (`YearlyRadar` new)
-6. 选择实验室 (`ExperimentLab` updated)
-7. 实验前后对照 (folded into ExperimentLab impact card)
-8. 人生数学书签 (existing `BookmarkStrip`)
-9. 收藏与分享 (existing GenerationMethod block)
+---
 
-Owns lifted state: `focusAge`, `viewMode`, `visibleDims`, `activeExperimentId`, `bookmarkId`, `lockedLine`.
+## 七、明确不做
 
-### `v2/bookmarks.ts` — small tweak
+- 不接微信/支付宝真实 API（保留现有模拟按钮）
+- 不删除任何现有支付方案展示或会员/报告业务逻辑
+- 不发布生产
+- 不修改命盘/AI 生成/报告结构
 
-Highlight ranges keep operating on composite; add ability to also flag relevant dimensions (used by chart to hint which lines to bold when a bookmark is active in 七维 view). No new AI, no new fetches.
+---
 
-## Responsive rules
-
-- Desktop ≥ md: chart full seven lines default, radar right of description.
-- Mobile: default view = 综合总览 with 2-3 lines pre-selected (career + health); button "全部七条" to expand. Radar stacks above description. Age slider full width. No hover-only affordances.
-
-## Deterministic guarantees
-
-- Same `chart_id + model_version + age` → same output.
-- Demo mode uses fixed seed `demo:v1`; personal mode uses `seedForChart(primaryBirthISO)`.
-- No new AI/network calls anywhere in the module. Cache retained via existing `memo` map.
-
-## Files touched
-
-- `src/experiences/life-studies/math/v2/types.ts` — expand schema
-- `src/experiences/life-studies/math/v2/computeSeries.ts` — seven-dim + composite + events
-- `src/experiences/life-studies/math/v2/LifeFunctionChart.tsx` — rewrite
-- `src/experiences/life-studies/math/v2/YearlyRadar.tsx` — new
-- `src/experiences/life-studies/math/v2/ExperimentLab.tsx` — seven-dim impact panel
-- `src/experiences/life-studies/math/v2/MathRoomV2.tsx` — new section order & lifted state
-- `src/experiences/life-studies/math/v2/bookmarks.ts` — optional dimension hints
-- Tests: add lightweight unit test for `computeSeries` seven-dim output + event detection.
-
-## Acceptance
-
-- Default view is 七维领域, not composite.
-- All seven domain curves render, filter buttons + quick combos work, min-1 guard enforced.
-- Hover tooltip shows human-readable name + age + value + delta + co-movers + explanation, never internal keys.
-- Age slider live-updates cursor and summary; "打开这一年" scrolls to and syncs the radar.
-- Radar values equal main-chart values at same age (same source).
-- Radar axis click highlights that dim on main chart.
-- 综合总览 preserved as a mode, not the default.
-- Experiments shift both composite AND per-dimension curves; before/after panel shows seven dims.
-- Undo restores state; branch save persists.
-- Demo data clearly labeled; personal mode uses primary chart; no AI calls added.
-- ZH/EN both clean, no leaked internal keys.
-- Typecheck + build + existing tests pass.
+**请回复"批准"后我按第 3 步开始：先建 migration（含 GRANT/RLS/`apply_membership_grant` 抽取/`redeem_code` RPC），再逐步落 UI 与测试。**

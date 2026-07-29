@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_audit_logs: {
+        Row: {
+          action: string
+          admin_user_id: string
+          created_at: string
+          id: string
+          metadata: Json
+          target_id: string | null
+          target_type: string | null
+        }
+        Insert: {
+          action: string
+          admin_user_id: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Update: {
+          action?: string
+          admin_user_id?: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Relationships: []
+      }
       ai_usage_ledger: {
         Row: {
           chapter_key: string | null
@@ -1403,6 +1433,161 @@ export type Database = {
         }
         Relationships: []
       }
+      redemption_attempts: {
+        Row: {
+          code_prefix: string | null
+          created_at: string
+          error_code: string | null
+          id: string
+          ip_hash: string | null
+          outcome: string
+          rate_limited: boolean
+          user_id: string | null
+        }
+        Insert: {
+          code_prefix?: string | null
+          created_at?: string
+          error_code?: string | null
+          id?: string
+          ip_hash?: string | null
+          outcome: string
+          rate_limited?: boolean
+          user_id?: string | null
+        }
+        Update: {
+          code_prefix?: string | null
+          created_at?: string
+          error_code?: string | null
+          id?: string
+          ip_hash?: string | null
+          outcome?: string
+          rate_limited?: boolean
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      redemption_codes: {
+        Row: {
+          benefit_type: string
+          campaign_name: string | null
+          code_hash: string
+          code_last4: string
+          code_prefix: string
+          created_at: string
+          created_by: string
+          disabled_at: string | null
+          disabled_by: string | null
+          duration_days: number | null
+          expires_at: string | null
+          id: string
+          internal_note: string | null
+          max_redemptions: number
+          redemption_count: number
+          report_scope: string | null
+          starts_at: string | null
+          status: string
+        }
+        Insert: {
+          benefit_type: string
+          campaign_name?: string | null
+          code_hash: string
+          code_last4: string
+          code_prefix: string
+          created_at?: string
+          created_by: string
+          disabled_at?: string | null
+          disabled_by?: string | null
+          duration_days?: number | null
+          expires_at?: string | null
+          id?: string
+          internal_note?: string | null
+          max_redemptions?: number
+          redemption_count?: number
+          report_scope?: string | null
+          starts_at?: string | null
+          status?: string
+        }
+        Update: {
+          benefit_type?: string
+          campaign_name?: string | null
+          code_hash?: string
+          code_last4?: string
+          code_prefix?: string
+          created_at?: string
+          created_by?: string
+          disabled_at?: string | null
+          disabled_by?: string | null
+          duration_days?: number | null
+          expires_at?: string | null
+          id?: string
+          internal_note?: string | null
+          max_redemptions?: number
+          redemption_count?: number
+          report_scope?: string | null
+          starts_at?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
+      redemption_uses: {
+        Row: {
+          benefit_type: string
+          chart_id: string | null
+          entitlement_id: string | null
+          failure_code: string | null
+          fulfilled_at: string | null
+          id: string
+          ip_hash: string | null
+          order_id: string | null
+          redeemed_at: string
+          redemption_code_id: string
+          request_id: string
+          status: string
+          user_agent_summary: string | null
+          user_id: string
+        }
+        Insert: {
+          benefit_type: string
+          chart_id?: string | null
+          entitlement_id?: string | null
+          failure_code?: string | null
+          fulfilled_at?: string | null
+          id?: string
+          ip_hash?: string | null
+          order_id?: string | null
+          redeemed_at?: string
+          redemption_code_id: string
+          request_id: string
+          status: string
+          user_agent_summary?: string | null
+          user_id: string
+        }
+        Update: {
+          benefit_type?: string
+          chart_id?: string | null
+          entitlement_id?: string | null
+          failure_code?: string | null
+          fulfilled_at?: string | null
+          id?: string
+          ip_hash?: string | null
+          order_id?: string | null
+          redeemed_at?: string
+          redemption_code_id?: string
+          request_id?: string
+          status?: string
+          user_agent_summary?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "redemption_uses_redemption_code_id_fkey"
+            columns: ["redemption_code_id"]
+            isOneToOne: false
+            referencedRelation: "redemption_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reports: {
         Row: {
           calculation_version: string | null
@@ -1899,6 +2084,82 @@ export type Database = {
           user_id: string
         }[]
       }
+      admin_create_redemption_code: {
+        Args: {
+          _benefit_type: string
+          _campaign_name: string
+          _code_hash: string
+          _code_last4: string
+          _code_prefix: string
+          _duration_days: number
+          _expires_at: string
+          _internal_note: string
+          _max_redemptions: number
+          _report_scope: string
+          _starts_at: string
+        }
+        Returns: string
+      }
+      admin_disable_redemption_code: {
+        Args: { _code_id: string }
+        Returns: undefined
+      }
+      admin_list_redemption_codes: {
+        Args: {
+          _benefit_type?: string
+          _campaign_name?: string
+          _limit?: number
+          _status?: string
+        }
+        Returns: {
+          benefit_type: string
+          campaign_name: string
+          code_last4: string
+          code_prefix: string
+          created_at: string
+          created_by: string
+          duration_days: number
+          expires_at: string
+          id: string
+          internal_note: string
+          max_redemptions: number
+          redemption_count: number
+          report_scope: string
+          starts_at: string
+          status: string
+        }[]
+      }
+      admin_list_redemption_uses: {
+        Args: { _code_id?: string; _limit?: number; _user_id?: string }
+        Returns: {
+          benefit_type: string
+          chart_id: string
+          code_last4: string
+          code_prefix: string
+          entitlement_id: string
+          failure_code: string
+          fulfilled_at: string
+          id: string
+          order_id: string
+          redeemed_at: string
+          redemption_code_id: string
+          status: string
+          user_email: string
+          user_id: string
+        }[]
+      }
+      apply_membership_grant: {
+        Args: {
+          _amount_cents?: number
+          _duration_days: number
+          _idempotency_key: string
+          _payment_method: string
+          _provider: string
+          _target_tier: string
+          _user_id: string
+        }
+        Returns: Json
+      }
       claim_premium_chapter: {
         Args: {
           _chapter_index: number
@@ -2030,6 +2291,33 @@ export type Database = {
         Returns: undefined
       }
       generate_ticket_code: { Args: never; Returns: string }
+      list_my_redemption_uses: {
+        Args: never
+        Returns: {
+          benefit_type: string
+          campaign_name: string
+          chart_id: string
+          code_last4: string
+          code_prefix: string
+          duration_days: number
+          fulfilled_at: string
+          id: string
+          order_id: string
+          redeemed_at: string
+          status: string
+        }[]
+      }
+      redeem_code: {
+        Args: {
+          _chart_id: string
+          _code_hash: string
+          _code_prefix: string
+          _ip_hash: string
+          _request_id: string
+          _user_agent_summary: string
+        }
+        Returns: Json
+      }
       set_chart_role: {
         Args: { _chart_id: string; _role: string }
         Returns: boolean

@@ -26,6 +26,9 @@ import {
 } from "@/lib/membership-plans";
 import { simulateMockMembershipUpgrade } from "@/lib/membership.functions";
 import { refreshMembershipTier } from "@/lib/use-membership-tier";
+import { RedemptionCheckoutForm } from "@/components/RedemptionCheckoutForm";
+
+type ExtendedMethod = MembershipPaymentMethod | "redemption";
 
 export type CheckoutSource =
   | "report"
@@ -67,6 +70,7 @@ const T = {
     en: "Please sign in first before activating a membership.",
   },
   benefits: { zh: "包含", en: "Includes" },
+  method_redemption: { zh: "兑换码", en: "Redemption code" },
 } as const;
 
 function pick(t: { zh: string; en: string }, lang: Lang) {
@@ -91,7 +95,7 @@ export function MembershipCheckoutModal({
   void source; // kept for analytics attribution once wired in.
   const titleId = useId();
   const plan = MEMBERSHIP_PLANS[targetTier];
-  const [method, setMethod] = useState<MembershipPaymentMethod>("wechat");
+  const [method, setMethod] = useState<ExtendedMethod>("wechat");
   const [phase, setPhase] = useState<"idle" | "busy" | "success" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
   const idempotencyKeyRef = useRef<string>("");
@@ -123,14 +127,14 @@ export function MembershipCheckoutModal({
   const priceCny = useMemo(() => (plan.priceCents / 100).toFixed(2).replace(/\.00$/, ""), [plan]);
 
   const confirm = async () => {
-    if (phase === "busy") return;
+    if (phase === "busy" || method === "redemption") return;
     setPhase("busy");
     setError(null);
     try {
       await simulateMockMembershipUpgrade({
         data: {
           targetTier,
-          paymentMethod: method,
+          paymentMethod: method as MembershipPaymentMethod,
           idempotencyKey: idempotencyKeyRef.current,
         },
       });
@@ -212,10 +216,15 @@ export function MembershipCheckoutModal({
 
           {phase !== "success" && (
             <>
-              <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                {MEMBERSHIP_PAYMENT_METHODS.map((m) => {
+              <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-5">
+                {(
+                  [...MEMBERSHIP_PAYMENT_METHODS, "redemption"] as ExtendedMethod[]
+                ).map((m) => {
                   const active = m === method;
-                  const meta = MEMBERSHIP_METHOD_LABELS[m];
+                  const meta =
+                    m === "redemption"
+                      ? { glyph: "🎟", zh: T.method_redemption.zh, en: T.method_redemption.en }
+                      : MEMBERSHIP_METHOD_LABELS[m as MembershipPaymentMethod];
                   return (
                     <button
                       key={m}
@@ -243,29 +252,44 @@ export function MembershipCheckoutModal({
                 })}
               </div>
 
-              {error && (
-                <p
-                  data-testid="membership-checkout-error"
-                  role="alert"
-                  className="mt-4 rounded-lg border border-rose-500/40 bg-rose-500/[0.08] px-3 py-2 text-xs text-rose-200"
-                >
-                  {error}
-                </p>
-              )}
+              {method === "redemption" ? (
+                <RedemptionCheckoutForm
+                  lang={lang}
+                  onSuccess={(res) => {
+                    if (res.membership) setPhase("success");
+                  }}
+                  onClose={() => {
+                    onSuccess?.();
+                    onClose();
+                  }}
+                />
+              ) : (
+                <>
+                  {error && (
+                    <p
+                      data-testid="membership-checkout-error"
+                      role="alert"
+                      className="mt-4 rounded-lg border border-rose-500/40 bg-rose-500/[0.08] px-3 py-2 text-xs text-rose-200"
+                    >
+                      {error}
+                    </p>
+                  )}
 
-              <button
-                type="button"
-                onClick={confirm}
-                disabled={phase === "busy"}
-                data-testid="membership-checkout-confirm"
-                className="mt-5 min-h-11 w-full rounded-full bg-gold-dust px-6 py-3 text-[11px] uppercase tracking-[0.28em] text-obsidian hover:bg-gold-light disabled:opacity-60"
-              >
-                {phase === "busy"
-                  ? pick(T.processing, lang)
-                  : phase === "error"
-                    ? pick(T.retry, lang)
-                    : `${pick(T.confirm, lang)} · ¥${priceCny}`}
-              </button>
+                  <button
+                    type="button"
+                    onClick={confirm}
+                    disabled={phase === "busy"}
+                    data-testid="membership-checkout-confirm"
+                    className="mt-5 min-h-11 w-full rounded-full bg-gold-dust px-6 py-3 text-[11px] uppercase tracking-[0.28em] text-obsidian hover:bg-gold-light disabled:opacity-60"
+                  >
+                    {phase === "busy"
+                      ? pick(T.processing, lang)
+                      : phase === "error"
+                        ? pick(T.retry, lang)
+                        : `${pick(T.confirm, lang)} · ¥${priceCny}`}
+                  </button>
+                </>
+              )}
             </>
           )}
 
