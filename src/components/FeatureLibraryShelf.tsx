@@ -13,7 +13,7 @@
  *   mobile) so nothing gets clipped.
  * - Same-tab picks propagate through a CustomEvent instead of polling.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 
 import { useLang } from "@/lib/i18n";
@@ -27,7 +27,7 @@ import {
   type ShelfBook,
   type ShelfBookKey,
 } from "@/lib/concern-guidance-v1";
-import { CONCERN_EVENT } from "@/components/ConcernSelector";
+import { CONCERN_EVENT, FOCUS_SHELF_EVENT } from "@/components/ConcernSelector";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 import coverSelf from "@/assets/shelf-books/self_knowledge.webp";
@@ -38,6 +38,7 @@ import coverWealth from "@/assets/shelf-books/wealth_path.webp";
 import coverTimeline from "@/assets/shelf-books/life_timeline.webp";
 
 const CONCERN_STORAGE_KEY = "fate.concern.v1";
+const CHOSEN_BOOK_KEY = "fate.chosenBook.v1";
 
 const COVERS: Record<ShelfBookKey, string> = {
   self_knowledge: coverSelf,
@@ -46,6 +47,11 @@ const COVERS: Record<ShelfBookKey, string> = {
   love_bonds: coverLove,
   wealth_path: coverWealth,
   life_timeline: coverTimeline,
+};
+
+type Props = {
+  hasPrimaryChart?: boolean;
+  existingReportId?: string | null;
 };
 
 export function FeatureLibraryShelf() {
