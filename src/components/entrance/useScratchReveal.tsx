@@ -1,67 +1,75 @@
 /**
- * useScratchReveal — accumulating "erase the foggy glass" interaction.
+ * useScratchReveal — "lantern & scratch glass" interaction for the
+ * Destiny Library entrance.
  *
- * Rendering model (single visible canvas + offscreen stroke mask):
- *   1. On each animation frame we paint the foggy-glass canvas by drawing
- *      the underlying <video> (or poster <img>) with a blur filter, then
- *      overlay a soft cool-white fog tint.
- *   2. We then composite an offscreen "stroke mask" canvas (which stores
- *      the accumulated erase strokes as opaque radial gradients) using
- *      `destination-out`. Wherever the stroke mask has ink, the glass
- *      pixels become transparent, revealing the clear layer below.
+ * Three distinct pointer interactions:
+ *   • Hover  → transient soft reveal (~55–70% clear) that fades after ~800ms.
+ *              Written to `hoverMaskRef` and cleared every frame with a
+ *              partial fade so the fog re-forms naturally.
+ *   • Click  → permanent radial reveal + a small starmark stamped into
+ *              `stampMaskRef`. Recent star points are kept in `starsRef`
+ *              (capped at MAX_STARS) so the enter animation can connect
+ *              them with faint golden lines.
+ *   • Drag   → permanent continuous erase along the pointer path (persistent
+ *              scratch mask, same behavior as before).
  *
- * Interaction:
- *   - Only pointer-DOWN drags erase (plain hover is a no-op; the caller
- *     shows an unrelated cursor glow).
- *   - Strokes are captured with pointer events + rAF throttling to stay
- *     off the React render path.
- *   - Erased pixels persist for the whole session — the stroke mask is
- *     never cleared until the entrance unmounts.
- *
- * The hook returns refs the component attaches to the visible glass
- * canvas and the transparent scratch surface, plus a getter for the
- * approximate reveal ratio (sampled at ~4Hz for the "馆门已经看见" hint).
+ * The visible <canvas> is repainted each frame:
+ *   blurred source → fog tint → destination-out hover mask (partial α)
+ *                              → destination-out permanent mask (full α)
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export interface UseScratchRevealOptions {
-  /** Source element re-painted into the glass each frame. */
   getSource: () => HTMLVideoElement | HTMLImageElement | null;
-  brushRadius?: number;   // desktop
+  brushRadius?: number;
   brushRadiusMobile?: number;
-  /** Called once when the user starts scratching. */
   onFirstStroke?: () => void;
   disabled?: boolean;
+  reducedMotion?: boolean;
 }
+
+export interface StarPoint {
+  x: number; // CSS px
+  y: number;
+  id: number;
+}
+
+const MAX_STARS = 8;
 
 export function useScratchReveal(opts: UseScratchRevealOptions) {
   const glassRef = useRef<HTMLCanvasElement | null>(null);
   const scratchRef = useRef<HTMLDivElement | null>(null);
-  const maskRef = useRef<HTMLCanvasElement | null>(null);
+  const maskRef = useRef<HTMLCanvasElement | null>(null); // permanent
+  const hoverMaskRef = useRef<HTMLCanvasElement | null>(null); // transient
   const rafRef = useRef<number | null>(null);
   const sizeRef = useRef({ w: 0, h: 0, dpr: 1 });
   const drawingRef = useRef(false);
+  const movedRef = useRef(false);
+  const downPtRef = useRef<{ x: number; y: number; t: number } | null>(null);
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
+  const hoverPtRef = useRef<{ x: number; y: number } | null>(null);
   const startedRef = useRef(false);
   const [revealRatio, setRevealRatio] = useState(0);
+  const starsRef = useRef<StarPoint[]>([]);
+  const starIdRef = useRef(1);
+  const [starsVersion, setStarsVersion] = useState(0);
 
-  // --- Sizing ----------------------------------------------------------
   const resize = useCallback(() => {
     const glass = glassRef.current;
     const mask = maskRef.current;
-    if (!glass || !mask) return;
+    const hover = hoverMaskRef.current;
+    if (!glass || !mask || !hover) return;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const w = window.innerWidth;
     const h = window.innerHeight;
     sizeRef.current = { w, h, dpr };
 
-    // Preserve prior mask by copying before resize.
     const prev = document.createElement("canvas");
     prev.width = mask.width;
     prev.height = mask.height;
     prev.getContext("2d")?.drawImage(mask, 0, 0);
 
-    for (const c of [glass, mask]) {
+    for (const c of [glass, mask, hover]) {
       c.width = Math.floor(w * dpr);
       c.height = Math.floor(h * dpr);
       c.style.width = `${w}px`;
@@ -74,12 +82,12 @@ export function useScratchReveal(opts: UseScratchRevealOptions) {
     }
   }, []);
 
-  // --- Frame paint -----------------------------------------------------
   const paint = useCallback(() => {
     rafRef.current = null;
     const glass = glassRef.current;
     const mask = maskRef.current;
-    if (!glass || !mask) return;
+    const hover = hoverMaskRef.current;
+    if (!glass || !mask || !hover) return;
     const ctx = glass.getContext("2d");
     if (!ctx) return;
     const src = opts.getSource();
@@ -89,12 +97,10 @@ export function useScratchReveal(opts: UseScratchRevealOptions) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
 
-    // Blurred + slightly desaturated source.
     if (src) {
       try {
         ctx.save();
-        ctx.filter = "blur(13px) brightness(0.72) saturate(0.6) contrast(0.95)";
-        // Scale up slightly to hide blur bleed at edges.
+        ctx.filter = "blur(11px) brightness(0.68) saturate(0.62) contrast(0.96)";
         const scale = 1.045;
         const dw = w * scale;
         const dh = h * scale;
@@ -103,32 +109,63 @@ export function useScratchReveal(opts: UseScratchRevealOptions) {
         ctx.drawImage(src, dx, dy, dw, dh);
         ctx.restore();
       } catch {
-        /* video not ready — skip this frame */
+        /* skip frame */
       }
     }
 
-    // Cool-white fog tint (never black).
+    // Warm-grey fog tint (never black).
     const grad = ctx.createLinearGradient(0, 0, 0, h);
-    grad.addColorStop(0, "rgba(205,202,195,0.18)");
-    grad.addColorStop(0.5, "rgba(130,126,136,0.13)");
-    grad.addColorStop(1, "rgba(55,51,62,0.20)");
+    grad.addColorStop(0, "rgba(205,202,195,0.12)");
+    grad.addColorStop(0.5, "rgba(128,122,135,0.09)");
+    grad.addColorStop(1, "rgba(65,60,70,0.10)");
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, w, h);
 
-    // Apply accumulated erase strokes.
+    // Continuously repaint hover mask so old spots fade.
+    const hctx = hover.getContext("2d");
+    if (hctx) {
+      // Fade existing hover ink each frame (~800ms half-life).
+      hctx.setTransform(1, 0, 0, 1, 0, 0);
+      hctx.globalCompositeOperation = "destination-out";
+      hctx.fillStyle = "rgba(0,0,0,0.06)";
+      hctx.fillRect(0, 0, hover.width, hover.height);
+      hctx.globalCompositeOperation = "source-over";
+
+      const hp = hoverPtRef.current;
+      if (hp && !drawingRef.current) {
+        const r = 200 * dpr;
+        const px = hp.x * dpr;
+        const py = hp.y * dpr;
+        const g = hctx.createRadialGradient(px, py, 0, px, py, r);
+        g.addColorStop(0, "rgba(0,0,0,0.55)");
+        g.addColorStop(0.55, "rgba(0,0,0,0.28)");
+        g.addColorStop(1, "rgba(0,0,0,0)");
+        hctx.fillStyle = g;
+        hctx.beginPath();
+        hctx.arc(px, py, r, 0, Math.PI * 2);
+        hctx.fill();
+      }
+    }
+
+    // Apply transient hover reveal (partial).
     ctx.globalCompositeOperation = "destination-out";
-    ctx.setTransform(1, 0, 0, 1, 0, 0); // draw mask 1:1 in device px
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.drawImage(hover, 0, 0);
+    // Apply permanent scratch mask (full).
     ctx.drawImage(mask, 0, 0);
     ctx.globalCompositeOperation = "source-over";
   }, [opts]);
 
-  // Continuous rAF loop while enabled — needed because video plays.
   useEffect(() => {
     if (opts.disabled) return;
     let alive = true;
     let last = 0;
     const loop = (t: number) => {
       if (!alive) return;
+      if (document.hidden) {
+        rafRef.current = window.requestAnimationFrame(loop);
+        return;
+      }
       if (t - last > 33) {
         last = t;
         paint();
@@ -143,22 +180,21 @@ export function useScratchReveal(opts: UseScratchRevealOptions) {
     };
   }, [paint, opts.disabled]);
 
-  // --- Strokes ---------------------------------------------------------
   const brushAt = useCallback(
-    (x: number, y: number) => {
+    (x: number, y: number, opts2?: { radiusScale?: number; alpha?: number }) => {
       const mask = maskRef.current;
       if (!mask) return;
       const mctx = mask.getContext("2d");
       if (!mctx) return;
       const isMobile = window.matchMedia("(max-width: 640px)").matches;
-      const r =
-        (isMobile ? opts.brushRadiusMobile ?? 110 : opts.brushRadius ?? 130) *
-        sizeRef.current.dpr;
+      const baseR = isMobile ? opts.brushRadiusMobile ?? 110 : opts.brushRadius ?? 130;
+      const r = baseR * (opts2?.radiusScale ?? 1) * sizeRef.current.dpr;
+      const a = opts2?.alpha ?? 1;
 
       const drawStamp = (px: number, py: number) => {
         const g = mctx.createRadialGradient(px, py, 0, px, py, r);
-        g.addColorStop(0, "rgba(0,0,0,1)");
-        g.addColorStop(0.55, "rgba(0,0,0,0.85)");
+        g.addColorStop(0, `rgba(0,0,0,${a})`);
+        g.addColorStop(0.55, `rgba(0,0,0,${a * 0.82})`);
         g.addColorStop(1, "rgba(0,0,0,0)");
         mctx.fillStyle = g;
         mctx.beginPath();
@@ -188,45 +224,104 @@ export function useScratchReveal(opts: UseScratchRevealOptions) {
     [opts.brushRadius, opts.brushRadiusMobile]
   );
 
+  const clickRevealAt = useCallback(
+    (x: number, y: number) => {
+      const mask = maskRef.current;
+      if (!mask) return;
+      const mctx = mask.getContext("2d");
+      if (!mctx) return;
+      const dpr = sizeRef.current.dpr;
+      const px = x * dpr;
+      const py = y * dpr;
+      const r = 210 * dpr;
+      const g = mctx.createRadialGradient(px, py, 0, px, py, r);
+      g.addColorStop(0, "rgba(0,0,0,1)");
+      g.addColorStop(0.5, "rgba(0,0,0,0.8)");
+      g.addColorStop(1, "rgba(0,0,0,0)");
+      mctx.fillStyle = g;
+      mctx.beginPath();
+      mctx.arc(px, py, r, 0, Math.PI * 2);
+      mctx.fill();
+
+      // Record star
+      starsRef.current.push({ x, y, id: starIdRef.current++ });
+      if (starsRef.current.length > MAX_STARS) {
+        starsRef.current.splice(0, starsRef.current.length - MAX_STARS);
+      }
+      setStarsVersion((v) => v + 1);
+    },
+    []
+  );
+
   useEffect(() => {
     if (opts.disabled) return;
     const surface = scratchRef.current;
     if (!surface) return;
 
+    const onHoverMove = (e: PointerEvent) => {
+      if (drawingRef.current) return;
+      if (opts.reducedMotion) return;
+      hoverPtRef.current = { x: e.clientX, y: e.clientY };
+    };
+    const onHoverLeave = () => {
+      hoverPtRef.current = null;
+    };
     const onDown = (e: PointerEvent) => {
       drawingRef.current = true;
+      movedRef.current = false;
       lastPointRef.current = null;
+      downPtRef.current = { x: e.clientX, y: e.clientY, t: performance.now() };
       (e.target as Element).setPointerCapture?.(e.pointerId);
-      brushAt(e.clientX, e.clientY);
-      if (!startedRef.current) {
-        startedRef.current = true;
-        opts.onFirstStroke?.();
-      }
     };
     const onMove = (e: PointerEvent) => {
-      if (!drawingRef.current) return;
-      brushAt(e.clientX, e.clientY);
+      if (!drawingRef.current) {
+        onHoverMove(e);
+        return;
+      }
+      const d0 = downPtRef.current;
+      if (d0) {
+        const dist = Math.hypot(e.clientX - d0.x, e.clientY - d0.y);
+        if (dist > 6) movedRef.current = true;
+      }
+      if (movedRef.current) {
+        brushAt(e.clientX, e.clientY);
+        if (!startedRef.current) {
+          startedRef.current = true;
+          opts.onFirstStroke?.();
+        }
+      }
     };
     const onUp = (e: PointerEvent) => {
+      const wasDrawing = drawingRef.current;
       drawingRef.current = false;
       lastPointRef.current = null;
       try { (e.target as Element).releasePointerCapture?.(e.pointerId); } catch { /* noop */ }
+      if (!wasDrawing) return;
+      const d0 = downPtRef.current;
+      downPtRef.current = null;
+      // Click (short, low movement) → reveal + star
+      if (d0 && !movedRef.current && performance.now() - d0.t < 400) {
+        clickRevealAt(e.clientX, e.clientY);
+        if (!startedRef.current) {
+          startedRef.current = true;
+          opts.onFirstStroke?.();
+        }
+      }
     };
+
     surface.addEventListener("pointerdown", onDown);
     surface.addEventListener("pointermove", onMove);
     surface.addEventListener("pointerup", onUp);
     surface.addEventListener("pointercancel", onUp);
-    surface.addEventListener("pointerleave", onUp);
+    surface.addEventListener("pointerleave", (e) => { onHoverLeave(); onUp(e); });
     return () => {
       surface.removeEventListener("pointerdown", onDown);
       surface.removeEventListener("pointermove", onMove);
       surface.removeEventListener("pointerup", onUp);
       surface.removeEventListener("pointercancel", onUp);
-      surface.removeEventListener("pointerleave", onUp);
     };
-  }, [brushAt, opts]);
+  }, [brushAt, clickRevealAt, opts]);
 
-  // --- Resize ----------------------------------------------------------
   useEffect(() => {
     resize();
     const onResize = () => resize();
@@ -234,7 +329,6 @@ export function useScratchReveal(opts: UseScratchRevealOptions) {
     return () => window.removeEventListener("resize", onResize);
   }, [resize]);
 
-  // --- Reveal ratio sampling (approx, cheap) --------------------------
   useEffect(() => {
     if (opts.disabled) return;
     const id = window.setInterval(() => {
@@ -242,7 +336,6 @@ export function useScratchReveal(opts: UseScratchRevealOptions) {
       if (!mask) return;
       const mctx = mask.getContext("2d");
       if (!mctx) return;
-      // Sample a 64x64 grid from the mask alpha channel.
       const sw = 64;
       const sh = 64;
       const off = document.createElement("canvas");
@@ -259,7 +352,6 @@ export function useScratchReveal(opts: UseScratchRevealOptions) {
     return () => window.clearInterval(id);
   }, [opts.disabled]);
 
-  // Full erase animation for the enter transition.
   const eraseAll = useCallback((durationMs = 550) => {
     const mask = maskRef.current;
     if (!mask) return;
@@ -276,10 +368,20 @@ export function useScratchReveal(opts: UseScratchRevealOptions) {
     window.requestAnimationFrame(step);
   }, []);
 
-  // The offscreen mask element (kept in DOM but hidden).
   const maskCanvas = (
-    <canvas ref={maskRef} style={{ display: "none" }} aria-hidden="true" />
+    <>
+      <canvas ref={maskRef} style={{ display: "none" }} aria-hidden="true" />
+      <canvas ref={hoverMaskRef} style={{ display: "none" }} aria-hidden="true" />
+    </>
   );
 
-  return { glassRef, scratchRef, maskCanvas, revealRatio, eraseAll };
+  return {
+    glassRef,
+    scratchRef,
+    maskCanvas,
+    revealRatio,
+    eraseAll,
+    stars: starsRef.current,
+    starsVersion,
+  };
 }
