@@ -64,7 +64,7 @@ export function LibraryFeatureDrawer({
             </SheetDescription>
           ) : null}
         </SheetHeader>
-        <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-8 sm:py-8">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-6 sm:px-8 sm:py-8">
           {open ? children : null}
         </div>
         {footer ? (
