@@ -25,6 +25,7 @@ import { HOME_GUIDE_CARDS, type HomeGuideCard, type HomeCardId } from "@/lib/hom
 import { useHomeFacts } from "@/lib/use-home-facts";
 
 import ScrollStack, { ScrollStackItem } from "@/components/react-bits/ScrollStack/ScrollStack";
+import SplitText from "@/components/react-bits/SplitText/SplitText";
 import LineSidebar from "@/components/react-bits/LineSidebar/LineSidebar";
 import { LibraryInteriorBackdrop } from "./LibraryInteriorBackdrop";
 import { HomeCardVisual } from "./HomeCardVisual";
