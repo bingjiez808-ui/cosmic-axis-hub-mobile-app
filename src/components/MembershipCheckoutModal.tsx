@@ -26,6 +26,9 @@ import {
 } from "@/lib/membership-plans";
 import { simulateMockMembershipUpgrade } from "@/lib/membership.functions";
 import { refreshMembershipTier } from "@/lib/use-membership-tier";
+import { RedemptionCheckoutForm } from "@/components/RedemptionCheckoutForm";
+
+type ExtendedMethod = MembershipPaymentMethod | "redemption";
 
 export type CheckoutSource =
   | "report"
