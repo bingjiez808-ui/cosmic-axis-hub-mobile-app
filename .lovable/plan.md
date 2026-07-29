@@ -1,97 +1,104 @@
-
 ## 目标
 
-只在本轮完成：馆门打开→馆内视频背景→七张 Scroll Stack 卡片首页，去重现有重复模块，保留全部业务逻辑/路由/handler。**不实现 Lanyard 借阅证**。
+用真正的 React Bits `ScrollStack + Lenis` 重构馆内首页，把七张卡做成"功能索引卡 + Drawer 抽屉"，Drawer 内直接复用现有的 `ConcernSelector` / `FeatureLibraryShelf` / `DestinyCommonsGrid` / `PostRitualRoomsSection` / `HomePersonalDeskTeaser` 等原组件，不复制第二套数据、状态、路由或支付逻辑。
 
-## 一、审计结果（不修改，仅确认复用）
+## 一、依赖与源码接入
 
-现首页 `src/routes/index.tsx` 已使用的组件与去向：
+1. `bun add lenis`。
+2. 新建 `src/components/react-bits/ScrollStack/ScrollStack.tsx`（附件源码 TSX 化，保留全部计算逻辑，去掉不需要的 `useWindowScroll=false` 分支里的 wrapper Lenis，避免与全局竞争；桌面 `useWindowScroll={true}`）。
+3. 新建 `src/components/react-bits/ScrollStack/ScrollStack.css`（附件原样）。
+4. 全局 Lenis 审计：搜索 `new Lenis`，若已有则改为共用；否则由 ScrollStack 自己创建 window Lenis 且卸载时销毁。
+5. `prefers-reduced-motion` / 移动端触摸：`syncTouch` 保留但 reduced-motion 时直接不初始化 Lenis，卡片按普通纵向渲染。
 
-| 现有模块 | 去向 |
-|---|---|
-| `LibraryEntrance`（开屏） | 保留原样，卡片首页作为下一层 |
-| `ConcernSelector`（问题选择） | 移入 **卡片 01**，删除页面独立段 |
-| `FeatureLibraryShelf`（六本书）| 拆入 **卡片 02/03/04/05**（各自路由 CTA），首页不再单独渲染 |
-| `PlayfulLibrarySection`（命运通识馆入口） | 移入 **卡片 06** |
-| `PostRitualRoomsSection`（四藏室） | 拆合并进 **卡片 03/04/05/07**（塔罗、时间轴、贤者/神谕者） |
-| `HomePersonalDeskTeaser` / trust-bridge / 会员段 / `CuratorLetter` | 会员段并入 **卡片 07**；Curator 与 trust-bridge 作为 Scroll Stack 之后的收束页脚保留 |
-| `PremiumReportCta` | 复用于 **卡片 03** CTA |
-| `resolveCta`（`src/lib/home-cta.ts`） | 七张卡的登录/命盘/会员判断统一走它，不复制第二套 |
-| `useSupabaseSession` + 现有主命盘 hook（沿用 `resolveCta` 的入参） | 复用 |
+## 二、开场文案恢复
 
-路由复用（全部现有）：`/ritual`, `/report`, `/me/home`, `/me/echoes`（时间轴）, `/me/oracle`（塔罗 / 神谕者）, `/me/sage`, `/me/membership`, `/life-studies`（命运通识馆）。不新建任何路由。
+`GuideDeskHero` 组件重写：
+- 中文主标题：`每一种文明，都在追问` 换行 `<em class="gold italic">同一个问题。</em>`
+- 英文对应翻译（用现有 `useLang`）。
+- 副标题：学业/事业/爱情/关系/财富/人生阶段 …
+- 小字提示：向下翻阅七张索引卡；点击可打开完整馆藏。
+- 字号 clamp 按要求；视频背景下方加 `linear-gradient(to top, rgba(0,0,0,0.85), transparent)` 遮罩。
 
-## 二、视频资源
+## 三、七张索引卡
 
-- 使用用户上传的 `library-interior-desktop.mp4` / `library-interior-mobile.mp4` / `library-interior-desktop-poster.webp` / `library-interior-mobile-poster.webp`，通过 `lovable-assets` 上 CDN，生成 `.asset.json` 指针于 `src/assets/library-interior/`。
-- 组件 `LibraryInteriorBackdrop`：
-  - `<video muted autoPlay loop playsInline preload="metadata" object-cover>` 加 poster。
-  - JS 依据 `(max-width:640px)` 选桌面/移动源。
-  - `onError` → 隐藏 video 显 poster。
-  - `prefers-reduced-motion` → 只渲染 poster `<img>`。
-  - `position: fixed inset-0 -z-10 pointer-events-none`，滚动不重挂载。
-  - 三层可读性：顶/底渐变 + 黑金半透明遮罩 + 卡片自带 `backdrop-blur`。
+沿用 `HOME_GUIDE_CARDS`（现已存在），把每张卡改成瘦身版：编号 / 标题 / 一句价值 / 状态徽章 / 打开馆藏按钮 / 局部纹理。**卡片点击不再走 `resolveCta` 跳路由**，而是 `openFeature(id)` 打开 Drawer。真正的导航 CTA 仍走 `resolveCta`，放在 Drawer 内部。
 
-## 三、Scroll Stack 组件
+七卡与 Drawer 内容映射：
 
-不装 npm 包。直接把 React Bits 官方 ScrollStack（TS + Tailwind）源码抄入 `src/components/scroll-stack/ScrollStack.tsx`，仅保留 rAF + IntersectionObserver 的堆叠逻辑；不引第三方依赖。
+| # | 卡 | Drawer 内复用组件 |
+|---|---|---|
+| 01 | 今天的问题 | `<ConcernSelector />` 完整原组件 |
+| 02 | 建立命盘 | 简介 + resolveCta 按钮跳 `/ritual` 或 `/me/home` |
+| 03 | 综合解读 | `<PremiumReportCta />` |
+| 04 | 图书馆的六本书 | `<FeatureLibraryShelf />`（新加） |
+| 05 | 命运通识馆 | `<DestinyCommonsGrid />` 或 `<PlayfulLibrarySection />` 原版 |
+| 06 | 四间特别藏室 | `<PostRitualRoomsSection />` 原版 |
+| 07 | 个人书架 | `<HomePersonalDeskTeaser />` 原版 |
 
-- 桌面：`max-w-[1240px]`, `clamp(520px,68vh,760px)`, 卡片粘性堆叠，`scale/brightness` 微变（±3%），无旋转。
-- 移动：单列，`min-h`-驱动，sticky 弱化（`top: 12vh`）。
-- `prefers-reduced-motion` → 关掉 sticky + scale，降级为普通列表。
-- 键盘 Tab 可达；卡片 focus 时更新进度指示。
-- 不锁 body、不劫持触控。
+*会员/塔罗/时间轴等原本在 07 位置的门牌，全部并入 06 的 `PostRitualRoomsSection`（它已经包含四藏室 + 会员共享结算）。*
 
-## 四、七卡数据源
+如任一原组件目前含"卡片下方 inline 展开"，改由 Drawer 承载，卡本身只做入口。
 
-新建 `src/lib/home-guide-cards.ts` 定义 `HomeGuideCard[]`，字段：id、序号、双语标题/一句话、access（open/basic/sage/oracle/coming）、CTA 目标（走 `resolveCta`）、可视化组件 key。JSX 只做映射，不复制七段。
+## 四、Drawer 统一容器
 
-七张卡 & 复用：
+新建 `src/components/home-v2/LibraryFeatureDrawer.tsx`：
+- 底层用 shadcn `Sheet`（已存在），桌面 `side="right"`、`className="w-[min(1180px,92vw)] sm:max-w-none"`；移动 `side="bottom"` 全屏 `h-[100dvh]`。
+- Props: `open / onOpenChange / title / eyebrow / status / children / primaryAction / secondaryAction`。
+- Header sticky，内容区 `overflow-y-auto`，底部 CTA sticky-bottom（可选）。
+- 内建 aria-labelledby / describedby，Escape、focus trap 由 Radix 自带。
+- `LazyMount`：`children` 仅在 `open===true` 时渲染，避免重型模块预挂载。
 
-1. **今天你带着什么问题** → 复用 `ConcernSelector`（作为 Dialog 打开）
-2. **建立我的命盘** → `/ritual` 或 `/me/home`（`hasPrimaryChart` 判断）
-3. **阅读综合解读** → `PremiumReportCta` + `/report`
-4. **沿时间寻找证据** → `/me/echoes`
-5. **塔罗 · 第二位证人** → `/me/oracle`（塔罗子段）
-6. **命运通识馆** → `/life-studies`，六馆状态显示
-7. **贤者与神谕者阅览室** → `/me/membership`（简介 + 两扇门）
+## 五、URL 状态
 
-每卡视觉小组件放于 `src/components/scroll-stack/visuals/`（Card01Spines、Card02Astrolabe、…），均为轻量 SVG。
+- `useSearch` from `@tanstack/react-router`，声明 index 路由 `validateSearch` 支持 `?feature=<id>`。
+- 打开 Drawer → `router.navigate({ search: { feature: id }, replace: true })`。
+- 关闭 → 清空 `feature`。
+- `popstate` 由 router 自动触发 → Drawer 跟随 URL；返回键先关 Drawer。
+- 复用现有 router，不加二套。
 
-## 五、进度导航
+## 六、去重
 
-`src/components/scroll-stack/StackProgress.tsx`：桌面右侧 7 点书签（hover 展开），移动底部 Drawer "第 X / 共 7"。scroll 到对应 `id`。
-
-## 六、首页组装
-
-重写 `src/routes/index.tsx`：
-
+`src/routes/index.tsx` 精简为：
 ```
 <LibraryEntrance />
 <LibraryInteriorBackdrop />
-<GuideDeskHero />            // 55–70vh，导览台欢迎语 + 「开始翻阅」
-<HomeScrollStack cards={...} />
-<CuratorLetter /> + 页脚品牌/免责
-<StackProgress />
+<GuideDeskHero />
+<HomeScrollStack />   // 只剩 ScrollStack + Drawer
+<CuratorLetter />
 ```
+删除 Scroll Stack 之外任何 inline 渲染的 `ConcernSelector` / `FeatureLibraryShelf` / `PostRitualRoomsSection` 等。这些组件文件保留（Drawer 内复用）。
 
-删除首页里 `ConcernSelector`、`FeatureLibraryShelf`、`PlayfulLibrarySection`、`PostRitualRoomsSection`、`HomePersonalDeskTeaser`、独立会员段和 trust-bridge 段的重复渲染。组件文件本身**不删除**（其他路由或未来可能复用）。
+## 七、样式与背景
 
-## 七、i18n
+- `LibraryInteriorBackdrop` 保持不变，只在其上增加底部深色渐变。
+- ScrollStack 卡片：`rounded-3xl border-gold-dust/20 bg-obsidian/70 backdrop-blur-xl`，最小高度改为 `min-h-[clamp(320px,52vh,520px)]`（比原 20rem 更适合内容）。
+- 移动参数：`itemDistance=64 / itemStackDistance=14 / baseScale=0.94 / blurAmount=0`。
 
-`useLang` 已有 `t`。新增所需的 key 到 i18n 字典（`hero_guide_desk_*`、七卡的 `home_card_XX_title/desc/cta` 等）。
+## 八、i18n
 
-## 八、验收
+现有 `useLang` 已有中英；新增缺失 key（hero、drawer 状态、卡片一句话）到字典。全部经 `t()` 输出。
 
-- typecheck。
-- Playwright 快速跑一次：桌面 1280、移动 390，验证：进入馆门→视频背景→七卡滚动→CTA 跳转正确路由。
-- 检查无 console error、无重复请求。
+## 九、清理旧实现
+
+删除 / 替换：
+- `src/components/home-v2/ScrollStack.tsx`（自制 sticky 版本）→ 换成引用新的 react-bits 版本。
+- `src/components/home-v2/StackProgress.tsx` 保留但可选（暂不显示，避免干扰）。
+- `HomeScrollStack.tsx` 重写。
+
+## 十、验证
+
+1. `bun x tsgo --noEmit`。
+2. `bun test` — 已有 750+ 测试必须仍全绿。
+3. Playwright 桌面 1440 / 1280 / 1024 + 移动 390，脚本步骤：
+   - 首屏文案含 "每一种文明，都在追问"。
+   - 依次点开 7 张卡 → Drawer 打开 → 关闭 → URL 同步。
+   - 手动触发 ConcernSelector 选项切换，页面无跳动。
+   - reduced-motion 模拟：确认卡片正常列表化。
+4. 截图并 code--view 核对。
 
 ## 本轮不做
 
-- Lanyard 借阅证（下一轮）
-- 视频文件之外的新素材生成
-- 支付弹窗、会员逻辑改动
-- 现有业务组件的内部改动
-
-—— 批准后直接开工。
+- 不改数据库、鉴权、支付、会员权益、命盘计算、报告生成、既有路由。
+- 不引入 progress rail（`StackProgress` 保留代码但不挂载）。
+- 不新生成图片素材。
+- Lanyard 借阅证。
