@@ -261,6 +261,7 @@ const KNOWN_ERROR_CODES = new Set([
   "not_authenticated",
   "invalid_request_id",
   "rate_limited",
+  "code_not_assigned_to_you",
 ]);
 
 export const redeemCode = createServerFn({ method: "POST" })
