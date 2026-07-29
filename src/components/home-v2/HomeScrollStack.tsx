@@ -456,25 +456,19 @@ function HomeSideRail({
       {/* Desktop rail: fixed narrow width, proximity-driven labels. */}
       <div
         className="pointer-events-auto fixed right-4 top-1/2 z-40 hidden -translate-y-1/2 xl:block"
-        style={{ width: 220 }}
         aria-label={isZh ? "馆藏索引" : "Card index"}
       >
-        <div className="rounded-2xl border border-gold-dust/15 bg-obsidian/55 px-3 py-4 backdrop-blur-md">
-          <p className="mb-3 text-center text-[9px] uppercase tracking-[0.28em] text-gold-dust/60">
-            {String(activeIndex + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
-          </p>
-          <LineSidebar
-            items={items}
-            activeIndex={activeIndex}
-            onItemClick={(i) => scrollToIndex(i)}
-            proximityRadius={120}
-            maxShift={18}
-            markerLength={36}
-            itemGap={12}
-            fontSize={0.7}
-            ariaLabel={isZh ? "馆藏索引" : "Card index"}
-          />
-        </div>
+        <LineSidebar
+          items={items}
+          activeIndex={activeIndex}
+          onItemClick={(i) => scrollToIndex(i)}
+          proximityRadius={140}
+          maxShift={22}
+          markerLength={34}
+          itemGap={16}
+          fontSize={0.68}
+          ariaLabel={isZh ? "馆藏索引" : "Card index"}
+        />
       </div>
 
       {/* Mobile pill: cycles to next card. */}
