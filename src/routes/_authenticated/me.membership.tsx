@@ -43,6 +43,7 @@ function MembershipPage() {
   const { lang } = useLang();
   const isZh = lang === "zh";
   const [premium, setPremium] = useState<PremiumRow[] | null>(null);
+  const [redemptions, setRedemptions] = useState<MyRedemptionUse[] | null>(null);
   const [checkoutTarget, setCheckoutTarget] = useState<MembershipTierId | null>(null);
 
   useEffect(() => {
