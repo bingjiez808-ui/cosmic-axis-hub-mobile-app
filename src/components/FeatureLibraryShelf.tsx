@@ -408,6 +408,12 @@ export function FeatureLibraryShelf({
                       {b.oneLiner[lang]}
                     </DialogDescription>
 
+                    {H.alsoOpenNote && !isFeatured ? (
+                      <p className="mt-3 rounded-md border border-amber-200/25 bg-amber-500/10 px-3 py-2 text-[12px] leading-snug text-amber-100/80">
+                        {H.alsoOpenNote[lang]}
+                      </p>
+                    ) : null}
+
                     <div className="mt-5">
                       <div className="text-[11px] uppercase tracking-[0.22em] text-amber-200/70">
                         {H.answers[lang]}
@@ -452,12 +458,16 @@ export function FeatureLibraryShelf({
                       to={resolveConcernRoute({
                         concern: b.ctaTarget,
                         isSignedIn,
-                        hasPrimaryChart: false,
+                        hasPrimaryChart,
+                        existingReportId,
                       })}
-                      onClick={() => setOpenBook(null)}
+                      onClick={() => {
+                        rememberChosenBook(b.key);
+                        setOpenBook(null);
+                      }}
                       className="inline-flex min-h-11 w-full items-center justify-center rounded-full bg-gradient-to-r from-amber-300 to-amber-500 px-5 text-sm font-medium text-black transition hover:brightness-110 sm:w-auto"
                     >
-                      {H.cta[lang]}
+                      {ctaLabel(b.ctaTarget)}
                     </Link>
                   </div>
                 </div>
