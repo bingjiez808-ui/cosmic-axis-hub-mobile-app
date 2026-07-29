@@ -55,6 +55,7 @@ export function HomeScrollStack() {
   const { lang } = useLang();
   const isZh = lang === "zh";
   const facts = useHomeFacts();
+  const { stable } = useStableMotion();
 
   const [openId, setOpenId] = useState<HomeCardId | null>(null);
 
