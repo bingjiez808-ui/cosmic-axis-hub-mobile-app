@@ -205,7 +205,7 @@ function GuideDeskHero({ isZh }: { isZh: boolean }) {
         tag="h1"
         text={heading}
         className="mt-6 font-serif text-3xl leading-tight text-stone-warm sm:text-5xl md:text-6xl [text-shadow:0_2px_24px_rgba(0,0,0,0.9),0_0_2px_rgba(0,0,0,0.6)]"
-        splitType="chars"
+        splitType="words, chars"
         delay={55}
         duration={1.1}
         ease="power3.out"
