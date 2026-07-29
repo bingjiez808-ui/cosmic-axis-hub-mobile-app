@@ -82,22 +82,36 @@ export function HomeScrollStack() {
       Boolean
     ) as HTMLElement[];
     if (!cards.length) return;
-    const onScroll = () => {
+    let rafId: number | null = null;
+    let lastIdx = -1;
+    const compute = () => {
+      rafId = null;
       let bestIdx = 0;
       let bestDist = Infinity;
-      cards.forEach((el, i) => {
-        const rect = el.getBoundingClientRect();
-        const dist = Math.abs(rect.top - window.innerHeight * 0.3);
+      const anchor = window.innerHeight * 0.3;
+      for (let i = 0; i < cards.length; i++) {
+        const rect = cards[i].getBoundingClientRect();
+        const dist = Math.abs(rect.top - anchor);
         if (dist < bestDist) {
           bestDist = dist;
           bestIdx = i;
         }
-      });
-      setActiveIndex(bestIdx);
+      }
+      if (bestIdx !== lastIdx) {
+        lastIdx = bestIdx;
+        setActiveIndex(bestIdx);
+      }
     };
-    onScroll();
+    const onScroll = () => {
+      if (rafId != null) return;
+      rafId = requestAnimationFrame(compute);
+    };
+    compute();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (rafId != null) cancelAnimationFrame(rafId);
+    };
   }, []);
 
   const activeCard = openId ? HOME_GUIDE_CARDS.find((c) => c.id === openId) ?? null : null;
