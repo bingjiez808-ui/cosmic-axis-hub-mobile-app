@@ -93,11 +93,39 @@ export type ReportDimensionAI = {
   synthesis: string;
   plain: string;
   details: { label: string; items: string[] }[];
+  /** Concrete, practical pointers for this dimension (label -> short answer). */
+  specifics: { label: string; value: string }[];
 };
 
 export type ReportAI = {
   summary: string;
   dimensions: ReportDimensionAI[];
+};
+
+
+/** What the "specifics" block must answer, per dimension. Kept deliberately
+   short — the exhaustive treatment belongs to the paid综合报告. */
+const SPECIFIC_TOPICS_ZH: Record<string, string> = {
+  character: "关键词性格标签；最舒服的相处方式；最容易被误解的一点",
+  academic: "最适合的学科族群；最佳学习方式；需要补的短板",
+  vocation: "适合的职业/行业（举 2-3 个具体方向）；适合的组织形态（大机构/小团队/自由职业）；不适合的工作环境",
+  wealth: "主要财富来源（主业为主还是副业为主）；适合的副业方向；其他可能的进财方式（投资/版税/家族/贵人）；最需要避开的破财方式",
+  love: "正缘类型（性格与相处气质，不写具体身份）；桃花较旺的时间段（年龄段或流年方向）；容易反复的关系模式；最有效的相处建议",
+  health: "尤其需要注意的身体系统/部位；最容易失衡的季节或作息；一条最见效的日常调理",
+  parents: "与父母的相处基调；最容易起摩擦的议题；可修复的一个具体动作",
+  children: "与子女/后辈的缘分基调；教育方式建议；需要留心的一个阶段",
+  mission: "此生最核心的课题一句话；最能发挥的场域；最需要放下的执念",
+};
+const SPECIFIC_TOPICS_EN: Record<string, string> = {
+  character: "signature trait; how you are easiest to be with; what people most often misread",
+  academic: "best subject clusters; best learning mode; the gap to close",
+  vocation: "suitable roles/industries (2-3 concrete directions); best organisation type (large org / small team / freelance); environments to avoid",
+  wealth: "primary income source (main job vs side work); a fitting side-income direction; other possible inflows (investment, royalties, family, patrons); the leak to avoid",
+  love: "type of the destined partner (temperament, never a specific identity); periods when romance runs strong; the pattern that tends to repeat; the most useful relating advice",
+  health: "body systems to watch most; the season or routine that destabilises you; one daily practice that works",
+  parents: "the baseline tone with your parents; the topic that sparks friction; one concrete repair move",
+  children: "the bond with children/juniors; a fitting way to guide them; a stage to watch",
+  mission: "the core lesson of this life in one line; the field where you shine; the attachment to release",
 };
 
 function buildChartFacts(data: z.infer<typeof BaseInput>) {
@@ -239,6 +267,12 @@ export const generateReportDimension = createServerFn({ method: "POST" })
   "details": [
     {"label": "优势 / 通道 / 缘份形状 等", "items": ["点 1", "点 2", "点 3", "点 4"]},
     {"label": "警惕 / 窗口 / 需修的功课 等", "items": ["点 1", "点 2", "点 3", "点 4"]}
+  ],
+  "specifics": [
+    {"label": "小标题（3-6 字）", "value": "一句具体回答，25-45 字，必须引用一条命盘依据"},
+    {"label": "小标题", "value": "一句具体回答"},
+    {"label": "小标题", "value": "一句具体回答"},
+    {"label": "小标题", "value": "一句具体回答"}
   ]
 }`
         : `{
@@ -255,6 +289,12 @@ export const generateReportDimension = createServerFn({ method: "POST" })
   "details": [
     {"label": "Strengths / channels / shape of the bond etc.", "items": ["point 1", "point 2", "point 3", "point 4"]},
     {"label": "Watch-outs / windows / lessons etc.", "items": ["point 1", "point 2", "point 3", "point 4"]}
+  ],
+  "specifics": [
+    {"label": "short label (1-3 words)", "value": "one concrete sentence, 15-30 words, citing one chart fact"},
+    {"label": "short label", "value": "one concrete sentence"},
+    {"label": "short label", "value": "one concrete sentence"},
+    {"label": "short label", "value": "one concrete sentence"}
   ]
 }`;
 
@@ -263,6 +303,11 @@ ${chartFacts || (isZh ? "（未提供）" : "(not provided)")}
 
 ${concernFocusDirective(data.concern, isZh ? "zh" : "en")}
 ${isZh ? "需要生成的维度" : "Dimension to generate"}: ${dimKey} · ${dimTitle}
+${
+  isZh
+    ? `"specifics" 必须逐条覆盖这些问题（每条一句话，点到为止，不展开长篇；越具体越好，但不得给出医疗/法律/投资承诺）：${SPECIFIC_TOPICS_ZH[dimKey] ?? ""}。最后不要在 specifics 里写任何推销文字。`
+    : `"specifics" must cover each of these questions (one short sentence each — pointed, not exhaustive; concrete but never a medical/legal/financial promise): ${SPECIFIC_TOPICS_EN[dimKey] ?? ""}. Do not put any sales copy inside specifics.`
+}
 ${missionNote}${academicNote}
 
 ${isZh ? "严格输出 JSON（只输出 JSON）" : "Output STRICT JSON only"}:
@@ -282,6 +327,13 @@ ${schema}`;
         synthesis: parsed.synthesis ?? "",
         plain: parsed.plain ?? "",
         details: Array.isArray(parsed.details) ? parsed.details.slice(0, 2) : [],
+        specifics: Array.isArray(parsed.specifics)
+          ? parsed.specifics
+              .filter((x) => x && typeof x === "object")
+              .slice(0, 4)
+              .map((x) => ({ label: String(x.label ?? ""), value: String(x.value ?? "") }))
+              .filter((x) => x.value)
+          : [],
       };
     } catch (err) {
       throw new Error(safeMessage(err, "Dimension generation failed"));
