@@ -13,6 +13,7 @@
  *   3. subtle vignette (readability behind cards further via card blur)
  */
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 import desktopVideo from "@/assets/library-interior/library-interior-desktop.mp4.asset.json";
 import mobileVideo from "@/assets/library-interior/library-interior-mobile.mp4.asset.json";
 import desktopPoster from "@/assets/library-interior/library-interior-desktop-poster.webp.asset.json";
@@ -66,7 +67,7 @@ export function LibraryInteriorBackdrop() {
   // interior stays centred and the frame always overflows the viewport,
   // whatever the aspect ratio. No letterbox, no hard seam under the nav.
   const mediaClass = "absolute inset-0 h-full w-full object-cover";
-  const mediaStyle: React.CSSProperties = isMobile
+  const mediaStyle: CSSProperties = isMobile
     ? { objectPosition: "50% 42%", transform: "scale(1.12)", transformOrigin: "center top" }
     : { objectPosition: "50% 45%" };
 
