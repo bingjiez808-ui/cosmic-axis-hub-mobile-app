@@ -196,8 +196,8 @@ const HEADER = {
   kicker: ["The Archive", "档案室"] as Bi,
   h1a: ["Four ", "四种"] as Bi,
   h1b: ["languages", "语言"] as Bi,
-  h1c: [" for", "，同一片"] as Bi,
-  h1d: ["the same silence", "沉默"] as Bi,
+  h1c: [",", "，"] as Bi,
+  h1d: ["for the same silence", "同一片沉默"] as Bi,
   lead: [
     "Each of the four traditions is a self-contained cosmology, developed over centuries with its own canonical texts. The library holds them side by side so their answers can converse.",
     "四大传统各自是一个自洽的宇宙观，经数百年沉淀，各有其经典。图书馆将它们并列诵读，让四种回答彼此对话。",
@@ -458,18 +458,23 @@ function TraditionsPage() {
   return (
     <div className="pt-32 pb-32">
       {/* Header */}
-      <header className="trad-panel mx-auto max-w-4xl px-6 py-12 text-center md:px-12">
+      <header className="trad-head mx-auto max-w-4xl px-5 py-10 text-center sm:px-8 md:px-12 md:py-12">
         <p className="mb-4 text-[10px] uppercase tracking-[0.42em] text-gold-dust">
           {HEADER.kicker[li]}
         </p>
-        <h1 className="mb-6 font-serif text-5xl leading-[1.05] text-stone-warm md:text-7xl">
-          {HEADER.h1a[li]}
-          <span className="italic gold-gradient-text">{HEADER.h1b[li]}</span>
-          {HEADER.h1c[li]}
-          <br /> {HEADER.h1d[li]}
+        <h1 className="trad-h1 mb-6 font-serif text-stone-warm">
+          <span className="trad-h1-line">
+            {HEADER.h1a[li]}
+            <span className="italic gold-gradient-text">{HEADER.h1b[li]}</span>
+            {HEADER.h1c[li]}
+          </span>
+          <span className="trad-h1-line">{HEADER.h1d[li]}</span>
         </h1>
-        <p className="mx-auto max-w-2xl font-light text-stone-warm/80">{HEADER.lead[li]}</p>
+        <p className="mx-auto max-w-2xl text-balance font-light text-stone-warm/85">
+          {HEADER.lead[li]}
+        </p>
       </header>
+
       <div className="h-16" />
 
       {/* Four Pillars — moved from homepage */}
@@ -495,18 +500,21 @@ function TraditionsPage() {
             className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-16"
           >
             <div className={`lg:col-span-5 ${idx % 2 === 1 ? "lg:order-2" : ""}`}>
-              <div className="trad-panel trad-plate relative">
+              <div className="trad-plate group relative">
+                <span aria-hidden className="trad-plate-halo" />
+                <span aria-hidden className="trad-plate-ring" />
                 <img
                   src={c.image}
                   alt={`${c.title[0]} diagram`}
                   loading="lazy"
                   width={1024}
                   height={1024}
-                  className="aspect-square w-full object-cover"
+                  className="trad-plate-img aspect-square w-full object-contain"
                 />
               </div>
             </div>
-            <div className={`trad-panel p-7 md:p-10 lg:col-span-7 ${idx % 2 === 1 ? "lg:order-1" : ""}`}>
+            <div className={`trad-copy px-1 md:px-2 lg:col-span-7 ${idx % 2 === 1 ? "lg:order-1" : ""}`}>
+
               <p className="mb-4 font-serif text-2xl italic text-gold-dust">{c.numeral}.</p>
               <h2 className="mb-3 font-serif text-4xl text-stone-warm md:text-5xl">{c.title[li]}</h2>
               <p className="mb-8 text-sm uppercase tracking-[0.3em] text-stone-warm/70">
