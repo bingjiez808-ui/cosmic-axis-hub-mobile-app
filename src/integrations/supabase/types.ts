@@ -241,7 +241,11 @@ export type Database = {
           letter_ttl_days: number
           max_recipients: number
           max_replies: number
+          recipient_daily_cap: number
+          second_wave: number
           updated_at: string
+          waiting_hint_hours: number
+          wave_interval_hours: number
         }
         Insert: {
           daily_letter_limit?: number
@@ -250,7 +254,11 @@ export type Database = {
           letter_ttl_days?: number
           max_recipients?: number
           max_replies?: number
+          recipient_daily_cap?: number
+          second_wave?: number
           updated_at?: string
+          waiting_hint_hours?: number
+          wave_interval_hours?: number
         }
         Update: {
           daily_letter_limit?: number
@@ -259,7 +267,11 @@ export type Database = {
           letter_ttl_days?: number
           max_recipients?: number
           max_replies?: number
+          recipient_daily_cap?: number
+          second_wave?: number
           updated_at?: string
+          waiting_hint_hours?: number
+          wave_interval_hours?: number
         }
         Relationships: []
       }
@@ -348,9 +360,11 @@ export type Database = {
           body: string
           content_origin: string
           created_at: string
+          dispatch_wave: number
           expires_at: string
           id: string
           language: string
+          last_dispatch_at: string | null
           published_at: string | null
           response_style: string | null
           risk_level: string
@@ -366,9 +380,11 @@ export type Database = {
           body: string
           content_origin?: string
           created_at?: string
+          dispatch_wave?: number
           expires_at?: string
           id?: string
           language?: string
+          last_dispatch_at?: string | null
           published_at?: string | null
           response_style?: string | null
           risk_level?: string
@@ -384,9 +400,11 @@ export type Database = {
           body?: string
           content_origin?: string
           created_at?: string
+          dispatch_wave?: number
           expires_at?: string
           id?: string
           language?: string
+          last_dispatch_at?: string | null
           published_at?: string | null
           response_style?: string | null
           risk_level?: string
@@ -2663,6 +2681,10 @@ export type Database = {
         Returns: number
       }
       generate_ticket_code: { Args: never; Returns: string }
+      get_community_letter_dispatch_state: {
+        Args: { _letter_id: string }
+        Returns: Json
+      }
       get_my_community_mailbox: { Args: never; Returns: Json }
       list_my_redemption_uses: {
         Args: never

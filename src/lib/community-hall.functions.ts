@@ -17,6 +17,8 @@ import {
   loadMailbox,
   markNotificationsRead,
   readCommunityProfile,
+  readDispatchState,
+  requestNextWave,
   reportContent,
   saveCommunityProfile,
   sendLetter,
@@ -133,3 +135,15 @@ export const closeCommunityLetter = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => letterIdSchema.parse(data))
   .handler(async ({ data, context }) => closeLetter(context, data.letterId));
+
+/** Author-only: delivery telemetry for one letter (waves, reads, replies). */
+export const getCommunityLetterDispatchState = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => letterIdSchema.parse(data))
+  .handler(async ({ data, context }) => readDispatchState(context, data.letterId));
+
+/** Author-only: release the next delivery wave once the wave window has passed. */
+export const requestCommunityLetterWave = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => letterIdSchema.parse(data))
+  .handler(async ({ data, context }) => requestNextWave(context, data.letterId));

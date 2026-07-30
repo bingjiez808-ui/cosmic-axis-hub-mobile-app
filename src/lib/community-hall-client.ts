@@ -20,6 +20,8 @@ import {
   blockCommunityLetterAuthor,
   setCommunityEchoSaved,
   closeCommunityLetter,
+  getCommunityLetterDispatchState,
+  requestCommunityLetterWave,
   upsertMyCommunityProfile,
   type CommunityMailbox,
 } from "@/lib/community-hall.functions";
@@ -27,6 +29,7 @@ import {
 export const communityKeys = {
   profile: ["community-hall", "profile"] as const,
   mailbox: ["community-hall", "mailbox"] as const,
+  dispatch: (letterId: string) => ["community-hall", "dispatch", letterId] as const,
 };
 
 export type CommunityProfileInput = {
@@ -165,5 +168,29 @@ export function useCloseLetter() {
   return useMutation({
     mutationFn: (data: { letterId: string }) => close({ data }),
     onSuccess: invalidate,
+  });
+}
+
+/** Author-only: live delivery telemetry for one sent letter. */
+export function useLetterDispatchState(letterId: string, enabled = true) {
+  const load = useServerFn(getCommunityLetterDispatchState);
+  return useQuery({
+    queryKey: communityKeys.dispatch(letterId),
+    queryFn: () => load({ data: { letterId } }),
+    enabled: enabled && Boolean(letterId),
+    staleTime: 60_000,
+  });
+}
+
+/** Author-only: release the next delivery wave for a letter still waiting. */
+export function useRequestLetterWave() {
+  const qc = useQueryClient();
+  const request = useServerFn(requestCommunityLetterWave);
+  return useMutation({
+    mutationFn: (data: { letterId: string }) => request({ data }),
+    onSuccess: (_result, variables) => {
+      void qc.invalidateQueries({ queryKey: communityKeys.mailbox });
+      void qc.invalidateQueries({ queryKey: communityKeys.dispatch(variables.letterId) });
+    },
   });
 }

@@ -12,6 +12,7 @@ import {
 } from "@/experiences/community-hall/HallShell";
 import { HallEmptyState, HallError, HallSkeleton } from "@/experiences/community-hall/HallStates";
 import { SentLetterCard } from "@/experiences/community-hall/LetterCards";
+import { LetterWaveStatus } from "@/experiences/community-hall/LetterWaveStatus";
 import { useCloseLetter, useCommunityMailbox } from "@/lib/community-hall-client";
 import { hallErrorMessage } from "@/lib/community-hall-errors";
 import { useCommunityHall } from "@/lib/i18n-community-hall";
@@ -78,6 +79,7 @@ function OutboxPage() {
               {sent.map((letter) => (
                 <div key={letter.letterId} className="space-y-2">
                   <SentLetterCard letter={letter} />
+                  <LetterWaveStatus letterId={letter.letterId} closed={letter.status === "closed"} />
                   {letter.status === "closed" ? (
                     <p className="text-xs text-muted-foreground">{c.closedCollecting}</p>
                   ) : confirming === letter.letterId ? (
