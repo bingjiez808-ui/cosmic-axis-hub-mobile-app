@@ -251,7 +251,8 @@ function TarotVisual() {
   return (
     <svg viewBox="0 0 200 200">
       {[-14, 0, 14].map((r, i) => (
-        <g key={r} className="hcv-card" data-i={i} transform={`translate(100 105) rotate(${r})`}>
+        <g key={r} transform={`translate(100 105) rotate(${r})`}>
+          <g className="hcv-card" data-i={i}>
           <rect
             x={-26}
             y={-42}
@@ -273,6 +274,7 @@ function TarotVisual() {
               <line x1="-14" y1="6" x2="14" y2="6" stroke={GOLD_SOFT} strokeWidth="0.8" />
             </>
           )}
+          </g>
         </g>
       ))}
     </svg>
