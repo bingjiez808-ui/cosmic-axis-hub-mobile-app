@@ -425,6 +425,22 @@ export function useCommunityHall() {
       closedCollecting: p("已结束收信", "No longer collecting"),
       closeConfirm: p("结束后不会再有新的回音寄来，确认吗？", "No new echoes will arrive after this. Continue?"),
       awaitingEcho: p("还在等待回音", "Still waiting for an echo"),
+
+      // ── Delivery waves (round 4 · batch B) ────────────────
+      waveLabel: p("投递波次", "Delivery waves"),
+      waveDelivered: p("已送达", "Delivered"),
+      waveRead: p("已拆阅", "Opened"),
+      waveReplied: p("已回音", "Echoes"),
+      waveWaiting: p("信已在路上，正在等待回音。", "Your letter is on its way, waiting for an echo."),
+      waveRequest: p("再送一程", "Send another wave"),
+      waveRequested: p("新的一波已经寄出。", "A new wave has been sent."),
+      waveNoOne: p("暂时没有合适的收信人，稍后会自动再试。", "No suitable reader right now — we will try again later."),
+      waveCooldown: p("下一波可在 {time} 之后寄出。", "The next wave can go out after {time}."),
+      waveFull: p("这封信已经送到最多的读者手中。", "This letter has reached as many readers as allowed."),
+      waveHint: p(
+        "为了不打扰任何人，每位同门每天只会收到有限的几封信；若一段时间没有回音，我们会自动把信送给更多人。",
+        "To keep inboxes gentle, each traveler receives only a few letters a day; if no echo arrives, we quietly widen the circle.",
+      ),
     };
   }, [lang]);
 }
