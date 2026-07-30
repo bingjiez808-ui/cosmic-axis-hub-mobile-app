@@ -41,6 +41,13 @@ type Props = {
   size?: number;
   selectedPlanet?: number | null;
   onSelectPlanet?: (idx: number | null) => void;
+  /** Controlled active system (when the tab bar lives outside this component). */
+  active?: SystemKey;
+  onActiveChange?: (key: SystemKey) => void;
+  /** Hide the built-in switcher — used when the tabs are rendered above. */
+  hideTabs?: boolean;
+  /** Force the stage height (defaults to size + 56). */
+  stageHeight?: number;
 };
 
 type Mode = "rotate" | "drag";
@@ -55,15 +62,28 @@ export function FourSystemsChart({
   size = 380,
   selectedPlanet = null,
   onSelectPlanet,
+  active: activeProp,
+  onActiveChange,
+  hideTabs = false,
+  stageHeight,
 }: Props) {
   const zh = lang === "zh";
   const availability = useMemo(() => systemAvailability(snapshot), [snapshot]);
-  const [active, setActive] = useState<SystemKey>("western");
+  const [activeLocal, setActiveLocal] = useState<SystemKey>("western");
+  const active = activeProp ?? activeLocal;
+  const setActive = useCallback(
+    (k: SystemKey) => {
+      setActiveLocal(k);
+      onActiveChange?.(k);
+    },
+    [onActiveChange],
+  );
   const [mode, setMode] = useState<Mode>("rotate");
 
   const [rotation, setRotation] = useState(0);
   const [scale, setScale] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
+
 
   const stageRef = useRef<HTMLDivElement | null>(null);
   const drag = useRef<{
