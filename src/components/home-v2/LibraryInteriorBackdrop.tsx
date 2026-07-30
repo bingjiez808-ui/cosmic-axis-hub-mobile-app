@@ -73,9 +73,9 @@ export function LibraryInteriorBackdrop() {
         top: "-25%",
         bottom: "-5%",
         left: "-6%",
-        right: "-6%",
-        width: "auto",
-        height: "auto",
+        width: "112%",
+        height: "130%",
+        maxWidth: "none",
         objectPosition: "50% 50%",
       }
     : { inset: 0, width: "100%", height: "100%", objectPosition: "50% 45%" };
