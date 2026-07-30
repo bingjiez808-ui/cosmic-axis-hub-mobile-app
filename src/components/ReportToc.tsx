@@ -393,21 +393,42 @@ export function ReportToc({ items, lang }: { items: TocItem[]; lang: "en" | "zh"
           >
             {/* Swipe-to-dismiss handle — generous 44px grab area */}
             <div
+              onTouchStart={(e) => {
+                const t = e.touches[0];
+                if (!t) return;
+                dragStart.current = t.clientY;
+                setDragging(true);
+              }}
+              onTouchMove={(e) => {
+                const t = e.touches[0];
+                if (dragStart.current == null || !t) return;
+                setDragY(Math.max(0, t.clientY - dragStart.current));
+              }}
+              onTouchEnd={() => {
+                setDragging(false);
+                if (dragY > 80) closeDrawer();
+                else setDragY(0);
+                dragStart.current = null;
+              }}
               onPointerDown={(e) => {
+                if (e.pointerType === "touch") return;
                 dragStart.current = e.clientY;
                 setDragging(true);
                 e.currentTarget.setPointerCapture(e.pointerId);
               }}
               onPointerMove={(e) => {
+                if (e.pointerType === "touch") return;
                 if (dragStart.current == null) return;
                 setDragY(Math.max(0, e.clientY - dragStart.current));
               }}
-              onPointerUp={() => {
+              onPointerUp={(e) => {
+                if (e.pointerType === "touch") return;
                 setDragging(false);
-                if (dragY > 90) closeDrawer();
+                if (dragY > 80) closeDrawer();
                 else setDragY(0);
                 dragStart.current = null;
               }}
+
               onPointerCancel={() => {
                 setDragging(false);
                 setDragY(0);
