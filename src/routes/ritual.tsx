@@ -7,7 +7,7 @@ import RitualMagicRings from "@/components/reactbits/RitualMagicRings";
 import { useLang } from "@/lib/i18n";
 import { solarToLunarInfo } from "@/lib/lunar";
 import { noOrphan } from "@/lib/typography";
-import { listUserCharts } from "@/lib/reports-store.functions";
+import { listUserCharts, findExistingChartByInput } from "@/lib/reports-store.functions";
 import {
   FIELD_STEP,
   firstMissingStep,
