@@ -209,20 +209,6 @@ export const generateReportSummary = createServerFn({ method: "POST" })
       const isZh = data.lang === "zh";
       const chartFacts = buildChartFacts(data);
 
-      // One slot per topic, with the label fixed in advance. Previously the
-      // template always asked for 4 free-form labels while some dimensions
-      // (e.g. academic) only define 3 topics, so the model padded the extra
-      // slot by repeating a label such as "适合学科族群" with a second
-      // system's evidence. Fixed labels + dedupe make that impossible.
-      const topicsZh = (SPECIFIC_TOPICS_ZH[dimKey] ?? "").split("；").map((t) => t.trim()).filter(Boolean);
-      const topicsEn = (SPECIFIC_TOPICS_EN[dimKey] ?? "").split(";").map((t) => t.trim()).filter(Boolean);
-      const specificSlotsZh = topicsZh
-        .map((t, i) => `    {"label": "${t.replace(/["\\]/g, "").slice(0, 6)}", "value": "一句具体回答，25-45 字，必须引用一条命盘依据${i === 0 ? "" : ""}"}`)
-        .join(",\n");
-      const specificSlotsEn = topicsEn
-        .map((t) => `    {"label": "${t.replace(/["\\]/g, "").split(" ").slice(0, 3).join(" ")}", "value": "one concrete sentence, 15-30 words, citing one chart fact"}`)
-        .join(",\n");
-
       const schema = isZh
         ? `{ "summary": "两三句诗意概括，必须直接呼应来访者具体的日/时/干支/主要行星落位，并至少点名两套体系（西方 / 印度 / 八字 / 紫微）在此处的共振" }`
         : `{ "summary": "2-3 sentence poetic epigraph echoing the visitor's specific date/time/pillars/placements, naming at least two of the four systems that converge here" }`;
@@ -282,6 +268,20 @@ export const generateReportDimension = createServerFn({ method: "POST" })
           ? "学业与认知维度专注于学习方式、可能形成优势的学科族群、以及当前的学习/认知周期。硬性规则：不得断言智商、考试分数或某个专业保证成功；至少给出 3 个「学科族群候选」，每项都需要引用具体命盘事实并给出「如何在现实中验证」的一句话；若来访者年龄已超过传统求学阶段，语气自动适配为「继续教育 / 职业学习 / 知识迁移与经验传承」，不要把他写成学生。"
           : "The academic dimension is about learning style, subject clusters that may become strengths, and the current cognition/study window. Hard rules: never claim IQ, exam scores, or guaranteed success in a major; give at least 3 subject-cluster candidates, each anchored in a concrete chart fact and paired with a one-sentence 'how to validate in real life'; if the visitor is past traditional schooling age, shift the voice to continuing education, re-skilling, knowledge transfer and mentorship — do not write them as a student."
         : "";
+
+      // One slot per topic, with the label fixed in advance. Previously the
+      // template always asked for 4 free-form labels while some dimensions
+      // (e.g. academic) only define 3 topics, so the model padded the extra
+      // slot by repeating a label such as "适合学科族群" with a second
+      // system's evidence. Fixed labels + dedupe make that impossible.
+      const topicsZh = (SPECIFIC_TOPICS_ZH[dimKey] ?? "").split("；").map((t) => t.trim()).filter(Boolean);
+      const topicsEn = (SPECIFIC_TOPICS_EN[dimKey] ?? "").split(";").map((t) => t.trim()).filter(Boolean);
+      const specificSlotsZh = topicsZh
+        .map((t, i) => `    {"label": "${t.replace(/["\\]/g, "").slice(0, 6)}", "value": "一句具体回答，25-45 字，必须引用一条命盘依据${i === 0 ? "" : ""}"}`)
+        .join(",\n");
+      const specificSlotsEn = topicsEn
+        .map((t) => `    {"label": "${t.replace(/["\\]/g, "").split(" ").slice(0, 3).join(" ")}", "value": "one concrete sentence, 15-30 words, citing one chart fact"}`)
+        .join(",\n");
 
       const schema = isZh
         ? `{
