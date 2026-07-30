@@ -128,6 +128,23 @@ const SPECIFIC_TOPICS_EN: Record<string, string> = {
   mission: "the core lesson of this life in one line; the field where you shine; the attachment to release",
 };
 
+
+/** Collapse repeated labels (the model sometimes emits one entry per system
+ *  for the same question) and cap the block at 4 pointers. */
+function dedupeSpecifics(list: { label: string; value: string }[]) {
+  const out: { label: string; value: string }[] = [];
+  for (const item of list) {
+    const key = item.label.replace(/[\s·、,，]/g, "");
+    const hit = out.find((o) => o.label.replace(/[\s·、,，]/g, "") === key && key !== "");
+    if (hit) {
+      if (!hit.value.includes(item.value)) hit.value = `${hit.value} ${item.value}`;
+      continue;
+    }
+    out.push({ ...item });
+  }
+  return out.slice(0, 4);
+}
+
 function buildChartFacts(data: z.infer<typeof BaseInput>) {
   const planetLines = data.planets
     .map((p) => `${p.name} in ${p.sign}${p.house ? ` (house ${p.house})` : ""}`)
@@ -191,6 +208,20 @@ export const generateReportSummary = createServerFn({ method: "POST" })
       const gateway = createLovableAiGatewayProvider(key);
       const isZh = data.lang === "zh";
       const chartFacts = buildChartFacts(data);
+
+      // One slot per topic, with the label fixed in advance. Previously the
+      // template always asked for 4 free-form labels while some dimensions
+      // (e.g. academic) only define 3 topics, so the model padded the extra
+      // slot by repeating a label such as "适合学科族群" with a second
+      // system's evidence. Fixed labels + dedupe make that impossible.
+      const topicsZh = (SPECIFIC_TOPICS_ZH[dimKey] ?? "").split("；").map((t) => t.trim()).filter(Boolean);
+      const topicsEn = (SPECIFIC_TOPICS_EN[dimKey] ?? "").split(";").map((t) => t.trim()).filter(Boolean);
+      const specificSlotsZh = topicsZh
+        .map((t, i) => `    {"label": "${t.replace(/["\\]/g, "").slice(0, 6)}", "value": "一句具体回答，25-45 字，必须引用一条命盘依据${i === 0 ? "" : ""}"}`)
+        .join(",\n");
+      const specificSlotsEn = topicsEn
+        .map((t) => `    {"label": "${t.replace(/["\\]/g, "").split(" ").slice(0, 3).join(" ")}", "value": "one concrete sentence, 15-30 words, citing one chart fact"}`)
+        .join(",\n");
 
       const schema = isZh
         ? `{ "summary": "两三句诗意概括，必须直接呼应来访者具体的日/时/干支/主要行星落位，并至少点名两套体系（西方 / 印度 / 八字 / 紫微）在此处的共振" }`
@@ -269,10 +300,7 @@ export const generateReportDimension = createServerFn({ method: "POST" })
     {"label": "警惕 / 窗口 / 需修的功课 等", "items": ["点 1", "点 2", "点 3", "点 4"]}
   ],
   "specifics": [
-    {"label": "小标题（3-6 字）", "value": "一句具体回答，25-45 字，必须引用一条命盘依据"},
-    {"label": "小标题", "value": "一句具体回答"},
-    {"label": "小标题", "value": "一句具体回答"},
-    {"label": "小标题", "value": "一句具体回答"}
+${specificSlotsZh}
   ]
 }`
         : `{
@@ -291,10 +319,7 @@ export const generateReportDimension = createServerFn({ method: "POST" })
     {"label": "Watch-outs / windows / lessons etc.", "items": ["point 1", "point 2", "point 3", "point 4"]}
   ],
   "specifics": [
-    {"label": "short label (1-3 words)", "value": "one concrete sentence, 15-30 words, citing one chart fact"},
-    {"label": "short label", "value": "one concrete sentence"},
-    {"label": "short label", "value": "one concrete sentence"},
-    {"label": "short label", "value": "one concrete sentence"}
+${specificSlotsEn}
   ]
 }`;
 
@@ -305,8 +330,8 @@ ${concernFocusDirective(data.concern, isZh ? "zh" : "en")}
 ${isZh ? "需要生成的维度" : "Dimension to generate"}: ${dimKey} · ${dimTitle}
 ${
   isZh
-    ? `"specifics" 必须逐条覆盖这些问题（每条一句话，点到为止，不展开长篇；越具体越好，但不得给出医疗/法律/投资承诺）：${SPECIFIC_TOPICS_ZH[dimKey] ?? ""}。最后不要在 specifics 里写任何推销文字。`
-    : `"specifics" must cover each of these questions (one short sentence each — pointed, not exhaustive; concrete but never a medical/legal/financial promise): ${SPECIFIC_TOPICS_EN[dimKey] ?? ""}. Do not put any sales copy inside specifics.`
+    ? `"specifics" 必须逐条覆盖这些问题（每条一句话，点到为止，不展开长篇；越具体越好，但不得给出医疗/法律/投资承诺）：${SPECIFIC_TOPICS_ZH[dimKey] ?? ""}。每个问题只输出一条，label 必须互不重复（不要把同一个 label 拆成多条来分别引用不同体系；跨体系证据请合并进同一条 value）。最后不要在 specifics 里写任何推销文字。`
+    : `"specifics" must cover each of these questions (one short sentence each — pointed, not exhaustive; concrete but never a medical/legal/financial promise): ${SPECIFIC_TOPICS_EN[dimKey] ?? ""}. Emit exactly one entry per question and never repeat a label (do not split one label into several entries to cite different systems — merge cross-system evidence into the same value). Do not put any sales copy inside specifics.`
 }
 ${missionNote}${academicNote}
 
@@ -328,11 +353,12 @@ ${schema}`;
         plain: parsed.plain ?? "",
         details: Array.isArray(parsed.details) ? parsed.details.slice(0, 2) : [],
         specifics: Array.isArray(parsed.specifics)
-          ? parsed.specifics
-              .filter((x) => x && typeof x === "object")
-              .slice(0, 4)
-              .map((x) => ({ label: String(x.label ?? ""), value: String(x.value ?? "") }))
-              .filter((x) => x.value)
+          ? dedupeSpecifics(
+              parsed.specifics
+                .filter((x) => x && typeof x === "object")
+                .map((x) => ({ label: String(x.label ?? ""), value: String(x.value ?? "") }))
+                .filter((x) => x.value),
+            )
           : [],
       };
     } catch (err) {
