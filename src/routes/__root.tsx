@@ -762,40 +762,37 @@ function SiteNav() {
         }`}
       />
 
-      {/* Mobile navigation sheet — compact two-column groups, never a long
-          single column. Same IA as desktop, one DOM tree only. */}
+      {/* Mobile navigation drawer — right-side vertical rail (original mode),
+          opened by the floating orb. Same IA as desktop, one DOM tree only. */}
       <aside
         aria-label={isZh ? "导航" : "Navigation"}
         aria-hidden={!drawerOpen}
         aria-modal={drawerOpen || undefined}
         role="dialog"
         style={{
-          maxHeight: "min(68dvh, 560px)",
-          paddingBottom: "calc(0.5rem + env(safe-area-inset-bottom))",
+          paddingBottom: "calc(1rem + env(safe-area-inset-bottom))",
+          paddingTop: "calc(1rem + env(safe-area-inset-top))",
         }}
-        className={`fixed inset-x-0 bottom-0 z-[75] flex flex-col overflow-y-auto overscroll-contain rounded-t-3xl border-t border-gold-dust/25 bg-obsidian/97 px-3 pt-2 backdrop-blur-xl shadow-[0_-16px_44px_rgba(0,0,0,0.6)] transition-transform duration-300 xl:hidden ${
-          drawerOpen ? "translate-y-0" : "pointer-events-none translate-y-full"
+        className={`fixed right-0 top-0 z-[75] flex h-dvh w-[min(84vw,320px)] flex-col overflow-y-auto overscroll-contain rounded-l-3xl border-l border-gold-dust/25 bg-obsidian/97 px-5 backdrop-blur-xl shadow-[-16px_0_44px_rgba(0,0,0,0.6)] transition-transform duration-300 xl:hidden ${
+          drawerOpen ? "translate-x-0" : "pointer-events-none translate-x-full"
         }`}
       >
-        <div className="mx-auto mb-2 h-1 w-10 shrink-0 rounded-full bg-white/20" aria-hidden />
-
-        {sheetGroups.map((group) => (
-          <section key={group.title} className="mb-2.5 last:mb-1">
-            <h2 className="mb-1.5 text-[10px] tracking-[0.24em] text-gold-dust/70">
-              {group.title}
-            </h2>
-            <div className="grid grid-cols-[repeat(2,minmax(0,1fr))] gap-1.5 max-[319px]:grid-cols-1">
+        {sheetGroups.map((group, gi) => (
+          <section key={group.title} className="mb-3 last:mb-2">
+            {gi > 0 && (
+              <h2 className="mb-1 mt-3 border-t border-white/10 pt-4 text-right text-[10px] tracking-[0.24em] text-gold-dust/70">
+                {group.title}
+              </h2>
+            )}
+            <div className="flex flex-col">
               {group.items.map((item) => {
-                const cls = `flex min-h-[38px] items-center justify-center rounded-lg border px-2 py-1 text-center leading-tight break-words ${
-                  item.wide ? "col-span-full text-[12px]" : ""
-                } ${
+                const cls = `flex min-h-[48px] items-center justify-end rounded-xl px-4 text-right text-[15px] leading-tight ${
                   item.active
-                    ? "border-gold-dust/50 bg-gold-dust/10 text-gold-light"
-                    : "border-white/10 bg-white/[0.04] text-stone-warm/85 hover:border-gold-dust/40 hover:text-gold-light"
+                    ? "bg-gold-dust/10 text-gold-light"
+                    : "text-stone-warm/85 hover:text-gold-light"
                 }`;
-                const style = item.wide
-                  ? undefined
-                  : { fontSize: "clamp(12px, 3.2vw, 14px)" };
+                const style = undefined;
+
 
                 if (item.href) {
                   return (
