@@ -138,6 +138,9 @@ export function ReportToc({ items, lang }: { items: TocItem[]; lang: "en" | "zh"
   const [triggerHidden, setTriggerHidden] = useState(false);
 
   const closeDrawer = () => {
+    // Guard against the close paths that fire from the same gesture that just
+    // opened the drawer (synthesized click / stray touchend on mobile).
+    if (Date.now() - openedAt.current < 400) return;
     setOpen(false);
     setDragY(0);
     setDragging(false);
