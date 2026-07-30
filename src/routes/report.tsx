@@ -1300,10 +1300,11 @@ function ReportPage() {
         time: search.time,
         place: search.place,
         lang: reportLang,
-        gender: search.gender ?? null,
+        gender: search.gender ?? genderOverride,
       }),
-    [search.date, search.time, search.place, search.gender, reportLang],
+    [search.date, search.time, search.place, search.gender, genderOverride, reportLang],
   );
+
 
   const snapshotEvidence = useMemo(() => {
     const sun = snapshot.western.sun;
