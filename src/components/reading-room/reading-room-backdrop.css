@@ -48,9 +48,9 @@
   pointer-events: none;
   background: linear-gradient(
     180deg,
-    rgba(6, 7, 9, 0.18) 0%,
-    rgba(7, 8, 10, 0.24) 48%,
-    rgba(6, 7, 9, 0.34) 100%
+    rgba(6, 7, 9, 0.1) 0%,
+    rgba(7, 8, 10, 0.14) 48%,
+    rgba(6, 7, 9, 0.22) 100%
   );
 }
 
@@ -58,9 +58,9 @@
   .rrb-scrim {
     background: linear-gradient(
       180deg,
-      rgba(6, 7, 9, 0.22) 0%,
-      rgba(7, 8, 10, 0.3) 52%,
-      rgba(6, 7, 9, 0.4) 100%
+      rgba(6, 7, 9, 0.14) 0%,
+      rgba(7, 8, 10, 0.2) 52%,
+      rgba(6, 7, 9, 0.3) 100%
     );
   }
 }
@@ -89,9 +89,9 @@
   pointer-events: none;
   background: radial-gradient(
     ellipse at center,
-    rgba(8, 9, 11, 0.08) 0%,
-    rgba(8, 9, 11, 0.18) 55%,
-    rgba(5, 6, 8, 0.38) 100%
+    rgba(8, 9, 11, 0.04) 0%,
+    rgba(8, 9, 11, 0.1) 55%,
+    rgba(5, 6, 8, 0.26) 100%
   );
 }
 
@@ -101,7 +101,7 @@
   inset: 0;
   z-index: 4;
   pointer-events: none;
-  opacity: 0.2;
+  opacity: 0.14;
   background-image: radial-gradient(
       ellipse at 50% 50%,
       transparent 55%,
@@ -159,9 +159,9 @@
   .rrb-reading-guard {
     background: radial-gradient(
       ellipse at center,
-      rgba(8, 9, 11, 0.3) 0%,
-      rgba(8, 9, 11, 0.38) 55%,
-      rgba(5, 6, 8, 0.5) 100%
+      rgba(8, 9, 11, 0.2) 0%,
+      rgba(8, 9, 11, 0.28) 55%,
+      rgba(5, 6, 8, 0.4) 100%
     );
   }
 }
