@@ -45,7 +45,7 @@ export function ReaderPassDrawer({ open, onOpenChange, data }: ReaderPassDrawerP
       ? "开启仪式,建立我的第一张命盘"
       : "Open the ritual — build my first chart",
     shelf: isZh ? "进入我的书架" : "Open My Shelf",
-    today: isZh ? "查看今日命运" : "See today's reading",
+    today: isZh ? "查看命盘与报告" : "See charts & reports",
     membership: isZh ? "查看会员与订单" : "Membership & orders",
     disclaimer: isZh
       ? "所有命理解读用于文化娱乐与自我反思,不替代医疗、法律、投资或人生决策。"
@@ -118,7 +118,7 @@ export function ReaderPassDrawer({ open, onOpenChange, data }: ReaderPassDrawerP
           ) : (
             <div className="space-y-2">
               <DrawerLink to="/me/home" onClose={close} label={t.shelf} />
-              <DrawerLink to="/me/home" onClose={close} label={t.today} />
+              <DrawerLink to="/me/profile" onClose={close} label={t.today} />
               <DrawerLink to="/me/membership" onClose={close} label={t.membership} />
             </div>
           )}
