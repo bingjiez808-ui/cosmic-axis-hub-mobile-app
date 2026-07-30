@@ -468,7 +468,7 @@ export async function listLibrarySamples(
   input: { language?: "zh" | "en" | null; limit?: number },
 ): Promise<LibrarySample[]> {
   const { data, error } = await ctx.supabase.rpc("get_community_library_samples", {
-    _language: input.language ?? null,
+    _language: input.language ?? undefined,
     _limit: input.limit ?? 12,
   });
   if (error) friendly(error);
