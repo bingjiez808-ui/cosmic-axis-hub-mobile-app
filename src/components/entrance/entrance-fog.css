@@ -1,0 +1,112 @@
+/**
+ * Entrance fog — 3 stacked drifting mist layers, cleared around the lantern
+ * via a soft radial CSS mask. Pure CSS + one rAF loop writing CSS variables.
+ * Sits above the background/glass canvas, below the UI content (z-index 8).
+ */
+.le-fog {
+  position: absolute;
+  inset: -12%;
+  z-index: 3;
+  pointer-events: none;
+  opacity: var(--le-fog-alpha, 1);
+  transition: opacity 700ms ease;
+  will-change: opacity;
+  /* Lantern clearing mask: transparent (no fog) at pointer, opaque far away. */
+  -webkit-mask-image: radial-gradient(
+    circle var(--le-fog-r, 220px) at var(--le-fog-x, 50%) var(--le-fog-y, 50%),
+    rgba(0, 0, 0, calc(0.2 * var(--le-fog-back, 1))) 0%,
+    rgba(0, 0, 0, calc(0.6 * var(--le-fog-back, 1) + 0.4 * (1 - var(--le-fog-back, 1)))) 38%,
+    rgba(0, 0, 0, 0.86) 70%,
+    #000 100%
+  );
+  mask-image: radial-gradient(
+    circle var(--le-fog-r, 220px) at var(--le-fog-x, 50%) var(--le-fog-y, 50%),
+    rgba(0, 0, 0, calc(0.2 * var(--le-fog-back, 1))) 0%,
+    rgba(0, 0, 0, calc(0.6 * var(--le-fog-back, 1) + 0.4 * (1 - var(--le-fog-back, 1)))) 38%,
+    rgba(0, 0, 0, 0.86) 70%,
+    #000 100%
+  );
+}
+
+.le-fog-layer {
+  position: absolute;
+  inset: -20%;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+}
+
+/* Layer 1 — broad, very slow blue-grey haze. */
+.le-fog-1 {
+  background:
+    radial-gradient(60% 48% at 22% 74%, rgba(17, 24, 39, 0.26) 0%, transparent 72%),
+    radial-gradient(52% 44% at 78% 66%, rgba(17, 24, 39, 0.22) 0%, transparent 70%),
+    radial-gradient(70% 40% at 50% 100%, rgba(17, 24, 39, 0.3) 0%, transparent 78%);
+  opacity: 0.9;
+  animation: le-fog-drift-a 28s ease-in-out infinite alternate;
+}
+
+/* Layer 2 — irregular mid-ground mist bands. */
+.le-fog-2 {
+  background:
+    radial-gradient(38% 26% at 32% 42%, rgba(107, 114, 128, 0.16) 0%, transparent 74%),
+    radial-gradient(44% 20% at 68% 54%, rgba(107, 114, 128, 0.14) 0%, transparent 76%),
+    radial-gradient(30% 22% at 52% 26%, rgba(218, 181, 94, 0.05) 0%, transparent 78%);
+  opacity: 0.85;
+  animation: le-fog-drift-b 22s ease-in-out infinite alternate;
+}
+
+/* Layer 3 — edge + floor haze only. */
+.le-fog-3 {
+  background:
+    linear-gradient(to top, rgba(17, 24, 39, 0.3) 0%, transparent 34%),
+    linear-gradient(to right, rgba(107, 114, 128, 0.14) 0%, transparent 22%),
+    linear-gradient(to left, rgba(107, 114, 128, 0.14) 0%, transparent 22%);
+  opacity: 0.9;
+  animation: le-fog-drift-c 32s ease-in-out infinite alternate;
+}
+
+@keyframes le-fog-drift-a {
+  from { transform: translate3d(-2.2%, 0.8%, 0) scale(1.02); }
+  to   { transform: translate3d(2.4%, -1.2%, 0) scale(1.06); }
+}
+@keyframes le-fog-drift-b {
+  from { transform: translate3d(2.6%, -0.6%, 0) scale(1.04); }
+  to   { transform: translate3d(-2.8%, 1.4%, 0) scale(1.01); }
+}
+@keyframes le-fog-drift-c {
+  from { transform: translate3d(0, 1.2%, 0); }
+  to   { transform: translate3d(0, -1.4%, 0); }
+}
+
+/* Text protection — very soft radial darkening behind the headline block. */
+.le-fog-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(5, 7, 12, 0.18) 0%,
+    rgba(5, 7, 12, 0.05) 62%,
+    transparent 100%
+  );
+}
+
+/* Door-opening burst: fog blows outward from the centre / CTA. */
+.le-root[data-phase="exiting-enter"] .le-fog {
+  opacity: 0;
+  transform: scale(1.16);
+  transition: opacity 620ms ease-out, transform 760ms ease-out;
+}
+.le-root[data-phase="exiting-enter"] .le-fog-scrim { opacity: 0; transition: opacity 500ms ease-out; }
+
+@media (max-width: 640px) {
+  .le-fog-1 { opacity: 0.72; }
+  .le-fog-2 { opacity: 0.66; }
+  .le-fog-3 { opacity: 0.72; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .le-fog-layer { animation: none !important; }
+  .le-fog { transition: none; }
+}
