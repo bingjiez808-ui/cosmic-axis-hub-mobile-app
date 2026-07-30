@@ -172,6 +172,7 @@ import {
 } from "@/lib/report-input";
 import { REPORT_AI_VERSION } from "@/lib/ai-cache-version";
 import { useAccount } from "@/lib/account";
+import "@/components/report-modules.css";
 import {
   buildCalculationSnapshot,
   ELEMENT_LABEL_EN,
