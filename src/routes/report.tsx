@@ -992,6 +992,17 @@ function ReportPage() {
   // Which dimension's detail modal is open (by key), or null.
   const [detailKey, setDetailKey] = useState<string | null>(null);
 
+  // Perf-lite flag for the whole report page: low-end device, save-data,
+  // reduced-motion, sustained low FPS, or an explicit "stable" preference.
+  const { stable: litePerf } = useStableMotion();
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const el = document.documentElement;
+    if (litePerf) el.setAttribute("data-perf", "lite");
+    else el.removeAttribute("data-perf");
+    return () => el.removeAttribute("data-perf");
+  }, [litePerf]);
+
   // Sync report language with the choice made in the ritual, if provided.
   useEffect(() => {
     if (search.lang && search.lang !== lang) setLang(search.lang);
