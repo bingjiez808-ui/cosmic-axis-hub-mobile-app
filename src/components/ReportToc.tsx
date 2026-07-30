@@ -25,7 +25,7 @@ export type TocItem = {
   hint: string;
 };
 
-function scrollToId(id: string) {
+export function scrollToId(id: string) {
   const el = document.getElementById(id);
   if (!el) return;
   const nav = parseInt(
