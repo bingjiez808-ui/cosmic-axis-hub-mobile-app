@@ -54,7 +54,7 @@
 
 .trad-h1-line {
   display: block;
-  white-space: nowrap;
+  text-wrap: balance;
 }
 
 .trad-h1-line + .trad-h1-line {
