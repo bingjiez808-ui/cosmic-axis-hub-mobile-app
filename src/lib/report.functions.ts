@@ -34,6 +34,12 @@ const BaseInput = z.object({
   bazi: z.string().max(120).optional(),
   zodiac: z.string().max(40).optional(),
   lunar: z.string().max(80).optional(),
+  // Real Jyotish / Zi Wei placements computed from the birth snapshot.
+  // Without these the model correctly reports "insufficient data" for
+  // those two traditions, so they must always be sent when available.
+  vedic: z.string().max(400).optional(),
+  ziwei: z.string().max(400).optional(),
+  gender: z.enum(["male", "female"]).optional(),
 });
 
 export const DIM_KEYS = [
@@ -98,6 +104,9 @@ function buildChartFacts(data: z.infer<typeof BaseInput>) {
     data.lunar && `Lunar date: ${data.lunar}`,
     data.zodiac && `Chinese zodiac: ${data.zodiac}`,
     data.bazi && `BaZi four pillars: ${data.bazi}`,
+    data.vedic && `Vedic (sidereal) chart: ${data.vedic}`,
+    data.ziwei && `Zi Wei Dou Shu chart: ${data.ziwei}`,
+    data.gender && `Gender: ${data.gender}`,
     planetLines && `Western planet placements: ${planetLines}`,
     data.quiz && `Self-report calibration answers (A/B/C/D per question): ${data.quiz}`,
   ]
