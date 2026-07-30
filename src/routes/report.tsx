@@ -1685,12 +1685,13 @@ function ReportPage() {
 
               <div className="mb-8 flex flex-wrap items-start justify-between gap-4 border-b border-white/10 pb-6">
                 <div className="flex min-w-0 items-start gap-4">
-                  <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl border border-gold-dust/25 bg-gradient-to-br from-gold-dust/[0.12] to-transparent text-gold-light shadow-[0_0_24px_-12px_hsl(45_70%_60%/0.5)]">
+                  <div className="rm-icon flex size-14 shrink-0 items-center justify-center rounded-2xl border border-gold-dust/25 bg-gradient-to-br from-gold-dust/[0.12] to-transparent text-gold-light">
                     {(() => {
                       const Icon = DIM_ICONS[d.key] ?? Sparkles;
                       return <Icon size={22} strokeWidth={1.5} />;
                     })()}
                   </div>
+
                   <div className="min-w-0">
                     <p className="mb-2 flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
                       <span>
