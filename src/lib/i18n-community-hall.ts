@@ -470,6 +470,29 @@ export function useCommunityHall() {
           lang,
         ),
 
+      // ── Metrics & privacy (round 4 · batch D) ─────────────
+      metricsTitle: p("运营指标", "Operating metrics"),
+      metricsRange: (n: number) => pick({ zh: `最近 ${n} 天`, en: `Last ${n} days` }, lang),
+      metricLetters: p("来信", "Letters"),
+      metricDeliveries: p("投递", "Deliveries"),
+      metricReplies: p("回音", "Echoes"),
+      metricReports: p("举报", "Reports"),
+      metricParticipants: p("同门", "Members"),
+      metricReadRate: p("拆阅率", "Open rate"),
+      metricReplyRate: p("回音率", "Echo rate"),
+      metricMedianEcho: p("首次回音中位时长", "Median time to first echo"),
+      metricHours: p("小时", "h"),
+      metricNoData: p("暂无数据", "No data yet"),
+
+      privacyTitle: p("我的数据", "My data"),
+      privacyBody: p(
+        "你可以随时清除自己在众生之厅留下的全部痕迹：匿名身份、寄出的信、写过的回音、收信记录、举报与通报。此操作不可撤销，且不会影响你的账号与命盘。",
+        "You can erase everything you left in the hall at any time: anonymous identity, letters sent, echoes written, delivery records, reports and notices. This cannot be undone, and it does not touch your account or charts.",
+      ),
+      privacyDelete: p("清除我在同门的全部数据", "Delete all my hall data"),
+      privacyConfirm: p("确认清除？此操作不可撤销。", "Delete for good? This cannot be undone."),
+      privacyDone: p("已清除你在众生之厅的全部数据。", "Your hall data has been erased."),
+
       // ── Delivery waves (round 4 · batch B) ────────────────
       waveLabel: p("投递波次", "Delivery waves"),
       waveDelivered: p("已送达", "Delivered"),

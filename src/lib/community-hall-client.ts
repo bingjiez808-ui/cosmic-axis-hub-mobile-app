@@ -20,6 +20,7 @@ import {
   blockCommunityLetterAuthor,
   setCommunityEchoSaved,
   closeCommunityLetter,
+  deleteMyCommunityHallData,
   getCommunityLetterDispatchState,
   getCommunityLibrarySamples,
   markCommunityOnboarded,
@@ -226,5 +227,18 @@ export function useMarkNotificationsRead() {
   return useMutation({
     mutationFn: (ids: string[]) => mark({ data: { ids } }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: communityKeys.mailbox }),
+  });
+}
+
+/** Privacy: erase this member's whole footprint in the hall. */
+export function useDeleteMyCommunityData() {
+  const qc = useQueryClient();
+  const run = useServerFn(deleteMyCommunityHallData);
+  return useMutation({
+    mutationFn: () => run({ data: undefined }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: communityKeys.profile });
+      void qc.invalidateQueries({ queryKey: communityKeys.mailbox });
+    },
   });
 }
