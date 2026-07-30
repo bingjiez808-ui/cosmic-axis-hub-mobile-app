@@ -47,7 +47,7 @@ async function makeUser(label, age, optIn) {
   if (error) throw error;
   const id = data.user.id;
   // verified birth date lives on profiles; age_band is derived server-side
-  { const { error: bErr } = await admin.from("profiles").upsert({ id, birth_date: yearsAgo(age) }, { onConflict: "id" }); if (bErr) throw new Error("profiles upsert: " + bErr.message); }
+  { const { error: bErr } = await admin.from("profiles").upsert({ id, email, birth_date: yearsAgo(age) }, { onConflict: "id" }); if (bErr) throw new Error("profiles upsert: " + bErr.message); }
   const client = createClient(URL, ANON, { auth: { persistSession: false } });
   const { error: sErr } = await client.auth.signInWithPassword({ email, password: PW });
   if (sErr) throw sErr;
