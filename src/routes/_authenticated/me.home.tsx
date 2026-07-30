@@ -266,7 +266,7 @@ function DailyRoomPage() {
   const caution = plain.overall.avoid_today;
 
   return (
-    <div className="min-h-screen bg-[#0a0a12]/35 text-amber-50">
+    <div className="min-h-screen bg-[#0a0a12]/10 text-amber-50">
       <div className="mx-auto w-full max-w-[1100px] px-4 py-8 md:px-8 md:py-12">
         {/* Demo banner */}
         <div className="mb-6 rounded-lg border border-amber-400/30 bg-amber-500/5 px-4 py-2 text-xs text-amber-200/90">

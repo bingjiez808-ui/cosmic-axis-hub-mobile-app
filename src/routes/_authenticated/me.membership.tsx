@@ -73,7 +73,7 @@ function MembershipPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#0a0a12]/35 text-amber-50">
+    <div className="min-h-screen bg-[#0a0a12]/10 text-amber-50">
       <div className="mx-auto w-full max-w-[1100px] px-4 py-8 md:px-8 md:py-12">
         <PersonalWorkspaceNav active="/me/membership" />
         <header className="mb-6">
