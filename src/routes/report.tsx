@@ -23,7 +23,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { ReportToc, type TocItem } from "@/components/ReportToc";
+import { ReportToc, scrollToId, type TocItem } from "@/components/ReportToc";
 import { PriorityPreviewModal } from "@/components/PriorityPreviewModal";
 import { isConcernKey } from "@/lib/concern-guidance-v1";
 import { useStableMotion } from "@/lib/motion-preference";
