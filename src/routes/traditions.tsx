@@ -458,18 +458,23 @@ function TraditionsPage() {
   return (
     <div className="pt-32 pb-32">
       {/* Header */}
-      <header className="trad-panel mx-auto max-w-4xl px-6 py-12 text-center md:px-12">
+      <header className="trad-head mx-auto max-w-4xl px-5 py-10 text-center sm:px-8 md:px-12 md:py-12">
         <p className="mb-4 text-[10px] uppercase tracking-[0.42em] text-gold-dust">
           {HEADER.kicker[li]}
         </p>
-        <h1 className="mb-6 font-serif text-5xl leading-[1.05] text-stone-warm md:text-7xl">
-          {HEADER.h1a[li]}
-          <span className="italic gold-gradient-text">{HEADER.h1b[li]}</span>
-          {HEADER.h1c[li]}
-          <br /> {HEADER.h1d[li]}
+        <h1 className="trad-h1 mb-6 font-serif text-stone-warm">
+          <span className="trad-h1-line">
+            {HEADER.h1a[li]}
+            <span className="italic gold-gradient-text">{HEADER.h1b[li]}</span>
+            {HEADER.h1c[li]}
+          </span>
+          <span className="trad-h1-line">{HEADER.h1d[li]}</span>
         </h1>
-        <p className="mx-auto max-w-2xl font-light text-stone-warm/80">{HEADER.lead[li]}</p>
+        <p className="mx-auto max-w-2xl text-balance font-light text-stone-warm/85">
+          {HEADER.lead[li]}
+        </p>
       </header>
+
       <div className="h-16" />
 
       {/* Four Pillars — moved from homepage */}
