@@ -111,3 +111,41 @@ the only sanctioned way to reset attempts on a partial report.
   without a valid JSON payload.
 - Cite modules outside the chapter's `allowed_facts`.
 - Claim guaranteed marriage, income, health, or disaster outcomes.
+
+## Four-system coverage contract (v2026-07-30)
+
+Every generator that reads a natal chart — the free `/report` reader, the
+premium chapters, the outlook / key-events tools and the oracle — MUST be
+handed all four systems, in this order:
+
+| System | Prompt field | Minimum fact |
+|---|---|---|
+| 西方占星 / Western | `planets` | sign + house of at least the luminaries |
+| 八字 / BaZi | `bazi` | four pillars incl. day-master stem |
+| 印度占星 / Jyotish | `vedic` | sidereal Asc, Moon nakshatra + pada, current Vimshottari dasha |
+| 紫微斗数 / Zi Wei | `ziwei` | five-elements class, body star, 12 palaces with main stars |
+
+Runtime enforcement lives in `src/lib/four-system-brief.ts`:
+
+- `buildFourSystemFacts(snapshot)` — client side; produces the `vedic` /
+  `ziwei` prose lines plus a `coverage` map. Gender is required for Zi Wei
+  and birth time + resolvable birthplace for Jyotish; when one is missing
+  the system is reported missing, never approximated.
+- `systemCoverageFromFacts(...)` + `coverageDirective(...)` — server side;
+  injects an explicit line naming which systems are present and which are
+  absent. A missing system must be declared in the prose
+  ("本次缺少 X 排盘"), never fabricated.
+- `crossSystemDirective(lang)` — the synthesis rule: `synthesis` must name
+  the 2–3 systems that **converge**, the system that reads it
+  **differently**, and end with one combined conclusion. Four parallel
+  monologues are not a synthesis. Single-system claims must be labelled
+  「单体系参考」 / "single-system reference".
+
+## Concern promise contract
+
+When the visitor entered through 「今天你带着什么问题来到这里」 the homepage
+already showed them three 「这次阅读会帮你分清」 cards
+(`src/lib/concern-reading-guide.ts`). `concernFocusDirective(concern, lang)`
+injects those three cards into the prompt, and the generated chapter MUST
+answer all three — spread across `synthesis` / `plain` / `details` — each
+anchored to a real chart fact from one of the four systems.
