@@ -269,21 +269,44 @@ export function ReportToc({ items, lang }: { items: TocItem[]; lang: "en" | "zh"
         </div>
       </nav>
 
-      {/* Mobile floating trigger — < md */}
+      {/* Mobile floating trigger — < md.
+          Thumb-zone (bottom-right), 48px target, hides while scrolling down
+          so it never sits under a finger mid-read, and only fires on a
+          deliberate tap (pointer travel < 10px). */}
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onPointerDown={(e) => {
+          tapStart.current = { x: e.clientX, y: e.clientY };
+        }}
+        onClick={(e) => {
+          const s = tapStart.current;
+          if (s) {
+            const dx = Math.abs(e.clientX - s.x);
+            const dy = Math.abs(e.clientY - s.y);
+            tapStart.current = null;
+            if (dx > 10 || dy > 10) return; // was a scroll/drag, not a tap
+          }
+          setOpen(true);
+        }}
         aria-haspopup="dialog"
         aria-expanded={open}
-        style={{ bottom: "max(1.25rem, env(safe-area-inset-bottom))" }}
-        className="fixed left-4 z-40 flex min-h-11 items-center gap-2 rounded-full border border-gold-dust/40 bg-obsidian/85 px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-gold-dust shadow-[0_6px_24px_rgba(0,0,0,0.6)] backdrop-blur md:hidden"
+        aria-label={tocLabel}
+        style={{
+          bottom: "max(1.25rem, calc(env(safe-area-inset-bottom) + 0.75rem))",
+          touchAction: "manipulation",
+        }}
+        className={`fixed right-4 z-40 flex min-h-12 min-w-12 items-center gap-2 rounded-full border border-gold-dust/40 bg-obsidian/90 px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-gold-dust shadow-[0_6px_24px_rgba(0,0,0,0.6)] backdrop-blur transition-all duration-300 md:hidden ${
+          triggerHidden || open
+            ? "pointer-events-none translate-y-6 opacity-0"
+            : "translate-y-0 opacity-100"
+        }`}
         data-testid="report-toc-trigger"
       >
         <span aria-hidden>☰</span>
-        {tocLabel} · {activeIndex + 1}/{items.length}
+        {activeIndex + 1}/{items.length}
       </button>
 
-      {/* Mobile drawer */}
+      {/* Mobile drawer — tap backdrop, tap close, or swipe the handle down. */}
       {open && (
         <div
           role="dialog"
@@ -295,24 +318,59 @@ export function ReportToc({ items, lang }: { items: TocItem[]; lang: "en" | "zh"
           <button
             type="button"
             aria-label={closeLabel}
-            onClick={() => setOpen(false)}
-            className="absolute inset-0 bg-obsidian/70 backdrop-blur-sm"
+            onClick={closeDrawer}
+            className="absolute inset-0 bg-obsidian/70 backdrop-blur-sm animate-fade-in"
           />
-          <div className="absolute inset-x-0 bottom-0 max-h-[80dvh] overflow-y-auto rounded-t-3xl border-t border-gold-dust/25 bg-obsidian/95 p-4 pb-8">
-            <div className="mx-auto mb-3 h-1 w-12 rounded-full bg-white/20" />
-            <div className="mb-3 flex items-center justify-between px-1">
+          <div
+            style={{
+              transform: `translateY(${dragY}px)`,
+              transition: dragging ? "none" : "transform 220ms cubic-bezier(0.32,0.72,0,1)",
+              paddingBottom: "max(2rem, calc(env(safe-area-inset-bottom) + 1rem))",
+            }}
+            className="absolute inset-x-0 bottom-0 flex max-h-[78dvh] flex-col rounded-t-3xl border-t border-gold-dust/25 bg-obsidian/95 p-4"
+          >
+            {/* Swipe-to-dismiss handle — generous 44px grab area */}
+            <div
+              onPointerDown={(e) => {
+                dragStart.current = e.clientY;
+                setDragging(true);
+                e.currentTarget.setPointerCapture(e.pointerId);
+              }}
+              onPointerMove={(e) => {
+                if (dragStart.current == null) return;
+                setDragY(Math.max(0, e.clientY - dragStart.current));
+              }}
+              onPointerUp={() => {
+                setDragging(false);
+                if (dragY > 90) closeDrawer();
+                else setDragY(0);
+                dragStart.current = null;
+              }}
+              onPointerCancel={() => {
+                setDragging(false);
+                setDragY(0);
+                dragStart.current = null;
+              }}
+              style={{ touchAction: "none" }}
+              className="-mt-2 mb-1 flex h-11 shrink-0 cursor-grab items-center justify-center active:cursor-grabbing"
+              aria-hidden
+            >
+              <span className="h-1.5 w-12 rounded-full bg-white/25" />
+            </div>
+            <div className="mb-3 flex shrink-0 items-center justify-between px-1">
               <span className="text-[10px] uppercase tracking-[0.32em] text-gold-dust/80">
-                {tocLabel}
+                {tocLabel} · {activeIndex + 1}/{items.length}
               </span>
               <button
                 type="button"
-                onClick={() => setOpen(false)}
-                className="rounded-full border border-white/15 px-3 py-1 text-[10px] uppercase tracking-[0.24em] text-stone-warm/70"
+                onClick={closeDrawer}
+                style={{ touchAction: "manipulation" }}
+                className="min-h-11 min-w-11 rounded-full border border-white/15 px-4 text-[10px] uppercase tracking-[0.24em] text-stone-warm/70 active:bg-white/10"
               >
                 {closeLabel}
               </button>
             </div>
-            <ul className="space-y-1">
+            <ul className="-mx-1 space-y-1 overflow-y-auto overscroll-contain px-1">
               {items.map((it) => {
                 const isActive = it.id === active;
                 return (
@@ -320,14 +378,15 @@ export function ReportToc({ items, lang }: { items: TocItem[]; lang: "en" | "zh"
                     <button
                       type="button"
                       onClick={() => {
+                        closeDrawer();
                         scrollToId(it.id);
-                        setOpen(false);
                       }}
                       aria-current={isActive ? "true" : undefined}
-                      className={`block w-full rounded-xl border px-3 py-3 text-left transition ${
+                      style={{ touchAction: "manipulation" }}
+                      className={`block min-h-14 w-full rounded-xl border px-3 py-3 text-left transition active:scale-[0.99] ${
                         isActive
                           ? "border-gold-dust/50 bg-gold-dust/10"
-                          : "border-white/10 bg-white/[0.02] hover:border-gold-dust/30"
+                          : "border-white/10 bg-white/[0.02] active:border-gold-dust/40"
                       }`}
                     >
                       <div
@@ -344,6 +403,7 @@ export function ReportToc({ items, lang }: { items: TocItem[]; lang: "en" | "zh"
           </div>
         </div>
       )}
+
     </>
   );
 }
