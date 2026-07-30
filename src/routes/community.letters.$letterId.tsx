@@ -1,9 +1,15 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { HallGate, HallHeader, HallNav } from "@/experiences/community-hall/HallShell";
+import {
+  HallGate,
+  HallHeader,
+  HallMobileBar,
+  HallNav,
+} from "@/experiences/community-hall/HallShell";
+import { HallError, HallSkeleton } from "@/experiences/community-hall/HallStates";
 import {
   useBlockLetterAuthor,
   useCommunityMailbox,
@@ -11,19 +17,27 @@ import {
   useReplyToLetter,
   useReportContent,
 } from "@/lib/community-hall-client";
+import { hallErrorMessage } from "@/lib/community-hall-errors";
 import { useCommunityHall } from "@/lib/i18n-community-hall";
+import "@/experiences/community-hall/hall.css";
+
+const ECHO_MIN = 20;
+const ECHO_MAX = 800;
 
 /**
- * /community/letters/$letterId — read one delivered letter and write an echo.
- * Opening the page marks the delivery as read; the reply box, the report form
- * and the block action all live on this single page so a recipient never has
- * to hunt for safety tools.
+ * /community/letters/$letterId — open one delivered letter and write an echo.
+ * Opening the page marks the delivery as read. The reply box and the safety
+ * tools (report / block) both live here, so a recipient never has to hunt for
+ * them; on phones the actions sit in a sticky bar within thumb reach.
  */
 export const Route = createFileRoute("/community/letters/$letterId")({
   head: () => ({
     meta: [
       { title: "拆信 · 众生之厅 — Read a letter | Library of Destiny" },
-      { name: "description", content: "拆开一封匿名来信，写下你的回音。Open an anonymous letter and write your echo." },
+      {
+        name: "description",
+        content: "拆开一封匿名来信，写下你的回音。Open an anonymous letter and write your echo.",
+      },
       { property: "og:title", content: "拆信 · 众生之厅" },
       { property: "og:description", content: "拆开一封匿名来信，写下你的回音。" },
       { property: "og:type", content: "article" },
@@ -37,14 +51,20 @@ export const Route = createFileRoute("/community/letters/$letterId")({
 function LetterDetailPage() {
   const c = useCommunityHall();
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 pb-24 pt-12 sm:px-6">
+    <main className="mx-auto w-full max-w-3xl px-4 pb-16 pt-12 sm:px-6 sm:pb-24">
       <HallHeader title={c.navInbox} />
       <HallNav />
       <HallGate>
         <LetterDetail />
       </HallGate>
+      <HallMobileBar />
     </main>
   );
+}
+
+/** Emoji / punctuation only — not an answer anyone can read. */
+function isWordless(text: string) {
+  return !/[\p{L}\p{N}]/u.test(text);
 }
 
 function LetterDetail() {
@@ -59,13 +79,19 @@ function LetterDetail() {
 
   const [body, setBody] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [showReport, setShowReport] = useState(false);
+  const [showSafety, setShowSafety] = useState(false);
   const [reason, setReason] = useState(c.reportReasons[0]?.key ?? "other");
   const [details, setDetails] = useState("");
+  const [confirmBlock, setConfirmBlock] = useState(false);
+  const lastSent = useRef<string | null>(null);
 
   const letter = mailbox.data?.received.find((l) => l.letterId === letterId);
-  const echoes = (mailbox.data?.echoes ?? []).filter((e) => e.letterId === letterId);
+  const echoes = useMemo(
+    () => (mailbox.data?.echoes ?? []).filter((e) => e.letterId === letterId),
+    [mailbox.data?.echoes, letterId],
+  );
   const alreadyReplied = Boolean(letter?.repliedAt);
+  const length = body.trim().length;
 
   // Mark as read once, the first time the letter renders.
   useEffect(() => {
@@ -75,15 +101,20 @@ function LetterDetail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [letter?.letterId, letter?.readAt]);
 
-  if (mailbox.isLoading) {
-    return <p className="mt-10 text-sm text-muted-foreground">{c.loading}</p>;
+  if (mailbox.isLoading) return <div className="mt-8"><HallSkeleton rows={1} /></div>;
+  if (mailbox.error) {
+    return (
+      <div className="mt-8">
+        <HallError error={mailbox.error} onRetry={() => void mailbox.refetch()} />
+      </div>
+    );
   }
 
   if (!letter) {
     return (
-      <div className="mt-10 rounded-2xl border border-dashed border-primary/20 p-8 text-center">
+      <div className="hall-paper mt-10 p-8 text-center">
         <p className="text-sm text-muted-foreground">{c.emptyInbox}</p>
-        <Button asChild className="mt-5" variant="outline">
+        <Button asChild className="hall-tap mt-5" variant="outline">
           <Link to="/community/inbox">{c.backToInbox}</Link>
         </Button>
       </div>
@@ -91,46 +122,78 @@ function LetterDetail() {
   }
 
   async function submitEcho() {
-    if (body.trim().length < 10) {
-      setError(c.tooShort);
-      return;
-    }
+    const text = body.trim();
+    if (text.length < ECHO_MIN) return setError(c.echoTooShort);
+    if (text.length > ECHO_MAX) return setError(c.echoTooLong);
+    if (isWordless(text)) return setError(c.echoNoEmojiOnly);
+    if (lastSent.current === text) return setError(c.echoDuplicate);
     try {
-      await reply.mutateAsync({ letterId, body: body.trim() });
+      await reply.mutateAsync({ letterId, body: text });
+      lastSent.current = text;
       setBody("");
       setError(null);
       toast.success(c.echoSent);
     } catch (err) {
-      setError(err instanceof Error ? err.message : c.required);
+      setError(hallErrorMessage(err, c.lang));
+    }
+  }
+
+  async function submitReport() {
+    try {
+      await report.mutateAsync({
+        targetType: "letter",
+        targetId: letterId,
+        reason,
+        details: details.trim() || null,
+      });
+      setShowSafety(false);
+      setDetails("");
+      toast.success(c.reportSent);
+    } catch (err) {
+      toast.error(hallErrorMessage(err, c.lang));
+    }
+  }
+
+  async function submitBlock() {
+    try {
+      await block.mutateAsync({ letterId });
+      setShowSafety(false);
+      setConfirmBlock(false);
+      toast.success(c.blocked);
+      void navigate({ to: "/community/inbox" });
+    } catch (err) {
+      toast.error(hallErrorMessage(err, c.lang));
     }
   }
 
   return (
     <section className="mt-8 space-y-6">
-      <article className="rounded-2xl border border-primary/25 bg-background/60 p-6 backdrop-blur">
-        <div className="flex flex-wrap gap-x-3 gap-y-1 text-[0.7rem] text-muted-foreground">
+      <article className="hall-paper hall-open-in p-6">
+        <p className="text-[0.7rem] uppercase tracking-[0.3em] text-primary/70">
+          {c.letterFromChapter} {c.ageBand(letter.author.ageBand)}
+        </p>
+        <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-[0.7rem] text-muted-foreground">
           <span>
             {c.fromTraveler} · {letter.author.alias ?? c.hallEyebrow}
           </span>
-          <span>{c.ageBand(letter.author.ageBand)}</span>
           <span>{c.topic(letter.topic)}</span>
           <span>{c.deliveryStatus(letter.status)}</span>
         </div>
         <h2 className="mt-3 text-xl font-semibold text-foreground">
           {letter.subject ?? c.topic(letter.topic)}
         </h2>
-        <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">
+        <p className="mt-4 whitespace-pre-wrap text-[0.95rem] leading-[1.9] text-foreground/90">
           {letter.body}
         </p>
       </article>
 
       {echoes.length > 0 ? (
         <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-foreground">{c.sectionEchoes}</h3>
+          <h3 className="text-sm font-semibold text-foreground">{c.echoesForLetter}</h3>
           {echoes.map((echo) => (
             <p
               key={echo.replyId}
-              className="whitespace-pre-wrap rounded-2xl border border-primary/15 bg-background/50 p-5 text-sm leading-relaxed text-foreground/90"
+              className="hall-paper whitespace-pre-wrap p-5 text-sm leading-relaxed text-foreground/90"
             >
               {echo.body}
             </p>
@@ -139,62 +202,59 @@ function LetterDetail() {
       ) : null}
 
       {alreadyReplied ? (
-        <p className="rounded-2xl border border-primary/15 bg-primary/[0.06] p-5 text-sm text-muted-foreground">
-          {c.echoSent}
-        </p>
+        <p className="hall-paper p-5 text-sm text-muted-foreground">{c.echoOnce}</p>
       ) : (
-        <div className="rounded-2xl border border-primary/15 bg-background/50 p-5">
+        <div className="hall-paper p-5">
           <h3 className="text-sm font-semibold text-foreground">{c.writeEcho}</h3>
           <textarea
             value={body}
-            onChange={(e) => setBody(e.target.value.slice(0, 3000))}
+            onChange={(e) => setBody(e.target.value.slice(0, ECHO_MAX))}
             rows={7}
             placeholder={c.echoPlaceholder}
-            className="mt-3 w-full resize-y rounded-xl border border-primary/20 bg-background/70 px-4 py-3 text-sm leading-relaxed outline-none focus:border-primary/50"
+            className="mt-3 w-full resize-y rounded-xl border border-primary/20 bg-background/70 px-4 py-3 text-base leading-relaxed outline-none focus:border-primary/50 sm:text-sm"
           />
           <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
-            <span>{c.echoHint}</span>
-            <span>{body.trim().length} / 3000</span>
+            <span>{c.echoRange}</span>
+            <span>{c.bodyCounter(length, ECHO_MAX)}</span>
           </div>
           {error ? <p className="mt-2 text-sm text-destructive">{error}</p> : null}
-          <Button className="mt-4" disabled={reply.isPending} onClick={() => void submitEcho()}>
+          <Button
+            className="hall-tap mt-4 w-full sm:w-auto"
+            disabled={reply.isPending}
+            onClick={() => void submitEcho()}
+          >
             {reply.isPending ? c.sending : c.sendEcho}
           </Button>
         </div>
       )}
 
-      <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
-        <button type="button" onClick={() => setShowReport((v) => !v)} className="hover:text-foreground">
-          {c.reportThis}
-        </button>
-        <button
-          type="button"
-          disabled={block.isPending}
-          onClick={async () => {
-            await block.mutateAsync({ letterId });
-            toast.success(c.blocked);
-            void navigate({ to: "/community/inbox" });
-          }}
-          className="hover:text-foreground"
+      {/* ── Safety tools ──────────────────────────────────── */}
+      <div className="flex flex-wrap items-center gap-3">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="hall-tap"
+          onClick={() => setShowSafety((v) => !v)}
         >
-          {c.blockThis}
-        </button>
-        <Link to="/community/inbox" className="hover:text-foreground">
+          {c.safetyTools}
+        </Button>
+        <Link to="/community/inbox" className="text-sm text-muted-foreground hover:text-foreground">
           {c.backToInbox}
         </Link>
       </div>
 
-      {showReport ? (
-        <div className="rounded-2xl border border-destructive/25 bg-destructive/[0.04] p-5">
-          <div className="flex flex-wrap gap-2">
+      {showSafety ? (
+        <div className="hall-paper hall-rise p-5">
+          <h3 className="text-sm font-semibold text-foreground">{c.safetySheetTitle}</h3>
+          <div className="mt-3 flex flex-wrap gap-2">
             {c.reportReasons.map((r) => (
               <button
                 key={r.key}
                 type="button"
                 onClick={() => setReason(r.key)}
-                className={`rounded-full border px-3 py-1.5 text-xs transition ${
+                className={`hall-tap rounded-full border px-3 py-1.5 text-xs transition ${
                   reason === r.key
-                    ? "border-destructive/50 bg-destructive/10 text-destructive"
+                    ? "border-primary/50 bg-primary/15 text-primary"
                     : "border-primary/15 text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -206,26 +266,49 @@ function LetterDetail() {
             value={details}
             onChange={(e) => setDetails(e.target.value.slice(0, 1000))}
             rows={3}
-            className="mt-3 w-full resize-y rounded-xl border border-primary/20 bg-background/70 px-4 py-2 text-sm outline-none focus:border-primary/50"
+            className="mt-3 w-full resize-y rounded-xl border border-primary/20 bg-background/70 px-4 py-3 text-sm outline-none focus:border-primary/50"
           />
-          <Button
-            variant="outline"
-            className="mt-3"
-            disabled={report.isPending}
-            onClick={async () => {
-              await report.mutateAsync({
-                targetType: "letter",
-                targetId: letterId,
-                reason,
-                details: details.trim() || null,
-              });
-              setShowReport(false);
-              setDetails("");
-              toast.success(c.reportSent);
-            }}
-          >
-            {c.reportThis}
-          </Button>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <Button
+              size="sm"
+              className="hall-tap"
+              disabled={report.isPending}
+              onClick={() => void submitReport()}
+            >
+              {c.reportThis}
+            </Button>
+            {confirmBlock ? (
+              <>
+                <span className="self-center text-xs text-muted-foreground">{c.confirmBlock}</span>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  className="hall-tap"
+                  disabled={block.isPending}
+                  onClick={() => void submitBlock()}
+                >
+                  {c.confirm}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="hall-tap"
+                  onClick={() => setConfirmBlock(false)}
+                >
+                  {c.cancel}
+                </Button>
+              </>
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                className="hall-tap"
+                onClick={() => setConfirmBlock(true)}
+              >
+                {c.blockThis}
+              </Button>
+            )}
+          </div>
         </div>
       ) : null}
     </section>

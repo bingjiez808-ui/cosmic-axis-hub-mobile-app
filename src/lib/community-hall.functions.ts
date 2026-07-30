@@ -21,6 +21,8 @@ import {
   saveCommunityProfile,
   sendLetter,
   setDeliveryState,
+  setEchoSaved,
+  closeLetter,
   submitReply,
   toggleBlock,
   type CommunityMailbox,
@@ -41,7 +43,7 @@ const profileSchema = z.object({
 
 const sendSchema = z.object({
   subject: z.string().trim().max(80).optional().nullable(),
-  body: z.string().trim().min(20).max(4000),
+  body: z.string().trim().min(30).max(1200),
   topic: z.string().trim().max(40).optional().nullable(),
   targetAgeBand: bandEnum,
   responseStyle: z.string().trim().max(40).optional().nullable(),
@@ -49,7 +51,7 @@ const sendSchema = z.object({
 
 const replySchema = z.object({
   letterId: z.string().uuid(),
-  body: z.string().trim().min(10).max(3000),
+  body: z.string().trim().min(20).max(800),
 });
 
 const reportSchema = z.object({
@@ -121,3 +123,13 @@ export const blockCommunityLetterAuthor = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => letterIdSchema.parse(data))
   .handler(async ({ data, context }) => blockLetterAuthor(context, data.letterId));
+
+export const setCommunityEchoSaved = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ replyId: z.string().uuid(), saved: z.boolean() }).parse(data))
+  .handler(async ({ data, context }) => setEchoSaved(context, data));
+
+export const closeCommunityLetter = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => letterIdSchema.parse(data))
+  .handler(async ({ data, context }) => closeLetter(context, data.letterId));

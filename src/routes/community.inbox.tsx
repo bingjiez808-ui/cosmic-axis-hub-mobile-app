@@ -3,15 +3,17 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
-  HallEmpty,
   HallGate,
   HallHeader,
+  HallMobileBar,
   HallNav,
   HallSection,
 } from "@/experiences/community-hall/HallShell";
+import { HallEmptyState, HallError, HallSkeleton } from "@/experiences/community-hall/HallStates";
 import { ReceivedLetterCard } from "@/experiences/community-hall/LetterCards";
 import { useCommunityMailbox, useDeliveryState } from "@/lib/community-hall-client";
 import { useCommunityHall } from "@/lib/i18n-community-hall";
+import "@/experiences/community-hall/hall.css";
 
 /** /community/inbox — letters delivered to this traveler, with status filters. */
 export const Route = createFileRoute("/community/inbox")({
@@ -51,8 +53,8 @@ function InboxPage() {
   ];
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 pb-24 pt-12 sm:px-6">
-      <HallHeader title={c.sectionToday} subtitle={c.ctaReceived} />
+    <main className="mx-auto w-full max-w-3xl px-4 pb-16 pt-12 sm:px-6 sm:pb-24">
+      <HallHeader title={c.cardInboxTitle} subtitle={c.cardInboxBody} />
       <HallNav />
       <HallGate>
         <HallSection title={c.navInbox}>
@@ -62,7 +64,8 @@ function InboxPage() {
                 key={f.key}
                 type="button"
                 onClick={() => setFilter(f.key)}
-                className={`rounded-full border px-3 py-1.5 text-xs transition ${
+                aria-pressed={filter === f.key}
+                className={`hall-tap rounded-full border px-3.5 py-2 text-xs transition ${
                   filter === f.key
                     ? "border-primary/50 bg-primary/15 text-primary"
                     : "border-primary/15 text-muted-foreground hover:text-foreground"
@@ -74,12 +77,14 @@ function InboxPage() {
           </div>
 
           {mailbox.isLoading ? (
-            <p className="text-sm text-muted-foreground">{c.loading}</p>
+            <HallSkeleton />
+          ) : mailbox.error ? (
+            <HallError error={mailbox.error} onRetry={() => void mailbox.refetch()} />
           ) : letters.length === 0 ? (
-            <HallEmpty
-              text={c.emptyInbox}
+            <HallEmptyState
+              text={filter === "all" ? c.emptyInbox : c.stateEmptyHint}
               cta={
-                <Button asChild variant="outline">
+                <Button asChild variant="outline" className="hall-tap">
                   <Link to="/community/write">{c.ctaWrite}</Link>
                 </Button>
               }
@@ -98,7 +103,7 @@ function InboxPage() {
                         state: letter.status === "archived" ? "restore" : "archived",
                       })
                     }
-                    className="text-xs text-muted-foreground hover:text-foreground"
+                    className="hall-tap text-xs text-muted-foreground hover:text-foreground"
                   >
                     {letter.status === "archived" ? c.unarchive : c.archive}
                   </button>
@@ -108,6 +113,7 @@ function InboxPage() {
           )}
         </HallSection>
       </HallGate>
+      <HallMobileBar />
     </main>
   );
 }

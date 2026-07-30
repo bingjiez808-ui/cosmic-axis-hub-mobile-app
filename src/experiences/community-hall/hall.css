@@ -1,0 +1,218 @@
+/**
+ * 同门 · 众生之厅 — archive-room visual language.
+ *
+ * All colour comes from the existing semantic tokens (primary / foreground /
+ * background / muted). Nothing here hardcodes a hex value, so the hall keeps
+ * following the library theme. Every animation is disabled under
+ * `prefers-reduced-motion` and under the site-wide `[data-perf="lite"]` flag.
+ */
+
+/* ── Paper & envelopes ─────────────────────────────────────── */
+.hall-paper {
+  position: relative;
+  border-radius: 1rem;
+  border: 1px solid color-mix(in oklab, var(--primary) 18%, transparent);
+  background:
+    radial-gradient(120% 90% at 12% 0%, color-mix(in oklab, var(--primary) 7%, transparent), transparent 62%),
+    color-mix(in oklab, var(--background) 88%, transparent);
+  box-shadow: 0 18px 44px -32px color-mix(in oklab, var(--primary) 60%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+.hall-paper::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0.35;
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      color-mix(in oklab, var(--foreground) 4%, transparent) 0 1px,
+      transparent 1px 3px
+    );
+  mix-blend-mode: overlay;
+}
+
+.hall-envelope {
+  position: relative;
+  overflow: hidden;
+  transition: transform 260ms ease, box-shadow 260ms ease, border-color 260ms ease;
+}
+
+.hall-envelope:hover,
+.hall-envelope:focus-within {
+  transform: translateY(-3px);
+  border-color: color-mix(in oklab, var(--primary) 38%, transparent);
+  box-shadow: 0 24px 54px -30px color-mix(in oklab, var(--primary) 75%, transparent);
+}
+
+/* The flap: a soft triangular fold across the top of an unopened envelope. */
+.hall-envelope[data-unread="true"]::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 46%;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in oklab, var(--primary) 12%, transparent),
+    transparent
+  );
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  pointer-events: none;
+  opacity: 0.9;
+}
+
+/* Wax seal dot for unopened letters. */
+.hall-seal {
+  display: inline-flex;
+  height: 0.6rem;
+  width: 0.6rem;
+  border-radius: 9999px;
+  background: color-mix(in oklab, var(--primary) 70%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in oklab, var(--primary) 16%, transparent);
+  animation: hall-seal-pulse 3.6s ease-in-out infinite;
+}
+
+@keyframes hall-seal-pulse {
+  0%, 100% { box-shadow: 0 0 0 4px color-mix(in oklab, var(--primary) 14%, transparent); }
+  50% { box-shadow: 0 0 0 7px color-mix(in oklab, var(--primary) 6%, transparent); }
+}
+
+/* ── Letter opening ────────────────────────────────────────── */
+.hall-open-in {
+  animation: hall-open 520ms cubic-bezier(0.22, 0.8, 0.24, 1) both;
+  transform-origin: top center;
+}
+
+@keyframes hall-open {
+  from { opacity: 0; transform: perspective(900px) rotateX(-7deg) translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
+.hall-rise {
+  animation: hall-rise 460ms ease both;
+}
+
+@keyframes hall-rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ── Courier path (three steps) ────────────────────────────── */
+.hall-path {
+  position: relative;
+}
+
+.hall-path::before {
+  content: "";
+  position: absolute;
+  left: 1.05rem;
+  top: 0.9rem;
+  bottom: 0.9rem;
+  width: 1px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    color-mix(in oklab, var(--primary) 34%, transparent),
+    transparent
+  );
+}
+
+@media (min-width: 768px) {
+  .hall-path::before {
+    left: 8%;
+    right: 8%;
+    top: 1.15rem;
+    bottom: auto;
+    width: auto;
+    height: 1px;
+    background: linear-gradient(
+      to right,
+      transparent,
+      color-mix(in oklab, var(--primary) 34%, transparent),
+      transparent
+    );
+  }
+}
+
+.hall-step-dot {
+  display: grid;
+  place-items: center;
+  height: 2.1rem;
+  width: 2.1rem;
+  border-radius: 9999px;
+  border: 1px solid color-mix(in oklab, var(--primary) 40%, transparent);
+  background: color-mix(in oklab, var(--background) 80%, transparent);
+  color: color-mix(in oklab, var(--primary) 88%, var(--foreground));
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+}
+
+/* ── Skeletons ─────────────────────────────────────────────── */
+.hall-skeleton {
+  border-radius: 0.9rem;
+  background: linear-gradient(
+    90deg,
+    color-mix(in oklab, var(--foreground) 5%, transparent) 0%,
+    color-mix(in oklab, var(--foreground) 10%, transparent) 50%,
+    color-mix(in oklab, var(--foreground) 5%, transparent) 100%
+  );
+  background-size: 200% 100%;
+  animation: hall-shimmer 1.5s linear infinite;
+}
+
+@keyframes hall-shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+/* ── Mobile section bar ────────────────────────────────────── */
+.hall-mobile-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 30;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  border-top: 1px solid color-mix(in oklab, var(--primary) 16%, transparent);
+  background: color-mix(in oklab, var(--background) 92%, transparent);
+  backdrop-filter: blur(14px);
+}
+
+.hall-mobile-bar a {
+  min-height: 48px;
+}
+
+/* Comfortable tap targets everywhere in the hall. */
+.hall-tap {
+  min-height: 44px;
+}
+
+/* ── Degraded modes ────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .hall-envelope,
+  .hall-open-in,
+  .hall-rise,
+  .hall-seal,
+  .hall-skeleton {
+    animation: none !important;
+    transition: none !important;
+  }
+  .hall-envelope:hover { transform: none; }
+}
+
+[data-perf="lite"] .hall-paper {
+  backdrop-filter: none;
+}
+
+[data-perf="lite"] .hall-paper::after,
+[data-perf="lite"] .hall-envelope[data-unread="true"]::before {
+  display: none;
+}
+
+[data-perf="lite"] .hall-seal,
+[data-perf="lite"] .hall-skeleton,
+[data-perf="lite"] .hall-open-in,
+[data-perf="lite"] .hall-rise {
+  animation: none !important;
+}

@@ -278,6 +278,7 @@ export type Database = {
           created_at: string
           id: string
           letter_id: string
+          saved_by_author_at: string | null
           status: string
           updated_at: string
         }
@@ -287,6 +288,7 @@ export type Database = {
           created_at?: string
           id?: string
           letter_id: string
+          saved_by_author_at?: string | null
           status?: string
           updated_at?: string
         }
@@ -296,6 +298,7 @@ export type Database = {
           created_at?: string
           id?: string
           letter_id?: string
+          saved_by_author_at?: string | null
           status?: string
           updated_at?: string
         }
@@ -2502,6 +2505,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      close_community_letter: { Args: { _letter_id: string }; Returns: string }
       community_age_band: { Args: { _uid: string }; Returns: string }
       community_email_verified: { Args: never; Returns: boolean }
       community_match_alias_for: { Args: { _uid: string }; Returns: string }
@@ -2671,6 +2675,10 @@ export type Database = {
       }
       set_chart_role: {
         Args: { _chart_id: string; _role: string }
+        Returns: boolean
+      }
+      set_community_echo_saved: {
+        Args: { _reply_id: string; _saved: boolean }
         Returns: boolean
       }
       set_primary_chart: { Args: { _chart_id: string }; Returns: boolean }
