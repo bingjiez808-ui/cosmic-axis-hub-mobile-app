@@ -947,6 +947,11 @@ function ReportPage() {
   const [selectedPlanet, setSelectedPlanet] = useState<number | null>(0);
   const [wheelSize, setWheelSize] = useState(360);
   const [zoomNatal, setZoomNatal] = useState(false);
+  // Which of the four systems the natal-chart module is showing.
+  const [chartSystem, setChartSystem] = useState<SystemKey>("western");
+  // Gender supplied in-place when Zi Wei is missing that parameter.
+  const [genderOverride, setGenderOverride] = useState<"male" | "female" | null>(null);
+
   // Which dimension's detail modal is open (by key), or null.
   const [detailKey, setDetailKey] = useState<string | null>(null);
 
