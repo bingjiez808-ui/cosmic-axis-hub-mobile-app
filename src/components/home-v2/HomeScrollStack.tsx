@@ -16,7 +16,7 @@
  * The drawer state is mirrored to the URL as ?feature=<id> so the back
  * button closes the drawer.
  */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 
 import { useLang } from "@/lib/i18n";
@@ -31,6 +31,7 @@ import { HomeCardVisual } from "./HomeCardVisual";
 import { LibraryFeatureDrawer } from "./LibraryFeatureDrawer";
 import { ResponsiveHeroTitle } from "@/components/ResponsiveHeroTitle";
 import { MotionModeToggle } from "./MotionModeToggle";
+import "./home-corridor.css";
 
 import { ConcernSelector } from "@/components/ConcernSelector";
 import { FeatureLibraryShelf } from "@/components/FeatureLibraryShelf";
@@ -125,18 +126,21 @@ export function HomeScrollStack() {
       <GuideDeskHero isZh={isZh} />
 
       {/* Plain vertical section list — no stacking / pinning effects. */}
-      <div className="mx-auto w-full max-w-[1180px] space-y-8 px-4 pb-24 pt-6 sm:space-y-10 sm:px-6">
-        {HOME_GUIDE_CARDS.map((card) => (
+      {/* Guide corridor — plain vertical flow, no stacking / pinning. */}
+      <div className="corridor pb-24 pt-6">
+        {HOME_GUIDE_CARDS.map((card, i) => (
           <div id={card.id} key={card.id} className="scroll-mt-24">
             <HomeCard
               card={card}
               isZh={isZh}
               facts={facts}
+              flip={i % 2 === 1}
               onOpenDrawer={() => openCard(card.id)}
             />
           </div>
         ))}
       </div>
+
 
 
       <HomeSideRail
@@ -221,19 +225,47 @@ const ACCESS_STYLE: Record<AccessTag, string> = {
   coming: "border-white/20 text-stone-warm/60 bg-white/5",
 };
 
+function useRevealOnce<T extends HTMLElement>() {
+  const ref = useRef<T | null>(null);
+  const [revealed, setRevealed] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof IntersectionObserver === "undefined") {
+      setRevealed(true);
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setRevealed(true);
+          io.disconnect();
+        }
+      },
+      { rootMargin: "0px 0px -10% 0px", threshold: 0.08 }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  return { ref, revealed };
+}
+
 function HomeCard({
   card,
   isZh,
   facts,
+  flip,
   onOpenDrawer,
 }: {
   card: HomeGuideCard;
   isZh: boolean;
   facts: ReturnType<typeof useHomeFacts>;
+  flip: boolean;
   onOpenDrawer: () => void;
 }) {
+  const { ref, revealed } = useRevealOnce<HTMLElement>();
   const isDrawer = card.mode === "drawer";
   const routeTarget = card.target ?? "/";
+
 
   const plan = resolveCta({
     target: routeTarget,
@@ -266,71 +298,68 @@ function HomeCard({
     : card.ctaEn;
 
   const ctaClasses =
-    "inline-flex min-h-[46px] items-center justify-center rounded-full border border-gold-dust/50 bg-gold-dust/15 px-6 py-2.5 text-xs uppercase tracking-[0.28em] text-gold-light transition hover:bg-gold-dust/25 focus:outline-none focus:ring-2 focus:ring-gold-dust/40";
+    "corridor-cta inline-flex min-h-[46px] items-center justify-center rounded-full border border-gold-dust/50 bg-gold-dust/15 px-6 py-2.5 text-xs uppercase tracking-[0.28em] text-gold-light transition hover:bg-gold-dust/25 focus:outline-none focus:ring-2 focus:ring-gold-dust/40";
 
   return (
     <article
-      className="relative overflow-hidden rounded-3xl border border-gold-dust/20 bg-obsidian/70 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.7)] backdrop-blur-xl"
+      ref={ref}
+      data-revealed={revealed ? "true" : "false"}
+      data-flip={flip ? "true" : "false"}
+      className="corridor-card border border-gold-dust/20 bg-obsidian/70 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.7)] backdrop-blur-xl"
       data-testid={`home-card-${card.id}`}
     >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-60"
-        style={{
-          background:
-            "radial-gradient(120% 60% at 50% -10%, rgba(220,180,90,0.14), transparent 55%), linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.05))",
-        }}
-      />
-      <div className="relative grid gap-6 p-5 sm:p-7 md:grid-cols-[minmax(0,1fr)_minmax(0,0.6fr)] md:gap-9 md:p-9">
-        <div className="flex min-w-0 flex-col justify-between gap-5">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="rounded-full border border-gold-dust/30 px-3 py-1 text-[10px] uppercase tracking-[0.36em] text-gold-dust/80">
-                {card.number}
-              </span>
-              <span
-                className={`rounded-full border px-3 py-1 text-[10px] uppercase tracking-[0.3em] ${ACCESS_STYLE[accessTag]}`}
-              >
-                {accessTagLabel(accessTag, isZh)}
-              </span>
-            </div>
-            <h2 className="mt-4 font-serif text-2xl leading-tight text-stone-warm sm:text-[1.75rem] md:text-[2rem]">
-              {isZh ? card.titleZh : card.titleEn}
-            </h2>
-            <p className="mt-3 text-[11px] uppercase tracking-[0.24em] text-gold-dust/70">
-              {isZh ? card.taglineZh : card.taglineEn}
-            </p>
-            <p className="mt-4 max-w-xl text-sm leading-relaxed text-stone-warm/80">
-              {isZh ? card.descriptionZh : card.descriptionEn}
-            </p>
+      <div aria-hidden className="corridor-card__wash" />
+      <div className="corridor-card__inner">
+        <div className="corridor-head min-w-0">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="rounded-full border border-gold-dust/30 px-3 py-1 text-[10px] uppercase tracking-[0.36em] text-gold-dust/80">
+              {card.number}
+            </span>
+            <span
+              className={`rounded-full border px-3 py-1 text-[10px] uppercase tracking-[0.3em] ${ACCESS_STYLE[accessTag]}`}
+            >
+              {accessTagLabel(accessTag, isZh)}
+            </span>
           </div>
-          <div className="space-y-3">
-            {isDrawer ? (
-              <button type="button" className={ctaClasses} onClick={onOpenDrawer}>
-                {ctaText}
-              </button>
-            ) : plan.disabled || !plan.href ? (
-              <button type="button" className={`${ctaClasses} cursor-not-allowed opacity-60`} disabled>
-                {isZh ? "馆藏整理中" : "Still curating"}
-              </button>
-            ) : (
-              <Link to={plan.href} className={ctaClasses}>
-                {ctaText}
-              </Link>
-            )}
-            <p className="max-w-lg text-xs leading-relaxed text-stone-warm/60">{micro}</p>
-          </div>
+          <h2 className="corridor-title mt-4 font-serif text-stone-warm">
+            {isZh ? card.titleZh : card.titleEn}
+          </h2>
+          <p className="mt-3 text-[11px] uppercase tracking-[0.24em] text-gold-dust/70">
+            {isZh ? card.taglineZh : card.taglineEn}
+          </p>
+          <p className="corridor-body mt-4 text-stone-warm/80">
+            {isZh ? card.descriptionZh : card.descriptionEn}
+          </p>
         </div>
-        <div className="relative flex min-h-[132px] items-center justify-center sm:min-h-[150px]">
+
+        <div className="corridor-visual">
           <div className="absolute inset-0 rounded-2xl border border-gold-dust/10 bg-black/35" />
           <div className="relative h-full max-h-[190px] w-full max-w-[260px] p-3">
             <HomeCardVisual kind={card.visual} />
           </div>
         </div>
+
+        <div className="corridor-actions min-w-0 space-y-3">
+          {isDrawer ? (
+            <button type="button" className={ctaClasses} onClick={onOpenDrawer}>
+              {ctaText}
+            </button>
+          ) : plan.disabled || !plan.href ? (
+            <button type="button" className={`${ctaClasses} cursor-not-allowed opacity-60`} disabled>
+              {isZh ? "馆藏整理中" : "Still curating"}
+            </button>
+          ) : (
+            <Link to={plan.href} className={ctaClasses}>
+              {ctaText}
+            </Link>
+          )}
+          <p className="max-w-lg text-xs leading-relaxed text-stone-warm/60">{micro}</p>
+        </div>
       </div>
     </article>
   );
 }
+
 
 function FeatureDrawerHost({
   card,
