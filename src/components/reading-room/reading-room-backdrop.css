@@ -150,3 +150,16 @@
 .rr-pad-x {
   padding-inline: clamp(16px, 4.5vw, 28px);
 }
+
+/* Mobile: the rose window sits directly behind body copy — deepen the guard
+   so text contrast stays stable without crushing the image to black. */
+@media (max-width: 767px) {
+  .rrb-reading-guard {
+    background: radial-gradient(
+      ellipse at center,
+      rgba(8, 9, 11, 0.42) 0%,
+      rgba(8, 9, 11, 0.5) 55%,
+      rgba(5, 6, 8, 0.62) 100%
+    );
+  }
+}
