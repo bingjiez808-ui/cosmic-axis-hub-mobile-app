@@ -1786,10 +1786,10 @@ function ReportPage() {
                     <button
                       type="button"
                       onClick={() => setDetailKey(d.key)}
-                      className="group mt-6 flex w-full items-center justify-between gap-3 rounded-2xl border border-gold-dust/25 bg-gradient-to-br from-gold-dust/[0.06] to-transparent px-5 py-4 text-left transition-all hover:border-gold-dust/50 hover:from-gold-dust/[0.1] hover:shadow-[0_10px_40px_-20px_hsl(45_70%_60%/0.6)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-light"
+                      className="rm-detail-btn group mt-6 flex w-full items-center justify-between gap-3 rounded-2xl border border-gold-dust/25 bg-gradient-to-br from-gold-dust/[0.06] to-transparent px-5 py-4 text-left transition-all hover:border-gold-dust/50 hover:from-gold-dust/[0.1] hover:shadow-[0_10px_40px_-20px_hsl(45_70%_60%/0.6)] active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-light"
                     >
                       <span className="flex min-w-0 items-center gap-3">
-                        <span className="grid size-9 shrink-0 place-items-center rounded-xl border border-gold-dust/30 bg-obsidian/60 text-gold-light">
+                        <span className="grid size-9 shrink-0 place-items-center rounded-xl border border-gold-dust/30 bg-obsidian/60 text-gold-light transition-transform duration-500 group-hover:rotate-6 group-hover:scale-110">
                           <Maximize2 size={14} strokeWidth={1.6} />
                         </span>
                         <span className="min-w-0">
@@ -1803,13 +1803,14 @@ function ReportPage() {
                           </span>
                         </span>
                       </span>
-                      <span className="flex items-center gap-2 text-gold-dust/70 transition-transform group-hover:translate-x-1">
+                      <span className="rm-detail-arrow flex items-center gap-2 text-gold-dust/70">
                         {/* Preview dots — one per detail block */}
                         <span className="hidden gap-1 sm:flex">
                           {d.details.map((_, i) => (
                             <span
                               key={i}
-                              className={`size-1.5 rounded-full ${
+                              style={{ animationDelay: `${i * 0.35}s` }}
+                              className={`size-1.5 animate-pulse rounded-full ${
                                 i === 0 ? "bg-emerald-300/70" : "bg-amber-300/70"
                               }`}
                             />
@@ -1821,7 +1822,8 @@ function ReportPage() {
                   )}
                 </div>
               </div>
-            </motion.article>
+            </DimensionCardShell>
+
           );
         })}
       </section>
