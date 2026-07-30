@@ -150,8 +150,12 @@ export function ReportToc({ items, lang }: { items: TocItem[]; lang: "en" | "zh"
           onFocusCapture={cancelCollapse}
           onBlurCapture={scheduleCollapse}
         >
-          {/* Dots column */}
-          <div className="flex flex-col items-center gap-2 rounded-full border border-gold-dust/25 bg-obsidian/70 px-2 py-3 backdrop-blur">
+          {/* Dots column — hovering here (with intent delay) opens the panel */}
+          <div
+            onMouseEnter={scheduleExpand}
+            onMouseMove={scheduleExpand}
+            className="flex flex-col items-center gap-2 rounded-full border border-gold-dust/25 bg-obsidian/70 px-2 py-3 backdrop-blur"
+          >
             {items.map((it, idx) => {
               const isActive = it.id === active;
               const isRead = idx < activeIndex;
