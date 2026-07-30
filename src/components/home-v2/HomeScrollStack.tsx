@@ -125,18 +125,21 @@ export function HomeScrollStack() {
       <GuideDeskHero isZh={isZh} />
 
       {/* Plain vertical section list — no stacking / pinning effects. */}
-      <div className="mx-auto w-full max-w-[1180px] space-y-8 px-4 pb-24 pt-6 sm:space-y-10 sm:px-6">
-        {HOME_GUIDE_CARDS.map((card) => (
+      {/* Guide corridor — plain vertical flow, no stacking / pinning. */}
+      <div className="corridor pb-24 pt-6">
+        {HOME_GUIDE_CARDS.map((card, i) => (
           <div id={card.id} key={card.id} className="scroll-mt-24">
             <HomeCard
               card={card}
               isZh={isZh}
               facts={facts}
+              flip={i % 2 === 1}
               onOpenDrawer={() => openCard(card.id)}
             />
           </div>
         ))}
       </div>
+
 
 
       <HomeSideRail
