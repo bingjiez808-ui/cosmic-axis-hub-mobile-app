@@ -336,7 +336,7 @@ function SiteNav() {
   }, []);
 
   useEffect(() => {
-    if (!moreOpen && !libraryOpen) return;
+    if (!moreOpen && !libraryOpen && !drawerOpen) return;
     const onDoc = (e: MouseEvent) => {
       const el = e.target as HTMLElement | null;
       if (el?.closest("[data-more-menu]") || el?.closest("[data-library-menu]")) return;
@@ -357,7 +357,7 @@ function SiteNav() {
       document.removeEventListener("mousedown", onDoc);
       document.removeEventListener("keydown", onKey);
     };
-  }, [moreOpen, libraryOpen]);
+  }, [moreOpen, libraryOpen, drawerOpen]);
 
   // Lock page scroll while the mobile navigation sheet is open.
   useEffect(() => {
