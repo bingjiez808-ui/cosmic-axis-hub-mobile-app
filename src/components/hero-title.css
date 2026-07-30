@@ -100,3 +100,79 @@
     font-size: clamp(20px, 6.2vw, 28px);
   }
 }
+
+/* ------------------------------------------------------------------
+   Vertical rhythm — height-aware so the whole first screen (eyebrow →
+   title → description → "向下走进书架") always fits inside 100dvh,
+   including iPhone 16 / 16 Pro widths and short viewports.
+   ------------------------------------------------------------------ */
+.hero-gap-title {
+  margin-top: clamp(28px, min(4.2vw, 5.2dvh), 72px);
+}
+.hero-gap-sub {
+  margin-top: clamp(18px, min(3.4vw, 4.4dvh), 34px);
+}
+.hero-gap-cta {
+  margin-top: clamp(16px, min(3vw, 3.8dvh), 32px);
+}
+
+/* Phone portrait (iPhone 16: 393px, 16 Pro Max: 440px) */
+@media (max-width: 480px) {
+  .hero-shell {
+    min-height: 100dvh;
+    padding-top: clamp(76px, 12dvh, 108px);
+    padding-bottom: clamp(28px, 6dvh, 56px);
+  }
+  .hero-gap-title {
+    margin-top: clamp(20px, 3.4dvh, 40px);
+  }
+  .hero-gap-sub {
+    margin-top: clamp(14px, 2.6dvh, 28px);
+  }
+  .hero-gap-cta {
+    margin-top: clamp(14px, 2.4dvh, 26px);
+  }
+  .hero-sub {
+    font-size: clamp(14px, 3.7vw, 17px);
+    line-height: 1.55;
+  }
+}
+
+/* Short viewports (small heights / landscape phones) — clamp everything down */
+@media (max-height: 720px) {
+  .hero-gap-title {
+    margin-top: clamp(16px, 3dvh, 34px);
+  }
+  .hero-gap-sub {
+    margin-top: clamp(12px, 2.2dvh, 24px);
+  }
+  .hero-gap-cta {
+    margin-top: clamp(12px, 2dvh, 22px);
+  }
+}
+
+@media (max-height: 620px) {
+  .hero-shell {
+    padding-top: clamp(64px, 10dvh, 84px);
+    padding-bottom: clamp(20px, 4dvh, 36px);
+  }
+  .hero-title {
+    font-size: clamp(24px, 6.4dvh, 40px);
+  }
+  .hero-title[data-lang="en"] {
+    font-size: clamp(20px, 5.4dvh, 34px);
+  }
+  .hero-sub {
+    font-size: clamp(13px, 2.4dvh, 16px);
+    line-height: 1.5;
+  }
+  .hero-gap-title {
+    margin-top: clamp(12px, 2.4dvh, 24px);
+  }
+  .hero-gap-sub {
+    margin-top: clamp(10px, 1.8dvh, 18px);
+  }
+  .hero-gap-cta {
+    margin-top: clamp(10px, 1.6dvh, 18px);
+  }
+}
