@@ -497,23 +497,10 @@ function TraditionsPage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.9, ease: [0.32, 0.72, 0, 1] }}
-            className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-16"
+            className="grid grid-cols-1"
           >
-            <div className={`lg:col-span-5 ${idx % 2 === 1 ? "lg:order-2" : ""}`}>
-              <div className="trad-plate group relative">
-                <span aria-hidden className="trad-plate-halo" />
-                <span aria-hidden className="trad-plate-ring" />
-                <img
-                  src={c.image}
-                  alt={`${c.title[0]} diagram`}
-                  loading="lazy"
-                  width={1024}
-                  height={1024}
-                  className="trad-plate-img aspect-square w-full object-contain"
-                />
-              </div>
-            </div>
-            <div className={`trad-copy trad-glass p-6 md:p-9 lg:col-span-7 ${idx % 2 === 1 ? "lg:order-1" : ""}`}>
+            <div className="trad-copy trad-glass p-6 md:p-9">
+
 
 
               <p className="mb-4 font-serif text-2xl italic text-gold-dust">{c.numeral}.</p>
