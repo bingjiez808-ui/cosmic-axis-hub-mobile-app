@@ -92,16 +92,102 @@ export function ReportToc({ items, lang }: { items: TocItem[]; lang: "en" | "zh"
   const collapseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Mobile ergonomics
+  const tapStart = useRef<{ x: number; y: number } | null>(null);
+  const openedByPointer = useRef(false);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const openedAt = useRef(0);
+
+  // Native touch handling for the floating trigger. Direct element listeners
+  // survive smooth-scroll libraries that intercept touch before React's root,
+  // and let us reject taps that are really the tail of a scroll gesture.
+  useEffect(() => {
+    const el = triggerRef.current;
+    if (!el) return;
+    const onStart = (e: TouchEvent) => {
+      const t = e.touches[0];
+      tapStart.current = t ? { x: t.clientX, y: t.clientY } : null;
+    };
+    const onEnd = (e: TouchEvent) => {
+      const s = tapStart.current;
+      tapStart.current = null;
+      const t = e.changedTouches[0];
+      if (!s || !t) return;
+      if (Math.abs(t.clientX - s.x) > 12 || Math.abs(t.clientY - s.y) > 12) return;
+      openedByPointer.current = true;
+      openedAt.current = Date.now();
+      setOpen(true);
+    };
+    const onCancel = () => {
+      tapStart.current = null;
+    };
+    el.addEventListener("touchstart", onStart, { passive: true });
+    el.addEventListener("touchend", onEnd, { passive: true });
+    el.addEventListener("touchcancel", onCancel, { passive: true });
+    return () => {
+      el.removeEventListener("touchstart", onStart);
+      el.removeEventListener("touchend", onEnd);
+      el.removeEventListener("touchcancel", onCancel);
+    };
+  }, []);
+
+
+  const dragStart = useRef<number | null>(null);
+  const [dragY, setDragY] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const [triggerHidden, setTriggerHidden] = useState(false);
+
+  const closeDrawer = () => {
+    // Guard against the close paths that fire from the same gesture that just
+    // opened the drawer (synthesized click / stray touchend on mobile).
+    if (Date.now() - openedAt.current < 400) return;
+    setOpen(false);
+    setDragY(0);
+    setDragging(false);
+    dragStart.current = null;
+  };
+
+  // Hide the floating trigger while scrolling down (thumb is busy), bring it
+  // back on scroll-up or when the page rests.
+  useEffect(() => {
+    let last = window.scrollY;
+    let idle: ReturnType<typeof setTimeout> | null = null;
+    const onScroll = () => {
+      const y = window.scrollY;
+      if (y > last + 8 && y > 200) setTriggerHidden(true);
+      else if (y < last - 8) setTriggerHidden(false);
+      last = y;
+      if (idle) clearTimeout(idle);
+      idle = setTimeout(() => setTriggerHidden(false), 700);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (idle) clearTimeout(idle);
+    };
+  }, []);
+
+  // Lock background scroll while the mobile drawer is open.
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        setOpen(false);
+        closeDrawer();
         if (!pinned) setRailExpanded(false);
       }
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [pinned]);
+
 
   if (items.length === 0) return null;
   const tocLabel = lang === "zh" ? "阅读目录" : "Reading contents";
@@ -269,50 +355,146 @@ export function ReportToc({ items, lang }: { items: TocItem[]; lang: "en" | "zh"
         </div>
       </nav>
 
-      {/* Mobile floating trigger — < md */}
+      {/* Mobile floating trigger — < md.
+          Thumb-zone (bottom-right), 48px target, hides while scrolling down
+          so it never sits under a finger mid-read, and only fires on a
+          deliberate tap (pointer travel < 10px). */}
       <button
+        ref={triggerRef}
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          // Mouse / keyboard / assistive activation. Touch is handled by the
+          // native listener below so it can't be swallowed by smooth-scroll.
+          if (openedByPointer.current) {
+            openedByPointer.current = false;
+            return;
+          }
+          openedAt.current = Date.now();
+          setOpen(true);
+        }}
+
+
+
         aria-haspopup="dialog"
         aria-expanded={open}
-        style={{ bottom: "max(1.25rem, env(safe-area-inset-bottom))" }}
-        className="fixed left-4 z-40 flex min-h-11 items-center gap-2 rounded-full border border-gold-dust/40 bg-obsidian/85 px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-gold-dust shadow-[0_6px_24px_rgba(0,0,0,0.6)] backdrop-blur md:hidden"
+        aria-label={tocLabel}
+        style={{
+          bottom: "max(1.25rem, calc(env(safe-area-inset-bottom) + 0.75rem))",
+          touchAction: "manipulation",
+        }}
+        className={`fixed right-4 z-40 flex min-h-12 min-w-12 items-center gap-2 rounded-full border border-gold-dust/40 bg-obsidian/90 px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-gold-dust shadow-[0_6px_24px_rgba(0,0,0,0.6)] backdrop-blur transition-all duration-300 md:hidden ${
+          triggerHidden || open
+            ? "pointer-events-none translate-y-6 opacity-0"
+            : "translate-y-0 opacity-100"
+        }`}
         data-testid="report-toc-trigger"
       >
         <span aria-hidden>☰</span>
-        {tocLabel} · {activeIndex + 1}/{items.length}
+        {activeIndex + 1}/{items.length}
       </button>
 
-      {/* Mobile drawer */}
+      {/* Mobile drawer — tap backdrop, tap close, or swipe the handle down. */}
       {open && (
         <div
           role="dialog"
           aria-modal="true"
           aria-label={tocLabel}
+          style={{ pointerEvents: "none" }}
+          ref={(el) => {
+            if (!el) return;
+            // Arm the drawer only after the opening tap settles, so the click
+            // the browser synthesizes from that tap can't hit a fresh control.
+            const t = setTimeout(() => {
+              el.style.pointerEvents = "auto";
+            }, 400);
+            return () => clearTimeout(t);
+          }}
           className="fixed inset-0 z-50 md:hidden"
           data-testid="report-toc-drawer"
         >
           <button
             type="button"
             aria-label={closeLabel}
-            onClick={() => setOpen(false)}
-            className="absolute inset-0 bg-obsidian/70 backdrop-blur-sm"
+            onClick={() => {
+              // Swallow the click the browser synthesizes from the very tap
+              // that opened the drawer — it lands on the fresh backdrop.
+              if (Date.now() - openedAt.current < 450) return;
+              closeDrawer();
+            }}
+            className="absolute inset-0 bg-obsidian/70 backdrop-blur-sm animate-fade-in"
+
           />
-          <div className="absolute inset-x-0 bottom-0 max-h-[80dvh] overflow-y-auto rounded-t-3xl border-t border-gold-dust/25 bg-obsidian/95 p-4 pb-8">
-            <div className="mx-auto mb-3 h-1 w-12 rounded-full bg-white/20" />
-            <div className="mb-3 flex items-center justify-between px-1">
+          <div
+            style={{
+              transform: `translateY(${dragY}px)`,
+              transition: dragging ? "none" : "transform 220ms cubic-bezier(0.32,0.72,0,1)",
+              paddingBottom: "max(2rem, calc(env(safe-area-inset-bottom) + 1rem))",
+            }}
+            className="absolute inset-x-0 bottom-0 flex max-h-[78dvh] flex-col rounded-t-3xl border-t border-gold-dust/25 bg-obsidian/95 p-4"
+          >
+            {/* Swipe-to-dismiss handle — generous 44px grab area */}
+            <div
+              onTouchStart={(e) => {
+                const t = e.touches[0];
+                if (!t) return;
+                dragStart.current = t.clientY;
+                setDragging(true);
+              }}
+              onTouchMove={(e) => {
+                const t = e.touches[0];
+                if (dragStart.current == null || !t) return;
+                setDragY(Math.max(0, t.clientY - dragStart.current));
+              }}
+              onTouchEnd={() => {
+                setDragging(false);
+                if (dragY > 80) closeDrawer();
+                else setDragY(0);
+                dragStart.current = null;
+              }}
+              onPointerDown={(e) => {
+                if (e.pointerType === "touch") return;
+                dragStart.current = e.clientY;
+                setDragging(true);
+                e.currentTarget.setPointerCapture(e.pointerId);
+              }}
+              onPointerMove={(e) => {
+                if (e.pointerType === "touch") return;
+                if (dragStart.current == null) return;
+                setDragY(Math.max(0, e.clientY - dragStart.current));
+              }}
+              onPointerUp={(e) => {
+                if (e.pointerType === "touch") return;
+                setDragging(false);
+                if (dragY > 80) closeDrawer();
+                else setDragY(0);
+                dragStart.current = null;
+              }}
+
+              onPointerCancel={() => {
+                setDragging(false);
+                setDragY(0);
+                dragStart.current = null;
+              }}
+              style={{ touchAction: "none" }}
+              className="-mt-2 mb-1 flex h-11 shrink-0 cursor-grab items-center justify-center active:cursor-grabbing"
+              aria-hidden
+            >
+              <span className="h-1.5 w-12 rounded-full bg-white/25" />
+            </div>
+            <div className="mb-3 flex shrink-0 items-center justify-between px-1">
               <span className="text-[10px] uppercase tracking-[0.32em] text-gold-dust/80">
-                {tocLabel}
+                {tocLabel} · {activeIndex + 1}/{items.length}
               </span>
               <button
                 type="button"
-                onClick={() => setOpen(false)}
-                className="rounded-full border border-white/15 px-3 py-1 text-[10px] uppercase tracking-[0.24em] text-stone-warm/70"
+                onClick={closeDrawer}
+                style={{ touchAction: "manipulation" }}
+                className="min-h-11 min-w-11 rounded-full border border-white/15 px-4 text-[10px] uppercase tracking-[0.24em] text-stone-warm/70 active:bg-white/10"
               >
                 {closeLabel}
               </button>
             </div>
-            <ul className="space-y-1">
+            <ul className="-mx-1 space-y-1 overflow-y-auto overscroll-contain px-1">
               {items.map((it) => {
                 const isActive = it.id === active;
                 return (
@@ -320,14 +502,15 @@ export function ReportToc({ items, lang }: { items: TocItem[]; lang: "en" | "zh"
                     <button
                       type="button"
                       onClick={() => {
+                        closeDrawer();
                         scrollToId(it.id);
-                        setOpen(false);
                       }}
                       aria-current={isActive ? "true" : undefined}
-                      className={`block w-full rounded-xl border px-3 py-3 text-left transition ${
+                      style={{ touchAction: "manipulation" }}
+                      className={`block min-h-14 w-full rounded-xl border px-3 py-3 text-left transition active:scale-[0.99] ${
                         isActive
                           ? "border-gold-dust/50 bg-gold-dust/10"
-                          : "border-white/10 bg-white/[0.02] hover:border-gold-dust/30"
+                          : "border-white/10 bg-white/[0.02] active:border-gold-dust/40"
                       }`}
                     >
                       <div
@@ -344,6 +527,7 @@ export function ReportToc({ items, lang }: { items: TocItem[]; lang: "en" | "zh"
           </div>
         </div>
       )}
+
     </>
   );
 }
