@@ -104,6 +104,9 @@ function buildChartFacts(data: z.infer<typeof BaseInput>) {
     data.lunar && `Lunar date: ${data.lunar}`,
     data.zodiac && `Chinese zodiac: ${data.zodiac}`,
     data.bazi && `BaZi four pillars: ${data.bazi}`,
+    data.vedic && `Vedic (sidereal) chart: ${data.vedic}`,
+    data.ziwei && `Zi Wei Dou Shu chart: ${data.ziwei}`,
+    data.gender && `Gender: ${data.gender}`,
     planetLines && `Western planet placements: ${planetLines}`,
     data.quiz && `Self-report calibration answers (A/B/C/D per question): ${data.quiz}`,
   ]
