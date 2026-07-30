@@ -513,7 +513,7 @@ function TraditionsPage() {
                 />
               </div>
             </div>
-            <div className={`px-1 md:px-2 lg:col-span-7 ${idx % 2 === 1 ? "lg:order-1" : ""}`}>
+            <div className={`trad-copy px-1 md:px-2 lg:col-span-7 ${idx % 2 === 1 ? "lg:order-1" : ""}`}>
 
               <p className="mb-4 font-serif text-2xl italic text-gold-dust">{c.numeral}.</p>
               <h2 className="mb-3 font-serif text-4xl text-stone-warm md:text-5xl">{c.title[li]}</h2>
