@@ -896,11 +896,12 @@ function newEventId() {
 
 export function KeyEventsVerification({
   birthISO,
-  search,
+  search: searchInput,
 }: {
   birthISO?: string;
   search?: ReportSearchLike;
 }) {
+  const search = useHydratedChartSearch(searchInput);
   const { t, lang } = useLang();
   const [rows, setRows] = useState<EventRow[]>([
     {
