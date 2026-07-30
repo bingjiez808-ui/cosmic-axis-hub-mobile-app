@@ -191,6 +191,7 @@ export function ReportToc({ items, lang }: { items: TocItem[]; lang: "en" | "zh"
           </div>
           {/* Expandable panel */}
           <div
+            onMouseEnter={cancelCollapse}
             className={`w-72 max-w-[min(20rem,calc(100vw-6rem))] overflow-hidden rounded-2xl border border-gold-dust/25 bg-obsidian/95 shadow-[0_10px_30px_rgba(0,0,0,0.5)] backdrop-blur-xl transition-all duration-200 ${
               showPanel
                 ? "translate-x-0 opacity-100"
