@@ -1,24 +1,47 @@
-/* Four Traditions page — readability panels + interaction polish.
+/* Four Traditions page — readability without heavy black plates.
    Purely presentational: no layout/business logic changes. */
 
+/* Frameless readable text: rely on soft text shadow instead of a black box */
+.trad-head,
+.trad-head p,
+.trad-head h1 {
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.75),
+    0 8px 28px rgba(0, 0, 0, 0.6);
+}
+
+/* Responsive hero title, forced two lines */
+.trad-h1 {
+  font-size: clamp(2rem, 8.4vw, 4.5rem);
+  line-height: 1.14;
+  letter-spacing: 0.01em;
+  text-wrap: balance;
+}
+
+@media (min-width: 768px) {
+  .trad-h1 {
+    font-size: clamp(3rem, 5.4vw, 4.75rem);
+    line-height: 1.08;
+  }
+}
+
+.trad-h1-line {
+  display: block;
+}
+
+/* Remaining structural panels stay, but glassy rather than black */
 .trad-panel {
   position: relative;
   border-radius: 20px;
-  background: rgba(9, 10, 12, 0.72);
-  border: 1px solid rgba(198, 161, 87, 0.18);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.38);
+  background: rgba(14, 15, 18, 0.34);
+  border: 1px solid rgba(198, 161, 87, 0.16);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.24);
 }
 
 @supports not (backdrop-filter: blur(4px)) {
   .trad-panel {
-    background: rgba(9, 10, 12, 0.9);
-  }
-}
-
-@media (max-width: 767px) {
-  .trad-panel {
-    background: rgba(9, 10, 12, 0.84);
+    background: rgba(14, 15, 18, 0.6);
   }
 }
 
@@ -36,38 +59,89 @@
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
 }
 
-/* chapter plate: slow drift + hover zoom */
+/* ── Chapter plates: frameless, alive ─────────────────────────── */
 .trad-plate {
-  overflow: hidden;
+  position: relative;
+  display: block;
   border-radius: 24px;
+  isolation: isolate;
 }
 
-.trad-plate img {
-  transition: transform 1.1s cubic-bezier(0.32, 0.72, 0, 1), filter 0.6s ease;
-  filter: saturate(0.92) contrast(1.04);
+.trad-plate-img {
+  position: relative;
+  z-index: 2;
+  display: block;
+  border-radius: 20px;
+  filter: saturate(0.95) contrast(1.05) drop-shadow(0 18px 40px rgba(0, 0, 0, 0.55));
+  animation: trad-plate-float 11s ease-in-out infinite;
+  transition:
+    transform 1s cubic-bezier(0.32, 0.72, 0, 1),
+    filter 0.6s ease;
+  will-change: transform;
 }
 
-.trad-plate:hover img {
-  transform: scale(1.06);
-  filter: saturate(1.05) contrast(1.08);
+.trad-plate:hover .trad-plate-img {
+  transform: scale(1.045) rotate(0.4deg);
+  filter: saturate(1.08) contrast(1.1)
+    drop-shadow(0 22px 52px rgba(198, 161, 87, 0.22));
 }
 
-.trad-plate::after {
-  content: "";
+/* breathing golden halo behind the diagram */
+.trad-plate-halo {
   position: absolute;
-  inset: 0;
+  inset: -6%;
+  z-index: 0;
+  border-radius: 50%;
   pointer-events: none;
   background: radial-gradient(
-    120% 90% at 50% 100%,
-    rgba(198, 161, 87, 0.16) 0%,
-    transparent 60%
+    circle at 50% 50%,
+    rgba(198, 161, 87, 0.22) 0%,
+    rgba(198, 161, 87, 0.08) 42%,
+    transparent 70%
   );
-  opacity: 0;
+  filter: blur(14px);
+  animation: trad-halo-breathe 7.5s ease-in-out infinite;
+}
+
+/* slowly rotating dashed ring, like a turning dial */
+.trad-plate-ring {
+  position: absolute;
+  inset: 4%;
+  z-index: 1;
+  border-radius: 50%;
+  pointer-events: none;
+  border: 1px dashed rgba(198, 161, 87, 0.28);
+  opacity: 0.55;
+  animation: trad-ring-spin 48s linear infinite;
   transition: opacity 0.5s ease;
 }
 
-.trad-plate:hover::after {
-  opacity: 1;
+.trad-plate:hover .trad-plate-ring {
+  opacity: 0.95;
+}
+
+@keyframes trad-plate-float {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-8px) scale(1.012); }
+}
+
+@keyframes trad-halo-breathe {
+  0%, 100% { opacity: 0.5; transform: scale(0.96); }
+  50% { opacity: 1; transform: scale(1.04); }
+}
+
+@keyframes trad-ring-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 767px) {
+  .trad-plate-img {
+    animation-duration: 13s;
+  }
+  .trad-plate-ring {
+    inset: 2%;
+  }
 }
 
 /* concept rows reveal a gold rail on hover */
@@ -124,8 +198,13 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .trad-pulse { animation: none; }
+  .trad-pulse,
+  .trad-plate-img,
+  .trad-plate-halo,
+  .trad-plate-ring {
+    animation: none;
+  }
   .trad-hover:hover,
   .trad-tile:hover { transform: none; }
-  .trad-plate:hover img { transform: none; }
+  .trad-plate:hover .trad-plate-img { transform: none; }
 }
