@@ -76,6 +76,7 @@
   z-index: 2;
   display: block;
   border-radius: 20px;
+  mix-blend-mode: screen;
   filter: saturate(0.95) contrast(1.05) drop-shadow(0 18px 40px rgba(0, 0, 0, 0.55));
   animation: trad-plate-float 11s ease-in-out infinite;
   transition:
