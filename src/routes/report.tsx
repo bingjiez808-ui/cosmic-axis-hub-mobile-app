@@ -1758,7 +1758,7 @@ function ReportPage() {
                 <div className="lg:col-span-3">
                   <p className="mb-4 flex items-center gap-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
                     <span
-                      className="inline-block size-1.5 rotate-45 bg-gold-dust"
+                      className="rm-tick inline-block size-1.5 rotate-45 bg-gold-dust"
                       aria-hidden="true"
                     />
                     {t.synthesis}
@@ -1769,7 +1769,8 @@ function ReportPage() {
                     ))}
                   </div>
 
-                  <div className="rounded-2xl border border-gold-dust/25 bg-gradient-to-br from-gold-dust/[0.08] to-gold-dust/[0.02] p-5 md:p-6">
+                  <div className="rm-plain rounded-2xl border border-gold-dust/25 bg-gradient-to-br from-gold-dust/[0.08] to-gold-dust/[0.02] p-5 md:p-6">
+
                     <p className="mb-3 flex items-center gap-2 text-[10px] uppercase tracking-[0.32em] text-gold-light">
                       <span className="size-1.5 rounded-full bg-gold-dust" />
                       {t.in_plain_words}
