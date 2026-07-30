@@ -5,7 +5,7 @@
  * simulates gravity: after release the card overshoots slightly on Y,
  * then settles. Tap (no drag) opens the drawer.
  */
-import { useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { useLang } from "@/lib/i18n";
 import type { ReaderPassData } from "./useReaderPassData";
 import { useReaderPassSvg } from "./useReaderPassSvg";
@@ -31,6 +31,15 @@ export function ReaderPassFlat({ data, onOpen }: Props) {
     moved: false,
   });
   const settleTimer = useRef<number | null>(null);
+  const [reducedMotion, setReducedMotion] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const apply = () => setReducedMotion(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
 
   const clearSettle = () => {
     if (settleTimer.current !== null) {
@@ -51,7 +60,7 @@ export function ReaderPassFlat({ data, onOpen }: Props) {
     if (!dragging) return;
     const dx = e.clientX - dragRef.current.startX;
     const dy = e.clientY - dragRef.current.startY;
-    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) dragRef.current.moved = true;
+    if (Math.abs(dx) > 6 || Math.abs(dy) > 6) dragRef.current.moved = true;
     // Horizontal: follow with a damped factor + small rotation for a pendulum feel.
     // Vertical: down easier than up (gravity feel), clamped so it doesn't run away.
     const px = dx * 0.55;
@@ -72,8 +81,9 @@ export function ReaderPassFlat({ data, onOpen }: Props) {
       /* noop */
     }
     if (!dragRef.current.moved) {
+      // Tap (< 6px travel) flips the pass in place; drags never flip.
       setOffset({ x: 0, y: 0, rot: 0 });
-      onOpen();
+      setFlipped((v) => !v);
       return;
     }
     // Two-stage settle: quick overshoot (bounce) then a soft rest, so the
@@ -98,13 +108,26 @@ export function ReaderPassFlat({ data, onOpen }: Props) {
     <div className="pointer-events-auto relative flex flex-col items-start gap-2">
       <button
         type="button"
-        aria-label={isZh ? "打开我的借阅证" : "Open my reader's pass"}
+        aria-label={
+          flipped
+            ? isZh
+              ? "查看借阅证正面"
+              : "View the front of the reader's pass"
+            : isZh
+              ? "查看借阅证背面"
+              : "View the back of the reader's pass"
+        }
+        aria-pressed={flipped}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setFlipped((v) => !v);
+          }
+        }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
-        onMouseEnter={() => setFlipped(true)}
-        onMouseLeave={() => setFlipped(false)}
         className="group relative block h-[clamp(170px,26vw,240px)] w-[clamp(118px,17vw,168px)] cursor-grab touch-none select-none rounded-[18px] border border-gold-dust/25 bg-obsidian/50 p-0 shadow-[0_18px_40px_-14px_rgba(0,0,0,0.75)] active:cursor-grabbing"
         style={{
           perspective: "1200px",
@@ -115,14 +138,28 @@ export function ReaderPassFlat({ data, onOpen }: Props) {
         }}
       >
         <div
-          className="relative h-full w-full transition-transform duration-700 ease-out"
+          className="library-card relative h-full w-full"
+          data-flipped={flipped ? "true" : "false"}
           style={{
             transformStyle: "preserve-3d",
-            transform: flipped ? "rotateY(180deg) rotate(-1deg)" : "rotateY(0deg) rotate(1deg)",
+            transition: reducedMotion
+              ? "opacity 220ms ease"
+              : "transform 600ms cubic-bezier(.2,.75,.25,1)",
+            transform: reducedMotion
+              ? undefined
+              : flipped
+                ? "rotateY(180deg) rotate(-1deg)"
+                : "rotateY(0deg) rotate(1deg)",
           }}
         >
-          <FlatFace url={frontUrl} />
-          <FlatFace url={backUrl} back />
+          {reducedMotion ? (
+            <FlatFace url={flipped ? backUrl : frontUrl} />
+          ) : (
+            <>
+              <FlatFace url={frontUrl} />
+              <FlatFace url={backUrl} back />
+            </>
+          )}
         </div>
         {/* Cord stub that swings with the card. */}
         <span
@@ -134,6 +171,13 @@ export function ReaderPassFlat({ data, onOpen }: Props) {
             transition: dragging ? "none" : releaseTransition,
           }}
         />
+      </button>
+      <button
+        type="button"
+        onClick={onOpen}
+        className="rounded-full border border-gold-dust/30 bg-obsidian/70 px-3 py-1 text-[9px] uppercase tracking-[0.24em] text-gold-light/80 transition hover:border-gold-dust/60"
+      >
+        {isZh ? "馆内索引" : "Library index"}
       </button>
     </div>
   );
