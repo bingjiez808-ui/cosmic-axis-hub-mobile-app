@@ -20,6 +20,11 @@ import { LibrarySplash } from "../components/LibrarySplash";
 import { ElderCompanion } from "../components/ElderCompanion";
 import { useSupabaseSession } from "../lib/session";
 import libraryHallImg from "../assets/ancient-library-hall.jpg";
+import {
+  ReadingRoomBackdrop,
+  readingRoomVariantForPath,
+} from "@/components/reading-room/ReadingRoomBackdrop";
+
 
 
 function NotFoundComponent() {
