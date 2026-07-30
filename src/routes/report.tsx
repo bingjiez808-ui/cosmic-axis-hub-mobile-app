@@ -137,6 +137,9 @@ import {
   houseForSign,
 } from "@/components/charts/DestinyCharts";
 import { FourSystemsChart } from "@/components/charts/FourSystemsChart";
+import { SystemDetailPanel } from "@/components/charts/SystemDetailPanel";
+import { SYSTEM_TABS, systemAvailability, type SystemKey } from "@/lib/four-systems-view";
+
 import { planetPlacementReading as placementReading, aspectReading } from "@/lib/planet-reading";
 import {
   KeyEventsVerification,
