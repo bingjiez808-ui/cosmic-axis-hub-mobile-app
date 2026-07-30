@@ -175,6 +175,7 @@ import {
   buildReportRequest,
   buildReportSeed,
 } from "@/lib/report-input";
+import { useHydratedChartSearch } from "@/lib/chart-hydration";
 import { REPORT_AI_VERSION } from "@/lib/ai-cache-version";
 import { useAccount } from "@/lib/account";
 import "@/components/report-modules.css";
@@ -976,7 +977,11 @@ function DimensionCardShell({
 
 
 function ReportPage() {
-  const search = Route.useSearch();
+  const rawSearch = Route.useSearch();
+  // Every downstream consumer (AI prompt builders, Zi Wei panel, extras)
+  // must see a COMPLETE chart input, otherwise Zi Wei silently drops out.
+  const hydrated = useHydratedChartSearch(rawSearch) ?? rawSearch;
+  const search = hydrated as typeof rawSearch;
   const { lang, setLang, t } = useLang();
   const reportLang = search.lang ?? lang;
   const li = lang === "zh" ? 1 : 0;
@@ -1245,7 +1250,10 @@ function ReportPage() {
       // four systems (western / bazi / vedic / ziwei) + gender + concern,
       // so every AI surface receives the identical brief.
       const req = {
-        ...buildReportRequest({ ...search, gender: search.gender, concern: search.concern }, reportLang),
+        ...buildReportRequest(
+          { ...search, gender: search.gender ?? genderOverride ?? undefined, concern: search.concern },
+          reportLang,
+        ),
       };
       const acc: { summary: string; dimensions: ReportDimensionAI[] } = {
         summary: "",
@@ -1336,7 +1344,7 @@ function ReportPage() {
       });
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [seed, reportLang, search.readingId]);
+  }, [seed, reportLang, search.readingId, search.gender, genderOverride]);
 
   useEffect(() => {
     runReport();

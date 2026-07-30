@@ -37,6 +37,9 @@ export function buildReportFingerprint(search: ReportSearchLike, lang: "en" | "z
     search.time,
     search.place,
     search.quiz,
+    // Gender is a first-class calculation input (Zi Wei Dou Shu cannot be
+    // cast without it), so it must take part in the cache identity.
+    search.gender,
     search.bazi,
     search.zodiac,
     search.lunar,

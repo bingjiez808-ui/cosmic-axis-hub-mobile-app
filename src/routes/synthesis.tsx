@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import treeImg from "@/assets/tree-of-destiny.jpg";
 import { generateReport } from "@/lib/report.functions";
 import { buildReportCacheKey, buildReportFingerprint, buildReportRequest } from "@/lib/report-input";
+import { useHydratedChartSearch } from "@/lib/chart-hydration";
 import { missingFields, type RitualState } from "@/lib/ritual-validation";
 
 type SearchParams = {
@@ -90,7 +91,8 @@ const KICKER = {
 const PASSAGES = { en: "rites", zh: "礼" };
 
 function SynthesisPage() {
-  const search = Route.useSearch();
+  const rawSearch = Route.useSearch();
+  const search = (useHydratedChartSearch(rawSearch) ?? rawSearch) as typeof rawSearch;
   const navigate = useNavigate();
   const [phase, setPhase] = useState(0);
   const [reportReady, setReportReady] = useState(false);

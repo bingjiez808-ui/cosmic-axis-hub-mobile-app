@@ -52,6 +52,7 @@ import {
   buildReportRequest,
   type ReportSearchLike,
 } from "@/lib/report-input";
+import { useHydratedChartSearch } from "@/lib/chart-hydration";
 import { OUTLOOK_AI_VERSION } from "@/lib/ai-cache-version";
 import { computeEnergyRange } from "@/lib/energy-score";
 import { YearInsightModal, type YearInsightPoint, type YearInsightSystem } from "@/components/YearInsightModal";
@@ -64,7 +65,9 @@ import { ensureYearReadings } from "@/lib/year-readings.functions";
    — one AI call, cached in sessionStorage + saved reading
 ═══════════════════════════════════════════ */
 
-function useChartOutlook(search: ReportSearchLike | undefined, lang: Lang) {
+function useChartOutlook(searchInput: ReportSearchLike | undefined, lang: Lang) {
+  // Always work from a hydrated input so the four-system brief keeps Zi Wei.
+  const search = useHydratedChartSearch(searchInput);
   const { findReading, updateReadingAI } = useAccount();
   const [outlook, setOutlook] = useState<OutlookAI | null>(null);
   const [state, setState] = useState<"idle" | "loading" | "ready" | "error">("idle");
@@ -893,11 +896,12 @@ function newEventId() {
 
 export function KeyEventsVerification({
   birthISO,
-  search,
+  search: searchInput,
 }: {
   birthISO?: string;
   search?: ReportSearchLike;
 }) {
+  const search = useHydratedChartSearch(searchInput);
   const { t, lang } = useLang();
   const [rows, setRows] = useState<EventRow[]>([
     {
