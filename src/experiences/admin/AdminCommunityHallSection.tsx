@@ -29,7 +29,9 @@ export function AdminCommunityHallSection() {
   const letterFn = useServerFn(moderateCommunityLetter);
   const replyFn = useServerFn(moderateCommunityReply);
   const participationFn = useServerFn(setCommunityParticipation);
-  const [tab, setTab] = useState<"reports" | "letters" | "replies" | "people" | "log">("reports");
+  const [tab, setTab] = useState<
+    "reports" | "letters" | "replies" | "deliveries" | "people" | "log"
+  >("reports");
 
   const overview = useQuery<AdminHallOverview>({
     queryKey: KEY,
@@ -74,6 +76,11 @@ export function AdminCommunityHallSection() {
     { key: "reports" as const, label: c.isZh ? "举报" : "Reports", n: data?.reports.length ?? 0 },
     { key: "letters" as const, label: c.isZh ? "信件" : "Letters", n: data?.letters.length ?? 0 },
     { key: "replies" as const, label: c.isZh ? "回音" : "Replies", n: data?.replies.length ?? 0 },
+    {
+      key: "deliveries" as const,
+      label: c.isZh ? "投递" : "Deliveries",
+      n: data?.deliveries.length ?? 0,
+    },
     { key: "people" as const, label: c.isZh ? "成员" : "People", n: data?.participants.length ?? 0 },
     { key: "log" as const, label: c.isZh ? "日志" : "Audit", n: data?.events.length ?? 0 },
   ];
@@ -156,6 +163,20 @@ export function AdminCommunityHallSection() {
                   onAction={(a) => replyAction.mutate({ replyId: r.id, action: a as "hide" })}
                   labels={c}
                 />
+              </Row>
+            ))}
+
+          {tab === "deliveries" &&
+            (data?.deliveries ?? []).map((d) => (
+              <Row
+                key={d.id}
+                title={`${c.deliveredAt} ${new Date(d.deliveredAt).toLocaleString()}`}
+                meta={c.deliveryStatus(d.status)}
+              >
+                <p className="text-xs text-muted-foreground">
+                  {c.filterRead}: {d.readAt ? new Date(d.readAt).toLocaleString() : "—"} ·{" "}
+                  {c.filterReplied}: {d.repliedAt ? new Date(d.repliedAt).toLocaleString() : "—"}
+                </p>
               </Row>
             ))}
 
