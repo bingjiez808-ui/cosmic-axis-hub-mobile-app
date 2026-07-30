@@ -197,10 +197,10 @@ export function validateField(
       return null;
     }
     case "gender":
-      if (!state.genderChosen)
+      if (!state.genderChosen || (state.gender !== "male" && state.gender !== "female"))
         return lang === "zh"
-          ? "请明确选择一项——包含「暂不填写」。这不会被公开显示。"
-          : "Please explicitly pick one option — including 'prefer not to say'. This is never shown publicly.";
+          ? "请选择「男」或「女」。紫微斗数必须依据此参数排盘，之后可在个人书架中修改。"
+          : "Please choose Male or Female — Zi Wei Dou Shu cannot be cast without it. You can change it later in your Personal Library.";
       return null;
   }
 }
