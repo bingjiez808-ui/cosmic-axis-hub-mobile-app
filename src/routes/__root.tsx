@@ -779,7 +779,7 @@ function SiteNav() {
       >
         <div className="mx-auto mb-2 h-1 w-10 shrink-0 rounded-full bg-white/20" aria-hidden />
 
-        {sheetGroups.map((group, gi) => (
+        {sheetGroups.map((group) => (
           <section key={group.title} className="mb-2.5 last:mb-1">
             <h2 className="mb-1.5 text-[10px] tracking-[0.24em] text-gold-dust/70">
               {group.title}
@@ -844,7 +844,7 @@ function SiteNav() {
           </section>
         ))}
 
-        <div className="mt-1 flex shrink-0 items-center justify-between gap-3 border-t border-white/10 pt-3">
+        <div className="mt-0.5 flex shrink-0 items-center justify-between gap-2 border-t border-white/10 pt-2">
           <LanguageToggle />
           {session ? (
             <button
@@ -853,7 +853,7 @@ function SiteNav() {
                 setDrawerOpen(false);
                 openAcc();
               }}
-              className="flex min-h-[44px] items-center gap-2 rounded-full border border-gold-dust/40 px-4 text-[12px] tracking-[0.2em] text-gold-dust hover:bg-gold-dust/10"
+              className="flex min-h-[40px] items-center gap-2 rounded-full border border-gold-dust/40 px-3 text-[11px] tracking-[0.18em] text-gold-dust hover:bg-gold-dust/10"
             >
               {avatarUrl && (
                 <img
@@ -872,7 +872,7 @@ function SiteNav() {
                 to="/auth"
                 search={{ mode: "login", redirect: undefined }}
                 onClick={() => setDrawerOpen(false)}
-                className="flex min-h-[44px] items-center rounded-full border border-gold-dust/40 px-4 text-[12px] tracking-[0.2em] text-gold-dust"
+                className="flex min-h-[40px] items-center rounded-full border border-gold-dust/40 px-3 text-[11px] tracking-[0.18em] text-gold-dust"
               >
                 {isZh ? "登录" : "Sign in"}
               </Link>
@@ -880,7 +880,7 @@ function SiteNav() {
                 to="/auth"
                 search={{ mode: "signup", redirect: undefined }}
                 onClick={() => setDrawerOpen(false)}
-                className="flex min-h-[44px] items-center rounded-full bg-gold-dust px-4 text-[12px] tracking-[0.2em] text-obsidian"
+                className="flex min-h-[40px] items-center rounded-full bg-gold-dust px-3 text-[11px] tracking-[0.18em] text-obsidian"
               >
                 {isZh ? "注册" : "Sign up"}
               </Link>
