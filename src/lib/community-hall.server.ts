@@ -8,7 +8,13 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/integrations/supabase/types";
 import { enforceRateLimit } from "./rate-limit.server";
-import { safetyCode, screenCommunityText, type AgeBand } from "./community-hall-safety";
+import {
+  needsSupportResources,
+  riskLevel,
+  safetyCode,
+  screenCommunityText,
+  type AgeBand,
+} from "./community-hall-safety";
 import { hallError, type HallErrorCode } from "./community-hall-errors";
 
 type Ctx = { supabase: SupabaseClient<Database>; userId: string };
@@ -204,22 +210,32 @@ export async function sendLetter(
   const verdict = screenCommunityText(`${input.subject ?? ""}\n${input.body}`);
   if (verdict.action === "block") throw hallError(safetyCode(verdict.categories));
 
+  const risk = riskLevel(verdict);
+  const held = risk !== "none";
+
   const { data: letterId, error } = await ctx.supabase.rpc("send_community_letter", {
     _subject: input.subject ?? "",
     _body: input.body,
     _topic: input.topic ?? "",
     _target_age_band: input.targetAgeBand,
     _response_style: input.responseStyle ?? "",
-    _needs_review: verdict.action === "review",
+    _needs_review: held,
+    _risk_level: risk,
   });
   if (error || !letterId) friendly(error);
 
   let delivered = 0;
-  if (verdict.action !== "review") {
+  if (!held) {
     const { data } = await ctx.supabase.rpc("dispatch_community_letter", { _letter_id: letterId });
     delivered = Number(data ?? 0);
   }
-  return { letterId: letterId as string, pendingReview: verdict.action === "review", delivered };
+  return {
+    letterId: letterId as string,
+    pendingReview: held,
+    delivered,
+    riskLevel: risk,
+    showSupport: needsSupportResources(verdict),
+  };
 }
 
 export async function dispatchLetter(ctx: Ctx, letterId: string) {
@@ -233,13 +249,18 @@ export async function submitReply(ctx: Ctx, input: { letterId: string; body: str
   limit(`community-hall:reply:${ctx.userId}`, 10, 60 * 60_000, "hourly_reply_limit");
   const verdict = screenCommunityText(input.body);
   if (verdict.action === "block") throw hallError(safetyCode(verdict.categories));
+  const risk = riskLevel(verdict);
   const { data, error } = await ctx.supabase.rpc("reply_to_community_letter", {
     _letter_id: input.letterId,
     _body: input.body,
-    _needs_review: verdict.action === "review",
+    _needs_review: risk !== "none",
   });
   if (error || !data) friendly(error);
-  return { replyId: data as string, pendingReview: verdict.action === "review" };
+  return {
+    replyId: data as string,
+    pendingReview: risk !== "none",
+    showSupport: needsSupportResources(verdict),
+  };
 }
 
 export async function loadMailbox(ctx: Ctx): Promise<CommunityMailbox> {
