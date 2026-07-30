@@ -328,6 +328,7 @@ export function ReportToc({ items, lang }: { items: TocItem[]; lang: "en" | "zh"
         onPointerUp={(e) => {
           const s = tapStart.current;
           tapStart.current = null;
+          console.log('TOCUP', e.pointerType, !!s);
           if (!s) return;
           if (Math.abs(e.clientX - s.x) > 10 || Math.abs(e.clientY - s.y) > 10) return;
           openedByPointer.current = true;
