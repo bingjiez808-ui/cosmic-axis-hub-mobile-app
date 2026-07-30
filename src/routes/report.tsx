@@ -976,7 +976,11 @@ function DimensionCardShell({
 
 
 function ReportPage() {
-  const search = Route.useSearch();
+  const rawSearch = Route.useSearch();
+  // Every downstream consumer (AI prompt builders, Zi Wei panel, extras)
+  // must see a COMPLETE chart input, otherwise Zi Wei silently drops out.
+  const hydrated = useHydratedChartSearch(rawSearch) ?? rawSearch;
+  const search = hydrated as typeof rawSearch;
   const { lang, setLang, t } = useLang();
   const reportLang = search.lang ?? lang;
   const li = lang === "zh" ? 1 : 0;
