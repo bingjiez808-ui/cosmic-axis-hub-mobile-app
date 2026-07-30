@@ -34,6 +34,12 @@ const BaseInput = z.object({
   bazi: z.string().max(120).optional(),
   zodiac: z.string().max(40).optional(),
   lunar: z.string().max(80).optional(),
+  // Real Jyotish / Zi Wei placements computed from the birth snapshot.
+  // Without these the model correctly reports "insufficient data" for
+  // those two traditions, so they must always be sent when available.
+  vedic: z.string().max(400).optional(),
+  ziwei: z.string().max(400).optional(),
+  gender: z.enum(["male", "female"]).optional(),
 });
 
 export const DIM_KEYS = [
