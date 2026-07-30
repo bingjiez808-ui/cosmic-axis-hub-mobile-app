@@ -6,6 +6,12 @@ import { createLovableAiGatewayProvider } from "./ai-gateway.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { guardrailsFor, safeMessage } from "./ai-guardrails";
 import { enforceRateLimit } from "./rate-limit.server";
+import {
+  concernFocusDirective,
+  coverageDirective,
+  crossSystemDirective,
+  systemCoverageFromFacts,
+} from "./four-system-brief";
 
 const EventInput = z.object({
   id: z.string().max(64),
@@ -22,6 +28,10 @@ const ChartInput = z.object({
   bazi: z.string().max(120).optional(),
   zodiac: z.string().max(40).optional(),
   lunar: z.string().max(80).optional(),
+  vedic: z.string().max(400).optional(),
+  ziwei: z.string().max(600).optional(),
+  gender: z.enum(["male", "female"]).optional(),
+  concern: z.string().max(40).optional(),
   planets: z
     .array(
       z.object({

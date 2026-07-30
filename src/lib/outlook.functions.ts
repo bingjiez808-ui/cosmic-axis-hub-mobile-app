@@ -6,6 +6,12 @@ import { createLovableAiGatewayProvider } from "./ai-gateway.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { guardrailsFor, safeMessage } from "./ai-guardrails";
 import { enforceRateLimit } from "./rate-limit.server";
+import {
+  concernFocusDirective,
+  coverageDirective,
+  crossSystemDirective,
+  systemCoverageFromFacts,
+} from "./four-system-brief";
 import { isEmailVerified, assertEmailVerifiedOrAdmin } from "./reports-store.functions";
 
 const Input = z.object({
@@ -28,6 +34,10 @@ const Input = z.object({
   bazi: z.string().max(120).optional(),
   zodiac: z.string().max(40).optional(),
   lunar: z.string().max(80).optional(),
+  vedic: z.string().max(400).optional(),
+  ziwei: z.string().max(600).optional(),
+  gender: z.enum(["male", "female"]).optional(),
+  concern: z.string().max(40).optional(),
 });
 
 export type OutlookDecade = {
