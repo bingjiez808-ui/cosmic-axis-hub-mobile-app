@@ -1250,7 +1250,10 @@ function ReportPage() {
       // four systems (western / bazi / vedic / ziwei) + gender + concern,
       // so every AI surface receives the identical brief.
       const req = {
-        ...buildReportRequest({ ...search, gender: search.gender, concern: search.concern }, reportLang),
+        ...buildReportRequest(
+          { ...search, gender: search.gender ?? genderOverride ?? undefined, concern: search.concern },
+          reportLang,
+        ),
       };
       const acc: { summary: string; dimensions: ReportDimensionAI[] } = {
         summary: "",
