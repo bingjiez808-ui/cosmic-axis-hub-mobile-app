@@ -1646,8 +1646,8 @@ function ReportPage() {
                   snapshot={snapshot}
                   lang={lang}
                   seed={`${search.name ?? ""}|${search.date ?? ""}|${search.time ?? ""}|${search.place ?? ""}`}
-                  size={Math.min(wheelSize, 320)}
-                  stageHeight={340}
+                  size={Math.min(wheelSize, 300)}
+                  stageHeight={Math.min(wheelSize, 300) + 44}
                   hideTabs
                   active={chartSystem}
                   onActiveChange={setChartSystem}
