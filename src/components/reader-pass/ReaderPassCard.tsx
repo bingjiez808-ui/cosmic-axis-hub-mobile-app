@@ -153,9 +153,9 @@ export function ReaderPassCard() {
               // until the reader taps or drags it out. Never covers the hero.
               top: "clamp(8px, 2vh, 28px)",
               right: 0,
-              width: "min(78vw, 280px)",
+              width: "min(46vw, 172px)",
               maxWidth: "min(78vw, 280px)",
-              height: "min(112vw, 400px)",
+              height: "min(72vw, 262px)",
               opacity: dimmed ? 0 : 1,
               transform: dimmed
                 ? "scale(0.92)"
