@@ -36,6 +36,33 @@ const AGE_BAND_LABELS: Record<AgeBand, Pair> = {
   "60+": { zh: "60 岁以上", en: "Ages 60+" },
 };
 
+const AGE_BAND_INVITES: Record<AgeBand, Pair> = {
+  "18-22": {
+    zh: "想问问刚离开校园、还在试错的人",
+    en: "Ask someone still just past the school gate",
+  },
+  "23-29": {
+    zh: "想问问正在城市里站稳脚跟的人",
+    en: "Ask someone finding their footing in a city",
+  },
+  "30-39": {
+    zh: "想问问选择开始有重量的人",
+    en: "Ask someone whose choices have started to weigh",
+  },
+  "40-49": {
+    zh: "想问问肩上已经有人的人",
+    en: "Ask someone who now carries others",
+  },
+  "50-59": {
+    zh: "想问问正在回望、也仍在启程的人",
+    en: "Ask someone looking back while still setting out",
+  },
+  "60+": {
+    zh: "想问问走过很长一段路的人",
+    en: "Ask someone who has walked a long road",
+  },
+};
+
 const AGE_BAND_CHAPTERS: Record<AgeBand, Pair> = {
   "18-22": { zh: "刚离开校园的路口", en: "just past the school gate" },
   "23-29": { zh: "在城市里立足的年头", en: "finding a footing" },
@@ -124,7 +151,10 @@ export function useCommunityHall() {
         key,
         label: pick(AGE_BAND_LABELS[key], lang),
         chapter: pick(AGE_BAND_CHAPTERS[key], lang),
+        invite: pick(AGE_BAND_INVITES[key], lang),
       })),
+      ageInvite: (band?: string | null) =>
+        band && band in AGE_BAND_INVITES ? pick(AGE_BAND_INVITES[band as AgeBand], lang) : "",
       reportReasons: REPORT_REASONS.map((r) => ({ key: r.key, label: zh ? r.zh : r.en })),
 
       // ── Hall ──────────────────────────────────────────────
@@ -313,6 +343,88 @@ export function useCommunityHall() {
       myReports: p("我的举报记录", "My reports"),
       archiveList: p("封存记录", "Archived"),
       loading: p("正在从书架取信…", "Fetching from the shelves…"),
+
+      // ── Hall hero (round 3) ───────────────────────────────
+      hallHeroLineOne: p("你此刻的困惑，", "The question you are carrying"),
+      hallHeroLineTwo: p("有人已经走过", "has already been walked by someone"),
+      hallHeroBody: p(
+        "在众生之厅，你可以匿名写下一个真实的问题，选择你想请教的人生阶段。图书馆的信使会把它送到那个阶段的旅者手中，再把回音带回你的书架。",
+        "In the Hall of Beings you can write one honest question, anonymously, and choose the chapter of life you want to ask. A courier carries it to a traveler there, and brings the echo back to your shelf.",
+      ),
+      hallHeroNote: p(
+        "没有点赞，没有粉丝，没有公开评论区。只有一封信，和一次回音。",
+        "No likes, no followers, no public comment thread. Just a letter, and an echo.",
+      ),
+      pathTitle: p("信是怎样走完这一程的", "How a letter travels"),
+      cardWriteTitle: p("寄一封信", "Send a letter"),
+      cardWriteBody: p("写下一个真实的问题，交给信使。", "Write one honest question and hand it to the courier."),
+      cardInboxTitle: p("收信匣", "Mailbox"),
+      cardInboxBody: p("别人寄到你这一段人生的信。", "Letters written to the chapter you are living."),
+      cardOutboxTitle: p("我的书札", "My letters"),
+      cardOutboxBody: p("你寄出的信，和它们的去向。", "The letters you sent, and where they went."),
+      cardEchoesTitle: p("回音", "Echoes"),
+      cardEchoesBody: p("陌生人写给你的回信。", "What strangers wrote back to you."),
+      unreadCount: (n: number) => (zh ? `${n} 封未拆封` : `${n} unopened`),
+      newEchoes: (n: number) => (zh ? `${n} 条新回音` : `${n} new`),
+      identityLine: (alias: string, band: string) =>
+        zh ? `你现在是「${alias}」，来自${band}` : `You are "${alias}", writing from ${band}`,
+      identityEdit: p("修改匿名身份", "Edit anonymous identity"),
+      recentTitle: p("最近的动静", "Recent movement"),
+      houseRules: p("馆内守则", "House rules"),
+
+      // ── States ────────────────────────────────────────────
+      stateLoadingHall: p("信使正在整理书架…", "The courier is sorting the shelves…"),
+      stateError: p("书架那边出了点状况。", "Something went wrong on the shelves."),
+      stateRetry: p("再试一次", "Try again"),
+      stateOffline: p("暂时连不上图书馆，请检查网络。", "The library is unreachable. Check your connection."),
+      stateEmptyHint: p("这里现在是空的。", "Nothing here yet."),
+
+      // ── Write flow (round 3) ──────────────────────────────
+      stepOfThree: (n: number) => (zh ? `第 ${n} 步 / 共 3 步` : `Step ${n} of 3`),
+      writeIntro: p(
+        "一句真实的困惑，胜过一封完美的信。对方看不到你是谁。",
+        "One honest sentence beats a perfect letter. They will never see who you are.",
+      ),
+      bodyCounter: (n: number, max: number) => (zh ? `${n} / ${max} 字` : `${n} / ${max}`),
+      bodyTooShort: (min: number) =>
+        zh ? `再多写一点，至少 ${min} 字，让对方看懂你的处境。` : `A little more — at least ${min} characters.`,
+      previewFrom: p("寄自", "From"),
+      previewTo: p("寄往", "To"),
+      previewSealHint: p(
+        "寄出后不能修改，也不能撤回。信件 7 天后自动停止投递。",
+        "Once sealed it cannot be edited or recalled. Delivery stops after 7 days.",
+      ),
+      sentBody: p(
+        "信使已经带着它走向书架深处。有人读到并写下回音时，你会在「回音」里看到。",
+        "The courier has carried it into the stacks. When someone answers, it will appear under Echoes.",
+      ),
+      sentGoEchoes: p("去回音等一等", "Wait by the echoes"),
+      sentWriteAnother: p("再写一封", "Write another"),
+
+      // ── Letter detail (round 3) ───────────────────────────
+      openingLetter: p("正在拆开信封…", "Opening the envelope…"),
+      letterFromChapter: p("这封信来自", "This letter comes from"),
+      echoRange: p("20–800 字", "20–800 characters"),
+      echoTooShort: p("回音至少 20 字。", "An echo needs at least 20 characters."),
+      echoTooLong: p("回音最多 800 字。", "An echo can hold at most 800 characters."),
+      echoNoEmojiOnly: p("请用文字写下你想说的话。", "Please answer in words."),
+      echoDuplicate: p("这段话你刚刚已经寄出过了。", "You just sent that exact echo."),
+      echoOnce: p("每封信只能回一次。", "One echo per letter."),
+      notReplyable: p("这封信已经不再接收回音。", "This letter no longer takes echoes."),
+      safetyTools: p("安全", "Safety"),
+      safetySheetTitle: p("这封信让你不舒服吗？", "Is this letter making you uncomfortable?"),
+      confirmBlock: p("确认屏蔽这位匿名旅者？", "Block this anonymous traveler?"),
+      cancel: p("取消", "Cancel"),
+      confirm: p("确认", "Confirm"),
+
+      // ── Echo shelf (round 3) ──────────────────────────────
+      echoesForLetter: p("这封信收到的回音", "Echoes for this letter"),
+      saveEcho: p("收藏这条回音", "Keep this echo"),
+      savedEcho: p("已收藏", "Kept"),
+      closeCollecting: p("结束收信", "Stop collecting"),
+      closedCollecting: p("已结束收信", "No longer collecting"),
+      closeConfirm: p("结束后不会再有新的回音寄来，确认吗？", "No new echoes will arrive after this. Continue?"),
+      awaitingEcho: p("还在等待回音", "Still waiting for an echo"),
     };
   }, [lang]);
 }

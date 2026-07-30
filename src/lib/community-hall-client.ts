@@ -18,6 +18,8 @@ import {
   setCommunityBlock,
   setCommunityDeliveryState,
   blockCommunityLetterAuthor,
+  setCommunityEchoSaved,
+  closeCommunityLetter,
   upsertMyCommunityProfile,
   type CommunityMailbox,
 } from "@/lib/community-hall.functions";
@@ -142,6 +144,26 @@ export function useBlockLetterAuthor() {
   const invalidate = useInvalidate();
   return useMutation({
     mutationFn: (data: { letterId: string }) => block({ data }),
+    onSuccess: invalidate,
+  });
+}
+
+/** Author-only: keep an echo on the private shelf. */
+export function useSaveEcho() {
+  const save = useServerFn(setCommunityEchoSaved);
+  const invalidate = useInvalidate();
+  return useMutation({
+    mutationFn: (data: { replyId: string; saved: boolean }) => save({ data }),
+    onSuccess: invalidate,
+  });
+}
+
+/** Author-only: stop collecting echoes for one letter. */
+export function useCloseLetter() {
+  const close = useServerFn(closeCommunityLetter);
+  const invalidate = useInvalidate();
+  return useMutation({
+    mutationFn: (data: { letterId: string }) => close({ data }),
     onSuccess: invalidate,
   });
 }

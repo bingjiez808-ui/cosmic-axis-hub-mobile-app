@@ -69,6 +69,19 @@ function unique(items: string[]): string[] {
   return Array.from(new Set(items));
 }
 
+/** Stable refusal code; the client turns it into bilingual copy. */
+export function safetyCode(
+  categories: string[],
+): "content_contact" | "content_solicitation" | "content_rejected" {
+  if (categories.some((c) => ["email", "phone", "wechat", "wechat_hint", "social", "qrcode", "url"].includes(c))) {
+    return "content_contact";
+  }
+  if (categories.some((c) => ["payment", "financial", "scam", "recruit"].includes(c))) {
+    return "content_solicitation";
+  }
+  return "content_rejected";
+}
+
 /** Human-facing refusal copy; deliberately generic, no echo of user text. */
 export function safetyMessage(categories: string[]): string {
   if (categories.some((c) => ["email", "phone", "wechat", "wechat_hint", "social", "qrcode", "url"].includes(c))) {

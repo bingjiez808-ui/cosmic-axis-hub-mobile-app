@@ -8,7 +8,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/integrations/supabase/types";
 import { enforceRateLimit } from "./rate-limit.server";
-import { safetyMessage, screenCommunityText, type AgeBand } from "./community-hall-safety";
+import { safetyCode, screenCommunityText, type AgeBand } from "./community-hall-safety";
+import { hallError, type HallErrorCode } from "./community-hall-errors";
 
 type Ctx = { supabase: SupabaseClient<Database>; userId: string };
 
@@ -64,6 +65,7 @@ export type EchoReply = {
   letterId: string;
   body: string;
   createdAt: string;
+  savedAt?: string | null;
   author: MailboxIdentity;
 };
 
@@ -92,25 +94,37 @@ export type CommunityMailbox = {
   notifications: CommunityNotification[];
 };
 
-const RPC_ERRORS: Record<string, string> = {
-  auth_required: "请先登录。",
-  adult_verification_required: "众生之厅目前仅向已满 18 周岁的旅者开放，请先在账户中补全出生日期。",
-  invalid_target_age_band: "请选择一个有效的年龄区间。",
-  invalid_body_length: "正文长度不符合要求。",
-  daily_letter_limit: "今天已经寄出 3 封信了，明天再来吧。",
-  hourly_reply_limit: "这一小时的回信次数已达上限，请稍后再试。",
-  hourly_report_limit: "举报过于频繁，请稍后再试。",
-  duplicate_submission: "刚刚已经提交过相同内容了。",
-  not_a_recipient: "只有收到这封信的人才能回信。",
-  letter_not_found: "这封信不存在或你无权访问。",
-  letter_expired: "这封信已经过期。",
-  not_allowed: "没有权限执行该操作。",
-};
+const RPC_CODES: Array<[string, HallErrorCode]> = [
+  ["auth_required", "auth_required"],
+  ["adult_verification_required", "adult_required"],
+  ["invalid_target_age_band", "invalid_age_band"],
+  ["invalid_body_length", "invalid_body_length"],
+  ["daily_letter_limit", "daily_letter_limit"],
+  ["hourly_reply_limit", "hourly_reply_limit"],
+  ["hourly_report_limit", "hourly_report_limit"],
+  ["duplicate_submission", "duplicate_submission"],
+  ["already_replied", "already_replied"],
+  ["not_a_recipient", "not_a_recipient"],
+  ["letter_not_found", "letter_not_found"],
+  ["letter_expired", "letter_expired"],
+  ["letter_closed", "letter_closed"],
+  ["not_allowed", "not_allowed"],
+];
 
+/** Translate any DB/transport failure into a stable client-facing code. */
 function friendly(error: { message?: string } | null): never {
   const raw = error?.message ?? "unknown_error";
-  const key = Object.keys(RPC_ERRORS).find((k) => raw.includes(k));
-  throw new Error(key ? RPC_ERRORS[key] : "操作失败，请稍后再试。");
+  const hit = RPC_CODES.find(([needle]) => raw.includes(needle));
+  throw hallError(hit ? hit[1] : "unknown");
+}
+
+/** Rate limiting, expressed in the same code vocabulary. */
+function limit(key: string, max: number, windowMs: number, code: HallErrorCode) {
+  try {
+    enforceRateLimit(key, max, windowMs, key);
+  } catch {
+    throw hallError(code);
+  }
 }
 
 export async function readCommunityProfile(ctx: Ctx) {
@@ -152,11 +166,11 @@ export async function saveCommunityProfile(
     paused: boolean;
   },
 ) {
-  enforceRateLimit(`community-hall:profile:${ctx.userId}`, 20, 60_000, "profile updates");
+  limit(`community-hall:profile:${ctx.userId}`, 20, 60_000, "rate_limited");
   for (const value of [input.alias, input.quote, input.academy]) {
     if (!value) continue;
     const verdict = screenCommunityText(value);
-    if (verdict.action === "block") throw new Error(safetyMessage(verdict.categories));
+    if (verdict.action === "block") throw hallError(safetyCode(verdict.categories));
   }
   const { error } = await ctx.supabase.from("community_profiles").upsert(
     {
@@ -186,9 +200,9 @@ export async function sendLetter(
     responseStyle?: string | null;
   },
 ) {
-  enforceRateLimit(`community-hall:send:${ctx.userId}`, 3, 24 * 60 * 60_000, "letters");
+  limit(`community-hall:send:${ctx.userId}`, 3, 24 * 60 * 60_000, "daily_letter_limit");
   const verdict = screenCommunityText(`${input.subject ?? ""}\n${input.body}`);
-  if (verdict.action === "block") throw new Error(safetyMessage(verdict.categories));
+  if (verdict.action === "block") throw hallError(safetyCode(verdict.categories));
 
   const { data: letterId, error } = await ctx.supabase.rpc("send_community_letter", {
     _subject: input.subject ?? "",
@@ -209,16 +223,16 @@ export async function sendLetter(
 }
 
 export async function dispatchLetter(ctx: Ctx, letterId: string) {
-  enforceRateLimit(`community-hall:dispatch:${ctx.userId}`, 12, 60 * 60_000, "dispatches");
+  limit(`community-hall:dispatch:${ctx.userId}`, 12, 60 * 60_000, "rate_limited");
   const { data, error } = await ctx.supabase.rpc("dispatch_community_letter", { _letter_id: letterId });
   if (error) friendly(error);
   return { delivered: Number(data ?? 0) };
 }
 
 export async function submitReply(ctx: Ctx, input: { letterId: string; body: string }) {
-  enforceRateLimit(`community-hall:reply:${ctx.userId}`, 10, 60 * 60_000, "replies");
+  limit(`community-hall:reply:${ctx.userId}`, 10, 60 * 60_000, "hourly_reply_limit");
   const verdict = screenCommunityText(input.body);
-  if (verdict.action === "block") throw new Error(safetyMessage(verdict.categories));
+  if (verdict.action === "block") throw hallError(safetyCode(verdict.categories));
   const { data, error } = await ctx.supabase.rpc("reply_to_community_letter", {
     _letter_id: input.letterId,
     _body: input.body,
@@ -246,7 +260,7 @@ export async function reportContent(
   ctx: Ctx,
   input: { targetType: "letter" | "reply" | "profile"; targetId: string; reason: string; details?: string | null },
 ) {
-  enforceRateLimit(`community-hall:report:${ctx.userId}`, 10, 60 * 60_000, "reports");
+  limit(`community-hall:report:${ctx.userId}`, 10, 60 * 60_000, "hourly_report_limit");
   const { data, error } = await ctx.supabase.rpc("report_community_content", {
     _target_type: input.targetType,
     _target_id: input.targetId,
@@ -258,8 +272,8 @@ export async function reportContent(
 }
 
 export async function toggleBlock(ctx: Ctx, input: { userId: string; blocked: boolean }) {
-  enforceRateLimit(`community-hall:block:${ctx.userId}`, 30, 60 * 60_000, "block updates");
-  if (input.userId === ctx.userId) throw new Error("不能拉黑自己。");
+  limit(`community-hall:block:${ctx.userId}`, 30, 60 * 60_000, "rate_limited");
+  if (input.userId === ctx.userId) throw hallError("not_allowed");
   if (input.blocked) {
     const { error } = await ctx.supabase
       .from("community_blocks")
@@ -282,7 +296,7 @@ export async function setDeliveryState(
   ctx: Ctx,
   input: { letterId: string; state: "read" | "archived" | "restore" },
 ) {
-  enforceRateLimit(`community-hall:delivery:${ctx.userId}`, 120, 60 * 60_000, "mailbox updates");
+  limit(`community-hall:delivery:${ctx.userId}`, 120, 60 * 60_000, "rate_limited");
   const { data: current, error: readError } = await ctx.supabase
     .from("community_letter_deliveries")
     .select("id, status, read_at, replied_at")
@@ -290,7 +304,7 @@ export async function setDeliveryState(
     .eq("recipient_id", ctx.userId)
     .maybeSingle();
   if (readError) friendly(readError);
-  if (!current) throw new Error(RPC_ERRORS.letter_not_found);
+  if (!current) throw hallError("letter_not_found");
 
   const patch: { status?: string; read_at?: string } = {};
   if (input.state === "read") {
@@ -338,15 +352,34 @@ export async function blockLetterAuthor(ctx: Ctx, letterId: string) {
     .eq("recipient_id", ctx.userId)
     .maybeSingle();
   if (error) friendly(error);
-  if (!delivery) throw new Error(RPC_ERRORS.letter_not_found);
+  if (!delivery) throw hallError("letter_not_found");
 
   const { data: letter } = await ctx.supabase
     .from("community_letters")
     .select("author_id")
     .eq("id", letterId)
     .maybeSingle();
-  if (!letter?.author_id) throw new Error(RPC_ERRORS.letter_not_found);
+  if (!letter?.author_id) throw hallError("letter_not_found");
 
   await toggleBlock(ctx, { userId: letter.author_id, blocked: true });
   return { blocked: true };
+}
+
+/** Author-only: keep an echo on the personal shelf (private, never public). */
+export async function setEchoSaved(ctx: Ctx, input: { replyId: string; saved: boolean }) {
+  limit(`community-hall:save-echo:${ctx.userId}`, 60, 60 * 60_000, "rate_limited");
+  const { error } = await ctx.supabase.rpc("set_community_echo_saved", {
+    _reply_id: input.replyId,
+    _saved: input.saved,
+  });
+  if (error) friendly(error);
+  return { saved: input.saved };
+}
+
+/** Author-only: stop collecting further echoes for one letter. */
+export async function closeLetter(ctx: Ctx, letterId: string) {
+  limit(`community-hall:close-letter:${ctx.userId}`, 30, 60 * 60_000, "rate_limited");
+  const { data, error } = await ctx.supabase.rpc("close_community_letter", { _letter_id: letterId });
+  if (error) friendly(error);
+  return { status: (data as string | null) ?? "closed" };
 }

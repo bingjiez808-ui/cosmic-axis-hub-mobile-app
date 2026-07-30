@@ -9,6 +9,7 @@ import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
 import { useCommunityHall } from "@/lib/i18n-community-hall";
+import "./hall.css";
 import type { EchoReply, ReceivedLetter, SentLetter } from "@/lib/community-hall.server";
 
 function formatDate(iso: string, lang: string) {
@@ -30,11 +31,7 @@ function Shell({
   accent?: boolean;
 }) {
   return (
-    <article
-      className={`rounded-2xl border p-5 backdrop-blur transition hover:border-primary/35 ${
-        accent ? "border-primary/35 bg-primary/[0.06]" : "border-primary/15 bg-background/50"
-      }`}
-    >
+    <article className="hall-paper hall-envelope p-5" data-unread={accent ? "true" : "false"}>
       {children}
     </article>
   );
@@ -62,7 +59,8 @@ export function ReceivedLetterCard({ letter }: { letter: ReceivedLetter }) {
         <span>
           {c.deliveredAt} {formatDate(letter.deliveredAt, c.lang)}
         </span>
-        <span className={unread ? "text-primary" : undefined}>
+        <span className={unread ? "inline-flex items-center gap-1.5 text-primary" : undefined}>
+          {unread ? <span className="hall-seal" aria-hidden /> : null}
           {c.deliveryStatus(letter.status)}
         </span>
       </Meta>
@@ -75,7 +73,7 @@ export function ReceivedLetterCard({ letter }: { letter: ReceivedLetter }) {
       <Link
         to="/community/letters/$letterId"
         params={{ letterId: letter.letterId }}
-        className="mt-4 inline-flex text-sm font-medium text-primary hover:underline"
+        className="hall-tap mt-4 inline-flex items-center text-sm font-medium text-primary hover:underline"
       >
         {c.open} →
       </Link>
