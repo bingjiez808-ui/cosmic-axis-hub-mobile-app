@@ -221,19 +221,47 @@ const ACCESS_STYLE: Record<AccessTag, string> = {
   coming: "border-white/20 text-stone-warm/60 bg-white/5",
 };
 
+function useRevealOnce<T extends HTMLElement>() {
+  const ref = useRef<T | null>(null);
+  const [revealed, setRevealed] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof IntersectionObserver === "undefined") {
+      setRevealed(true);
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setRevealed(true);
+          io.disconnect();
+        }
+      },
+      { rootMargin: "0px 0px -10% 0px", threshold: 0.08 }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  return { ref, revealed };
+}
+
 function HomeCard({
   card,
   isZh,
   facts,
+  flip,
   onOpenDrawer,
 }: {
   card: HomeGuideCard;
   isZh: boolean;
   facts: ReturnType<typeof useHomeFacts>;
+  flip: boolean;
   onOpenDrawer: () => void;
 }) {
+  const { ref, revealed } = useRevealOnce<HTMLElement>();
   const isDrawer = card.mode === "drawer";
   const routeTarget = card.target ?? "/";
+
 
   const plan = resolveCta({
     target: routeTarget,
