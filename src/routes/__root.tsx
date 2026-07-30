@@ -347,8 +347,10 @@ function SiteNav() {
       if (e.key === "Escape") {
         setMoreOpen(false);
         setLibraryOpen(false);
+        setDrawerOpen(false);
       }
     };
+
     document.addEventListener("mousedown", onDoc);
     document.addEventListener("keydown", onKey);
     return () => {
