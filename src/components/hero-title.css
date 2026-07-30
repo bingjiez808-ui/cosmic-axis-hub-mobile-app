@@ -37,7 +37,7 @@
 /* Final line: the question itself — warm gold, serif italic, the visual
    landing point of the headline. Slightly smaller, never weaker. */
 .hero-title-line--accent {
-  color: hsl(var(--gold-dust, 43 74% 66%));
+  color: var(--gold-dust, oklch(0.76 0.11 85));
   font-style: italic;
   font-size: 0.88em;
   letter-spacing: -0.02em;
