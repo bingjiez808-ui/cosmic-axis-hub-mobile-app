@@ -1349,7 +1349,10 @@ function ReportPage() {
         setAiProgress((p) => ({ done: Math.min(p.total, p.done + 1), total: p.total }));
       };
 
+      // One retry: the epigraph is persisted with the report, so a single
+      // transient failure here would otherwise be frozen into the saved row.
       const summaryPromise = generateReportSummary({ data: req })
+        .catch(() => generateReportSummary({ data: req }))
         .then((res) => {
           if (stale()) return;
           acc.summary = res.summary;
@@ -1359,6 +1362,7 @@ function ReportPage() {
           firstError = firstError ?? err;
         })
         .finally(bump);
+
 
       const dimPromises = DIM_KEYS.map((k) =>
         generateReportDimension({ data: { ...req, key: k } })
