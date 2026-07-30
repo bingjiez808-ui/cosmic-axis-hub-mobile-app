@@ -762,40 +762,37 @@ function SiteNav() {
         }`}
       />
 
-      {/* Mobile navigation sheet — compact two-column groups, never a long
-          single column. Same IA as desktop, one DOM tree only. */}
+      {/* Mobile navigation drawer — right-side vertical rail (original mode),
+          opened by the floating orb. Same IA as desktop, one DOM tree only. */}
       <aside
         aria-label={isZh ? "导航" : "Navigation"}
         aria-hidden={!drawerOpen}
         aria-modal={drawerOpen || undefined}
         role="dialog"
         style={{
-          maxHeight: "min(68dvh, 560px)",
-          paddingBottom: "calc(0.5rem + env(safe-area-inset-bottom))",
+          paddingBottom: "calc(1rem + env(safe-area-inset-bottom))",
+          paddingTop: "calc(1rem + env(safe-area-inset-top))",
         }}
-        className={`fixed inset-x-0 bottom-0 z-[75] flex flex-col overflow-y-auto overscroll-contain rounded-t-3xl border-t border-gold-dust/25 bg-obsidian/97 px-3 pt-2 backdrop-blur-xl shadow-[0_-16px_44px_rgba(0,0,0,0.6)] transition-transform duration-300 xl:hidden ${
-          drawerOpen ? "translate-y-0" : "pointer-events-none translate-y-full"
+        className={`fixed right-0 top-0 z-[75] flex h-dvh w-[min(84vw,320px)] flex-col overflow-y-auto overscroll-contain rounded-l-3xl border-l border-gold-dust/25 bg-obsidian/97 px-5 backdrop-blur-xl shadow-[-16px_0_44px_rgba(0,0,0,0.6)] transition-transform duration-300 xl:hidden ${
+          drawerOpen ? "translate-x-0" : "pointer-events-none translate-x-full"
         }`}
       >
-        <div className="mx-auto mb-2 h-1 w-10 shrink-0 rounded-full bg-white/20" aria-hidden />
-
-        {sheetGroups.map((group) => (
-          <section key={group.title} className="mb-2.5 last:mb-1">
-            <h2 className="mb-1.5 text-[10px] tracking-[0.24em] text-gold-dust/70">
-              {group.title}
-            </h2>
-            <div className="grid grid-cols-[repeat(2,minmax(0,1fr))] gap-1.5 max-[319px]:grid-cols-1">
+        {sheetGroups.map((group, gi) => (
+          <section key={group.title} className="mb-3 last:mb-2">
+            {gi > 0 && (
+              <h2 className="mb-1 mt-3 border-t border-white/10 pt-4 text-right text-[10px] tracking-[0.24em] text-gold-dust/70">
+                {group.title}
+              </h2>
+            )}
+            <div className="flex flex-col">
               {group.items.map((item) => {
-                const cls = `flex min-h-[38px] items-center justify-center rounded-lg border px-2 py-1 text-center leading-tight break-words ${
-                  item.wide ? "col-span-full text-[12px]" : ""
-                } ${
+                const cls = `flex min-h-[48px] items-center justify-end rounded-xl px-4 text-right text-[15px] leading-tight ${
                   item.active
-                    ? "border-gold-dust/50 bg-gold-dust/10 text-gold-light"
-                    : "border-white/10 bg-white/[0.04] text-stone-warm/85 hover:border-gold-dust/40 hover:text-gold-light"
+                    ? "bg-gold-dust/10 text-gold-light"
+                    : "text-stone-warm/85 hover:text-gold-light"
                 }`;
-                const style = item.wide
-                  ? undefined
-                  : { fontSize: "clamp(12px, 3.2vw, 14px)" };
+                const style = undefined;
+
 
                 if (item.href) {
                   return (
@@ -844,7 +841,7 @@ function SiteNav() {
           </section>
         ))}
 
-        <div className="mt-0.5 flex shrink-0 items-center justify-between gap-2 border-t border-white/10 pt-2">
+        <div className="mt-auto flex shrink-0 items-center justify-end gap-2 border-t border-white/10 pt-3">
           <LanguageToggle />
           {session ? (
             <button
@@ -936,9 +933,9 @@ function SiteFooter() {
   ];
 
   return (
-    <footer className="relative z-10 border-t border-white/5 px-4 py-12 sm:px-6 md:px-12 md:py-16">
+    <footer className="relative z-10 border-t border-white/5 bg-obsidian/80 px-4 py-10 backdrop-blur-md sm:px-6 md:px-12 md:py-16">
       <div className="mx-auto max-w-7xl">
-        <div className="grid gap-8 md:grid-cols-[1.2fr_1fr_1fr_1fr] md:gap-10">
+        <div className="grid gap-7 md:grid-cols-[1.2fr_1fr_1fr_1fr] md:gap-10">
           <div>
             <div className="font-serif text-xl text-stone-warm">
               Destiny<span className="text-gold-dust">Library</span>
@@ -949,26 +946,29 @@ function SiteFooter() {
                 : "Four traditions read together — a way to see the patterns in your own life. Cultural reading and self-reflection, never a verdict."}
             </p>
           </div>
-          {groups.map((g) => (
-            <div key={g.title}>
-              <div className="mb-3 text-[10px] font-medium uppercase tracking-[0.28em] text-gold-dust/80">
-                {g.title}
+          <div className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 md:contents">
+            {groups.map((g) => (
+              <div key={g.title} className="min-w-0">
+                <div className="mb-2.5 text-[10px] font-medium uppercase tracking-[0.2em] text-gold-dust/80">
+                  {g.title}
+                </div>
+                <ul className="space-y-1.5 text-[11px] text-stone-warm/60">
+                  {g.items.map((it) => (
+                    <li key={it.href} className="min-w-0">
+                      <a
+                        href={it.href}
+                        className="block truncate transition-colors hover:text-gold-dust"
+                      >
+                        {it.label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <ul className="space-y-2 text-[11px] text-stone-warm/60">
-                {g.items.map((it) => (
-                  <li key={it.href}>
-                    <a
-                      href={it.href}
-                      className="transition-colors hover:text-gold-dust"
-                    >
-                      {it.label}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
+
         <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-white/5 pt-6 text-center text-[10px] uppercase tracking-[0.28em] text-stone-warm/40 md:flex-row md:text-left">
           <span className="italic">© MMXXVI · Four civilizations, one question</span>
           <span className="normal-case tracking-normal text-stone-warm/40">
