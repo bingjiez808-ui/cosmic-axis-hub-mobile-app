@@ -119,6 +119,7 @@
 /* Phone portrait (iPhone 16: 393px, 16 Pro Max: 440px) */
 @media (max-width: 480px) {
   .hero-shell {
+    min-height: 100svh;
     min-height: 100dvh;
     padding-top: clamp(76px, 12dvh, 108px);
     padding-bottom: clamp(28px, 6dvh, 56px);

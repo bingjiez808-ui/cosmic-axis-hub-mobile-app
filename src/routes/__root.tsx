@@ -543,7 +543,8 @@ function SiteNav() {
 
       <nav
         ref={navRef}
-        className={`fixed left-1/2 top-0 z-50 w-full max-w-[100vw] -translate-x-1/2 px-3 py-3 xl:p-6 transition-all duration-500 ${
+        style={{ paddingTop: "max(10px, env(safe-area-inset-top))" }}
+        className={`fixed left-1/2 top-0 z-50 w-full max-w-[100vw] -translate-x-1/2 px-3 pb-3 xl:px-6 xl:pb-6 transition-all duration-500 ${
           showTopBar ? "opacity-100 translate-y-0" : "-translate-y-full opacity-0 pointer-events-none"
         }`}
       >
