@@ -1588,15 +1588,32 @@ function ReportPage() {
               : d.details,
           specifics: (() => {
             const raw = Array.isArray(pAny.specifics) ? pAny.specifics : [];
-            const mapped = raw
-              .map((x) => {
-                const xr = x as Record<string, unknown>;
-                const label = textFromUnknown(xr.label, lang);
-                const value = textFromUnknown(xr.value, lang);
-                return { label: [label, label] as [string, string], value: [value, value] as [string, string] };
-              })
-              .filter((x) => x.value[0]);
+            const seen = new Map<string, { label: [string, string]; value: [string, string] }>();
+            for (const x of raw) {
+              const xr = x as Record<string, unknown>;
+              const label = textFromUnknown(xr.label, lang);
+              const value = textFromUnknown(xr.value, lang);
+              if (!value) continue;
+              const key = label.replace(/[\s·、,，]/g, "");
+              const hit = key ? seen.get(key) : undefined;
+              if (hit) {
+                // Older cached reports sometimes repeat the same label once per
+                // system; merge them into a single pointer instead of showing
+                // two cards with an identical title.
+                if (!hit.value[0].includes(value)) {
+                  hit.value = [`${hit.value[0]} ${value}`, `${hit.value[1]} ${value}`];
+                }
+                continue;
+              }
+              const entry = {
+                label: [label, label] as [string, string],
+                value: [value, value] as [string, string],
+              };
+              seen.set(key || `#${seen.size}`, entry);
+            }
+            const mapped = [...seen.values()].slice(0, 4);
             return mapped.length > 0 ? mapped : (d.specifics ?? SPECIFIC_FALLBACK[d.key] ?? []);
+
           })(),
         };
       }),
