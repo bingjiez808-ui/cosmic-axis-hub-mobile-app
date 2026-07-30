@@ -19,6 +19,7 @@ import mobileVideoAsset from "@/assets/entrance/entrance-mobile.mp4.asset.json";
 import desktopPosterAsset from "@/assets/entrance/entrance-desktop-poster.webp.asset.json";
 import mobilePosterAsset from "@/assets/entrance/entrance-mobile-poster.png.asset.json";
 import { ResponsiveHeroTitle } from "@/components/ResponsiveHeroTitle";
+import { EntranceFog } from "./EntranceFog";
 import { useEntranceSequence } from "./useEntranceSequence";
 import { useScratchReveal } from "./useScratchReveal";
 import "./library-entrance.css";
@@ -332,6 +333,13 @@ export function LibraryEntrance() {
       {maskCanvas}
 
       <div ref={scratchRef} className="le-scratch" aria-hidden="true" />
+
+      <EntranceFog
+        active={overlayVisible}
+        reducedMotion={reducedMotion}
+        isCoarse={isCoarse}
+        restAnchor="[data-le-action='enter']"
+      />
 
       {/* Persistent starmarks + connection SVG */}
       <svg
