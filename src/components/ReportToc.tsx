@@ -94,6 +94,8 @@ export function ReportToc({ items, lang }: { items: TocItem[]; lang: "en" | "zh"
 
   // Mobile ergonomics
   const tapStart = useRef<{ x: number; y: number } | null>(null);
+  const openedByPointer = useRef(false);
+
   const dragStart = useRef<number | null>(null);
   const [dragY, setDragY] = useState(0);
   const [dragging, setDragging] = useState(false);
