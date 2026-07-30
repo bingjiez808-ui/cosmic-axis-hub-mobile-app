@@ -184,7 +184,7 @@ function OraclePage() {
   const access = roomAccess(tier, "oracle");
 
   return (
-    <div className="min-h-screen bg-[#0a0a12]/10 text-amber-50">
+    <div className="min-h-screen bg-[#0a0a12]/25 text-amber-50">
       <div className="mx-auto w-full max-w-[900px] px-4 py-8 md:px-8 md:py-12">
         <PersonalWorkspaceNav active="/me/oracle" />
         <header className="mb-6">
