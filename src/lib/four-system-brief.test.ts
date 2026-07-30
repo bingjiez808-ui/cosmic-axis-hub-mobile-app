@@ -1,5 +1,4 @@
-// @ts-expect-error — bun:test is Bun's built-in runner.
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 
 import { buildCalculationSnapshot } from "./calc-snapshot";
 import {
