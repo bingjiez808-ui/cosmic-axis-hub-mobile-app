@@ -127,28 +127,20 @@ export function HomeScrollStack() {
 
       <GuideDeskHero isZh={isZh} />
 
-      <ScrollStack
-        itemDistance={80}
-        itemStackDistance={26}
-        stackPosition="18%"
-        scaleEndPosition="8%"
-        baseScale={0.88}
-        itemScale={0.02}
-        stableMode={stable}
-      >
+      {/* Plain vertical section list — no stacking / pinning effects. */}
+      <div className="mx-auto w-full max-w-[1180px] space-y-8 px-4 pb-24 pt-6 sm:space-y-10 sm:px-6">
         {HOME_GUIDE_CARDS.map((card) => (
-          <ScrollStackItem key={card.id}>
-            <div id={card.id}>
-              <HomeCard
-                card={card}
-                isZh={isZh}
-                facts={facts}
-                onOpenDrawer={() => openCard(card.id)}
-              />
-            </div>
-          </ScrollStackItem>
+          <div id={card.id} key={card.id} className="scroll-mt-24">
+            <HomeCard
+              card={card}
+              isZh={isZh}
+              facts={facts}
+              onOpenDrawer={() => openCard(card.id)}
+            />
+          </div>
         ))}
-      </ScrollStack>
+      </div>
+
 
       <HomeSideRail
         cards={HOME_GUIDE_CARDS}
