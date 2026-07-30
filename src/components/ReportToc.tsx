@@ -330,6 +330,7 @@ export function ReportToc({ items, lang }: { items: TocItem[]; lang: "en" | "zh"
           const s = tapStart.current;
           tapStart.current = null;
           const t = e.changedTouches[0];
+          console.log('TOCTAP', !!s, !!t);
           if (!s || !t) return;
           // Ignore taps that were really the tail of a scroll gesture.
           if (Math.abs(t.clientX - s.x) > 12 || Math.abs(t.clientY - s.y) > 12) return;
