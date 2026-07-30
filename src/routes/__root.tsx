@@ -469,7 +469,6 @@ function SiteNav() {
     { to: "/", label: libraryHomeLabel, ariaLabel: libraryHomeAria },
     { to: "/ritual", label: t.nav_ritual },
     { to: "/life-studies", label: isZh ? "命运通识馆" : "Life Studies", ariaLabel: isZh ? "命运通识馆（五种读法）" : "Life Studies (five readings)" },
-    { to: "/traditions", label: t.nav_traditions },
     { to: "/community", label: t.nav_community },
   ];
 
@@ -487,6 +486,7 @@ function SiteNav() {
 
   // "Learn · More" — informational/policy only. Never duplicate personal features here.
   const moreEntries: Array<{ to?: string; href?: string; label: string; external?: boolean }> = [
+    { to: "/traditions", label: t.nav_traditions },
     { to: "/about", label: t.nav_about },
     { to: "/privacy", label: isZh ? "隐私政策" : "Privacy" },
     { to: "/terms", label: isZh ? "服务条款" : "Terms" },
@@ -532,7 +532,7 @@ function SiteNav() {
       })),
     },
     {
-      title: isZh ? "帮助与条款" : "Help & Policies",
+      title: isZh ? "了解更多" : "Learn · More",
       items: moreEntries.map((e) => ({
         key: e.to ?? e.href ?? e.label,
         label: e.label,
