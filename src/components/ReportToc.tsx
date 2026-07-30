@@ -408,7 +408,18 @@ export function ReportToc({ items, lang }: { items: TocItem[]; lang: "en" | "zh"
               if (Date.now() - openedAt.current < 450) return;
               closeDrawer();
             }}
+            style={{ pointerEvents: "none", animationFillMode: "forwards" }}
+            ref={(el) => {
+              if (!el) return;
+              // Arm the backdrop only after the opening tap has fully settled,
+              // so its synthesized click can't close the drawer instantly.
+              const t = setTimeout(() => {
+                el.style.pointerEvents = "auto";
+              }, 450);
+              return () => clearTimeout(t);
+            }}
             className="absolute inset-0 bg-obsidian/70 backdrop-blur-sm animate-fade-in"
+
           />
           <div
             style={{
