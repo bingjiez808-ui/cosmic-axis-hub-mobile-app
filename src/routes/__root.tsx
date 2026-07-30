@@ -359,6 +359,18 @@ function SiteNav() {
     };
   }, [moreOpen, libraryOpen]);
 
+  // Lock page scroll while the mobile navigation sheet is open.
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [drawerOpen]);
+
+
+
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null;
