@@ -5,7 +5,7 @@
  * Layout:
  *   LibraryInteriorBackdrop (fixed video)
  *   ├── GuideDeskHero              (welcome + brand copy)
- *   ├── ScrollStack (7 index cards)  — React Bits ScrollStack + Lenis
+ *   ├── plain vertical card sections (no stacking effect)
  *   └── StackProgress               (right rail desktop / bottom pill mobile)
  *
  * Each card is a bookmark. Clicking a card opens LibraryFeatureDrawer
@@ -31,7 +31,6 @@ import { HomeCardVisual } from "./HomeCardVisual";
 import { LibraryFeatureDrawer } from "./LibraryFeatureDrawer";
 import { ResponsiveHeroTitle } from "@/components/ResponsiveHeroTitle";
 import { MotionModeToggle } from "./MotionModeToggle";
-import { useStableMotion } from "@/lib/motion-preference";
 
 import { ConcernSelector } from "@/components/ConcernSelector";
 import { FeatureLibraryShelf } from "@/components/FeatureLibraryShelf";
@@ -55,7 +54,6 @@ export function HomeScrollStack() {
   const { lang } = useLang();
   const isZh = lang === "zh";
   const facts = useHomeFacts();
-  const { stable } = useStableMotion();
 
   const [openId, setOpenId] = useState<HomeCardId | null>(null);
 
