@@ -14,7 +14,7 @@
   text-align: center;
   line-height: 1.08;
   letter-spacing: -0.035em;
-  font-size: clamp(38px, 8.5vw, 118px);
+  font-size: clamp(38px, 6.2vw, 88px);
   text-wrap: balance;
   overflow-wrap: normal;
   word-break: keep-all;
