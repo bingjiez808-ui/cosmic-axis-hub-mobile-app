@@ -71,11 +71,12 @@ export function LibraryInteriorBackdrop() {
   const mediaStyle: CSSProperties = isMobile
     ? {
         top: "-25%",
+        bottom: "-5%",
         left: "-6%",
-        width: "112%",
-        height: "130%",
+        right: "-6%",
+        width: "auto",
+        height: "auto",
         objectPosition: "50% 50%",
-        transformOrigin: "center top",
       }
     : { inset: 0, width: "100%", height: "100%", objectPosition: "50% 45%" };
 
