@@ -164,8 +164,8 @@ export function HomeScrollStack() {
 function GuideDeskHero({ isZh }: { isZh: boolean }) {
   const eyebrow = isZh ? "命运图书馆 · 导览室" : "Destiny Library · Guide Desk";
   const headingLines = isZh
-    ? ["每一个文明，", "都在追问同一个问题：", { text: "「我是谁？」", accent: true }]
-    : ["Every civilization", "returns to the same question:", { text: "\u201cWho am I?\u201d", accent: true }];
+    ? ["每一个文明，", "都在追问同一个问题", { text: "「我是谁？」", accent: true }]
+    : ["Every civilization", "returns to the same question", { text: "\u201cWho am I?\u201d", accent: true }];
   const bodyLines = isZh
     ? ["命盘不会替你定义答案，", "只陪你读懂正在成为谁。"]
     : ["The chart does not define your answer.", "It helps you understand who you are becoming."];
@@ -199,7 +199,7 @@ function GuideDeskHero({ isZh }: { isZh: boolean }) {
           className="mt-6 font-serif text-stone-warm [text-shadow:0_2px_24px_rgba(0,0,0,0.9),0_0_2px_rgba(0,0,0,0.6)]"
         />
 
-        <p className="hero-sub mt-6 leading-relaxed text-stone-warm/90 [text-shadow:0_1px_14px_rgba(0,0,0,0.85)]">
+        <p className="hero-sub mt-[34px] leading-relaxed text-stone-warm/90 [text-shadow:0_1px_14px_rgba(0,0,0,0.85)]">
           {bodyLines.map((line) => (
             <span key={line} className="block">
               {line}
