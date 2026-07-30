@@ -175,7 +175,7 @@ function GuideDeskHero({ isZh }: { isZh: boolean }) {
     // HeroSection: the pass overlay is an absolute sibling of HeroContent, so
     // it never enters the content's width calculation. HeroContent stays
     // centred on the viewport (margin-inline: auto, no asymmetric padding).
-    <header className="relative flex min-h-[62vh] w-full flex-col items-center justify-center px-6 pb-14 pt-24 text-center sm:min-h-[70vh]">
+    <header className="hero-shell relative flex min-h-[62vh] w-full flex-col items-center justify-center px-6 pb-14 pt-24 text-center sm:min-h-[70vh]">
       <ReaderPassCard />
       {/* Vignette scrim behind copy so text never dissolves into the library backdrop. */}
       <div
@@ -196,17 +196,17 @@ function GuideDeskHero({ isZh }: { isZh: boolean }) {
         <ResponsiveHeroTitle
           lang={isZh ? "zh" : "en"}
           lines={headingLines}
-          className="mt-[clamp(36px,4.2vw,72px)] font-serif text-stone-warm [text-shadow:0_2px_24px_rgba(0,0,0,0.9),0_0_2px_rgba(0,0,0,0.6)]"
+          className="hero-gap-title font-serif text-stone-warm [text-shadow:0_2px_24px_rgba(0,0,0,0.9),0_0_2px_rgba(0,0,0,0.6)]"
         />
 
-        <p className="hero-sub mt-[34px] leading-relaxed text-stone-warm/90 [text-shadow:0_1px_14px_rgba(0,0,0,0.85)]">
+        <p className="hero-sub hero-gap-sub leading-relaxed text-stone-warm/90 [text-shadow:0_1px_14px_rgba(0,0,0,0.85)]">
           {bodyLines.map((line) => (
             <span key={line} className="block">
               {line}
             </span>
           ))}
         </p>
-        <div className="mt-8 flex items-center gap-3 text-[10px] uppercase tracking-[0.42em] text-gold-dust/60 [text-shadow:0_1px_10px_rgba(0,0,0,0.8)]">
+        <div className="hero-gap-cta flex items-center gap-3 text-[10px] uppercase tracking-[0.42em] text-gold-dust/60 [text-shadow:0_1px_10px_rgba(0,0,0,0.8)]">
           <span aria-hidden>↓</span>
           <span>{scrollHint}</span>
         </div>
