@@ -89,7 +89,7 @@ function MatchPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a12] text-amber-50">
+    <div className="min-h-screen bg-[#0a0a12]/25 text-amber-50">
       <div className="mx-auto w-full max-w-[1100px] px-4 py-8 md:px-8 md:py-12">
         <div className="mb-4 rounded-lg border border-amber-400/30 bg-amber-500/5 px-4 py-2 text-xs text-amber-200/90">
           {d.demo_banner_match}

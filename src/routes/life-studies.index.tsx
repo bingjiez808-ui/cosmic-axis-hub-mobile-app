@@ -47,7 +47,7 @@ function DestinyCommonsPage() {
 
   return (
     <main
-      className="relative min-h-screen bg-obsidian pb-24 text-stone-warm"
+      className="relative min-h-screen bg-obsidian/10 pb-24 text-stone-warm"
       style={{ paddingTop: "calc(var(--site-nav-height, 96px) + 24px)" }}
     >
       <div className="mx-auto max-w-[1280px] px-5 sm:px-8">

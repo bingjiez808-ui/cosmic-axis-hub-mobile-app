@@ -20,6 +20,11 @@ import { LibrarySplash } from "../components/LibrarySplash";
 import { ElderCompanion } from "../components/ElderCompanion";
 import { useSupabaseSession } from "../lib/session";
 import libraryHallImg from "../assets/ancient-library-hall.jpg";
+import {
+  ReadingRoomBackdrop,
+  readingRoomVariantForPath,
+} from "@/components/reading-room/ReadingRoomBackdrop";
+
 
 
 function NotFoundComponent() {
@@ -228,38 +233,53 @@ function RootComponent() {
     );
   }
 
+  const readingRoomVariant = readingRoomVariantForPath(pathname);
+
+  const shell = (
+    <div
+      className={`relative min-h-screen text-stone-warm${readingRoomVariant === null ? " bg-obsidian" : ""}`}
+    >
+      {readingRoomVariant === null ? (
+        <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+          {/* Ancient library — image-led immersive backdrop */}
+          <img
+            src={libraryHallImg}
+            alt=""
+            width={1600}
+            height={1000}
+            decoding="async"
+            fetchPriority="high"
+            className="absolute inset-0 h-full w-full object-cover opacity-55 saturate-[0.85]"
+          />
+          <div className="library-shadow-aisle absolute inset-0" />
+          <div className="library-parchment absolute inset-0 opacity-45" />
+          <div className="library-lamplight absolute inset-0 opacity-75 animate-candle-flicker" />
+          <div className="dust-motes absolute inset-0 opacity-70" />
+          <div className="star-bg absolute inset-0 opacity-10" />
+          <div className="library-vignette absolute inset-0" />
+        </div>
+      ) : null}
+
+      <SiteNav />
+
+      <main className="relative z-10">
+        <Outlet />
+      </main>
+
+      <SiteFooter />
+    </div>
+  );
+
   return (
     <QueryClientProvider client={queryClient}>
       <LanguageProvider>
         <AccountProvider>
-          <div className="relative min-h-screen bg-obsidian text-stone-warm">
-            <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-              {/* Ancient library — image-led immersive backdrop */}
-              <img
-                src={libraryHallImg}
-                alt=""
-                width={1600}
-                height={1000}
-                decoding="async"
-                fetchPriority="high"
-                className="absolute inset-0 h-full w-full object-cover opacity-55 saturate-[0.85]"
-              />
-              <div className="library-shadow-aisle absolute inset-0" />
-              <div className="library-parchment absolute inset-0 opacity-45" />
-              <div className="library-lamplight absolute inset-0 opacity-75 animate-candle-flicker" />
-              <div className="dust-motes absolute inset-0 opacity-70" />
-              <div className="star-bg absolute inset-0 opacity-10" />
-              <div className="library-vignette absolute inset-0" />
-            </div>
+          {readingRoomVariant === null ? (
+            shell
+          ) : (
+            <ReadingRoomBackdrop variant={readingRoomVariant}>{shell}</ReadingRoomBackdrop>
+          )}
 
-            <SiteNav />
-
-            <main className="relative z-10">
-              <Outlet />
-            </main>
-
-            <SiteFooter />
-          </div>
           <AccountModal open={accOpen} onClose={() => setAccOpen(false)} />
           <LibrarySplash />
           <GlobalSageCompanion />

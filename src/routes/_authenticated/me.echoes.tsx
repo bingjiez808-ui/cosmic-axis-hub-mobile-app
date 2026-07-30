@@ -72,7 +72,7 @@ function EchoesPage() {
   }, [load]);
 
   return (
-    <div className="min-h-screen bg-[#0a0a12] text-amber-50">
+    <div className="min-h-screen bg-[#0a0a12]/25 text-amber-50">
       <div className="mx-auto w-full max-w-[1100px] px-4 py-8 md:px-8 md:py-12">
         <PersonalWorkspaceNav active="/me/echoes" />
         <header className="mb-6">
