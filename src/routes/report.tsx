@@ -2398,37 +2398,16 @@ function DimensionDetailModal({
                     );
                   })}
 
-                  {d.specifics && d.specifics.length > 0 && (
-                    <div className="rounded-2xl border border-gold-dust/25 bg-gradient-to-br from-gold-dust/[0.07] to-transparent p-4 sm:p-5">
-                      <p className="mb-3 text-[10px] uppercase tracking-[0.3em] text-gold-light/90">
-                        {lang === "zh" ? "具体指向" : "Concrete pointers"}
-                      </p>
-                      <ul className="space-y-2">
-                        {d.specifics.map((sp, i) => (
-                          <li
-                            key={`${sp.label[0]}-${i}`}
-                            className="rounded-lg border border-white/8 bg-obsidian/40 px-3 py-2"
-                          >
-                            <p className="mb-1 text-[10px] uppercase tracking-[0.24em] text-gold-dust/80">
-                              {sp.label[li]}
-                            </p>
-                            <p className="text-[13px] leading-relaxed text-stone-warm/85">
-                              {sp.value[li]}
-                            </p>
-                          </li>
-                        ))}
-                      </ul>
-                      <button
-                        type="button"
-                        onClick={onUpsell}
-                        className="mt-4 w-full rounded-xl border border-gold-dust/35 bg-gold-dust/[0.08] px-4 py-3 text-left text-[13px] leading-relaxed text-stone-warm/85 transition-colors hover:border-gold-dust/60 hover:bg-gold-dust/[0.14] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-light"
-                      >
-                        {lang === "zh"
-                          ? "以上只点到为止 —— 想要更完整的推演与时间线，请解锁综合报告 →"
-                          : "These are pointers only — unlock the comprehensive report for the full reading →"}
-                      </button>
-                    </div>
-                  )}
+                  <button
+                    type="button"
+                    onClick={onUpsell}
+                    className="rounded-2xl border border-gold-dust/35 bg-gold-dust/[0.08] px-4 py-3 text-left text-[13px] leading-relaxed text-stone-warm/85 transition-colors hover:border-gold-dust/60 hover:bg-gold-dust/[0.14] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-light"
+                  >
+                    {lang === "zh"
+                      ? "以上只点到为止 —— 想要更完整的推演与时间线，请解锁综合报告 →"
+                      : "These are pointers only — unlock the comprehensive report for the full reading →"}
+                  </button>
+
                 </div>
               </div>
             </div>
