@@ -90,6 +90,7 @@ export function ReportToc({ items, lang }: { items: TocItem[]; lang: "en" | "zh"
   const [railExpanded, setRailExpanded] = useState(false);
   const [pinned, setPinned] = useState(false);
   const collapseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
