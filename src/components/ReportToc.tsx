@@ -323,16 +323,26 @@ export function ReportToc({ items, lang }: { items: TocItem[]; lang: "en" | "zh"
         onPointerDown={(e) => {
           tapStart.current = { x: e.clientX, y: e.clientY };
         }}
-        onClick={(e) => {
+        onPointerUp={(e) => {
           const s = tapStart.current;
-          if (s) {
-            const dx = Math.abs(e.clientX - s.x);
-            const dy = Math.abs(e.clientY - s.y);
-            tapStart.current = null;
-            if (dx > 10 || dy > 10) return; // was a scroll/drag, not a tap
+          tapStart.current = null;
+          if (!s) return;
+          if (Math.abs(e.clientX - s.x) > 10 || Math.abs(e.clientY - s.y) > 10) return;
+          openedByPointer.current = true;
+          setOpen(true);
+        }}
+        onPointerCancel={() => {
+          tapStart.current = null;
+        }}
+        onClick={() => {
+          // Keyboard / assistive activation (no preceding pointer gesture).
+          if (openedByPointer.current) {
+            openedByPointer.current = false;
+            return;
           }
           setOpen(true);
         }}
+
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-label={tocLabel}
