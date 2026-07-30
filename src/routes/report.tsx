@@ -968,7 +968,7 @@ function ReportPage() {
   useEffect(() => {
     const update = () => {
       const w = typeof window !== "undefined" ? window.innerWidth : 440;
-      setWheelSize(Math.min(440, Math.max(280, w - 72)));
+      setWheelSize(w >= 1024 ? 400 : Math.min(360, Math.max(260, w - 88)));
     };
     update();
     window.addEventListener("resize", update);
@@ -1646,8 +1646,8 @@ function ReportPage() {
                   snapshot={snapshot}
                   lang={lang}
                   seed={`${search.name ?? ""}|${search.date ?? ""}|${search.time ?? ""}|${search.place ?? ""}`}
-                  size={Math.min(wheelSize, 300)}
-                  stageHeight={Math.min(wheelSize, 300) + 44}
+                  size={Math.min(wheelSize, 400)}
+                  stageHeight={Math.min(wheelSize, 400) + 44}
                   hideTabs
                   active={chartSystem}
                   onActiveChange={setChartSystem}
