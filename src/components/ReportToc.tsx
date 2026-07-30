@@ -321,34 +321,18 @@ export function ReportToc({ items, lang }: { items: TocItem[]; lang: "en" | "zh"
           so it never sits under a finger mid-read, and only fires on a
           deliberate tap (pointer travel < 10px). */}
       <button
+        ref={triggerRef}
         type="button"
-        onTouchStart={(e) => {
-          const t = e.touches[0];
-          tapStart.current = t ? { x: t.clientX, y: t.clientY } : null;
-        }}
-        onTouchEnd={(e) => {
-          const s = tapStart.current;
-          tapStart.current = null;
-          const t = e.changedTouches[0];
-          console.log('TOCTAP', !!s, !!t);
-          if (!s || !t) return;
-          // Ignore taps that were really the tail of a scroll gesture.
-          if (Math.abs(t.clientX - s.x) > 12 || Math.abs(t.clientY - s.y) > 12) return;
-          openedByPointer.current = true;
-          setOpen(true);
-        }}
-        onTouchCancel={() => {
-          tapStart.current = null;
-        }}
         onClick={() => {
-          // Mouse / keyboard / assistive activation. Touch already handled
-          // above; skip the synthesized click so it can't double-toggle.
+          // Mouse / keyboard / assistive activation. Touch is handled by the
+          // native listener below so it can't be swallowed by smooth-scroll.
           if (openedByPointer.current) {
             openedByPointer.current = false;
             return;
           }
           setOpen(true);
         }}
+
 
 
         aria-haspopup="dialog"
