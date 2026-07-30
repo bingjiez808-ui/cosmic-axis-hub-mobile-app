@@ -73,6 +73,8 @@ export function ReaderPassCard() {
   const [dimmed, setDimmed] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [showHint, setShowHint] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const { lang } = useLang();
   const isZh = lang === "zh";
@@ -81,7 +83,11 @@ export function ReaderPassCard() {
   // the guide-desk headline paints first.
   useEffect(() => {
     setMode(detectMode());
-    const onResize = () => setMode(detectMode());
+    setIsMobile(window.innerWidth < 640);
+    const onResize = () => {
+      setMode(detectMode());
+      setIsMobile(window.innerWidth < 640);
+    };
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
@@ -139,14 +145,33 @@ export function ReaderPassCard() {
     <div
       ref={containerRef}
       className="pointer-events-none absolute z-20 transition-all duration-500 ease-out"
-      style={{
-        top: "clamp(8px, 3vh, 40px)",
-        left: "clamp(2px, 0.6vw, 14px)",
-        width: mode === "flat" ? "clamp(120px, 18vw, 172px)" : "clamp(180px, 16vw, 260px)",
-        height: mode === "flat" ? "clamp(180px, 28vw, 260px)" : "clamp(280px, 52vh, 560px)",
-        opacity: dimmed ? 0 : 1,
-        transform: dimmed ? "scale(0.92)" : "scale(1)",
-      }}
+      onPointerDown={() => setExpanded(true)}
+      style={
+        isMobile
+          ? {
+              // Docked at the top-right corner, only ~28% of the card showing
+              // until the reader taps or drags it out. Never covers the hero.
+              top: "clamp(8px, 2vh, 28px)",
+              right: 0,
+              width: "min(78vw, 280px)",
+              maxWidth: "min(78vw, 280px)",
+              height: "min(112vw, 400px)",
+              opacity: dimmed ? 0 : 1,
+              transform: dimmed
+                ? "scale(0.92)"
+                : expanded
+                  ? "translateX(-8px)"
+                  : "translateX(72%)",
+            }
+          : {
+              top: "clamp(8px, 3vh, 40px)",
+              left: "clamp(2px, 0.6vw, 14px)",
+              width: mode === "flat" ? "clamp(120px, 18vw, 172px)" : "clamp(180px, 16vw, 260px)",
+              height: mode === "flat" ? "clamp(180px, 28vw, 260px)" : "clamp(280px, 52vh, 560px)",
+              opacity: dimmed ? 0 : 1,
+              transform: dimmed ? "scale(0.92)" : "scale(1)",
+            }
+      }
       aria-hidden={dimmed}
     >
       {mounted && !dimmed && mode === "three" ? (
