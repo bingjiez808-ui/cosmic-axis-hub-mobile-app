@@ -171,6 +171,49 @@ export const ensureChart = createServerFn({ method: "POST" })
     throw new Error(`Failed to save chart${error?.message ? `: ${error.message}` : ""}`);
   });
 
+/**
+ * Read-only duplicate probe used by the ritual before it creates a new
+ * chart. Scope is intentionally the CALLER'S OWN charts only (RLS + the
+ * explicit user_id filter) — matching another person's birth data must
+ * never be observable.
+ */
+export const findExistingChartByInput = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => ChartInputSchema.parse(data))
+  .handler(async ({ data, context }) => {
+    const hash = computeChartHash(data);
+    const { supabase, userId } = context;
+    const { data: chart } = await supabase
+      .from("charts")
+      .select("id, name, chart_role, is_primary, created_at")
+      .eq("user_id", userId)
+      .eq("normalized_input_hash", hash)
+      .maybeSingle();
+    if (!chart) return null;
+
+    const { data: report } = await supabase
+      .from("reports")
+      .select("id, status, generated_at")
+      .eq("user_id", userId)
+      .eq("chart_id", chart.id)
+      .eq("kind", "report")
+      .eq("status", "completed")
+      .maybeSingle();
+
+    return {
+      chartId: chart.id,
+      hash,
+      name: chart.name,
+      chartRole: chart.chart_role,
+      isPrimary: chart.is_primary,
+      createdAt: chart.created_at,
+      hasReport: !!report,
+      reportGeneratedAt: report?.generated_at ?? null,
+    };
+  });
+
+
+
 /* --------------------------------------------------------------------- */
 /* Report read                                                           */
 /* --------------------------------------------------------------------- */

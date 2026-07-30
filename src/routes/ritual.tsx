@@ -7,7 +7,7 @@ import RitualMagicRings from "@/components/reactbits/RitualMagicRings";
 import { useLang } from "@/lib/i18n";
 import { solarToLunarInfo } from "@/lib/lunar";
 import { noOrphan } from "@/lib/typography";
-import { listUserCharts } from "@/lib/reports-store.functions";
+import { listUserCharts, findExistingChartByInput } from "@/lib/reports-store.functions";
 import {
   FIELD_STEP,
   firstMissingStep,
@@ -162,6 +162,10 @@ function RitualPage() {
   const [restored, setRestored] = useState(false);
   const [fieldError, setFieldError] = useState<string | null>(null);
   const [primaryConflict, setPrimaryConflict] = useState<URLSearchParams | null>(null);
+  // Duplicate chart already in the caller's own library (same birth data).
+  const [duplicate, setDuplicate] = useState<
+    { params: URLSearchParams; hasReport: boolean } | null
+  >(null);
   const [submitting, setSubmitting] = useState(false);
 
 
@@ -317,6 +321,32 @@ function RitualPage() {
           : {}),
       });
 
+      // Duplicate probe: same birth data already saved in THIS user's own
+      // library → ask before walking the ritual again, so we never burn
+      // AI credits (and never create a second row) for an identical chart.
+      setSubmitting(true);
+      try {
+        const existing = await findExistingChartByInput({
+          data: {
+            name: values.name,
+            date: values.date,
+            time: values.time,
+            place: values.place,
+            ...(gender ? { gender } : {}),
+            lang,
+          },
+        });
+        if (existing) {
+          setDuplicate({ params, hasReport: existing.hasReport });
+          setSubmitting(false);
+          return;
+        }
+      } catch {
+        /* anonymous or transient — fall through to the normal flow */
+      }
+      setSubmitting(false);
+
+
       // If claiming this as "my chart" and a primary self-chart already
       // exists, ask the user how to resolve the collision instead of
       // silently overriding. Anonymous users / errors → proceed normally
@@ -353,6 +383,23 @@ function RitualPage() {
     try { sessionStorage.removeItem(RITUAL_STATE_KEY); } catch {}
     setPrimaryConflict(null);
     navigate({ to: "/synthesis", search: () => Object.fromEntries(params) as never });
+  };
+
+  /**
+   * Duplicate resolution. "open" jumps straight to the saved reading —
+   * the report layer reuses the cached row for this chart, so no AI call
+   * is made. "again" replays the synthesis animation; the same cache
+   * still applies downstream.
+   */
+  const resolveDuplicate = (intent: "open" | "again") => {
+    if (!duplicate) return;
+    const params = new URLSearchParams(duplicate.params);
+    try { sessionStorage.removeItem(RITUAL_STATE_KEY); } catch {}
+    setDuplicate(null);
+    navigate({
+      to: intent === "open" ? "/report" : "/synthesis",
+      search: () => Object.fromEntries(params) as never,
+    });
   };
 
 
@@ -658,6 +705,57 @@ function RitualPage() {
           {t.progress} · {Math.round(progress * 100)}%
         </p>
       </div>
+      {duplicate && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="ritual-duplicate-title"
+          data-testid="ritual-duplicate"
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 px-4"
+          onKeyDown={(e) => { if (e.key === "Escape") setDuplicate(null); }}
+        >
+          <div className="w-full max-w-md rounded-2xl border border-gold-dust/30 bg-[#0a0a12] p-6 text-stone-warm shadow-2xl">
+            <h2 id="ritual-duplicate-title" className="font-serif text-lg text-gold-light">
+              {lang === "zh" ? "你已填写过一次" : "You've filed this chart before"}
+            </h2>
+            <p className="mt-2 text-sm text-stone-warm/75">
+              {lang === "zh"
+                ? duplicate.hasReport
+                  ? "书架里已有一张完全相同出生信息的命盘，解读也已生成。是否直接打开这个命盘？（不会重复生成，也不会消耗额度）"
+                  : "书架里已有一张完全相同出生信息的命盘。是否直接打开这个命盘？"
+                : duplicate.hasReport
+                  ? "A chart with exactly this birth data already sits in your library, and its reading is generated. Open it? Nothing will be regenerated."
+                  : "A chart with exactly this birth data already sits in your library. Open it?"}
+            </p>
+            <div className="mt-5 flex flex-col gap-2">
+              <button
+                type="button"
+                data-testid="ritual-duplicate-open"
+                onClick={() => resolveDuplicate("open")}
+                className="min-h-11 rounded-full border border-gold-dust/50 bg-gold-dust/10 px-5 py-2 text-sm text-gold-dust hover:bg-gold-dust/20"
+              >
+                {lang === "zh" ? "打开这个命盘" : "Open this chart"}
+              </button>
+              <button
+                type="button"
+                data-testid="ritual-duplicate-again"
+                onClick={() => resolveDuplicate("again")}
+                className="min-h-11 rounded-full border border-white/15 px-5 py-2 text-sm text-stone-warm/80 hover:border-gold-dust/40 hover:text-gold-dust"
+              >
+                {lang === "zh" ? "重新走一遍生成流程" : "Replay the synthesis"}
+              </button>
+              <button
+                type="button"
+                data-testid="ritual-duplicate-cancel"
+                onClick={() => setDuplicate(null)}
+                className="min-h-11 rounded-full border border-transparent px-5 py-2 text-xs text-stone-warm/50 hover:text-stone-warm/80"
+              >
+                {lang === "zh" ? "返回修改出生信息" : "Back to edit"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {primaryConflict && (
         <div
           role="dialog"
