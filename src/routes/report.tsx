@@ -175,6 +175,7 @@ import {
   buildReportRequest,
   buildReportSeed,
 } from "@/lib/report-input";
+import { useHydratedChartSearch } from "@/lib/chart-hydration";
 import { REPORT_AI_VERSION } from "@/lib/ai-cache-version";
 import { useAccount } from "@/lib/account";
 import "@/components/report-modules.css";

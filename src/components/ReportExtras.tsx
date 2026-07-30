@@ -52,6 +52,7 @@ import {
   buildReportRequest,
   type ReportSearchLike,
 } from "@/lib/report-input";
+import { useHydratedChartSearch } from "@/lib/chart-hydration";
 import { OUTLOOK_AI_VERSION } from "@/lib/ai-cache-version";
 import { computeEnergyRange } from "@/lib/energy-score";
 import { YearInsightModal, type YearInsightPoint, type YearInsightSystem } from "@/components/YearInsightModal";
