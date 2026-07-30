@@ -23,7 +23,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { ReportToc, type TocItem } from "@/components/ReportToc";
+import { ReportToc, scrollToId, type TocItem } from "@/components/ReportToc";
 import { PriorityPreviewModal } from "@/components/PriorityPreviewModal";
 import { isConcernKey } from "@/lib/concern-guidance-v1";
 import { useStableMotion } from "@/lib/motion-preference";
@@ -1830,6 +1830,34 @@ function ReportPage() {
             )}
           </div>
         )}
+        {/* Quick module nav — ten reading modules + membership */}
+        <nav
+          aria-label={lang === "zh" ? "模块导航" : "Module navigation"}
+          data-testid="report-module-nav"
+          className="glass-card flex items-center gap-2 overflow-x-auto rounded-2xl border border-gold-dust/25 bg-obsidian/70 px-3 py-2 backdrop-blur [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          <span className="shrink-0 pl-1 pr-1 text-[10px] uppercase tracking-[0.3em] text-gold-dust/70">
+            {lang === "zh" ? "模块" : "Modules"}
+          </span>
+          {displayed.map((d, idx) => (
+            <button
+              key={d.key}
+              type="button"
+              onClick={() => scrollToId(d.key)}
+              title={d.headline[li]}
+              className="min-h-9 shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-[11px] text-stone-warm/70 transition hover:bg-gold-dust/10 hover:text-gold-light"
+            >
+              {String(idx + 1).padStart(2, "0")} · {d.title[li]}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => scrollToId("membership-plans")}
+            className="min-h-9 shrink-0 whitespace-nowrap rounded-full border border-gold-dust/40 bg-gold-dust/10 px-3 py-1 text-[11px] text-gold-light transition hover:bg-gold-dust/20"
+          >
+            {lang === "zh" ? "会员" : "Membership"}
+          </button>
+        </nav>
         {displayed.map((d, idx) => {
           const arrived = aiByKey.has(d.key);
           const pending = !!search.date && aiState === "loading" && !arrived;

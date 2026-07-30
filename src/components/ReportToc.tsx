@@ -25,7 +25,7 @@ export type TocItem = {
   hint: string;
 };
 
-function scrollToId(id: string) {
+export function scrollToId(id: string) {
   const el = document.getElementById(id);
   if (!el) return;
   const nav = parseInt(
@@ -90,6 +90,7 @@ export function ReportToc({ items, lang }: { items: TocItem[]; lang: "en" | "zh"
   const [railExpanded, setRailExpanded] = useState(false);
   const [pinned, setPinned] = useState(false);
   const collapseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -110,12 +111,21 @@ export function ReportToc({ items, lang }: { items: TocItem[]; lang: "en" | "zh"
     : lang === "zh" ? "固定" : "Pin";
 
   const scheduleCollapse = () => {
+    if (openTimer.current) clearTimeout(openTimer.current);
     if (pinned) return;
     if (collapseTimer.current) clearTimeout(collapseTimer.current);
-    collapseTimer.current = setTimeout(() => setRailExpanded(false), 320);
+    collapseTimer.current = setTimeout(() => setRailExpanded(false), 200);
+  };
+  /** Hover-intent: only expand after the pointer rests on the rail itself. */
+  const scheduleExpand = () => {
+    if (collapseTimer.current) clearTimeout(collapseTimer.current);
+    if (railExpanded) return;
+    if (openTimer.current) clearTimeout(openTimer.current);
+    openTimer.current = setTimeout(() => setRailExpanded(true), 260);
   };
   const cancelCollapse = () => {
     if (collapseTimer.current) clearTimeout(collapseTimer.current);
+    if (openTimer.current) clearTimeout(openTimer.current);
     setRailExpanded(true);
   };
 
@@ -130,17 +140,22 @@ export function ReportToc({ items, lang }: { items: TocItem[]; lang: "en" | "zh"
       {/* Desktop LEFT DOT RAIL — lg and above */}
       <aside
         aria-label={tocLabel}
-        onMouseEnter={cancelCollapse}
-        onMouseLeave={scheduleCollapse}
-        onFocusCapture={cancelCollapse}
-        onBlurCapture={scheduleCollapse}
         style={{ top: "calc(var(--site-nav-height, 96px) + 80px)" }}
         className="pointer-events-none fixed left-3 z-30 hidden max-h-[calc(100dvh-var(--site-nav-height,96px)-120px)] lg:flex xl:left-5"
         data-testid="report-toc-rail"
       >
-        <div className="pointer-events-auto flex items-start gap-2">
-          {/* Dots column */}
-          <div className="flex flex-col items-center gap-2 rounded-full border border-gold-dust/25 bg-obsidian/70 px-2 py-3 backdrop-blur">
+        <div
+          className="pointer-events-auto flex items-start gap-2"
+          onMouseLeave={scheduleCollapse}
+          onFocusCapture={cancelCollapse}
+          onBlurCapture={scheduleCollapse}
+        >
+          {/* Dots column — hovering here (with intent delay) opens the panel */}
+          <div
+            onMouseEnter={scheduleExpand}
+            onMouseMove={scheduleExpand}
+            className="flex flex-col items-center gap-2 rounded-full border border-gold-dust/25 bg-obsidian/70 px-2 py-3 backdrop-blur"
+          >
             {items.map((it, idx) => {
               const isActive = it.id === active;
               const isRead = idx < activeIndex;
@@ -176,6 +191,7 @@ export function ReportToc({ items, lang }: { items: TocItem[]; lang: "en" | "zh"
           </div>
           {/* Expandable panel */}
           <div
+            onMouseEnter={cancelCollapse}
             className={`w-72 max-w-[min(20rem,calc(100vw-6rem))] overflow-hidden rounded-2xl border border-gold-dust/25 bg-obsidian/95 shadow-[0_10px_30px_rgba(0,0,0,0.5)] backdrop-blur-xl transition-all duration-200 ${
               showPanel
                 ? "translate-x-0 opacity-100"
