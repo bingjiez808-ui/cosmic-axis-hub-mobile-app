@@ -92,16 +92,61 @@ export function ReportToc({ items, lang }: { items: TocItem[]; lang: "en" | "zh"
   const collapseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Mobile ergonomics
+  const tapStart = useRef<{ x: number; y: number } | null>(null);
+  const dragStart = useRef<number | null>(null);
+  const [dragY, setDragY] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const [triggerHidden, setTriggerHidden] = useState(false);
+
+  const closeDrawer = () => {
+    setOpen(false);
+    setDragY(0);
+    setDragging(false);
+    dragStart.current = null;
+  };
+
+  // Hide the floating trigger while scrolling down (thumb is busy), bring it
+  // back on scroll-up or when the page rests.
+  useEffect(() => {
+    let last = window.scrollY;
+    let idle: ReturnType<typeof setTimeout> | null = null;
+    const onScroll = () => {
+      const y = window.scrollY;
+      if (y > last + 8 && y > 200) setTriggerHidden(true);
+      else if (y < last - 8) setTriggerHidden(false);
+      last = y;
+      if (idle) clearTimeout(idle);
+      idle = setTimeout(() => setTriggerHidden(false), 700);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (idle) clearTimeout(idle);
+    };
+  }, []);
+
+  // Lock background scroll while the mobile drawer is open.
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        setOpen(false);
+        closeDrawer();
         if (!pinned) setRailExpanded(false);
       }
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [pinned]);
+
 
   if (items.length === 0) return null;
   const tocLabel = lang === "zh" ? "阅读目录" : "Reading contents";
