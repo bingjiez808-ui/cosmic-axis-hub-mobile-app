@@ -717,167 +717,117 @@ function SiteNav() {
         }`}
       />
 
-      {/* Mobile drawer — mirrors desktop IA */}
+      {/* Mobile navigation sheet — compact two-column groups, never a long
+          single column. Same IA as desktop, one DOM tree only. */}
       <aside
         aria-label={isZh ? "导航" : "Navigation"}
         aria-hidden={!drawerOpen}
-        onMouseLeave={() => setDrawerOpen(false)}
-        style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}
-        className={`fixed right-3 top-16 z-[75] flex max-h-[calc(100dvh-5rem)] w-56 flex-col items-stretch gap-1 overflow-y-auto rounded-2xl border border-gold-dust/25 bg-obsidian/95 p-2 backdrop-blur-xl shadow-[-10px_10px_40px_rgba(0,0,0,0.5)] transition-all duration-300 xl:top-20 xl:w-auto xl:bg-obsidian/85 ${
-          drawerOpen
-            ? "translate-x-0 opacity-100"
-            : "pointer-events-none translate-x-6 opacity-0"
+        aria-modal={drawerOpen || undefined}
+        role="dialog"
+        style={{
+          maxHeight: "min(82dvh, 720px)",
+          paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))",
+        }}
+        className={`fixed inset-x-0 bottom-0 z-[75] flex flex-col overflow-y-auto overscroll-contain rounded-t-3xl border-t border-gold-dust/25 bg-obsidian/97 px-4 pt-3 backdrop-blur-xl shadow-[0_-16px_44px_rgba(0,0,0,0.6)] transition-transform duration-300 xl:hidden ${
+          drawerOpen ? "translate-y-0" : "pointer-events-none translate-y-full"
         }`}
       >
-        {coreEntries.map((item) => {
-          const active = isActive(item.to);
-          const gate = !session && item.to.startsWith("/me");
-          const cls = `flex min-h-11 items-center justify-end whitespace-nowrap rounded-lg px-4 py-3 text-right text-[13px] ${
-            isZh ? "tracking-normal" : "uppercase tracking-[0.24em]"
-          } ${active ? "bg-gold-dust/10 text-gold-light" : "text-stone-warm/85 hover:bg-gold-dust/10 hover:text-gold-light"}`;
-          if (gate) {
-            return (
-              <Link
-                key={item.to}
-                to="/auth"
-                search={{ mode: "login", redirect: item.to }}
-                onClick={() => setDrawerOpen(false)}
-                aria-label={item.ariaLabel}
-                title={item.ariaLabel}
-                className={cls}
-              >
-                {item.label}
-              </Link>
-            );
-          }
-          return (
-            <Link
-              key={item.to}
-              to={item.to}
-              onClick={() => setDrawerOpen(false)}
-              aria-current={active ? "page" : undefined}
-              aria-label={item.ariaLabel}
-              title={item.ariaLabel}
-              className={cls}
-            >
-              {item.label}
-            </Link>
-          );
-        })}
-        <div className="my-1 h-px bg-white/10" />
-        <div className="px-3 pb-1 pt-1 text-right text-[9px] uppercase tracking-[0.28em] text-stone-warm/40">
-          {myLibraryLabel}
-        </div>
-        {libraryEntries.map((e, idx) => {
-          const prev = libraryEntries[idx - 1];
-          const showRoomsHeader = e.group === "rooms" && prev?.group !== "rooms";
-          const active = isActive(e.to);
-          const gate = !session;
-          const cls = `flex min-h-11 items-center justify-end whitespace-nowrap rounded-lg px-4 py-3 text-right text-[12px] ${
-            isZh ? "tracking-normal" : "uppercase tracking-[0.22em]"
-          } ${active ? "bg-gold-dust/10 text-gold-light" : "text-stone-warm/80 hover:bg-gold-dust/10 hover:text-gold-light"}`;
-          const link = gate ? (
-            <Link key={e.to} to="/auth" search={{ mode: "login", redirect: e.to }} onClick={() => setDrawerOpen(false)} className={cls}>
-              {e.label}
-            </Link>
-          ) : (
-            <Link key={e.to} to={e.to} onClick={() => setDrawerOpen(false)} aria-current={active ? "page" : undefined} className={cls}>
-              {e.label}
-            </Link>
-          );
-          return (
-            <div key={e.to}>
-              {showRoomsHeader && (
-                <div className="mt-1 border-t border-white/10 px-3 pb-1 pt-2 text-right text-[9px] uppercase tracking-[0.28em] text-gold-dust/70">
-                  {isZh ? "会员阅览室" : "Membership Rooms"}
-                </div>
-              )}
-              {link}
-            </div>
-          );
-        })}
-        {moreEntries.length > 0 && <div className="my-1 h-px bg-white/10" />}
+        <div className="mx-auto mb-3 h-1 w-10 shrink-0 rounded-full bg-white/20" aria-hidden />
 
-        {moreEntries.length > 0 && (
-          <div className="px-3 pb-1 pt-1 text-right text-[9px] uppercase tracking-[0.28em] text-stone-warm/40">
-            {isZh ? "了解 · 更多" : "Learn · More"}
-          </div>
-        )}
-        {moreEntries.map((item) => {
-          const key = item.to ?? item.href ?? item.label;
-          const active = item.to ? isActive(item.to) : false;
-          const cls = `flex min-h-11 items-center justify-end whitespace-nowrap rounded-lg px-4 py-3 text-right text-[12px] ${
-            isZh ? "tracking-normal" : "uppercase tracking-[0.22em]"
-          } ${active ? "bg-gold-dust/10 text-gold-light" : "text-stone-warm/70 hover:bg-gold-dust/10 hover:text-gold-light"}`;
-          if (item.href) {
-            return (
-              <a
-                key={key}
-                href={item.href}
-                onClick={() => setDrawerOpen(false)}
-                className={cls}
-              >
-                {item.label}
-              </a>
-            );
-          }
-          return (
-            <Link
-              key={key}
-              to={item.to!}
-              onClick={() => setDrawerOpen(false)}
-              aria-current={active ? "page" : undefined}
-              className={cls}
-            >
-              {item.label}
-            </Link>
-          );
-        })}
-        <div className="my-1 h-px bg-white/10" />
-        {session ? (
-          <button
-            type="button"
-            onClick={() => {
-              setDrawerOpen(false);
-              openAcc();
-            }}
-            className="flex min-h-11 items-center justify-end gap-2 whitespace-nowrap rounded-lg px-4 py-3 text-[11px] uppercase tracking-[0.24em] text-gold-dust hover:bg-gold-dust/10"
-          >
-            {avatarUrl && (
-              <img
-                src={avatarUrl!}
-                alt=""
-                loading="lazy"
-                decoding="async"
-                className="h-5 w-5 flex-none rounded-full border border-gold-dust/40 object-cover"
-              />
-            )}
-            <span>{isZh ? "账户" : "Account"}</span>
-          </button>
-        ) : (
-          <>
-            <Link
-              to="/auth"
-              search={{ mode: "login", redirect: undefined }}
-              onClick={() => setDrawerOpen(false)}
-              className="flex min-h-11 items-center justify-end whitespace-nowrap rounded-lg px-4 py-3 text-[11px] uppercase tracking-[0.24em] text-gold-dust hover:bg-gold-dust/10"
-            >
-              {isZh ? "登录" : "Sign in"}
-            </Link>
-            <Link
-              to="/auth"
-              search={{ mode: "signup", redirect: undefined }}
-              onClick={() => setDrawerOpen(false)}
-              className="flex min-h-11 items-center justify-end whitespace-nowrap rounded-lg bg-gold-dust/10 px-4 py-3 text-[11px] uppercase tracking-[0.24em] text-gold-light hover:bg-gold-dust/20"
-            >
-              {isZh ? "注册" : "Sign up"}
-            </Link>
-          </>
-        )}
-        <div className="flex justify-end px-2 pb-1">
+        {sheetGroups.map((group) => (
+          <section key={group.title} className="mb-5 last:mb-2">
+            <h2 className="mb-2 text-[12px] tracking-[0.28em] text-gold-dust/80">
+              {group.title}
+            </h2>
+            <div className="grid grid-cols-[repeat(2,minmax(0,1fr))] gap-2.5 max-[319px]:grid-cols-1">
+              {group.items.map((item) => {
+                const cls = `flex min-h-[46px] items-center justify-center rounded-xl border px-2 py-2 text-center leading-snug break-words ${
+                  item.wide ? "col-span-full text-[13px]" : ""
+                } ${
+                  item.active
+                    ? "border-gold-dust/50 bg-gold-dust/10 text-gold-light"
+                    : "border-white/10 bg-white/[0.04] text-stone-warm/85 hover:border-gold-dust/40 hover:text-gold-light"
+                }`;
+                const style = item.wide
+                  ? undefined
+                  : { fontSize: "clamp(14px, 3.7vw, 16px)" };
+                if (item.href) {
+                  return (
+                    <a
+                      key={item.key}
+                      href={item.href}
+                      onClick={() => setDrawerOpen(false)}
+                      className={cls}
+                      style={style}
+                    >
+                      {item.label}
+                    </a>
+                  );
+                }
+                return (
+                  <Link
+                    key={item.key}
+                    to={item.gated ? "/auth" : item.to!}
+                    search={item.gated ? { mode: "login" as const, redirect: item.to } : undefined}
+                    onClick={() => setDrawerOpen(false)}
+                    aria-current={item.active ? "page" : undefined}
+                    aria-label={item.ariaLabel}
+                    className={cls}
+                    style={style}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+        ))}
+
+        <div className="mt-1 flex shrink-0 items-center justify-between gap-3 border-t border-white/10 pt-3">
           <LanguageToggle />
+          {session ? (
+            <button
+              type="button"
+              onClick={() => {
+                setDrawerOpen(false);
+                openAcc();
+              }}
+              className="flex min-h-[44px] items-center gap-2 rounded-full border border-gold-dust/40 px-4 text-[12px] tracking-[0.2em] text-gold-dust hover:bg-gold-dust/10"
+            >
+              {avatarUrl && (
+                <img
+                  src={avatarUrl!}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                  className="h-5 w-5 flex-none rounded-full border border-gold-dust/40 object-cover"
+                />
+              )}
+              <span>{isZh ? "账户" : "Account"}</span>
+            </button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Link
+                to="/auth"
+                search={{ mode: "login", redirect: undefined }}
+                onClick={() => setDrawerOpen(false)}
+                className="flex min-h-[44px] items-center rounded-full border border-gold-dust/40 px-4 text-[12px] tracking-[0.2em] text-gold-dust"
+              >
+                {isZh ? "登录" : "Sign in"}
+              </Link>
+              <Link
+                to="/auth"
+                search={{ mode: "signup", redirect: undefined }}
+                onClick={() => setDrawerOpen(false)}
+                className="flex min-h-[44px] items-center rounded-full bg-gold-dust px-4 text-[12px] tracking-[0.2em] text-obsidian"
+              >
+                {isZh ? "注册" : "Sign up"}
+              </Link>
+            </div>
+          )}
         </div>
       </aside>
+
     </>
   );
 }
