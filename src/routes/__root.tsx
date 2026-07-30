@@ -933,9 +933,9 @@ function SiteFooter() {
   ];
 
   return (
-    <footer className="relative z-10 border-t border-white/5 px-4 py-12 sm:px-6 md:px-12 md:py-16">
+    <footer className="relative z-10 border-t border-white/5 bg-obsidian/80 px-4 py-10 backdrop-blur-md sm:px-6 md:px-12 md:py-16">
       <div className="mx-auto max-w-7xl">
-        <div className="grid gap-8 md:grid-cols-[1.2fr_1fr_1fr_1fr] md:gap-10">
+        <div className="grid gap-7 md:grid-cols-[1.2fr_1fr_1fr_1fr] md:gap-10">
           <div>
             <div className="font-serif text-xl text-stone-warm">
               Destiny<span className="text-gold-dust">Library</span>
@@ -946,26 +946,29 @@ function SiteFooter() {
                 : "Four traditions read together — a way to see the patterns in your own life. Cultural reading and self-reflection, never a verdict."}
             </p>
           </div>
-          {groups.map((g) => (
-            <div key={g.title}>
-              <div className="mb-3 text-[10px] font-medium uppercase tracking-[0.28em] text-gold-dust/80">
-                {g.title}
+          <div className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 md:contents">
+            {groups.map((g) => (
+              <div key={g.title} className="min-w-0">
+                <div className="mb-2.5 text-[10px] font-medium uppercase tracking-[0.2em] text-gold-dust/80">
+                  {g.title}
+                </div>
+                <ul className="space-y-1.5 text-[11px] text-stone-warm/60">
+                  {g.items.map((it) => (
+                    <li key={it.href} className="min-w-0">
+                      <a
+                        href={it.href}
+                        className="block truncate transition-colors hover:text-gold-dust"
+                      >
+                        {it.label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <ul className="space-y-2 text-[11px] text-stone-warm/60">
-                {g.items.map((it) => (
-                  <li key={it.href}>
-                    <a
-                      href={it.href}
-                      className="transition-colors hover:text-gold-dust"
-                    >
-                      {it.label}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
+
         <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-white/5 pt-6 text-center text-[10px] uppercase tracking-[0.28em] text-stone-warm/40 md:flex-row md:text-left">
           <span className="italic">© MMXXVI · Four civilizations, one question</span>
           <span className="normal-case tracking-normal text-stone-warm/40">
