@@ -175,7 +175,7 @@ export function ReaderPassFlat({ data, onOpen }: Props) {
       <button
         type="button"
         onClick={onOpen}
-        className="rounded-full border border-gold-dust/30 bg-obsidian/70 px-3 py-1 text-[9px] uppercase tracking-[0.24em] text-gold-light/80 transition hover:border-gold-dust/60"
+        className="hidden rounded-full border border-gold-dust/30 sm:inline-flex bg-obsidian/70 px-3 py-1 text-[9px] uppercase tracking-[0.24em] text-gold-light/80 transition hover:border-gold-dust/60"
       >
         {isZh ? "馆内索引" : "Library index"}
       </button>

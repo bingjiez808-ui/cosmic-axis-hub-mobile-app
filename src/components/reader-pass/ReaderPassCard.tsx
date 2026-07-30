@@ -191,9 +191,9 @@ export function ReaderPassCard() {
         </div>
       ) : null}
 
-      {showHint ? (
+      {showHint && (!isMobile || expanded) ? (
         <div
-          className="pointer-events-none absolute left-1/2 top-full mt-3 w-max max-w-[240px] -translate-x-1/2 rounded-full border border-gold-dust/40 bg-obsidian/85 px-4 py-2 text-center text-[10px] uppercase tracking-[0.28em] text-gold-light shadow-lg"
+          className="pointer-events-none absolute right-2 top-full mt-3 w-max max-w-[62vw] sm:left-1/2 sm:right-auto sm:max-w-[240px] sm:-translate-x-1/2 rounded-full border border-gold-dust/40 bg-obsidian/85 px-4 py-2 text-center text-[10px] uppercase tracking-[0.28em] text-gold-light shadow-lg"
           role="status"
         >
           {isZh
