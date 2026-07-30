@@ -32,6 +32,7 @@ import {
 } from "@/lib/premium.functions";
 import { AdminTicketsSection } from "@/components/AdminTicketsSection";
 import { AdminRedemptionSection } from "@/experiences/admin/AdminRedemptionSection";
+import { AdminCommunityHallSection } from "@/experiences/admin/AdminCommunityHallSection";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -283,6 +284,8 @@ function AdminPage() {
       <AdminTicketsSection />
 
       <AdminRedemptionSection />
+
+      <AdminCommunityHallSection />
 
       {editing && (
         <EditDrawer
