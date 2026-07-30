@@ -1546,74 +1546,135 @@ function ReportPage() {
       <section id="natal-chart" className="mx-auto mb-24 max-w-6xl scroll-mt-[calc(var(--site-nav-height,96px)+72px)] px-4 sm:px-6">
         <div className="glass-card rounded-3xl p-4 sm:p-8 md:p-12">
           {/* Intro block — always full width so mobile sees context first */}
-          <div className="mb-6 min-w-0 lg:mb-8">
+          <div className="mb-5 min-w-0 lg:mb-6">
             <p className="mb-3 text-[10px] uppercase tracking-[0.4em] text-gold-dust">
               {lang === "zh" ? "你的命盘" : "Your natal chart"}
             </p>
             <h2 className="mb-4 font-serif text-2xl italic text-stone-warm sm:text-3xl md:text-4xl">
-              {lang === "zh"
-                ? "九颗行星 · 落在你专属的十二宫"
-                : "Nine planets · falling in your own twelve houses"}
+              {lang === "zh" ? "四大盘总览" : "Four charts · one overview"}
             </h2>
-            <p className="reading-copy mb-4 text-sm leading-relaxed text-stone-warm/60">
-              {lang === "zh"
-                ? "这是一张真实推算的西方回归黄道盘（Tropical Zodiac）—— 以 J2000.0 为基准，按平均黄经公式将七颗行星与上升 / 天顶落入你出生时刻真正对应的星座；相位则按行星间黄经差自动识别合、六分、四分、三分与对分。点击行星查看落位与主要相位；点击星座查看它承接的行星。"
-                : "A real tropical-zodiac natal wheel: seven planets plus Ascendant / Midheaven are placed by mean-longitude formulas referenced to J2000.0, using the exact moment you were born. Aspects (conjunction, sextile, square, trine, opposition) are detected automatically from the longitude differences. Tap a planet to reveal its sign and major aspects; tap a sign to see which planets it holds."}
-            </p>
-            <div className="flex flex-wrap gap-2 text-[10px] uppercase tracking-[0.28em] text-stone-warm/50">
-              <span className="rounded-full border border-white/10 px-3 py-1">☉ ☽ ☿ ♀ ♂ ♃ ♄</span>
-              <span className="rounded-full border border-white/10 px-3 py-1">
-                Ⓐ {lang === "zh" ? "上升" : "Asc"}
-              </span>
-              <span className="rounded-full border border-white/10 px-3 py-1">
-                Ⓜ {lang === "zh" ? "天顶" : "MC"}
-              </span>
-            </div>
+            {(() => {
+              const intro: Record<SystemKey, [string, string]> = {
+                western: [
+                  "A real tropical-zodiac natal wheel: seven planets plus Ascendant / Midheaven are placed by mean-longitude formulas referenced to J2000.0. Aspects are detected from longitude differences. Tap a planet to read its placement on the left.",
+                  "真实推算的西方回归黄道盘：七颗行星与上升 / 天顶按平均黄经公式落入你出生时刻对应的星座，相位由黄经差自动识别。点击行星，左侧显示它的落位与相位解读。",
+                ],
+                vedic: [
+                  "The sidereal (Lahiri) mandala: the same sky measured against the fixed stars, with the 27 nakshatras and the Moon's pada. The left column lists every sidereal placement.",
+                  "恒星黄道（Lahiri）曼陀罗：同一片天空以恒星为基准重新丈量，含二十七宿与月亮分位。左侧列出九曜的恒星落位参数。",
+                ],
+                bazi: [
+                  "Four pillars derived from the solar-to-lunar conversion: year, month, day and hour stems and branches, with the Wu Xing balance and your Day Master.",
+                  "由阳历转农历推得的四柱：年月日时的天干地支，以及五行强弱与日主。左侧为逐柱参数解读。",
+                ],
+                ziwei: [
+                  "Zi Wei Dou Shu: the twelve palaces of the classical square, the Soul and Body stars and the Five-Element class. Requires birth date, exact hour and gender.",
+                  "紫微斗数：古典方盘的十二宫、命主身主与五行局。需要出生日期、准确时辰与性别三项参数。",
+                ],
+              };
+              return (
+                <p className="reading-copy mb-4 text-sm leading-relaxed text-stone-warm/60">
+                  {intro[chartSystem][lang === "zh" ? 1 : 0]}
+                </p>
+              );
+            })()}
           </div>
 
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:items-stretch lg:gap-10">
-            {/* Left: planet reading panel — on mobile it comes after the wheel */}
-            <div className="order-2 flex min-w-0 flex-col lg:order-1 lg:h-full">
-              <div className="flex min-w-0 flex-1 flex-col">
-                <PlanetReadingPanel
-                  lang={lang}
-                  seed={`${search.name ?? ""}|${search.date ?? ""}|${search.time ?? ""}|${search.place ?? ""}`}
-                  planetIdx={selectedPlanet}
-                  onClear={() => setSelectedPlanet(null)}
-                />
-              </div>
+          {/* Top navigation — the four systems */}
+          <div
+            role="tablist"
+            aria-label={lang === "zh" ? "四大体系" : "Four systems"}
+            className="mb-5 grid grid-cols-2 gap-2 sm:grid-cols-4"
+          >
+            {SYSTEM_TABS.map((tb) => {
+              const on = chartSystem === tb.key;
+              const ready = systemAvailability(snapshot)[tb.key];
+              return (
+                <button
+                  key={tb.key}
+                  role="tab"
+                  aria-selected={on}
+                  onClick={() => setChartSystem(tb.key)}
+                  className={`rounded-2xl border px-3 py-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-light ${
+                    on
+                      ? "border-gold-dust/60 bg-gold-dust/10 text-gold-light"
+                      : "border-white/10 bg-white/[0.02] text-stone-warm/70 hover:border-gold-dust/30 hover:text-stone-warm"
+                  }`}
+                >
+                  <span className="block text-xs font-medium tracking-wide sm:text-sm">
+                    {lang === "zh" ? tb.zh : tb.en}
+                  </span>
+                  <span className="mt-0.5 block text-[10px] tracking-wide text-stone-warm/45">
+                    {ready
+                      ? lang === "zh"
+                        ? tb.hintZh
+                        : tb.hintEn
+                      : lang === "zh"
+                        ? "数据不足 · 可补全"
+                        : "needs data"}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Fixed-size stage: left = parameters, right = interactive chart.
+              Both columns scroll internally so the module never changes size. */}
+          <div className="grid h-[560px] grid-cols-1 gap-4 sm:h-[600px] lg:h-[640px] lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:gap-8">
+            {/* Left: parameter reading for the active system */}
+            <div className="order-2 min-h-0 min-w-0 overflow-hidden lg:order-1">
+              <SystemDetailPanel
+                snapshot={snapshot}
+                lang={lang}
+                system={chartSystem}
+                onSupplyGender={(g) => setGenderOverride(g)}
+                westernSlot={
+                  <PlanetReadingPanel
+                    lang={lang}
+                    seed={`${search.name ?? ""}|${search.date ?? ""}|${search.time ?? ""}|${search.place ?? ""}`}
+                    planetIdx={selectedPlanet}
+                    onClear={() => setSelectedPlanet(null)}
+                  />
+                }
+              />
             </div>
 
-            {/* Right: four-system chart + core placements */}
-            <div className="order-1 flex min-w-0 flex-col items-center gap-4 lg:order-2">
+            {/* Right: the interactive chart (+ western core placements) */}
+            <div className="order-1 min-h-0 min-w-0 overflow-y-auto overscroll-contain rounded-2xl border border-white/10 bg-white/[0.02] p-3 sm:p-4 lg:order-2">
               <div className="relative w-full text-stone-warm/40">
                 <FourSystemsChart
                   snapshot={snapshot}
                   lang={lang}
                   seed={`${search.name ?? ""}|${search.date ?? ""}|${search.time ?? ""}|${search.place ?? ""}`}
-                  size={wheelSize}
+                  size={Math.min(wheelSize, 320)}
+                  stageHeight={340}
+                  hideTabs
+                  active={chartSystem}
+                  onActiveChange={setChartSystem}
                   selectedPlanet={selectedPlanet}
                   onSelectPlanet={setSelectedPlanet}
                 />
                 <button
                   onClick={() => setZoomNatal(true)}
-                  className="absolute bottom-0 right-0 z-10 rounded-full border border-gold-dust/30 bg-obsidian/60 px-2.5 py-1 text-[10px] uppercase tracking-[0.28em] text-gold-dust/80 backdrop-blur transition-colors hover:border-gold-light hover:text-gold-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-light sm:px-3 sm:py-1.5"
+                  className="absolute right-2 top-2 z-10 rounded-full border border-gold-dust/30 bg-obsidian/60 px-2.5 py-1 text-[10px] uppercase tracking-[0.28em] text-gold-dust/80 backdrop-blur transition-colors hover:border-gold-light hover:text-gold-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-light sm:px-3 sm:py-1.5"
                   aria-label={lang === "zh" ? "放大查看星盘" : "Enlarge chart"}
                 >
                   {lang === "zh" ? "⤢ 放大" : "⤢ Enlarge"}
                 </button>
               </div>
 
-
-              <div className="flex w-full flex-col">
-                <ChartFactsCard
-                  lang={lang}
-                  seed={`${search.name ?? ""}|${search.date ?? ""}|${search.time ?? ""}|${search.place ?? ""}`}
-                  onPickPlanet={setSelectedPlanet}
-                />
-              </div>
+              {chartSystem === "western" && (
+                <div className="mt-4 flex w-full flex-col">
+                  <ChartFactsCard
+                    lang={lang}
+                    seed={`${search.name ?? ""}|${search.date ?? ""}|${search.time ?? ""}|${search.place ?? ""}`}
+                    onPickPlanet={setSelectedPlanet}
+                  />
+                </div>
+              )}
             </div>
           </div>
+
         </div>
 
         <ChartZoomModal
