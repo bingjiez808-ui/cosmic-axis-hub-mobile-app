@@ -179,7 +179,10 @@ function GuideDeskHero({ isZh }: { isZh: boolean }) {
   const scrollHint = isZh ? "向下走进书架" : "Scroll into the shelves";
 
   return (
-    <header className="relative mx-auto flex min-h-[62vh] max-w-4xl flex-col items-center justify-center px-6 pb-14 pt-24 text-center sm:min-h-[70vh]">
+    // HeroSection: the pass overlay is an absolute sibling of HeroContent, so
+    // it never enters the content's width calculation. HeroContent stays
+    // centred on the viewport (margin-inline: auto, no asymmetric padding).
+    <header className="relative flex min-h-[62vh] w-full flex-col items-center justify-center px-6 pb-14 pt-24 text-center sm:min-h-[70vh]">
       <ReaderPassCard />
       {/* Vignette scrim behind copy so text never dissolves into the library backdrop. */}
       <div
@@ -190,23 +193,29 @@ function GuideDeskHero({ isZh }: { isZh: boolean }) {
             "radial-gradient(ellipse at center, rgba(8,10,18,0.72) 0%, rgba(8,10,18,0.45) 45%, rgba(8,10,18,0) 75%)",
         }}
       />
-      <p className="text-[10px] uppercase tracking-[0.5em] text-gold-dust/80 sm:text-xs [text-shadow:0_1px_12px_rgba(0,0,0,0.85)]">
-        {eyebrow}
-      </p>
-      <ResponsiveHeroTitle
-        lang={isZh ? "zh" : "en"}
-        lines={headingLines}
-        className="mt-6 font-serif text-stone-warm [text-shadow:0_2px_24px_rgba(0,0,0,0.9),0_0_2px_rgba(0,0,0,0.6)]"
-      />
+      <div
+        className="relative z-[15] flex flex-col items-center"
+        style={{ width: "min(1120px, calc(100vw - 48px))", marginInline: "auto" }}
+      >
+        <p className="text-[10px] uppercase tracking-[0.5em] text-gold-dust/80 sm:text-xs [text-shadow:0_1px_12px_rgba(0,0,0,0.85)]">
+          {eyebrow}
+        </p>
+        <ResponsiveHeroTitle
+          lang={isZh ? "zh" : "en"}
+          lines={headingLines}
+          className="mt-6 font-serif text-stone-warm [text-shadow:0_2px_24px_rgba(0,0,0,0.9),0_0_2px_rgba(0,0,0,0.6)]"
+        />
 
-      <p className="hero-sub mt-6 leading-relaxed text-stone-warm/90 [text-shadow:0_1px_14px_rgba(0,0,0,0.85)]">
-        {body}
-      </p>
-      <div className="mt-8 flex items-center gap-3 text-[10px] uppercase tracking-[0.42em] text-gold-dust/60 [text-shadow:0_1px_10px_rgba(0,0,0,0.8)]">
-        <span aria-hidden>↓</span>
-        <span>{scrollHint}</span>
+        <p className="hero-sub mt-6 leading-relaxed text-stone-warm/90 [text-shadow:0_1px_14px_rgba(0,0,0,0.85)]">
+          {body}
+        </p>
+        <div className="mt-8 flex items-center gap-3 text-[10px] uppercase tracking-[0.42em] text-gold-dust/60 [text-shadow:0_1px_10px_rgba(0,0,0,0.8)]">
+          <span aria-hidden>↓</span>
+          <span>{scrollHint}</span>
+        </div>
       </div>
     </header>
+
   );
 }
 
