@@ -269,21 +269,6 @@ function backSvg(data: ReaderPassData, isZh: boolean): string {
 </svg>`;
 }
 
-function wrapText(text: string, maxChars: number): string[] {
-  // Simple char-count wrap; both CJK and ASCII look OK at 16-20pt.
-  const lines: string[] = [];
-  let buf = "";
-  for (const ch of text) {
-    buf += ch;
-    if (buf.length >= maxChars && /[\s,。,;·]/.test(ch)) {
-      lines.push(buf.trim());
-      buf = "";
-    }
-  }
-  if (buf.trim()) lines.push(buf.trim());
-  return lines.slice(0, 3);
-}
-
 function escapeXml(s: string): string {
   return s
     .replace(/&/g, "&amp;")
