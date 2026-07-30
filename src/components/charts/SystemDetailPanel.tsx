@@ -281,8 +281,9 @@ export function SystemDetailPanel({
                 <span className="shrink-0 text-stone-warm/70">
                   {p.name}
                   <span className="ml-1.5 text-[10px] tracking-[0.18em] text-stone-warm/40">
-                    {p.heavenlyStem ?? ""}
-                    {p.earthlyBranch ?? ""}
+                    {p.heavenly_stem ?? ""}
+                    {p.earthly_branch ?? ""}
+
                   </span>
                 </span>
                 <span className="text-right font-serif italic text-stone-warm/90">
