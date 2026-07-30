@@ -206,36 +206,38 @@ export function FourSystemsChart({
   return (
     <div className="w-full">
       {/* System switcher */}
-      <div
-        role="tablist"
-        aria-label={zh ? "四大体系可视化" : "Four systems"}
-        className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4"
-      >
-        {SYSTEM_TABS.map((t) => {
-          const on = active === t.key;
-          const ready = availability[t.key];
-          return (
-            <button
-              key={t.key}
-              role="tab"
-              aria-selected={on}
-              onClick={() => setActive(t.key)}
-              className={`rounded-2xl border px-3 py-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-light ${
-                on
-                  ? "border-gold-dust/60 bg-gold-dust/10 text-gold-light"
-                  : "border-white/10 bg-white/[0.02] text-stone-warm/70 hover:border-gold-dust/30 hover:text-stone-warm"
-              }`}
-            >
-              <span className="block text-xs font-medium tracking-wide sm:text-sm">
-                {zh ? t.zh : t.en}
-              </span>
-              <span className="mt-0.5 block text-[10px] tracking-wide text-stone-warm/45">
-                {ready ? (zh ? t.hintZh : t.hintEn) : zh ? "数据不足" : "not available"}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+      {!hideTabs && (
+        <div
+          role="tablist"
+          aria-label={zh ? "四大体系可视化" : "Four systems"}
+          className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4"
+        >
+          {SYSTEM_TABS.map((t) => {
+            const on = active === t.key;
+            const ready = availability[t.key];
+            return (
+              <button
+                key={t.key}
+                role="tab"
+                aria-selected={on}
+                onClick={() => setActive(t.key)}
+                className={`rounded-2xl border px-3 py-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-light ${
+                  on
+                    ? "border-gold-dust/60 bg-gold-dust/10 text-gold-light"
+                    : "border-white/10 bg-white/[0.02] text-stone-warm/70 hover:border-gold-dust/30 hover:text-stone-warm"
+                }`}
+              >
+                <span className="block text-xs font-medium tracking-wide sm:text-sm">
+                  {zh ? t.zh : t.en}
+                </span>
+                <span className="mt-0.5 block text-[10px] tracking-wide text-stone-warm/45">
+                  {ready ? (zh ? t.hintZh : t.hintEn) : zh ? "数据不足" : "not available"}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Interactive stage */}
       <div
@@ -250,8 +252,12 @@ export function FourSystemsChart({
         onWheel={onWheel}
         onKeyDown={onKeyDown}
         className="relative mx-auto flex w-full touch-none select-none items-center justify-center overflow-hidden rounded-3xl border border-white/10 bg-white/[0.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-light"
-        style={{ height: size + 56, cursor: dragging ? "grabbing" : mode === "drag" ? "grab" : "crosshair" }}
+        style={{
+          height: stageHeight ?? size + 56,
+          cursor: dragging ? "grabbing" : mode === "drag" ? "grab" : "crosshair",
+        }}
       >
+
         <div
           className="flex items-center justify-center"
           style={{
