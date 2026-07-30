@@ -1223,7 +1223,41 @@ function ReportPage() {
         });
         if (stale()) return;
         if (saved?.status === "completed" && saved.report_json) {
-          const finalReport = saved.report_json as unknown as ReportAI;
+          let finalReport = saved.report_json as unknown as ReportAI;
+          // The epigraph at the top of 综合解读 is part of the persisted
+          // report. Older rows (or a run where only the summary call
+          // failed) can be completed with an EMPTY summary — that made the
+          // page fall back to deterministic prose, i.e. a different header
+          // on every visit. Backfill it exactly once and write it back so
+          // every later open renders the identical text without any AI call.
+          if (!textFromUnknown(finalReport.summary, lang).trim()) {
+            try {
+              const backfillReq = buildReportRequest(
+                {
+                  ...search,
+                  gender: search.gender ?? genderOverride ?? undefined,
+                  concern: search.concern,
+                },
+                reportLang,
+              );
+              const res = await generateReportSummary({ data: backfillReq });
+              if (stale()) return;
+              if (res.summary) {
+                finalReport = { ...finalReport, summary: res.summary };
+                await saveReport({
+                  data: {
+                    reportId: saved.id,
+                    report_json: finalReport as never,
+                    model: "google/gemini-2.5-flash",
+                    provider: "lovable-ai-gateway",
+                  },
+                }).catch(() => {});
+              }
+            } catch {
+              /* keep the stored report as-is */
+            }
+            if (stale()) return;
+          }
           setAi(finalReport);
           setAiState("ready");
           updateReadingAI(fingerprint, {
@@ -1236,6 +1270,7 @@ function ReportPage() {
       } catch {
         /* fall through to begin */
       }
+
 
       // 4. Atomic claim.
       let claim: Awaited<ReturnType<typeof beginReport>>;
@@ -1314,7 +1349,10 @@ function ReportPage() {
         setAiProgress((p) => ({ done: Math.min(p.total, p.done + 1), total: p.total }));
       };
 
+      // One retry: the epigraph is persisted with the report, so a single
+      // transient failure here would otherwise be frozen into the saved row.
       const summaryPromise = generateReportSummary({ data: req })
+        .catch(() => generateReportSummary({ data: req }))
         .then((res) => {
           if (stale()) return;
           acc.summary = res.summary;
@@ -1324,6 +1362,7 @@ function ReportPage() {
           firstError = firstError ?? err;
         })
         .finally(bump);
+
 
       const dimPromises = DIM_KEYS.map((k) =>
         generateReportDimension({ data: { ...req, key: k } })
