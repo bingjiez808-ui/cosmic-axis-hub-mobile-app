@@ -2,10 +2,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 
-import astrologyImg from "@/assets/tradition-astrology.jpg";
-import jyotishImg from "@/assets/tradition-jyotish.jpg";
-import baziImg from "@/assets/tradition-bazi.jpg";
-import ziweiImg from "@/assets/tradition-ziwei.jpg";
 import treeImg from "@/assets/tree-of-destiny.jpg";
 import { TraditionModal, type TraditionId } from "@/components/TraditionModal";
 import { useLang } from "@/lib/i18n";
@@ -47,7 +43,6 @@ type Chapter = {
   concepts: { name: Bi; gloss: Bi }[];
   canon: Bi[];
   reveals: Bi[];
-  image: string;
 };
 
 const chapters: Chapter[] = [
@@ -84,7 +79,6 @@ const chapters: Chapter[] = [
       ["Relational grammar", "关系的语法"],
       ["Life themes and lessons", "人生主题与功课"],
     ],
-    image: astrologyImg,
   },
   {
     numeral: "II",
@@ -119,7 +113,6 @@ const chapters: Chapter[] = [
       ["Marriage and partnership", "婚姻与伴侣"],
       ["Wealth and spiritual growth", "财富与灵性成长"],
     ],
-    image: jyotishImg,
   },
   {
     numeral: "III",
@@ -154,7 +147,6 @@ const chapters: Chapter[] = [
       ["Marriage timing", "婚期"],
       ["Health tendencies and cycles", "身体倾向与周期"],
     ],
-    image: baziImg,
   },
   {
     numeral: "IV",
@@ -188,7 +180,6 @@ const chapters: Chapter[] = [
       ["Marriage and children", "婚姻与子女"],
       ["Migration, health, siblings", "迁移 · 疾厄 · 兄弟"],
     ],
-    image: ziweiImg,
   },
 ];
 
@@ -490,30 +481,17 @@ function TraditionsPage() {
 
       {/* Chapters */}
       <div className="mx-auto max-w-6xl space-y-32 px-6 md:px-12">
-        {chapters.map((c, idx) => (
+        {chapters.map((c) => (
           <motion.article
             key={c.numeral}
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.9, ease: [0.32, 0.72, 0, 1] }}
-            className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-16"
+            className="grid grid-cols-1"
           >
-            <div className={`lg:col-span-5 ${idx % 2 === 1 ? "lg:order-2" : ""}`}>
-              <div className="trad-plate group relative">
-                <span aria-hidden className="trad-plate-halo" />
-                <span aria-hidden className="trad-plate-ring" />
-                <img
-                  src={c.image}
-                  alt={`${c.title[0]} diagram`}
-                  loading="lazy"
-                  width={1024}
-                  height={1024}
-                  className="trad-plate-img aspect-square w-full object-contain"
-                />
-              </div>
-            </div>
-            <div className={`trad-copy trad-glass p-6 md:p-9 lg:col-span-7 ${idx % 2 === 1 ? "lg:order-1" : ""}`}>
+            <div className="trad-copy trad-glass p-6 md:p-9">
+
 
 
               <p className="mb-4 font-serif text-2xl italic text-gold-dust">{c.numeral}.</p>
