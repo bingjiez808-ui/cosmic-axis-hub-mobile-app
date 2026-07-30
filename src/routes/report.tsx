@@ -856,12 +856,54 @@ const dimensions: Dimension[] = [
 
 function Stars({ n }: { n: number }) {
   return (
-    <span className="tracking-[0.3em] text-gold-dust">
-      {"★".repeat(n)}
-      <span className="text-stone-warm/20">{"★".repeat(5 - n)}</span>
+    <span className="rm-stars tracking-[0.3em] text-gold-dust" aria-label={`${n}/5`}>
+      {Array.from({ length: 5 }).map((_, i) => (
+        <span
+          key={i}
+          aria-hidden="true"
+          className={`rm-star ${i < n ? "rm-star--on" : "text-stone-warm/20"}`}
+          style={i < n ? { animationDelay: `${i * 0.42}s` } : undefined}
+        >
+          ★
+        </span>
+      ))}
     </span>
   );
 }
+
+/**
+ * Touch/coarse-pointer devices have no hover, so a module "wakes up" while it
+ * sits in the middle of the viewport instead. Desktop keeps pure hover.
+ */
+function useCoarseActive<T extends HTMLElement>() {
+  const ref = useRef<T | null>(null);
+  const [active, setActive] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof window === "undefined") return;
+    const coarse = window.matchMedia("(hover: none), (pointer: coarse)").matches;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!coarse || reduced) return;
+    const io = new IntersectionObserver(
+      ([entry]) => setActive(entry.isIntersecting),
+      { rootMargin: "-38% 0px -38% 0px", threshold: 0 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  const onPointerMove = useCallback((e: React.PointerEvent<T>) => {
+    const el = ref.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    el.style.setProperty("--rm-x", `${((e.clientX - r.left) / r.width) * 100}%`);
+    el.style.setProperty("--rm-y", `${((e.clientY - r.top) / r.height) * 100}%`);
+  }, []);
+
+  return { ref, active, onPointerMove };
+}
+
 
 function ReportPage() {
   const search = Route.useSearch();
