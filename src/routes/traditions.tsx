@@ -465,7 +465,7 @@ function TraditionsPage() {
         <h1 className="trad-h1 mb-6 font-serif text-stone-warm">
           <span className="trad-h1-line">
             {HEADER.h1a[li]}
-            <span className="italic gold-gradient-text">{HEADER.h1b[li]}</span>
+            {HEADER.h1b[li]}
             {HEADER.h1c[li]}
           </span>
           <span className="trad-h1-line">{HEADER.h1d[li]}</span>
@@ -513,7 +513,8 @@ function TraditionsPage() {
                 />
               </div>
             </div>
-            <div className={`trad-copy px-1 md:px-2 lg:col-span-7 ${idx % 2 === 1 ? "lg:order-1" : ""}`}>
+            <div className={`trad-copy trad-glass p-6 md:p-9 lg:col-span-7 ${idx % 2 === 1 ? "lg:order-1" : ""}`}>
+
 
               <p className="mb-4 font-serif text-2xl italic text-gold-dust">{c.numeral}.</p>
               <h2 className="mb-3 font-serif text-4xl text-stone-warm md:text-5xl">{c.title[li]}</h2>
