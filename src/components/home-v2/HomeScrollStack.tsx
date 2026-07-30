@@ -31,6 +31,7 @@ import { HomeCardVisual } from "./HomeCardVisual";
 import { LibraryFeatureDrawer } from "./LibraryFeatureDrawer";
 import { ResponsiveHeroTitle } from "@/components/ResponsiveHeroTitle";
 import { MotionModeToggle } from "./MotionModeToggle";
+import "./home-corridor.css";
 
 import { ConcernSelector } from "@/components/ConcernSelector";
 import { FeatureLibraryShelf } from "@/components/FeatureLibraryShelf";
@@ -297,7 +298,7 @@ function HomeCard({
     : card.ctaEn;
 
   const ctaClasses =
-    "inline-flex min-h-[46px] items-center justify-center rounded-full border border-gold-dust/50 bg-gold-dust/15 px-6 py-2.5 text-xs uppercase tracking-[0.28em] text-gold-light transition hover:bg-gold-dust/25 focus:outline-none focus:ring-2 focus:ring-gold-dust/40";
+    "corridor-cta inline-flex min-h-[46px] items-center justify-center rounded-full border border-gold-dust/50 bg-gold-dust/15 px-6 py-2.5 text-xs uppercase tracking-[0.28em] text-gold-light transition hover:bg-gold-dust/25 focus:outline-none focus:ring-2 focus:ring-gold-dust/40";
 
   return (
     <article
