@@ -242,3 +242,19 @@
   .trad-tile:hover { transform: none; }
   .trad-plate:hover .trad-plate-img { transform: none; }
 }
+
+/* Section title that mirrors the hero's two-line typographic rhythm */
+.trad-h2-hero {
+  font-size: clamp(1.9rem, 7.6vw, 3.1rem);
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  font-weight: 400;
+}
+
+@media (min-width: 768px) {
+  .trad-h2-hero {
+    font-size: clamp(2.4rem, 4.2vw, 3.6rem);
+    line-height: 1.16;
+    letter-spacing: 0.03em;
+  }
+}

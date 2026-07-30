@@ -482,9 +482,9 @@ function TraditionsPage() {
         <p className="mb-3 text-center text-[10px] uppercase tracking-[0.4em] text-gold-dust">
           {t.pillars_kicker}
         </p>
-        <h2 className="mx-auto mb-12 max-w-3xl text-center font-serif text-3xl leading-tight text-stone-warm md:text-4xl">
-          {t.pillars_title_a}
-          <span className="italic">{t.pillars_title_em}</span>
+        <h2 className="trad-h2-hero mx-auto mb-12 max-w-3xl text-center font-serif text-stone-warm">
+          <span className="trad-h1-line">{t.pillars_title_a}</span>
+          <span className="trad-h1-line">{t.pillars_title_em}</span>
         </h2>
       </section>
 
