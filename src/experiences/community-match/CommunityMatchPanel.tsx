@@ -10,7 +10,7 @@
  * deep gold, celestial instruments. Motion respects
  * `prefers-reduced-motion` via {@link useReducedMotion}.
  */
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 
 import {
@@ -338,37 +338,47 @@ function AtlasTab({ paused, selfAlias }: { paused: boolean; selfAlias: string })
   );
   const [flightFor, setFlightFor] = useState<string | null>(null);
 
+  const inFlight = useRef(false);
+
   const refresh = useCallback(async (force = false) => {
     if (paused) return;
+    if (inFlight.current) return;
     // DB enforces a 60s server-side cooldown; skip if we just fetched.
     if (!force && candidatesCache.items && Date.now() - candidatesCache.at < 60_000) {
       setItems(candidatesCache.items);
       return;
     }
+    inFlight.current = true;
     setLoading(true);
     setErr(null);
     try {
       const rows = await list({ data: { limit: 10, mode: "friendship", lang: "en" } });
       candidatesCache = { items: rows, at: Date.now() };
       setItems(rows);
-      if (rows.length > 0 && !focusedAlias) setFocusedAlias(rows[0].alias);
+      // Functional update: keeps `focusedAlias` out of this callback's deps,
+      // otherwise focusing a star re-created `refresh` and re-fired the
+      // mount effect, tripping the server-side 60s cooldown.
+      setFocusedAlias((prev) => prev ?? rows[0]?.alias ?? null);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "generic";
-      // Rate-limit is expected when navigating back within 60s — keep stale list.
-      if (msg === "rate_limited" && candidatesCache.items) {
-        setItems(candidatesCache.items);
+      // Rate-limit is expected when navigating back within 60s — keep stale
+      // list (or render the empty state) instead of an error wall.
+      if (msg.includes("rate_limited")) {
+        setItems(candidatesCache.items ?? []);
       } else {
         setErr(c.errFor(msg));
       }
     } finally {
+      inFlight.current = false;
       setLoading(false);
     }
-  }, [list, paused, c, focusedAlias]);
+  }, [list, paused, c]);
 
 
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
 
   const focused = useMemo(
     () => (items ?? []).find((x) => x.alias === focusedAlias) ?? null,
