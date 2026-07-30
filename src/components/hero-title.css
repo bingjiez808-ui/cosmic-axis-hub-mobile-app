@@ -3,19 +3,18 @@
  *
  * Semantic lines are authored as explicit blocks (never browser-wrapped),
  * so a comma, a full stop or the last glyph can never end up alone on a
- * third line. Instead of adding line breaks, the font size shrinks with
+ * fourth line. Instead of adding line breaks, the font size shrinks with
  * the viewport.
  */
 .hero-title {
-  /* never wider than the centred hero content box, so the optical centre
-     of the headline always equals the viewport centre */
-  width: min(94vw, 1400px, 100%);
+  /* full-width centred block: the reader pass never shifts the optical centre */
+  width: 100%;
+  max-width: min(1100px, 72vw);
   margin-inline: auto;
   text-align: center;
   line-height: 1.08;
-  letter-spacing: -0.035em;
-  font-size: clamp(38px, 6.2vw, 88px);
-  text-wrap: balance;
+  letter-spacing: -0.025em;
+  font-size: clamp(50px, 5.2vw, 88px);
   overflow-wrap: normal;
   word-break: keep-all;
   margin-block: 0;
@@ -30,62 +29,74 @@
 }
 
 .hero-title[data-lang="en"] {
-  font-size: clamp(30px, 5.6vw, 88px);
+  font-size: clamp(40px, 4.6vw, 76px);
   letter-spacing: -0.02em;
 }
 
 /* Final line: the question itself — warm gold, serif italic, the visual
-   landing point of the headline. Slightly smaller, never weaker. */
+   landing point of the headline, but never louder than the two lines above. */
 .hero-title-line--accent {
   color: var(--gold-dust, oklch(0.76 0.11 85));
   font-style: italic;
-  font-size: 0.88em;
+  font-size: 0.71em;
   letter-spacing: -0.02em;
-  padding-block-start: 0.06em;
+  padding-block-start: 0.14em;
 }
 
 .hero-sub {
   margin-inline: auto;
   max-width: 720px;
-  font-size: clamp(1rem, 1.35vw, 1.35rem);
+  font-size: clamp(16px, 1.25vw, 22px);
   line-height: 1.62;
   text-wrap: pretty;
 }
 
-/* Tablet */
-@media (max-width: 1024px) {
+/* Laptop / small desktop */
+@media (max-width: 1279px) {
   .hero-title {
-    font-size: clamp(34px, 7.4vw, 74px);
+    font-size: clamp(44px, 5.8vw, 68px);
+    max-width: min(900px, 78vw);
   }
   .hero-title[data-lang="en"] {
-    font-size: clamp(26px, 5.4vw, 58px);
+    font-size: clamp(36px, 5vw, 60px);
+  }
+}
+
+/* Tablet */
+@media (max-width: 1023px) {
+  .hero-title {
+    font-size: clamp(38px, 6.5vw, 58px);
+    line-height: 1.12;
+    max-width: 82vw;
+  }
+  .hero-title[data-lang="en"] {
+    font-size: clamp(30px, 5.4vw, 50px);
   }
 }
 
 /* Mobile */
-@media (max-width: 640px) {
+@media (max-width: 767px) {
   .hero-title {
-    font-size: clamp(24px, 8vw, 50px);
-    line-height: 1.1;
-    letter-spacing: -0.045em;
+    font-size: clamp(30px, 9vw, 46px);
+    line-height: 1.15;
+    letter-spacing: -0.015em;
+    max-width: calc(100vw - 40px);
+    padding-inline: 20px;
   }
   .hero-title[data-lang="en"] {
-    font-size: clamp(19px, 5.6vw, 38px);
-    letter-spacing: -0.03em;
-  }
-  .hero-sub {
-    font-size: clamp(0.94rem, 4vw, 1.05rem);
+    font-size: clamp(24px, 6.6vw, 38px);
+    letter-spacing: -0.02em;
   }
 }
 
-/* Ultra narrow */
+/* Ultra narrow (320–390px) */
 @media (max-width: 390px) {
   .hero-title {
-    width: min(calc(100vw - 24px), 100%);
-    font-size: clamp(21px, 7.8vw, 34px);
-    letter-spacing: -0.055em;
+    font-size: clamp(27px, 8.7vw, 36px);
+    max-width: calc(100vw - 32px);
+    padding-inline: 16px;
   }
   .hero-title[data-lang="en"] {
-    font-size: clamp(17px, 5.4vw, 26px);
+    font-size: clamp(20px, 6.2vw, 28px);
   }
 }
