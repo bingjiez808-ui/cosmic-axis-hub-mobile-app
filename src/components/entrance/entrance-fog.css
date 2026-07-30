@@ -17,10 +17,6 @@
   pointer-events: none;
   opacity: var(--le-fog-alpha, 1);
   will-change: opacity;
-  /* A soft veil of moisture, not a blurred backdrop: 3px, and the lantern
-     mask below erases it wherever the light falls. */
-  -webkit-backdrop-filter: blur(3px) saturate(0.94);
-  backdrop-filter: blur(3px) saturate(0.94);
   /* Lantern clearing mask: cleared at the pointer, full mist far away. */
   --le-fog-mask: radial-gradient(
     circle var(--le-fog-r, 220px) at var(--le-fog-x, 50%) var(--le-fog-y, 50%),
@@ -34,6 +30,16 @@
   transition: opacity 700ms ease, --le-fog-clear 1500ms ease;
 }
 
+ /* Moisture veil — periphery only, never the centre of the frame. */
+.le-fog-blur {
+  position: absolute;
+  inset: 0;
+  -webkit-backdrop-filter: blur(3px) saturate(0.95);
+  backdrop-filter: blur(3px) saturate(0.95);
+  -webkit-mask-image: radial-gradient(ellipse 62% 56% at 50% 46%, transparent 0%, rgba(0, 0, 0, 0.28) 64%, #000 100%);
+  mask-image: radial-gradient(ellipse 62% 56% at 50% 46%, transparent 0%, rgba(0, 0, 0, 0.28) 64%, #000 100%);
+}
+
 .le-fog-layer {
   position: absolute;
   inset: -20%;
@@ -44,8 +50,8 @@
 /* Layer 1 — broad, very slow blue-grey haze. */
 .le-fog-1 {
   background:
-    radial-gradient(62% 50% at 20% 72%, rgba(170, 187, 214, 0.34) 0%, transparent 72%),
-    radial-gradient(54% 46% at 80% 64%, rgba(158, 175, 204, 0.30) 0%, transparent 70%),
+    radial-gradient(62% 50% at 20% 72%, rgba(170, 187, 214, 0.22) 0%, transparent 72%),
+    radial-gradient(54% 46% at 80% 64%, rgba(158, 175, 204, 0.20) 0%, transparent 70%),
     radial-gradient(74% 44% at 50% 102%, rgba(17, 24, 39, 0.34) 0%, transparent 78%),
     radial-gradient(120% 90% at 50% 50%, transparent 34%, rgba(17, 24, 39, 0.24) 100%);
   opacity: 1;
@@ -55,10 +61,10 @@
 /* Layer 2 — irregular mid-ground mist bands. */
 .le-fog-2 {
   background:
-    radial-gradient(40% 26% at 30% 44%, rgba(186, 199, 220, 0.26) 0%, transparent 74%),
-    radial-gradient(46% 20% at 70% 56%, rgba(172, 186, 210, 0.24) 0%, transparent 76%),
+    radial-gradient(40% 26% at 30% 44%, rgba(186, 199, 220, 0.16) 0%, transparent 74%),
+    radial-gradient(46% 20% at 70% 56%, rgba(172, 186, 210, 0.15) 0%, transparent 76%),
     radial-gradient(34% 24% at 52% 24%, rgba(218, 181, 94, 0.06) 0%, transparent 78%),
-    radial-gradient(52% 30% at 14% 30%, rgba(166, 181, 208, 0.22) 0%, transparent 76%);
+    radial-gradient(52% 30% at 14% 30%, rgba(166, 181, 208, 0.16) 0%, transparent 76%);
   opacity: 0.95;
   animation: le-fog-drift-b 22s ease-in-out infinite alternate;
 }
@@ -109,18 +115,38 @@
 .le-root[data-phase="exiting-enter"] .le-fog-scrim { opacity: 0; transition: opacity 500ms ease-out; }
 
 @media (max-width: 640px) {
-  .le-fog { -webkit-backdrop-filter: blur(2px) saturate(0.95); backdrop-filter: blur(2px) saturate(0.95); }
+  .le-fog-blur { -webkit-backdrop-filter: blur(2px) saturate(0.96); backdrop-filter: blur(2px) saturate(0.96); }
   .le-fog-1 { opacity: 0.78; }
   .le-fog-2 { opacity: 0.7; }
   .le-fog-3 { opacity: 0.78; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .le-fog-layer { animation: none !important; }
+   /* Moisture veil — periphery only, never the centre of the frame. */
+.le-fog-blur {
+  position: absolute;
+  inset: 0;
+  -webkit-backdrop-filter: blur(3px) saturate(0.95);
+  backdrop-filter: blur(3px) saturate(0.95);
+  -webkit-mask-image: radial-gradient(ellipse 62% 56% at 50% 46%, transparent 0%, rgba(0, 0, 0, 0.28) 64%, #000 100%);
+  mask-image: radial-gradient(ellipse 62% 56% at 50% 46%, transparent 0%, rgba(0, 0, 0, 0.28) 64%, #000 100%);
+}
+
+.le-fog-layer { animation: none !important; }
   .le-fog { transition: none; }
 }
 
 /* Low-end devices: drop the third layer to reduce compositing cost. */
 .le-fog[data-lite="true"] .le-fog-3 { display: none; }
-.le-fog[data-lite="true"] { -webkit-backdrop-filter: none; backdrop-filter: none; }
-.le-fog[data-lite="true"] .le-fog-layer { animation-duration: 34s; }
+.le-fog[data-lite="true"] .le-fog-blur { -webkit-backdrop-filter: none; backdrop-filter: none; }
+.le-fog[data-lite="true"]  /* Moisture veil — periphery only, never the centre of the frame. */
+.le-fog-blur {
+  position: absolute;
+  inset: 0;
+  -webkit-backdrop-filter: blur(3px) saturate(0.95);
+  backdrop-filter: blur(3px) saturate(0.95);
+  -webkit-mask-image: radial-gradient(ellipse 62% 56% at 50% 46%, transparent 0%, rgba(0, 0, 0, 0.28) 64%, #000 100%);
+  mask-image: radial-gradient(ellipse 62% 56% at 50% 46%, transparent 0%, rgba(0, 0, 0, 0.28) 64%, #000 100%);
+}
+
+.le-fog-layer { animation-duration: 34s; }

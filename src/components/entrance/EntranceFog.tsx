@@ -121,6 +121,7 @@ export function EntranceFog({ active, reducedMotion, isCoarse, restAnchor }: Pro
   return (
     <>
       <div ref={ref} className="le-fog" data-lite={lite ? "true" : "false"} aria-hidden="true">
+        <div className="le-fog-blur" />
         <div className="le-fog-layer le-fog-1" />
         <div className="le-fog-layer le-fog-2" />
         <div className="le-fog-layer le-fog-3" />
