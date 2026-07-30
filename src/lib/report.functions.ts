@@ -7,6 +7,12 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { guardrailsFor, safeMessage } from "./ai-guardrails";
 import { enforceRateLimit } from "./rate-limit.server";
 import { isEmailVerified, assertEmailVerifiedOrAdmin } from "./reports-store.functions";
+import {
+  concernFocusDirective,
+  coverageDirective,
+  crossSystemDirective,
+  systemCoverageFromFacts,
+} from "./four-system-brief";
 
 
 
@@ -40,6 +46,8 @@ const BaseInput = z.object({
   vedic: z.string().max(400).optional(),
   ziwei: z.string().max(400).optional(),
   gender: z.enum(["male", "female"]).optional(),
+  /** Homepage concern selection — drives the "这次阅读会帮你分清" contract. */
+  concern: z.string().max(40).optional(),
 });
 
 export const DIM_KEYS = [
@@ -109,6 +117,15 @@ function buildChartFacts(data: z.infer<typeof BaseInput>) {
     data.gender && `Gender: ${data.gender}`,
     planetLines && `Western planet placements: ${planetLines}`,
     data.quiz && `Self-report calibration answers (A/B/C/D per question): ${data.quiz}`,
+    coverageDirective(
+      systemCoverageFromFacts({
+        planets: data.planets,
+        bazi: data.bazi,
+        vedic: data.vedic,
+        ziwei: data.ziwei,
+      }).missing,
+      data.lang,
+    ),
   ]
     .filter(Boolean)
     .join("\n");
@@ -127,7 +144,7 @@ ${uniquenessRule}
 Every paragraph must anchor in the visitor's real chart facts listed below — never produce text two people would receive verbatim.
 ${uniquenessRule}
 Tone: warm, poetic, restrained — a candle-lit whisper.`;
-  return `${base}\n\n${guardrailsFor(isZh ? "zh" : "en")}`;
+  return `${base}\n\n${crossSystemDirective(isZh ? "zh" : "en")}\n\n${guardrailsFor(isZh ? "zh" : "en")}`;
 }
 
 /* ═══════════════════════════════════════════
@@ -148,11 +165,12 @@ export const generateReportSummary = createServerFn({ method: "POST" })
       const chartFacts = buildChartFacts(data);
 
       const schema = isZh
-        ? `{ "summary": "两三句诗意概括，必须直接呼应来访者具体的日/时/干支/主要行星落位" }`
-        : `{ "summary": "2-3 sentence poetic epigraph that directly echoes the visitor's specific date/time/pillars/main placements" }`;
+        ? `{ "summary": "两三句诗意概括，必须直接呼应来访者具体的日/时/干支/主要行星落位，并至少点名两套体系（西方 / 印度 / 八字 / 紫微）在此处的共振" }`
+        : `{ "summary": "2-3 sentence poetic epigraph echoing the visitor's specific date/time/pillars/placements, naming at least two of the four systems that converge here" }`;
 
       const prompt = `${isZh ? "来访者命盘事实" : "Visitor chart facts"}:
 ${chartFacts || (isZh ? "（未提供）" : "(not provided)")}
+${concernFocusDirective(data.concern, isZh ? "zh" : "en")}
 
 ${isZh ? "严格输出 JSON（只输出 JSON）" : "Output STRICT JSON only"}:
 ${schema}`;
@@ -216,7 +234,7 @@ export const generateReportDimension = createServerFn({ method: "POST" })
     {"tradition": "八字",   "note": "结合上面干支，指出日主与十神"},
     {"tradition": "紫微",   "note": "结合出生年月，落到具体宫位与主星"}
   ],
-  "synthesis": "3-4 句跨体系合鸣，必须点出至少一条上面列出的事实",
+  "synthesis": "3-4 句跨体系综合：先点名哪两三套体系在此共振（并各引一条真实落位），再点名哪套体系给出不同侧写，最后一句合读结论",
   "plain": "3-4 句「说人话」——直接给来访者的行动建议，带一句他此刻的处境感",
   "details": [
     {"label": "优势 / 通道 / 缘份形状 等", "items": ["点 1", "点 2", "点 3", "点 4"]},
@@ -232,7 +250,7 @@ export const generateReportDimension = createServerFn({ method: "POST" })
     {"tradition": "BaZi",      "note": "based on the pillars above, name the day-master & a Ten God"},
     {"tradition": "Zi Wei",    "note": "specific palace + main star for this year/month of birth"}
   ],
-  "synthesis": "3-4 sentences of cross-tradition convergence, citing at least one concrete fact listed above",
+  "synthesis": "3-4 sentences of real cross-system synthesis: name the 2-3 systems that converge here (each with one real placement), name the system that reads it differently, then one combined conclusion",
   "plain": "3-4 sentences in everyday words — a concrete next move plus one line about where they stand right now",
   "details": [
     {"label": "Strengths / channels / shape of the bond etc.", "items": ["point 1", "point 2", "point 3", "point 4"]},
@@ -243,6 +261,7 @@ export const generateReportDimension = createServerFn({ method: "POST" })
       const prompt = `${isZh ? "来访者命盘事实" : "Visitor chart facts"}:
 ${chartFacts || (isZh ? "（未提供）" : "(not provided)")}
 
+${concernFocusDirective(data.concern, isZh ? "zh" : "en")}
 ${isZh ? "需要生成的维度" : "Dimension to generate"}: ${dimKey} · ${dimTitle}
 ${missionNote}${academicNote}
 

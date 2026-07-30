@@ -1241,28 +1241,11 @@ function ReportPage() {
       }
 
       // 5. We own this generation. Run the streaming pieces.
-      // Ground the model in the REAL Jyotish / Zi Wei placements — without
-      // these two lines the model can only say "insufficient data".
-      const genSnap = buildCalculationSnapshot({
-        date: search.date,
-        time: search.time,
-        place: search.place,
-        lang: reportLang,
-        gender: search.gender,
-      });
-      const gv = genSnap.vedic.chart;
-      const gz = genSnap.ziwei.chart;
+      // `buildReportRequest` is now the single place that assembles all
+      // four systems (western / bazi / vedic / ziwei) + gender + concern,
+      // so every AI surface receives the identical brief.
       const req = {
-        ...buildReportRequest(search, reportLang),
-        gender: search.gender,
-        vedic: gv
-          ? `sidereal Ascendant ${gv.ascendant?.sign_en ?? "n/a"}; Moon ${gv.moon.nakshatra_en} pada ${gv.moon.pada} (lord ${gv.moon.lord}); Vimshottari dasa ${gv.vimshottari[0]?.lord ?? gv.moon.lord}; planets ${gv.planets.map((p) => `${p.name_en} sign#${p.sign + 1} ${Math.round(p.deg_in_sign)}°`).join(", ")}`
-          : undefined,
-        ziwei: gz
-          ? `five-elements class ${gz.five_elements_class}; body star ${gz.body}; palaces ${gz.palaces
-              .map((p) => `${p.name}(${p.earthly_branch}): ${p.major_stars.map((s) => s.name).join("·") || "空宫"}`)
-              .join("; ")}`
-          : undefined,
+        ...buildReportRequest({ ...search, gender: search.gender, concern: search.concern }, reportLang),
       };
       const acc: { summary: string; dimensions: ReportDimensionAI[] } = {
         summary: "",

@@ -5,6 +5,8 @@ import {
   houseForSign,
 } from "@/components/charts/DestinyCharts";
 import { solarToLunarInfo } from "@/lib/lunar";
+import { buildCalculationSnapshot } from "@/lib/calc-snapshot";
+import { buildFourSystemFacts } from "@/lib/four-system-brief";
 import { REPORT_AI_VERSION } from "@/lib/ai-cache-version";
 
 export type ReportSearchLike = {
@@ -19,6 +21,8 @@ export type ReportSearchLike = {
   lunar?: string;
   readingId?: string;
   gender?: "male" | "female";
+  /** Homepage "今天你带着什么问题来到这里" selection, when present. */
+  concern?: string;
 };
 
 export function buildReportSeed(search: ReportSearchLike) {
@@ -53,6 +57,19 @@ export function buildReportRequest(search: ReportSearchLike, lang: "en" | "zh") 
   const ascSign = signs[PLANETS.findIndex((p) => p.key === "asc")] ?? 0;
   const lunarInfo = search.date ? solarToLunarInfo(search.date, search.time) : null;
 
+  // Every AI generator that reads a chart gets ALL FOUR systems, not just
+  // Western + BaZi. Without these two lines Jyotish / Zi Wei sections can
+  // only answer "insufficient data".
+  const four = buildFourSystemFacts(
+    buildCalculationSnapshot({
+      date: search.date,
+      time: search.time,
+      place: search.place,
+      lang,
+      gender: search.gender,
+    }),
+  );
+
   return {
     name: search.name,
     date: search.date,
@@ -68,5 +85,9 @@ export function buildReportRequest(search: ReportSearchLike, lang: "en" | "zh") 
     bazi: search.bazi || lunarInfo?.bazi,
     zodiac: search.zodiac || lunarInfo?.zodiac,
     lunar: search.lunar || lunarInfo?.lunarZh,
+    gender: search.gender,
+    vedic: four.vedic,
+    ziwei: four.ziwei,
+    concern: search.concern,
   };
 }

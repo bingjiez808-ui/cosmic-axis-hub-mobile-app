@@ -6,6 +6,12 @@ import { createLovableAiGatewayProvider } from "./ai-gateway.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { guardrailsFor, safeMessage } from "./ai-guardrails";
 import { enforceRateLimit } from "./rate-limit.server";
+import {
+  concernFocusDirective,
+  coverageDirective,
+  crossSystemDirective,
+  systemCoverageFromFacts,
+} from "./four-system-brief";
 
 const EventInput = z.object({
   id: z.string().max(64),
@@ -22,6 +28,10 @@ const ChartInput = z.object({
   bazi: z.string().max(120).optional(),
   zodiac: z.string().max(40).optional(),
   lunar: z.string().max(80).optional(),
+  vedic: z.string().max(400).optional(),
+  ziwei: z.string().max(600).optional(),
+  gender: z.enum(["male", "female"]).optional(),
+  concern: z.string().max(40).optional(),
   planets: z
     .array(
       z.object({
@@ -57,7 +67,21 @@ function chartFacts(data: z.infer<typeof ChartInput>) {
     data.lunar && `Lunar date: ${data.lunar}`,
     data.zodiac && `Chinese zodiac: ${data.zodiac}`,
     data.bazi && `BaZi pillars: ${data.bazi}`,
+    data.vedic && `Vedic (sidereal) chart: ${data.vedic}`,
+    data.ziwei && `Zi Wei Dou Shu chart: ${data.ziwei}`,
+    data.gender && `Gender: ${data.gender}`,
     planetLines && `Western placements: ${planetLines}`,
+    coverageDirective(
+      systemCoverageFromFacts({
+        planets: data.planets,
+        bazi: data.bazi,
+        vedic: data.vedic,
+        ziwei: data.ziwei,
+      }).missing,
+      data.lang,
+    ),
+    concernFocusDirective(data.concern, data.lang),
+    crossSystemDirective(data.lang),
   ]
     .filter(Boolean)
     .join("\n");
