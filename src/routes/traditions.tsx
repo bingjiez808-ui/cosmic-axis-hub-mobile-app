@@ -465,7 +465,7 @@ function TraditionsPage() {
         <h1 className="trad-h1 mb-6 font-serif text-stone-warm">
           <span className="trad-h1-line">
             {HEADER.h1a[li]}
-            <span className="italic gold-gradient-text">{HEADER.h1b[li]}</span>
+            {HEADER.h1b[li]}
             {HEADER.h1c[li]}
           </span>
           <span className="trad-h1-line">{HEADER.h1d[li]}</span>
