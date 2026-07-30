@@ -96,7 +96,7 @@ export function DailyRoomPending() {
       aria-live="polite"
       data-testid="daily-room-pending"
       data-lang={c.lang}
-      className="min-h-screen bg-[#0a0a12]/55 text-amber-50"
+      className="min-h-screen bg-[#0a0a12]/35 text-amber-50"
     >
       <div className="mx-auto flex w-full max-w-[1100px] flex-col items-center px-4 py-16 md:px-8 md:py-24">
         <div className="text-xs uppercase tracking-[0.3em] text-amber-300/60">{c.kicker}</div>
@@ -128,7 +128,7 @@ export function DailyRoomError({
       role="alert"
       data-testid="daily-room-error"
       data-lang={c.lang}
-      className="min-h-screen bg-[#0a0a12]/55 text-amber-50"
+      className="min-h-screen bg-[#0a0a12]/35 text-amber-50"
     >
       <div className="mx-auto flex w-full max-w-[720px] flex-col items-center px-4 py-16 text-center md:py-24">
         <div className="text-xs uppercase tracking-[0.3em] text-rose-300/70">{c.errKicker}</div>
