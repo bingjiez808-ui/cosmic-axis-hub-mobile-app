@@ -128,7 +128,7 @@ export function ReaderPassFlat({ data, onOpen }: Props) {
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
-        className="group relative block h-[clamp(170px,26vw,240px)] w-[clamp(118px,17vw,168px)] cursor-grab touch-none select-none rounded-[18px] border border-gold-dust/25 bg-obsidian/50 p-0 shadow-[0_18px_40px_-14px_rgba(0,0,0,0.75)] active:cursor-grabbing"
+        className="group relative block h-[clamp(118px,34vw,140px)] w-[clamp(82px,23vw,98px)] cursor-grab touch-none select-none rounded-[18px] border border-gold-dust/25 bg-obsidian/50 p-0 shadow-[0_18px_40px_-14px_rgba(0,0,0,0.75)] active:cursor-grabbing sm:h-[clamp(170px,26vw,240px)] sm:w-[clamp(118px,17vw,168px)]"
         style={{
           perspective: "1200px",
           transform: `translate3d(${offset.x}px, ${offset.y}px, 0) rotate(${offset.rot}deg)`,
