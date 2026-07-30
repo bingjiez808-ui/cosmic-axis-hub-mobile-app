@@ -40,30 +40,32 @@
 /* Layer 1 — broad, very slow blue-grey haze. */
 .le-fog-1 {
   background:
-    radial-gradient(60% 48% at 22% 74%, rgba(17, 24, 39, 0.26) 0%, transparent 72%),
-    radial-gradient(52% 44% at 78% 66%, rgba(17, 24, 39, 0.22) 0%, transparent 70%),
-    radial-gradient(70% 40% at 50% 100%, rgba(17, 24, 39, 0.3) 0%, transparent 78%);
-  opacity: 0.9;
+    radial-gradient(62% 50% at 20% 72%, rgba(146, 165, 196, 0.20) 0%, transparent 72%),
+    radial-gradient(54% 46% at 80% 64%, rgba(132, 150, 182, 0.18) 0%, transparent 70%),
+    radial-gradient(74% 44% at 50% 102%, rgba(17, 24, 39, 0.34) 0%, transparent 78%),
+    radial-gradient(120% 90% at 50% 50%, transparent 34%, rgba(17, 24, 39, 0.24) 100%);
+  opacity: 1;
   animation: le-fog-drift-a 28s ease-in-out infinite alternate;
 }
 
 /* Layer 2 — irregular mid-ground mist bands. */
 .le-fog-2 {
   background:
-    radial-gradient(38% 26% at 32% 42%, rgba(107, 114, 128, 0.16) 0%, transparent 74%),
-    radial-gradient(44% 20% at 68% 54%, rgba(107, 114, 128, 0.14) 0%, transparent 76%),
-    radial-gradient(30% 22% at 52% 26%, rgba(218, 181, 94, 0.05) 0%, transparent 78%);
-  opacity: 0.85;
+    radial-gradient(40% 26% at 30% 44%, rgba(168, 182, 206, 0.20) 0%, transparent 74%),
+    radial-gradient(46% 20% at 70% 56%, rgba(150, 166, 194, 0.18) 0%, transparent 76%),
+    radial-gradient(34% 24% at 52% 24%, rgba(218, 181, 94, 0.06) 0%, transparent 78%),
+    radial-gradient(52% 30% at 14% 30%, rgba(140, 158, 190, 0.16) 0%, transparent 76%);
+  opacity: 0.95;
   animation: le-fog-drift-b 22s ease-in-out infinite alternate;
 }
 
 /* Layer 3 — edge + floor haze only. */
 .le-fog-3 {
   background:
-    linear-gradient(to top, rgba(17, 24, 39, 0.3) 0%, transparent 34%),
-    linear-gradient(to right, rgba(107, 114, 128, 0.14) 0%, transparent 22%),
-    linear-gradient(to left, rgba(107, 114, 128, 0.14) 0%, transparent 22%);
-  opacity: 0.9;
+    linear-gradient(to top, rgba(158, 174, 200, 0.20) 0%, rgba(17, 24, 39, 0.16) 18%, transparent 40%),
+    linear-gradient(to right, rgba(140, 158, 190, 0.18) 0%, transparent 26%),
+    linear-gradient(to left, rgba(140, 158, 190, 0.18) 0%, transparent 26%);
+  opacity: 1;
   animation: le-fog-drift-c 32s ease-in-out infinite alternate;
 }
 
@@ -103,9 +105,9 @@
 .le-root[data-phase="exiting-enter"] .le-fog-scrim { opacity: 0; transition: opacity 500ms ease-out; }
 
 @media (max-width: 640px) {
-  .le-fog-1 { opacity: 0.72; }
-  .le-fog-2 { opacity: 0.66; }
-  .le-fog-3 { opacity: 0.72; }
+  .le-fog-1 { opacity: 0.78; }
+  .le-fog-2 { opacity: 0.7; }
+  .le-fog-3 { opacity: 0.78; }
 }
 
 @media (prefers-reduced-motion: reduce) {
