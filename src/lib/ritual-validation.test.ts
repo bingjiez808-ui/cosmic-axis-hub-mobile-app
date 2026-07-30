@@ -88,10 +88,11 @@ describe("validateField", () => {
     expect(validateField("date", s, "en")).not.toBeNull();
   });
 
-  test("gender: prefer-not-to-say still counts as chosen", () => {
+  test("gender: prefer-not-to-say is no longer accepted (required field)", () => {
     const s = { ...complete, gender: "" as const, genderChosen: true };
-    expect(validateField("gender", s, "en")).toBeNull();
+    expect(validateField("gender", s, "en")).not.toBeNull();
   });
+
 
   test("gender: not chosen fails", () => {
     const s = { ...complete, gender: "" as const, genderChosen: false };
