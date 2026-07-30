@@ -196,7 +196,7 @@ function GuideDeskHero({ isZh }: { isZh: boolean }) {
         <ResponsiveHeroTitle
           lang={isZh ? "zh" : "en"}
           lines={headingLines}
-          className="mt-6 font-serif text-stone-warm [text-shadow:0_2px_24px_rgba(0,0,0,0.9),0_0_2px_rgba(0,0,0,0.6)]"
+          className="mt-[clamp(36px,4.2vw,72px)] font-serif text-stone-warm [text-shadow:0_2px_24px_rgba(0,0,0,0.9),0_0_2px_rgba(0,0,0,0.6)]"
         />
 
         <p className="hero-sub mt-[34px] leading-relaxed text-stone-warm/90 [text-shadow:0_1px_14px_rgba(0,0,0,0.85)]">
