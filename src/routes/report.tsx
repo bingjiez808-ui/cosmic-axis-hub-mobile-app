@@ -136,6 +136,7 @@ import {
   computePlanetSigns,
   houseForSign,
 } from "@/components/charts/DestinyCharts";
+import { FourSystemsChart } from "@/components/charts/FourSystemsChart";
 import { planetPlacementReading as placementReading, aspectReading } from "@/lib/planet-reading";
 import {
   KeyEventsVerification,
