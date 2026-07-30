@@ -16,7 +16,7 @@
 
 // Bump when: report model changes, per-dimension prompt/schema changes,
 // summary prompt changes, or the ReportAI shape changes.
-export const REPORT_AI_VERSION = "r2026-07-30.gender-hydration";
+export const REPORT_AI_VERSION = "r2026-07-30.dimension-specifics";
 
 // Bump when: outlook model changes, prompt/schema changes, or the
 // OutlookAI shape (timeline / outlook90 / watchlist) changes.

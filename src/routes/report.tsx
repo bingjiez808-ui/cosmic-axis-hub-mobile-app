@@ -261,6 +261,53 @@ type Dimension = {
   viz: "zodiac" | "elements" | "radar";
   elementStrengths?: [number, number, number, number, number]; // wood, fire, earth, metal, water
   details?: DetailBlock[];
+  /** Short, concrete pointers (career sectors, income sources, romance timing…). */
+  specifics?: { label: [string, string]; value: [string, string] }[];
+};
+
+/** Fallback "specifics" per dimension, shown before the AI text lands. */
+const SPECIFIC_FALLBACK: Record<string, { label: [string, string]; value: [string, string] }[]> = {
+  character: [
+    { label: ["Signature", "性格底色"], value: ["Warm on the surface, exacting underneath.", "对外温度足，对内标准高。"] },
+    { label: ["Misread as", "常被误解"], value: ["Calm read as indifference.", "沉静常被读成冷淡。"] },
+  ],
+  academic: [
+    { label: ["Subject clusters", "学科族群"], value: ["Language, systems thinking, applied design.", "语言表达、系统思维、应用型设计。"] },
+    { label: ["Learning mode", "学习方式"], value: ["Short focused blocks beat long marathons.", "短时高专注优于长时间硬撑。"] },
+  ],
+  vocation: [
+    { label: ["Roles / industries", "适合职业行业"], value: ["Content & education, product/brand, advisory work.", "内容与教育、产品与品牌、顾问咨询。"] },
+    { label: ["Org type", "组织形态"], value: ["Small senior teams or independent practice.", "小而精的团队，或独立执业。"] },
+    { label: ["Avoid", "不适合"], value: ["Rigid, purely quota-driven environments.", "只看硬指标、缺少自主的环境。"] },
+  ],
+  wealth: [
+    { label: ["Main source", "主要来源"], value: ["Skill-based main income carries the base.", "以专业能力的主业为基本盘。"] },
+    { label: ["Side income", "副业方向"], value: ["Knowledge products, teaching, commissioned work.", "知识产品、教学、接单式创作。"] },
+    { label: ["Other inflow", "其他进财"], value: ["Long-hold assets and patron introductions.", "长持型资产与贵人引荐。"] },
+    { label: ["Leak to avoid", "破财点"], value: ["Impulse bets during hot streaks.", "顺风期的冲动加码。"] },
+  ],
+  love: [
+    { label: ["Partner type", "正缘类型"], value: ["Steady, verbal, not easily flustered.", "稳定、愿沟通、不易被情绪带走。"] },
+    { label: ["Romance windows", "桃花旺期"], value: ["Peaks around role or city changes.", "换角色、换城市的年份最旺。"] },
+    { label: ["Pattern", "反复模式"], value: ["Over-giving, then abrupt withdrawal.", "先过度付出，再骤然抽离。"] },
+  ],
+  health: [
+    { label: ["Watch most", "尤其注意"], value: ["Sleep-driven digestion and nervous system.", "睡眠牵动的肠胃与神经系统。"] },
+    { label: ["Risk season", "易失衡时段"], value: ["Seasonal turns and late-night work runs.", "季节交替与连续熬夜期。"] },
+    { label: ["Daily practice", "日常调理"], value: ["A fixed wake time beats extra sleep-ins.", "固定起床时间胜过补觉。"] },
+  ],
+  parents: [
+    { label: ["Baseline", "相处基调"], value: ["Caring but under-spoken.", "在意彼此，却说得太少。"] },
+    { label: ["Friction", "摩擦议题"], value: ["Choices about pace and money.", "节奏与金钱的选择权。"] },
+  ],
+  children: [
+    { label: ["Bond", "缘分基调"], value: ["Mentor-like rather than commanding.", "更像引路人，而非管理者。"] },
+    { label: ["Guiding", "教育方式"], value: ["Give reasons before rules.", "先给理由，再给规则。"] },
+  ],
+  mission: [
+    { label: ["Core lesson", "核心课题"], value: ["Turn private standards into shared work.", "把私下的标准，变成能共享的作品。"] },
+    { label: ["Your field", "发挥场域"], value: ["Wherever explaining is the real value.", "凡是「把事情讲明白」有价值的地方。"] },
+  ],
 };
 
 const dimensions: Dimension[] = [
@@ -1315,6 +1362,7 @@ function ReportPage() {
             key: k,
             headline: "",
             evidence: [],
+            specifics: [],
             synthesis: "",
             plain: "",
             details: [],
@@ -1457,7 +1505,12 @@ function ReportPage() {
           { tradition: ["BaZi", "八字"], note: snapshotEvidence.baziLine },
           { tradition: ["Zi Wei", "紫微"], note: snapshotEvidence.ziwei },
         ];
-        if (!p) return { ...d, evidence: fallbackEvidence };
+        if (!p)
+          return {
+            ...d,
+            evidence: fallbackEvidence,
+            specifics: d.specifics ?? SPECIFIC_FALLBACK[d.key] ?? [],
+          };
         const pAny = p as unknown as Record<string, unknown>;
         const headline = textFromUnknown(pAny.headline, lang);
         const synthesis = textFromUnknown(pAny.synthesis, lang);
@@ -1494,6 +1547,18 @@ function ReportPage() {
                   };
                 })
               : d.details,
+          specifics: (() => {
+            const raw = Array.isArray(pAny.specifics) ? pAny.specifics : [];
+            const mapped = raw
+              .map((x) => {
+                const xr = x as Record<string, unknown>;
+                const label = textFromUnknown(xr.label, lang);
+                const value = textFromUnknown(xr.value, lang);
+                return { label: [label, label] as [string, string], value: [value, value] as [string, string] };
+              })
+              .filter((x) => x.value[0]);
+            return mapped.length > 0 ? mapped : (d.specifics ?? SPECIFIC_FALLBACK[d.key] ?? []);
+          })(),
         };
       }),
     [aiByKey, snapshotEvidence, lang],
@@ -1939,11 +2004,11 @@ function ReportPage() {
 
               <div className="grid grid-cols-1 gap-8 lg:grid-cols-5">
                 {/* Left: evidence + viz */}
-                <div className="lg:col-span-2">
-                  <p className="mb-4 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+                <div className="rm-pane lg:col-span-2">
+                  <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
                     {t.evidence_across}
                   </p>
-                  <ul className="mb-8 space-y-3 text-sm">
+                  <ul className="rm-scroll rm-h-evidence mb-6 space-y-3 text-sm">
                     {d.evidence.map((e) => {
                       const TIcon = traditionIcon(e.tradition[0]);
                       return (
@@ -1988,7 +2053,7 @@ function ReportPage() {
                     />
                     {t.synthesis}
                   </p>
-                  <div className="reading-copy mb-8 space-y-4 text-base leading-relaxed text-stone-warm/80">
+                  <div className="reading-copy rm-scroll rm-h-synthesis mb-6 space-y-4 text-base leading-relaxed text-stone-warm/80">
                     {splitParagraphs(d.synthesis[li]).map((para, i) => (
                       <p key={i}>{para}</p>
                     ))}
@@ -2000,12 +2065,35 @@ function ReportPage() {
                       <span className="size-1.5 rounded-full bg-gold-dust" />
                       {t.in_plain_words}
                     </p>
-                    <div className="reading-copy space-y-3 font-serif text-[15px] italic leading-[1.7] text-stone-warm/90 md:text-base">
+                    <div className="reading-copy rm-scroll rm-h-plain space-y-3 font-serif text-[15px] italic leading-[1.7] text-stone-warm/90 md:text-base">
                       {splitParagraphs(d.plain[li]).map((para, i) => (
                         <p key={i}>{para}</p>
                       ))}
                     </div>
                   </div>
+
+                  {d.specifics && d.specifics.length > 0 && (
+                    <div className="mt-5">
+                      <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+                        {lang === "zh" ? "具体指向" : "Concrete pointers"}
+                      </p>
+                      <ul className="rm-scroll rm-h-specifics grid gap-2 sm:grid-cols-2">
+                        {d.specifics.map((sp, i) => (
+                          <li
+                            key={`${sp.label[0]}-${i}`}
+                            className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5"
+                          >
+                            <p className="mb-1 text-[10px] uppercase tracking-[0.24em] text-gold-light/80">
+                              {sp.label[li]}
+                            </p>
+                            <p className="text-[13px] leading-relaxed text-stone-warm/75">
+                              {sp.value[li]}
+                            </p>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
 
                   {d.details && d.details.length > 0 && (
                     <button
@@ -2101,6 +2189,10 @@ function ReportPage() {
         dimension={displayed.find((x) => x.key === detailKey) ?? null}
         open={detailKey !== null}
         onClose={() => setDetailKey(null)}
+        onUpsell={() => {
+          setDetailKey(null);
+          window.setTimeout(() => scrollToId("membership-plans"), 240);
+        }}
         lang={lang}
         t={t}
       />
@@ -2130,12 +2222,14 @@ function DimensionDetailModal({
   dimension,
   open,
   onClose,
+  onUpsell,
   lang,
   t,
 }: {
   dimension: Dimension | null;
   open: boolean;
   onClose: () => void;
+  onUpsell: () => void;
   lang: "en" | "zh";
   t: ReturnType<typeof useLang>["t"];
 }) {
@@ -2303,6 +2397,38 @@ function DimensionDetailModal({
                       </motion.div>
                     );
                   })}
+
+                  {d.specifics && d.specifics.length > 0 && (
+                    <div className="rounded-2xl border border-gold-dust/25 bg-gradient-to-br from-gold-dust/[0.07] to-transparent p-4 sm:p-5">
+                      <p className="mb-3 text-[10px] uppercase tracking-[0.3em] text-gold-light/90">
+                        {lang === "zh" ? "具体指向" : "Concrete pointers"}
+                      </p>
+                      <ul className="space-y-2">
+                        {d.specifics.map((sp, i) => (
+                          <li
+                            key={`${sp.label[0]}-${i}`}
+                            className="rounded-lg border border-white/8 bg-obsidian/40 px-3 py-2"
+                          >
+                            <p className="mb-1 text-[10px] uppercase tracking-[0.24em] text-gold-dust/80">
+                              {sp.label[li]}
+                            </p>
+                            <p className="text-[13px] leading-relaxed text-stone-warm/85">
+                              {sp.value[li]}
+                            </p>
+                          </li>
+                        ))}
+                      </ul>
+                      <button
+                        type="button"
+                        onClick={onUpsell}
+                        className="mt-4 w-full rounded-xl border border-gold-dust/35 bg-gold-dust/[0.08] px-4 py-3 text-left text-[13px] leading-relaxed text-stone-warm/85 transition-colors hover:border-gold-dust/60 hover:bg-gold-dust/[0.14] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-light"
+                      >
+                        {lang === "zh"
+                          ? "以上只点到为止 —— 想要更完整的推演与时间线，请解锁综合报告 →"
+                          : "These are pointers only — unlock the comprehensive report for the full reading →"}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
