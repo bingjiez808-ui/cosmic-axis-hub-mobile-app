@@ -1722,9 +1722,17 @@ function ReportPage() {
                     {d.evidence.map((e) => {
                       const TIcon = traditionIcon(e.tradition[0]);
                       return (
-                        <li key={e.tradition[0]} className="border-l border-gold-dust/30 pl-4">
+                        <li
+                          key={e.tradition[0]}
+                          tabIndex={0}
+                          className="rm-evidence-item border-l border-gold-dust/30 pl-4"
+                        >
                           <p className="mb-1 flex items-center gap-2 font-serif text-gold-light">
-                            <TIcon size={13} strokeWidth={1.5} className="opacity-80" />
+                            <TIcon
+                              size={13}
+                              strokeWidth={1.5}
+                              className="rm-evidence-icon opacity-80"
+                            />
                             <span>{e.tradition[li]}</span>
                           </p>
                           <p className="text-stone-warm/60">{e.note[li]}</p>
@@ -1736,7 +1744,7 @@ function ReportPage() {
                   <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
                     {t.strength_map}
                   </p>
-                  <div className="text-stone-warm/50">
+                  <div className="rm-viz text-stone-warm/50">
                     {d.viz === "elements" && d.elementStrengths ? (
                       <FiveElements strengths={d.elementStrengths} lang={lang} size={240} />
                     ) : (
@@ -1744,6 +1752,7 @@ function ReportPage() {
                     )}
                   </div>
                 </div>
+
 
                 {/* Right: synthesis + plain-language */}
                 <div className="lg:col-span-3">
