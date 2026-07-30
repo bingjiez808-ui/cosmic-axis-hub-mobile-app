@@ -136,6 +136,7 @@ import {
   computePlanetSigns,
   houseForSign,
 } from "@/components/charts/DestinyCharts";
+import { FourSystemsChart } from "@/components/charts/FourSystemsChart";
 import { planetPlacementReading as placementReading, aspectReading } from "@/lib/planet-reading";
 import {
   KeyEventsVerification,
@@ -1499,10 +1500,11 @@ function ReportPage() {
               </div>
             </div>
 
-            {/* Right: wheel + core placements */}
+            {/* Right: four-system chart + core placements */}
             <div className="order-1 flex min-w-0 flex-col items-center gap-4 lg:order-2">
               <div className="relative w-full text-stone-warm/40">
-                <NatalWheel
+                <FourSystemsChart
+                  snapshot={snapshot}
                   lang={lang}
                   seed={`${search.name ?? ""}|${search.date ?? ""}|${search.time ?? ""}|${search.place ?? ""}`}
                   size={wheelSize}
@@ -1511,12 +1513,13 @@ function ReportPage() {
                 />
                 <button
                   onClick={() => setZoomNatal(true)}
-                  className="absolute right-0 top-0 rounded-full border border-gold-dust/30 bg-obsidian/60 px-2.5 py-1 text-[10px] uppercase tracking-[0.28em] text-gold-dust/80 backdrop-blur transition-colors hover:border-gold-light hover:text-gold-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-light sm:px-3 sm:py-1.5"
+                  className="absolute bottom-0 right-0 z-10 rounded-full border border-gold-dust/30 bg-obsidian/60 px-2.5 py-1 text-[10px] uppercase tracking-[0.28em] text-gold-dust/80 backdrop-blur transition-colors hover:border-gold-light hover:text-gold-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-light sm:px-3 sm:py-1.5"
                   aria-label={lang === "zh" ? "放大查看星盘" : "Enlarge chart"}
                 >
                   {lang === "zh" ? "⤢ 放大" : "⤢ Enlarge"}
                 </button>
               </div>
+
 
               <div className="flex w-full flex-col">
                 <ChartFactsCard
@@ -1532,16 +1535,17 @@ function ReportPage() {
         <ChartZoomModal
           open={zoomNatal}
           onClose={() => setZoomNatal(false)}
-          title={lang === "zh" ? "本命盘 · 大图查询" : "Natal chart · full view"}
+          title={lang === "zh" ? "命盘 · 四大体系" : "Charts · four systems"}
           subtitle={
-            lang === "zh" ? "十三星体 · 十二宫 · 主要相位" : "13 bodies · 12 houses · major aspects"
+            lang === "zh" ? "西方星盘 · 印度曼陀罗 · 四柱五行 · 紫微十二宫" : "Western · Vedic · BaZi · Zi Wei"
           }
         >
           <div className="flex flex-col items-center gap-4">
-            <NatalWheel
+            <FourSystemsChart
+              snapshot={snapshot}
               lang={lang}
               seed={`${search.name ?? ""}|${search.date ?? ""}|${search.time ?? ""}|${search.place ?? ""}`}
-              size={Math.min(640, typeof window !== "undefined" ? window.innerWidth - 96 : 640)}
+              size={Math.min(560, typeof window !== "undefined" ? window.innerWidth - 96 : 560)}
               selectedPlanet={selectedPlanet}
               onSelectPlanet={setSelectedPlanet}
             />
