@@ -65,7 +65,9 @@ import { ensureYearReadings } from "@/lib/year-readings.functions";
    — one AI call, cached in sessionStorage + saved reading
 ═══════════════════════════════════════════ */
 
-function useChartOutlook(search: ReportSearchLike | undefined, lang: Lang) {
+function useChartOutlook(searchInput: ReportSearchLike | undefined, lang: Lang) {
+  // Always work from a hydrated input so the four-system brief keeps Zi Wei.
+  const search = useHydratedChartSearch(searchInput);
   const { findReading, updateReadingAI } = useAccount();
   const [outlook, setOutlook] = useState<OutlookAI | null>(null);
   const [state, setState] = useState<"idle" | "loading" | "ready" | "error">("idle");
