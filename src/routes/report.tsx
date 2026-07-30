@@ -164,6 +164,7 @@ import {
   buildCanonicalChartInput,
   ensureChart,
   failReport,
+  getChartById,
   getSavedReport,
   saveReport,
 } from "@/lib/reports-store.functions";
