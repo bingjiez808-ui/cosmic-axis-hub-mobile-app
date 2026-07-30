@@ -5,7 +5,7 @@
  * Layout:
  *   LibraryInteriorBackdrop (fixed video)
  *   ├── GuideDeskHero              (welcome + brand copy)
- *   ├── ScrollStack (7 index cards)  — React Bits ScrollStack + Lenis
+ *   ├── plain vertical card sections (no stacking effect)
  *   └── StackProgress               (right rail desktop / bottom pill mobile)
  *
  * Each card is a bookmark. Clicking a card opens LibraryFeatureDrawer
@@ -24,7 +24,6 @@ import { resolveCta, ctaMicroCopy, accessTagLabel, type AccessTag } from "@/lib/
 import { HOME_GUIDE_CARDS, type HomeGuideCard, type HomeCardId } from "@/lib/home-guide-cards";
 import { useHomeFacts } from "@/lib/use-home-facts";
 
-import ScrollStack, { ScrollStackItem } from "@/components/react-bits/ScrollStack/ScrollStack";
 
 import LineSidebar from "@/components/react-bits/LineSidebar/LineSidebar";
 import { LibraryInteriorBackdrop } from "./LibraryInteriorBackdrop";
@@ -32,7 +31,6 @@ import { HomeCardVisual } from "./HomeCardVisual";
 import { LibraryFeatureDrawer } from "./LibraryFeatureDrawer";
 import { ResponsiveHeroTitle } from "@/components/ResponsiveHeroTitle";
 import { MotionModeToggle } from "./MotionModeToggle";
-import { useStableMotion } from "@/lib/motion-preference";
 
 import { ConcernSelector } from "@/components/ConcernSelector";
 import { FeatureLibraryShelf } from "@/components/FeatureLibraryShelf";
@@ -56,7 +54,6 @@ export function HomeScrollStack() {
   const { lang } = useLang();
   const isZh = lang === "zh";
   const facts = useHomeFacts();
-  const { stable } = useStableMotion();
 
   const [openId, setOpenId] = useState<HomeCardId | null>(null);
 
@@ -127,28 +124,20 @@ export function HomeScrollStack() {
 
       <GuideDeskHero isZh={isZh} />
 
-      <ScrollStack
-        itemDistance={80}
-        itemStackDistance={26}
-        stackPosition="18%"
-        scaleEndPosition="8%"
-        baseScale={0.88}
-        itemScale={0.02}
-        stableMode={stable}
-      >
+      {/* Plain vertical section list — no stacking / pinning effects. */}
+      <div className="mx-auto w-full max-w-[1180px] space-y-8 px-4 pb-24 pt-6 sm:space-y-10 sm:px-6">
         {HOME_GUIDE_CARDS.map((card) => (
-          <ScrollStackItem key={card.id}>
-            <div id={card.id}>
-              <HomeCard
-                card={card}
-                isZh={isZh}
-                facts={facts}
-                onOpenDrawer={() => openCard(card.id)}
-              />
-            </div>
-          </ScrollStackItem>
+          <div id={card.id} key={card.id} className="scroll-mt-24">
+            <HomeCard
+              card={card}
+              isZh={isZh}
+              facts={facts}
+              onOpenDrawer={() => openCard(card.id)}
+            />
+          </div>
         ))}
-      </ScrollStack>
+      </div>
+
 
       <HomeSideRail
         cards={HOME_GUIDE_CARDS}
@@ -288,8 +277,8 @@ function HomeCard({
             "radial-gradient(120% 60% at 50% -10%, rgba(220,180,90,0.14), transparent 55%), linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.05))",
         }}
       />
-      <div className="relative grid gap-8 p-6 sm:p-10 md:grid-cols-[minmax(0,1fr)_minmax(0,0.65fr)] md:gap-12 md:p-14">
-        <div className="flex min-w-0 flex-col justify-between gap-8">
+      <div className="relative grid gap-6 p-5 sm:p-7 md:grid-cols-[minmax(0,1fr)_minmax(0,0.6fr)] md:gap-9 md:p-9">
+        <div className="flex min-w-0 flex-col justify-between gap-5">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-3">
               <span className="rounded-full border border-gold-dust/30 px-3 py-1 text-[10px] uppercase tracking-[0.36em] text-gold-dust/80">
@@ -301,13 +290,13 @@ function HomeCard({
                 {accessTagLabel(accessTag, isZh)}
               </span>
             </div>
-            <h2 className="mt-5 font-serif text-2xl leading-tight text-stone-warm sm:text-3xl md:text-4xl">
+            <h2 className="mt-4 font-serif text-2xl leading-tight text-stone-warm sm:text-[1.75rem] md:text-[2rem]">
               {isZh ? card.titleZh : card.titleEn}
             </h2>
             <p className="mt-3 text-[11px] uppercase tracking-[0.24em] text-gold-dust/70">
               {isZh ? card.taglineZh : card.taglineEn}
             </p>
-            <p className="mt-6 max-w-xl text-sm leading-relaxed text-stone-warm/80 sm:text-base">
+            <p className="mt-4 max-w-xl text-sm leading-relaxed text-stone-warm/80">
               {isZh ? card.descriptionZh : card.descriptionEn}
             </p>
           </div>
@@ -328,9 +317,9 @@ function HomeCard({
             <p className="max-w-lg text-xs leading-relaxed text-stone-warm/60">{micro}</p>
           </div>
         </div>
-        <div className="relative flex min-h-[180px] items-center justify-center">
+        <div className="relative flex min-h-[132px] items-center justify-center sm:min-h-[150px]">
           <div className="absolute inset-0 rounded-2xl border border-gold-dust/10 bg-black/35" />
-          <div className="relative h-full max-h-[260px] w-full max-w-[320px] p-4">
+          <div className="relative h-full max-h-[190px] w-full max-w-[260px] p-3">
             <HomeCardVisual kind={card.visual} />
           </div>
         </div>
