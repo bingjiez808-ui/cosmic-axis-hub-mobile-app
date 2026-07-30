@@ -265,7 +265,7 @@ function LiteratureHallPage() {
 
   /* ── render ───────────────────────────────────────────────────── */
   return (
-    <div className="min-h-screen bg-[#0a0a12] text-amber-50">
+    <div className="min-h-screen bg-[#0a0a12]/55 text-amber-50">
       <div style={{ paddingTop: "var(--site-nav-height, 96px)" }}>
         <CommonsHallNav active="/me/literature" />
       </div>
