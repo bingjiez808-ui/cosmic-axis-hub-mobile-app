@@ -1500,10 +1500,11 @@ function ReportPage() {
               </div>
             </div>
 
-            {/* Right: wheel + core placements */}
+            {/* Right: four-system chart + core placements */}
             <div className="order-1 flex min-w-0 flex-col items-center gap-4 lg:order-2">
               <div className="relative w-full text-stone-warm/40">
-                <NatalWheel
+                <FourSystemsChart
+                  snapshot={snapshot}
                   lang={lang}
                   seed={`${search.name ?? ""}|${search.date ?? ""}|${search.time ?? ""}|${search.place ?? ""}`}
                   size={wheelSize}
@@ -1518,6 +1519,7 @@ function ReportPage() {
                   {lang === "zh" ? "⤢ 放大" : "⤢ Enlarge"}
                 </button>
               </div>
+
 
               <div className="flex w-full flex-col">
                 <ChartFactsCard
