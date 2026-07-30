@@ -2,6 +2,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 
+import emblemAstrology from "@/assets/emblem-astrology.png";
+import emblemBazi from "@/assets/emblem-bazi.png";
+import emblemJyotish from "@/assets/emblem-jyotish.png";
+import emblemZiwei from "@/assets/emblem-ziwei.png";
 import treeImg from "@/assets/tree-of-destiny.jpg";
 import { TraditionModal, type TraditionId } from "@/components/TraditionModal";
 import { useLang } from "@/lib/i18n";
@@ -36,6 +40,7 @@ type Bi = [string, string]; // [en, zh]
 type Chapter = {
   numeral: string;
   elderId: TraditionId;
+  emblem: string;
   title: Bi;
   subtitle: Bi;
   origin: Bi;
@@ -49,6 +54,7 @@ const chapters: Chapter[] = [
   {
     numeral: "I",
     elderId: "astrology",
+    emblem: emblemAstrology,
     title: ["Western Astrology", "西方占星"],
     subtitle: ["The dialogue between psyche and sky", "灵魂与星空的对话"],
     origin: [
@@ -83,6 +89,7 @@ const chapters: Chapter[] = [
   {
     numeral: "II",
     elderId: "jyotish",
+    emblem: emblemJyotish,
     title: ["Jyotish", "印度占星 · Jyotish"],
     subtitle: ["The science of light — India's Vedic astrology", "光的科学 —— 印度吠陀占星"],
     origin: [
@@ -117,6 +124,7 @@ const chapters: Chapter[] = [
   {
     numeral: "III",
     elderId: "bazi",
+    emblem: emblemBazi,
     title: ["BaZi — 八字", "八字 · 四柱"],
     subtitle: ["The Four Pillars of Destiny", "命运的四柱"],
     origin: [
@@ -151,6 +159,7 @@ const chapters: Chapter[] = [
   {
     numeral: "IV",
     elderId: "ziwei",
+    emblem: emblemZiwei,
     title: ["Zi Wei Dou Shu — 紫微斗数", "紫微斗数"],
     subtitle: ["The Purple Star Astrology of the Chinese imperium", "中华帝国的紫微星占"],
     origin: [
@@ -479,56 +488,65 @@ function TraditionsPage() {
         </h2>
       </section>
 
-      {/* Chapters */}
-      <div className="mx-auto max-w-6xl space-y-32 px-6 md:px-12">
+      {/* Chapters — four equal cards */}
+      <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 px-6 md:px-12 lg:grid-cols-2 lg:gap-8">
         {chapters.map((c) => (
           <motion.article
             key={c.numeral}
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.9, ease: [0.32, 0.72, 0, 1] }}
-            className="grid grid-cols-1"
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.8, ease: [0.32, 0.72, 0, 1] }}
+            className="trad-card trad-glass"
           >
-            <div className="trad-copy trad-glass p-6 md:p-9">
+            <header className="trad-card-head">
+              <div className="min-w-0">
+                <p className="mb-2 font-serif text-lg italic text-gold-dust">{c.numeral}.</p>
+                <h2 className="trad-card-title font-serif text-stone-warm">{c.title[li]}</h2>
+                <p className="trad-card-sub mt-2 uppercase tracking-[0.28em] text-stone-warm/70">
+                  {c.subtitle[li]}
+                </p>
+              </div>
+              <img
+                src={c.emblem}
+                alt=""
+                aria-hidden
+                loading="lazy"
+                width={768}
+                height={768}
+                className="trad-card-emblem shrink-0"
+              />
+            </header>
 
-
-
-              <p className="mb-4 font-serif text-2xl italic text-gold-dust">{c.numeral}.</p>
-              <h2 className="mb-3 font-serif text-4xl text-stone-warm md:text-5xl">{c.title[li]}</h2>
-              <p className="mb-8 text-sm uppercase tracking-[0.3em] text-stone-warm/70">
-                {c.subtitle[li]}
-              </p>
-              <p className="mb-6 text-sm italic text-stone-warm/85">
+            <div className="trad-card-body">
+              <p className="trad-card-text mb-4 italic text-stone-warm/85">
                 <span className="mr-2 not-italic text-gold-dust">{HEADER.origin[li]} —</span>
                 {c.origin[li]}
               </p>
-              <p className="mb-10 max-w-[62ch] text-base leading-relaxed text-stone-warm">
-                {c.essay[li]}
-              </p>
+              <p className="trad-card-text mb-6 leading-relaxed text-stone-warm">{c.essay[li]}</p>
 
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-5 sm:grid-cols-2">
                 <div>
-                  <p className="mb-4 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+                  <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
                     {HEADER.concepts[li]}
                   </p>
-                  <ul className="space-y-2 text-sm text-stone-warm/85">
+                  <ul className="trad-card-text space-y-2 text-stone-warm/85">
                     {c.concepts.map((cc) => (
                       <li
                         key={cc.name[0]}
-                        className="trad-row flex justify-between gap-6 border-b border-white/10 pb-2"
+                        className="trad-row flex justify-between gap-4 border-b border-white/10 pb-2"
                       >
-                        <span className="font-serif text-gold-light">{cc.name[li]}</span>
-                        <span className="text-right text-stone-warm/70">{cc.gloss[li]}</span>
+                        <span className="min-w-0 font-serif text-gold-light">{cc.name[li]}</span>
+                        <span className="min-w-0 text-right text-stone-warm/70">{cc.gloss[li]}</span>
                       </li>
                     ))}
                   </ul>
                 </div>
                 <div>
-                  <p className="mb-4 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+                  <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
                     {HEADER.canon[li]}
                   </p>
-                  <ul className="mb-8 space-y-2 text-sm italic text-stone-warm/85">
+                  <ul className="trad-card-text mb-6 space-y-2 italic text-stone-warm/85">
                     {c.canon.map((k) => (
                       <li key={k[0]}>· {k[li]}</li>
                     ))}
@@ -536,23 +554,23 @@ function TraditionsPage() {
                   <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
                     {HEADER.reveals[li]}
                   </p>
-                  <ul className="space-y-1 text-sm text-stone-warm/85">
+                  <ul className="trad-card-text space-y-1 text-stone-warm/85">
                     {c.reveals.map((r) => (
                       <li key={r[0]}>— {r[li]}</li>
                     ))}
                   </ul>
                 </div>
               </div>
-
-              <button
-                type="button"
-                onClick={() => setOpenTradition(c.elderId)}
-                className="group/cta mt-10 inline-flex items-center gap-2 rounded-full border border-gold-dust/40 px-6 py-2.5 text-[10px] uppercase tracking-[0.32em] text-gold-dust transition-all hover:border-gold-dust hover:bg-gold-dust/10 hover:shadow-[0_0_24px_rgba(198,161,87,0.25)]"
-              >
-                {lang === "zh" ? "请这位长老开口" : "Consult this elder"}
-                <span className="text-sm transition-transform duration-300 group-hover/cta:translate-x-1">→</span>
-              </button>
             </div>
+
+            <button
+              type="button"
+              onClick={() => setOpenTradition(c.elderId)}
+              className="group/cta mt-5 inline-flex w-fit items-center gap-2 rounded-full border border-gold-dust/40 px-5 py-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust transition-all hover:border-gold-dust hover:bg-gold-dust/10 hover:shadow-[0_0_24px_rgba(198,161,87,0.25)]"
+            >
+              {lang === "zh" ? "请这位长老开口" : "Consult this elder"}
+              <span className="text-sm transition-transform duration-300 group-hover/cta:translate-x-1">→</span>
+            </button>
           </motion.article>
         ))}
       </div>
