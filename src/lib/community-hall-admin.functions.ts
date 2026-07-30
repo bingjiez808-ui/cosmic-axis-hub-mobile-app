@@ -8,11 +8,15 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
   loadAdminHallOverview,
+  loadAuditLog,
+  loadHallMetrics,
   moderateLetter,
   moderateReply,
   setParticipation,
   type AdminHallOverview,
 } from "./community-hall-admin.server";
+
+export type { HallMetrics, AuditRow } from "./community-hall-admin.server";
 
 export type {
   AdminHallOverview,
@@ -60,3 +64,23 @@ export const setCommunityParticipation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => participationSchema.parse(data))
   .handler(async ({ data, context }) => setParticipation(context, data));
+
+export const getCommunityHallMetrics = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z.object({ days: z.number().int().min(1).max(365).default(30) }).parse(data ?? {}),
+  )
+  .handler(async ({ data, context }) => loadHallMetrics(context, data.days));
+
+export const getCommunityAuditLog = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z
+      .object({
+        targetType: z.enum(["letter", "reply", "profile"]).nullish(),
+        action: z.string().trim().max(60).nullish(),
+        limit: z.number().int().min(1).max(500).optional(),
+      })
+      .parse(data ?? {}),
+  )
+  .handler(async ({ data, context }) => loadAuditLog(context, data));

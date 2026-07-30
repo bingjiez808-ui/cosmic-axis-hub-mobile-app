@@ -27,6 +27,7 @@ import {
   setDeliveryState,
   setEchoSaved,
   closeLetter,
+  deleteMyCommunityData,
   submitReply,
   toggleBlock,
   type CommunityMailbox,
@@ -164,3 +165,8 @@ export const getCommunityLibrarySamples = createServerFn({ method: "GET" })
 export const markCommunityOnboarded = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => markOnboarded(context));
+
+/** Privacy: delete every trace of this member inside the hall. */
+export const deleteMyCommunityHallData = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => deleteMyCommunityData(context));
