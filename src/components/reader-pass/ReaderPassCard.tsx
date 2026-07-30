@@ -141,38 +141,48 @@ export function ReaderPassCard() {
     setDrawerOpen(true);
   }, []);
 
+  // Below 768px the pass never hangs beside the hero title: it collapses into
+  // a small corner "pass" chip that opens the full card inside the drawer.
+  if (isMobile) {
+    return (
+      <div ref={containerRef} className="absolute right-3 top-3 z-20">
+        <button
+          type="button"
+          onClick={onTap}
+          aria-label={isZh ? "打开借阅证" : "Open reader pass"}
+          className="flex min-h-[40px] items-center gap-2 rounded-full border border-emerald-300/40 bg-emerald-950/70 px-3 py-1.5 text-[11px] tracking-[0.18em] text-emerald-100 backdrop-blur-md"
+        >
+          <span
+            aria-hidden
+            className="block h-4 w-3 rounded-[2px] border border-emerald-300/60 bg-emerald-800/80"
+          />
+          <span className="whitespace-nowrap">{isZh ? "借阅证" : "Pass"}</span>
+        </button>
+        <ReaderPassDrawer open={drawerOpen} onOpenChange={setDrawerOpen} data={data} />
+      </div>
+    );
+  }
+
   return (
     <div
       ref={containerRef}
       className="pointer-events-none absolute z-20 transition-all duration-500 ease-out"
       onPointerDown={() => setExpanded(true)}
-      style={
-        isMobile
-          ? {
-              // Docked at the top-right corner, only ~28% of the card showing
-              // until the reader taps or drags it out. Never covers the hero.
-              top: "clamp(8px, 2vh, 28px)",
-              right: 0,
-              width: "min(34vw, 128px)",
-              maxWidth: "min(78vw, 280px)",
-              height: "min(52vw, 190px)",
-
-              opacity: dimmed ? 0 : 1,
-              transform: dimmed
-                ? "scale(0.92)"
-                : expanded
-                  ? "translateX(-8px)"
-                  : "translateX(72%)",
-            }
-          : {
-              top: "clamp(8px, 3vh, 40px)",
-              left: "clamp(2px, 0.6vw, 14px)",
-              width: mode === "flat" ? "clamp(120px, 18vw, 172px)" : "clamp(180px, 16vw, 260px)",
-              height: mode === "flat" ? "clamp(180px, 28vw, 260px)" : "clamp(280px, 52vh, 560px)",
-              opacity: dimmed ? 0 : 1,
-              transform: dimmed ? "scale(0.92)" : "scale(1)",
-            }
-      }
+      style={{
+        top: "clamp(92px, 12vh, 150px)",
+        left: "clamp(24px, 4vw, 72px)",
+        width:
+          mode === "flat"
+            ? "clamp(110px, 13vw, 168px)"
+            : "clamp(150px, 14vw, 240px)",
+        maxWidth: "22vw",
+        height:
+          mode === "flat"
+            ? "clamp(170px, 22vw, 250px)"
+            : "clamp(260px, 46vh, 520px)",
+        opacity: dimmed ? 0 : 1,
+        transform: dimmed ? "scale(0.92)" : "scale(1)",
+      }}
       aria-hidden={dimmed}
     >
       {mounted && !dimmed && mode === "three" ? (
@@ -192,9 +202,9 @@ export function ReaderPassCard() {
         </div>
       ) : null}
 
-      {showHint && (!isMobile || expanded) ? (
+      {showHint ? (
         <div
-          className="pointer-events-none absolute right-2 top-full mt-3 w-max max-w-[62vw] sm:left-1/2 sm:right-auto sm:max-w-[240px] sm:-translate-x-1/2 rounded-full border border-gold-dust/40 bg-obsidian/85 px-4 py-2 text-center text-[10px] uppercase tracking-[0.28em] text-gold-light shadow-lg"
+          className="pointer-events-none absolute left-1/2 top-full mt-3 w-max max-w-[240px] -translate-x-1/2 rounded-full border border-gold-dust/40 bg-obsidian/85 px-4 py-2 text-center text-[10px] uppercase tracking-[0.28em] text-gold-light shadow-lg"
           role="status"
         >
           {isZh
@@ -207,3 +217,4 @@ export function ReaderPassCard() {
     </div>
   );
 }
+
