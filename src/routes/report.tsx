@@ -1344,7 +1344,7 @@ function ReportPage() {
       });
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [seed, reportLang, search.readingId]);
+  }, [seed, reportLang, search.readingId, search.gender, genderOverride]);
 
   useEffect(() => {
     runReport();
