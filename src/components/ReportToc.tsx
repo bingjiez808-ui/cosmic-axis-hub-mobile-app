@@ -95,6 +95,40 @@ export function ReportToc({ items, lang }: { items: TocItem[]; lang: "en" | "zh"
   // Mobile ergonomics
   const tapStart = useRef<{ x: number; y: number } | null>(null);
   const openedByPointer = useRef(false);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+
+  // Native touch handling for the floating trigger. Direct element listeners
+  // survive smooth-scroll libraries that intercept touch before React's root,
+  // and let us reject taps that are really the tail of a scroll gesture.
+  useEffect(() => {
+    const el = triggerRef.current;
+    if (!el) return;
+    const onStart = (e: TouchEvent) => {
+      const t = e.touches[0];
+      tapStart.current = t ? { x: t.clientX, y: t.clientY } : null;
+    };
+    const onEnd = (e: TouchEvent) => {
+      const s = tapStart.current;
+      tapStart.current = null;
+      const t = e.changedTouches[0];
+      if (!s || !t) return;
+      if (Math.abs(t.clientX - s.x) > 12 || Math.abs(t.clientY - s.y) > 12) return;
+      openedByPointer.current = true;
+      setOpen(true);
+    };
+    const onCancel = () => {
+      tapStart.current = null;
+    };
+    el.addEventListener("touchstart", onStart, { passive: true });
+    el.addEventListener("touchend", onEnd, { passive: true });
+    el.addEventListener("touchcancel", onCancel, { passive: true });
+    return () => {
+      el.removeEventListener("touchstart", onStart);
+      el.removeEventListener("touchend", onEnd);
+      el.removeEventListener("touchcancel", onCancel);
+    };
+  }, []);
+
 
   const dragStart = useRef<number | null>(null);
   const [dragY, setDragY] = useState(0);
