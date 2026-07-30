@@ -172,6 +172,7 @@ import {
 } from "@/lib/report-input";
 import { REPORT_AI_VERSION } from "@/lib/ai-cache-version";
 import { useAccount } from "@/lib/account";
+import "@/components/report-modules.css";
 import {
   buildCalculationSnapshot,
   ELEMENT_LABEL_EN,
@@ -855,12 +856,86 @@ const dimensions: Dimension[] = [
 
 function Stars({ n }: { n: number }) {
   return (
-    <span className="tracking-[0.3em] text-gold-dust">
-      {"★".repeat(n)}
-      <span className="text-stone-warm/20">{"★".repeat(5 - n)}</span>
+    <span className="rm-stars tracking-[0.3em] text-gold-dust" aria-label={`${n}/5`}>
+      {Array.from({ length: 5 }).map((_, i) => (
+        <span
+          key={i}
+          aria-hidden="true"
+          className={`rm-star ${i < n ? "rm-star--on" : "text-stone-warm/20"}`}
+          style={i < n ? { animationDelay: `${i * 0.42}s` } : undefined}
+        >
+          ★
+        </span>
+      ))}
     </span>
   );
 }
+
+/**
+ * Touch/coarse-pointer devices have no hover, so a module "wakes up" while it
+ * sits in the middle of the viewport instead. Desktop keeps pure hover.
+ */
+function useCoarseActive<T extends HTMLElement>() {
+  const ref = useRef<T | null>(null);
+  const [active, setActive] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof window === "undefined") return;
+    const coarse = window.matchMedia("(hover: none), (pointer: coarse)").matches;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!coarse || reduced) return;
+    const io = new IntersectionObserver(
+      ([entry]) => setActive(entry.isIntersecting),
+      { rootMargin: "-38% 0px -38% 0px", threshold: 0 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  const onPointerMove = useCallback((e: React.PointerEvent<T>) => {
+    const el = ref.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    el.style.setProperty("--rm-x", `${((e.clientX - r.left) / r.width) * 100}%`);
+    el.style.setProperty("--rm-y", `${((e.clientY - r.top) / r.height) * 100}%`);
+  }, []);
+
+  return { ref, active, onPointerMove };
+}
+
+/** Animated shell for one reading module (hover glow + in-view wake on touch). */
+function DimensionCardShell({
+  id,
+  idx,
+  pending,
+  children,
+}: {
+  id: string;
+  idx: number;
+  pending: boolean;
+  children: React.ReactNode;
+}) {
+  const { ref, active, onPointerMove } = useCoarseActive<HTMLDivElement>();
+  return (
+    <motion.article
+      ref={ref}
+      id={id}
+      onPointerMove={onPointerMove}
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-80px" }}
+      transition={{ duration: 0.8, delay: Math.min(idx, 4) * 0.04, ease: [0.32, 0.72, 0, 1] }}
+      className={`rm-card glass-card scroll-mt-[calc(var(--site-nav-height,96px)+72px)] overflow-hidden rounded-3xl p-4 sm:p-8 md:p-12 ${
+        pending ? "opacity-70" : ""
+      } ${active ? "is-active" : ""}`}
+    >
+      {children}
+    </motion.article>
+  );
+}
+
+
 
 function ReportPage() {
   const search = Route.useSearch();
@@ -1638,23 +1713,17 @@ function ReportPage() {
           const arrived = aiByKey.has(d.key);
           const pending = !!search.date && aiState === "loading" && !arrived;
           return (
-            <motion.article
-              key={d.key}
-              id={d.key}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.8, delay: idx * 0.04, ease: [0.32, 0.72, 0, 1] }}
-              className={`glass-card scroll-mt-[calc(var(--site-nav-height,96px)+72px)] overflow-hidden rounded-3xl p-4 sm:p-8 md:p-12 ${pending ? "opacity-70" : ""}`}
-            >
+            <DimensionCardShell key={d.key} id={d.key} idx={idx} pending={pending}>
+
               <div className="mb-8 flex flex-wrap items-start justify-between gap-4 border-b border-white/10 pb-6">
                 <div className="flex min-w-0 items-start gap-4">
-                  <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl border border-gold-dust/25 bg-gradient-to-br from-gold-dust/[0.12] to-transparent text-gold-light shadow-[0_0_24px_-12px_hsl(45_70%_60%/0.5)]">
+                  <div className="rm-icon flex size-14 shrink-0 items-center justify-center rounded-2xl border border-gold-dust/25 bg-gradient-to-br from-gold-dust/[0.12] to-transparent text-gold-light">
                     {(() => {
                       const Icon = DIM_ICONS[d.key] ?? Sparkles;
                       return <Icon size={22} strokeWidth={1.5} />;
                     })()}
                   </div>
+
                   <div className="min-w-0">
                     <p className="mb-2 flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
                       <span>
@@ -1685,9 +1754,17 @@ function ReportPage() {
                     {d.evidence.map((e) => {
                       const TIcon = traditionIcon(e.tradition[0]);
                       return (
-                        <li key={e.tradition[0]} className="border-l border-gold-dust/30 pl-4">
+                        <li
+                          key={e.tradition[0]}
+                          tabIndex={0}
+                          className="rm-evidence-item border-l border-gold-dust/30 pl-4"
+                        >
                           <p className="mb-1 flex items-center gap-2 font-serif text-gold-light">
-                            <TIcon size={13} strokeWidth={1.5} className="opacity-80" />
+                            <TIcon
+                              size={13}
+                              strokeWidth={1.5}
+                              className="rm-evidence-icon opacity-80"
+                            />
                             <span>{e.tradition[li]}</span>
                           </p>
                           <p className="text-stone-warm/60">{e.note[li]}</p>
@@ -1699,7 +1776,7 @@ function ReportPage() {
                   <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
                     {t.strength_map}
                   </p>
-                  <div className="text-stone-warm/50">
+                  <div className="rm-viz text-stone-warm/50">
                     {d.viz === "elements" && d.elementStrengths ? (
                       <FiveElements strengths={d.elementStrengths} lang={lang} size={240} />
                     ) : (
@@ -1708,11 +1785,12 @@ function ReportPage() {
                   </div>
                 </div>
 
+
                 {/* Right: synthesis + plain-language */}
                 <div className="lg:col-span-3">
                   <p className="mb-4 flex items-center gap-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
                     <span
-                      className="inline-block size-1.5 rotate-45 bg-gold-dust"
+                      className="rm-tick inline-block size-1.5 rotate-45 bg-gold-dust"
                       aria-hidden="true"
                     />
                     {t.synthesis}
@@ -1723,7 +1801,8 @@ function ReportPage() {
                     ))}
                   </div>
 
-                  <div className="rounded-2xl border border-gold-dust/25 bg-gradient-to-br from-gold-dust/[0.08] to-gold-dust/[0.02] p-5 md:p-6">
+                  <div className="rm-plain rounded-2xl border border-gold-dust/25 bg-gradient-to-br from-gold-dust/[0.08] to-gold-dust/[0.02] p-5 md:p-6">
+
                     <p className="mb-3 flex items-center gap-2 text-[10px] uppercase tracking-[0.32em] text-gold-light">
                       <span className="size-1.5 rounded-full bg-gold-dust" />
                       {t.in_plain_words}
@@ -1739,10 +1818,10 @@ function ReportPage() {
                     <button
                       type="button"
                       onClick={() => setDetailKey(d.key)}
-                      className="group mt-6 flex w-full items-center justify-between gap-3 rounded-2xl border border-gold-dust/25 bg-gradient-to-br from-gold-dust/[0.06] to-transparent px-5 py-4 text-left transition-all hover:border-gold-dust/50 hover:from-gold-dust/[0.1] hover:shadow-[0_10px_40px_-20px_hsl(45_70%_60%/0.6)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-light"
+                      className="rm-detail-btn group mt-6 flex w-full items-center justify-between gap-3 rounded-2xl border border-gold-dust/25 bg-gradient-to-br from-gold-dust/[0.06] to-transparent px-5 py-4 text-left transition-all hover:border-gold-dust/50 hover:from-gold-dust/[0.1] hover:shadow-[0_10px_40px_-20px_hsl(45_70%_60%/0.6)] active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-light"
                     >
                       <span className="flex min-w-0 items-center gap-3">
-                        <span className="grid size-9 shrink-0 place-items-center rounded-xl border border-gold-dust/30 bg-obsidian/60 text-gold-light">
+                        <span className="grid size-9 shrink-0 place-items-center rounded-xl border border-gold-dust/30 bg-obsidian/60 text-gold-light transition-transform duration-500 group-hover:rotate-6 group-hover:scale-110">
                           <Maximize2 size={14} strokeWidth={1.6} />
                         </span>
                         <span className="min-w-0">
@@ -1756,13 +1835,14 @@ function ReportPage() {
                           </span>
                         </span>
                       </span>
-                      <span className="flex items-center gap-2 text-gold-dust/70 transition-transform group-hover:translate-x-1">
+                      <span className="rm-detail-arrow flex items-center gap-2 text-gold-dust/70">
                         {/* Preview dots — one per detail block */}
                         <span className="hidden gap-1 sm:flex">
                           {d.details.map((_, i) => (
                             <span
                               key={i}
-                              className={`size-1.5 rounded-full ${
+                              style={{ animationDelay: `${i * 0.35}s` }}
+                              className={`size-1.5 animate-pulse rounded-full ${
                                 i === 0 ? "bg-emerald-300/70" : "bg-amber-300/70"
                               }`}
                             />
@@ -1774,7 +1854,8 @@ function ReportPage() {
                   )}
                 </div>
               </div>
-            </motion.article>
+            </DimensionCardShell>
+
           );
         })}
       </section>
