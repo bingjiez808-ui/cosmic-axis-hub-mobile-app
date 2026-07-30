@@ -11,11 +11,11 @@
  */
 .le-fog {
   position: absolute;
-  inset: -12%;
+  inset: 0;
+  overflow: hidden;
   z-index: 3;
   pointer-events: none;
   opacity: var(--le-fog-alpha, 1);
-  transition: opacity 700ms ease;
   will-change: opacity;
   /* Lantern clearing mask: cleared at the pointer, full mist far away. */
   --le-fog-mask: radial-gradient(
@@ -112,3 +112,7 @@
   .le-fog-layer { animation: none !important; }
   .le-fog { transition: none; }
 }
+
+/* Low-end devices: drop the third layer to reduce compositing cost. */
+.le-fog[data-lite="true"] .le-fog-3 { display: none; }
+.le-fog[data-lite="true"] .le-fog-layer { animation-duration: 34s; }
