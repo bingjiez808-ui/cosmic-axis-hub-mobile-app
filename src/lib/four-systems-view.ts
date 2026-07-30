@@ -205,8 +205,8 @@ export function baziView(bazi: CalculationSnapshot["bazi"]): BaziView | null {
  * branch at position i of the 寅-first order.
  */
 export const ZIWEI_GRID_CELLS: Array<[number, number]> = [
-  [1, 2], // 寅
-  [0, 2], // 卯  (bottom-left corner region)
+  [0, 3], // 寅  (bottom-left corner)
+  [0, 2], // 卯
   [0, 1], // 辰
   [0, 0], // 巳
   [1, 0], // 午
