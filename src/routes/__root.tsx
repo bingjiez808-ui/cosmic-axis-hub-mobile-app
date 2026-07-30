@@ -809,11 +809,25 @@ function SiteNav() {
                     </a>
                   );
                 }
+                if (item.gated) {
+                  return (
+                    <Link
+                      key={item.key}
+                      to="/auth"
+                      search={{ mode: "login" as const, redirect: item.to }}
+                      onClick={() => setDrawerOpen(false)}
+                      aria-label={item.ariaLabel}
+                      className={cls}
+                      style={style}
+                    >
+                      {item.label}
+                    </Link>
+                  );
+                }
                 return (
                   <Link
                     key={item.key}
-                    to={item.gated ? "/auth" : item.to!}
-                    search={item.gated ? { mode: "login" as const, redirect: item.to } : undefined}
+                    to={item.to!}
                     onClick={() => setDrawerOpen(false)}
                     aria-current={item.active ? "page" : undefined}
                     aria-label={item.ariaLabel}
@@ -823,6 +837,7 @@ function SiteNav() {
                     {item.label}
                   </Link>
                 );
+
               })}
             </div>
           </section>
