@@ -6,6 +6,11 @@ import { createLovableAiGatewayProvider } from "./ai-gateway.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { guardrailsFor, safeMessage } from "./ai-guardrails";
 import { enforceRateLimit } from "./rate-limit.server";
+import {
+  coverageDirective,
+  crossSystemDirective,
+  systemCoverageFromFacts,
+} from "./four-system-brief";
 
 const AskInput = z.object({
   question: z.string().min(1).max(4000),
@@ -149,6 +154,15 @@ export const askOracle = createServerFn({ method: "POST" })
         chart.jyotish ? `Jyotish: ${chart.jyotish}` : null,
         chart.bazi ? `BaZi: ${chart.bazi}` : null,
         chart.ziwei ? `Zi Wei Dou Shu: ${chart.ziwei}` : null,
+        coverageDirective(
+          systemCoverageFromFacts({
+            planets: chart.astrology ? [{ name: "chart", sign: chart.astrology }] : [],
+            bazi: chart.bazi,
+            vedic: chart.jyotish,
+            ziwei: chart.ziwei,
+          }).missing,
+          data.lang,
+        ),
       ]
         .filter(Boolean)
         .join("\n");
@@ -168,7 +182,8 @@ export const askOracle = createServerFn({ method: "POST" })
 4) English, 200–320 words, blank lines between paragraphs; numbered points are welcome.
 Never claim to be an AI. Never say fate is fixed — destiny is only a map.`;
 
-      const guardedSystem = system + "\n\n" + guardrailsFor(data.lang);
+      const guardedSystem =
+        system + "\n\n" + crossSystemDirective(data.lang) + "\n\n" + guardrailsFor(data.lang);
       const prompt = `${chartLine ? `Visitor's chart:\n${chartLine}\n\n` : ""}Question:\n${data.question}`;
 
       const { text } = await generateText({
