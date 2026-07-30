@@ -31,12 +31,17 @@ import { Route as DevReaderHarnessRouteImport } from './routes/dev.reader-harnes
 import { Route as DevPanoramaTourRouteImport } from './routes/dev.panorama-tour'
 import { Route as DevGuidedLibraryV2RouteImport } from './routes/dev.guided-library-v2'
 import { Route as DevDemoPremiumRouteImport } from './routes/dev.demo-premium'
+import { Route as CommunityWriteRouteImport } from './routes/community.write'
+import { Route as CommunityOutboxRouteImport } from './routes/community.outbox'
+import { Route as CommunityInboxRouteImport } from './routes/community.inbox'
+import { Route as CommunityEchoesRouteImport } from './routes/community.echoes'
 import { Route as AuthResetRouteImport } from './routes/auth.reset'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as ApiGenerateAvatarRouteImport } from './routes/api/generate-avatar'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
+import { Route as CommunityLettersLetterIdRouteImport } from './routes/community.letters.$letterId'
 import { Route as AuthenticatedMeSageRouteImport } from './routes/_authenticated/me.sage'
 import { Route as AuthenticatedMeRelationshipsRouteImport } from './routes/_authenticated/me.relationships'
 import { Route as AuthenticatedMeProfileRouteImport } from './routes/_authenticated/me.profile'
@@ -47,6 +52,7 @@ import { Route as AuthenticatedMeLiteratureRouteImport } from './routes/_authent
 import { Route as AuthenticatedMeHomeRouteImport } from './routes/_authenticated/me.home'
 import { Route as AuthenticatedMeFriendsRouteImport } from './routes/_authenticated/me.friends'
 import { Route as AuthenticatedMeEchoesRouteImport } from './routes/_authenticated/me.echoes'
+import { Route as AuthenticatedMeCommunityRouteImport } from './routes/_authenticated/me.community'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 
@@ -159,6 +165,26 @@ const DevDemoPremiumRoute = DevDemoPremiumRouteImport.update({
   path: '/dev/demo-premium',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CommunityWriteRoute = CommunityWriteRouteImport.update({
+  id: '/write',
+  path: '/write',
+  getParentRoute: () => CommunityRoute,
+} as any)
+const CommunityOutboxRoute = CommunityOutboxRouteImport.update({
+  id: '/outbox',
+  path: '/outbox',
+  getParentRoute: () => CommunityRoute,
+} as any)
+const CommunityInboxRoute = CommunityInboxRouteImport.update({
+  id: '/inbox',
+  path: '/inbox',
+  getParentRoute: () => CommunityRoute,
+} as any)
+const CommunityEchoesRoute = CommunityEchoesRouteImport.update({
+  id: '/echoes',
+  path: '/echoes',
+  getParentRoute: () => CommunityRoute,
+} as any)
 const AuthResetRoute = AuthResetRouteImport.update({
   id: '/reset',
   path: '/reset',
@@ -190,6 +216,12 @@ const Char91DotmcpChar93ListToolsRoute =
     id: '/.mcp/list-tools',
     path: '/.mcp/list-tools',
     getParentRoute: () => rootRouteImport,
+  } as any)
+const CommunityLettersLetterIdRoute =
+  CommunityLettersLetterIdRouteImport.update({
+    id: '/letters/$letterId',
+    path: '/letters/$letterId',
+    getParentRoute: () => CommunityRoute,
   } as any)
 const AuthenticatedMeSageRoute = AuthenticatedMeSageRouteImport.update({
   id: '/me/sage',
@@ -244,6 +276,12 @@ const AuthenticatedMeEchoesRoute = AuthenticatedMeEchoesRouteImport.update({
   path: '/me/echoes',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedMeCommunityRoute =
+  AuthenticatedMeCommunityRouteImport.update({
+    id: '/me/community',
+    path: '/me/community',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const Char91DotmcpChar93InvokeToolToolRoute =
   Char91DotmcpChar93InvokeToolToolRouteImport.update({
     id: '/.mcp/invoke-tool/$tool',
@@ -260,7 +298,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/auth': typeof AuthRouteWithChildren
-  '/community': typeof CommunityRoute
+  '/community': typeof CommunityRouteWithChildren
   '/delete-account': typeof DeleteAccountRoute
   '/life-studies': typeof LifeStudiesRouteWithChildren
   '/mcp': typeof McpRoute
@@ -277,6 +315,10 @@ export interface FileRoutesByFullPath {
   '/api/generate-avatar': typeof ApiGenerateAvatarRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/reset': typeof AuthResetRoute
+  '/community/echoes': typeof CommunityEchoesRoute
+  '/community/inbox': typeof CommunityInboxRoute
+  '/community/outbox': typeof CommunityOutboxRoute
+  '/community/write': typeof CommunityWriteRoute
   '/dev/demo-premium': typeof DevDemoPremiumRoute
   '/dev/guided-library-v2': typeof DevGuidedLibraryV2Route
   '/dev/panorama-tour': typeof DevPanoramaTourRoute
@@ -286,6 +328,7 @@ export interface FileRoutesByFullPath {
   '/life-studies/': typeof LifeStudiesIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/me/community': typeof AuthenticatedMeCommunityRoute
   '/me/echoes': typeof AuthenticatedMeEchoesRoute
   '/me/friends': typeof AuthenticatedMeFriendsRoute
   '/me/home': typeof AuthenticatedMeHomeRoute
@@ -296,11 +339,12 @@ export interface FileRoutesByFullPath {
   '/me/profile': typeof AuthenticatedMeProfileRoute
   '/me/relationships': typeof AuthenticatedMeRelationshipsRoute
   '/me/sage': typeof AuthenticatedMeSageRoute
+  '/community/letters/$letterId': typeof CommunityLettersLetterIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/community': typeof CommunityRoute
+  '/community': typeof CommunityRouteWithChildren
   '/delete-account': typeof DeleteAccountRoute
   '/mcp': typeof McpRoute
   '/privacy': typeof PrivacyRoute
@@ -316,6 +360,10 @@ export interface FileRoutesByTo {
   '/api/generate-avatar': typeof ApiGenerateAvatarRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/reset': typeof AuthResetRoute
+  '/community/echoes': typeof CommunityEchoesRoute
+  '/community/inbox': typeof CommunityInboxRoute
+  '/community/outbox': typeof CommunityOutboxRoute
+  '/community/write': typeof CommunityWriteRoute
   '/dev/demo-premium': typeof DevDemoPremiumRoute
   '/dev/guided-library-v2': typeof DevGuidedLibraryV2Route
   '/dev/panorama-tour': typeof DevPanoramaTourRoute
@@ -325,6 +373,7 @@ export interface FileRoutesByTo {
   '/life-studies': typeof LifeStudiesIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/me/community': typeof AuthenticatedMeCommunityRoute
   '/me/echoes': typeof AuthenticatedMeEchoesRoute
   '/me/friends': typeof AuthenticatedMeFriendsRoute
   '/me/home': typeof AuthenticatedMeHomeRoute
@@ -335,6 +384,7 @@ export interface FileRoutesByTo {
   '/me/profile': typeof AuthenticatedMeProfileRoute
   '/me/relationships': typeof AuthenticatedMeRelationshipsRoute
   '/me/sage': typeof AuthenticatedMeSageRoute
+  '/community/letters/$letterId': typeof CommunityLettersLetterIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -342,7 +392,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/about': typeof AboutRoute
   '/auth': typeof AuthRouteWithChildren
-  '/community': typeof CommunityRoute
+  '/community': typeof CommunityRouteWithChildren
   '/delete-account': typeof DeleteAccountRoute
   '/life-studies': typeof LifeStudiesRouteWithChildren
   '/mcp': typeof McpRoute
@@ -359,6 +409,10 @@ export interface FileRoutesById {
   '/api/generate-avatar': typeof ApiGenerateAvatarRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/reset': typeof AuthResetRoute
+  '/community/echoes': typeof CommunityEchoesRoute
+  '/community/inbox': typeof CommunityInboxRoute
+  '/community/outbox': typeof CommunityOutboxRoute
+  '/community/write': typeof CommunityWriteRoute
   '/dev/demo-premium': typeof DevDemoPremiumRoute
   '/dev/guided-library-v2': typeof DevGuidedLibraryV2Route
   '/dev/panorama-tour': typeof DevPanoramaTourRoute
@@ -368,6 +422,7 @@ export interface FileRoutesById {
   '/life-studies/': typeof LifeStudiesIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/_authenticated/me/community': typeof AuthenticatedMeCommunityRoute
   '/_authenticated/me/echoes': typeof AuthenticatedMeEchoesRoute
   '/_authenticated/me/friends': typeof AuthenticatedMeFriendsRoute
   '/_authenticated/me/home': typeof AuthenticatedMeHomeRoute
@@ -378,6 +433,7 @@ export interface FileRoutesById {
   '/_authenticated/me/profile': typeof AuthenticatedMeProfileRoute
   '/_authenticated/me/relationships': typeof AuthenticatedMeRelationshipsRoute
   '/_authenticated/me/sage': typeof AuthenticatedMeSageRoute
+  '/community/letters/$letterId': typeof CommunityLettersLetterIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -402,6 +458,10 @@ export interface FileRouteTypes {
     | '/api/generate-avatar'
     | '/auth/callback'
     | '/auth/reset'
+    | '/community/echoes'
+    | '/community/inbox'
+    | '/community/outbox'
+    | '/community/write'
     | '/dev/demo-premium'
     | '/dev/guided-library-v2'
     | '/dev/panorama-tour'
@@ -411,6 +471,7 @@ export interface FileRouteTypes {
     | '/life-studies/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/me/community'
     | '/me/echoes'
     | '/me/friends'
     | '/me/home'
@@ -421,6 +482,7 @@ export interface FileRouteTypes {
     | '/me/profile'
     | '/me/relationships'
     | '/me/sage'
+    | '/community/letters/$letterId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -441,6 +503,10 @@ export interface FileRouteTypes {
     | '/api/generate-avatar'
     | '/auth/callback'
     | '/auth/reset'
+    | '/community/echoes'
+    | '/community/inbox'
+    | '/community/outbox'
+    | '/community/write'
     | '/dev/demo-premium'
     | '/dev/guided-library-v2'
     | '/dev/panorama-tour'
@@ -450,6 +516,7 @@ export interface FileRouteTypes {
     | '/life-studies'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/me/community'
     | '/me/echoes'
     | '/me/friends'
     | '/me/home'
@@ -460,6 +527,7 @@ export interface FileRouteTypes {
     | '/me/profile'
     | '/me/relationships'
     | '/me/sage'
+    | '/community/letters/$letterId'
   id:
     | '__root__'
     | '/'
@@ -483,6 +551,10 @@ export interface FileRouteTypes {
     | '/api/generate-avatar'
     | '/auth/callback'
     | '/auth/reset'
+    | '/community/echoes'
+    | '/community/inbox'
+    | '/community/outbox'
+    | '/community/write'
     | '/dev/demo-premium'
     | '/dev/guided-library-v2'
     | '/dev/panorama-tour'
@@ -492,6 +564,7 @@ export interface FileRouteTypes {
     | '/life-studies/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/_authenticated/me/community'
     | '/_authenticated/me/echoes'
     | '/_authenticated/me/friends'
     | '/_authenticated/me/home'
@@ -502,6 +575,7 @@ export interface FileRouteTypes {
     | '/_authenticated/me/profile'
     | '/_authenticated/me/relationships'
     | '/_authenticated/me/sage'
+    | '/community/letters/$letterId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -509,7 +583,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AboutRoute: typeof AboutRoute
   AuthRoute: typeof AuthRouteWithChildren
-  CommunityRoute: typeof CommunityRoute
+  CommunityRoute: typeof CommunityRouteWithChildren
   DeleteAccountRoute: typeof DeleteAccountRoute
   LifeStudiesRoute: typeof LifeStudiesRouteWithChildren
   McpRoute: typeof McpRoute
@@ -687,6 +761,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DevDemoPremiumRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/community/write': {
+      id: '/community/write'
+      path: '/write'
+      fullPath: '/community/write'
+      preLoaderRoute: typeof CommunityWriteRouteImport
+      parentRoute: typeof CommunityRoute
+    }
+    '/community/outbox': {
+      id: '/community/outbox'
+      path: '/outbox'
+      fullPath: '/community/outbox'
+      preLoaderRoute: typeof CommunityOutboxRouteImport
+      parentRoute: typeof CommunityRoute
+    }
+    '/community/inbox': {
+      id: '/community/inbox'
+      path: '/inbox'
+      fullPath: '/community/inbox'
+      preLoaderRoute: typeof CommunityInboxRouteImport
+      parentRoute: typeof CommunityRoute
+    }
+    '/community/echoes': {
+      id: '/community/echoes'
+      path: '/echoes'
+      fullPath: '/community/echoes'
+      preLoaderRoute: typeof CommunityEchoesRouteImport
+      parentRoute: typeof CommunityRoute
+    }
     '/auth/reset': {
       id: '/auth/reset'
       path: '/reset'
@@ -728,6 +830,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/.mcp/list-tools'
       preLoaderRoute: typeof Char91DotmcpChar93ListToolsRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/community/letters/$letterId': {
+      id: '/community/letters/$letterId'
+      path: '/letters/$letterId'
+      fullPath: '/community/letters/$letterId'
+      preLoaderRoute: typeof CommunityLettersLetterIdRouteImport
+      parentRoute: typeof CommunityRoute
     }
     '/_authenticated/me/sage': {
       id: '/_authenticated/me/sage'
@@ -799,6 +908,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMeEchoesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/me/community': {
+      id: '/_authenticated/me/community'
+      path: '/me/community'
+      fullPath: '/me/community'
+      preLoaderRoute: typeof AuthenticatedMeCommunityRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/.mcp/invoke-tool/$tool': {
       id: '/.mcp/invoke-tool/$tool'
       path: '/.mcp/invoke-tool/$tool'
@@ -818,6 +934,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
+  AuthenticatedMeCommunityRoute: typeof AuthenticatedMeCommunityRoute
   AuthenticatedMeEchoesRoute: typeof AuthenticatedMeEchoesRoute
   AuthenticatedMeFriendsRoute: typeof AuthenticatedMeFriendsRoute
   AuthenticatedMeHomeRoute: typeof AuthenticatedMeHomeRoute
@@ -832,6 +949,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
+  AuthenticatedMeCommunityRoute: AuthenticatedMeCommunityRoute,
   AuthenticatedMeEchoesRoute: AuthenticatedMeEchoesRoute,
   AuthenticatedMeFriendsRoute: AuthenticatedMeFriendsRoute,
   AuthenticatedMeHomeRoute: AuthenticatedMeHomeRoute,
@@ -861,6 +979,26 @@ const AuthRouteChildren: AuthRouteChildren = {
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
+interface CommunityRouteChildren {
+  CommunityEchoesRoute: typeof CommunityEchoesRoute
+  CommunityInboxRoute: typeof CommunityInboxRoute
+  CommunityOutboxRoute: typeof CommunityOutboxRoute
+  CommunityWriteRoute: typeof CommunityWriteRoute
+  CommunityLettersLetterIdRoute: typeof CommunityLettersLetterIdRoute
+}
+
+const CommunityRouteChildren: CommunityRouteChildren = {
+  CommunityEchoesRoute: CommunityEchoesRoute,
+  CommunityInboxRoute: CommunityInboxRoute,
+  CommunityOutboxRoute: CommunityOutboxRoute,
+  CommunityWriteRoute: CommunityWriteRoute,
+  CommunityLettersLetterIdRoute: CommunityLettersLetterIdRoute,
+}
+
+const CommunityRouteWithChildren = CommunityRoute._addFileChildren(
+  CommunityRouteChildren,
+)
+
 interface LifeStudiesRouteChildren {
   LifeStudiesMathRoute: typeof LifeStudiesMathRoute
   LifeStudiesIndexRoute: typeof LifeStudiesIndexRoute
@@ -880,7 +1018,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AboutRoute: AboutRoute,
   AuthRoute: AuthRouteWithChildren,
-  CommunityRoute: CommunityRoute,
+  CommunityRoute: CommunityRouteWithChildren,
   DeleteAccountRoute: DeleteAccountRoute,
   LifeStudiesRoute: LifeStudiesRouteWithChildren,
   McpRoute: McpRoute,

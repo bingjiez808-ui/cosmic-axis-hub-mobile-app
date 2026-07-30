@@ -12,12 +12,15 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { AGE_BANDS } from "./community-hall-safety";
 import {
+  blockLetterAuthor,
   dispatchLetter,
   loadMailbox,
+  markNotificationsRead,
   readCommunityProfile,
   reportContent,
   saveCommunityProfile,
   sendLetter,
+  setDeliveryState,
   submitReply,
   toggleBlock,
   type CommunityMailbox,
@@ -98,3 +101,23 @@ export const setCommunityBlock = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => blockSchema.parse(data))
   .handler(async ({ data, context }) => toggleBlock(context, data));
+
+const deliverySchema = z.object({
+  letterId: z.string().uuid(),
+  state: z.enum(["read", "archived", "restore"]),
+});
+
+export const setCommunityDeliveryState = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => deliverySchema.parse(data))
+  .handler(async ({ data, context }) => setDeliveryState(context, data));
+
+export const markCommunityNotificationsRead = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ ids: z.array(z.string().uuid()).max(50) }).parse(data))
+  .handler(async ({ data, context }) => markNotificationsRead(context, data.ids));
+
+export const blockCommunityLetterAuthor = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => letterIdSchema.parse(data))
+  .handler(async ({ data, context }) => blockLetterAuthor(context, data.letterId));

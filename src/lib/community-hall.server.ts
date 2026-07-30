@@ -275,3 +275,78 @@ export async function toggleBlock(ctx: Ctx, input: { userId: string; blocked: bo
   }
   return { blocked: input.blocked };
 }
+
+/** Recipient-side delivery state. Only `read` / `archived` are client-settable
+ *  (enforced again by the `community_deliveries_guard` trigger in Postgres). */
+export async function setDeliveryState(
+  ctx: Ctx,
+  input: { letterId: string; state: "read" | "archived" | "restore" },
+) {
+  enforceRateLimit(`community-hall:delivery:${ctx.userId}`, 120, 60 * 60_000, "mailbox updates");
+  const { data: current, error: readError } = await ctx.supabase
+    .from("community_letter_deliveries")
+    .select("id, status, read_at, replied_at")
+    .eq("letter_id", input.letterId)
+    .eq("recipient_id", ctx.userId)
+    .maybeSingle();
+  if (readError) friendly(readError);
+  if (!current) throw new Error(RPC_ERRORS.letter_not_found);
+
+  const patch: { status?: string; read_at?: string } = {};
+  if (input.state === "read") {
+    if (current.read_at) return { status: current.status };
+    patch.read_at = new Date().toISOString();
+    if (current.status === "delivered") patch.status = "read";
+  } else if (input.state === "archived") {
+    patch.status = "archived";
+  } else {
+    patch.status = current.replied_at ? "replied" : current.read_at ? "read" : "delivered";
+  }
+
+  const { data, error } = await ctx.supabase
+    .from("community_letter_deliveries")
+    .update(patch)
+    .eq("id", current.id)
+    .select("status")
+    .maybeSingle();
+  if (error) friendly(error);
+  return { status: data?.status ?? current.status };
+}
+
+export async function markNotificationsRead(ctx: Ctx, ids: string[]) {
+  if (ids.length === 0) return { updated: 0 };
+  const { error, count } = await ctx.supabase
+    .from("community_notifications")
+    .update({ read_at: new Date().toISOString() }, { count: "exact" })
+    .eq("user_id", ctx.userId)
+    .in("id", ids.slice(0, 50))
+    .is("read_at", null);
+  if (error) friendly(error);
+  return { updated: count ?? 0 };
+}
+
+/**
+ * Block the (anonymous) author of a letter this user actually received.
+ * The author's user id is resolved server-side and never returned, so the
+ * recipient can block without ever learning who wrote the letter.
+ */
+export async function blockLetterAuthor(ctx: Ctx, letterId: string) {
+  const { data: delivery, error } = await ctx.supabase
+    .from("community_letter_deliveries")
+    .select("id")
+    .eq("letter_id", letterId)
+    .eq("recipient_id", ctx.userId)
+    .maybeSingle();
+  if (error) friendly(error);
+  if (!delivery) throw new Error(RPC_ERRORS.letter_not_found);
+
+  const { data: letter } = await ctx.supabase
+    .from("community_letters")
+    .select("author_id")
+    .eq("id", letterId)
+    .maybeSingle();
+  if (!letter?.author_id) throw new Error(RPC_ERRORS.letter_not_found);
+
+  await toggleBlock(ctx, { userId: letter.author_id, blocked: true });
+  return { blocked: true };
+}
