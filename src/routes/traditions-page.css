@@ -258,3 +258,81 @@
     letter-spacing: 0.03em;
   }
 }
+
+/* ---- Four-tradition equal cards ---- */
+.trad-card {
+  display: flex;
+  flex-direction: column;
+  height: clamp(520px, 62vh, 640px);
+  padding: clamp(18px, 2.4vw, 30px);
+  border-radius: 1.5rem;
+  overflow: hidden;
+}
+
+.trad-card-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: flex-start;
+  gap: clamp(10px, 2vw, 20px);
+  padding-bottom: clamp(12px, 1.6vw, 18px);
+  border-bottom: 1px solid rgb(255 255 255 / 0.08);
+}
+
+.trad-card-title {
+  font-size: clamp(1.35rem, 1rem + 1.5vw, 2.1rem);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.trad-card-sub {
+  font-size: clamp(0.62rem, 0.55rem + 0.25vw, 0.78rem);
+  line-height: 1.6;
+}
+
+.trad-card-emblem {
+  width: clamp(64px, 9vw, 108px);
+  height: auto;
+  opacity: 0.78;
+  filter: drop-shadow(0 0 14px rgb(198 161 87 / 0.25));
+  animation: trad-emblem-breathe 9s ease-in-out infinite;
+}
+
+.trad-card:hover .trad-card-emblem {
+  opacity: 1;
+}
+
+@keyframes trad-emblem-breathe {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-4px) rotate(2.5deg); }
+}
+
+.trad-card-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: clamp(14px, 1.8vw, 20px) 4px 4px 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgb(198 161 87 / 0.45) transparent;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+}
+
+.trad-card-body::-webkit-scrollbar { width: 5px; }
+.trad-card-body::-webkit-scrollbar-track { background: transparent; }
+.trad-card-body::-webkit-scrollbar-thumb {
+  background: rgb(198 161 87 / 0.4);
+  border-radius: 999px;
+}
+
+.trad-card-text {
+  font-size: clamp(0.8rem, 0.72rem + 0.3vw, 0.95rem);
+}
+
+@media (max-width: 640px) {
+  .trad-card { height: clamp(440px, 78vh, 560px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trad-card-emblem { animation: none; }
+}
