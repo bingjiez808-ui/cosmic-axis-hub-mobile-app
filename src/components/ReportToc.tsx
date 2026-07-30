@@ -102,6 +102,7 @@ export function ReportToc({ items, lang }: { items: TocItem[]; lang: "en" | "zh"
   // and let us reject taps that are really the tail of a scroll gesture.
   useEffect(() => {
     const el = triggerRef.current;
+    console.log("TOC effect", !!el);
     if (!el) return;
     const onStart = (e: TouchEvent) => {
       const t = e.touches[0];
@@ -113,6 +114,7 @@ export function ReportToc({ items, lang }: { items: TocItem[]; lang: "en" | "zh"
       const t = e.changedTouches[0];
       if (!s || !t) return;
       if (Math.abs(t.clientX - s.x) > 12 || Math.abs(t.clientY - s.y) > 12) return;
+      console.log("TOC native tap");
       openedByPointer.current = true;
       setOpen(true);
     };
