@@ -9,6 +9,7 @@ import ziweiImg from "@/assets/tradition-ziwei.jpg";
 import treeImg from "@/assets/tree-of-destiny.jpg";
 import { TraditionModal, type TraditionId } from "@/components/TraditionModal";
 import { useLang } from "@/lib/i18n";
+import "./traditions-page.css";
 
 export const Route = createFileRoute("/traditions")({
   head: () => ({
@@ -404,7 +405,7 @@ function FocusComparison() {
           {t.focus_title}
           <span className="italic gold-gradient-text">{t.focus_title_em}</span>
         </h3>
-        <p className="mx-auto mt-4 max-w-xl text-sm text-stone-warm/50">{t.focus_hint}</p>
+        <p className="mx-auto mt-4 max-w-xl text-sm text-stone-warm/75">{t.focus_hint}</p>
       </div>
       <div className="mb-10 flex flex-wrap justify-center gap-2">
         {(Object.keys(dimLabels) as FocusRow["key"][]).map((k) => (
@@ -418,6 +419,10 @@ function FocusComparison() {
                 : "border-white/10 text-stone-warm/60 hover:border-gold-dust/40 hover:text-gold-dust"
             }`}
           >
+            <span
+              aria-hidden
+              className={`mr-2 inline-block h-1.5 w-1.5 rounded-full bg-gold-dust ${active === k ? "trad-pulse" : "opacity-40"}`}
+            />
             {dimLabels[k]}
           </button>
         ))}
@@ -431,12 +436,12 @@ function FocusComparison() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.45, delay: i * 0.06, ease: [0.32, 0.72, 0, 1] }}
-              className="glass-card group flex h-full flex-col rounded-2xl p-6"
+              className="trad-panel trad-hover group flex h-full flex-col p-6"
             >
               <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/80">
                 {c.label}
               </p>
-              <p className="font-serif text-base leading-relaxed text-stone-warm/85">{c.text}</p>
+              <p className="font-serif text-base leading-relaxed text-stone-warm">{c.text}</p>
             </motion.div>
           ))}
         </AnimatePresence>
@@ -453,7 +458,7 @@ function TraditionsPage() {
   return (
     <div className="pt-32 pb-32">
       {/* Header */}
-      <header className="mx-auto max-w-4xl px-6 pb-24 text-center">
+      <header className="trad-panel mx-auto max-w-4xl px-6 py-12 text-center md:px-12">
         <p className="mb-4 text-[10px] uppercase tracking-[0.42em] text-gold-dust">
           {HEADER.kicker[li]}
         </p>
@@ -463,8 +468,9 @@ function TraditionsPage() {
           {HEADER.h1c[li]}
           <br /> {HEADER.h1d[li]}
         </h1>
-        <p className="mx-auto max-w-2xl font-light text-stone-warm/60">{HEADER.lead[li]}</p>
+        <p className="mx-auto max-w-2xl font-light text-stone-warm/80">{HEADER.lead[li]}</p>
       </header>
+      <div className="h-16" />
 
       {/* Four Pillars — moved from homepage */}
       <section id="four-pillars" className="mx-auto max-w-6xl px-6 pb-16 md:px-12">
@@ -489,7 +495,7 @@ function TraditionsPage() {
             className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-16"
           >
             <div className={`lg:col-span-5 ${idx % 2 === 1 ? "lg:order-2" : ""}`}>
-              <div className="glass-card overflow-hidden rounded-3xl">
+              <div className="trad-panel trad-plate relative">
                 <img
                   src={c.image}
                   alt={`${c.title[0]} diagram`}
@@ -500,17 +506,17 @@ function TraditionsPage() {
                 />
               </div>
             </div>
-            <div className={`lg:col-span-7 ${idx % 2 === 1 ? "lg:order-1" : ""}`}>
+            <div className={`trad-panel p-7 md:p-10 lg:col-span-7 ${idx % 2 === 1 ? "lg:order-1" : ""}`}>
               <p className="mb-4 font-serif text-2xl italic text-gold-dust">{c.numeral}.</p>
               <h2 className="mb-3 font-serif text-4xl text-stone-warm md:text-5xl">{c.title[li]}</h2>
-              <p className="mb-8 text-sm uppercase tracking-[0.3em] text-stone-warm/50">
+              <p className="mb-8 text-sm uppercase tracking-[0.3em] text-stone-warm/70">
                 {c.subtitle[li]}
               </p>
-              <p className="mb-6 text-sm italic text-stone-warm/70">
+              <p className="mb-6 text-sm italic text-stone-warm/85">
                 <span className="mr-2 not-italic text-gold-dust">{HEADER.origin[li]} —</span>
                 {c.origin[li]}
               </p>
-              <p className="mb-10 max-w-[62ch] text-base leading-relaxed text-stone-warm/80">
+              <p className="mb-10 max-w-[62ch] text-base leading-relaxed text-stone-warm">
                 {c.essay[li]}
               </p>
 
@@ -519,14 +525,14 @@ function TraditionsPage() {
                   <p className="mb-4 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
                     {HEADER.concepts[li]}
                   </p>
-                  <ul className="space-y-2 text-sm text-stone-warm/75">
+                  <ul className="space-y-2 text-sm text-stone-warm/85">
                     {c.concepts.map((cc) => (
                       <li
                         key={cc.name[0]}
-                        className="flex justify-between gap-6 border-b border-white/5 pb-2"
+                        className="trad-row flex justify-between gap-6 border-b border-white/10 pb-2"
                       >
                         <span className="font-serif text-gold-light">{cc.name[li]}</span>
-                        <span className="text-right text-stone-warm/50">{cc.gloss[li]}</span>
+                        <span className="text-right text-stone-warm/70">{cc.gloss[li]}</span>
                       </li>
                     ))}
                   </ul>
@@ -535,7 +541,7 @@ function TraditionsPage() {
                   <p className="mb-4 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
                     {HEADER.canon[li]}
                   </p>
-                  <ul className="mb-8 space-y-2 text-sm italic text-stone-warm/70">
+                  <ul className="mb-8 space-y-2 text-sm italic text-stone-warm/85">
                     {c.canon.map((k) => (
                       <li key={k[0]}>· {k[li]}</li>
                     ))}
@@ -543,7 +549,7 @@ function TraditionsPage() {
                   <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
                     {HEADER.reveals[li]}
                   </p>
-                  <ul className="space-y-1 text-sm text-stone-warm/75">
+                  <ul className="space-y-1 text-sm text-stone-warm/85">
                     {c.reveals.map((r) => (
                       <li key={r[0]}>— {r[li]}</li>
                     ))}
@@ -554,10 +560,10 @@ function TraditionsPage() {
               <button
                 type="button"
                 onClick={() => setOpenTradition(c.elderId)}
-                className="mt-10 inline-flex items-center gap-2 rounded-full border border-gold-dust/40 px-6 py-2.5 text-[10px] uppercase tracking-[0.32em] text-gold-dust transition-colors hover:bg-gold-dust/10"
+                className="group/cta mt-10 inline-flex items-center gap-2 rounded-full border border-gold-dust/40 px-6 py-2.5 text-[10px] uppercase tracking-[0.32em] text-gold-dust transition-all hover:border-gold-dust hover:bg-gold-dust/10 hover:shadow-[0_0_24px_rgba(198,161,87,0.25)]"
               >
                 {lang === "zh" ? "请这位长老开口" : "Consult this elder"}
-                <span className="text-sm">→</span>
+                <span className="text-sm transition-transform duration-300 group-hover/cta:translate-x-1">→</span>
               </button>
             </div>
           </motion.article>
@@ -569,7 +575,7 @@ function TraditionsPage() {
 
       {/* AI synthesis showcase — moved from homepage */}
       <section className="relative z-10 mx-auto max-w-6xl px-6 py-24 md:px-12">
-        <div className="glass-card overflow-hidden rounded-[2.5rem]">
+        <div className="trad-panel overflow-hidden rounded-[2.5rem]">
           <div className="grid grid-cols-1 lg:grid-cols-2">
             <div className="p-10 md:p-16">
               <p className="mb-6 text-[10px] font-medium uppercase tracking-[0.42em] text-gold-dust">
@@ -578,7 +584,7 @@ function TraditionsPage() {
               <h3 className="mb-8 font-serif text-4xl italic leading-tight text-stone-warm md:text-5xl">
                 {t.show_title}
               </h3>
-              <p className="mb-10 text-base font-light leading-relaxed text-stone-warm/60 md:text-lg">
+              <p className="mb-10 text-base font-light leading-relaxed text-stone-warm/85 md:text-lg">
                 {t.show_body}
               </p>
               <ul className="space-y-4 text-sm text-stone-warm/80">
@@ -630,7 +636,7 @@ function TraditionsPage() {
           {t.dims_list.map((d) => (
             <div
               key={d}
-              className="glass-card flex h-24 items-center justify-center rounded-2xl px-4 text-center text-sm uppercase tracking-[0.28em] text-stone-warm/70"
+              className="trad-panel trad-tile flex h-24 cursor-default items-center justify-center px-4 text-center text-sm uppercase tracking-[0.28em] text-stone-warm/85"
             >
               {d}
             </div>
