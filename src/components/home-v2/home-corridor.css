@@ -2,7 +2,7 @@
    No sticky / pin / scale / translate stacking: cards simply flow. */
 
 .corridor {
-  width: min(calc(100% - 2 * clamp(48px, 6vw, 108px)), 1600px);
+  width: min(calc(100% - 2 * clamp(48px, 9vw, 160px)), 1180px);
   margin-inline: auto;
   display: flex;
   flex-direction: column;
