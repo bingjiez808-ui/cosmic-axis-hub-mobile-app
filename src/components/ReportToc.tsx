@@ -396,6 +396,16 @@ export function ReportToc({ items, lang }: { items: TocItem[]; lang: "en" | "zh"
           role="dialog"
           aria-modal="true"
           aria-label={tocLabel}
+          style={{ pointerEvents: "none" }}
+          ref={(el) => {
+            if (!el) return;
+            // Arm the drawer only after the opening tap settles, so the click
+            // the browser synthesizes from that tap can't hit a fresh control.
+            const t = setTimeout(() => {
+              el.style.pointerEvents = "auto";
+            }, 400);
+            return () => clearTimeout(t);
+          }}
           className="fixed inset-0 z-50 md:hidden"
           data-testid="report-toc-drawer"
         >
@@ -407,16 +417,6 @@ export function ReportToc({ items, lang }: { items: TocItem[]; lang: "en" | "zh"
               // that opened the drawer — it lands on the fresh backdrop.
               if (Date.now() - openedAt.current < 450) return;
               closeDrawer();
-            }}
-            style={{ pointerEvents: "none", animationFillMode: "forwards" }}
-            ref={(el) => {
-              if (!el) return;
-              // Arm the backdrop only after the opening tap has fully settled,
-              // so its synthesized click can't close the drawer instantly.
-              const t = setTimeout(() => {
-                el.style.pointerEvents = "auto";
-              }, 450);
-              return () => clearTimeout(t);
             }}
             className="absolute inset-0 bg-obsidian/70 backdrop-blur-sm animate-fade-in"
 
