@@ -770,24 +770,24 @@ function SiteNav() {
         aria-modal={drawerOpen || undefined}
         role="dialog"
         style={{
-          maxHeight: "min(82dvh, 720px)",
-          paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))",
+          maxHeight: "min(68dvh, 560px)",
+          paddingBottom: "calc(0.5rem + env(safe-area-inset-bottom))",
         }}
-        className={`fixed inset-x-0 bottom-0 z-[75] flex flex-col overflow-y-auto overscroll-contain rounded-t-3xl border-t border-gold-dust/25 bg-obsidian/97 px-4 pt-3 backdrop-blur-xl shadow-[0_-16px_44px_rgba(0,0,0,0.6)] transition-transform duration-300 xl:hidden ${
+        className={`fixed inset-x-0 bottom-0 z-[75] flex flex-col overflow-y-auto overscroll-contain rounded-t-3xl border-t border-gold-dust/25 bg-obsidian/97 px-3 pt-2 backdrop-blur-xl shadow-[0_-16px_44px_rgba(0,0,0,0.6)] transition-transform duration-300 xl:hidden ${
           drawerOpen ? "translate-y-0" : "pointer-events-none translate-y-full"
         }`}
       >
-        <div className="mx-auto mb-3 h-1 w-10 shrink-0 rounded-full bg-white/20" aria-hidden />
+        <div className="mx-auto mb-2 h-1 w-10 shrink-0 rounded-full bg-white/20" aria-hidden />
 
         {sheetGroups.map((group) => (
-          <section key={group.title} className="mb-5 last:mb-2">
-            <h2 className="mb-2 text-[12px] tracking-[0.28em] text-gold-dust/80">
+          <section key={group.title} className="mb-2.5 last:mb-1">
+            <h2 className="mb-1.5 text-[10px] tracking-[0.24em] text-gold-dust/70">
               {group.title}
             </h2>
-            <div className="grid grid-cols-[repeat(2,minmax(0,1fr))] gap-2.5 max-[319px]:grid-cols-1">
+            <div className="grid grid-cols-[repeat(2,minmax(0,1fr))] gap-1.5 max-[319px]:grid-cols-1">
               {group.items.map((item) => {
-                const cls = `flex min-h-[46px] items-center justify-center rounded-xl border px-2 py-2 text-center leading-snug break-words ${
-                  item.wide ? "col-span-full text-[13px]" : ""
+                const cls = `flex min-h-[38px] items-center justify-center rounded-lg border px-2 py-1 text-center leading-tight break-words ${
+                  item.wide ? "col-span-full text-[12px]" : ""
                 } ${
                   item.active
                     ? "border-gold-dust/50 bg-gold-dust/10 text-gold-light"
@@ -795,7 +795,8 @@ function SiteNav() {
                 }`;
                 const style = item.wide
                   ? undefined
-                  : { fontSize: "clamp(14px, 3.7vw, 16px)" };
+                  : { fontSize: "clamp(12px, 3.2vw, 14px)" };
+
                 if (item.href) {
                   return (
                     <a
@@ -843,7 +844,7 @@ function SiteNav() {
           </section>
         ))}
 
-        <div className="mt-1 flex shrink-0 items-center justify-between gap-3 border-t border-white/10 pt-3">
+        <div className="mt-0.5 flex shrink-0 items-center justify-between gap-2 border-t border-white/10 pt-2">
           <LanguageToggle />
           {session ? (
             <button
@@ -852,7 +853,7 @@ function SiteNav() {
                 setDrawerOpen(false);
                 openAcc();
               }}
-              className="flex min-h-[44px] items-center gap-2 rounded-full border border-gold-dust/40 px-4 text-[12px] tracking-[0.2em] text-gold-dust hover:bg-gold-dust/10"
+              className="flex min-h-[40px] items-center gap-2 rounded-full border border-gold-dust/40 px-3 text-[11px] tracking-[0.18em] text-gold-dust hover:bg-gold-dust/10"
             >
               {avatarUrl && (
                 <img
@@ -871,7 +872,7 @@ function SiteNav() {
                 to="/auth"
                 search={{ mode: "login", redirect: undefined }}
                 onClick={() => setDrawerOpen(false)}
-                className="flex min-h-[44px] items-center rounded-full border border-gold-dust/40 px-4 text-[12px] tracking-[0.2em] text-gold-dust"
+                className="flex min-h-[40px] items-center rounded-full border border-gold-dust/40 px-3 text-[11px] tracking-[0.18em] text-gold-dust"
               >
                 {isZh ? "登录" : "Sign in"}
               </Link>
@@ -879,7 +880,7 @@ function SiteNav() {
                 to="/auth"
                 search={{ mode: "signup", redirect: undefined }}
                 onClick={() => setDrawerOpen(false)}
-                className="flex min-h-[44px] items-center rounded-full bg-gold-dust px-4 text-[12px] tracking-[0.2em] text-obsidian"
+                className="flex min-h-[40px] items-center rounded-full bg-gold-dust px-3 text-[11px] tracking-[0.18em] text-obsidian"
               >
                 {isZh ? "注册" : "Sign up"}
               </Link>
