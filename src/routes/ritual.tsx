@@ -321,6 +321,32 @@ function RitualPage() {
           : {}),
       });
 
+      // Duplicate probe: same birth data already saved in THIS user's own
+      // library → ask before walking the ritual again, so we never burn
+      // AI credits (and never create a second row) for an identical chart.
+      setSubmitting(true);
+      try {
+        const existing = await findExistingChartByInput({
+          data: {
+            name: values.name,
+            date: values.date,
+            time: values.time,
+            place: values.place,
+            ...(gender ? { gender } : {}),
+            lang,
+          },
+        });
+        if (existing) {
+          setDuplicate({ params, hasReport: existing.hasReport });
+          setSubmitting(false);
+          return;
+        }
+      } catch {
+        /* anonymous or transient — fall through to the normal flow */
+      }
+      setSubmitting(false);
+
+
       // If claiming this as "my chart" and a primary self-chart already
       // exists, ask the user how to resolve the collision instead of
       // silently overriding. Anonymous users / errors → proceed normally
