@@ -63,13 +63,22 @@ export function LibraryInteriorBackdrop() {
 
   const showVideo = !reducedMotion && !videoError;
 
-  // Mobile: gently scale the media up from the top edge so the library
-  // interior stays centred and the frame always overflows the viewport,
-  // whatever the aspect ratio. No letterbox, no hard seam under the nav.
-  const mediaClass = "absolute inset-0 h-full w-full object-cover";
+  // The mobile source has ~18% of baked-in black at the top of the frame
+  // (letterboxed ceiling). On phones we therefore oversize the media and pull
+  // it above the viewport so that black strip is cropped away entirely — the
+  // library interior then runs continuously behind the floating nav bar.
+  const mediaClass = "absolute object-cover";
   const mediaStyle: CSSProperties = isMobile
-    ? { objectPosition: "50% 42%", transform: "scale(1.12)", transformOrigin: "center top" }
-    : { objectPosition: "50% 45%" };
+    ? {
+        top: "-25%",
+        left: "-6%",
+        width: "112%",
+        height: "130%",
+        objectPosition: "50% 50%",
+        transformOrigin: "center top",
+      }
+    : { inset: 0, width: "100%", height: "100%", objectPosition: "50% 45%" };
+
 
   return (
     <div
