@@ -479,6 +479,51 @@ function SiteNav() {
   const gatedShelfHref = (to: string) =>
     !session ? { to: "/auth" as const, search: { mode: "login" as const, redirect: to } } : null;
 
+  // Grouped source for the compact mobile sheet (two-column grid).
+  type SheetItem = {
+    key: string;
+    label: string;
+    to?: string;
+    href?: string;
+    gated?: boolean;
+    active?: boolean;
+    wide?: boolean;
+    ariaLabel?: string;
+  };
+  const sheetGroups: Array<{ title: string; items: SheetItem[] }> = [
+    {
+      title: isZh ? "探索图书馆" : "Explore the Library",
+      items: coreEntries.map((e) => ({
+        key: e.to,
+        label: e.label,
+        to: e.to,
+        ariaLabel: e.ariaLabel,
+        active: isActive(e.to),
+      })),
+    },
+    {
+      title: isZh ? "个人书架" : "Personal Library",
+      items: libraryEntries.map((e) => ({
+        key: e.to,
+        label: e.label,
+        to: e.to,
+        gated: !session,
+        active: isActive(e.to),
+      })),
+    },
+    {
+      title: isZh ? "帮助与条款" : "Help & Policies",
+      items: moreEntries.map((e) => ({
+        key: e.to ?? e.href ?? e.label,
+        label: e.label,
+        to: e.to,
+        href: e.href,
+        wide: !!e.href,
+        active: e.to ? isActive(e.to) : false,
+      })),
+    },
+  ];
+
 
   return (
     <>
