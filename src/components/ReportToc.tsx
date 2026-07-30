@@ -322,29 +322,33 @@ export function ReportToc({ items, lang }: { items: TocItem[]; lang: "en" | "zh"
           deliberate tap (pointer travel < 10px). */}
       <button
         type="button"
-        onPointerDown={(e) => {
-          tapStart.current = { x: e.clientX, y: e.clientY };
+        onTouchStart={(e) => {
+          const t = e.touches[0];
+          tapStart.current = t ? { x: t.clientX, y: t.clientY } : null;
         }}
-        onPointerUp={(e) => {
+        onTouchEnd={(e) => {
           const s = tapStart.current;
           tapStart.current = null;
-          console.log('TOCUP', e.pointerType, !!s);
-          if (!s) return;
-          if (Math.abs(e.clientX - s.x) > 10 || Math.abs(e.clientY - s.y) > 10) return;
+          const t = e.changedTouches[0];
+          if (!s || !t) return;
+          // Ignore taps that were really the tail of a scroll gesture.
+          if (Math.abs(t.clientX - s.x) > 12 || Math.abs(t.clientY - s.y) > 12) return;
           openedByPointer.current = true;
           setOpen(true);
         }}
-        onPointerCancel={() => {
+        onTouchCancel={() => {
           tapStart.current = null;
         }}
         onClick={() => {
-          // Keyboard / assistive activation (no preceding pointer gesture).
+          // Mouse / keyboard / assistive activation. Touch already handled
+          // above; skip the synthesized click so it can't double-toggle.
           if (openedByPointer.current) {
             openedByPointer.current = false;
             return;
           }
           setOpen(true);
         }}
+
 
         aria-haspopup="dialog"
         aria-expanded={open}
