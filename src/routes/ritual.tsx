@@ -573,13 +573,12 @@ function RitualPage() {
                 ) : currentQ.key === "gender" ? (
                   <div className="mx-auto max-w-md" data-ritual-field>
                     <div role="radiogroup" aria-label={t.q_gender} className="flex flex-wrap justify-center gap-3">
-                      {(["male", "female", ""] as Gender[]).map((g) => {
-                        const label =
-                          g === "male" ? t.q_gender_male : g === "female" ? t.q_gender_female : t.q_gender_skip;
+                      {(["male", "female"] as Gender[]).map((g) => {
+                        const label = g === "male" ? t.q_gender_male : t.q_gender_female;
                         const active = genderChosen && values.gender === g;
                         return (
                           <button
-                            key={g || "skip"}
+                            key={g}
                             type="button"
                             role="radio"
                             aria-checked={active}
@@ -598,9 +597,9 @@ function RitualPage() {
                         );
                       })}
                     </div>
-                    {genderChosen && values.gender === "" && (
-                      <p className="mx-auto mt-4 max-w-md rounded-2xl border border-nebula-purple/30 bg-nebula-purple/[0.06] p-3 text-left text-[11.5px] leading-relaxed text-stone-warm/70">
-                        ⚠ {t.q_gender_skip_warn}
+                    {!(values.gender === "male" || values.gender === "female") && (
+                      <p className="mx-auto mt-4 max-w-md rounded-2xl border border-gold-dust/25 bg-gold-dust/[0.05] p-3 text-left text-[11.5px] leading-relaxed text-stone-warm/70">
+                        {t.q_gender_hint}
                       </p>
                     )}
                   </div>
