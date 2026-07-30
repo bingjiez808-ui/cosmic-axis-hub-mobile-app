@@ -12,6 +12,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { AGE_BANDS } from "./community-hall-safety";
 import {
+  blockLetterAuthor,
   dispatchLetter,
   loadMailbox,
   markNotificationsRead,
@@ -115,3 +116,8 @@ export const markCommunityNotificationsRead = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => z.object({ ids: z.array(z.string().uuid()).max(50) }).parse(data))
   .handler(async ({ data, context }) => markNotificationsRead(context, data.ids));
+
+export const blockCommunityLetterAuthor = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => letterIdSchema.parse(data))
+  .handler(async ({ data, context }) => blockLetterAuthor(context, data.letterId));

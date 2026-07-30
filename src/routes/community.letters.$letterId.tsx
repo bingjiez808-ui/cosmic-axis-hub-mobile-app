@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { HallGate, HallHeader, HallNav } from "@/experiences/community-hall/HallShell";
 import {
-  useBlockTraveler,
+  useBlockLetterAuthor,
   useCommunityMailbox,
   useDeliveryState,
   useReplyToLetter,
@@ -55,7 +55,7 @@ function LetterDetail() {
   const delivery = useDeliveryState();
   const reply = useReplyToLetter();
   const report = useReportContent();
-  const block = useBlockTraveler();
+  const block = useBlockLetterAuthor();
 
   const [body, setBody] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -171,9 +171,7 @@ function LetterDetail() {
           type="button"
           disabled={block.isPending}
           onClick={async () => {
-            const authorId = (letter as unknown as { authorId?: string }).authorId;
-            if (!authorId) return;
-            await block.mutateAsync({ userId: authorId, blocked: true });
+            await block.mutateAsync({ letterId });
             toast.success(c.blocked);
             void navigate({ to: "/community/inbox" });
           }}

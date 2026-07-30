@@ -324,3 +324,29 @@ export async function markNotificationsRead(ctx: Ctx, ids: string[]) {
   if (error) friendly(error);
   return { updated: count ?? 0 };
 }
+
+/**
+ * Block the (anonymous) author of a letter this user actually received.
+ * The author's user id is resolved server-side and never returned, so the
+ * recipient can block without ever learning who wrote the letter.
+ */
+export async function blockLetterAuthor(ctx: Ctx, letterId: string) {
+  const { data: delivery, error } = await ctx.supabase
+    .from("community_letter_deliveries")
+    .select("id")
+    .eq("letter_id", letterId)
+    .eq("recipient_id", ctx.userId)
+    .maybeSingle();
+  if (error) friendly(error);
+  if (!delivery) throw new Error(RPC_ERRORS.letter_not_found);
+
+  const { data: letter } = await ctx.supabase
+    .from("community_letters")
+    .select("author_id")
+    .eq("id", letterId)
+    .maybeSingle();
+  if (!letter?.author_id) throw new Error(RPC_ERRORS.letter_not_found);
+
+  await toggleBlock(ctx, { userId: letter.author_id, blocked: true });
+  return { blocked: true };
+}

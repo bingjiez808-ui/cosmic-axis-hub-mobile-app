@@ -17,6 +17,7 @@ import {
   sendCommunityLetter,
   setCommunityBlock,
   setCommunityDeliveryState,
+  blockCommunityLetterAuthor,
   upsertMyCommunityProfile,
   type CommunityMailbox,
 } from "@/lib/community-hall.functions";
@@ -131,6 +132,16 @@ export function useBlockTraveler() {
   const invalidate = useInvalidate();
   return useMutation({
     mutationFn: (data: { userId: string; blocked: boolean }) => block({ data }),
+    onSuccess: invalidate,
+  });
+}
+
+/** Block a letter's anonymous author without ever exposing their user id. */
+export function useBlockLetterAuthor() {
+  const block = useServerFn(blockCommunityLetterAuthor);
+  const invalidate = useInvalidate();
+  return useMutation({
+    mutationFn: (data: { letterId: string }) => block({ data }),
     onSuccess: invalidate,
   });
 }
