@@ -21,6 +21,9 @@ import {
   setCommunityEchoSaved,
   closeCommunityLetter,
   getCommunityLetterDispatchState,
+  getCommunityLibrarySamples,
+  markCommunityOnboarded,
+  markCommunityNotificationsRead,
   requestCommunityLetterWave,
   upsertMyCommunityProfile,
   type CommunityMailbox,
@@ -29,6 +32,7 @@ import {
 export const communityKeys = {
   profile: ["community-hall", "profile"] as const,
   mailbox: ["community-hall", "mailbox"] as const,
+  samples: (lang: string) => ["community-hall", "samples", lang] as const,
   dispatch: (letterId: string) => ["community-hall", "dispatch", letterId] as const,
 };
 
@@ -192,5 +196,35 @@ export function useRequestLetterWave() {
       void qc.invalidateQueries({ queryKey: communityKeys.mailbox });
       void qc.invalidateQueries({ queryKey: communityKeys.dispatch(variables.letterId) });
     },
+  });
+}
+
+/** Curated cold-start letters, always rendered with a "library sample" label. */
+export function useCommunityLibrarySamples(language: "zh" | "en") {
+  const load = useServerFn(getCommunityLibrarySamples);
+  return useQuery({
+    queryKey: communityKeys.samples(language),
+    queryFn: () => load({ data: { language, limit: 12 } }),
+    staleTime: 10 * 60_000,
+  });
+}
+
+/** Mark the onboarding cards as seen (idempotent server-side). */
+export function useMarkOnboarded() {
+  const qc = useQueryClient();
+  const mark = useServerFn(markCommunityOnboarded);
+  return useMutation({
+    mutationFn: () => mark({ data: undefined }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: communityKeys.profile }),
+  });
+}
+
+/** Notification centre: mark a batch of notifications as read. */
+export function useMarkNotificationsRead() {
+  const qc = useQueryClient();
+  const mark = useServerFn(markCommunityNotificationsRead);
+  return useMutation({
+    mutationFn: (ids: string[]) => mark({ data: { ids } }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: communityKeys.mailbox }),
   });
 }

@@ -749,6 +749,7 @@ export type Database = {
           created_at: string
           element: string | null
           language: string
+          onboarded_at: string | null
           opt_in: boolean
           quote: string | null
           status: string
@@ -763,6 +764,7 @@ export type Database = {
           created_at?: string
           element?: string | null
           language?: string
+          onboarded_at?: string | null
           opt_in?: boolean
           quote?: string | null
           status?: string
@@ -777,6 +779,7 @@ export type Database = {
           created_at?: string
           element?: string | null
           language?: string
+          onboarded_at?: string | null
           opt_in?: boolean
           quote?: string | null
           status?: string
@@ -826,6 +829,44 @@ export type Database = {
           target_type?: string
         }
         Relationships: []
+      }
+      community_sample_echoes: {
+        Row: {
+          body: string
+          created_at: string
+          echo_age_band: string
+          id: string
+          letter_id: string
+          position: number
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          echo_age_band: string
+          id?: string
+          letter_id: string
+          position?: number
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          echo_age_band?: string
+          id?: string
+          letter_id?: string
+          position?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_sample_echoes_letter_id_fkey"
+            columns: ["letter_id"]
+            isOneToOne: false
+            referencedRelation: "community_letters"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       friend_blocks: {
         Row: {
@@ -2685,6 +2726,10 @@ export type Database = {
         Args: { _letter_id: string }
         Returns: Json
       }
+      get_community_library_samples: {
+        Args: { _language?: string; _limit?: number }
+        Returns: Json
+      }
       get_my_community_mailbox: { Args: never; Returns: Json }
       list_my_redemption_uses: {
         Args: never
@@ -2702,6 +2747,7 @@ export type Database = {
           status: string
         }[]
       }
+      mark_community_onboarded: { Args: never; Returns: string }
       redeem_code: {
         Args: {
           _chart_id: string

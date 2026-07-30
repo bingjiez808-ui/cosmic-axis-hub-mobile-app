@@ -11,6 +11,9 @@ import {
 } from "@/experiences/community-hall/HallShell";
 import { HallEmptyState, HallError, HallSkeleton } from "@/experiences/community-hall/HallStates";
 import { EchoCard, ReceivedLetterCard } from "@/experiences/community-hall/LetterCards";
+import { HallOnboarding } from "@/experiences/community-hall/HallOnboarding";
+import { LibrarySamplesSection } from "@/experiences/community-hall/LibrarySamples";
+import { NotificationCenter } from "@/experiences/community-hall/NotificationCenter";
 import { useCommunityMailbox, useCommunityProfile } from "@/lib/community-hall-client";
 import { useCommunityHall } from "@/lib/i18n-community-hall";
 import { useSupabaseSession } from "@/lib/session";
@@ -102,6 +105,8 @@ function CommunityHallPage() {
 
       <HallNav />
 
+      <HallOnboarding />
+
       {alias ? (
         <p className="mx-auto mt-6 max-w-3xl text-center text-xs text-muted-foreground">
           {c.identityLine(alias, c.ageBand(band))} ·{" "}
@@ -148,6 +153,7 @@ function CommunityHallPage() {
       </HallSection>
 
       <HallGate>
+        <NotificationCenter />
         <HallSection
           title={c.recentTitle}
           action={
@@ -181,6 +187,8 @@ function CommunityHallPage() {
           )}
         </HallSection>
       </HallGate>
+
+      <LibrarySamplesSection />
 
       {/* ── House rules ───────────────────────────────────── */}
       <HallSection title={c.houseRules}>

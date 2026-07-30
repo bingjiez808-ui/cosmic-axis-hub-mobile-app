@@ -17,6 +17,8 @@ import {
   loadMailbox,
   markNotificationsRead,
   readCommunityProfile,
+  listLibrarySamples,
+  markOnboarded,
   readDispatchState,
   requestNextWave,
   reportContent,
@@ -147,3 +149,18 @@ export const requestCommunityLetterWave = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => letterIdSchema.parse(data))
   .handler(async ({ data, context }) => requestNextWave(context, data.letterId));
+
+/** Cold-start reading material: curated library samples, clearly labelled. */
+export const getCommunityLibrarySamples = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z
+      .object({ language: z.enum(["zh", "en"]).nullish(), limit: z.number().int().min(1).max(50).optional() })
+      .parse(data ?? {}),
+  )
+  .handler(async ({ data, context }) => listLibrarySamples(context, data));
+
+/** Mark the three onboarding cards as seen. */
+export const markCommunityOnboarded = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => markOnboarded(context));
