@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { PersonalWorkspaceNav } from "@/components/PersonalWorkspaceNav";
 import { Button } from "@/components/ui/button";
 import { useCommunityProfile, useSaveCommunityProfile } from "@/lib/community-hall-client";
+import { EntryNotesSection } from "@/experiences/community-hall/EntryNotes";
 import { useCommunityHall } from "@/lib/i18n-community-hall";
 
 /**
@@ -128,6 +129,25 @@ function CommunitySettingsPage() {
           </Button>
         </section>
       )}
+
+      {/* ── Privacy promise + the optional entry notes side room ── */}
+      <section className="mt-8 rounded-2xl border border-primary/12 bg-background/40 p-5">
+        <h2 className="text-sm font-semibold text-foreground">{c.privacyTitle}</h2>
+        <ul className="mt-3 space-y-2 text-sm leading-relaxed text-muted-foreground">
+          {c.privacyPoints.map((point) => (
+            <li key={point}>· {point}</li>
+          ))}
+        </ul>
+        <p className="mt-4 text-sm text-muted-foreground">{c.entryNotesHint}</p>
+        <details className="mt-3 rounded-xl border border-primary/12 p-4">
+          <summary className="cursor-pointer text-sm font-medium text-primary">
+            {c.entryNotes}
+          </summary>
+          <div className="mt-4">
+            <EntryNotesSection />
+          </div>
+        </details>
+      </section>
     </main>
   );
 }
