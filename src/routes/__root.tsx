@@ -841,7 +841,7 @@ function SiteNav() {
           </section>
         ))}
 
-        <div className="mt-0.5 flex shrink-0 items-center justify-between gap-2 border-t border-white/10 pt-2">
+        <div className="mt-auto flex shrink-0 items-center justify-end gap-2 border-t border-white/10 pt-3">
           <LanguageToggle />
           {session ? (
             <button
