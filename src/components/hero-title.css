@@ -7,7 +7,9 @@
  * the viewport.
  */
 .hero-title {
-  width: min(94vw, 1400px);
+  /* never wider than the centred hero content box, so the optical centre
+     of the headline always equals the viewport centre */
+  width: min(94vw, 1400px, 100%);
   margin-inline: auto;
   text-align: center;
   line-height: 0.98;
@@ -66,7 +68,7 @@
 /* Ultra narrow */
 @media (max-width: 390px) {
   .hero-title {
-    width: calc(100vw - 24px);
+    width: min(calc(100vw - 24px), 100%);
     font-size: clamp(1.95rem, 9vw, 2.8rem);
     letter-spacing: -0.055em;
   }
