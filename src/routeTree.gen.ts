@@ -31,6 +31,10 @@ import { Route as DevReaderHarnessRouteImport } from './routes/dev.reader-harnes
 import { Route as DevPanoramaTourRouteImport } from './routes/dev.panorama-tour'
 import { Route as DevGuidedLibraryV2RouteImport } from './routes/dev.guided-library-v2'
 import { Route as DevDemoPremiumRouteImport } from './routes/dev.demo-premium'
+import { Route as CommunityWriteRouteImport } from './routes/community.write'
+import { Route as CommunityOutboxRouteImport } from './routes/community.outbox'
+import { Route as CommunityInboxRouteImport } from './routes/community.inbox'
+import { Route as CommunityEchoesRouteImport } from './routes/community.echoes'
 import { Route as AuthResetRouteImport } from './routes/auth.reset'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as ApiGenerateAvatarRouteImport } from './routes/api/generate-avatar'
@@ -159,6 +163,26 @@ const DevDemoPremiumRoute = DevDemoPremiumRouteImport.update({
   path: '/dev/demo-premium',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CommunityWriteRoute = CommunityWriteRouteImport.update({
+  id: '/write',
+  path: '/write',
+  getParentRoute: () => CommunityRoute,
+} as any)
+const CommunityOutboxRoute = CommunityOutboxRouteImport.update({
+  id: '/outbox',
+  path: '/outbox',
+  getParentRoute: () => CommunityRoute,
+} as any)
+const CommunityInboxRoute = CommunityInboxRouteImport.update({
+  id: '/inbox',
+  path: '/inbox',
+  getParentRoute: () => CommunityRoute,
+} as any)
+const CommunityEchoesRoute = CommunityEchoesRouteImport.update({
+  id: '/echoes',
+  path: '/echoes',
+  getParentRoute: () => CommunityRoute,
+} as any)
 const AuthResetRoute = AuthResetRouteImport.update({
   id: '/reset',
   path: '/reset',
@@ -260,7 +284,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/auth': typeof AuthRouteWithChildren
-  '/community': typeof CommunityRoute
+  '/community': typeof CommunityRouteWithChildren
   '/delete-account': typeof DeleteAccountRoute
   '/life-studies': typeof LifeStudiesRouteWithChildren
   '/mcp': typeof McpRoute
@@ -277,6 +301,10 @@ export interface FileRoutesByFullPath {
   '/api/generate-avatar': typeof ApiGenerateAvatarRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/reset': typeof AuthResetRoute
+  '/community/echoes': typeof CommunityEchoesRoute
+  '/community/inbox': typeof CommunityInboxRoute
+  '/community/outbox': typeof CommunityOutboxRoute
+  '/community/write': typeof CommunityWriteRoute
   '/dev/demo-premium': typeof DevDemoPremiumRoute
   '/dev/guided-library-v2': typeof DevGuidedLibraryV2Route
   '/dev/panorama-tour': typeof DevPanoramaTourRoute
@@ -300,7 +328,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/community': typeof CommunityRoute
+  '/community': typeof CommunityRouteWithChildren
   '/delete-account': typeof DeleteAccountRoute
   '/mcp': typeof McpRoute
   '/privacy': typeof PrivacyRoute
@@ -316,6 +344,10 @@ export interface FileRoutesByTo {
   '/api/generate-avatar': typeof ApiGenerateAvatarRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/reset': typeof AuthResetRoute
+  '/community/echoes': typeof CommunityEchoesRoute
+  '/community/inbox': typeof CommunityInboxRoute
+  '/community/outbox': typeof CommunityOutboxRoute
+  '/community/write': typeof CommunityWriteRoute
   '/dev/demo-premium': typeof DevDemoPremiumRoute
   '/dev/guided-library-v2': typeof DevGuidedLibraryV2Route
   '/dev/panorama-tour': typeof DevPanoramaTourRoute
@@ -342,7 +374,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/about': typeof AboutRoute
   '/auth': typeof AuthRouteWithChildren
-  '/community': typeof CommunityRoute
+  '/community': typeof CommunityRouteWithChildren
   '/delete-account': typeof DeleteAccountRoute
   '/life-studies': typeof LifeStudiesRouteWithChildren
   '/mcp': typeof McpRoute
@@ -359,6 +391,10 @@ export interface FileRoutesById {
   '/api/generate-avatar': typeof ApiGenerateAvatarRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/reset': typeof AuthResetRoute
+  '/community/echoes': typeof CommunityEchoesRoute
+  '/community/inbox': typeof CommunityInboxRoute
+  '/community/outbox': typeof CommunityOutboxRoute
+  '/community/write': typeof CommunityWriteRoute
   '/dev/demo-premium': typeof DevDemoPremiumRoute
   '/dev/guided-library-v2': typeof DevGuidedLibraryV2Route
   '/dev/panorama-tour': typeof DevPanoramaTourRoute
@@ -402,6 +438,10 @@ export interface FileRouteTypes {
     | '/api/generate-avatar'
     | '/auth/callback'
     | '/auth/reset'
+    | '/community/echoes'
+    | '/community/inbox'
+    | '/community/outbox'
+    | '/community/write'
     | '/dev/demo-premium'
     | '/dev/guided-library-v2'
     | '/dev/panorama-tour'
@@ -441,6 +481,10 @@ export interface FileRouteTypes {
     | '/api/generate-avatar'
     | '/auth/callback'
     | '/auth/reset'
+    | '/community/echoes'
+    | '/community/inbox'
+    | '/community/outbox'
+    | '/community/write'
     | '/dev/demo-premium'
     | '/dev/guided-library-v2'
     | '/dev/panorama-tour'
@@ -483,6 +527,10 @@ export interface FileRouteTypes {
     | '/api/generate-avatar'
     | '/auth/callback'
     | '/auth/reset'
+    | '/community/echoes'
+    | '/community/inbox'
+    | '/community/outbox'
+    | '/community/write'
     | '/dev/demo-premium'
     | '/dev/guided-library-v2'
     | '/dev/panorama-tour'
@@ -509,7 +557,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AboutRoute: typeof AboutRoute
   AuthRoute: typeof AuthRouteWithChildren
-  CommunityRoute: typeof CommunityRoute
+  CommunityRoute: typeof CommunityRouteWithChildren
   DeleteAccountRoute: typeof DeleteAccountRoute
   LifeStudiesRoute: typeof LifeStudiesRouteWithChildren
   McpRoute: typeof McpRoute
@@ -687,6 +735,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DevDemoPremiumRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/community/write': {
+      id: '/community/write'
+      path: '/write'
+      fullPath: '/community/write'
+      preLoaderRoute: typeof CommunityWriteRouteImport
+      parentRoute: typeof CommunityRoute
+    }
+    '/community/outbox': {
+      id: '/community/outbox'
+      path: '/outbox'
+      fullPath: '/community/outbox'
+      preLoaderRoute: typeof CommunityOutboxRouteImport
+      parentRoute: typeof CommunityRoute
+    }
+    '/community/inbox': {
+      id: '/community/inbox'
+      path: '/inbox'
+      fullPath: '/community/inbox'
+      preLoaderRoute: typeof CommunityInboxRouteImport
+      parentRoute: typeof CommunityRoute
+    }
+    '/community/echoes': {
+      id: '/community/echoes'
+      path: '/echoes'
+      fullPath: '/community/echoes'
+      preLoaderRoute: typeof CommunityEchoesRouteImport
+      parentRoute: typeof CommunityRoute
+    }
     '/auth/reset': {
       id: '/auth/reset'
       path: '/reset'
@@ -861,6 +937,24 @@ const AuthRouteChildren: AuthRouteChildren = {
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
+interface CommunityRouteChildren {
+  CommunityEchoesRoute: typeof CommunityEchoesRoute
+  CommunityInboxRoute: typeof CommunityInboxRoute
+  CommunityOutboxRoute: typeof CommunityOutboxRoute
+  CommunityWriteRoute: typeof CommunityWriteRoute
+}
+
+const CommunityRouteChildren: CommunityRouteChildren = {
+  CommunityEchoesRoute: CommunityEchoesRoute,
+  CommunityInboxRoute: CommunityInboxRoute,
+  CommunityOutboxRoute: CommunityOutboxRoute,
+  CommunityWriteRoute: CommunityWriteRoute,
+}
+
+const CommunityRouteWithChildren = CommunityRoute._addFileChildren(
+  CommunityRouteChildren,
+)
+
 interface LifeStudiesRouteChildren {
   LifeStudiesMathRoute: typeof LifeStudiesMathRoute
   LifeStudiesIndexRoute: typeof LifeStudiesIndexRoute
@@ -880,7 +974,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AboutRoute: AboutRoute,
   AuthRoute: AuthRouteWithChildren,
-  CommunityRoute: CommunityRoute,
+  CommunityRoute: CommunityRouteWithChildren,
   DeleteAccountRoute: DeleteAccountRoute,
   LifeStudiesRoute: LifeStudiesRouteWithChildren,
   McpRoute: McpRoute,
