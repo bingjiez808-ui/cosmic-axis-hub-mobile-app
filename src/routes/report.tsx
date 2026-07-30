@@ -904,6 +904,38 @@ function useCoarseActive<T extends HTMLElement>() {
   return { ref, active, onPointerMove };
 }
 
+/** Animated shell for one reading module (hover glow + in-view wake on touch). */
+function DimensionCardShell({
+  id,
+  idx,
+  pending,
+  children,
+}: {
+  id: string;
+  idx: number;
+  pending: boolean;
+  children: React.ReactNode;
+}) {
+  const { ref, active, onPointerMove } = useCoarseActive<HTMLDivElement>();
+  return (
+    <motion.article
+      ref={ref}
+      id={id}
+      onPointerMove={onPointerMove}
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-80px" }}
+      transition={{ duration: 0.8, delay: Math.min(idx, 4) * 0.04, ease: [0.32, 0.72, 0, 1] }}
+      className={`rm-card glass-card scroll-mt-[calc(var(--site-nav-height,96px)+72px)] overflow-hidden rounded-3xl p-4 sm:p-8 md:p-12 ${
+        pending ? "opacity-70" : ""
+      } ${active ? "is-active" : ""}`}
+    >
+      {children}
+    </motion.article>
+  );
+}
+
+
 
 function ReportPage() {
   const search = Route.useSearch();
