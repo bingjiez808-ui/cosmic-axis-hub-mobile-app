@@ -164,8 +164,8 @@ export function HomeScrollStack() {
 function GuideDeskHero({ isZh }: { isZh: boolean }) {
   const eyebrow = isZh ? "命运图书馆 · 导览室" : "Destiny Library · Guide Desk";
   const headingLines = isZh
-    ? ["每一个文明，", "都在追问同一个问题：", { text: "「我是谁？」", accent: true }]
-    : ["Every civilization", "returns to the same question:", { text: "\u201cWho am I?\u201d", accent: true }];
+    ? ["每一个文明，", "都在追问同一个问题", { text: "「我是谁？」", accent: true }]
+    : ["Every civilization", "returns to the same question", { text: "\u201cWho am I?\u201d", accent: true }];
   const bodyLines = isZh
     ? ["命盘不会替你定义答案，", "只陪你读懂正在成为谁。"]
     : ["The chart does not define your answer.", "It helps you understand who you are becoming."];
