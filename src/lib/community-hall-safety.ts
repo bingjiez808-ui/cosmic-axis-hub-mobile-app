@@ -93,6 +93,28 @@ export function safetyMessage(categories: string[]): string {
   return "这封信包含不适合公开寄出的内容，请修改后再试。";
 }
 
+/**
+ * Categories that must never be auto-published and must reach a human fast:
+ * self-harm, threats of violence, and anything hinting the writer is a minor.
+ */
+const CRISIS_CATEGORIES = ["self_harm", "violence", "minor_risk"] as const;
+
+export type RiskLevel = "none" | "review" | "crisis";
+
+/** Map a verdict to the persisted risk level used by the moderation queue. */
+export function riskLevel(verdict: SafetyVerdict): RiskLevel {
+  if (verdict.action === "block") return "crisis";
+  if (verdict.categories.some((c) => (CRISIS_CATEGORIES as readonly string[]).includes(c))) {
+    return "crisis";
+  }
+  return verdict.action === "review" ? "review" : "none";
+}
+
+/** True when the writer may be in danger and should see support resources. */
+export function needsSupportResources(verdict: SafetyVerdict): boolean {
+  return verdict.categories.includes("self_harm");
+}
+
 export function isAgeBand(value: unknown): value is AgeBand {
   return typeof value === "string" && (AGE_BANDS as readonly string[]).includes(value);
 }
