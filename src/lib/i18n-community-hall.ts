@@ -426,6 +426,50 @@ export function useCommunityHall() {
       closeConfirm: p("结束后不会再有新的回音寄来，确认吗？", "No new echoes will arrive after this. Continue?"),
       awaitingEcho: p("还在等待回音", "Still waiting for an echo"),
 
+      // ── Cold start, onboarding, notifications (batch C) ───
+      samplesTitle: p("馆藏范文", "From the library shelf"),
+      samplesBadge: p("馆藏范文 · 非真人来信", "Library sample · not a member letter"),
+      samplesIntro: p(
+        "开馆之初，这些是由图书馆撰写的示范书信与示范回音，用来说明这里的语气与分寸。它们不会被投递给任何人，也无法回信。",
+        "While the hall is young, these sample letters and echoes are written by the library itself to show the tone we hope for. They are never delivered to anyone and cannot be answered.",
+      ),
+      samplesEchoes: p("示范回音", "Sample echoes"),
+      samplesEmpty: p("馆藏还在整理中。", "The shelf is still being arranged."),
+      samplesWriteCta: p("写下我自己的那封", "Write my own letter"),
+
+      onboardTitle: p("入馆三件事", "Three things before you write"),
+      onboardSkip: p("以后再说", "Later"),
+      onboardNext: p("下一张", "Next"),
+      onboardDone: p("我明白了", "I understand"),
+      onboardCards: [
+        {
+          zh: ["这里是什么", "你写下此刻真实的困惑，它会被匿名寄给几位走过这段路的人；你可能收到一封回音，也可能没有。"],
+          en: ["What this is", "You write a real question, and it travels anonymously to a few people who have lived that chapter. An echo may come back — or may not."],
+        },
+        {
+          zh: ["保护你自己", "不要写出姓名、单位、学校、电话和社交账号。匿名是这里唯一的安全带。"],
+          en: ["Protect yourself", "No names, employers, schools, phone numbers or handles. Anonymity is the only seatbelt here."],
+        },
+        {
+          zh: ["温柔地回信", "回音不是评判。若信中出现危机内容，请举报并让我们介入，而不是独自承担。"],
+          en: ["Answer gently", "An echo is not a verdict. If a letter shows a crisis, report it so we can step in — do not carry it alone."],
+        },
+      ].map((card) => ({ title: pick({ zh: card.zh[0], en: card.en[0] }, lang), body: pick({ zh: card.zh[1], en: card.en[1] }, lang) })),
+
+      notificationsTitle: p("信使通报", "Notifications"),
+      notificationsEmpty: p("暂时没有新的通报。", "Nothing new from the courier."),
+      notificationsMarkRead: p("全部标为已读", "Mark all read"),
+      notificationLabel: (type: string) =>
+        pick(
+          {
+            letter_received: { zh: "有一封信寄到了你手上", en: "A letter arrived for you" },
+            reply_received: { zh: "你的信收到了回音", en: "Your letter received an echo" },
+            letter_reviewed: { zh: "你的信已完成审核", en: "Your letter finished review" },
+            reply_reviewed: { zh: "你的回音已完成审核", en: "Your echo finished review" },
+          }[type] ?? { zh: "新的通报", en: "New notice" },
+          lang,
+        ),
+
       // ── Delivery waves (round 4 · batch B) ────────────────
       waveLabel: p("投递波次", "Delivery waves"),
       waveDelivered: p("已送达", "Delivered"),
