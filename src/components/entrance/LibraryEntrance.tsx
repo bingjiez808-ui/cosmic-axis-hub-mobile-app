@@ -18,6 +18,7 @@ import desktopVideoAsset from "@/assets/entrance/entrance-desktop.mp4.asset.json
 import mobileVideoAsset from "@/assets/entrance/entrance-mobile.mp4.asset.json";
 import desktopPosterAsset from "@/assets/entrance/entrance-desktop-poster.webp.asset.json";
 import mobilePosterAsset from "@/assets/entrance/entrance-mobile-poster.png.asset.json";
+import { ResponsiveHeroTitle } from "@/components/ResponsiveHeroTitle";
 import { useEntranceSequence } from "./useEntranceSequence";
 import { useScratchReveal } from "./useScratchReveal";
 import "./library-entrance.css";
@@ -25,7 +26,7 @@ import "./library-entrance.css";
 const COPY = {
   zh: {
     brand: "DESTINY LIBRARY · 命运图书馆",
-    title: "万卷命运之中，\n有一本以你为名。",
+    titleLines: ["万卷命运之中，", "有一本以你为名。"],
     sub: "这里不收藏既定的答案，\n只陪你照亮那些尚未读懂的自己。",
     cta: "推开馆门",
     skip: "直接进入",
@@ -35,7 +36,7 @@ const COPY = {
   },
   en: {
     brand: "DESTINY LIBRARY",
-    title: "Among countless stories of fate,\none bears your name.",
+    titleLines: ["Among countless stories of fate,", "one bears your name."],
     sub: "This library does not preserve predetermined answers.\nIt helps illuminate the parts of yourself not yet understood.",
     cta: "Open the Library",
     skip: "Enter directly",
@@ -392,14 +393,12 @@ export function LibraryEntrance() {
       <div className="le-content">
         <div className="le-inner">
           <div className="le-title-block">
-            <h1
+            <ResponsiveHeroTitle
               id="le-title"
               className="le-title"
-              data-lang={lang}
-              style={{ whiteSpace: "pre-line" }}
-            >
-              {copy.title}
-            </h1>
+              lang={lang}
+              lines={copy.titleLines}
+            />
             <p
               id="le-sub"
               className="le-sub"

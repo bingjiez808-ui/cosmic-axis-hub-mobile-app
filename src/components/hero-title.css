@@ -1,0 +1,76 @@
+/**
+ * ResponsiveHeroTitle — shared hero headline typography.
+ *
+ * Semantic lines are authored as explicit blocks (never browser-wrapped),
+ * so a comma, a full stop or the last glyph can never end up alone on a
+ * third line. Instead of adding line breaks, the font size shrinks with
+ * the viewport.
+ */
+.hero-title {
+  width: min(94vw, 1400px);
+  margin-inline: auto;
+  text-align: center;
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+  font-size: clamp(4.5rem, 6vw, 7.5rem);
+  margin-block: 0;
+}
+
+.hero-title-line {
+  display: block;
+  white-space: nowrap;
+  width: max-content;
+  max-width: 100%;
+  margin-inline: auto;
+}
+
+.hero-title[data-lang="en"] {
+  font-size: clamp(3.4rem, 4.6vw, 5.6rem);
+  letter-spacing: -0.02em;
+}
+
+.hero-sub {
+  margin-inline: auto;
+  max-width: 720px;
+  font-size: clamp(1rem, 1.35vw, 1.35rem);
+  line-height: 1.62;
+  text-wrap: pretty;
+}
+
+/* Tablet */
+@media (max-width: 1024px) {
+  .hero-title {
+    font-size: clamp(3.25rem, 7.2vw, 5.5rem);
+  }
+  .hero-title[data-lang="en"] {
+    font-size: clamp(2.6rem, 5.8vw, 4.4rem);
+  }
+}
+
+/* Mobile */
+@media (max-width: 640px) {
+  .hero-title {
+    font-size: clamp(2.15rem, 9.2vw, 3.7rem);
+    line-height: 1.06;
+    letter-spacing: -0.045em;
+  }
+  .hero-title[data-lang="en"] {
+    font-size: clamp(1.7rem, 6.4vw, 2.6rem);
+    letter-spacing: -0.03em;
+  }
+  .hero-sub {
+    font-size: clamp(0.94rem, 4vw, 1.05rem);
+  }
+}
+
+/* Ultra narrow */
+@media (max-width: 390px) {
+  .hero-title {
+    width: calc(100vw - 24px);
+    font-size: clamp(1.95rem, 9vw, 2.8rem);
+    letter-spacing: -0.055em;
+  }
+  .hero-title[data-lang="en"] {
+    font-size: clamp(1.5rem, 6.2vw, 2.2rem);
+  }
+}

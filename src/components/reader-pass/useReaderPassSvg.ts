@@ -161,72 +161,112 @@ function frontSvg(data: ReaderPassData, isZh: boolean): string {
 </svg>`;
 }
 
-function backSvg(_data: ReaderPassData, isZh: boolean): string {
-  const p = paletteFor(_data.tier);
-  const title = isZh ? "馆内索引" : "Library Index";
-  const rows = isZh
-    ? ["我的书架", "今日命运", "会员与订单"]
-    : ["My Shelf", "Today's Reading", "Membership & Orders"];
-  const rowsEn = isZh
-    ? ["My Shelf", "Today's Reading", "Membership & Orders"]
-    : ["我的书架", "今日命运", "会员与订单"];
-  const disclaimer = isZh
-    ? "本证仅用于命运图书馆馆内阅读。所有命理解读用于文化娱乐与自我反思,不替代医疗、法律、投资或人生决策。"
-    : "For in-library reading only. All destiny readings are for cultural enjoyment and self-reflection — not medical, legal, financial or life advice.";
+function backSvg(data: ReaderPassData, isZh: boolean): string {
+  // The back always keeps the deep-green / gold library livery so the flip
+  // never reveals a white or transparent face.
+  const frame = "#c9a95c";
+  const ink = "#eee3c2";
+  const inkSoft = "rgba(238,227,194,0.66)";
+  const identity = isZh ? data.identityZh : data.identityEn;
+  const displayName = data.isSignedIn
+    ? data.displayName
+    : isZh
+      ? "访客读者"
+      : "Guest Reader";
+  const fields: Array<[string, string]> = isZh
+    ? [
+        ["持证读者", displayName],
+        ["读者等级", identity],
+        ["借阅编号", data.readerNumber],
+        ["入馆状态", "已入馆"],
+      ]
+    : [
+        ["Reader", displayName],
+        ["Level", identity],
+        ["Reader No.", data.readerNumber],
+        ["Status", "Admitted"],
+      ];
+  const motto = isZh
+    ? "这张卡只记录你的阅读，不定义你的命运。"
+    : "This card records your reading, not your fate.";
+  const flipHint = isZh ? "点击卡片翻回正面" : "Tap the card to flip back";
+
+  // Decorative pseudo-barcode derived from the display number only.
+  const seed = data.readerNumber;
+  const bars = Array.from({ length: 46 })
+    .map((_, i) => {
+      const code = seed.charCodeAt(i % seed.length) + i * 7;
+      const w = 3 + (code % 4) * 2;
+      const x = 130 + i * 16;
+      return `<rect x="${x}" y="0" width="${w}" height="46" fill="${frame}" opacity="${0.35 + (code % 5) * 0.09}"/>`;
+    })
+    .join("");
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">
   <defs>
-    <linearGradient id="bg2" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="${p.bgEnd}"/>
-      <stop offset="1" stop-color="${p.bgStart}"/>
+    <linearGradient id="backbg" x1="0.1" y1="0" x2="0.9" y2="1">
+      <stop offset="0" stop-color="#13251E"/>
+      <stop offset="0.55" stop-color="#0A1712"/>
+      <stop offset="1" stop-color="#07110D"/>
     </linearGradient>
+    <radialGradient id="backglow" cx="0.72" cy="0.2" r="0.42">
+      <stop offset="0" stop-color="#C9A95C" stop-opacity="0.14"/>
+      <stop offset="1" stop-color="#C9A95C" stop-opacity="0"/>
+    </radialGradient>
   </defs>
-  <rect width="${W}" height="${H}" fill="url(#bg2)"/>
-  <rect x="42" y="42" width="${W - 84}" height="${H - 84}" fill="none" stroke="${p.frame}" stroke-width="2"/>
-  <rect x="60" y="60" width="${W - 120}" height="${H - 120}" fill="none" stroke="${p.frame}" stroke-width="0.6" opacity="0.7"/>
+  <rect width="${W}" height="${H}" fill="url(#backbg)"/>
+  <rect width="${W}" height="${H}" fill="url(#backglow)"/>
 
-  <g font-family="Georgia, serif" text-anchor="middle" fill="${p.ink}">
-    <text x="${W / 2}" y="200" font-size="52" letter-spacing="16">${title}</text>
-    <line x1="${W * 0.32}" y1="240" x2="${W * 0.68}" y2="240" stroke="${p.frame}" stroke-width="0.8" opacity="0.6"/>
+  <!-- Inner gold hairline frames -->
+  <rect x="10" y="10" width="${W - 20}" height="${H - 20}" fill="none" stroke="${frame}" stroke-width="3" opacity="0.58"/>
+  <rect x="46" y="46" width="${W - 92}" height="${H - 92}" fill="none" stroke="${frame}" stroke-width="1.4" opacity="0.28"/>
+
+  <g font-family="Georgia, 'Times New Roman', serif" text-anchor="middle">
+    <text x="${W / 2}" y="132" font-size="30" fill="${ink}" letter-spacing="8">${isZh ? "命运图书馆 · 借阅凭证" : "DESTINY LIBRARY"}</text>
+    <text x="${W / 2}" y="176" font-size="18" fill="${inkSoft}" letter-spacing="7">DESTINY LIBRARY · READER PASS</text>
+    <line x1="${W * 0.26}" y1="212" x2="${W * 0.74}" y2="212" stroke="${frame}" stroke-width="0.8" opacity="0.5"/>
   </g>
 
-  <g font-family="Georgia, serif" fill="${p.ink}">
-    ${rows
-      .map((row, i) => {
-        const y = 380 + i * 200;
-        const num = `0${i + 1}`;
+  <!-- Library seal -->
+  <g transform="translate(${W / 2}, 430)" opacity="0.32" fill="none" stroke="${frame}">
+    <circle r="150" stroke-width="2"/>
+    <circle r="126" stroke-width="0.9"/>
+    <circle r="70" stroke-width="0.9"/>
+    ${Array.from({ length: 24 })
+      .map((_, i) => {
+        const a = (i * Math.PI) / 12;
+        return `<line x1="${(Math.cos(a) * 126).toFixed(1)}" y1="${(Math.sin(a) * 126).toFixed(1)}" x2="${(Math.cos(a) * 150).toFixed(1)}" y2="${(Math.sin(a) * 150).toFixed(1)}" stroke-width="0.8"/>`;
+      })
+      .join("")}
+    <text text-anchor="middle" y="12" font-size="54" font-family="Georgia, serif" fill="${frame}" stroke="none" letter-spacing="6">命</text>
+  </g>
+
+  <!-- Reader fields -->
+  <g font-family="Georgia, 'Times New Roman', serif">
+    ${fields
+      .map(([label, value], i) => {
+        const y = 700 + i * 118;
         return `
-        <g transform="translate(140, ${y})">
-          <text font-size="22" fill="${p.inkSoft}" letter-spacing="6">${num}</text>
-          <text y="60" font-size="46" fill="${p.ink}">${row}</text>
-          <text y="102" font-size="20" fill="${p.inkSoft}" letter-spacing="4">${rowsEn[i]}</text>
-          <line x1="0" y1="130" x2="${W - 280}" y2="130" stroke="${p.frame}" stroke-width="0.4" opacity="0.4"/>
+        <g transform="translate(110, ${y})">
+          <text font-size="20" fill="${inkSoft}" letter-spacing="6">${escapeXml(label)}</text>
+          <text y="52" font-size="40" fill="${ink}">${escapeXml(value)}</text>
+          <line x1="0" y1="76" x2="${W - 220}" y2="76" stroke="${frame}" stroke-width="0.5" opacity="0.28"/>
         </g>`;
       })
       .join("")}
   </g>
 
-  <g font-family="Georgia, serif" fill="${p.inkSoft}" text-anchor="middle">
-    ${wrapText(disclaimer, 34)
-      .map((line, i) => `<text x="${W / 2}" y="${H - 160 + i * 26}" font-size="16" letter-spacing="1">${escapeXml(line)}</text>`)
-      .join("")}
+  <!-- Decorative shelf-mark barcode -->
+  <g transform="translate(0, ${H - 250})">
+    ${bars}
+    <text x="${W / 2}" y="76" text-anchor="middle" font-size="18" font-family="'Courier New', monospace" fill="${inkSoft}" letter-spacing="8">${escapeXml(data.readerNumber)}</text>
+  </g>
+
+  <g font-family="Georgia, serif" text-anchor="middle">
+    <text x="${W / 2}" y="${H - 116}" font-size="24" fill="${ink}" letter-spacing="2">${escapeXml(motto)}</text>
+    <text x="${W / 2}" y="${H - 66}" font-size="17" fill="${inkSoft}" letter-spacing="5">${escapeXml(flipHint)}</text>
   </g>
 </svg>`;
-}
-
-function wrapText(text: string, maxChars: number): string[] {
-  // Simple char-count wrap; both CJK and ASCII look OK at 16-20pt.
-  const lines: string[] = [];
-  let buf = "";
-  for (const ch of text) {
-    buf += ch;
-    if (buf.length >= maxChars && /[\s,。,;·]/.test(ch)) {
-      lines.push(buf.trim());
-      buf = "";
-    }
-  }
-  if (buf.trim()) lines.push(buf.trim());
-  return lines.slice(0, 3);
 }
 
 function escapeXml(s: string): string {

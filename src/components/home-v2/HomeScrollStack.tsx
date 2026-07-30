@@ -30,6 +30,7 @@ import LineSidebar from "@/components/react-bits/LineSidebar/LineSidebar";
 import { LibraryInteriorBackdrop } from "./LibraryInteriorBackdrop";
 import { HomeCardVisual } from "./HomeCardVisual";
 import { LibraryFeatureDrawer } from "./LibraryFeatureDrawer";
+import { ResponsiveHeroTitle } from "@/components/ResponsiveHeroTitle";
 import { MotionModeToggle } from "./MotionModeToggle";
 import { useStableMotion } from "@/lib/motion-preference";
 
@@ -169,9 +170,9 @@ export function HomeScrollStack() {
 
 function GuideDeskHero({ isZh }: { isZh: boolean }) {
   const eyebrow = isZh ? "命运图书馆 · 导览室" : "Destiny Library · Guide Desk";
-  const headingParts = isZh
-    ? ["每一个文明,", "都在问同一个问题。"]
-    : ["Every civilization has been asking", "the same question."];
+  const headingLines = isZh
+    ? ["每一个文明，", "都在问同一个问题。"]
+    : ["Every civilization,", "asks the same question."];
   const body = isZh
     ? "跟着下面七块导览牌一路向下:从今天的问题、命盘与综合解读,到六本书、通识馆、四间藏室,最后回到你的个人书架。每一张卡片都会告诉你现在能读什么、需要先做什么。"
     : "Follow the seven guide plates below: from today's question, primary chart and panorama, to six books, the commons, four special rooms, and finally your Personal Library. Each plate tells you what you can read now and what needs to happen first.";
@@ -192,12 +193,13 @@ function GuideDeskHero({ isZh }: { isZh: boolean }) {
       <p className="text-[10px] uppercase tracking-[0.5em] text-gold-dust/80 sm:text-xs [text-shadow:0_1px_12px_rgba(0,0,0,0.85)]">
         {eyebrow}
       </p>
-      <h1 className="mt-6 font-serif text-3xl leading-tight text-stone-warm sm:text-5xl md:text-6xl [text-shadow:0_2px_24px_rgba(0,0,0,0.9),0_0_2px_rgba(0,0,0,0.6)]">
-        <span className="block">{headingParts[0]}</span>
-        <span className="block">{headingParts[1]}</span>
-      </h1>
+      <ResponsiveHeroTitle
+        lang={isZh ? "zh" : "en"}
+        lines={headingLines}
+        className="mt-6 font-serif text-stone-warm [text-shadow:0_2px_24px_rgba(0,0,0,0.9),0_0_2px_rgba(0,0,0,0.6)]"
+      />
 
-      <p className="mt-6 max-w-2xl text-sm leading-relaxed text-stone-warm/90 sm:text-base [text-shadow:0_1px_14px_rgba(0,0,0,0.85)]">
+      <p className="hero-sub mt-6 leading-relaxed text-stone-warm/90 [text-shadow:0_1px_14px_rgba(0,0,0,0.85)]">
         {body}
       </p>
       <div className="mt-8 flex items-center gap-3 text-[10px] uppercase tracking-[0.42em] text-gold-dust/60 [text-shadow:0_1px_10px_rgba(0,0,0,0.8)]">
