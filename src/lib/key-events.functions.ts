@@ -67,7 +67,21 @@ function chartFacts(data: z.infer<typeof ChartInput>) {
     data.lunar && `Lunar date: ${data.lunar}`,
     data.zodiac && `Chinese zodiac: ${data.zodiac}`,
     data.bazi && `BaZi pillars: ${data.bazi}`,
+    data.vedic && `Vedic (sidereal) chart: ${data.vedic}`,
+    data.ziwei && `Zi Wei Dou Shu chart: ${data.ziwei}`,
+    data.gender && `Gender: ${data.gender}`,
     planetLines && `Western placements: ${planetLines}`,
+    coverageDirective(
+      systemCoverageFromFacts({
+        planets: data.planets,
+        bazi: data.bazi,
+        vedic: data.vedic,
+        ziwei: data.ziwei,
+      }).missing,
+      data.lang,
+    ),
+    concernFocusDirective(data.concern, data.lang),
+    crossSystemDirective(data.lang),
   ]
     .filter(Boolean)
     .join("\n");

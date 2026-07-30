@@ -111,7 +111,20 @@ export const generateChartOutlook = createServerFn({ method: "POST" })
       data.lunar && `Lunar date: ${data.lunar}`,
       data.zodiac && `Chinese zodiac: ${data.zodiac}`,
       data.bazi && `BaZi four pillars: ${data.bazi}`,
+      data.vedic && `Vedic (sidereal) chart: ${data.vedic}`,
+      data.ziwei && `Zi Wei Dou Shu chart: ${data.ziwei}`,
+      data.gender && `Gender: ${data.gender}`,
       planetLines && `Western placements: ${planetLines}`,
+      coverageDirective(
+        systemCoverageFromFacts({
+          planets: data.planets,
+          bazi: data.bazi,
+          vedic: data.vedic,
+          ziwei: data.ziwei,
+        }).missing,
+        isZh ? "zh" : "en",
+      ),
+      concernFocusDirective(data.concern, isZh ? "zh" : "en"),
       `Today (server date): ${today}`,
     ]
       .filter(Boolean)
@@ -124,7 +137,9 @@ export const generateChartOutlook = createServerFn({ method: "POST" })
 - 90 天窗口必须结合**当前流月/流年干支**与**当前主要过境行星**（水星逆行、金星过境、外行星相位等）。
 - 未来观察名单（watchlist）共 5 项，覆盖未来 1-6 年（从今天所在年份起，按时间升序），每项必须点名该年的**流年干支或大运走向**并结合**关键过境**（土星过境、木星入宫、外行星相位、南北交移动等）。
 - 每一段文字都要引用至少一条上面给出的具体事实，禁止通用模板句。
-- 语气温暖、诗意、克制，像烛下低语。`
+- 语气温暖、诗意、克制，像烛下低语。
+
+${crossSystemDirective("zh")}`
       : `You are an elder fluent in BaZi luck-decades (大运/流年) and Western transit astrology. Output STRICT JSON only — no prose, comments, or code fences.
 Hard rules:
 - Each life-timeline decade MUST cite that decade's **luck-pillar stem/branch or Ten-God trend** and pair it with a Western marker (Saturn return, Jupiter transit, etc.).
@@ -132,6 +147,8 @@ Hard rules:
 - The 5-item watchlist covers the NEXT 1-6 years (chronological, starting from today's year); every item MUST name that year's **year-pillar or luck-pillar shift** together with a **key transit** (Saturn transit, Jupiter ingress, outer-planet aspect, nodal shift).
 - Every sentence must reference at least one concrete fact listed above — no generic templates.
 - Tone: warm, poetic, restrained.
+
+${crossSystemDirective("en")}
 
 ${guardrailsFor(isZh ? "zh" : "en")}`;
 
