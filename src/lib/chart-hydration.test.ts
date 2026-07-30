@@ -1,4 +1,5 @@
-import { describe, expect, test } from "vitest";
+// @ts-expect-error bun:test
+import { describe, expect, test } from "bun:test";
 import { isChartInputComplete, missingChartInputFields } from "@/lib/chart-hydration";
 import { buildReportFingerprint } from "@/lib/report-input";
 
