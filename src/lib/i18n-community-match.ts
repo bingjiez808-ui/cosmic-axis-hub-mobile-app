@@ -157,12 +157,27 @@ const DICT = {
 
 type Key = keyof typeof DICT;
 
+/**
+ * Cached per language. The returned object is used inside `useCallback`
+ * dependency arrays; returning a fresh object on every render caused an
+ * infinite refresh loop in the Community Match panel.
+ */
+const COPY_CACHE = new Map<Lang, ReturnType<typeof buildCommunityMatchCopy>>();
+
 export function useCommunityMatchCopy() {
   const { lang } = useLang();
   return communityMatchCopy(lang);
 }
 
 export function communityMatchCopy(lang: Lang) {
+  const cached = COPY_CACHE.get(lang);
+  if (cached) return cached;
+  const built = buildCommunityMatchCopy(lang);
+  COPY_CACHE.set(lang, built);
+  return built;
+}
+
+function buildCommunityMatchCopy(lang: Lang) {
   const t = <K extends Key>(k: K): string => {
     const v = DICT[k] as unknown;
     if (typeof v === "function") return "";
