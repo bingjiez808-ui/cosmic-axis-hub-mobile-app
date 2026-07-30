@@ -245,6 +245,46 @@ export async function dispatchLetter(ctx: Ctx, letterId: string) {
   return { delivered: Number(data ?? 0) };
 }
 
+export type LetterDispatchState = {
+  letterId: string;
+  status: string;
+  wave: number;
+  deliveredCount: number;
+  readCount: number;
+  replyCount: number;
+  maxRecipients: number;
+  maxReplies: number;
+  lastDispatchAt: string | null;
+  nextWaveAt: string | null;
+  expiresAt: string | null;
+  canRequestWave: boolean;
+  waiting: boolean;
+  waitingHintHours: number;
+};
+
+/** Author-facing delivery telemetry: how many waves went out, who read, who replied. */
+export async function readDispatchState(ctx: Ctx, letterId: string): Promise<LetterDispatchState> {
+  const { data, error } = await ctx.supabase.rpc("get_community_letter_dispatch_state", {
+    _letter_id: letterId,
+  });
+  if (error || !data) friendly(error);
+  return data as unknown as LetterDispatchState;
+}
+
+/**
+ * Author-facing "send the next wave" action. The wave window, recipient cap and
+ * per-reader daily quota are all enforced inside `dispatch_community_letter`;
+ * this only adds a burst throttle and returns the refreshed state.
+ */
+export async function requestNextWave(ctx: Ctx, letterId: string) {
+  limit(`community-hall:wave:${ctx.userId}`, 6, 60 * 60_000, "rate_limited");
+  const { data, error } = await ctx.supabase.rpc("dispatch_community_letter", { _letter_id: letterId });
+  if (error) friendly(error);
+  const delivered = Number(data ?? 0);
+  return { delivered, state: await readDispatchState(ctx, letterId) };
+}
+
+
 export async function submitReply(ctx: Ctx, input: { letterId: string; body: string }) {
   limit(`community-hall:reply:${ctx.userId}`, 10, 60 * 60_000, "hourly_reply_limit");
   const verdict = screenCommunityText(input.body);
