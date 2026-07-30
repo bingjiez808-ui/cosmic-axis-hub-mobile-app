@@ -154,6 +154,24 @@ export type Database = {
         }
         Relationships: []
       }
+      community_blocks: {
+        Row: {
+          blocked_user_id: string
+          blocker_id: string
+          created_at: string
+        }
+        Insert: {
+          blocked_user_id: string
+          blocker_id: string
+          created_at?: string
+        }
+        Update: {
+          blocked_user_id?: string
+          blocker_id?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
       community_comments: {
         Row: {
           author_house_key: string
@@ -214,6 +232,130 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      community_letter_deliveries: {
+        Row: {
+          delivered_at: string
+          id: string
+          letter_id: string
+          read_at: string | null
+          recipient_id: string
+          replied_at: string | null
+          status: string
+        }
+        Insert: {
+          delivered_at?: string
+          id?: string
+          letter_id: string
+          read_at?: string | null
+          recipient_id: string
+          replied_at?: string | null
+          status?: string
+        }
+        Update: {
+          delivered_at?: string
+          id?: string
+          letter_id?: string
+          read_at?: string | null
+          recipient_id?: string
+          replied_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_letter_deliveries_letter_id_fkey"
+            columns: ["letter_id"]
+            isOneToOne: false
+            referencedRelation: "community_letters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_letter_replies: {
+        Row: {
+          author_id: string
+          body: string
+          created_at: string
+          id: string
+          letter_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          created_at?: string
+          id?: string
+          letter_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          letter_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_letter_replies_letter_id_fkey"
+            columns: ["letter_id"]
+            isOneToOne: false
+            referencedRelation: "community_letters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_letters: {
+        Row: {
+          author_id: string
+          body: string
+          created_at: string
+          expires_at: string
+          id: string
+          language: string
+          response_style: string | null
+          status: string
+          subject: string | null
+          target_age_band: string
+          topic: string | null
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          language?: string
+          response_style?: string | null
+          status?: string
+          subject?: string | null
+          target_age_band: string
+          topic?: string | null
+          updated_at?: string
+          visibility?: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          language?: string
+          response_style?: string | null
+          status?: string
+          subject?: string | null
+          target_age_band?: string
+          topic?: string | null
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: []
       }
       community_likes: {
         Row: {
@@ -434,6 +576,63 @@ export type Database = {
         }
         Relationships: []
       }
+      community_moderation_events: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          target_id: string | null
+          target_type: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          target_id?: string | null
+          target_type: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          target_id?: string | null
+          target_type?: string
+        }
+        Relationships: []
+      }
+      community_notifications: {
+        Row: {
+          created_at: string
+          entity_id: string | null
+          id: string
+          read_at: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          entity_id?: string | null
+          id?: string
+          read_at?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string | null
+          id?: string
+          read_at?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       community_posts: {
         Row: {
           author_house_key: string
@@ -480,6 +679,90 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      community_profiles: {
+        Row: {
+          academy: string | null
+          age_band: string | null
+          alias: string | null
+          avatar_url: string | null
+          created_at: string
+          element: string | null
+          language: string
+          opt_in: boolean
+          quote: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          academy?: string | null
+          age_band?: string | null
+          alias?: string | null
+          avatar_url?: string | null
+          created_at?: string
+          element?: string | null
+          language?: string
+          opt_in?: boolean
+          quote?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          academy?: string | null
+          age_band?: string | null
+          alias?: string | null
+          avatar_url?: string | null
+          created_at?: string
+          element?: string | null
+          language?: string
+          opt_in?: boolean
+          quote?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      community_reports: {
+        Row: {
+          created_at: string
+          details: string | null
+          id: string
+          reason: string
+          reporter_id: string
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          target_id: string
+          target_type: string
+        }
+        Insert: {
+          created_at?: string
+          details?: string | null
+          id?: string
+          reason: string
+          reporter_id: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          target_id: string
+          target_type: string
+        }
+        Update: {
+          created_at?: string
+          details?: string | null
+          id?: string
+          reason?: string
+          reporter_id?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          target_id?: string
+          target_type?: string
+        }
+        Relationships: []
       }
       friend_blocks: {
         Row: {
@@ -1399,6 +1682,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          birth_date: string | null
           created_at: string
           display_name: string | null
           email: string
@@ -1410,6 +1694,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          birth_date?: string | null
           created_at?: string
           display_name?: string | null
           email: string
@@ -1421,6 +1706,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          birth_date?: string | null
           created_at?: string
           display_name?: string | null
           email?: string
@@ -2203,6 +2489,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      community_age_band: { Args: { _uid: string }; Returns: string }
       community_email_verified: { Args: never; Returns: boolean }
       community_match_alias_for: { Args: { _uid: string }; Returns: string }
       community_match_expire_stale: { Args: never; Returns: undefined }
@@ -2312,7 +2599,12 @@ export type Database = {
         }
         Returns: undefined
       }
+      dispatch_community_letter: {
+        Args: { _letter_id: string }
+        Returns: number
+      }
       generate_ticket_code: { Args: never; Returns: string }
+      get_my_community_mailbox: { Args: never; Returns: Json }
       list_my_redemption_uses: {
         Args: never
         Returns: {
@@ -2339,6 +2631,30 @@ export type Database = {
           _user_agent_summary: string
         }
         Returns: Json
+      }
+      reply_to_community_letter: {
+        Args: { _body: string; _letter_id: string; _needs_review?: boolean }
+        Returns: string
+      }
+      report_community_content: {
+        Args: {
+          _details?: string
+          _reason: string
+          _target_id: string
+          _target_type: string
+        }
+        Returns: string
+      }
+      send_community_letter: {
+        Args: {
+          _body: string
+          _needs_review?: boolean
+          _response_style: string
+          _subject: string
+          _target_age_band: string
+          _topic: string
+        }
+        Returns: string
       }
       set_chart_role: {
         Args: { _chart_id: string; _role: string }
