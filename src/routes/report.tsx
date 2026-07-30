@@ -1691,8 +1691,11 @@ function ReportPage() {
               lang={lang}
               seed={`${search.name ?? ""}|${search.date ?? ""}|${search.time ?? ""}|${search.place ?? ""}`}
               size={Math.min(560, typeof window !== "undefined" ? window.innerWidth - 96 : 560)}
+              active={chartSystem}
+              onActiveChange={setChartSystem}
               selectedPlanet={selectedPlanet}
               onSelectPlanet={setSelectedPlanet}
+
             />
             <p className="max-w-2xl text-center text-xs leading-relaxed text-stone-warm/60">
               {lang === "zh"
