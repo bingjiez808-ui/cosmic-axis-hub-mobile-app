@@ -4,7 +4,11 @@ import { toast } from "sonner";
 
 import { PersonalWorkspaceNav } from "@/components/PersonalWorkspaceNav";
 import { Button } from "@/components/ui/button";
-import { useCommunityProfile, useSaveCommunityProfile } from "@/lib/community-hall-client";
+import {
+  useCommunityProfile,
+  useDeleteMyCommunityData,
+  useSaveCommunityProfile,
+} from "@/lib/community-hall-client";
 import { EntryNotesSection } from "@/experiences/community-hall/EntryNotes";
 import { useCommunityHall } from "@/lib/i18n-community-hall";
 
