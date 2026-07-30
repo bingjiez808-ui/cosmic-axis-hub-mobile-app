@@ -233,6 +233,36 @@ export type Database = {
           },
         ]
       }
+      community_delivery_config: {
+        Row: {
+          daily_letter_limit: number
+          first_wave: number
+          id: number
+          letter_ttl_days: number
+          max_recipients: number
+          max_replies: number
+          updated_at: string
+        }
+        Insert: {
+          daily_letter_limit?: number
+          first_wave?: number
+          id?: number
+          letter_ttl_days?: number
+          max_recipients?: number
+          max_replies?: number
+          updated_at?: string
+        }
+        Update: {
+          daily_letter_limit?: number
+          first_wave?: number
+          id?: number
+          letter_ttl_days?: number
+          max_recipients?: number
+          max_replies?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       community_letter_deliveries: {
         Row: {
           delivered_at: string
@@ -314,13 +344,16 @@ export type Database = {
       }
       community_letters: {
         Row: {
-          author_id: string
+          author_id: string | null
           body: string
+          content_origin: string
           created_at: string
           expires_at: string
           id: string
           language: string
+          published_at: string | null
           response_style: string | null
+          risk_level: string
           status: string
           subject: string | null
           target_age_band: string
@@ -329,13 +362,16 @@ export type Database = {
           visibility: string
         }
         Insert: {
-          author_id: string
+          author_id?: string | null
           body: string
+          content_origin?: string
           created_at?: string
           expires_at?: string
           id?: string
           language?: string
+          published_at?: string | null
           response_style?: string | null
+          risk_level?: string
           status?: string
           subject?: string | null
           target_age_band: string
@@ -344,13 +380,16 @@ export type Database = {
           visibility?: string
         }
         Update: {
-          author_id?: string
+          author_id?: string | null
           body?: string
+          content_origin?: string
           created_at?: string
           expires_at?: string
           id?: string
           language?: string
+          published_at?: string | null
           response_style?: string | null
+          risk_level?: string
           status?: string
           subject?: string | null
           target_age_band?: string
@@ -733,6 +772,7 @@ export type Database = {
           created_at: string
           details: string | null
           id: string
+          priority: string
           reason: string
           reporter_id: string
           resolved_at: string | null
@@ -745,6 +785,7 @@ export type Database = {
           created_at?: string
           details?: string | null
           id?: string
+          priority?: string
           reason: string
           reporter_id: string
           resolved_at?: string | null
@@ -757,6 +798,7 @@ export type Database = {
           created_at?: string
           details?: string | null
           id?: string
+          priority?: string
           reason?: string
           reporter_id?: string
           resolved_at?: string | null
@@ -2667,6 +2709,7 @@ export type Database = {
           _body: string
           _needs_review?: boolean
           _response_style: string
+          _risk_level?: string
           _subject: string
           _target_age_band: string
           _topic: string
