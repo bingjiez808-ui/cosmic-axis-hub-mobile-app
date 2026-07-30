@@ -333,8 +333,8 @@ function HomeCard({
         </div>
 
         <div className="corridor-visual">
-          <div className="absolute inset-0 rounded-2xl border border-gold-dust/10 bg-black/35" />
           <div className="relative h-full max-h-[190px] w-full max-w-[260px] p-3">
+
             <HomeCardVisual kind={card.visual} />
           </div>
         </div>
