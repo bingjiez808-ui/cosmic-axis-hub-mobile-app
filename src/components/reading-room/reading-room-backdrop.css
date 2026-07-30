@@ -25,7 +25,9 @@
   width: 100%;
   height: 100dvh;
   object-fit: cover;
-  object-position: center center;
+  /* The new hall photograph puts the lit archway slightly below centre;
+     bias the crop downward so the desktop frame is not all dark vaulting. */
+  object-position: center 62%;
   pointer-events: none;
   user-select: none;
   -webkit-user-select: none;
