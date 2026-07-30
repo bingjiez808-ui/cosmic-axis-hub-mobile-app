@@ -164,6 +164,7 @@ import {
   buildCanonicalChartInput,
   ensureChart,
   failReport,
+  getChartById,
   getSavedReport,
   saveReport,
 } from "@/lib/reports-store.functions";
@@ -1042,6 +1043,36 @@ function ReportPage() {
   const latestReqRef = useRef(0);
   const { updateReadingAI } = useAccount();
   const navigate = useNavigate();
+
+  // Rehydrate the gender parameter from the persisted chart row when the URL
+  // does not carry it (e.g. reopening a saved chart from the bookshelf, where
+  // the link only passes `readingId`). Without this the Zi Wei panel reports
+  // "性别参数：缺失" even though the ritual recorded it.
+  useEffect(() => {
+    if (search.gender === "male" || search.gender === "female") return;
+    const rid = (search.readingId ?? "").trim();
+    const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const chartId = reportChartId && uuid.test(reportChartId)
+      ? reportChartId
+      : uuid.test(rid)
+        ? rid
+        : null;
+    if (!chartId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const row = await getChartById({ data: { chartId } });
+        if (cancelled) return;
+        if (row?.gender === "male" || row?.gender === "female") setGenderOverride(row.gender);
+      } catch {
+        /* anonymous or transient — the in-place gender picker still works */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [search.gender, search.readingId, reportChartId]);
+
 
   const runReport = useCallback(() => {
     if (!search.date) return;
