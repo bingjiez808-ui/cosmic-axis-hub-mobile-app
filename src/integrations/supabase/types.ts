@@ -2373,6 +2373,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      admin_community_hall_overview: { Args: never; Returns: Json }
       admin_create_redemption_code:
         | {
             Args: {
@@ -2455,6 +2456,18 @@ export type Database = {
           user_email: string
           user_id: string
         }[]
+      }
+      admin_moderate_community_letter: {
+        Args: { _action: string; _letter_id: string; _notes?: string }
+        Returns: Json
+      }
+      admin_moderate_community_reply: {
+        Args: { _action: string; _notes?: string; _reply_id: string }
+        Returns: Json
+      }
+      admin_set_community_participation: {
+        Args: { _notes?: string; _status: string; _user_id: string }
+        Returns: Json
       }
       apply_membership_grant: {
         Args: {
