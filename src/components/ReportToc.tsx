@@ -96,13 +96,13 @@ export function ReportToc({ items, lang }: { items: TocItem[]; lang: "en" | "zh"
   const tapStart = useRef<{ x: number; y: number } | null>(null);
   const openedByPointer = useRef(false);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const openedAt = useRef(0);
 
   // Native touch handling for the floating trigger. Direct element listeners
   // survive smooth-scroll libraries that intercept touch before React's root,
   // and let us reject taps that are really the tail of a scroll gesture.
   useEffect(() => {
     const el = triggerRef.current;
-    console.log("TOC effect", !!el);
     if (!el) return;
     const onStart = (e: TouchEvent) => {
       const t = e.touches[0];
@@ -114,8 +114,8 @@ export function ReportToc({ items, lang }: { items: TocItem[]; lang: "en" | "zh"
       const t = e.changedTouches[0];
       if (!s || !t) return;
       if (Math.abs(t.clientX - s.x) > 12 || Math.abs(t.clientY - s.y) > 12) return;
-      console.log("TOC native tap");
       openedByPointer.current = true;
+      openedAt.current = Date.now();
       setOpen(true);
     };
     const onCancel = () => {
@@ -366,6 +366,7 @@ export function ReportToc({ items, lang }: { items: TocItem[]; lang: "en" | "zh"
             openedByPointer.current = false;
             return;
           }
+          openedAt.current = Date.now();
           setOpen(true);
         }}
 
@@ -401,7 +402,12 @@ export function ReportToc({ items, lang }: { items: TocItem[]; lang: "en" | "zh"
           <button
             type="button"
             aria-label={closeLabel}
-            onClick={closeDrawer}
+            onClick={() => {
+              // Swallow the click the browser synthesizes from the very tap
+              // that opened the drawer — it lands on the fresh backdrop.
+              if (Date.now() - openedAt.current < 450) return;
+              closeDrawer();
+            }}
             className="absolute inset-0 bg-obsidian/70 backdrop-blur-sm animate-fade-in"
           />
           <div
