@@ -382,7 +382,7 @@ try {
       });
       if (error) throw error;
     });
-    await step("report lands as open in the queue", async () => {
+    await step("report lands as pending in the queue", async () => {
       const { data } = await admin
         .from("community_reports")
         .select("id,status")
@@ -390,7 +390,7 @@ try {
         .eq("reporter_id", B.id)
         .order("created_at", { ascending: false })
         .limit(1);
-      must(data?.[0]?.status === "open", `status=${data?.[0]?.status}`);
+      must(data?.[0]?.status === "pending", `status=${data?.[0]?.status}`);
     });
     await step("invalid report target type rejected", async () => {
       const { error } = await B.client.rpc("report_community_content", {
@@ -404,7 +404,7 @@ try {
       const { error } = await B.client.rpc("admin_community_hall_overview");
       must(error, "non-admin got overview");
     });
-    await step("admin overview surfaces the open report", async () => {
+    await step("admin overview surfaces the pending report", async () => {
       const { data, error } = await D.client.rpc("admin_community_hall_overview");
       if (error) throw error;
       must(JSON.stringify(data).includes(letterId), "letter not in overview");
@@ -413,15 +413,15 @@ try {
       const { error } = await D.client.rpc("admin_moderate_community_letter", {
         _letter_id: letterId,
         _action: "redact",
-        _notes: "（本段内容已由馆员脱敏）",
+        _notes: "（本段内容已由馆员脱敏处理，原文不再展示。）",
       });
       if (error) throw error;
       const { count } = await admin
         .from("community_reports")
         .select("id", { count: "exact", head: true })
         .eq("target_id", letterId)
-        .eq("status", "open");
-      must((count ?? 0) === 0, `${count} report(s) still open`);
+        .in("status", ["pending", "reviewing"]);
+      must((count ?? 0) === 0, `${count} report(s) still unresolved`);
     });
     await step("full report chain is audited", async () => {
       const { data } = await admin
@@ -502,8 +502,12 @@ try {
     console.log(`  ↷ --keep: leaving ${cleanup.length} accounts (${EMAIL_PREFIX}${RUN_ID}-*)`);
   } else {
     for (const id of cleanup) {
-      await admin.from("user_roles").delete().eq("user_id", id).catch(() => {});
-      await admin.auth.admin.deleteUser(id).catch(() => {});
+      try {
+        await admin.from("user_roles").delete().eq("user_id", id);
+        await admin.auth.admin.deleteUser(id);
+      } catch {
+        /* best-effort */
+      }
     }
     console.log(`  ✓ removed ${cleanup.length} synthetic accounts`);
     // sweep orphans left by crashed earlier runs
