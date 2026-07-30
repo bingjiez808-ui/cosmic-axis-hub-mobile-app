@@ -1,3 +1,4 @@
+// @ts-expect-error — resolved by the vitest runner.
 import { describe, expect, test } from "vitest";
 
 import { buildCalculationSnapshot } from "./calc-snapshot";
