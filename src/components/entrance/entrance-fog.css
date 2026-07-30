@@ -1,3 +1,9 @@
+@property --le-fog-clear {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+
 /**
  * Entrance fog — 3 stacked drifting mist layers, cleared around the lantern
  * via a soft radial CSS mask. Pure CSS + one rAF loop writing CSS variables.
@@ -11,21 +17,17 @@
   opacity: var(--le-fog-alpha, 1);
   transition: opacity 700ms ease;
   will-change: opacity;
-  /* Lantern clearing mask: transparent (no fog) at pointer, opaque far away. */
-  -webkit-mask-image: radial-gradient(
+  /* Lantern clearing mask: cleared at the pointer, full mist far away. */
+  --le-fog-mask: radial-gradient(
     circle var(--le-fog-r, 220px) at var(--le-fog-x, 50%) var(--le-fog-y, 50%),
-    rgba(0, 0, 0, calc(0.2 * var(--le-fog-back, 1))) 0%,
-    rgba(0, 0, 0, calc(0.6 * var(--le-fog-back, 1) + 0.4 * (1 - var(--le-fog-back, 1)))) 38%,
-    rgba(0, 0, 0, 0.86) 70%,
+    rgba(0, 0, 0, calc(1 - 0.8 * var(--le-fog-clear))) 0%,
+    rgba(0, 0, 0, calc(1 - 0.4 * var(--le-fog-clear))) 38%,
+    rgba(0, 0, 0, calc(1 - 0.14 * var(--le-fog-clear))) 70%,
     #000 100%
   );
-  mask-image: radial-gradient(
-    circle var(--le-fog-r, 220px) at var(--le-fog-x, 50%) var(--le-fog-y, 50%),
-    rgba(0, 0, 0, calc(0.2 * var(--le-fog-back, 1))) 0%,
-    rgba(0, 0, 0, calc(0.6 * var(--le-fog-back, 1) + 0.4 * (1 - var(--le-fog-back, 1)))) 38%,
-    rgba(0, 0, 0, 0.86) 70%,
-    #000 100%
-  );
+  -webkit-mask-image: var(--le-fog-mask);
+  mask-image: var(--le-fog-mask);
+  transition: opacity 700ms ease, --le-fog-clear 1500ms ease;
 }
 
 .le-fog-layer {
