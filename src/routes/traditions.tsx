@@ -196,8 +196,8 @@ const HEADER = {
   kicker: ["The Archive", "档案室"] as Bi,
   h1a: ["Four ", "四种"] as Bi,
   h1b: ["languages", "语言"] as Bi,
-  h1c: [" for", "，同一片"] as Bi,
-  h1d: ["the same silence", "沉默"] as Bi,
+  h1c: [",", "，"] as Bi,
+  h1d: ["for the same silence", "同一片沉默"] as Bi,
   lead: [
     "Each of the four traditions is a self-contained cosmology, developed over centuries with its own canonical texts. The library holds them side by side so their answers can converse.",
     "四大传统各自是一个自洽的宇宙观，经数百年沉淀，各有其经典。图书馆将它们并列诵读，让四种回答彼此对话。",
