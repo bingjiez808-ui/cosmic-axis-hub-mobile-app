@@ -385,6 +385,23 @@ function RitualPage() {
     navigate({ to: "/synthesis", search: () => Object.fromEntries(params) as never });
   };
 
+  /**
+   * Duplicate resolution. "open" jumps straight to the saved reading —
+   * the report layer reuses the cached row for this chart, so no AI call
+   * is made. "again" replays the synthesis animation; the same cache
+   * still applies downstream.
+   */
+  const resolveDuplicate = (intent: "open" | "again") => {
+    if (!duplicate) return;
+    const params = new URLSearchParams(duplicate.params);
+    try { sessionStorage.removeItem(RITUAL_STATE_KEY); } catch {}
+    setDuplicate(null);
+    navigate({
+      to: intent === "open" ? "/report" : "/synthesis",
+      search: () => Object.fromEntries(params) as never,
+    });
+  };
+
 
   // Clear stale error when the user moves to a different step. Errors
   // should never survive step navigation.
