@@ -162,6 +162,10 @@ function RitualPage() {
   const [restored, setRestored] = useState(false);
   const [fieldError, setFieldError] = useState<string | null>(null);
   const [primaryConflict, setPrimaryConflict] = useState<URLSearchParams | null>(null);
+  // Duplicate chart already in the caller's own library (same birth data).
+  const [duplicate, setDuplicate] = useState<
+    { params: URLSearchParams; hasReport: boolean } | null
+  >(null);
   const [submitting, setSubmitting] = useState(false);
 
 
