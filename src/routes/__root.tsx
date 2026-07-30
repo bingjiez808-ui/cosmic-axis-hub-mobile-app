@@ -532,7 +532,7 @@ function SiteNav() {
       })),
     },
     {
-      title: isZh ? "帮助与条款" : "Help & Policies",
+      title: isZh ? "了解更多" : "Learn · More",
       items: moreEntries.map((e) => ({
         key: e.to ?? e.href ?? e.label,
         label: e.label,
