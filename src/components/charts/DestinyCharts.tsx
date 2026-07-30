@@ -50,7 +50,7 @@ export function ZodiacWheel({
   const active = hover ?? highlighted ?? -1;
   const r1 = size / 2 - 4;
   const r2 = size / 2 - 42;
-  const r3 = size / 2 - 78;
+  const r3 = Math.max(8, size / 2 - 78);
   const cx = size / 2;
   const cy = size / 2;
   const mounted = useMounted();
@@ -157,7 +157,7 @@ export function ZodiacWheel({
           <circle
             cx={r3}
             cy={r3}
-            r={r3 - 6}
+            r={Math.max(0, r3 - 6)}
             fill="none"
             stroke="var(--gold-dust)"
             strokeOpacity="0.25"
@@ -690,7 +690,7 @@ export function NatalWheel({
   const rSignRing = size / 2 - 40;
   const rHouseRing = size / 2 - 80;
   const rPlanetBase = size / 2 - 118;
-  const rInner = size / 2 - 148;
+  const rInner = Math.max(8, size / 2 - 148);
 
   // Group planets by sign for stacking
   const bySign: Record<number, number[]> = {};
@@ -977,7 +977,7 @@ export function NatalWheel({
             <stop offset="100%" stopColor="var(--gold-dust)" stopOpacity="0" />
           </radialGradient>
         </defs>
-        <circle cx={cx} cy={cy} r={rInner - 4} fill="url(#natal-core)" />
+        <circle cx={cx} cy={cy} r={Math.max(0, rInner - 4)} fill="url(#natal-core)" />
       </svg>
       )}
 
