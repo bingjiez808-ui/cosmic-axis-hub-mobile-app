@@ -1681,15 +1681,8 @@ function ReportPage() {
           const arrived = aiByKey.has(d.key);
           const pending = !!search.date && aiState === "loading" && !arrived;
           return (
-            <motion.article
-              key={d.key}
-              id={d.key}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.8, delay: idx * 0.04, ease: [0.32, 0.72, 0, 1] }}
-              className={`glass-card scroll-mt-[calc(var(--site-nav-height,96px)+72px)] overflow-hidden rounded-3xl p-4 sm:p-8 md:p-12 ${pending ? "opacity-70" : ""}`}
-            >
+            <DimensionCardShell key={d.key} id={d.key} idx={idx} pending={pending}>
+
               <div className="mb-8 flex flex-wrap items-start justify-between gap-4 border-b border-white/10 pb-6">
                 <div className="flex min-w-0 items-start gap-4">
                   <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl border border-gold-dust/25 bg-gradient-to-br from-gold-dust/[0.12] to-transparent text-gold-light shadow-[0_0_24px_-12px_hsl(45_70%_60%/0.5)]">
