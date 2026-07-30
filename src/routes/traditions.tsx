@@ -500,18 +500,21 @@ function TraditionsPage() {
             className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-16"
           >
             <div className={`lg:col-span-5 ${idx % 2 === 1 ? "lg:order-2" : ""}`}>
-              <div className="trad-panel trad-plate relative">
+              <div className="trad-plate group relative">
+                <span aria-hidden className="trad-plate-halo" />
+                <span aria-hidden className="trad-plate-ring" />
                 <img
                   src={c.image}
                   alt={`${c.title[0]} diagram`}
                   loading="lazy"
                   width={1024}
                   height={1024}
-                  className="aspect-square w-full object-cover"
+                  className="trad-plate-img aspect-square w-full object-contain"
                 />
               </div>
             </div>
-            <div className={`trad-panel p-7 md:p-10 lg:col-span-7 ${idx % 2 === 1 ? "lg:order-1" : ""}`}>
+            <div className={`px-1 md:px-2 lg:col-span-7 ${idx % 2 === 1 ? "lg:order-1" : ""}`}>
+
               <p className="mb-4 font-serif text-2xl italic text-gold-dust">{c.numeral}.</p>
               <h2 className="mb-3 font-serif text-4xl text-stone-warm md:text-5xl">{c.title[li]}</h2>
               <p className="mb-8 text-sm uppercase tracking-[0.3em] text-stone-warm/70">
