@@ -137,7 +137,7 @@ export async function readCommunityProfile(ctx: Ctx) {
   const { data: band } = await ctx.supabase.rpc("community_age_band", { _uid: ctx.userId });
   const { data } = await ctx.supabase
     .from("community_profiles")
-    .select("alias, academy, element, avatar_url, quote, age_band, language, opt_in, status")
+    .select("alias, academy, element, avatar_url, quote, age_band, language, opt_in, status, onboarded_at")
     .eq("user_id", ctx.userId)
     .maybeSingle();
   return {
@@ -154,6 +154,7 @@ export async function readCommunityProfile(ctx: Ctx) {
           language: data.language,
           optIn: data.opt_in,
           status: data.status,
+          onboardedAt: (data as { onboarded_at?: string | null }).onboarded_at ?? null,
         }
       : null,
   };
@@ -443,4 +444,40 @@ export async function closeLetter(ctx: Ctx, letterId: string) {
   const { data, error } = await ctx.supabase.rpc("close_community_letter", { _letter_id: letterId });
   if (error) friendly(error);
   return { status: (data as string | null) ?? "closed" };
+}
+
+export type LibrarySample = {
+  letterId: string;
+  subject: string | null;
+  body: string;
+  topic: string | null;
+  targetAgeBand: string;
+  responseStyle: string | null;
+  language: string;
+  publishedAt: string | null;
+  echoes: Array<{ id: string; body: string; ageBand: string }>;
+};
+
+/**
+ * Cold-start reading material. These are curated library samples written for
+ * the hall itself: they carry no author, are never delivered to anyone and
+ * cannot be replied to — the UI must label them as 馆藏范文 / Library sample.
+ */
+export async function listLibrarySamples(
+  ctx: Ctx,
+  input: { language?: "zh" | "en" | null; limit?: number },
+): Promise<LibrarySample[]> {
+  const { data, error } = await ctx.supabase.rpc("get_community_library_samples", {
+    _language: input.language ?? null,
+    _limit: input.limit ?? 12,
+  });
+  if (error) friendly(error);
+  return (data ?? []) as unknown as LibrarySample[];
+}
+
+/** Record that this traveler has seen the three onboarding cards. */
+export async function markOnboarded(ctx: Ctx) {
+  const { data, error } = await ctx.supabase.rpc("mark_community_onboarded");
+  if (error) friendly(error);
+  return { onboardedAt: (data as string | null) ?? null };
 }
