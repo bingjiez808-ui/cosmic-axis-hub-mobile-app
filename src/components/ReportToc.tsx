@@ -110,12 +110,21 @@ export function ReportToc({ items, lang }: { items: TocItem[]; lang: "en" | "zh"
     : lang === "zh" ? "固定" : "Pin";
 
   const scheduleCollapse = () => {
+    if (openTimer.current) clearTimeout(openTimer.current);
     if (pinned) return;
     if (collapseTimer.current) clearTimeout(collapseTimer.current);
-    collapseTimer.current = setTimeout(() => setRailExpanded(false), 320);
+    collapseTimer.current = setTimeout(() => setRailExpanded(false), 200);
+  };
+  /** Hover-intent: only expand after the pointer rests on the rail itself. */
+  const scheduleExpand = () => {
+    if (collapseTimer.current) clearTimeout(collapseTimer.current);
+    if (railExpanded) return;
+    if (openTimer.current) clearTimeout(openTimer.current);
+    openTimer.current = setTimeout(() => setRailExpanded(true), 260);
   };
   const cancelCollapse = () => {
     if (collapseTimer.current) clearTimeout(collapseTimer.current);
+    if (openTimer.current) clearTimeout(openTimer.current);
     setRailExpanded(true);
   };
 
@@ -130,15 +139,16 @@ export function ReportToc({ items, lang }: { items: TocItem[]; lang: "en" | "zh"
       {/* Desktop LEFT DOT RAIL — lg and above */}
       <aside
         aria-label={tocLabel}
-        onMouseEnter={cancelCollapse}
-        onMouseLeave={scheduleCollapse}
-        onFocusCapture={cancelCollapse}
-        onBlurCapture={scheduleCollapse}
         style={{ top: "calc(var(--site-nav-height, 96px) + 80px)" }}
         className="pointer-events-none fixed left-3 z-30 hidden max-h-[calc(100dvh-var(--site-nav-height,96px)-120px)] lg:flex xl:left-5"
         data-testid="report-toc-rail"
       >
-        <div className="pointer-events-auto flex items-start gap-2">
+        <div
+          className="pointer-events-auto flex items-start gap-2"
+          onMouseLeave={scheduleCollapse}
+          onFocusCapture={cancelCollapse}
+          onBlurCapture={scheduleCollapse}
+        >
           {/* Dots column */}
           <div className="flex flex-col items-center gap-2 rounded-full border border-gold-dust/25 bg-obsidian/70 px-2 py-3 backdrop-blur">
             {items.map((it, idx) => {
