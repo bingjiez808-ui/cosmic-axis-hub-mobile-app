@@ -16,7 +16,7 @@
  * The drawer state is mirrored to the URL as ?feature=<id> so the back
  * button closes the drawer.
  */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 
 import { useLang } from "@/lib/i18n";
