@@ -481,3 +481,21 @@ export async function markOnboarded(ctx: Ctx) {
   if (error) friendly(error);
   return { onboardedAt: (data as string | null) ?? null };
 }
+
+/**
+ * Privacy: erase everything this member wrote or received in the hall.
+ * Runs inside a SECURITY DEFINER RPC so the deletion is atomic and audited
+ * (the audit row records the action only, never any content).
+ */
+export async function deleteMyCommunityData(ctx: Ctx) {
+  const { data, error } = await ctx.supabase.rpc("delete_my_community_data");
+  if (error) friendly(error);
+  return (data ?? {}) as {
+    letters: number;
+    replies: number;
+    deliveries: number;
+    reports: number;
+    notifications: number;
+    profile: number;
+  };
+}

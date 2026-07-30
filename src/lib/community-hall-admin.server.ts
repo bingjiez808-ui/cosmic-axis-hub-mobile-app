@@ -145,3 +145,45 @@ export async function setParticipation(
   if (error) fail(error);
   return (data ?? {}) as { status: string };
 }
+
+export type HallMetrics = {
+  days: number;
+  since: string;
+  letters: Record<string, number>;
+  deliveries: Record<string, number>;
+  replies: Record<string, number>;
+  reports: Record<string, number>;
+  participants: Record<string, number>;
+  moderation: Array<{ action: string; count: number }>;
+  ageBands: Array<{ band: string; count: number }>;
+  medianFirstEchoHours: number | null;
+};
+
+export async function loadHallMetrics(ctx: Ctx, days: number): Promise<HallMetrics> {
+  const { data, error } = await ctx.supabase.rpc("admin_community_hall_metrics", { _days: days });
+  if (error) fail(error);
+  return data as unknown as HallMetrics;
+}
+
+export type AuditRow = {
+  id: string;
+  actor_id: string | null;
+  target_type: string;
+  target_id: string | null;
+  action: string;
+  notes: string | null;
+  created_at: string;
+};
+
+export async function loadAuditLog(
+  ctx: Ctx,
+  input: { targetType?: string | null; action?: string | null; limit?: number },
+): Promise<AuditRow[]> {
+  const { data, error } = await ctx.supabase.rpc("admin_community_audit_log", {
+    _target_type: input.targetType ?? undefined,
+    _action: input.action ?? undefined,
+    _limit: input.limit ?? 200,
+  });
+  if (error) fail(error);
+  return (data ?? []) as unknown as AuditRow[];
+}

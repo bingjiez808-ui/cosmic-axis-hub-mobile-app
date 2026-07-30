@@ -4,7 +4,11 @@ import { toast } from "sonner";
 
 import { PersonalWorkspaceNav } from "@/components/PersonalWorkspaceNav";
 import { Button } from "@/components/ui/button";
-import { useCommunityProfile, useSaveCommunityProfile } from "@/lib/community-hall-client";
+import {
+  useCommunityProfile,
+  useDeleteMyCommunityData,
+  useSaveCommunityProfile,
+} from "@/lib/community-hall-client";
 import { EntryNotesSection } from "@/experiences/community-hall/EntryNotes";
 import { useCommunityHall } from "@/lib/i18n-community-hall";
 
@@ -148,6 +152,51 @@ function CommunitySettingsPage() {
           </div>
         </details>
       </section>
+
+      {/* ── Round 4 · batch D: member-initiated data erasure ── */}
+      <DangerZone />
     </main>
+  );
+}
+
+function DangerZone() {
+  const c = useCommunityHall();
+  const erase = useDeleteMyCommunityData();
+  const [confirming, setConfirming] = useState(false);
+
+  return (
+    <section className="mt-8 rounded-2xl border border-destructive/25 bg-destructive/5 p-5">
+      <h2 className="text-sm font-semibold text-foreground">{c.dataTitle}</h2>
+      <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{c.dataBody}</p>
+      {confirming ? (
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <span className="text-sm text-destructive">{c.dataConfirm}</span>
+          <Button
+            variant="destructive"
+            size="sm"
+            disabled={erase.isPending}
+            onClick={async () => {
+              await erase.mutateAsync();
+              setConfirming(false);
+              toast.success(c.dataDone);
+            }}
+          >
+            {erase.isPending ? c.sending : c.dataDelete}
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setConfirming(false)}>
+            {c.cancel}
+          </Button>
+        </div>
+      ) : (
+        <Button
+          variant="outline"
+          size="sm"
+          className="mt-4 border-destructive/40 text-destructive hover:bg-destructive/10"
+          onClick={() => setConfirming(true)}
+        >
+          {c.dataDelete}
+        </Button>
+      )}
+    </section>
   );
 }

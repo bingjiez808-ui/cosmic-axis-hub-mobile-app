@@ -2477,6 +2477,19 @@ export type Database = {
           user_id: string
         }[]
       }
+      admin_community_audit_log: {
+        Args: { _action?: string; _limit?: number; _target_type?: string }
+        Returns: {
+          action: string
+          actor_id: string
+          created_at: string
+          id: string
+          notes: string
+          target_id: string
+          target_type: string
+        }[]
+      }
+      admin_community_hall_metrics: { Args: { _days?: number }; Returns: Json }
       admin_community_hall_overview: { Args: never; Returns: Json }
       admin_create_redemption_code:
         | {
@@ -2717,6 +2730,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      delete_my_community_data: { Args: never; Returns: Json }
       dispatch_community_letter: {
         Args: { _letter_id: string }
         Returns: number

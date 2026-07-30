@@ -13,6 +13,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   getCommunityHallAdminOverview,
+  getCommunityHallMetrics,
+  type HallMetrics,
   moderateCommunityLetter,
   moderateCommunityReply,
   setCommunityParticipation,
@@ -30,8 +32,14 @@ export function AdminCommunityHallSection() {
   const replyFn = useServerFn(moderateCommunityReply);
   const participationFn = useServerFn(setCommunityParticipation);
   const [tab, setTab] = useState<
-    "reports" | "letters" | "replies" | "deliveries" | "people" | "log"
-  >("reports");
+    "metrics" | "reports" | "letters" | "replies" | "deliveries" | "people" | "log"
+  >("metrics");
+  const loadMetrics = useServerFn(getCommunityHallMetrics);
+  const metrics = useQuery<HallMetrics>({
+    queryKey: ["admin", "community-hall", "metrics", 30],
+    queryFn: () => loadMetrics({ data: { days: 30 } }),
+    staleTime: 60_000,
+  });
 
   const overview = useQuery<AdminHallOverview>({
     queryKey: KEY,
@@ -73,6 +81,7 @@ export function AdminCommunityHallSection() {
 
   const data = overview.data;
   const tabs = [
+    { key: "metrics" as const, label: c.metricsTitle, n: metrics.data?.letters.total ?? 0 },
     { key: "reports" as const, label: c.isZh ? "举报" : "Reports", n: data?.reports.length ?? 0 },
     { key: "letters" as const, label: c.isZh ? "信件" : "Letters", n: data?.letters.length ?? 0 },
     { key: "replies" as const, label: c.isZh ? "回音" : "Replies", n: data?.replies.length ?? 0 },
@@ -119,6 +128,8 @@ export function AdminCommunityHallSection() {
         <p className="mt-6 text-sm text-destructive">{(overview.error as Error).message}</p>
       ) : (
         <div className="mt-6 space-y-3">
+          {tab === "metrics" && <MetricsPanel data={metrics.data} labels={c} />}
+
           {tab === "reports" &&
             (data?.reports ?? []).map((r) => (
               <Row key={r.id} title={`${r.targetType} · ${r.reason}`} meta={r.status}>
@@ -215,6 +226,79 @@ export function AdminCommunityHallSection() {
         </div>
       )}
     </section>
+  );
+}
+
+function MetricsPanel({
+  data,
+  labels,
+}: {
+  data: HallMetrics | undefined;
+  labels: ReturnType<typeof useCommunityHall>;
+}) {
+  if (!data) return <p className="text-sm text-muted-foreground">{labels.loading}</p>;
+  const rate = (a: number, b: number) => (b > 0 ? `${Math.round((a / b) * 100)}%` : "—");
+  const stats: Array<[string, string]> = [
+    [labels.metricLetters, String(data.letters.total ?? 0)],
+    [labels.metricDeliveries, String(data.deliveries.total ?? 0)],
+    [labels.metricReplies, String(data.replies.total ?? 0)],
+    [labels.metricReports, String(data.reports.total ?? 0)],
+    [labels.metricParticipants, String(data.participants.active ?? 0)],
+    [labels.metricReadRate, rate(data.deliveries.read ?? 0, data.deliveries.total ?? 0)],
+    [labels.metricReplyRate, rate(data.deliveries.replied ?? 0, data.deliveries.total ?? 0)],
+    [
+      labels.metricMedianEcho,
+      data.medianFirstEchoHours != null
+        ? `${data.medianFirstEchoHours} ${labels.metricHours}`
+        : labels.metricNoData,
+    ],
+  ];
+
+  return (
+    <div className="space-y-4">
+      <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+        {labels.metricsRange(data.days)}
+      </p>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {stats.map(([label, value]) => (
+          <div key={label} className="rounded-xl border border-primary/12 bg-background/60 p-4">
+            <p className="text-[0.7rem] text-muted-foreground">{label}</p>
+            <p className="mt-1 text-xl font-semibold text-foreground">{value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-2">
+        <div className="rounded-xl border border-primary/12 bg-background/60 p-4">
+          <p className="text-[0.7rem] text-muted-foreground">{labels.ageBand(undefined)}</p>
+          <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+            {data.ageBands.length === 0 ? (
+              <li>{labels.metricNoData}</li>
+            ) : (
+              data.ageBands.map((b) => (
+                <li key={b.band}>
+                  {labels.ageBand(b.band)} · {b.count}
+                </li>
+              ))
+            )}
+          </ul>
+        </div>
+        <div className="rounded-xl border border-primary/12 bg-background/60 p-4">
+          <p className="text-[0.7rem] text-muted-foreground">{labels.metricsTitle}</p>
+          <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+            {data.moderation.length === 0 ? (
+              <li>{labels.metricNoData}</li>
+            ) : (
+              data.moderation.map((m) => (
+                <li key={m.action}>
+                  {labels.moderationResult(m.action)} · {m.count}
+                </li>
+              ))
+            )}
+          </ul>
+        </div>
+      </div>
+    </div>
   );
 }
 
