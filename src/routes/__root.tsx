@@ -236,7 +236,9 @@ function RootComponent() {
   const readingRoomVariant = readingRoomVariantForPath(pathname);
 
   const shell = (
-    <div className="relative min-h-screen bg-obsidian text-stone-warm">
+    <div
+      className={`relative min-h-screen text-stone-warm${readingRoomVariant === null ? " bg-obsidian" : ""}`}
+    >
       {readingRoomVariant === null ? (
         <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
           {/* Ancient library — image-led immersive backdrop */}
