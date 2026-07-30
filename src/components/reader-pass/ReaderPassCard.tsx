@@ -31,7 +31,7 @@ function detectMode(): Mode {
     connection?: { saveData?: boolean };
     deviceMemory?: number;
   };
-  if (window.innerWidth < 640) return "flat";
+  if (window.innerWidth < 900) return "flat";
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return "flat";
   if (nav.connection?.saveData) return "flat";
   if (nav.deviceMemory && nav.deviceMemory < 4) return "flat";
@@ -83,10 +83,10 @@ export function ReaderPassCard() {
   // the guide-desk headline paints first.
   useEffect(() => {
     setMode(detectMode());
-    setIsMobile(window.innerWidth < 640);
+    setIsMobile(window.innerWidth < 768);
     const onResize = () => {
       setMode(detectMode());
-      setIsMobile(window.innerWidth < 640);
+      setIsMobile(window.innerWidth < 768);
     };
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
