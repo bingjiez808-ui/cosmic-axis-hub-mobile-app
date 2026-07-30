@@ -26,6 +26,7 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/compone
 import { ReportToc, type TocItem } from "@/components/ReportToc";
 import { PriorityPreviewModal } from "@/components/PriorityPreviewModal";
 import { isConcernKey } from "@/lib/concern-guidance-v1";
+import { useStableMotion } from "@/lib/motion-preference";
 // Sage tree-hole is mounted globally in src/routes/__root.tsx.
 
 const DIM_ICONS: Record<string, LucideIcon> = {
@@ -858,6 +859,20 @@ const dimensions: Dimension[] = [
 ];
 
 function Stars({ n }: { n: number }) {
+  // Perf-lite: no per-star twinkle loops (5 infinite animations per module
+  // × 10 modules is a measurable cost on low-end phones).
+  const { stable } = useStableMotion();
+  if (stable) {
+    return (
+      <span className="rm-stars tracking-[0.3em] text-gold-dust" aria-label={`${n}/5`}>
+        {Array.from({ length: 5 }).map((_, i) => (
+          <span key={i} aria-hidden="true" className={i < n ? "" : "text-stone-warm/20"}>
+            ★
+          </span>
+        ))}
+      </span>
+    );
+  }
   return (
     <span className="rm-stars tracking-[0.3em] text-gold-dust" aria-label={`${n}/5`}>
       {Array.from({ length: 5 }).map((_, i) => (
@@ -878,13 +893,14 @@ function Stars({ n }: { n: number }) {
  * Touch/coarse-pointer devices have no hover, so a module "wakes up" while it
  * sits in the middle of the viewport instead. Desktop keeps pure hover.
  */
-function useCoarseActive<T extends HTMLElement>() {
+function useCoarseActive<T extends HTMLElement>(lite = false) {
   const ref = useRef<T | null>(null);
   const [active, setActive] = useState(false);
+  const rafRef = useRef(0);
 
   useEffect(() => {
     const el = ref.current;
-    if (!el || typeof window === "undefined") return;
+    if (lite || !el || typeof window === "undefined") return;
     const coarse = window.matchMedia("(hover: none), (pointer: coarse)").matches;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (!coarse || reduced) return;
@@ -894,15 +910,28 @@ function useCoarseActive<T extends HTMLElement>() {
     );
     io.observe(el);
     return () => io.disconnect();
-  }, []);
+  }, [lite]);
 
-  const onPointerMove = useCallback((e: React.PointerEvent<T>) => {
-    const el = ref.current;
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    el.style.setProperty("--rm-x", `${((e.clientX - r.left) / r.width) * 100}%`);
-    el.style.setProperty("--rm-y", `${((e.clientY - r.top) / r.height) * 100}%`);
-  }, []);
+  useEffect(() => () => cancelAnimationFrame(rafRef.current), []);
+
+  // Pointer aura: skipped entirely in lite mode; otherwise coalesced into one
+  // rAF per frame so fast pointer streams never trigger extra layout reads.
+  const onPointerMove = useCallback(
+    (e: React.PointerEvent<T>) => {
+      if (lite) return;
+      const el = ref.current;
+      if (!el) return;
+      const { clientX, clientY } = e;
+      if (rafRef.current) return;
+      rafRef.current = requestAnimationFrame(() => {
+        rafRef.current = 0;
+        const r = el.getBoundingClientRect();
+        el.style.setProperty("--rm-x", `${((clientX - r.left) / r.width) * 100}%`);
+        el.style.setProperty("--rm-y", `${((clientY - r.top) / r.height) * 100}%`);
+      });
+    },
+    [lite],
+  );
 
   return { ref, active, onPointerMove };
 }
@@ -919,16 +948,21 @@ function DimensionCardShell({
   pending: boolean;
   children: React.ReactNode;
 }) {
-  const { ref, active, onPointerMove } = useCoarseActive<HTMLDivElement>();
+  const { stable } = useStableMotion();
+  const { ref, active, onPointerMove } = useCoarseActive<HTMLDivElement>(stable);
   return (
     <motion.article
       ref={ref}
       id={id}
-      onPointerMove={onPointerMove}
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-80px" }}
-      transition={{ duration: 0.8, delay: Math.min(idx, 4) * 0.04, ease: [0.32, 0.72, 0, 1] }}
+      onPointerMove={stable ? undefined : onPointerMove}
+      initial={stable ? false : { opacity: 0, y: 30 }}
+      whileInView={stable ? undefined : { opacity: 1, y: 0 }}
+      viewport={stable ? undefined : { once: true, margin: "-80px" }}
+      transition={
+        stable
+          ? undefined
+          : { duration: 0.8, delay: Math.min(idx, 4) * 0.04, ease: [0.32, 0.72, 0, 1] }
+      }
       className={`rm-card glass-card scroll-mt-[calc(var(--site-nav-height,96px)+72px)] overflow-hidden rounded-3xl p-4 sm:p-8 md:p-12 ${
         pending ? "opacity-70" : ""
       } ${active ? "is-active" : ""}`}
@@ -957,6 +991,17 @@ function ReportPage() {
 
   // Which dimension's detail modal is open (by key), or null.
   const [detailKey, setDetailKey] = useState<string | null>(null);
+
+  // Perf-lite flag for the whole report page: low-end device, save-data,
+  // reduced-motion, sustained low FPS, or an explicit "stable" preference.
+  const { stable: litePerf } = useStableMotion();
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const el = document.documentElement;
+    if (litePerf) el.setAttribute("data-perf", "lite");
+    else el.removeAttribute("data-perf");
+    return () => el.removeAttribute("data-perf");
+  }, [litePerf]);
 
   // Sync report language with the choice made in the ritual, if provided.
   useEffect(() => {

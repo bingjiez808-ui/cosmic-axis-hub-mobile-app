@@ -325,3 +325,52 @@
     transform: none !important;
   }
 }
+
+/* ═══════════════════════════════════════════
+   Perf-lite degradation
+   Applied as [data-perf="lite"] on <html> by the report page when the
+   device is low-end / save-data / reduced-motion / sustained low FPS.
+   Goal: no infinite loops, no pointer-driven repaints, no large-area
+   filters — the page stays fully readable, just static.
+═══════════════════════════════════════════ */
+[data-perf="lite"] .rm-card,
+[data-perf="lite"] .rm-card::before,
+[data-perf="lite"] .rm-card::after,
+[data-perf="lite"] .rm-icon,
+[data-perf="lite"] .rm-icon::after,
+[data-perf="lite"] .rm-icon > svg,
+[data-perf="lite"] .rm-star,
+[data-perf="lite"] .rm-star--on,
+[data-perf="lite"] .rm-evidence-item,
+[data-perf="lite"] .rm-evidence-item .rm-evidence-icon,
+[data-perf="lite"] .rm-viz,
+[data-perf="lite"] .rm-plain::after,
+[data-perf="lite"] .rm-detail-btn .rm-detail-arrow,
+[data-perf="lite"] .rm-detail-btn::after,
+[data-perf="lite"] .rm-tick,
+[data-perf="lite"] .animate-slow-rotate {
+  animation: none !important;
+  transition: none !important;
+  transform: none !important;
+}
+
+/* Kill the pointer-following aura + blur layers (large-area repaint). */
+[data-perf="lite"] .rm-card::before,
+[data-perf="lite"] .rm-card::after {
+  opacity: 0 !important;
+  content: none !important;
+}
+
+[data-perf="lite"] .rm-card,
+[data-perf="lite"] .rm-viz,
+[data-perf="lite"] .rm-icon {
+  backdrop-filter: none !important;
+  filter: none !important;
+  box-shadow: none !important;
+  will-change: auto !important;
+}
+
+/* Fewer decorative stars in the module visuals. */
+[data-perf="lite"] .rm-stars .rm-star {
+  opacity: 0.9;
+}
