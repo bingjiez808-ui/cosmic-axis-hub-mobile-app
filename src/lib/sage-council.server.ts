@@ -189,7 +189,9 @@ export async function readHelperStanding(ctx: Ctx): Promise<HelperStanding> {
 
 export type SageCreditEvent = {
   eventId: string;
-  kind: "grant" | "spend";
+  kind: "grant" | "spend" | "purchase";
+  bucket: "sage" | "human";
+  amountCents: number;
   delta: number;
   createdAt: string;
   periodStart: string;
