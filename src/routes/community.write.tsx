@@ -140,6 +140,10 @@ function WriteFlow() {
       });
       setError(null);
       setErrorCode(null);
+      sentRef.current = true;
+      clearLetterDraft();
+      setSavedAt(null);
+      setDraftRestored(false);
       setSent({ pendingReview: result.pendingReview, delivered: result.delivered });
     } catch (err) {
       setErrorCode(hallErrorCode(err));
