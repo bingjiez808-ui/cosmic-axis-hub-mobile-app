@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { Button } from "@/components/ui/button";
-import { EntryNotesSection } from "@/experiences/community-hall/EntryNotes";
 import {
   HallGate,
   HallHeader,
@@ -14,6 +13,7 @@ import { EchoCard, ReceivedLetterCard } from "@/experiences/community-hall/Lette
 import { HallOnboarding } from "@/experiences/community-hall/HallOnboarding";
 import { LibrarySamplesSection } from "@/experiences/community-hall/LibrarySamples";
 import { NotificationCenter } from "@/experiences/community-hall/NotificationCenter";
+import { TravelerIdentityCard } from "@/experiences/community-hall/TravelerIdentityCard";
 import { useCommunityMailbox, useCommunityProfile } from "@/lib/community-hall-client";
 import { useCommunityHall } from "@/lib/i18n-community-hall";
 import { useSupabaseSession } from "@/lib/session";
@@ -23,8 +23,7 @@ import "@/experiences/community-hall/hall.css";
  * /community — 同门 · 众生之厅.
  * The archive room itself: what this place is, the courier's three-step
  * journey, the four doors (write / mailbox / my letters / echoes), the newest
- * movement on your shelf, and the house rules. The legacy quest lives on as
- * an optional side room, 入馆问笺.
+ * movement on your shelf, and the house rules.
  */
 export const Route = createFileRoute("/community/")({
   head: () => ({
@@ -90,6 +89,8 @@ function CommunityHallPage() {
   return (
     <main className="mx-auto w-full max-w-5xl px-4 pb-16 pt-28 sm:px-6 sm:pb-24 sm:pt-32">
       <HallHeader lines={[c.hallHeroLineOne, c.hallHeroLineTwo]} subtitle={c.hallHeroBody} />
+
+      <TravelerIdentityCard />
       <p className="mx-auto mt-4 max-w-xl text-center text-xs leading-relaxed text-primary/75">
         {c.hallHeroNote}
       </p>
@@ -202,19 +203,6 @@ function CommunityHallPage() {
             <li key={point}>· {point}</li>
           ))}
         </ul>
-      </HallSection>
-
-      {/* ── Optional side room: the legacy quest ──────────── */}
-      <HallSection title={c.entryNotes}>
-        <p className="mb-4 text-sm text-muted-foreground">{c.entryNotesHint}</p>
-        <details className="hall-paper p-4">
-          <summary className="hall-tap cursor-pointer text-sm font-medium text-primary">
-            {c.entryNotes}
-          </summary>
-          <div className="mt-4">
-            <EntryNotesSection />
-          </div>
-        </details>
       </HallSection>
 
       <HallMobileBar />
