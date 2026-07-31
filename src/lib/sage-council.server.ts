@@ -175,7 +175,7 @@ export async function askSage(
   if (!persona) throw hallError("not_allowed");
 
   const { entitled } = await readTier(ctx);
-  if (!entitled) throw hallError("not_allowed");
+  if (!entitled) throw hallError("sage_required");
 
   limit(`sage-council:ask:${ctx.userId}`, 12, 24 * 60 * 60_000);
 
