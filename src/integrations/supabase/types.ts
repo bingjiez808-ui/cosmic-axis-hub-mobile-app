@@ -2744,6 +2744,11 @@ export type Database = {
         Args: { _language?: string; _limit?: number }
         Returns: Json
       }
+      get_community_public_letter: {
+        Args: { _letter_id: string }
+        Returns: Json
+      }
+      get_community_public_wall: { Args: { _limit?: number }; Returns: Json }
       get_my_community_mailbox: { Args: never; Returns: Json }
       list_my_redemption_uses: {
         Args: never
@@ -2795,6 +2800,7 @@ export type Database = {
           _subject: string
           _target_age_band: string
           _topic: string
+          _visibility?: string
         }
         Returns: string
       }

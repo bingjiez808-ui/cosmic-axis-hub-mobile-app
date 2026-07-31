@@ -20,6 +20,8 @@ import {
   listLibrarySamples,
   markOnboarded,
   readDispatchState,
+  readPublicLetter,
+  readPublicWall,
   requestNextWave,
   reportContent,
   saveCommunityProfile,
@@ -52,6 +54,7 @@ const sendSchema = z.object({
   topic: z.string().trim().max(40).optional().nullable(),
   targetAgeBand: bandEnum,
   responseStyle: z.string().trim().max(40).optional().nullable(),
+  visibility: z.enum(["delivered_only", "wall"]).default("delivered_only"),
 });
 
 const replySchema = z.object({
@@ -170,3 +173,18 @@ export const markCommunityOnboarded = createServerFn({ method: "POST" })
 export const deleteMyCommunityHallData = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => deleteMyCommunityData(context));
+
+
+/** The open board: every public letter a member may read and answer. */
+export const getCommunityPublicWall = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z.object({ limit: z.number().int().min(1).max(60).optional() }).parse(data ?? {}),
+  )
+  .handler(async ({ data, context }) => readPublicWall(context, data.limit ?? 30));
+
+/** One public letter plus its echoes. */
+export const getCommunityPublicLetter = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => letterIdSchema.parse(data))
+  .handler(async ({ data, context }) => readPublicLetter(context, data.letterId));
