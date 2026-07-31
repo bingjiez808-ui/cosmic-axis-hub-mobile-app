@@ -410,6 +410,11 @@ function WriteFlow() {
             <p className="text-sm font-medium text-foreground">
               {zh ? "这封信寄给谁？" : "Who should receive this letter?"}
             </p>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+              {zh
+                ? "无论寄往哪一扇门，来往都只以旅者身份署名——对方看到的永远是你的代号，不是你的账号。"
+                : "Whichever door you choose, every letter travels under your traveler identity — the other side only ever sees your alias, never your account."}
+            </p>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               {(
                 [
@@ -417,33 +422,33 @@ function WriteFlow() {
                     key: "courier" as const,
                     title: zh ? "交给信使定向投递" : "Hand it to the courier",
                     body: zh
-                      ? "私密。信使会把它分批送给你选定人生阶段中的少数陌生旅者，只有收到的人能回信。"
-                      : "Private. The courier delivers it to a few strangers in the chapter of life you chose; only they can answer.",
+                      ? "私密。信使会把它分批送给你选定人生阶段中的少数陌生旅者，只有收到的人能回信。免费。"
+                      : "Private. The courier delivers it to a few strangers in the chapter of life you chose; only they can answer. Free.",
                     locked: false,
                   },
                   {
                     key: "wall" as const,
                     title: zh ? "张贴到公共信墙" : "Pin it on the public wall",
                     body: zh
-                      ? "公开。厅中所有人都能读到，谁想回就回。依然匿名，只显示你的旅者代号。"
-                      : "Open. Everyone in the hall can read it and decide whether to answer. Still anonymous — only your traveler alias shows.",
+                      ? "公开。厅中所有人都能读到，谁想回就回。依然匿名，只显示你的旅者代号。免费。"
+                      : "Open. Everyone in the hall can read it and decide whether to answer. Still anonymous — only your traveler alias shows. Free.",
                     locked: false,
                   },
                   {
                     key: "sage" as const,
                     title: zh ? "请一位历代先贤回信" : "Ask a sage of the past",
                     body: zh
-                      ? "十二位已故思想者依其生平与语气回信。需「贤者」会员；每月另赠三次真人回复。"
-                      : "One of twelve long-dead thinkers answers in their own documented voice. Requires the Sage membership; three human-reply grants included each month.",
+                      ? "十二位已故思想者依其生平与语气回信。需「贤者」会员，回信不限次。"
+                      : "One of twelve long-dead thinkers answers in their own documented voice. Requires the Sage membership; unlimited.",
                     locked: !entitledForSage,
                   },
                   {
                     key: "librarian" as const,
-                    title: zh ? "寄给图书管理员" : "Send it to the librarian",
+                    title: zh ? "请图书管理员亲自回信" : "Ask the librarian to write back",
                     body: zh
-                      ? "由图书管理员亲自读信：他会回信，或把它托付给一位愿意接信的旅者。"
-                      : "The librarian reads it personally: they answer, or entrust it to a traveler who offered to help.",
-                    locked: false,
+                      ? `真人回信。图书管理员亲自读信并回复，或托付给一位愿意接信的旅者。需「贤者」会员，每月赠三次（本月剩 ${humanCredits} 次）。`
+                      : `A real person answers. The librarian reads it and replies, or entrusts it to a traveler who offered to help. Requires the Sage membership; three grants a month (${humanCredits} left).`,
+                    locked: !entitledForSage || humanCredits <= 0,
                   },
                 ]
               ).map((option) => (
