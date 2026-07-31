@@ -629,7 +629,8 @@ const en: DailyDict = {
   overall_signal: "Today's overall signal",
   overall_out_of: "/ 100",
   overall_note:
-    "This is a \"domain signal for today\" — not a success rate or luck score. Suggestions are informational; real context wins.",
+    "Today's reading room offers a mirror where the day's sky and your mood meet; the path remains yours.",
+
   today_theme: "Today's theme",
   theme_pending: "Today's astronomy not yet wired / key facts missing.",
   theme_line: (phase, kw) => `Moon phase ${phase} · themes ${kw}`,
