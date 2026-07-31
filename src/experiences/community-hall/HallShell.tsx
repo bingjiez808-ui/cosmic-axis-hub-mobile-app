@@ -14,6 +14,7 @@ import { useCommunityHall } from "@/lib/i18n-community-hall";
 import { useCommunityProfile, useSaveCommunityProfile } from "@/lib/community-hall-client";
 import { hallErrorMessage } from "@/lib/community-hall-errors";
 import { useSupabaseSession } from "@/lib/session";
+import { useInView } from "@/lib/use-in-view";
 import "./hall.css";
 
 export function HallHeader({
@@ -129,12 +130,18 @@ export function HallSection({
   action?: ReactNode;
   children: ReactNode;
 }) {
+  const { ref, inView } = useInView<HTMLElement>();
   return (
-    <section className="mx-auto mt-10 w-full max-w-3xl">
+    <section
+      ref={ref}
+      data-visible={inView ? "true" : "false"}
+      className="hall-reveal mx-auto mt-10 w-full max-w-3xl"
+    >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-semibold text-foreground sm:text-xl">{title}</h2>
         {action}
       </div>
+      <span className="hall-heading-rule mt-3" aria-hidden="true" />
       <div className="mt-4">{children}</div>
     </section>
   );

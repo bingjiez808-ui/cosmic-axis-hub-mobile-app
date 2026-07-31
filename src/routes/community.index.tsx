@@ -1,6 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 
+import doorEchoes from "@/assets/community/door-echoes.jpg";
+import doorInbox from "@/assets/community/door-inbox.jpg";
+import doorOutbox from "@/assets/community/door-outbox.jpg";
+import doorWrite from "@/assets/community/door-write.jpg";
 import { Button } from "@/components/ui/button";
+import { HallDoorCard, type HallDoor } from "@/experiences/community-hall/HallDoorCard";
 import {
   HallGate,
   HallHeader,
@@ -59,30 +64,38 @@ function CommunityHallPage() {
   const alias = profile.data?.profile?.alias ?? null;
   const band = profile.data?.ageBand ?? null;
 
-  const doors = [
+  const doors: HallDoor[] = [
     {
-      to: "/community/write" as const,
+      to: "/community/write",
       title: c.cardWriteTitle,
       body: c.cardWriteBody,
-      badge: null as string | null,
+      badge: null,
+      image: doorWrite,
+      caption: c.lang === "en" ? "The writing desk" : "寄信台",
     },
     {
-      to: "/community/inbox" as const,
+      to: "/community/inbox",
       title: c.cardInboxTitle,
       body: c.cardInboxBody,
       badge: unread > 0 ? c.unreadCount(unread) : null,
+      image: doorInbox,
+      caption: c.lang === "en" ? "The mail wall" : "信格墙",
     },
     {
-      to: "/community/outbox" as const,
+      to: "/community/outbox",
       title: c.cardOutboxTitle,
       body: c.cardOutboxBody,
       badge: sent.length > 0 ? `${sent.length}` : null,
+      image: doorOutbox,
+      caption: c.lang === "en" ? "The courier's bundle" : "信使行囊",
     },
     {
-      to: "/community/echoes" as const,
+      to: "/community/echoes",
       title: c.cardEchoesTitle,
       body: c.cardEchoesBody,
       badge: echoes.length > 0 ? c.newEchoes(echoes.length) : null,
+      image: doorEchoes,
+      caption: c.lang === "en" ? "The echo bowl" : "回音之盂",
     },
   ];
 
@@ -133,29 +146,12 @@ function CommunityHallPage() {
       {/* ── Four doors ────────────────────────────────────── */}
       <HallSection title={c.navHall}>
         <div className="grid gap-4 sm:grid-cols-2">
-          {doors.map((door) => (
-            <Link
-              key={door.to}
-              to={door.to}
-              className="hall-paper hall-envelope hall-tap group block rounded-2xl p-5"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <h3 className="text-base font-semibold text-foreground">{door.title}</h3>
-                {door.badge ? (
-                  <span className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-[0.68rem] text-primary">
-                    {door.badge}
-                  </span>
-                ) : null}
-              </div>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{door.body}</p>
-              <span className="hall-door-arrow mt-3 inline-flex items-center gap-1 text-xs text-primary" aria-hidden>
-                {door.title} →
-              </span>
-            </Link>
+          {doors.map((door, i) => (
+            <HallDoorCard key={door.to} door={door} index={i} />
           ))}
         </div>
-
       </HallSection>
+
 
       <HallGate>
         <NotificationCenter />

@@ -9,6 +9,7 @@ import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
 import { useCommunityHall } from "@/lib/i18n-community-hall";
+import { useInView } from "@/lib/use-in-view";
 import "./hall.css";
 import type { EchoReply, ReceivedLetter, SentLetter } from "@/lib/community-hall.server";
 
@@ -30,8 +31,14 @@ function Shell({
   children: ReactNode;
   accent?: boolean;
 }) {
+  const { ref, inView } = useInView<HTMLElement>();
   return (
-    <article className="hall-paper hall-envelope p-5" data-unread={accent ? "true" : "false"}>
+    <article
+      ref={ref}
+      data-visible={inView ? "true" : "false"}
+      className="hall-paper hall-envelope hall-reveal p-5"
+      data-unread={accent ? "true" : "false"}
+    >
       {children}
     </article>
   );
