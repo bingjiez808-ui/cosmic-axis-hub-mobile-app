@@ -3,8 +3,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 
 import treeImg from "@/assets/tree-of-destiny.jpg";
-import { generateReport } from "@/lib/report.functions";
-import { buildReportCacheKey, buildReportFingerprint, buildReportRequest } from "@/lib/report-input";
+
+import { buildReportFingerprint } from "@/lib/report-input";
 import { useHydratedChartSearch } from "@/lib/chart-hydration";
 import { missingFields, type RitualState } from "@/lib/ritual-validation";
 
@@ -127,48 +127,22 @@ function SynthesisPage() {
     }
   }, [search, lang, navigate]);
 
+  // NOTE (stability): this page used to call the monolithic `generateReport`
+  // server fn, which fans out to 10 parallel AI calls and rejects atomically
+  // if any single one fails. That made the rite slow (bounded by the slowest
+  // call), fragile (one hiccup = "召唤未能完成"), and redundant — /report
+  // already claims, streams and persists exactly the same pieces one by one
+  // with its own retry + progress UI. The ceremony now only plays its
+  // passages and hands over; generation happens once, on /report.
   useEffect(() => {
-    if (!search.date) {
-      setReportReady(true);
-      return;
-    }
-
-    let cancelled = false;
-    setReportReady(false);
+    setReportReady(true);
     setReportError(null);
-    const cacheKey = buildReportCacheKey(search, lang);
-    const cached = typeof sessionStorage !== "undefined" ? sessionStorage.getItem(cacheKey) : null;
-    if (cached && retryTick === 0) {
-      setReportReady(true);
-      return;
-    }
-    if (retryTick > 0) {
-      try { sessionStorage.removeItem(cacheKey); } catch {}
-    }
+  }, [lang, reportFingerprint, retryTick]);
 
-    generateReport({ data: buildReportRequest(search, lang) })
-      .then((res) => {
-        if (cancelled) return;
-        try {
-          sessionStorage.setItem(cacheKey, JSON.stringify(res));
-        } catch {
-          /* ignore quota */
-        }
-        setReportReady(true);
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        setReportError(err instanceof Error ? err.message : String(err));
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [lang, reportFingerprint, search, retryTick]);
 
   useEffect(() => {
     const total = phases.length;
-    const perPhase = 1800;
+    const perPhase = 900;
     const interval = setInterval(() => {
       setPhase((p) => {
         if (p >= total - 1) {
@@ -188,7 +162,7 @@ function SynthesisPage() {
         to: "/report",
         search: () => search as never,
       });
-    }, 900);
+    }, 600);
     return () => clearTimeout(timer);
   }, [navigate, phase, phases.length, reportReady, search]);
 

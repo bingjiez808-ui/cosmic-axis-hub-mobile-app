@@ -38,19 +38,50 @@ function useIsMobile() {
   return mobile;
 }
 
-function useWebGL2() {
+/**
+ * Capability probe. WebGL2 alone is not enough: on low-memory / low-core
+ * phones the three.js ring shader is the single heaviest thing on the
+ * ritual page and is what makes the tab stall or die. Those devices get
+ * the static SVG instead. The probe canvas is explicitly released so we
+ * never leak a second GL context.
+ */
+function useCanRender3d() {
   const [ok, setOk] = useState<boolean | null>(null);
   useEffect(() => {
     try {
+      const nav = navigator as Navigator & { deviceMemory?: number };
+      if ((nav.deviceMemory ?? 8) <= 4 || (nav.hardwareConcurrency ?? 8) <= 4) {
+        setOk(false);
+        return;
+      }
       const c = document.createElement("canvas");
       const gl = c.getContext("webgl2");
-      setOk(!!gl);
+      const good = !!gl;
+      gl?.getExtension("WEBGL_lose_context")?.loseContext();
+      setOk(good);
     } catch {
       setOk(false);
     }
   }, []);
   return ok;
 }
+
+/** Defer mounting the heavy scene until the browser is actually idle. */
+function useIdle(delay = 600) {
+  const [idle, setIdle] = useState(false);
+  useEffect(() => {
+    const w = window as Window & { requestIdleCallback?: (cb: () => void) => number };
+    if (w.requestIdleCallback) {
+      const id = w.requestIdleCallback(() => setIdle(true));
+      return () => (window as unknown as { cancelIdleCallback?: (h: number) => void })
+        .cancelIdleCallback?.(id);
+    }
+    const t = window.setTimeout(() => setIdle(true), delay);
+    return () => window.clearTimeout(t);
+  }, [delay]);
+  return idle;
+}
+
 
 function StaticFallback({ mobile }: { mobile: boolean }) {
   const size = mobile ? 320 : 560;
@@ -77,7 +108,8 @@ interface Props {
 export default function RitualMagicRings({ currentStep }: Props) {
   const reduced = useReducedMotion();
   const mobile = useIsMobile();
-  const webgl2 = useWebGL2();
+  const webgl2 = useCanRender3d();
+  const idle = useIdle();
 
   if (webgl2 === null) {
     // First paint — render nothing (avoids SSR/hydration mismatch on webgl probe).
@@ -87,6 +119,13 @@ export default function RitualMagicRings({ currentStep }: Props) {
   if (reduced || webgl2 === false) {
     return <StaticFallback mobile={mobile} />;
   }
+
+  // Heavy scene waits for idle; show the cheap ring outline meanwhile so the
+  // ritual never paints an empty stage.
+  if (!idle) {
+    return <StaticFallback mobile={mobile} />;
+  }
+
 
   // Desktop: strong horizontal mask keeping brightness on left/right; center clear.
   // Mobile: soft radial mask forming an ambient halo around the card.
