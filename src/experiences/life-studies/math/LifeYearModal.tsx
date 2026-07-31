@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useModalA11y } from "@/lib/use-modal-a11y";
 
 import { DOMAIN_COLORS, DOMAIN_LABELS, type DomainKey } from "./domains";
 import { crossDomainEffects, type AgeSnapshot } from "./LifeDomainModel";
