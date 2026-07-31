@@ -10,6 +10,8 @@ import { useServerFn } from "@tanstack/react-start";
 import {
   askSagePersona,
   assignLetterToTraveler,
+  claimHumanReplyGrants,
+  getHumanReplyGrantHistory,
   getLibrarianDesk,
   getMyDeskLetters,
   getMyLetterAssignments,
@@ -24,7 +26,30 @@ export const sageKeys = {
   desk: (route: string) => ["sage-council", "desk", route] as const,
   assignments: ["sage-council", "assignments"] as const,
   librarian: ["sage-council", "librarian"] as const,
+  grantHistory: ["sage-council", "grant-history"] as const,
 };
+
+export function useHumanReplyGrantHistory(enabled = true) {
+  const load = useServerFn(getHumanReplyGrantHistory);
+  return useQuery({
+    queryKey: sageKeys.grantHistory,
+    queryFn: () => load(),
+    enabled,
+    staleTime: 20_000,
+  });
+}
+
+export function useClaimHumanReplyGrants() {
+  const qc = useQueryClient();
+  const call = useServerFn(claimHumanReplyGrants);
+  return useMutation({
+    mutationFn: () => call(),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: sageKeys.entitlement });
+      void qc.invalidateQueries({ queryKey: sageKeys.grantHistory });
+    },
+  });
+}
 
 export function useSageEntitlement(enabled = true) {
   const load = useServerFn(getSageEntitlement);
@@ -91,6 +116,7 @@ export function useRequestHumanReply() {
       void qc.invalidateQueries({ queryKey: sageKeys.desk("sage") });
       void qc.invalidateQueries({ queryKey: sageKeys.desk("librarian") });
       void qc.invalidateQueries({ queryKey: sageKeys.entitlement });
+      void qc.invalidateQueries({ queryKey: sageKeys.grantHistory });
     },
   });
 }
