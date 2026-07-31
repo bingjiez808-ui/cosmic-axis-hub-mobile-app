@@ -169,6 +169,12 @@ import {
   saveReport,
 } from "@/lib/reports-store.functions";
 import { supabase } from "@/integrations/supabase/client";
+import { retryWithBackoff } from "@/lib/ai-retry";
+import {
+  clearReportProgress,
+  loadReportProgress,
+  saveReportProgress,
+} from "@/lib/report-progress";
 import {
   buildReportCacheKey,
   buildReportFingerprint,
@@ -309,6 +315,34 @@ const SPECIFIC_FALLBACK: Record<string, { label: [string, string]; value: [strin
     { label: ["Your field", "发挥场域"], value: ["Wherever explaining is the real value.", "凡是「把事情讲明白」有价值的地方。"] },
   ],
 };
+
+/**
+ * Degraded (deterministic) content for a dimension whose AI call failed every
+ * retry. The report still renders that module from the template brief instead
+ * of collapsing the whole reading.
+ */
+function degradedDimension(key: string, lang: "en" | "zh"): ReportDimensionAI {
+  const i = lang === "zh" ? 1 : 0;
+  const base = dimensions.find((d) => d.key === key);
+  const specifics = (base?.specifics ?? SPECIFIC_FALLBACK[key] ?? []).map((s) => ({
+    label: s.label[i],
+    value: s.value[i],
+  }));
+  return {
+    key,
+    headline: base?.headline[i] ?? "",
+    evidence: (base?.evidence ?? []).map((e) => ({
+      tradition: e.tradition[i],
+      note: e.note[i],
+    })),
+    specifics,
+    synthesis: base?.synthesis[i] ?? "",
+    plain: base?.plain[i] ?? "",
+    details: [],
+  } as unknown as ReportDimensionAI;
+}
+
+
 
 const dimensions: Dimension[] = [
   {
@@ -1090,7 +1124,7 @@ function ReportPage() {
     "idle" | "loading" | "ready" | "error" | "needs-auth" | "needs-verify"
   >("idle");
   const [aiError, setAiError] = useState<string | null>(null);
-  const [aiProgress, setAiProgress] = useState({ done: 0, total: 0 });
+  const [aiProgress, setAiProgress] = useState({ done: 0, total: 0, degraded: 0 });
   const [reportChartId, setReportChartId] = useState<string | null>(null);
   const latestReqRef = useRef(0);
   const { updateReadingAI } = useAccount();
@@ -1135,7 +1169,7 @@ function ReportPage() {
     const totalSteps = DIM_KEYS.length + 1;
     setAiState("loading");
     setAiError(null);
-    setAiProgress({ done: 0, total: totalSteps });
+    setAiProgress({ done: 0, total: totalSteps, degraded: 0 });
 
     const draftKey = "lod.report-draft";
     const currentUrl =
@@ -1337,45 +1371,86 @@ function ReportPage() {
           reportLang,
         ),
       };
-      const acc: { summary: string; dimensions: ReportDimensionAI[] } = {
-        summary: "",
-        dimensions: [],
+      // Resume any partial run for this exact fingerprint: dimensions that
+      // already landed are never re-requested (cheaper, faster, and a refresh
+      // mid-generation no longer restarts from zero).
+      const resumed = loadReportProgress<ReportDimensionAI>(fingerprint, REPORT_AI_VERSION);
+      const acc: { summary: string; dimensions: ReportDimensionAI[]; degraded: string[] } = {
+        summary: resumed?.summary ?? "",
+        dimensions: resumed?.dimensions?.filter((d) => !resumed.degraded.includes(d.key)) ?? [],
+        degraded: [],
       };
-      setAi({ summary: "", dimensions: [] });
+      const orderDims = () =>
+        DIM_KEYS.map((key) => acc.dimensions.find((d) => d.key === key)).filter(
+          (d): d is ReportDimensionAI => !!d,
+        );
+      const persistProgress = () =>
+        saveReportProgress<ReportDimensionAI>({
+          fingerprint,
+          version: REPORT_AI_VERSION,
+          summary: acc.summary,
+          dimensions: orderDims(),
+          degraded: acc.degraded,
+        });
+
+      setAi({ summary: acc.summary, dimensions: orderDims() });
 
       let firstError: unknown = null;
+      const resumedCount = acc.dimensions.length + (acc.summary ? 1 : 0);
+      setAiProgress({ done: resumedCount, total: totalSteps, degraded: 0 });
       const bump = () => {
         if (stale()) return;
-        setAiProgress((p) => ({ done: Math.min(p.total, p.done + 1), total: p.total }));
+        setAiProgress((p) => ({ ...p, done: Math.min(p.total, p.done + 1) }));
+      };
+      const markDegraded = (key: string) => {
+        acc.degraded.push(key);
+        acc.dimensions.push(degradedDimension(key, reportLang));
+        if (!stale()) {
+          setAiProgress((p) => ({ ...p, degraded: p.degraded + 1 }));
+          setAi({ summary: acc.summary, dimensions: orderDims() });
+        }
+        persistProgress();
       };
 
-      // One retry: the epigraph is persisted with the report, so a single
-      // transient failure here would otherwise be frozen into the saved row.
-      const summaryPromise = generateReportSummary({ data: req })
-        .catch(() => generateReportSummary({ data: req }))
-        .then((res) => {
-          if (stale()) return;
-          acc.summary = res.summary;
-          setAi((prev) => ({ summary: res.summary, dimensions: prev?.dimensions ?? [] }));
-        })
-        .catch((err) => {
-          firstError = firstError ?? err;
-        })
-        .finally(bump);
+      // Exponential backoff with jitter on every call. The epigraph is
+      // persisted with the report, so a transient failure must not be frozen
+      // into the saved row.
+      const summaryPromise = acc.summary
+        ? Promise.resolve()
+        : retryWithBackoff(() => generateReportSummary({ data: req }), {
+            attempts: 3,
+            baseDelayMs: 700,
+            isCancelled: stale,
+          })
+            .then((res) => {
+              if (stale()) return;
+              acc.summary = res.summary;
+              setAi((prev) => ({ summary: res.summary, dimensions: prev?.dimensions ?? [] }));
+              persistProgress();
+            })
+            .catch((err) => {
+              firstError = firstError ?? err;
+            })
+            .finally(bump);
 
-
-      const dimPromises = DIM_KEYS.map((k) =>
-        generateReportDimension({ data: { ...req, key: k } })
+      const missingKeys = DIM_KEYS.filter((k) => !acc.dimensions.some((d) => d.key === k));
+      const dimPromises = missingKeys.map((k) =>
+        retryWithBackoff(() => generateReportDimension({ data: { ...req, key: k } }), {
+          attempts: 3,
+          baseDelayMs: 700,
+          maxDelayMs: 8000,
+          isCancelled: stale,
+        })
           .then((dim) => {
             if (stale()) return;
             acc.dimensions.push(dim);
-            const ordered = DIM_KEYS.map((key) => acc.dimensions.find((d) => d.key === key)).filter(
-              (d): d is ReportDimensionAI => !!d,
-            );
-            setAi((prev) => ({ summary: prev?.summary ?? acc.summary, dimensions: ordered }));
+            setAi((prev) => ({ summary: prev?.summary ?? acc.summary, dimensions: orderDims() }));
+            persistProgress();
           })
           .catch((err) => {
+            // Degrade this one module only — never the whole report.
             firstError = firstError ?? err;
+            if (!stale()) markDegraded(k);
           })
           .finally(bump),
       );
@@ -1383,7 +1458,9 @@ function ReportPage() {
       await Promise.all([summaryPromise, ...dimPromises]);
       if (stale()) return;
 
-      if (acc.dimensions.length === 0 && !acc.summary) {
+      // Only a total wipe-out is a real failure.
+      const liveDims = acc.dimensions.filter((d) => !acc.degraded.includes(d.key));
+      if (liveDims.length === 0 && !acc.summary) {
         await failReport({
           data: {
             reportId: claim.reportId,
@@ -1396,17 +1473,9 @@ function ReportPage() {
       }
 
       const finalDims: ReportDimensionAI[] = DIM_KEYS.map(
-        (k) =>
-          acc.dimensions.find((d) => d.key === k) ?? {
-            key: k,
-            headline: "",
-            evidence: [],
-            specifics: [],
-            synthesis: "",
-            plain: "",
-            details: [],
-          },
+        (k) => acc.dimensions.find((d) => d.key === k) ?? degradedDimension(k, reportLang),
       );
+
       const finalReport: ReportAI = { summary: acc.summary, dimensions: finalDims };
       setAi(finalReport);
       setAiState("ready");
@@ -1429,6 +1498,11 @@ function ReportPage() {
         aiReportVersion: REPORT_AI_VERSION,
         fingerprint,
       });
+      // Fully personalised run — drop the resume snapshot. If some modules are
+      // degraded, keep it so a retry only re-requests those.
+      if (acc.degraded.length === 0) clearReportProgress(fingerprint);
+      else persistProgress();
+
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seed, reportLang, search.readingId, search.gender, genderOverride]);
@@ -1975,12 +2049,13 @@ function ReportPage() {
             <span>
               {aiState === "loading"
                 ? lang === "zh"
-                  ? `智者正在逐维度写下你的命盘 · ${aiProgress.done}/${aiProgress.total}`
-                  : `The elder is writing your chart, one dimension at a time · ${aiProgress.done}/${aiProgress.total}`
+                  ? `智者正在逐维度写下你的命盘 · ${aiProgress.done}/${aiProgress.total}${aiProgress.degraded ? ` · ${aiProgress.degraded} 个维度改用通用文本` : ""}`
+                  : `The elder is writing your chart, one dimension at a time · ${aiProgress.done}/${aiProgress.total}${aiProgress.degraded ? ` · ${aiProgress.degraded} on template` : ""}`
                 : lang === "zh"
                   ? `个性化解读暂时无法生成（${aiError ?? "unknown"}）—— 先显示通用模板。`
                   : `Personalised reading unavailable (${aiError ?? "unknown"}) — showing template.`}
             </span>
+
             {aiState === "loading" && (
               <span className="size-2 animate-pulse rounded-full bg-gold-dust" />
             )}
@@ -1995,6 +2070,23 @@ function ReportPage() {
             )}
           </div>
         )}
+        {search.date && aiState === "ready" && aiProgress.degraded > 0 && (
+          <div className="glass-card flex flex-col gap-3 rounded-2xl px-5 py-3 text-[11px] uppercase tracking-[0.28em] text-gold-dust/70 sm:flex-row sm:items-center sm:justify-between">
+            <span>
+              {lang === "zh"
+                ? `有 ${aiProgress.degraded} 个维度暂用通用文本（其余为个性化解读）。`
+                : `${aiProgress.degraded} module(s) fell back to the template; the rest are personalised.`}
+            </span>
+            <button
+              type="button"
+              onClick={() => runReport()}
+              className="flex-none rounded-full border border-gold-dust/40 px-4 py-1.5 text-[10px] tracking-[0.28em] text-gold-dust transition-colors hover:bg-gold-dust/10"
+            >
+              {lang === "zh" ? "重新生成" : "Regenerate"}
+            </button>
+          </div>
+        )}
+
         {/* Quick module nav — ten reading modules + membership */}
         <nav
           aria-label={lang === "zh" ? "模块导航" : "Module navigation"}
