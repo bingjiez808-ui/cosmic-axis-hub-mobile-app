@@ -11,6 +11,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { HallEmptyState, HallError, HallSkeleton } from "@/experiences/community-hall/HallStates";
 import { HallSection } from "@/experiences/community-hall/HallShell";
+import { SampleLetterDialog } from "@/experiences/community-hall/SampleLetterDialog";
 import { useCommunityLibrarySamples } from "@/lib/community-hall-client";
 import { useCommunityHall } from "@/lib/i18n-community-hall";
 
@@ -19,6 +20,7 @@ export function LibrarySamplesSection() {
   const samples = useCommunityLibrarySamples(c.lang === "en" ? "en" : "zh");
   const [openId, setOpenId] = useState<string | null>(null);
   const list = samples.data ?? [];
+  const active = list.find((s) => s.letterId === openId) ?? null;
 
   return (
     <HallSection
