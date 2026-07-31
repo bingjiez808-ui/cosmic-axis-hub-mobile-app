@@ -15,6 +15,7 @@ import { useDaily, useFormatDate, xlate } from "@/lib/i18n-daily";
 import { formatThemeKeyword, formatContradiction, tPhase } from "@/lib/daily-format";
 import { interpretAll } from "@/lib/daily-plain-language";
 import { DailyDestinyCompass, type CompassAxis } from "@/experiences/daily-room/visuals/DailyDestinyCompass";
+import { DomainDetailDialog, type DomainDetailPayload } from "@/components/daily/DomainDetailDialog";
 import {
   pickPriorityDomain,
   curatorLetter,
@@ -151,6 +152,7 @@ function DailyRoomPage() {
   const [fixtureKey, setFixtureKey] = useState<DailyRoomFixtureKey>("working_adult");
   const [showEvidence, setShowEvidence] = useState(false);
   const [compassAxis, setCompassAxis] = useState<CompassAxis>("overall");
+  const [domainDetail, setDomainDetail] = useState<DomainDetailPayload | null>(null);
   // Membership toggle (dev-only "mock member") removed from this route.
   const [real, setReal] = useState<RealChartAdapterState>({ kind: "loading" });
   const [onboardingIntent, setOnboardingIntent] = useState<OnboardingIntent | null>(null);
@@ -298,11 +300,12 @@ function DailyRoomPage() {
         {/* Shared personal-workspace sub-nav (Today's Fate active) */}
         <PersonalWorkspaceNav active="/me/home" />
         <div id="today" className="sr-only" aria-hidden />
-        <p className="mb-4 text-xs text-amber-200/60" data-testid="home-purpose-hint">
+        <p className="sr-only" data-testid="home-purpose-hint">
           {lang === "zh"
-            ? "本页专注今日命运，不再嵌入历史回声或命盘管理；请用上方书架导航切换模块。"
-            : "This page focuses on today's fate only — it no longer embeds Historical Echoes or chart management. Use the library sub-nav above to switch modules."}
+            ? "本页专注今日命运；请用上方书架导航切换模块。"
+            : "This page focuses on today's fate only — use the library sub-nav above to switch modules."}
         </p>
+
 
 
 
@@ -374,18 +377,14 @@ function DailyRoomPage() {
 
 
 
-        {/* Welcome */}
-        <header className="pl-header mb-8">
-          <div className="text-xs uppercase tracking-[0.2em] text-amber-300/60">
-            {d.today_kicker}
-          </div>
-          <h1 className="mt-2 text-3xl font-serif tracking-wide md:text-4xl">{d.today_title}</h1>
-          <div className="mt-2 text-sm text-amber-100/70">
+        {/* Date + sample-chart switcher. The page H1 lives in the header above;
+            repeating it here was pure duplication. */}
+        <div className="mb-8 flex flex-wrap items-center gap-x-4 gap-y-2">
+          <div className="text-sm text-amber-100/70">
             {fmtDate(today, tz)} · {tz} ·{" "}
             {d.today_chart_label(FIXTURE_CHART_LABELS[fixtureKey][lang])}
           </div>
-
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2">
             {FIXTURE_KEYS.map((k) => (
               <button
                 key={k}
@@ -402,7 +401,8 @@ function DailyRoomPage() {
               </button>
             ))}
           </div>
-        </header>
+        </div>
+
 
         {/* Curator's welcome bookmark — always present, always the same anchor.
             Signed-in visitors see today's welcomeBack line; without an intent
@@ -508,22 +508,65 @@ function DailyRoomPage() {
 
 
 
-        <section className="mb-8 grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
-          {score.domains.map((dd) => (
-            <div key={dd.domain} className="rounded-xl border border-amber-400/20 bg-black/30 p-4">
-              <div className="text-xs text-amber-200/70">{domainLabel(dd.domain)}</div>
-              <div className="mt-1 flex items-baseline gap-2">
-                <div className="text-3xl font-serif text-amber-100">{dd.score}</div>
-                <div className="text-[10px] text-amber-200/50">{d.overall_out_of}</div>
-              </div>
-              <div
-                className={`mt-2 inline-block rounded-full border px-2 py-0.5 text-[10px] ${BAND_COLOR[dd.band]}`}
+        {/* Domain cards — each opens its full plain-language reading in a modal,
+            so the page layout never shifts (replaces the old inline <details>). */}
+        <section
+          className="mb-8 grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-5"
+          data-testid="domain-card-grid"
+        >
+          {score.domains.map((dd) => {
+            const pd = plain.domains.find((x) => x.domain === dd.domain);
+            return (
+              <button
+                key={dd.domain}
+                type="button"
+                data-testid={`domain-card-${dd.domain}`}
+                aria-haspopup="dialog"
+                onClick={() =>
+                  pd &&
+                  setDomainDetail({
+                    key: dd.domain,
+                    label: domainLabel(dd.domain),
+                    score: dd.score,
+                    bandLabel: xlate(d.band, dd.band),
+                    bandClass: BAND_COLOR[dd.band],
+                    confidenceLabel: xlate(d.confidence, dd.confidence),
+                    headline: pd.headline,
+                    mayShowAs: pd.may_show_as,
+                    doToday: pd.do_today,
+                    avoidToday: pd.avoid_today,
+                    weekTrend: pd.week_trend,
+                    breakdown: dd.breakdown,
+                  })
+                }
+                className="group rounded-xl border border-amber-400/20 bg-black/30 p-4 text-left transition hover:border-amber-300/60 hover:bg-black/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/60"
               >
-                {xlate(d.band, dd.band)} · {xlate(d.confidence, dd.confidence)}
-              </div>
-            </div>
-          ))}
+                <div className="text-xs text-amber-200/70">{domainLabel(dd.domain)}</div>
+                <div className="mt-1 flex items-baseline gap-2">
+                  <div className="text-3xl font-serif text-amber-100">{dd.score}</div>
+                  <div className="text-[10px] text-amber-200/50">{d.overall_out_of}</div>
+                </div>
+                <div
+                  className={`mt-2 inline-block rounded-full border px-2 py-0.5 text-[10px] ${BAND_COLOR[dd.band]}`}
+                >
+                  {xlate(d.band, dd.band)} · {xlate(d.confidence, dd.confidence)}
+                </div>
+                <div className="mt-2 text-[10px] text-amber-300/70 group-hover:text-amber-200">
+                  {lang === "zh" ? "查看详细解读 →" : "Open full reading →"}
+                </div>
+              </button>
+            );
+          })}
         </section>
+
+        <DomainDetailDialog
+          lang={lang}
+          payload={domainDetail}
+          onOpenChange={(open) => {
+            if (!open) setDomainDetail(null);
+          }}
+        />
+
 
         {/* Plain-language: what to do / what to watch (0-AI templates) */}
         <section className="mb-8 grid gap-4 md:grid-cols-2">
@@ -589,91 +632,9 @@ function DailyRoomPage() {
           </details>
         </section>
 
-        {/* Per-domain plain-language ledger */}
-        <section className="mb-8 grid gap-3 md:grid-cols-2">
-          {plain.domains.map((pd) => {
-            const row = score.domains.find((x) => x.domain === pd.domain);
-            if (!row) return null;
-            return (
-              <details
-                key={pd.domain}
-                className="rounded-xl border border-amber-400/15 bg-black/25 p-4 text-sm"
-              >
-                <summary className="cursor-pointer">
-                  <span className="text-amber-100">{domainLabel(pd.domain)}</span>
-                  <span className="ml-2 text-xs text-amber-300/80">{row.score}</span>
-                  <span
-                    className={`ml-2 inline-block rounded-full border px-2 py-0.5 text-[10px] ${BAND_COLOR[row.band]}`}
-                  >
-                    {xlate(d.band, row.band)}
-                  </span>
-                </summary>
-                <div className="mt-3 space-y-2 text-amber-100/85 leading-relaxed">
-                  <p>{pd.headline}</p>
-                  <p className="text-amber-100/70">{pd.may_show_as}</p>
-                  {pd.do_today.length > 0 && (
-                    <div>
-                      <div className="text-[11px] uppercase tracking-widest text-emerald-200/80">
-                        {lang === "zh" ? "建议做" : "Do today"}
-                      </div>
-                      <ul className="mt-1 list-disc pl-5 text-emerald-50/90">
-                        {pd.do_today.map((s, i) => <li key={i}>{s}</li>)}
-                      </ul>
-                    </div>
-                  )}
-                  {pd.avoid_today.length > 0 && (
-                    <div>
-                      <div className="text-[11px] uppercase tracking-widest text-rose-200/80">
-                        {lang === "zh" ? "注意避免" : "Avoid today"}
-                      </div>
-                      <ul className="mt-1 list-disc pl-5 text-rose-50/90">
-                        {pd.avoid_today.map((s, i) => <li key={i}>{s}</li>)}
-                      </ul>
-                    </div>
-                  )}
-                  <div className="text-[11px] text-amber-200/60">{pd.week_trend}</div>
-                  {/* Score ledger */}
-                  <div className="mt-2 border-t border-amber-400/10 pt-2">
-                    <div className="text-[11px] uppercase tracking-widest text-amber-200/70">
-                      {lang === "zh" ? "本日加减分账单" : "Today's score ledger"}
-                    </div>
-                    <div className="mt-1 text-[11px] text-amber-100/70">
-                      {lang === "zh" ? "基础分 50" : "Base 50"}
-                    </div>
-                    {row.breakdown.length === 0 ? (
-                      <div className="mt-1 text-[11px] text-amber-100/60">
-                        {lang === "zh"
-                          ? "今天没有足够强的单项信号，保持中性观察。"
-                          : "No strong single signal today — stay observant."}
-                      </div>
-                    ) : (
-                      <ul className="mt-1 space-y-0.5">
-                        {row.breakdown.slice(0, 6).map((b, i) => (
-                          <li key={i} className="flex justify-between text-[11px] text-amber-100/75">
-                            <span>
-                              {b.direction > 0
-                                ? (lang === "zh" ? "和谐信号" : "Harmonious")
-                                : (lang === "zh" ? "紧张信号" : "Straining")}
-                              {" · "}
-                              {lang === "zh" ? "权重" : "w"} {b.weight} · orb {b.orb.toFixed(1)}°
-                            </span>
-                            <span className={b.delta_applied >= 0 ? "text-emerald-300" : "text-rose-300"}>
-                              {b.delta_applied >= 0 ? "+" : ""}{b.delta_applied}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    <div className="mt-1 text-[11px] text-amber-200/70">
-                      {lang === "zh" ? "最终分" : "Final"} · {row.score} ·{" "}
-                      {lang === "zh" ? "置信度" : "confidence"} {xlate(d.confidence, row.confidence)}
-                    </div>
-                  </div>
-                </div>
-              </details>
-            );
-          })}
-        </section>
+        {/* Per-domain readings now open from the domain cards above (modal),
+            so this page no longer repeats the same six blocks inline. */}
+
 
 
         {/* Counter + reflection */}
