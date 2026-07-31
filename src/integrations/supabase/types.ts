@@ -2118,6 +2118,42 @@ export type Database = {
           },
         ]
       }
+      reply_credit_orders: {
+        Row: {
+          amount_cents: number
+          bucket: string
+          created_at: string
+          id: string
+          idempotency_key: string
+          pack: string
+          quantity: number
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount_cents: number
+          bucket: string
+          created_at?: string
+          id?: string
+          idempotency_key: string
+          pack: string
+          quantity: number
+          status?: string
+          user_id: string
+        }
+        Update: {
+          amount_cents?: number
+          bucket?: string
+          created_at?: string
+          id?: string
+          idempotency_key?: string
+          pack?: string
+          quantity?: number
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       reports: {
         Row: {
           calculation_version: string | null
@@ -2191,6 +2227,8 @@ export type Database = {
       }
       sage_reply_credit_events: {
         Row: {
+          amount_cents: number
+          bucket: string
           created_at: string
           delta: number
           id: string
@@ -2200,6 +2238,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          amount_cents?: number
+          bucket?: string
           created_at?: string
           delta: number
           id?: string
@@ -2209,6 +2249,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          amount_cents?: number
+          bucket?: string
           created_at?: string
           delta?: number
           id?: string
@@ -2225,6 +2267,8 @@ export type Database = {
           created_at: string
           granted: number
           period_start: string
+          sage_granted: number
+          sage_used: number
           updated_at: string
           used: number
           user_id: string
@@ -2234,6 +2278,8 @@ export type Database = {
           created_at?: string
           granted?: number
           period_start?: string
+          sage_granted?: number
+          sage_used?: number
           updated_at?: string
           used?: number
           user_id: string
@@ -2243,6 +2289,8 @@ export type Database = {
           created_at?: string
           granted?: number
           period_start?: string
+          sage_granted?: number
+          sage_used?: number
           updated_at?: string
           used?: number
           user_id?: string
@@ -2977,6 +3025,10 @@ export type Database = {
         }[]
       }
       mark_community_onboarded: { Args: never; Returns: string }
+      purchase_reply_credits: {
+        Args: { _bucket: string; _idempotency_key: string; _pack: string }
+        Returns: Json
+      }
       rate_letter_reply: {
         Args: { _note?: string; _reply_id: string; _stars: number }
         Returns: Json
@@ -3046,6 +3098,7 @@ export type Database = {
         }
         Returns: Json
       }
+      spend_sage_reply_credit: { Args: { _letter_id: string }; Returns: Json }
     }
     Enums: {
       app_role: "admin" | "user"
