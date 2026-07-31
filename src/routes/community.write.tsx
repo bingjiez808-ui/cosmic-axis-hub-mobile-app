@@ -61,10 +61,16 @@ function WriteLetterPage() {
   );
 }
 
-type Sent = { pendingReview: boolean; delivered: number; visibility: Visibility };
+type Sent = { pendingReview: boolean; delivered: number; dest: Destination; reply?: string | null };
 
-/** How the letter travels: a courier run to a few strangers, or the open board. */
-type Visibility = "delivered_only" | "wall";
+/**
+ * Where the letter goes. Four doors, chosen in step 2:
+ *   courier   — private delivery to a few strangers in the chosen chapter
+ *   wall      — pinned on the public board, anyone may answer
+ *   sage      — a distilled historical persona answers (贤者 membership)
+ *   librarian — lands on the librarian's desk, who answers or entrusts it
+ */
+type Destination = "courier" | "wall" | "sage" | "librarian";
 
 function WriteFlow() {
   const c = useCommunityHall();
