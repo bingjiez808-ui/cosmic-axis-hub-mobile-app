@@ -13,7 +13,8 @@
  * banner is pinned near the confirm button in both languages.
  */
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useState } from "react";
+import { useModalA11y } from "@/lib/use-modal-a11y";
 
 import type { Lang } from "@/lib/i18n";
 import {
@@ -129,7 +130,7 @@ export function MockPaymentModal({
   const [method, setMethod] = useState<Method>("wechat");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const dialogRef = useRef<HTMLDivElement | null>(null);
+  const dialogRef = useModalA11y<HTMLDivElement>({ open, onClose, closeOnEscape: !busy });
   const disabled = !isMockPaymentEnabled();
 
   useEffect(() => {
@@ -137,21 +138,8 @@ export function MockPaymentModal({
     setBusy(false);
     setError(null);
     setMethod("wechat");
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !busy) onClose();
-    };
-    document.addEventListener("keydown", onKey);
-    const raf = requestAnimationFrame(() => dialogRef.current?.focus());
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prevOverflow;
-      cancelAnimationFrame(raf);
-    };
-    // busy intentionally excluded — inline check above
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, onClose]);
+  }, [open]);
+
 
   if (!open) return null;
 

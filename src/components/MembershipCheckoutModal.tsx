@@ -14,6 +14,7 @@
  */
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useModalA11y } from "@/lib/use-modal-a11y";
 
 import type { Lang } from "@/lib/i18n";
 import {
@@ -99,7 +100,7 @@ export function MembershipCheckoutModal({
   const [phase, setPhase] = useState<"idle" | "busy" | "success" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
   const idempotencyKeyRef = useRef<string>("");
-  const dialogRef = useRef<HTMLDivElement | null>(null);
+  const dialogRef = useModalA11y<HTMLDivElement>({ open, onClose, closeOnEscape: phase !== "busy" });
 
   // Reset when the modal (re)opens for a new target.
   useEffect(() => {
@@ -108,21 +109,8 @@ export function MembershipCheckoutModal({
     setPhase("idle");
     setError(null);
     idempotencyKeyRef.current = newIdempotencyKey();
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && phase !== "busy") onClose();
-    };
-    document.addEventListener("keydown", onKey);
-    const raf = requestAnimationFrame(() => dialogRef.current?.focus());
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
-      cancelAnimationFrame(raf);
-    };
-    // phase intentionally excluded — Escape check reads current phase via closure.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, targetTier, onClose]);
+  }, [open, targetTier]);
+
 
   const priceCny = useMemo(() => (plan.priceCents / 100).toFixed(2).replace(/\.00$/, ""), [plan]);
 

@@ -14,7 +14,9 @@
  *   • Portal + high z-index + body scroll lock + ESC/backdrop close +
  *     focus management + full-screen on mobile with scroll.
  */
-import { useEffect, useId, useMemo, useRef } from "react";
+import { useId, useMemo } from "react";
+import { useModalA11y } from "@/lib/use-modal-a11y";
+
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -170,29 +172,8 @@ export function YearInsightModal({
   returnFocus?: HTMLElement | null;
 }) {
   const titleId = useId();
-  const dialogRef = useRef<HTMLDivElement | null>(null);
+  const dialogRef = useModalA11y<HTMLDivElement>({ open, onClose, returnFocus });
 
-  useEffect(() => {
-    if (!open) return;
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", onKey);
-    const raf = requestAnimationFrame(() => dialogRef.current?.focus());
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prevOverflow;
-      cancelAnimationFrame(raf);
-    };
-  }, [open, onClose]);
-
-  useEffect(() => {
-    if (!open && returnFocus) {
-      requestAnimationFrame(() => returnFocus.focus?.());
-    }
-  }, [open, returnFocus]);
 
   const bands = useMemo(
     () => (point && point.score != null ? deriveBands(point.score, lang) : null),

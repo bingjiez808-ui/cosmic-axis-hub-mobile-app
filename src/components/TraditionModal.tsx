@@ -1,4 +1,5 @@
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
+import { useModalA11y } from "@/lib/use-modal-a11y";
 
 import { PLANETS, ZODIAC_SIGNS, computePlanetSigns } from "@/components/charts/DestinyCharts";
 import { useAccount, type SavedReading } from "@/lib/account";
@@ -309,19 +310,8 @@ export function TraditionModal({
     return `${reading.name || ""}|${reading.date || ""}|${reading.time || ""}|${reading.place || ""}`;
   }, [reading]);
 
-  useEffect(() => {
-    if (!id) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
-    };
-  }, [id, onClose]);
+  const dialogRef = useModalA11y<HTMLDivElement>({ open: !!id, onClose });
+
 
   if (!id) return null;
   const p = PRIMERS[id];
@@ -341,16 +331,20 @@ export function TraditionModal({
 
   return (
     <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="tradition-modal-title"
+      role="presentation"
       className="fixed inset-0 z-[80] flex items-center justify-center bg-obsidian/85 px-4 py-8 backdrop-blur-md"
       onClick={onClose}
     >
       <div
-        className="relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl border border-gold-dust/25 bg-void-blue/95 p-6 md:p-10"
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="tradition-modal-title"
+        tabIndex={-1}
+        className="relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl border border-gold-dust/25 bg-void-blue/95 p-6 focus:outline-none md:p-10"
         onClick={(e) => e.stopPropagation()}
       >
+
         <button
           type="button"
           onClick={onClose}

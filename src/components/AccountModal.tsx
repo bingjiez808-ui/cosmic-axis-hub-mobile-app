@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useModalA11y } from "@/lib/use-modal-a11y";
 
 import { useAccount, type Plan } from "@/lib/account";
 import { useLang, type Lang } from "@/lib/i18n";
@@ -17,7 +18,7 @@ export function AccountModal({ open, onClose }: { open: boolean; onClose: () => 
   const { session, loading, isAdmin } = useSupabaseSession();
   const titleId = useId();
   const descId = useId();
-  const dialogRef = useRef<HTMLDivElement | null>(null);
+  const dialogRef = useModalA11y<HTMLDivElement>({ open, onClose });
   const [dbCharts, setDbCharts] = useState<ChartRow[] | null>(null);
 
   useEffect(() => {
@@ -70,21 +71,8 @@ export function AccountModal({ open, onClose }: { open: boolean; onClose: () => 
       }
     : null);
 
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const raf = requestAnimationFrame(() => dialogRef.current?.focus());
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
-      cancelAnimationFrame(raf);
-    };
-  }, [open, onClose]);
+
+
 
   const title = displayAccount
     ? `${t.acc_signed_as} · ${displayAccount.name}`
@@ -346,6 +334,14 @@ function MyChartsSection({ open, onClose, lang, rows, setRows }: {
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<{ id: string; scope: "chart" | "reports_only" } | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const confirmTitleId = useId();
+  const confirmDescId = useId();
+  const confirmRef = useModalA11y<HTMLDivElement>({
+    open: !!confirm,
+    onClose: () => setConfirm(null),
+    closeOnEscape: !deleting,
+  });
+
   const [feedback, setFeedback] = useState<string | null>(null);
 
   useEffect(() => { if (!open) return; }, [open]);
@@ -515,20 +511,26 @@ function MyChartsSection({ open, onClose, lang, rows, setRows }: {
       {confirm && (
         <div
           className="fixed inset-0 z-[60] flex items-end justify-center bg-black/70 p-4 sm:items-center"
-          role="dialog"
-          aria-modal="true"
+          role="presentation"
           onClick={() => !deleting && setConfirm(null)}
         >
           <div
+            ref={confirmRef}
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby={confirmTitleId}
+            aria-describedby={confirmDescId}
+            tabIndex={-1}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-md rounded-2xl border border-white/10 bg-obsidian/95 p-5 shadow-2xl"
+            className="w-full max-w-md rounded-2xl border border-white/10 bg-obsidian/95 p-5 shadow-2xl focus:outline-none"
           >
-            <h3 className="font-serif text-lg text-stone-warm">
+            <h3 id={confirmTitleId} className="font-serif text-lg text-stone-warm">
               {confirm.scope === "chart"
                 ? lang === "zh" ? "确认删除此命盘？" : "Delete this chart?"
                 : lang === "zh" ? "确认清除报告？" : "Clear reports?"}
             </h3>
-            <p className="mt-2 text-[13px] leading-relaxed text-stone-warm/75">
+
+            <p id={confirmDescId} className="mt-2 text-[13px] leading-relaxed text-stone-warm/75">
               {confirm.scope === "chart"
                 ? lang === "zh"
                   ? "命盘将连同其报告、逐年解读、对话记录一并永久删除，无法恢复。为保留财务审计所需的最少订单信息将被去标识化保留。"
