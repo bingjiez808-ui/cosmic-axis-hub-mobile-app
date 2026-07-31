@@ -73,7 +73,7 @@ type Sent = { pendingReview: boolean; delivered: number; dest: Destination; repl
  * Where the letter goes. Four doors, chosen in step 2:
  *   courier   — private delivery to a few strangers in the chosen chapter
  *   wall      — pinned on the public board, anyone may answer
- *   sage      — a distilled historical persona answers (贤者 membership)
+ *   sage      — a historical persona answers (贤者 membership)
  *   librarian — lands on the librarian's desk, who answers or entrusts it
  */
 type Destination = "courier" | "wall" | "sage" | "librarian";
