@@ -275,6 +275,36 @@ export type Database = {
         }
         Relationships: []
       }
+      community_helper_rewards: {
+        Row: {
+          avg_stars: number | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          rated_count: number
+          reward: string
+          user_id: string
+        }
+        Insert: {
+          avg_stars?: number | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          rated_count?: number
+          reward?: string
+          user_id: string
+        }
+        Update: {
+          avg_stars?: number | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          rated_count?: number
+          reward?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       community_letter_assignments: {
         Row: {
           assigned_by: string | null
@@ -846,6 +876,54 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      community_reply_ratings: {
+        Row: {
+          created_at: string
+          helper_id: string | null
+          id: string
+          letter_id: string
+          note: string | null
+          rater_id: string
+          reply_id: string
+          stars: number
+        }
+        Insert: {
+          created_at?: string
+          helper_id?: string | null
+          id?: string
+          letter_id: string
+          note?: string | null
+          rater_id: string
+          reply_id: string
+          stars: number
+        }
+        Update: {
+          created_at?: string
+          helper_id?: string | null
+          id?: string
+          letter_id?: string
+          note?: string | null
+          rater_id?: string
+          reply_id?: string
+          stars?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_reply_ratings_letter_id_fkey"
+            columns: ["letter_id"]
+            isOneToOne: false
+            referencedRelation: "community_letters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_reply_ratings_reply_id_fkey"
+            columns: ["reply_id"]
+            isOneToOne: false
+            referencedRelation: "community_letter_replies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       community_reports: {
         Row: {
@@ -2869,9 +2947,11 @@ export type Database = {
         Returns: Json
       }
       get_community_public_wall: { Args: { _limit?: number }; Returns: Json }
+      get_helper_standing: { Args: never; Returns: Json }
       get_my_community_mailbox: { Args: never; Returns: Json }
       get_my_desk_letters: { Args: { _route?: string }; Returns: Json }
       get_my_letter_assignments: { Args: never; Returns: Json }
+      get_my_reply_ratings: { Args: never; Returns: Json }
       get_sage_reply_credit_history: { Args: never; Returns: Json }
       get_sage_reply_credits: { Args: never; Returns: Json }
       librarian_assign_letter: {
@@ -2897,6 +2977,10 @@ export type Database = {
         }[]
       }
       mark_community_onboarded: { Args: never; Returns: string }
+      rate_letter_reply: {
+        Args: { _note?: string; _reply_id: string; _stars: number }
+        Returns: Json
+      }
       record_sage_reply: {
         Args: { _body: string; _letter_id: string; _persona_id: string }
         Returns: string
