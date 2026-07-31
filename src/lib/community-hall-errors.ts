@@ -37,6 +37,7 @@ export type HallErrorCode =
   | "not_allowed"
   | "sage_required"
   | "no_reply_credits"
+  | "no_sage_credits"
   | "invalid_rating"
   | "offline"
   | "unknown";
