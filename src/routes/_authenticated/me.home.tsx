@@ -301,29 +301,42 @@ function DailyRoomPage() {
   const caution = plain.overall.avoid_today;
 
   // ---- AI explanation layer (daily-reading-v1) ------------------------
+  // Cost policy: the score itself is 100% deterministic (daily-facts-v1 +
+  // daily-domain-score-v2) and never calls AI. The AI layer is OPT-IN and
+  // cached per chart+date+lang, so a normal day costs zero AI credits.
   const readingFn = useServerFn(generateDailyReading);
   const [ai, setAi] = useState<DailyReadingAI | null>(null);
   const [aiState, setAiState] = useState<"idle" | "loading" | "error">("idle");
+  const [aiRequested, setAiRequested] = useState(false);
   const aiKey =
     usingRealChart && primaryChart && facts
       ? `fate.daily-reading.v1|${primaryChart.id}|${today}|${tz}|${lang}|${score.overall.score}`
       : null;
   const requestedKey = useRef<string | null>(null);
 
+  // Cache-only pass: reuse today's reading if it was already generated.
   useEffect(() => {
-    if (!aiKey || !facts) return;
-    if (requestedKey.current === aiKey) return;
-    requestedKey.current = aiKey;
+    if (!aiKey) return;
     try {
       const cached = window.localStorage.getItem(aiKey);
       if (cached) {
         setAi(JSON.parse(cached) as DailyReadingAI);
+        requestedKey.current = aiKey;
         setAiState("idle");
         return;
       }
     } catch {
       /* ignore cache errors */
     }
+    setAi(null);
+    setAiState("idle");
+    requestedKey.current = null;
+  }, [aiKey]);
+
+  useEffect(() => {
+    if (!aiRequested || !aiKey || !facts) return;
+    if (requestedKey.current === aiKey) return;
+    requestedKey.current = aiKey;
     setAiState("loading");
     let cancelled = false;
     readingFn({
@@ -373,7 +386,7 @@ function DailyRoomPage() {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [aiKey]);
+  }, [aiKey, aiRequested]);
 
   const retryAi = () => {
     requestedKey.current = null;
@@ -386,7 +399,9 @@ function DailyRoomPage() {
     }
     setAi(null);
     setAiState("idle");
+    setAiRequested(true);
   };
+
 
   return (
     <div className="pl-shell min-h-screen bg-[#0a0a12]/25 text-amber-50">
@@ -649,6 +664,25 @@ function DailyRoomPage() {
                   <p>{plain.overall.headline}</p>
                 )}
               </div>
+
+              {usingRealChart && !ai && aiState !== "loading" && (
+                <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-amber-200/70">
+                  <button
+                    type="button"
+                    onClick={() => setAiRequested(true)}
+                    className="min-h-8 rounded-full border border-amber-300/50 px-3 py-1 text-amber-100 hover:bg-amber-500/10"
+                  >
+                    {lang === "zh" ? "生成今日 AI 解读" : "Generate AI reading"}
+                  </button>
+                  <span>
+                    {lang === "zh"
+                      ? "分数与证据由本地星历确定性计算，不消耗 AI；解读为可选，每日每盘只生成一次。"
+                      : "Scores are computed locally and cost no AI; the reading is optional and generated once per chart per day."}
+                  </span>
+                </div>
+              )}
+
+
 
               {ai && (ai.do_today.length > 0 || ai.observe_today.length > 0) && (
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
