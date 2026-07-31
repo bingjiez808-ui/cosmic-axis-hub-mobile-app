@@ -270,6 +270,7 @@ function GrantsBody() {
           ))}
         </div>
       </HallSection>
+      </div>
 
       {notice ? (
         <p className="rounded-xl border border-primary/20 bg-background/60 p-3 text-sm text-foreground/85">
