@@ -141,12 +141,24 @@ function WriteFlow() {
 
   const zh = c.lang !== "en";
   const entitledForSage = Boolean(entitlement.data?.entitled);
+  const humanCredits = entitlement.data?.credits?.remaining ?? 0;
   const busy = send.isPending || askSage.isPending || sendLibrarian.isPending;
 
   function goStepThree() {
     if (!band) return setError(c.required);
-    if (dest === "sage" && !entitledForSage) {
-      return setError(zh ? "先贤回信需要开通「贤者」会员。" : "Sage replies require the Sage membership.");
+    if ((dest === "sage" || dest === "librarian") && !entitledForSage) {
+      return setError(
+        zh
+          ? "先贤回信与图书管理员亲自回信，都需要开通「贤者」会员。"
+          : "Sage letters and the librarian's personal reply both require the Sage membership.",
+      );
+    }
+    if (dest === "librarian" && humanCredits <= 0) {
+      return setError(
+        zh
+          ? "本月的三次真人回复已经用完了。可以先寄给信使或张贴到信墙。"
+          : "This month's three human-reply grants are used up. Try the courier or the public wall.",
+      );
     }
     setError(null);
     setStep(3);
