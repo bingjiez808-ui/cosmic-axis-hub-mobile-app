@@ -136,7 +136,7 @@ function CommunityHallPage() {
             <Link
               key={door.to}
               to={door.to}
-              className="hall-paper hall-envelope hall-tap block p-5"
+              className="hall-paper hall-envelope hall-tap group block rounded-2xl p-5"
             >
               <div className="flex items-start justify-between gap-3">
                 <h3 className="text-base font-semibold text-foreground">{door.title}</h3>
@@ -147,9 +147,13 @@ function CommunityHallPage() {
                 ) : null}
               </div>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{door.body}</p>
+              <span className="hall-door-arrow mt-3 inline-flex items-center gap-1 text-xs text-primary" aria-hidden>
+                {door.title} →
+              </span>
             </Link>
           ))}
         </div>
+
       </HallSection>
 
       <HallGate>
