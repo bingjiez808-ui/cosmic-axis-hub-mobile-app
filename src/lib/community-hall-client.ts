@@ -110,11 +110,16 @@ export function useSaveCommunityProfile() {
 }
 
 export function useSendLetter() {
+  const qc = useQueryClient();
   const send = useServerFn(sendCommunityLetter);
   const invalidate = useInvalidate();
   return useMutation({
     mutationFn: (data: SendLetterInput) => send({ data }),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      invalidate();
+      // A letter posted to the public board must appear on the wall at once.
+      void qc.invalidateQueries({ queryKey: communityKeys.wall });
+    },
   });
 }
 
