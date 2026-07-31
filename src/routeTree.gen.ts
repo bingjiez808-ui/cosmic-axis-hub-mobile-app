@@ -35,6 +35,7 @@ import { Route as CommunityWriteRouteImport } from './routes/community.write'
 import { Route as CommunityWallRouteImport } from './routes/community.wall'
 import { Route as CommunitySagesRouteImport } from './routes/community.sages'
 import { Route as CommunityOutboxRouteImport } from './routes/community.outbox'
+import { Route as CommunityNoticesRouteImport } from './routes/community.notices'
 import { Route as CommunityLibrarianRouteImport } from './routes/community.librarian'
 import { Route as CommunityInboxRouteImport } from './routes/community.inbox'
 import { Route as CommunityGrantsRouteImport } from './routes/community.grants'
@@ -188,6 +189,11 @@ const CommunitySagesRoute = CommunitySagesRouteImport.update({
 const CommunityOutboxRoute = CommunityOutboxRouteImport.update({
   id: '/community/outbox',
   path: '/community/outbox',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CommunityNoticesRoute = CommunityNoticesRouteImport.update({
+  id: '/community/notices',
+  path: '/community/notices',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CommunityLibrarianRoute = CommunityLibrarianRouteImport.update({
@@ -349,6 +355,7 @@ export interface FileRoutesByFullPath {
   '/community/grants': typeof CommunityGrantsRoute
   '/community/inbox': typeof CommunityInboxRoute
   '/community/librarian': typeof CommunityLibrarianRoute
+  '/community/notices': typeof CommunityNoticesRoute
   '/community/outbox': typeof CommunityOutboxRoute
   '/community/sages': typeof CommunitySagesRoute
   '/community/wall': typeof CommunityWallRoute
@@ -399,6 +406,7 @@ export interface FileRoutesByTo {
   '/community/grants': typeof CommunityGrantsRoute
   '/community/inbox': typeof CommunityInboxRoute
   '/community/librarian': typeof CommunityLibrarianRoute
+  '/community/notices': typeof CommunityNoticesRoute
   '/community/outbox': typeof CommunityOutboxRoute
   '/community/sages': typeof CommunitySagesRoute
   '/community/wall': typeof CommunityWallRoute
@@ -453,6 +461,7 @@ export interface FileRoutesById {
   '/community/grants': typeof CommunityGrantsRoute
   '/community/inbox': typeof CommunityInboxRoute
   '/community/librarian': typeof CommunityLibrarianRoute
+  '/community/notices': typeof CommunityNoticesRoute
   '/community/outbox': typeof CommunityOutboxRoute
   '/community/sages': typeof CommunitySagesRoute
   '/community/wall': typeof CommunityWallRoute
@@ -507,6 +516,7 @@ export interface FileRouteTypes {
     | '/community/grants'
     | '/community/inbox'
     | '/community/librarian'
+    | '/community/notices'
     | '/community/outbox'
     | '/community/sages'
     | '/community/wall'
@@ -557,6 +567,7 @@ export interface FileRouteTypes {
     | '/community/grants'
     | '/community/inbox'
     | '/community/librarian'
+    | '/community/notices'
     | '/community/outbox'
     | '/community/sages'
     | '/community/wall'
@@ -610,6 +621,7 @@ export interface FileRouteTypes {
     | '/community/grants'
     | '/community/inbox'
     | '/community/librarian'
+    | '/community/notices'
     | '/community/outbox'
     | '/community/sages'
     | '/community/wall'
@@ -661,6 +673,7 @@ export interface RootRouteChildren {
   CommunityGrantsRoute: typeof CommunityGrantsRoute
   CommunityInboxRoute: typeof CommunityInboxRoute
   CommunityLibrarianRoute: typeof CommunityLibrarianRoute
+  CommunityNoticesRoute: typeof CommunityNoticesRoute
   CommunityOutboxRoute: typeof CommunityOutboxRoute
   CommunitySagesRoute: typeof CommunitySagesRoute
   CommunityWallRoute: typeof CommunityWallRoute
@@ -857,6 +870,13 @@ declare module '@tanstack/react-router' {
       path: '/community/outbox'
       fullPath: '/community/outbox'
       preLoaderRoute: typeof CommunityOutboxRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/community/notices': {
+      id: '/community/notices'
+      path: '/community/notices'
+      fullPath: '/community/notices'
+      preLoaderRoute: typeof CommunityNoticesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/community/librarian': {
@@ -1122,6 +1142,7 @@ const rootRouteChildren: RootRouteChildren = {
   CommunityGrantsRoute: CommunityGrantsRoute,
   CommunityInboxRoute: CommunityInboxRoute,
   CommunityLibrarianRoute: CommunityLibrarianRoute,
+  CommunityNoticesRoute: CommunityNoticesRoute,
   CommunityOutboxRoute: CommunityOutboxRoute,
   CommunitySagesRoute: CommunitySagesRoute,
   CommunityWallRoute: CommunityWallRoute,
