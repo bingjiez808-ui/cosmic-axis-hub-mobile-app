@@ -171,63 +171,33 @@ function Desk() {
                   </div>
 
                   {open ? (
-                    <div className="hall-inset mt-4 space-y-3 px-4 py-4">
-                      {helpers.length === 0 ? (
-                        <p className="text-xs text-muted-foreground">
-                          {zh
-                            ? "目前没有旅者打开「愿意接信」。"
-                            : "No traveler has switched on “willing to receive letters” yet."}
-                        </p>
-                      ) : (
-                        <>
-                          <label className="block text-xs text-muted-foreground">
-                            {zh ? "托付给" : "Entrust to"}
-                            <select
-                              value={assignee}
-                              onChange={(e) => setAssignee(e.target.value)}
-                              className="hall-field hall-tap mt-2 text-sm"
-                            >
-                              <option value="">{zh ? "选择一位旅者…" : "Choose a traveler…"}</option>
-                              {helpers.map((h) => (
-                                <option key={h.userId} value={h.userId}>
-                                  {(h.alias ?? (zh ? "旅者" : "Traveler")) +
-                                    (h.ageBand ? ` · ${c.ageBand(h.ageBand as never)}` : "")}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                          <label className="block text-xs text-muted-foreground">
-                            {zh ? "给对方的一句话（可选）" : "A note to them (optional)"}
-                            <input
-                              value={note}
-                              onChange={(e) => setNote(e.target.value.slice(0, 300))}
-                              className="hall-field hall-tap mt-2 text-sm"
-                            />
-                          </label>
-                          {error ? <p className="text-xs text-destructive">{error}</p> : null}
-                          <Button
-                            size="sm"
-                            className="hall-tap"
-                            disabled={!assignee || assign.isPending}
-                            onClick={async () => {
-                              try {
-                                await assign.mutateAsync({
-                                  letterId: letter.letterId,
-                                  assigneeId: assignee,
-                                  note: note.trim() || null,
-                                });
-                                setOpenId(null);
-                                setError(null);
-                              } catch (err) {
-                                setError(hallErrorMessage(err, c.lang));
-                              }
-                            }}
-                          >
-                            {assign.isPending ? c.sending : zh ? "托付这封信" : "Entrust this letter"}
-                          </Button>
-                        </>
-                      )}
-                    </div>
+                    helpers.length === 0 ? (
+                      <p className="hall-inset mt-4 px-4 py-4 text-xs text-muted-foreground">
+                        {zh
+                          ? "目前没有旅者打开「愿意接信」。"
+                          : "No traveler has switched on “willing to receive letters” yet."}
+                      </p>
+                    ) : (
+                      <EntrustPanel
+                        helpers={helpers}
+                        topicLabel={letter.subject?.trim() || c.topic(letter.topic ?? "self")}
+                        pending={assign.isPending}
+                        error={error}
+                        onAssign={async (assigneeId, noteText) => {
+                          try {
+                            await assign.mutateAsync({
+                              letterId: letter.letterId,
+                              assigneeId,
+                              note: noteText,
+                            });
+                            setOpenId(null);
+                            setError(null);
+                          } catch (err) {
+                            setError(hallErrorMessage(err, c.lang));
+                          }
+                        }}
+                      />
+                    )
                   ) : null}
                 </li>
               );
