@@ -16,6 +16,7 @@ import { useCommunityHall, type AgeBand } from "@/lib/i18n-community-hall";
 import { clearLetterDraft, loadLetterDraft, saveLetterDraft } from "@/lib/letter-draft";
 import { useAskSage, useSageEntitlement, useSendToLibrarian } from "@/lib/sage-council-client";
 import { SAGE_DOMAIN_LABEL, SAGE_PERSONAS } from "@/lib/sage-personas";
+import { sageSkill, sagesForTopic } from "@/lib/sage-skills";
 import "@/experiences/community-hall/hall.css";
 
 const BODY_MIN = 30;
@@ -489,8 +490,18 @@ function WriteFlow() {
                   <p className="text-sm font-medium text-foreground">
                     {zh ? "选择一位先贤" : "Choose a sage"}
                   </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {zh
+                      ? `按你选的主题「${c.topic(topic)}」，下列带 ✦ 的先贤本领最对得上。`
+                      : `For "${c.topic(topic)}", the sages marked ✦ carry the closest skill.`}
+                  </p>
                   <div className="mt-2 flex flex-wrap gap-2">
-                    {SAGE_PERSONAS.map((p) => (
+                    {[...SAGE_PERSONAS]
+                      .sort((a, b) => {
+                        const rec = sagesForTopic(topic as never);
+                        return Number(rec.includes(b.id)) - Number(rec.includes(a.id));
+                      })
+                      .map((p) => (
                       <button
                         key={p.id}
                         type="button"
@@ -502,6 +513,9 @@ function WriteFlow() {
                             : "border-primary/15 text-muted-foreground hover:text-foreground"
                         }`}
                       >
+                        {sagesForTopic(topic as never).includes(p.id) ? (
+                          <span className="mr-1 text-primary">✦</span>
+                        ) : null}
                         {zh ? p.name.zh : p.name.en}
                         <span className="ml-1 opacity-60">
                           {SAGE_DOMAIN_LABEL[p.domain][zh ? "zh" : "en"]}
@@ -509,6 +523,17 @@ function WriteFlow() {
                       </button>
                     ))}
                   </div>
+                  {sageSkill(personaId) ? (
+                    <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                      <span className="text-primary/90">
+                        {zh
+                          ? `本领 · ${sageSkill(personaId)!.name.zh}`
+                          : `Skill · ${sageSkill(personaId)!.name.en}`}
+                      </span>
+                      {" — "}
+                      {zh ? sageSkill(personaId)!.summary.zh : sageSkill(personaId)!.summary.en}
+                    </p>
+                  ) : null}
                 </div>
               ) : (
                 <div className="hall-inset mt-4 flex flex-wrap items-center gap-3 px-4 py-3 text-xs text-muted-foreground">
