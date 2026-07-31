@@ -55,7 +55,7 @@ export function LetterWaveStatus({ letterId, closed }: { letterId: string; close
   const data = state.data;
 
   return (
-    <div className="rounded-lg border border-border/60 bg-background/40 p-3 text-xs">
+    <div className="hall-inset p-3 text-xs">
       {state.isLoading || !data ? (
         <p className="text-muted-foreground">…</p>
       ) : (

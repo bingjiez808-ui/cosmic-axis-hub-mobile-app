@@ -71,7 +71,7 @@ export function ReceivedLetterCard({ letter }: { letter: ReceivedLetter }) {
           {c.deliveryStatus(letter.status)}
         </span>
       </Meta>
-      <h3 className="mt-3 text-base font-semibold text-foreground">
+      <h3 className="hall-card-title mt-3">
         {letter.subject ?? c.topic(letter.topic)}
       </h3>
       <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-muted-foreground">
@@ -102,7 +102,7 @@ export function SentLetterCard({ letter }: { letter: SentLetter }) {
           {c.expiresAt} {formatDate(letter.expiresAt, c.lang)}
         </span>
       </Meta>
-      <h3 className="mt-3 text-base font-semibold text-foreground">
+      <h3 className="hall-card-title mt-3">
         {letter.subject ?? c.topic(letter.topic)}
       </h3>
       <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-muted-foreground">

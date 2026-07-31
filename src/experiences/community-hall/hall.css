@@ -7,19 +7,40 @@
  * `prefers-reduced-motion` and under the site-wide `[data-perf="lite"]` flag.
  */
 
+/* ── Shared parchment tokens ───────────────────────────────
+   One source of truth for radius, warmth, border and texture so every
+   surface in the hall (cards, insets, fields, doors, letter modal) sits at
+   the same colour temperature as the reading-room backdrop. */
+:where(.hall-paper, .hall-inset, .hall-field, .hall-empty, .hall-letter-sheet, .hall-door),
+main:has(.hall-paper) {
+  --hall-radius: 1rem;
+  --hall-radius-sm: 0.75rem;
+  /* Warm parchment: the page tint always carries a little primary candlelight
+     so cards never read colder than the backdrop. */
+  --hall-surface: color-mix(in oklab, var(--background) 90%, var(--primary) 5%);
+  --hall-surface-soft: color-mix(in oklab, var(--background) 62%, var(--primary) 4%);
+  --hall-border: color-mix(in oklab, var(--primary) 20%, transparent);
+  --hall-border-strong: color-mix(in oklab, var(--primary) 38%, transparent);
+  --hall-glow: color-mix(in oklab, var(--primary) 7%, transparent);
+  --hall-shadow: 0 18px 44px -32px color-mix(in oklab, var(--primary) 60%, transparent);
+}
+
 /* ── Paper & envelopes ─────────────────────────────────────── */
 .hall-paper {
   position: relative;
-  border-radius: 1rem;
-  border: 1px solid color-mix(in oklab, var(--primary) 18%, transparent);
+  border-radius: var(--hall-radius);
+  border: 1px solid var(--hall-border);
   background:
-    radial-gradient(120% 90% at 12% 0%, color-mix(in oklab, var(--primary) 7%, transparent), transparent 62%),
-    color-mix(in oklab, var(--background) 88%, transparent);
-  box-shadow: 0 18px 44px -32px color-mix(in oklab, var(--primary) 60%, transparent);
+    radial-gradient(120% 90% at 12% 0%, var(--hall-glow), transparent 62%),
+    var(--hall-surface);
+  box-shadow: var(--hall-shadow);
   backdrop-filter: blur(10px);
 }
 
-.hall-paper::after {
+/* Shared grain: identical fibre texture on every parchment surface. */
+.hall-paper::after,
+.hall-inset::after,
+.hall-empty::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -34,6 +55,69 @@
     );
   mix-blend-mode: overlay;
 }
+
+/* An inner block inside a card (hint bars, meta strips, sub-panels). */
+.hall-inset {
+  position: relative;
+  border-radius: var(--hall-radius-sm);
+  border: 1px solid color-mix(in oklab, var(--primary) 14%, transparent);
+  background: var(--hall-surface-soft);
+}
+
+/* Text inputs and textareas — same parchment, same focus candlelight. */
+.hall-field {
+  width: 100%;
+  border-radius: var(--hall-radius-sm);
+  border: 1px solid var(--hall-border);
+  background: color-mix(in oklab, var(--background) 72%, var(--primary) 3%);
+  padding: 0.75rem 1rem;
+  line-height: 1.7;
+  color: var(--foreground);
+  outline: none;
+  transition: border-color 200ms ease, box-shadow 200ms ease;
+}
+
+.hall-field:focus {
+  border-color: var(--hall-border-strong);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--primary) 12%, transparent);
+}
+
+/* Empty / awaiting states: dashed parchment, same warmth as filled cards. */
+.hall-empty {
+  position: relative;
+  border-radius: var(--hall-radius);
+  border: 1px dashed color-mix(in oklab, var(--primary) 22%, transparent);
+  background: color-mix(in oklab, var(--background) 55%, var(--primary) 3%);
+}
+
+/* ── Typography scale ──────────────────────────────────────── */
+.hall-section-title {
+  font-size: 1.05rem;
+  line-height: 1.4;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--foreground);
+}
+
+@media (min-width: 640px) {
+  .hall-section-title { font-size: 1.2rem; }
+}
+
+.hall-card-title {
+  font-size: 1rem;
+  line-height: 1.45;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.hall-eyebrow {
+  font-size: 0.7rem;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--primary) 80%, var(--foreground));
+  opacity: 0.8;
+}
+
 
 .hall-envelope {
   position: relative;
@@ -143,8 +227,8 @@
   height: 2.1rem;
   width: 2.1rem;
   border-radius: 9999px;
-  border: 1px solid color-mix(in oklab, var(--primary) 40%, transparent);
-  background: color-mix(in oklab, var(--background) 80%, transparent);
+  border: 1px solid var(--hall-border-strong);
+  background: var(--hall-surface);
   color: color-mix(in oklab, var(--primary) 88%, var(--foreground));
   font-size: 0.78rem;
   letter-spacing: 0.08em;
@@ -206,9 +290,12 @@
 }
 
 [data-perf="lite"] .hall-paper::after,
+[data-perf="lite"] .hall-inset::after,
+[data-perf="lite"] .hall-empty::after,
 [data-perf="lite"] .hall-envelope[data-unread="true"]::before {
   display: none;
 }
+
 
 [data-perf="lite"] .hall-seal,
 [data-perf="lite"] .hall-skeleton,
@@ -440,15 +527,16 @@
 
 .hall-letter-sheet {
   position: relative;
-  border-radius: 0.9rem;
-  border: 1px solid color-mix(in oklab, var(--primary) 22%, transparent);
+  border-radius: var(--hall-radius);
+  border: 1px solid var(--hall-border);
   background:
-    radial-gradient(120% 80% at 50% 0%, color-mix(in oklab, var(--primary) 8%, transparent), transparent 62%),
+    radial-gradient(120% 80% at 50% 0%, var(--hall-glow), transparent 62%),
     linear-gradient(
       to bottom,
-      color-mix(in oklab, var(--background) 92%, var(--primary) 8%),
-      color-mix(in oklab, var(--background) 97%, transparent)
+      var(--hall-surface),
+      color-mix(in oklab, var(--background) 96%, var(--primary) 3%)
     );
+
   box-shadow:
     0 32px 70px -30px rgb(0 0 0 / 0.8),
     inset 0 1px 0 color-mix(in oklab, var(--primary) 14%, transparent);

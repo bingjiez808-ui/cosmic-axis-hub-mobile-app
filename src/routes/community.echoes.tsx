@@ -111,7 +111,7 @@ function EchoesPage() {
                 {groups.map(({ letter, items }) => (
                   <section key={letter.letterId} className="space-y-3">
                     <header className="flex flex-wrap items-baseline justify-between gap-2">
-                      <h3 className="text-sm font-semibold text-foreground">
+                      <h3 className="hall-card-title">
                         {letter.subject ?? c.topic(letter.topic)}
                       </h3>
                       <span className="text-[0.7rem] text-muted-foreground">
@@ -120,7 +120,7 @@ function EchoesPage() {
                       </span>
                     </header>
                     {items.length === 0 ? (
-                      <p className="rounded-2xl border border-dashed border-primary/20 p-5 text-sm text-muted-foreground">
+                      <p className="hall-empty p-5 text-sm text-muted-foreground">
                         {c.awaitingEcho}
                       </p>
                     ) : (

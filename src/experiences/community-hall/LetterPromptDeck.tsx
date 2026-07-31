@@ -38,7 +38,7 @@ export function LetterPromptDeck({
   );
 
   return (
-    <div className="rounded-2xl border border-primary/15 bg-background/50 p-4">
+    <div className="hall-inset p-4">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-sm font-medium text-foreground">
@@ -68,7 +68,7 @@ export function LetterPromptDeck({
             <button
               type="button"
               onClick={() => onPick(p)}
-              className="hall-tap w-full rounded-xl border border-primary/15 bg-background/60 p-3 text-left transition hover:border-primary/40 hover:bg-primary/5"
+              className="hall-inset hall-tap w-full p-3 text-left transition hover:border-primary/40 hover:bg-primary/5"
             >
               <span className="block text-sm font-medium text-foreground">{p.subject}</span>
               <span className="mt-1 line-clamp-2 block text-xs leading-relaxed text-muted-foreground">

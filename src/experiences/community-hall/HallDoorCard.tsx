@@ -38,7 +38,7 @@ export function HallDoorCard({ door, index }: { door: HallDoor; index: number })
       onMouseMove={trackPointer}
       data-visible={inView ? "true" : "false"}
       style={{ ["--hall-delay" as string]: `${index * 90}ms` }}
-      className="hall-paper hall-envelope hall-tap hall-door hall-reveal group block overflow-hidden rounded-2xl"
+      className="hall-paper hall-envelope hall-tap hall-door hall-reveal group block overflow-hidden"
     >
       <span className="hall-door-media" aria-hidden="true">
         <img src={door.image} alt="" loading="lazy" width={768} height={512} draggable={false} />
@@ -51,7 +51,7 @@ export function HallDoorCard({ door, index }: { door: HallDoor; index: number })
 
       <span className="relative block p-5">
         <span className="flex items-start justify-between gap-3">
-          <span className="text-base font-semibold text-foreground">{door.title}</span>
+          <span className="hall-card-title">{door.title}</span>
           {door.badge ? (
             <span className="hall-door-badge rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-[0.68rem] text-primary">
               {door.badge}

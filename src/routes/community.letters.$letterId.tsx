@@ -179,7 +179,7 @@ function LetterDetail() {
           <span>{c.topic(letter.topic)}</span>
           <span>{c.deliveryStatus(letter.status)}</span>
         </div>
-        <h2 className="mt-3 text-xl font-semibold text-foreground">
+        <h2 className="hall-section-title mt-3">
           {letter.subject ?? c.topic(letter.topic)}
         </h2>
         <p className="mt-4 whitespace-pre-wrap text-[0.95rem] leading-[1.9] text-foreground/90">
@@ -189,7 +189,7 @@ function LetterDetail() {
 
       {echoes.length > 0 ? (
         <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-foreground">{c.echoesForLetter}</h3>
+          <h3 className="hall-card-title">{c.echoesForLetter}</h3>
           {echoes.map((echo) => (
             <p
               key={echo.replyId}
@@ -205,13 +205,13 @@ function LetterDetail() {
         <p className="hall-paper p-5 text-sm text-muted-foreground">{c.echoOnce}</p>
       ) : (
         <div className="hall-paper p-5">
-          <h3 className="text-sm font-semibold text-foreground">{c.writeEcho}</h3>
+          <h3 className="hall-card-title">{c.writeEcho}</h3>
           <textarea
             value={body}
             onChange={(e) => setBody(e.target.value.slice(0, ECHO_MAX))}
             rows={7}
             placeholder={c.echoPlaceholder}
-            className="mt-3 w-full resize-y rounded-xl border border-primary/20 bg-background/70 px-4 py-3 text-base leading-relaxed outline-none focus:border-primary/50 sm:text-sm"
+            className="hall-field mt-3 resize-y text-base sm:text-sm"
           />
           <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
             <span>{c.echoRange}</span>
@@ -245,7 +245,7 @@ function LetterDetail() {
 
       {showSafety ? (
         <div className="hall-paper hall-rise p-5">
-          <h3 className="text-sm font-semibold text-foreground">{c.safetySheetTitle}</h3>
+          <h3 className="hall-card-title">{c.safetySheetTitle}</h3>
           <div className="mt-3 flex flex-wrap gap-2">
             {c.reportReasons.map((r) => (
               <button
@@ -266,7 +266,7 @@ function LetterDetail() {
             value={details}
             onChange={(e) => setDetails(e.target.value.slice(0, 1000))}
             rows={3}
-            className="mt-3 w-full resize-y rounded-xl border border-primary/20 bg-background/70 px-4 py-3 text-sm outline-none focus:border-primary/50"
+            className="hall-field mt-3 resize-y text-sm"
           />
           <div className="mt-4 flex flex-wrap gap-3">
             <Button
