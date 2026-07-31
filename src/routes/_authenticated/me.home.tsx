@@ -665,6 +665,25 @@ function DailyRoomPage() {
                 )}
               </div>
 
+              {usingRealChart && !ai && aiState !== "loading" && (
+                <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-amber-200/70">
+                  <button
+                    type="button"
+                    onClick={() => setAiRequested(true)}
+                    className="min-h-8 rounded-full border border-amber-300/50 px-3 py-1 text-amber-100 hover:bg-amber-500/10"
+                  >
+                    {lang === "zh" ? "生成今日 AI 解读" : "Generate AI reading"}
+                  </button>
+                  <span>
+                    {lang === "zh"
+                      ? "分数与证据由本地星历确定性计算，不消耗 AI；解读为可选，每日每盘只生成一次。"
+                      : "Scores are computed locally and cost no AI; the reading is optional and generated once per chart per day."}
+                  </span>
+                </div>
+              )}
+
+
+
               {ai && (ai.do_today.length > 0 || ai.observe_today.length > 0) && (
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   {ai.do_today.length > 0 && (
