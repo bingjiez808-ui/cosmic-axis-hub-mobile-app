@@ -150,6 +150,7 @@ function DailyRoomPage() {
       : "Asia/Shanghai";
   const today = todayInTz(tz);
   const [fixtureKey, setFixtureKey] = useState<DailyRoomFixtureKey>("working_adult");
+  const [samplePreview, setSamplePreview] = useState(false);
   const [showEvidence, setShowEvidence] = useState(false);
   const [compassAxis, setCompassAxis] = useState<CompassAxis>("overall");
   const [domainDetail, setDomainDetail] = useState<DomainDetailPayload | null>(null);
@@ -377,31 +378,62 @@ function DailyRoomPage() {
 
 
 
-        {/* Date + sample-chart switcher. The page H1 lives in the header above;
-            repeating it here was pure duplication. */}
-        <div className="mb-8 flex flex-wrap items-center gap-x-4 gap-y-2">
-          <div className="text-sm text-amber-100/70">
-            {fmtDate(today, tz)} · {tz} ·{" "}
-            {d.today_chart_label(FIXTURE_CHART_LABELS[fixtureKey][lang])}
+        {/* Date row + a collapsed "sample preview" area. The fixture switcher
+            used to sit inline next to the date, which made demo charts look
+            like the visitor's own reading. It now lives behind an explicit
+            opt-in toggle inside its own bordered region. */}
+        <div className="mb-8">
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+            <div className="text-sm text-amber-100/70">
+              {fmtDate(today, tz)} · {tz}
+              {samplePreview ? <> · {d.today_chart_label(FIXTURE_CHART_LABELS[fixtureKey][lang])}</> : null}
+            </div>
+            <button
+              type="button"
+              onClick={() => setSamplePreview((v) => !v)}
+              aria-expanded={samplePreview}
+              aria-controls="sample-preview-panel"
+              className={`min-h-9 rounded-full border px-3 py-1 text-xs transition ${
+                samplePreview
+                  ? "border-amber-300 bg-amber-300/10 text-amber-100"
+                  : "border-amber-400/20 text-amber-200/60 hover:border-amber-300/60"
+              }`}
+            >
+              {lang === "zh" ? "样例预览" : "Sample preview"} · {samplePreview ? (lang === "zh" ? "开" : "On") : lang === "zh" ? "关" : "Off"}
+            </button>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {FIXTURE_KEYS.map((k) => (
-              <button
-                key={k}
-                type="button"
-                onClick={() => setFixtureKey(k)}
-                aria-pressed={fixtureKey === k}
-                className={`rounded-full border px-3 py-1 text-xs transition ${
-                  fixtureKey === k
-                    ? "border-amber-300 bg-amber-300/10 text-amber-100"
-                    : "border-amber-400/20 text-amber-200/70 hover:border-amber-300/60"
-                }`}
-              >
-                {FIXTURE_LABELS[k][lang]}
-              </button>
-            ))}
-          </div>
+
+          {samplePreview && (
+            <div
+              id="sample-preview-panel"
+              className="mt-3 rounded-2xl border border-dashed border-amber-400/35 bg-amber-500/[0.04] p-4"
+            >
+              <p className="text-xs leading-relaxed text-amber-200/70">
+                {lang === "zh"
+                  ? "以下内容来自样例命盘，仅供演示，不是你本人的命盘。关闭此开关即可回到你自己的解读。"
+                  : "The content below comes from a demo chart. It is not your own reading — switch this off to return to yours."}
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {FIXTURE_KEYS.map((k) => (
+                  <button
+                    key={k}
+                    type="button"
+                    onClick={() => setFixtureKey(k)}
+                    aria-pressed={fixtureKey === k}
+                    className={`rounded-full border px-3 py-1 text-xs transition ${
+                      fixtureKey === k
+                        ? "border-amber-300 bg-amber-300/10 text-amber-100"
+                        : "border-amber-400/20 text-amber-200/70 hover:border-amber-300/60"
+                    }`}
+                  >
+                    {FIXTURE_LABELS[k][lang]}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
+
 
 
         {/* Curator's welcome bookmark — always present, always the same anchor.
