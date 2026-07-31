@@ -122,6 +122,15 @@ const MESSAGES: Record<HallErrorCode, Pair> = {
     zh: "你没有权限做这件事。",
     en: "You do not have permission to do this.",
   },
+  sage_required: {
+    zh: "先贤回信与图书管理员亲自回信，都属于「贤者」会员的权益。",
+    en: "Sage letters and the librarian's personal reply are both part of the Sage membership.",
+  },
+  no_reply_credits: {
+    zh: "本月的真人回复次数已经用完了。下个月信使会再送来三次。",
+    en: "You have used this month's human-reply grants. Three more arrive next month.",
+  },
+
   offline: {
     zh: "看起来暂时连不上图书馆。请检查网络后重试。",
     en: "The library seems unreachable. Check your connection and try again.",
