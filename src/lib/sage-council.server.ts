@@ -402,12 +402,8 @@ export async function requestHumanReply(ctx: Ctx, letterId: string) {
   limit(`sage-council:human:${ctx.userId}`, 6, 24 * 60 * 60_000);
   const { data, error } = await ctx.supabase.rpc("request_human_reply", { _letter_id: letterId });
   if (error) friendly(error);
-  const raw = (data ?? {}) as { granted?: number; used?: number; remaining?: number };
-  return {
-    granted: Number(raw.granted ?? 0),
-    used: Number(raw.used ?? 0),
-    remaining: Number(raw.remaining ?? 0),
-  };
+  return shapeCredits(data);
+
 }
 
 // ------------------------------------------------------------------
