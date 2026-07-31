@@ -14,6 +14,7 @@
  */
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useModalA11y } from "@/lib/use-modal-a11y";
 
 import type { Lang } from "@/lib/i18n";
 import {
