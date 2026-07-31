@@ -9,6 +9,7 @@ import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
 import { useCommunityHall } from "@/lib/i18n-community-hall";
+import { useInView } from "@/lib/use-in-view";
 import "./hall.css";
 import type { EchoReply, ReceivedLetter, SentLetter } from "@/lib/community-hall.server";
 
