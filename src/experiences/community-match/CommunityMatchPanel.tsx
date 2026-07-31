@@ -322,6 +322,28 @@ function ProfileHeader({
 
 let candidatesCache: { items: CandidateCard[] | null; at: number } = { items: null, at: 0 };
 
+/**
+ * Keeps invite / match state in sync with the cloud without a page reload:
+ * initial fetch, a 30s poll, and a refetch when the tab regains focus.
+ */
+function usePolledRefresh(refresh: () => void | Promise<void>, intervalMs = 30_000) {
+  useEffect(() => {
+    void refresh();
+    const id = setInterval(() => void refresh(), intervalMs);
+    const onFocus = () => {
+      if (document.visibilityState === "visible") void refresh();
+    };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
+    return () => {
+      clearInterval(id);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
+    };
+  }, [refresh, intervalMs]);
+}
+
+
 
 function AtlasTab({ paused, selfAlias }: { paused: boolean; selfAlias: string }) {
   const c = useCommunityMatchCopy();
