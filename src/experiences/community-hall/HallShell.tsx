@@ -15,6 +15,7 @@ import { useCommunityProfile, useSaveCommunityProfile } from "@/lib/community-ha
 import { hallErrorMessage } from "@/lib/community-hall-errors";
 import { useSupabaseSession } from "@/lib/session";
 import { useInView } from "@/lib/use-in-view";
+import { CourierEchoToast } from "./CourierEchoToast";
 import "./hall.css";
 
 export function HallHeader({
