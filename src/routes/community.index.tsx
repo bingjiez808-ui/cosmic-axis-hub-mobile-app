@@ -21,6 +21,7 @@ import { LibrarySamplesSection } from "@/experiences/community-hall/LibrarySampl
 import { NotificationCenter } from "@/experiences/community-hall/NotificationCenter";
 import { TravelerIdentityCard } from "@/experiences/community-hall/TravelerIdentityCard";
 import { useCommunityMailbox, useCommunityProfile } from "@/lib/community-hall-client";
+import { HallMechanismSection } from "@/experiences/community-hall/HallMechanismSection";
 import { useCommunityHall } from "@/lib/i18n-community-hall";
 import { useSupabaseSession } from "@/lib/session";
 import "@/experiences/community-hall/hall.css";
@@ -177,6 +178,7 @@ function CommunityHallPage() {
         </div>
       </HallSection>
 
+      <HallMechanismSection />
 
       <HallGate>
         <NotificationCenter />
