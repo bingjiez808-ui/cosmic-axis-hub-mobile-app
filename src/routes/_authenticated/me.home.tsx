@@ -866,7 +866,10 @@ function DailyRoomPage() {
                   {xlate(d.band, dd.band)} · {xlate(d.confidence, dd.confidence)}
                 </div>
                 {(() => {
-                  const aiLine = ai?.domain_lines.find((x) => x.domain === dd.domain)?.line;
+                  const seg = aiSegments.get(domainSegmentId(dd.domain));
+                  const aiLine = seg.data?.domain_lines.find(
+                    (x: { domain: string }) => x.domain === dd.domain,
+                  )?.line;
                   return aiLine ? (
                     <p className="mt-2 line-clamp-3 text-[11px] leading-relaxed text-amber-100/75">
                       {aiLine}
@@ -885,10 +888,27 @@ function DailyRoomPage() {
         <DomainDetailDialog
           lang={lang}
           payload={domainDetail}
+          aiNote={activeDomainSeg?.data?.narrative || undefined}
+          aiLine={
+            domainDetail
+              ? activeDomainSeg?.data?.domain_lines.find(
+                  (x: { domain: string }) => x.domain === domainDetail.key,
+                )?.line
+              : undefined
+          }
+          aiDoToday={activeDomainSeg?.data?.do_today ?? []}
+          aiObserveToday={activeDomainSeg?.data?.observe_today ?? []}
+          aiStatus={activeDomainSeg?.status ?? "idle"}
+          onRetryAi={
+            domainDetail
+              ? () => aiSegments.retry(domainSegmentId(domainDetail.key))
+              : undefined
+          }
           onOpenChange={(open) => {
             if (!open) setDomainDetail(null);
           }}
         />
+
 
 
         {/* Plain-language: what to do / what to watch (0-AI templates) */}
