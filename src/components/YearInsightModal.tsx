@@ -14,7 +14,9 @@
  *   • Portal + high z-index + body scroll lock + ESC/backdrop close +
  *     focus management + full-screen on mobile with scroll.
  */
-import { useEffect, useId, useMemo, useRef } from "react";
+import { useId, useMemo } from "react";
+import { useModalA11y } from "@/lib/use-modal-a11y";
+
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 
