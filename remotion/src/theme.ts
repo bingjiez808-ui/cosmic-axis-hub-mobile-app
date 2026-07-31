@@ -29,7 +29,7 @@ export const BEATS: Beat[] = [
     title: "一次登记，四种古老语言同时开口",
     sub: "西方占星 · 印度吠陀 · 八字 · 紫微斗数",
     focus: { x: 0.5, y: 0.32 },
-    duration: 95,
+    duration: 110,
   },
   {
     id: "traditions",
@@ -39,7 +39,7 @@ export const BEATS: Beat[] = [
     title: "四套宇宙观，读同一份出生资料",
     sub: "分歧与共识，都摊开给你看",
     focus: { x: 0.5, y: 0.4 },
-    duration: 85,
+    duration: 100,
   },
   {
     id: "report",
@@ -49,7 +49,7 @@ export const BEATS: Beat[] = [
     title: "24 章合参报告，每一句都能追到证据",
     sub: "诗意开篇 · 依据可查 · 落到本周行动",
     focus: { x: 0.5, y: 0.45 },
-    duration: 95,
+    duration: 110,
   },
   {
     id: "math",
@@ -59,7 +59,7 @@ export const BEATS: Beat[] = [
     title: "七条人生曲线，看见起伏何时发生",
     sub: "学业 · 事业 · 爱情 · 家庭 · 人际 · 财富 · 健康",
     focus: { x: 0.5, y: 0.45 },
-    duration: 95,
+    duration: 110,
   },
   {
     id: "daily",
@@ -69,7 +69,7 @@ export const BEATS: Beat[] = [
     title: "每天一页今日信号",
     sub: "本地推算不花钱，想要馆员手记时再唤醒 AI",
     focus: { x: 0.5, y: 0.4 },
-    duration: 85,
+    duration: 100,
   },
   {
     id: "hall",
@@ -79,6 +79,6 @@ export const BEATS: Beat[] = [
     title: "把问题写成一封信，等一次回音",
     sub: "匿名寄出 · 先贤回信 · 公开回音墙",
     focus: { x: 0.5, y: 0.42 },
-    duration: 95,
+    duration: 110,
   },
 ];

@@ -13,9 +13,9 @@ import { BEATS } from "./theme";
 
 const T = 14; // transition overlap
 
-export const OPEN_D = 100;
-export const BRAND_D = 78;
-export const CLOSE_D = 120;
+export const OPEN_D = 120;
+export const BRAND_D = 90;
+export const CLOSE_D = 150;
 
 /** total = sum(scenes) - transitions * overlap */
 export const TOTAL =
