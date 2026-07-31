@@ -150,6 +150,7 @@ function DailyRoomPage() {
       : "Asia/Shanghai";
   const today = todayInTz(tz);
   const [fixtureKey, setFixtureKey] = useState<DailyRoomFixtureKey>("working_adult");
+  const [samplePreview, setSamplePreview] = useState(false);
   const [showEvidence, setShowEvidence] = useState(false);
   const [compassAxis, setCompassAxis] = useState<CompassAxis>("overall");
   const [domainDetail, setDomainDetail] = useState<DomainDetailPayload | null>(null);
