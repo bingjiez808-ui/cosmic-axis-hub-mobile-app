@@ -14,6 +14,7 @@ import { useCommunityHall } from "@/lib/i18n-community-hall";
 import { useCommunityProfile, useSaveCommunityProfile } from "@/lib/community-hall-client";
 import { hallErrorMessage } from "@/lib/community-hall-errors";
 import { useSupabaseSession } from "@/lib/session";
+import { useInView } from "@/lib/use-in-view";
 import "./hall.css";
 
 export function HallHeader({
