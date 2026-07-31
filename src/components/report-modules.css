@@ -438,6 +438,10 @@
     max-height: none;
   }
   .rm-viz-block {
+    /* No auto margin here: the evidence list absorbs the free space
+       (auto margins would eat it first), which both lengthens the
+       evidence pane and pushes the signal map to the pane's foot. */
+    margin-top: 0;
     flex: 0 0 auto;
   }
 }
