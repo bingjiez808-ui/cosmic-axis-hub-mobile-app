@@ -5,6 +5,11 @@ import "@/components/personal-library.css";
 import { PersonalWorkspaceNav } from "@/components/PersonalWorkspaceNav";
 
 import { loadDailyRoomFixture, type DailyRoomFixtureKey } from "@/experiences/daily-room/fixtures";
+import { buildRealDaily } from "@/experiences/daily-room/real-chart-daily";
+import {
+  generateDailyReading,
+  type DailyReadingAI,
+} from "@/lib/daily-reading.functions";
 
 import { DailyRoomError } from "@/experiences/daily-room/fallback";
 import { PersonalShellPending } from "@/experiences/daily-room/personal-shell-pending";
@@ -249,7 +254,33 @@ function DailyRoomPage() {
   }, []);
 
   const fixture = loadDailyRoomFixture(fixtureKey, today, tz);
-  const { facts, score } = fixture;
+
+  // The visitor's OWN primary chart drives Today's Fate. Demo fixtures are
+  // only used when the "sample preview" switch is explicitly on, or while
+  // no primary chart exists yet.
+  const primaryChart =
+    real.kind === "ready"
+      ? real.charts.find((c) => c.is_primary && c.chart_role === "self") ?? null
+      : null;
+
+  const realDaily = useMemo(() => {
+    if (!primaryChart) return null;
+    return buildRealDaily({
+      name: primaryChart.name,
+      birthDate: primaryChart.birth_date,
+      birthTime: primaryChart.birth_time,
+      birthPlace: primaryChart.birth_place,
+      localDate: today,
+      timezone: tz,
+    });
+  }, [primaryChart, today, tz]);
+
+  const usingRealChart = !samplePreview && Boolean(realDaily);
+  const facts = usingRealChart ? realDaily!.facts : fixture.facts;
+  const score = usingRealChart ? realDaily!.score : fixture.score;
+  const chartLabel = usingRealChart
+    ? realDaily!.chartLabel || (lang === "zh" ? "我的主命盘" : "My primary chart")
+    : FIXTURE_CHART_LABELS[fixtureKey][lang];
 
   const domainLabel = (k: string) =>
     d.domain[k as keyof typeof d.domain] ?? xlate({}, k);
@@ -269,13 +300,104 @@ function DailyRoomPage() {
   const supportive = plain.overall.do_today;
   const caution = plain.overall.avoid_today;
 
+  // ---- AI explanation layer (daily-reading-v1) ------------------------
+  const readingFn = useServerFn(generateDailyReading);
+  const [ai, setAi] = useState<DailyReadingAI | null>(null);
+  const [aiState, setAiState] = useState<"idle" | "loading" | "error">("idle");
+  const aiKey =
+    usingRealChart && primaryChart && facts
+      ? `fate.daily-reading.v1|${primaryChart.id}|${today}|${tz}|${lang}|${score.overall.score}`
+      : null;
+  const requestedKey = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!aiKey || !facts) return;
+    if (requestedKey.current === aiKey) return;
+    requestedKey.current = aiKey;
+    try {
+      const cached = window.localStorage.getItem(aiKey);
+      if (cached) {
+        setAi(JSON.parse(cached) as DailyReadingAI);
+        setAiState("idle");
+        return;
+      }
+    } catch {
+      /* ignore cache errors */
+    }
+    setAiState("loading");
+    let cancelled = false;
+    readingFn({
+      data: {
+        lang,
+        localDate: today,
+        timezone: tz,
+        chartLabel,
+        moonPhase: facts.moon.phase,
+        moonSign: facts.moon.sign,
+        retrogrades: facts.transit_planets.filter((p) => p.retro).map((p) => p.key),
+        aspects: facts.transit_to_natal_aspects
+          .slice(0, 20)
+          .map((a) => `${a.transit}→${a.natal} ${a.kind} orb=${a.orb.toFixed(1)}`),
+        overall: {
+          score: score.overall.score,
+          band: score.overall.band,
+          themeKeywords: score.overall.theme_keywords,
+        },
+        domains: score.domains.map((dd) => ({
+          domain: dd.domain,
+          label: domainLabel(dd.domain),
+          score: dd.score,
+          band: dd.band,
+          confidence: dd.confidence,
+          evidence: dd.evidence_refs.slice(0, 6),
+        })),
+        contradictions: score.contradictions,
+        missingFacts: score.missing_facts,
+        concern: concern ?? undefined,
+      },
+    })
+      .then((res) => {
+        if (cancelled) return;
+        setAi(res);
+        setAiState("idle");
+        try {
+          window.localStorage.setItem(aiKey, JSON.stringify(res));
+        } catch {
+          /* quota — non-fatal */
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setAiState("error");
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aiKey]);
+
+  const retryAi = () => {
+    requestedKey.current = null;
+    if (aiKey) {
+      try {
+        window.localStorage.removeItem(aiKey);
+      } catch {
+        /* ignore */
+      }
+    }
+    setAi(null);
+    setAiState("idle");
+  };
+
   return (
     <div className="pl-shell min-h-screen bg-[#0a0a12]/25 text-amber-50">
       <div className="mx-auto w-full max-w-[1100px] px-4 py-8 md:px-8 md:py-12">
-        {/* Demo banner */}
-        <div className="mb-6 rounded-lg border border-amber-400/30 bg-amber-500/5 px-4 py-2 text-xs text-amber-200/90">
-          {d.demo_banner_home}
-        </div>
+        {/* Demo banner — only while no real primary chart drives the page. */}
+        {!usingRealChart && (
+          <div className="mb-6 rounded-lg border border-amber-400/30 bg-amber-500/5 px-4 py-2 text-xs text-amber-200/90">
+            {d.demo_banner_home}
+          </div>
+        )}
+
 
         {/* Curator welcome bookmark & reading-path breadcrumb render below
             the header — see CuratorWelcomeBookmark. */}
@@ -462,42 +584,149 @@ function DailyRoomPage() {
         />
 
 
-        {/* Overall + theme */}
-
-        <section className="mb-8 grid gap-4 md:grid-cols-[1fr_2fr]">
-          <div className="rounded-xl border border-amber-400/30 bg-black/40 p-6">
-            <div className="text-xs uppercase tracking-widest text-amber-200/60">
-              {d.overall_signal}
-            </div>
-            <div className="mt-3 flex items-baseline gap-2">
-              <div className="text-5xl font-serif text-amber-100">{score.overall.score}</div>
-              <div className="text-xs text-amber-200/70">{d.overall_out_of}</div>
-            </div>
-            <div
-              className={`mt-3 inline-block rounded-full border px-2 py-0.5 text-xs ${BAND_COLOR[score.overall.band]}`}
-            >
-              {xlate(d.band, score.overall.band)}
-            </div>
-            <p className="mt-3 text-xs leading-relaxed text-amber-100/70">{d.overall_note}</p>
-          </div>
-
-          <div className="rounded-xl border border-amber-400/30 bg-black/40 p-6">
-            <div className="text-xs uppercase tracking-widest text-amber-200/60">
-              {d.today_theme}
-            </div>
-            <div className="mt-3 text-lg text-amber-100">
-              {score.partial ? d.theme_pending : d.theme_line(phaseName, themeKeywords)}
-            </div>
-            {score.contradictions.length > 0 && (
-              <div className="mt-4 rounded-md border border-amber-400/20 bg-amber-500/5 p-3 text-xs text-amber-100/80">
-                <div className="mb-1 font-semibold text-amber-200">{d.contradictions_title}</div>
-                {score.contradictions.map((c, i) => (
-                  <div key={i}>{formatContradiction(c, d, lang)}</div>
-                ))}
+        {/* Today's headline — one card, two columns. The score rail stays
+            compact on the left; the right column carries the theme AND the
+            AI reading so it is never a half-empty box. */}
+        <section
+          className="mb-8 overflow-hidden rounded-2xl border border-amber-400/30 bg-black/40"
+          data-testid="today-headline"
+        >
+          <div className="grid gap-0 md:grid-cols-[minmax(0,200px)_minmax(0,1fr)]">
+            {/* score rail */}
+            <div className="flex flex-row items-center gap-4 border-b border-amber-400/15 px-5 py-4 md:flex-col md:items-start md:justify-center md:border-b-0 md:border-r md:px-6 md:py-6">
+              <div className="min-w-0">
+                <div className="text-[10px] uppercase tracking-[0.22em] text-amber-200/60">
+                  {d.overall_signal}
+                </div>
+                <div className="mt-1 flex items-baseline gap-1.5">
+                  <div className="font-serif text-4xl leading-none text-amber-100 md:text-5xl">
+                    {score.overall.score}
+                  </div>
+                  <div className="text-[11px] text-amber-200/70">{d.overall_out_of}</div>
+                </div>
               </div>
-            )}
+              <div
+                className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs ${BAND_COLOR[score.overall.band]}`}
+              >
+                {xlate(d.band, score.overall.band)}
+              </div>
+            </div>
+
+            {/* theme + AI reading */}
+            <div className="min-w-0 px-5 py-5 md:px-6 md:py-6">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span className="text-[10px] uppercase tracking-[0.22em] text-amber-200/60">
+                  {d.today_theme}
+                </span>
+                <span
+                  className={`rounded-full border px-2 py-0.5 text-[10px] ${
+                    usingRealChart
+                      ? "border-amber-300/50 text-amber-200/90"
+                      : "border-dashed border-amber-400/40 text-amber-300/70"
+                  }`}
+                >
+                  {usingRealChart
+                    ? `${lang === "zh" ? "本人主命盘" : "Your primary chart"} · ${chartLabel}`
+                    : `${lang === "zh" ? "样例命盘" : "Sample chart"} · ${chartLabel}`}
+                </span>
+              </div>
+
+              <h2 className="mt-2 font-serif text-xl leading-snug text-amber-50 md:text-2xl">
+                {ai?.one_line_theme ||
+                  (score.partial ? d.theme_pending : d.theme_line(phaseName, themeKeywords))}
+              </h2>
+
+              <div className="mt-3 min-h-[3.5rem] text-sm leading-relaxed text-amber-100/85">
+                {aiState === "loading" && !ai ? (
+                  <div className="space-y-2" aria-live="polite">
+                    <div className="h-3 w-11/12 animate-pulse rounded bg-amber-200/10" />
+                    <div className="h-3 w-9/12 animate-pulse rounded bg-amber-200/10" />
+                    <div className="h-3 w-7/12 animate-pulse rounded bg-amber-200/10" />
+                  </div>
+                ) : ai?.narrative ? (
+                  <p>{ai.narrative}</p>
+                ) : (
+                  <p>{plain.overall.headline}</p>
+                )}
+              </div>
+
+              {ai && (ai.do_today.length > 0 || ai.observe_today.length > 0) && (
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  {ai.do_today.length > 0 && (
+                    <div className="rounded-lg border border-emerald-400/20 bg-emerald-500/[0.06] p-3">
+                      <div className="text-[10px] uppercase tracking-[0.2em] text-emerald-200/80">
+                        {lang === "zh" ? "今天可以做" : "Do today"}
+                      </div>
+                      <ul className="mt-1.5 space-y-1 text-xs leading-relaxed text-emerald-50/90">
+                        {ai.do_today.map((s, i) => (
+                          <li key={i}>· {s}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {ai.observe_today.length > 0 && (
+                    <div className="rounded-lg border border-amber-400/20 bg-amber-500/[0.06] p-3">
+                      <div className="text-[10px] uppercase tracking-[0.2em] text-amber-200/80">
+                        {lang === "zh" ? "今天留意" : "Observe today"}
+                      </div>
+                      <ul className="mt-1.5 space-y-1 text-xs leading-relaxed text-amber-50/90">
+                        {ai.observe_today.map((s, i) => (
+                          <li key={i}>· {s}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {aiState === "error" && (
+                <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-rose-200/80">
+                  <span>
+                    {lang === "zh"
+                      ? "今日解读暂时生成失败，已显示确定性文本。"
+                      : "The AI reading failed; the deterministic text is shown instead."}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={retryAi}
+                    className="min-h-8 rounded-full border border-amber-300/50 px-3 py-1 text-amber-100 hover:bg-amber-500/10"
+                  >
+                    {lang === "zh" ? "重试" : "Retry"}
+                  </button>
+                </div>
+              )}
+
+              {!usingRealChart && real.kind === "ready" && !primaryChart && (
+                <p className="mt-3 text-xs text-amber-200/70">
+                  {lang === "zh"
+                    ? "还没有主命盘，暂以样例演示。完成开启仪式后，这里会换成你自己的今日解读。"
+                    : "No primary chart yet — a sample is shown. Complete the ritual to see your own reading."}
+                </p>
+              )}
+              {usingRealChart && realDaily?.geoUnresolved && (
+                <p className="mt-3 text-xs text-amber-200/60">
+                  {lang === "zh"
+                    ? "出生地未能解析为坐标，已按当地正午近似计算，置信度较低。"
+                    : "Birth place could not be resolved; a local-noon approximation is used (lower confidence)."}
+                </p>
+              )}
+
+              {score.contradictions.length > 0 && (
+                <div className="mt-4 rounded-md border border-amber-400/20 bg-amber-500/5 p-3 text-xs text-amber-100/80">
+                  <div className="mb-1 font-semibold text-amber-200">{d.contradictions_title}</div>
+                  {score.contradictions.map((c, i) => (
+                    <div key={i}>{formatContradiction(c, d, lang)}</div>
+                  ))}
+                </div>
+              )}
+
+              <p className="mt-4 text-[11px] leading-relaxed text-amber-100/55">
+                {d.overall_note}
+              </p>
+            </div>
           </div>
         </section>
+
 
         {/* Destiny Compass · 6-dimensional radar */}
         <section className="mb-8 rounded-xl border border-amber-400/25 bg-gradient-to-br from-black/60 via-black/40 to-purple-950/20 p-4 md:p-6">
@@ -583,9 +812,18 @@ function DailyRoomPage() {
                 >
                   {xlate(d.band, dd.band)} · {xlate(d.confidence, dd.confidence)}
                 </div>
+                {(() => {
+                  const aiLine = ai?.domain_lines.find((x) => x.domain === dd.domain)?.line;
+                  return aiLine ? (
+                    <p className="mt-2 line-clamp-3 text-[11px] leading-relaxed text-amber-100/75">
+                      {aiLine}
+                    </p>
+                  ) : null;
+                })()}
                 <div className="mt-2 text-[10px] text-amber-300/70 group-hover:text-amber-200">
                   {lang === "zh" ? "查看详细解读 →" : "Open full reading →"}
                 </div>
+
               </button>
             );
           })}
@@ -674,11 +912,16 @@ function DailyRoomPage() {
           <div className="text-xs uppercase tracking-widest text-amber-200/70">
             {d.countercondition_title}
           </div>
-          <p className="mt-2 text-amber-100/80">{d.countercondition_body}</p>
+          <p className="mt-2 text-amber-100/80">
+            {ai?.countercondition || d.countercondition_body}
+          </p>
           <div className="mt-4 text-xs uppercase tracking-widest text-amber-200/70">
             {d.reflection_title}
           </div>
-          <p className="mt-2 text-amber-100/80">{d.reflection_body}</p>
+          <p className="mt-2 text-amber-100/80">
+            {ai?.reflection_question || d.reflection_body}
+          </p>
+
         </section>
 
         {/* Cross-module CTA — Historical Echoes lives on its own page. */}
