@@ -33,6 +33,7 @@ import {
   type AgeBand,
   AGE_BANDS,
 } from "@/lib/community-match.functions";
+import { useLang } from "@/lib/i18n";
 import { useCommunityMatchCopy } from "@/lib/i18n-community-match";
 import { ResonanceAtlas } from "./atlas/ResonanceAtlas";
 import { ResonanceRadar, type RadarFacet } from "./atlas/ResonanceRadar";
