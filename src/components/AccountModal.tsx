@@ -17,7 +17,7 @@ export function AccountModal({ open, onClose }: { open: boolean; onClose: () => 
   const { session, loading, isAdmin } = useSupabaseSession();
   const titleId = useId();
   const descId = useId();
-  const dialogRef = useRef<HTMLDivElement | null>(null);
+  const dialogRef = useModalA11y<HTMLDivElement>({ open, onClose });
   const [dbCharts, setDbCharts] = useState<ChartRow[] | null>(null);
 
   useEffect(() => {
