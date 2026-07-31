@@ -33,6 +33,7 @@ import { Route as DevGuidedLibraryV2RouteImport } from './routes/dev.guided-libr
 import { Route as DevDemoPremiumRouteImport } from './routes/dev.demo-premium'
 import { Route as CommunityWriteRouteImport } from './routes/community.write'
 import { Route as CommunityWallRouteImport } from './routes/community.wall'
+import { Route as CommunitySagesRouteImport } from './routes/community.sages'
 import { Route as CommunityOutboxRouteImport } from './routes/community.outbox'
 import { Route as CommunityInboxRouteImport } from './routes/community.inbox'
 import { Route as CommunityEchoesRouteImport } from './routes/community.echoes'
@@ -174,6 +175,11 @@ const CommunityWriteRoute = CommunityWriteRouteImport.update({
 const CommunityWallRoute = CommunityWallRouteImport.update({
   id: '/community/wall',
   path: '/community/wall',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CommunitySagesRoute = CommunitySagesRouteImport.update({
+  id: '/community/sages',
+  path: '/community/sages',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CommunityOutboxRoute = CommunityOutboxRouteImport.update({
@@ -323,6 +329,7 @@ export interface FileRoutesByFullPath {
   '/community/echoes': typeof CommunityEchoesRoute
   '/community/inbox': typeof CommunityInboxRoute
   '/community/outbox': typeof CommunityOutboxRoute
+  '/community/sages': typeof CommunitySagesRoute
   '/community/wall': typeof CommunityWallRoute
   '/community/write': typeof CommunityWriteRoute
   '/dev/demo-premium': typeof DevDemoPremiumRoute
@@ -369,6 +376,7 @@ export interface FileRoutesByTo {
   '/community/echoes': typeof CommunityEchoesRoute
   '/community/inbox': typeof CommunityInboxRoute
   '/community/outbox': typeof CommunityOutboxRoute
+  '/community/sages': typeof CommunitySagesRoute
   '/community/wall': typeof CommunityWallRoute
   '/community/write': typeof CommunityWriteRoute
   '/dev/demo-premium': typeof DevDemoPremiumRoute
@@ -419,6 +427,7 @@ export interface FileRoutesById {
   '/community/echoes': typeof CommunityEchoesRoute
   '/community/inbox': typeof CommunityInboxRoute
   '/community/outbox': typeof CommunityOutboxRoute
+  '/community/sages': typeof CommunitySagesRoute
   '/community/wall': typeof CommunityWallRoute
   '/community/write': typeof CommunityWriteRoute
   '/dev/demo-premium': typeof DevDemoPremiumRoute
@@ -469,6 +478,7 @@ export interface FileRouteTypes {
     | '/community/echoes'
     | '/community/inbox'
     | '/community/outbox'
+    | '/community/sages'
     | '/community/wall'
     | '/community/write'
     | '/dev/demo-premium'
@@ -515,6 +525,7 @@ export interface FileRouteTypes {
     | '/community/echoes'
     | '/community/inbox'
     | '/community/outbox'
+    | '/community/sages'
     | '/community/wall'
     | '/community/write'
     | '/dev/demo-premium'
@@ -564,6 +575,7 @@ export interface FileRouteTypes {
     | '/community/echoes'
     | '/community/inbox'
     | '/community/outbox'
+    | '/community/sages'
     | '/community/wall'
     | '/community/write'
     | '/dev/demo-premium'
@@ -611,6 +623,7 @@ export interface RootRouteChildren {
   CommunityEchoesRoute: typeof CommunityEchoesRoute
   CommunityInboxRoute: typeof CommunityInboxRoute
   CommunityOutboxRoute: typeof CommunityOutboxRoute
+  CommunitySagesRoute: typeof CommunitySagesRoute
   CommunityWallRoute: typeof CommunityWallRoute
   CommunityWriteRoute: typeof CommunityWriteRoute
   DevDemoPremiumRoute: typeof DevDemoPremiumRoute
@@ -791,6 +804,13 @@ declare module '@tanstack/react-router' {
       path: '/community/wall'
       fullPath: '/community/wall'
       preLoaderRoute: typeof CommunityWallRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/community/sages': {
+      id: '/community/sages'
+      path: '/community/sages'
+      fullPath: '/community/sages'
+      preLoaderRoute: typeof CommunitySagesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/community/outbox': {
@@ -1040,6 +1060,7 @@ const rootRouteChildren: RootRouteChildren = {
   CommunityEchoesRoute: CommunityEchoesRoute,
   CommunityInboxRoute: CommunityInboxRoute,
   CommunityOutboxRoute: CommunityOutboxRoute,
+  CommunitySagesRoute: CommunitySagesRoute,
   CommunityWallRoute: CommunityWallRoute,
   CommunityWriteRoute: CommunityWriteRoute,
   DevDemoPremiumRoute: DevDemoPremiumRoute,
