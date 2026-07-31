@@ -146,7 +146,7 @@ export async function rateReply(
   const { data, error } = await ctx.supabase.rpc("rate_letter_reply", {
     _reply_id: input.replyId,
     _stars: input.stars,
-    _note: input.note ?? null,
+    _note: input.note ?? undefined,
   });
   if (error) friendly(error);
   const raw = (data ?? {}) as Record<string, unknown>;
