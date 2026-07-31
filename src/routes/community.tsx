@@ -88,7 +88,7 @@ function CommunityHallPage() {
   ];
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 pb-16 pt-12 sm:px-6 sm:pb-24">
+    <main className="mx-auto w-full max-w-5xl px-4 pb-16 pt-28 sm:px-6 sm:pb-24 sm:pt-32">
       <HallHeader lines={[c.hallHeroLineOne, c.hallHeroLineTwo]} subtitle={c.hallHeroBody} />
       <p className="mx-auto mt-4 max-w-xl text-center text-xs leading-relaxed text-primary/75">
         {c.hallHeroNote}

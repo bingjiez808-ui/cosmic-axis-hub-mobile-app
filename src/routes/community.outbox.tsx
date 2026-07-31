@@ -56,7 +56,7 @@ function OutboxPage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 pb-16 pt-12 sm:px-6 sm:pb-24">
+    <main className="mx-auto w-full max-w-3xl px-4 pb-16 pt-28 sm:px-6 sm:pb-24 sm:pt-32">
       <HallHeader title={c.cardOutboxTitle} subtitle={c.cardOutboxBody} />
       <HallNav />
       <HallGate>
