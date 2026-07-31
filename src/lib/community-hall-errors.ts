@@ -30,6 +30,9 @@ export type HallErrorCode =
   | "content_contact"
   | "content_solicitation"
   | "content_rejected"
+  | "content_political"
+  | "content_sexual"
+  | "content_illegal"
   | "content_in_review"
   | "not_allowed"
   | "sage_required"
@@ -120,6 +123,18 @@ const MESSAGES: Record<HallErrorCode, Pair> = {
   content_in_review: {
     zh: "这封信需要馆员先过目，通过后会自动开始投递。",
     en: "A librarian will read this one first; delivery begins once it is approved.",
+  },
+  content_political: {
+    zh: "这封信涉及违反法律法规的政治内容或煽动性言论，无法寄出。请只写你自己的人生困惑。",
+    en: "This letter touches political content or incitement that breaks the law and cannot be sent. Please write only about your own life.",
+  },
+  content_sexual: {
+    zh: "这封信涉及色情、性交易或性骚扰内容，无法寄出。众生之厅是安全的地方。",
+    en: "This letter contains sexual, solicitation or harassment content and cannot be sent. The hall is meant to stay safe.",
+  },
+  content_illegal: {
+    zh: "这封信涉及违法交易、伪造证件、赌博或毒品等内容，无法寄出。",
+    en: "This letter involves illegal trade, forgery, gambling or drugs and cannot be sent.",
   },
   not_allowed: {
     zh: "你没有权限做这件事。",

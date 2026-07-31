@@ -17,6 +17,11 @@ import { clearLetterDraft, loadLetterDraft, saveLetterDraft } from "@/lib/letter
 import { useAskSage, useSageEntitlement, useSendToLibrarian } from "@/lib/sage-council-client";
 import { SAGE_DOMAIN_LABEL, SAGE_PERSONAS } from "@/lib/sage-personas";
 import { sageSkill, sagesForTopic } from "@/lib/sage-skills";
+import {
+  LetterRulesNotice,
+  PrecheckWarning,
+} from "@/experiences/community-hall/LetterRulesNotice";
+import { safetyMessage, screenCommunityText } from "@/lib/community-hall-safety";
 import "@/experiences/community-hall/hall.css";
 
 const BODY_MIN = 30;
@@ -136,6 +141,14 @@ function WriteFlow() {
   function goStepTwo() {
     if (length < BODY_MIN) return setError(c.bodyTooShort(BODY_MIN));
     if (length > BODY_MAX) return setError(c.tooLong);
+    const verdict = screenCommunityText(`${subject}\n${body}`);
+    if (verdict.action === "block") {
+      return setError(
+        c.lang === "en"
+          ? "This letter contains content the hall cannot carry — political violations, illegal acts, sexual content, abuse or contact details. Please revise it."
+          : safetyMessage(verdict.categories),
+      );
+    }
     setError(null);
     setStep(2);
   }
@@ -376,6 +389,9 @@ function WriteFlow() {
               {c.bodyCounter(length, BODY_MAX)}
             </span>
           </label>
+
+          <PrecheckWarning text={`${subject}\n${body}`} />
+          <LetterRulesNotice />
 
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
           <Button className="hall-tap w-full sm:w-auto" onClick={goStepTwo}>
