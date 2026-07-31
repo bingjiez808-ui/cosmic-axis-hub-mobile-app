@@ -158,8 +158,12 @@ function WriteFlow() {
   const humanCredits = entitlement.data?.credits?.remaining ?? 0;
   const busy = send.isPending || askSage.isPending || sendLibrarian.isPending;
 
+  // Only these doors route the letter to living readers, so only they need a
+  // chapter of life. A sage answers whoever wrote, regardless of age.
+  const needsBand = dest !== "sage";
+
   function goStepThree() {
-    if (!band) return setError(c.required);
+    if (needsBand && !band) return setError(c.required);
     if ((dest === "sage" || dest === "librarian") && !entitledForSage) {
       return setError(
         zh
@@ -179,7 +183,8 @@ function WriteFlow() {
   }
 
   async function submit() {
-    if (!band || !agree) return setError(c.required);
+    if (!agree || (needsBand && !band)) return setError(c.required);
+    const sendBand: AgeBand = band ?? "30-39";
     try {
       setErrorCode(null);
       if (dest === "sage") {
@@ -188,7 +193,7 @@ function WriteFlow() {
           subject: subject.trim() || null,
           body: body.trim(),
           topic,
-          targetAgeBand: band,
+          targetAgeBand: sendBand,
           lang: zh ? "zh" : "en",
         });
         finishSend({ pendingReview: result.pendingReview, delivered: 0, dest, reply: result.reply });
@@ -199,7 +204,7 @@ function WriteFlow() {
           subject: subject.trim() || null,
           body: body.trim(),
           topic,
-          targetAgeBand: band,
+          targetAgeBand: sendBand,
         });
         finishSend({ pendingReview: result.pendingReview, delivered: 0, dest });
         return;
@@ -208,7 +213,7 @@ function WriteFlow() {
         subject: subject.trim() || null,
         body: body.trim(),
         topic,
-        targetAgeBand: band,
+        targetAgeBand: sendBand,
         visibility: dest === "wall" ? "wall" : "delivered_only",
       });
       finishSend({ pendingReview: result.pendingReview, delivered: result.delivered, dest });
@@ -402,28 +407,7 @@ function WriteFlow() {
 
       {step === 2 ? (
         <div className="hall-rise mt-6 space-y-5">
-          <p className="text-sm font-medium text-foreground">{c.chooseBand}</p>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {c.bands.map((b) => (
-              <button
-                key={b.key}
-                type="button"
-                onClick={() => setBand(b.key)}
-                aria-pressed={band === b.key}
-                className={`hall-tap rounded-2xl border p-4 text-left transition ${
-                  band === b.key
-                    ? "border-primary/50 bg-primary/10"
-                    : "border-primary/15 bg-background/60 hover:border-primary/30"
-                }`}
-              >
-                <span className="block text-sm font-semibold text-foreground">{b.label}</span>
-                <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
-                  {b.invite}
-                </span>
-              </button>
-            ))}
-          </div>
-          <div className="pt-2">
+          <div>
             <p className="text-sm font-medium text-foreground">
               {zh ? "这封信寄给谁？" : "Who should receive this letter?"}
             </p>
@@ -439,8 +423,8 @@ function WriteFlow() {
                     key: "courier" as const,
                     title: zh ? "交给信使定向投递" : "Hand it to the courier",
                     body: zh
-                      ? "私密。信使会把它分批送给你选定人生阶段中的少数陌生旅者，只有收到的人能回信。免费。"
-                      : "Private. The courier delivers it to a few strangers in the chapter of life you chose; only they can answer. Free.",
+                      ? "私密。信使会把它分批送给你选定人生阶段中的少数陌生旅者，只有收到的人能回信。免费，但可能较慢，也不保证有回音。"
+                      : "Private. The courier delivers it to a few strangers in the chapter of life you chose; only they can answer. Free — but slower, and a reply is never guaranteed.",
                     locked: false,
                   },
                   {
@@ -603,6 +587,62 @@ function WriteFlow() {
               </div>
             ) : null}
           </div>
+
+          {needsBand ? (
+            <div className="hall-rise pt-2">
+              <p className="text-sm font-medium text-foreground">
+                {zh ? "希望哪一段人生的人来回答？" : "Which chapter of life should answer?"}
+              </p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                {dest === "courier"
+                  ? zh
+                    ? "信使只会把这封信送给这一阶段的旅者。"
+                    : "The courier only delivers to travelers in this chapter."
+                  : dest === "wall"
+                    ? zh
+                      ? "信墙上所有人都能读到，这个阶段只作为推荐回答的标签。"
+                      : "Everyone can read it on the wall; this only marks who is best placed to answer."
+                    : zh
+                      ? "图书管理员若把这封信托付给旅者，会优先找这一阶段的人。"
+                      : "If the librarian entrusts it, they will look for a traveler in this chapter first."}
+              </p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                {c.bands.map((b) => (
+                  <button
+                    key={b.key}
+                    type="button"
+                    onClick={() => setBand(b.key)}
+                    aria-pressed={band === b.key}
+                    className={`hall-tap rounded-2xl border p-4 text-left transition ${
+                      band === b.key
+                        ? "border-primary/50 bg-primary/10"
+                        : "border-primary/15 bg-background/60 hover:border-primary/30"
+                    }`}
+                  >
+                    <span className="block text-sm font-semibold text-foreground">{b.label}</span>
+                    <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
+                      {b.invite}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p className="hall-inset mt-2 px-4 py-3 text-xs leading-relaxed text-muted-foreground">
+              {zh
+                ? "先贤回信不需要选择人生阶段——他会就着你信里的处境作答。"
+                : "A sage does not need a chapter of life; they answer the situation in your letter."}
+            </p>
+          )}
+
+          {dest === "courier" ? (
+            <p className="hall-inset px-4 py-3 text-xs leading-relaxed text-primary/85">
+              {zh
+                ? "关于信使定向投递：信要等对方打开信箱、愿意提笔才会有回音，可能会比较慢，也不保证每封信都能等到回复。想更快被更多人看到，可以改为张贴到公共信墙。"
+                : "About courier delivery: an echo only comes when a stranger opens their box and chooses to write back. It can take a while, and not every letter gets an answer. For faster, wider reach, pin it on the public wall instead."}
+            </p>
+          ) : null}
+
           <p className="text-xs text-muted-foreground">{c.autoExpire}</p>
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
           <div className="flex gap-3">
@@ -620,7 +660,7 @@ function WriteFlow() {
         <div className="hall-rise mt-6 space-y-5">
           <div className="hall-paper hall-envelope p-5" data-unread="true">
             <p className="text-xs text-muted-foreground">
-              {c.previewTo} {c.ageBand(band)} · {c.topic(topic)} ·{" "}
+              {c.previewTo} {band ? `${c.ageBand(band)} · ` : ""}{c.topic(topic)} ·{" "}
               <span className="text-primary/80">
                 {dest === "wall"
                   ? zh
