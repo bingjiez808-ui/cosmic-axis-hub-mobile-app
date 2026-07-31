@@ -28,13 +28,13 @@ export function HallMechanismSection() {
         },
         {
           title: "先贤回信",
-          tag: "贤者会员",
-          body: "十二位已故思想者之一，以其一生经历与看家本领作答。可随时写，不消耗真人次数。",
+          tag: "贤者会员 · 赠 2 次",
+          body: "十二位已故思想者之一，以其一生经历与看家本领作答。开通即赠 2 次，用完可加购：3 元 1 次，10 元 4 次。",
         },
         {
-          title: "图书管理员亲自回信",
-          tag: "贤者会员 · 赠 3 次",
-          body: "由管理员本人执笔，或由他托付给一位愿意接信的旅者。每寄出一封消耗一次赠送机会。",
+          title: "管理员授权（真人回信）",
+          tag: "贤者会员 · 赠 1 次",
+          body: "由管理员本人执笔，或由他托付给一位愿意接信的旅者——两种都消耗这一次。开通即赠 1 次，用完可加购：3 元 1 次，10 元 4 次。",
         },
       ]
     : [
@@ -50,25 +50,25 @@ export function HallMechanismSection() {
         },
         {
           title: "A sage's reply",
-          tag: "Sage membership",
-          body: "One of twelve long-dead thinkers answers in their own voice, through their distilled skill. Write as often as you like — it never spends a human reply.",
+          tag: "Sage · 2 gifted",
+          body: "One of twelve long-dead thinkers answers in their own voice, through their distilled skill. Two gifted on joining; extras cost ¥3 each or ¥10 for four.",
         },
         {
-          title: "The librarian in person",
-          tag: "Sage · 3 gifted",
-          body: "Written by the librarian, or by a traveler they entrust. Each letter spends one of the three gifted human replies.",
+          title: "Librarian-authorised human reply",
+          tag: "Sage · 1 gifted",
+          body: "Written by the librarian, or by a traveler they entrust — either way it spends this one chance. One gifted on joining; extras ¥3 each or ¥10 for four.",
         },
       ];
 
   const chain: Rule[] = zh
     ? [
         {
-          title: "1 · 开通即赠三次",
-          body: "开通「贤者」后，前往「真人回复」页面领取 3 次机会。这是一次性赠送，不会每月重置；用完为止。",
+          title: "1 · 开通即赠 2+1 次",
+          body: "开通「贤者」后，前往「回信权益」页面领取：2 次「先贤回信」与 1 次「管理员授权」。一次性赠送，不会每月重置。",
         },
         {
-          title: "2 · 一次可有两种去处",
-          body: "同一次机会，既可以让管理员本人回信，也可以由管理员托付给一位「愿意接信」的旅者定向回复——两者都消耗一次。",
+          title: "2 · 管理员授权的两种去处",
+          body: "同一次「管理员授权」，既可以让管理员本人回信，也可以由他托付给一位「愿意接信」的旅者定向回复——两者都消耗这一次。",
         },
         {
           title: "3 · 收到回音后可评分",
@@ -85,12 +85,12 @@ export function HallMechanismSection() {
       ]
     : [
         {
-          title: "1 · Three gifted on joining",
-          body: "Once you hold the Sage membership, claim your three human replies on the grants page. It is a one-time gift — no monthly reset.",
+          title: "1 · 2 + 1 gifted on joining",
+          body: "With the Sage membership, claim two sage replies and one librarian-authorised human reply on the grants page. A one-time gift — no monthly reset.",
         },
         {
-          title: "2 · One credit, two possible hands",
-          body: "The same credit buys either the librarian's own reply or a directed reply from a traveler they entrust. Both spend one.",
+          title: "2 · One authorisation, two possible hands",
+          body: "The librarian-authorised chance buys either the librarian's own reply or a directed reply from a traveler they entrust. Both spend it.",
         },
         {
           title: "3 · Rate the echo you receive",

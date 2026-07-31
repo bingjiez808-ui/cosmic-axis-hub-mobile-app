@@ -33,8 +33,8 @@ export const MEMBERSHIP_PLANS: Record<MembershipTierId, MembershipPlan> = {
     name: { zh: "贤者", en: "Sage" },
     priceLabel: { zh: "¥19.9 / 月", en: "¥19.9 / mo" },
     benefits: {
-      zh: "完整生命时间轴 · 合盘关系分析 · 每月 10 次塔罗 AI 解读。",
-      en: "Full life timeline · synastry · 10 tarot AI readings per month.",
+      zh: "完整生命时间轴 · 合盘关系分析 · 每月 10 次塔罗 AI 解读 · 开通即赠 2 次先贤回信与 1 次管理员授权（真人回信）。",
+      en: "Full life timeline · synastry · 10 tarot AI readings per month · 2 gifted sage replies and 1 librarian-authorised human reply on joining.",
     },
   },
   oracle: {

@@ -35,6 +35,7 @@ const SAGE_MODEL = "google/gemini-2.5-flash";
 function friendly(error: { message?: string } | null): never {
   const raw = error?.message ?? "";
   if (raw.includes("no_human_reply_credits")) throw hallError("no_reply_credits");
+  if (raw.includes("no_sage_reply_credits")) throw hallError("no_sage_credits");
   if (raw.includes("assignee_not_accepting")) throw hallError("not_allowed");
   if (raw.includes("not_allowed")) throw hallError("not_allowed");
   if (raw.includes("letter_not_found")) throw hallError("letter_not_found");
@@ -58,6 +59,9 @@ export type SageCredits = {
   granted: number;
   used: number;
   remaining: number;
+  sageGranted: number;
+  sageUsed: number;
+  sageRemaining: number;
   claimable: boolean;
   claimedAt: string | null;
   periodStart: string | null;
@@ -92,6 +96,9 @@ function shapeCredits(data: unknown): SageCredits {
     granted: Number(raw.granted ?? 0),
     used: Number(raw.used ?? 0),
     remaining: Number(raw.remaining ?? 0),
+    sageGranted: Number(raw.sageGranted ?? 0),
+    sageUsed: Number(raw.sageUsed ?? 0),
+    sageRemaining: Number(raw.sageRemaining ?? 0),
     claimable: Boolean(raw.claimable),
     claimedAt: (raw.claimedAt as string | null) ?? null,
     periodStart: (raw.periodStart as string | null) ?? null,
@@ -104,7 +111,7 @@ async function readCredits(ctx: Ctx): Promise<SageCredits> {
   return shapeCredits(data);
 }
 
-/** Claim the one-time gift of three human-reply chances (贤者/神谕者 only). */
+/** Claim the one-time gift: 2 sage replies + 1 librarian-authorised human reply. */
 export async function claimSageCredits(ctx: Ctx): Promise<SageCredits> {
   limit(`sage-council:claim:${ctx.userId}`, 10, 60 * 60_000);
   const { data, error } = await ctx.supabase.rpc("claim_sage_reply_credits");
@@ -182,7 +189,9 @@ export async function readHelperStanding(ctx: Ctx): Promise<HelperStanding> {
 
 export type SageCreditEvent = {
   eventId: string;
-  kind: "grant" | "spend";
+  kind: "grant" | "spend" | "purchase";
+  bucket: "sage" | "human";
+  amountCents: number;
   delta: number;
   createdAt: string;
   periodStart: string;
@@ -301,6 +310,8 @@ export async function askSage(
 
   const { entitled } = await readTier(ctx);
   if (!entitled) throw hallError("sage_required");
+  const beforeCredits = await readCredits(ctx);
+  if (beforeCredits.sageRemaining <= 0) throw hallError("no_sage_credits");
 
   limit(`sage-council:ask:${ctx.userId}`, 12, 24 * 60 * 60_000);
 
@@ -322,6 +333,12 @@ export async function askSage(
     _persona_id: persona.id,
   });
   if (error || !letterId) friendly(error);
+
+  // Spend one 先贤回信 chance. The RPC re-checks authorship and the balance.
+  const { error: spendError } = await ctx.supabase.rpc("spend_sage_reply_credit", {
+    _letter_id: letterId as string,
+  });
+  if (spendError) friendly(spendError);
 
   let reply: string | null = null;
   if (!held) {
@@ -370,9 +387,9 @@ export async function sendLibrarianLetter(
     responseStyle?: string | null;
   },
 ) {
-  // A personal reply from the librarian is a human writing back, so it is
-  // gated exactly like the sage route: 「贤者」membership, and it spends one of
-  // the three monthly human-reply grants (checked again inside the RPC).
+  // A personal reply from the librarian (or a traveler the librarian entrusts)
+  // is a human writing back: 「贤者」membership plus one 管理员授权 chance —
+  // one gifted on joining, extras purchasable (checked again inside the RPC).
   const { entitled } = await readTier(ctx);
   if (!entitled) throw hallError("sage_required");
   const before = await readCredits(ctx);
@@ -474,13 +491,27 @@ export async function respondToAssignment(ctx: Ctx, assignmentId: string, accept
   return { status: (data as string) ?? (accept ? "accepted" : "declined") };
 }
 
-/** Spend one of the three monthly human-reply grants: move the letter to the librarian. */
+/** Spend one 管理员授权 chance: move the letter to the librarian's desk. */
 export async function requestHumanReply(ctx: Ctx, letterId: string) {
   limit(`sage-council:human:${ctx.userId}`, 6, 24 * 60 * 60_000);
   const { data, error } = await ctx.supabase.rpc("request_human_reply", { _letter_id: letterId });
   if (error) friendly(error);
   return shapeCredits(data);
+}
 
+/** Buy extra chances: ¥3 for one, ¥10 for four. Simulated payment, idempotent. */
+export async function purchaseReplyCredits(
+  ctx: Ctx,
+  input: { bucket: "sage" | "human"; pack: "single" | "quad"; idempotencyKey: string },
+): Promise<SageCredits> {
+  limit(`sage-council:purchase:${ctx.userId}`, 20, 60 * 60_000);
+  const { data, error } = await ctx.supabase.rpc("purchase_reply_credits", {
+    _bucket: input.bucket,
+    _pack: input.pack,
+    _idempotency_key: input.idempotencyKey,
+  });
+  if (error) friendly(error);
+  return shapeCredits(data);
 }
 
 // ------------------------------------------------------------------

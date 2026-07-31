@@ -20,6 +20,7 @@ import {
   readHelperStanding,
   readMyReplyRatings,
   rateReply,
+  purchaseReplyCredits,
   readSageEntitlement,
   requestHumanReply,
   respondToAssignment,
@@ -51,10 +52,22 @@ export const getSageEntitlement = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => readSageEntitlement(context));
 
-/** Claim this month's three human-reply grants. */
+/** Claim the one-time gift: 2 sage replies + 1 librarian-authorised reply. */
 export const claimHumanReplyGrants = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => claimSageCredits(context));
+
+const purchaseSchema = z.object({
+  bucket: z.enum(["sage", "human"]),
+  pack: z.enum(["single", "quad"]),
+  idempotencyKey: z.string().trim().min(8).max(80),
+});
+
+/** Buy extra reply chances: ¥3 for one, ¥10 for four. */
+export const purchaseExtraReplyCredits = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => purchaseSchema.parse(input))
+  .handler(async ({ context, data }) => purchaseReplyCredits(context, data));
 
 const rateSchema = z.object({
   replyId: z.string().uuid(),

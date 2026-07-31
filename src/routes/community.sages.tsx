@@ -212,7 +212,7 @@ function SageDesk() {
           <div className="hall-paper p-5">
             <p className="text-sm leading-relaxed text-muted-foreground">
               {zh
-                ? "让先贤回信需要「贤者」会员。开通后可随时向十二位先贤写信，并一次性获赠 3 次「图书管理员亲自回信」的真人回复机会。往来始终匿名，只以旅者身份署名。"
+                ? "让先贤回信需要「贤者」会员。开通即赠 2 次「先贤回信」与 1 次「管理员授权」（管理员亲自回信或委托旅者定向回信）。用完可单独加购：3 元 1 次，10 元 4 次。往来始终匿名，只以旅者身份署名。"
                 : "Letters answered by a sage require the Sage membership. It also gifts three personal replies from the librarian, once. Every exchange stays anonymous, signed only with your traveler alias."}
             </p>
             <Button asChild className="hall-tap mt-4">
@@ -243,7 +243,7 @@ function SageDesk() {
             <p className="text-xs text-muted-foreground">
               {length}/{BODY_MAX}
               {credits
-                ? ` · ${zh ? "真人回复剩余" : "human replies left"} ${credits.remaining}/${credits.granted}`
+                ? ` · ${zh ? "先贤回信剩余" : "sage replies left"} ${credits.sageRemaining}/${credits.sageGranted} · ${zh ? "管理员授权剩余" : "librarian replies left"} ${credits.remaining}/${credits.granted}`
                 : ""}
             </p>
             {error ? <p className="text-sm text-destructive">{error}</p> : null}
@@ -303,7 +303,7 @@ function SageDesk() {
                     disabled={human.isPending}
                     onClick={() => void human.mutateAsync({ letterId: letter.letterId }).catch(() => {})}
                   >
-                    {zh ? "请一位真人再回一次（用 1 次赠额）" : "Ask a real person too (uses 1 grant)"}
+                    {zh ? "请一位真人再回一次（用 1 次管理员授权）" : "Ask a real person too (uses 1 librarian-authorised reply)"}
                   </Button>
                 ) : null}
               </article>

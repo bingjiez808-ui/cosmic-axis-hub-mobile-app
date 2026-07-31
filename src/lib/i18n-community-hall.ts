@@ -184,7 +184,7 @@ export function useCommunityHall() {
         {
           title: p("选择人生阶段与收信的门", "Choose a chapter, and a door"),
           body: p(
-            "信使定向投递、公共信墙免费；先贤回信与图书管理员亲自回信属「贤者」会员，后者开通即一次性赠三次。",
+            "信使定向投递、公共信墙免费；先贤回信与管理员授权属「贤者」会员：开通即赠 2 次先贤回信 + 1 次管理员授权，用完可加购（3 元 1 次 / 10 元 4 次）。",
             "Courier delivery and the public wall are free; sage letters and the librarian's personal reply are Sage benefits, the latter with three gifted replies in total.",
           ),
         },

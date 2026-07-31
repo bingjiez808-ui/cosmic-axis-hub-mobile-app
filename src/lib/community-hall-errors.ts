@@ -37,6 +37,7 @@ export type HallErrorCode =
   | "not_allowed"
   | "sage_required"
   | "no_reply_credits"
+  | "no_sage_credits"
   | "invalid_rating"
   | "offline"
   | "unknown";
@@ -145,8 +146,12 @@ const MESSAGES: Record<HallErrorCode, Pair> = {
     en: "Sage letters and the librarian's personal reply are both part of the Sage membership.",
   },
   no_reply_credits: {
-    zh: "赠送的三次真人回复已经用完了。这三次为开通「贤者」时一次性赠送，不会每月重置。",
-    en: "Your three gifted human replies are used up. They are a one-time gift with the Sage membership, not a monthly grant.",
+    zh: "「管理员授权」次数已用完。开通「贤者」赠送 1 次，之后可单独加购：3 元 1 次，10 元 4 次。",
+    en: "You have used your librarian-authorised reply. Sage membership gifts one; extra ones cost ¥3 each or ¥10 for four.",
+  },
+  no_sage_credits: {
+    zh: "「先贤回信」次数已用完。开通「贤者」赠送 2 次，之后可单独加购：3 元 1 次，10 元 4 次。",
+    en: "You have used your sage replies. Sage membership gifts two; extra ones cost ¥3 each or ¥10 for four.",
   },
   invalid_rating: {
     zh: "评分需要在 1 到 5 星之间。",

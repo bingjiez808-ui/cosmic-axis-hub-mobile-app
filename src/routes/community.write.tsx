@@ -156,6 +156,7 @@ function WriteFlow() {
   const zh = c.lang !== "en";
   const entitledForSage = Boolean(entitlement.data?.entitled);
   const humanCredits = entitlement.data?.credits?.remaining ?? 0;
+  const sageCredits = entitlement.data?.credits?.sageRemaining ?? 0;
   const busy = send.isPending || askSage.isPending || sendLibrarian.isPending;
 
   // Only these doors route the letter to living readers, so only they need a
@@ -174,8 +175,15 @@ function WriteFlow() {
     if (dest === "librarian" && humanCredits <= 0) {
       return setError(
         zh
-          ? "本月的三次真人回复已经用完了。可以先寄给信使或张贴到信墙。"
-          : "Your three gifted human replies are used up. Try the courier or the public wall.",
+          ? "「管理员授权」次数已用完。可在「回信权益」加购（3 元 1 次 / 10 元 4 次），或先寄给信使、张贴到信墙。"
+          : "No librarian-authorised replies left. Top up on the grants page (¥3 for one, ¥10 for four), or use the courier or the wall.",
+      );
+    }
+    if (dest === "sage" && sageCredits <= 0) {
+      return setError(
+        zh
+          ? "「先贤回信」次数已用完。可在「回信权益」加购：3 元 1 次，10 元 4 次。"
+          : "No sage replies left. Top up on the grants page: ¥3 for one, ¥10 for four.",
       );
     }
     setError(null);
@@ -439,16 +447,16 @@ function WriteFlow() {
                     key: "sage" as const,
                     title: zh ? "请一位历代先贤回信" : "Ask a sage of the past",
                     body: zh
-                      ? "十二位已故思想者依其生平与语气回信。需「贤者」会员，回信不限次。"
-                      : "One of twelve long-dead thinkers answers in their own documented voice. Requires the Sage membership; unlimited.",
-                    locked: !entitledForSage,
+                      ? `十二位已故思想者依其生平与语气回信。需「贤者」会员，开通即赠 2 次（剩 ${sageCredits} 次），可加购 3 元 1 次 / 10 元 4 次。`
+                      : `One of twelve long-dead thinkers answers in their own documented voice. Requires the Sage membership; two gifted replies (${sageCredits} left), extras ¥3 each or ¥10 for four.`,
+                    locked: !entitledForSage || sageCredits <= 0,
                   },
                   {
                     key: "librarian" as const,
                     title: zh ? "请图书管理员亲自回信" : "Ask the librarian to write back",
                     body: zh
-                      ? `真人回信。图书管理员亲自读信并回复，或托付给一位愿意接信的旅者。需「贤者」会员，开通即赠三次（剩 ${humanCredits} 次）。`
-                      : `A real person answers. The librarian reads it and replies, or entrusts it to a traveler who offered to help. Requires the Sage membership; three gifted replies in total (${humanCredits} left).`,
+                      ? `管理员授权的真人回信：图书管理员亲自回复，或托付给一位愿意接信的旅者。需「贤者」会员，开通即赠 1 次（剩 ${humanCredits} 次），可加购 3 元 1 次 / 10 元 4 次。`
+                      : `A librarian-authorised human reply: the librarian answers, or entrusts a traveler who offered to help. Requires the Sage membership; one gifted reply (${humanCredits} left), extras ¥3 each or ¥10 for four.`,
                     locked: !entitledForSage || humanCredits <= 0,
                   },
                 ]
@@ -534,6 +542,17 @@ function WriteFlow() {
                       {zh ? sageSkill(personaId)!.summary.zh : sageSkill(personaId)!.summary.en}
                     </p>
                   ) : null}
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {zh
+                      ? `先贤回信剩 ${sageCredits} 次（开通即赠 2 次）。用完可加购：3 元 1 次，10 元 4 次。`
+                      : `${sageCredits} sage replies left (2 gifted on joining). Extras: ¥3 for one, ¥10 for four.`}
+                    <Link
+                      to="/community/grants"
+                      className="hall-tap ml-2 underline underline-offset-4 hover:text-foreground"
+                    >
+                      {zh ? "去加购" : "Top up"}
+                    </Link>
+                  </p>
                 </div>
               ) : (
                 <div className="hall-inset mt-4 flex flex-wrap items-center gap-3 px-4 py-3 text-xs text-muted-foreground">
@@ -556,11 +575,11 @@ function WriteFlow() {
                 <span>
                   {!entitledForSage
                     ? zh
-                      ? "图书管理员亲自回信为「贤者」会员权益，开通即一次性赠送三次真人回复。"
-                      : "A personal reply from the librarian is a Sage membership benefit, with three gifted human replies in total."
+                      ? "「管理员授权」为「贤者」会员权益：开通即赠 1 次，之后 3 元 1 次、10 元 4 次。"
+                      : "The librarian-authorised reply is a Sage benefit: one gifted on joining, then ¥3 each or ¥10 for four."
                     : zh
-                      ? `本月还剩 ${humanCredits} 次真人回复。寄出后会立即扣除一次。`
-                      : `${humanCredits} gifted human replies left. Sending spends one right away.`}
+                      ? `还剩 ${humanCredits} 次管理员授权。寄出后会立即扣除一次，用完可加购。`
+                      : `${humanCredits} librarian-authorised replies left. Sending spends one; top up any time.`}
                 </span>
                 {!entitledForSage ? (
                   <Link
