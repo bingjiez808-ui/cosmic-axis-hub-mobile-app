@@ -146,29 +146,12 @@ function CommunityHallPage() {
       {/* ── Four doors ────────────────────────────────────── */}
       <HallSection title={c.navHall}>
         <div className="grid gap-4 sm:grid-cols-2">
-          {doors.map((door) => (
-            <Link
-              key={door.to}
-              to={door.to}
-              className="hall-paper hall-envelope hall-tap group block rounded-2xl p-5"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <h3 className="text-base font-semibold text-foreground">{door.title}</h3>
-                {door.badge ? (
-                  <span className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-[0.68rem] text-primary">
-                    {door.badge}
-                  </span>
-                ) : null}
-              </div>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{door.body}</p>
-              <span className="hall-door-arrow mt-3 inline-flex items-center gap-1 text-xs text-primary" aria-hidden>
-                {door.title} →
-              </span>
-            </Link>
+          {doors.map((door, i) => (
+            <HallDoorCard key={door.to} door={door} index={i} />
           ))}
         </div>
-
       </HallSection>
+
 
       <HallGate>
         <NotificationCenter />
