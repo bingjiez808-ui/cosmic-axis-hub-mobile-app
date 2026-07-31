@@ -300,107 +300,82 @@ function DailyRoomPage() {
   const supportive = plain.overall.do_today;
   const caution = plain.overall.avoid_today;
 
-  // ---- AI explanation layer (daily-reading-v1) ------------------------
+  // ---- AI explanation layer (daily-reading-v1, on-demand per section) ----
   // Cost policy: the score itself is 100% deterministic (daily-facts-v1 +
-  // daily-domain-score-v2) and never calls AI. The AI layer is OPT-IN and
-  // cached per chart+date+lang, so a normal day costs zero AI credits.
-  const readingFn = useServerFn(generateDailyReading);
-  const [ai, setAi] = useState<DailyReadingAI | null>(null);
-  const [aiState, setAiState] = useState<"idle" | "loading" | "error">("idle");
-  const [aiRequested, setAiRequested] = useState(false);
-  const aiKey =
+  // daily-domain-score-v2) and never calls AI. The AI layer is split into
+  // small sections and generated ONLY when the visitor expands the matching
+  // module (header note / today's actions / a single domain), each cached per
+  // chart+date+lang+score.
+  const aiBaseKey =
     usingRealChart && primaryChart && facts
-      ? `fate.daily-reading.v1|${primaryChart.id}|${today}|${tz}|${lang}|${score.overall.score}`
+      ? `fate.daily-reading.v2|${primaryChart.id}|${today}|${tz}|${lang}|${score.overall.score}`
       : null;
-  const requestedKey = useRef<string | null>(null);
 
-  // Cache-only pass: reuse today's reading if it was already generated.
-  useEffect(() => {
-    if (!aiKey) return;
-    try {
-      const cached = window.localStorage.getItem(aiKey);
-      if (cached) {
-        setAi(JSON.parse(cached) as DailyReadingAI);
-        requestedKey.current = aiKey;
-        setAiState("idle");
-        return;
-      }
-    } catch {
-      /* ignore cache errors */
-    }
-    setAi(null);
-    setAiState("idle");
-    requestedKey.current = null;
-  }, [aiKey]);
-
-  useEffect(() => {
-    if (!aiRequested || !aiKey || !facts) return;
-    if (requestedKey.current === aiKey) return;
-    requestedKey.current = aiKey;
-    setAiState("loading");
-    let cancelled = false;
-    readingFn({
-      data: {
-        lang,
-        localDate: today,
-        timezone: tz,
-        chartLabel,
-        moonPhase: facts.moon.phase,
-        moonSign: facts.moon.sign,
-        retrogrades: facts.transit_planets.filter((p) => p.retro).map((p) => p.key),
-        aspects: facts.transit_to_natal_aspects
-          .slice(0, 20)
-          .map((a) => `${a.transit}→${a.natal} ${a.kind} orb=${a.orb.toFixed(1)}`),
-        overall: {
-          score: score.overall.score,
-          band: score.overall.band,
-          themeKeywords: score.overall.theme_keywords,
-        },
-        domains: score.domains.map((dd) => ({
-          domain: dd.domain,
-          label: domainLabel(dd.domain),
-          score: dd.score,
-          band: dd.band,
-          confidence: dd.confidence,
-          evidence: dd.evidence_refs.slice(0, 6),
-        })),
-        contradictions: score.contradictions,
-        missingFacts: score.missing_facts,
-        concern: concern ?? undefined,
+  const buildAiInput = (segment: SegmentId): DailyReadingInput | null => {
+    if (!facts) return null;
+    const { section, targetDomain } = parseSegment(segment);
+    const domains = score.domains
+      .filter((dd) => (targetDomain ? dd.domain === targetDomain : true))
+      .map((dd) => ({
+        domain: dd.domain,
+        label: domainLabel(dd.domain),
+        score: dd.score,
+        band: dd.band,
+        confidence: dd.confidence,
+        evidence: dd.evidence_refs.slice(0, 6),
+      }));
+    return {
+      lang,
+      section,
+      targetDomain,
+      localDate: today,
+      timezone: tz,
+      chartLabel,
+      moonPhase: facts.moon.phase,
+      moonSign: facts.moon.sign,
+      retrogrades: facts.transit_planets.filter((p) => p.retro).map((p) => p.key),
+      aspects: facts.transit_to_natal_aspects
+        .slice(0, section === "domain" ? 10 : 20)
+        .map((a) => `${a.transit}→${a.natal} ${a.kind} orb=${a.orb.toFixed(1)}`),
+      overall: {
+        score: score.overall.score,
+        band: score.overall.band,
+        themeKeywords: score.overall.theme_keywords,
       },
-    })
-      .then((res) => {
-        if (cancelled) return;
-        setAi(res);
-        setAiState("idle");
-        try {
-          window.localStorage.setItem(aiKey, JSON.stringify(res));
-        } catch {
-          /* quota — non-fatal */
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setAiState("error");
-      });
-    return () => {
-      cancelled = true;
+      domains,
+      contradictions: score.contradictions,
+      missingFacts: score.missing_facts,
+      concern: concern ?? undefined,
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [aiKey, aiRequested]);
-
-  const retryAi = () => {
-    requestedKey.current = null;
-    if (aiKey) {
-      try {
-        window.localStorage.removeItem(aiKey);
-      } catch {
-        /* ignore */
-      }
-    }
-    setAi(null);
-    setAiState("idle");
-    setAiRequested(true);
   };
+
+  const aiSegments = useDailyReadingSegments({
+    baseKey: aiBaseKey,
+    buildInput: buildAiInput,
+  });
+
+  const overview = aiSegments.get("overview");
+  const actions = aiSegments.get("actions");
+  const ai = overview.data;
+  const aiState = overview.status;
+
+  // "Today's actions" module — collapsed by default; expanding it is what
+  // triggers that one AI call.
+  const [actionsOpen, setActionsOpen] = useState(false);
+  const toggleActions = () => {
+    const next = !actionsOpen;
+    setActionsOpen(next);
+    if (next) aiSegments.ensure("actions");
+  };
+
+  const retryAi = () => aiSegments.retry("overview");
+
+  // Domain modal — opening a domain generates only that domain's section.
+  const domainSegmentId = (key: string) => `domain:${key}` as SegmentId;
+  const activeDomainSeg = domainDetail
+    ? aiSegments.get(domainSegmentId(domainDetail.key))
+    : null;
+
 
 
   return (
