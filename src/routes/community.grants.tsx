@@ -219,11 +219,12 @@ function GrantsBody() {
       </HallSection>
 
       {/* ---- Top-up packs --------------------------------------- */}
+      <div id="buy" className="scroll-mt-28">
       <HallSection title={zh ? "加购次数" : "Buy more chances"}>
         <p className="mb-4 text-sm text-muted-foreground">
           {zh
-            ? "赠送次数用完后，可以按需加购：3 元 1 次，10 元 4 次（约合 2.5 元 / 次）。当前为模拟支付，不会真实扣款。"
-            : "Once the gift is used up, top up as needed: ¥3 for one, ¥10 for four (about ¥2.5 each). Payment is simulated for now."}
+            ? "赠送次数用完后，可以按需加购：3 元 / 次，10 元 / 4 次（约合 2.5 元 / 次）。当前为模拟支付，不会真实扣款。"
+            : "Once the gift is used up, top up as needed: ¥3 / reply, ¥10 / 4 replies (about ¥2.5 each). Payment is simulated for now."}
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
           {(["sage", "human"] as const).map((bucket) => (
