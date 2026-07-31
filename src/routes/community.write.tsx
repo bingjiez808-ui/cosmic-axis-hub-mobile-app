@@ -542,6 +542,17 @@ function WriteFlow() {
                       {zh ? sageSkill(personaId)!.summary.zh : sageSkill(personaId)!.summary.en}
                     </p>
                   ) : null}
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {zh
+                      ? `先贤回信剩 ${sageCredits} 次（开通即赠 2 次）。用完可加购：3 元 1 次，10 元 4 次。`
+                      : `${sageCredits} sage replies left (2 gifted on joining). Extras: ¥3 for one, ¥10 for four.`}
+                    <Link
+                      to="/community/grants"
+                      className="hall-tap ml-2 underline underline-offset-4 hover:text-foreground"
+                    >
+                      {zh ? "去加购" : "Top up"}
+                    </Link>
+                  </p>
                 </div>
               ) : (
                 <div className="hall-inset mt-4 flex flex-wrap items-center gap-3 px-4 py-3 text-xs text-muted-foreground">
