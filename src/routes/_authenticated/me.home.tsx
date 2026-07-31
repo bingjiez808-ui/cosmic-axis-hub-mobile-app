@@ -6,10 +6,12 @@ import { PersonalWorkspaceNav } from "@/components/PersonalWorkspaceNav";
 
 import { loadDailyRoomFixture, type DailyRoomFixtureKey } from "@/experiences/daily-room/fixtures";
 import { buildRealDaily } from "@/experiences/daily-room/real-chart-daily";
+import { type DailyReadingInput } from "@/lib/daily-reading.functions";
 import {
-  generateDailyReading,
-  type DailyReadingAI,
-} from "@/lib/daily-reading.functions";
+  parseSegment,
+  useDailyReadingSegments,
+  type SegmentId,
+} from "@/lib/use-daily-reading-segments";
 
 import { DailyRoomError } from "@/experiences/daily-room/fallback";
 import { PersonalShellPending } from "@/experiences/daily-room/personal-shell-pending";
@@ -836,8 +838,9 @@ function DailyRoomPage() {
                 type="button"
                 data-testid={`domain-card-${dd.domain}`}
                 aria-haspopup="dialog"
-                onClick={() =>
-                  pd &&
+                onClick={() => {
+                  if (!pd) return;
+                  aiSegments.ensure(domainSegmentId(dd.domain));
                   setDomainDetail({
                     key: dd.domain,
                     label: domainLabel(dd.domain),
@@ -851,8 +854,8 @@ function DailyRoomPage() {
                     avoidToday: pd.avoid_today,
                     weekTrend: pd.week_trend,
                     breakdown: dd.breakdown,
-                  })
-                }
+                  });
+                }}
                 className="group rounded-xl border border-amber-400/20 bg-black/30 p-4 text-left transition hover:border-amber-300/60 hover:bg-black/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/60"
               >
                 <div className="text-xs text-amber-200/70">{domainLabel(dd.domain)}</div>
@@ -986,13 +989,13 @@ function DailyRoomPage() {
             {d.countercondition_title}
           </div>
           <p className="mt-2 text-amber-100/80">
-            {ai?.countercondition || d.countercondition_body}
+            {actions.data?.countercondition || d.countercondition_body}
           </p>
           <div className="mt-4 text-xs uppercase tracking-widest text-amber-200/70">
             {d.reflection_title}
           </div>
           <p className="mt-2 text-amber-100/80">
-            {ai?.reflection_question || d.reflection_body}
+            {actions.data?.reflection_question || d.reflection_body}
           </p>
 
         </section>
