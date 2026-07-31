@@ -307,7 +307,8 @@ const zh: DailyDict = {
   overall_signal: "今日综合信号",
   overall_out_of: "/ 100",
   overall_note:
-    "这是「今日领域信号」，不是成功率或好运概率。以下建议仅供参考，现实情境优先。",
+    "今日阅览室只提供一面镜子，照见星历与心境的交汇；路仍在你脚下。",
+
   today_theme: "今日主题",
   theme_pending: "今日星象计算待接入 / 缺关键事实。",
   theme_line: (phase, kw) => `月相 ${phase} · 主题词 ${kw}`,
@@ -327,7 +328,8 @@ const zh: DailyDict = {
   ],
   countercondition_title: "如果现实不同",
   countercondition_body:
-    "如果现实情境与今日信号相反（例如实际推进得比预想更顺利），以现实为准；今日读数只是「值得留意的可能性」。",
+    "若今日信号与现实相反，请以现实为准——它只是一页值得留意的脚注。",
+
   reflection_title: "自我探问",
   reflection_body: "「今天有没有一件事，我是因为惯性去做，而不是真的想做？」",
   free_tier_notice:
@@ -627,7 +629,8 @@ const en: DailyDict = {
   overall_signal: "Today's overall signal",
   overall_out_of: "/ 100",
   overall_note:
-    "This is a \"domain signal for today\" — not a success rate or luck score. Suggestions are informational; real context wins.",
+    "Today's reading room offers a mirror where the day's sky and your mood meet; the path remains yours.",
+
   today_theme: "Today's theme",
   theme_pending: "Today's astronomy not yet wired / key facts missing.",
   theme_line: (phase, kw) => `Moon phase ${phase} · themes ${kw}`,
@@ -647,7 +650,8 @@ const en: DailyDict = {
   ],
   countercondition_title: "If reality differs",
   countercondition_body:
-    "If what actually happens contradicts today's signal (say, things go smoother than expected), trust reality. Today's reading only names a possibility worth watching.",
+    "If today's signal runs counter to reality, let reality lead — this is only a footnote worth noticing.",
+
   reflection_title: "A question for yourself",
   reflection_body: "\"Is there anything I'm doing today out of habit rather than because I want to?\"",
   free_tier_notice:

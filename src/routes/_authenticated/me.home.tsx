@@ -676,8 +676,8 @@ function DailyRoomPage() {
                   </button>
                   <span>
                     {lang === "zh"
-                      ? "分数与证据由本地星历确定性计算，不消耗 AI；解读为可选，每日每盘只生成一次。"
-                      : "Scores are computed locally and cost no AI; the reading is optional and generated once per chart per day."}
+                      ? "每日一次，为今日信号添一段馆员手记。"
+                      : "Once a day, add a librarian's note to today's signal."}
                   </span>
                 </div>
               )}
@@ -921,7 +921,7 @@ function DailyRoomPage() {
                   <p>单条影响值 = 方向(±1) × 领域相关权重(1–3) × 精确度系数 × 2。精确度系数 = max(0.2, 1 - orb/6)，越接近精确相位影响越大。</p>
                   <p>水星对学业/表达权重较高；金星、月亮对关系权重较高；木星、金星、土星对财务权重较高；月亮、太阳对身心权重较高（详见代码 DOMAIN_WEIGHTS 矩阵）。</p>
                   <p>总体分 = 五领域平均分 × 60% + 偏离 50 最远的那一项 × 40%。资料不完整时回到中性 50 并降低置信度。</p>
-                  <p className="text-amber-200/70">分数不是好运概率、成功率或事件必然发生率，只表示当日该领域的可用资源与调整成本。现实情境永远优先。</p>
+                  <p className="text-amber-200/70">分数是今日天气，不是命运判决；出门时记得带伞，也记得阳光会回来。</p>
                 </>
               ) : (
                 <>
@@ -929,7 +929,7 @@ function DailyRoomPage() {
                   <p>Contribution = direction(±1) × domain-weight(1–3) × orb-factor × 2. Orb-factor = max(0.2, 1 - orb/6) — closer to exact, larger effect.</p>
                   <p>Mercury weights higher for study/comms; Venus & Moon for relationships; Jupiter/Venus/Saturn for finance; Moon & Sun for body-mind (see DOMAIN_WEIGHTS).</p>
                   <p>Overall = mean of 5 domains × 60% + the most-off-neutral domain × 40%. Missing data pulls back to 50 with lowered confidence.</p>
-                  <p className="text-amber-200/70">Scores are not a luck probability, success rate, or certainty of events — only the day's usable resources and adjustment cost. Reality always wins.</p>
+                  <p className="text-amber-200/70">Scores are today's weather, not a verdict; bring an umbrella, but remember the sun returns.</p>
                 </>
               )}
             </div>
