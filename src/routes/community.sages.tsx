@@ -295,7 +295,7 @@ function SageDesk() {
                     </p>
                   </div>
                 ))}
-                {entitled && (credits?.sageRemaining ?? 0) > 0 ? (
+                {entitled && (credits?.remaining ?? 0) > 0 ? (
                   <Button
                     variant="outline"
                     size="sm"
@@ -303,7 +303,7 @@ function SageDesk() {
                     disabled={human.isPending}
                     onClick={() => void human.mutateAsync({ letterId: letter.letterId }).catch(() => {})}
                   >
-                    {zh ? "请一位真人再回一次（用 1 次赠额）" : "Ask a real person too (uses 1 grant)"}
+                    {zh ? "请一位真人再回一次（用 1 次管理员授权）" : "Ask a real person too (uses 1 librarian-authorised reply)"}
                   </Button>
                 ) : null}
               </article>
