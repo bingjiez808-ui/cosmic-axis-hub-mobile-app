@@ -6,10 +6,12 @@ import { PersonalWorkspaceNav } from "@/components/PersonalWorkspaceNav";
 
 import { loadDailyRoomFixture, type DailyRoomFixtureKey } from "@/experiences/daily-room/fixtures";
 import { buildRealDaily } from "@/experiences/daily-room/real-chart-daily";
+import { type DailyReadingInput } from "@/lib/daily-reading.functions";
 import {
-  generateDailyReading,
-  type DailyReadingAI,
-} from "@/lib/daily-reading.functions";
+  parseSegment,
+  useDailyReadingSegments,
+  type SegmentId,
+} from "@/lib/use-daily-reading-segments";
 
 import { DailyRoomError } from "@/experiences/daily-room/fallback";
 import { PersonalShellPending } from "@/experiences/daily-room/personal-shell-pending";
@@ -300,107 +302,82 @@ function DailyRoomPage() {
   const supportive = plain.overall.do_today;
   const caution = plain.overall.avoid_today;
 
-  // ---- AI explanation layer (daily-reading-v1) ------------------------
+  // ---- AI explanation layer (daily-reading-v1, on-demand per section) ----
   // Cost policy: the score itself is 100% deterministic (daily-facts-v1 +
-  // daily-domain-score-v2) and never calls AI. The AI layer is OPT-IN and
-  // cached per chart+date+lang, so a normal day costs zero AI credits.
-  const readingFn = useServerFn(generateDailyReading);
-  const [ai, setAi] = useState<DailyReadingAI | null>(null);
-  const [aiState, setAiState] = useState<"idle" | "loading" | "error">("idle");
-  const [aiRequested, setAiRequested] = useState(false);
-  const aiKey =
+  // daily-domain-score-v2) and never calls AI. The AI layer is split into
+  // small sections and generated ONLY when the visitor expands the matching
+  // module (header note / today's actions / a single domain), each cached per
+  // chart+date+lang+score.
+  const aiBaseKey =
     usingRealChart && primaryChart && facts
-      ? `fate.daily-reading.v1|${primaryChart.id}|${today}|${tz}|${lang}|${score.overall.score}`
+      ? `fate.daily-reading.v2|${primaryChart.id}|${today}|${tz}|${lang}|${score.overall.score}`
       : null;
-  const requestedKey = useRef<string | null>(null);
 
-  // Cache-only pass: reuse today's reading if it was already generated.
-  useEffect(() => {
-    if (!aiKey) return;
-    try {
-      const cached = window.localStorage.getItem(aiKey);
-      if (cached) {
-        setAi(JSON.parse(cached) as DailyReadingAI);
-        requestedKey.current = aiKey;
-        setAiState("idle");
-        return;
-      }
-    } catch {
-      /* ignore cache errors */
-    }
-    setAi(null);
-    setAiState("idle");
-    requestedKey.current = null;
-  }, [aiKey]);
-
-  useEffect(() => {
-    if (!aiRequested || !aiKey || !facts) return;
-    if (requestedKey.current === aiKey) return;
-    requestedKey.current = aiKey;
-    setAiState("loading");
-    let cancelled = false;
-    readingFn({
-      data: {
-        lang,
-        localDate: today,
-        timezone: tz,
-        chartLabel,
-        moonPhase: facts.moon.phase,
-        moonSign: facts.moon.sign,
-        retrogrades: facts.transit_planets.filter((p) => p.retro).map((p) => p.key),
-        aspects: facts.transit_to_natal_aspects
-          .slice(0, 20)
-          .map((a) => `${a.transit}→${a.natal} ${a.kind} orb=${a.orb.toFixed(1)}`),
-        overall: {
-          score: score.overall.score,
-          band: score.overall.band,
-          themeKeywords: score.overall.theme_keywords,
-        },
-        domains: score.domains.map((dd) => ({
-          domain: dd.domain,
-          label: domainLabel(dd.domain),
-          score: dd.score,
-          band: dd.band,
-          confidence: dd.confidence,
-          evidence: dd.evidence_refs.slice(0, 6),
-        })),
-        contradictions: score.contradictions,
-        missingFacts: score.missing_facts,
-        concern: concern ?? undefined,
+  const buildAiInput = (segment: SegmentId): DailyReadingInput | null => {
+    if (!facts) return null;
+    const { section, targetDomain } = parseSegment(segment);
+    const domains = score.domains
+      .filter((dd) => (targetDomain ? dd.domain === targetDomain : true))
+      .map((dd) => ({
+        domain: dd.domain,
+        label: domainLabel(dd.domain),
+        score: dd.score,
+        band: dd.band,
+        confidence: dd.confidence,
+        evidence: dd.evidence_refs.slice(0, 6),
+      }));
+    return {
+      lang,
+      section,
+      targetDomain,
+      localDate: today,
+      timezone: tz,
+      chartLabel,
+      moonPhase: facts.moon.phase,
+      moonSign: facts.moon.sign,
+      retrogrades: facts.transit_planets.filter((p) => p.retro).map((p) => p.key),
+      aspects: facts.transit_to_natal_aspects
+        .slice(0, section === "domain" ? 10 : 20)
+        .map((a) => `${a.transit}→${a.natal} ${a.kind} orb=${a.orb.toFixed(1)}`),
+      overall: {
+        score: score.overall.score,
+        band: score.overall.band,
+        themeKeywords: score.overall.theme_keywords,
       },
-    })
-      .then((res) => {
-        if (cancelled) return;
-        setAi(res);
-        setAiState("idle");
-        try {
-          window.localStorage.setItem(aiKey, JSON.stringify(res));
-        } catch {
-          /* quota — non-fatal */
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setAiState("error");
-      });
-    return () => {
-      cancelled = true;
+      domains,
+      contradictions: score.contradictions,
+      missingFacts: score.missing_facts,
+      concern: concern ?? undefined,
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [aiKey, aiRequested]);
-
-  const retryAi = () => {
-    requestedKey.current = null;
-    if (aiKey) {
-      try {
-        window.localStorage.removeItem(aiKey);
-      } catch {
-        /* ignore */
-      }
-    }
-    setAi(null);
-    setAiState("idle");
-    setAiRequested(true);
   };
+
+  const aiSegments = useDailyReadingSegments({
+    baseKey: aiBaseKey,
+    buildInput: buildAiInput,
+  });
+
+  const overview = aiSegments.get("overview");
+  const actions = aiSegments.get("actions");
+  const ai = overview.data;
+  const aiState = overview.status;
+
+  // "Today's actions" module — collapsed by default; expanding it is what
+  // triggers that one AI call.
+  const [actionsOpen, setActionsOpen] = useState(false);
+  const toggleActions = () => {
+    const next = !actionsOpen;
+    setActionsOpen(next);
+    if (next) aiSegments.ensure("actions");
+  };
+
+  const retryAi = () => aiSegments.retry("overview");
+
+  // Domain modal — opening a domain generates only that domain's section.
+  const domainSegmentId = (key: string) => `domain:${key}` as SegmentId;
+  const activeDomainSeg = domainDetail
+    ? aiSegments.get(domainSegmentId(domainDetail.key))
+    : null;
+
 
 
   return (
@@ -669,7 +646,7 @@ function DailyRoomPage() {
                 <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-amber-200/70">
                   <button
                     type="button"
-                    onClick={() => setAiRequested(true)}
+                    onClick={() => aiSegments.ensure("overview")}
                     className="min-h-8 rounded-full border border-amber-300/50 px-3 py-1 text-amber-100 hover:bg-amber-500/10"
                   >
                     {lang === "zh" ? "生成今日 AI 解读" : "Generate AI reading"}
@@ -682,36 +659,80 @@ function DailyRoomPage() {
                 </div>
               )}
 
+              {/* Today's actions — collapsed by default; expanding it is what
+                  triggers this section's own (small) AI call. */}
+              {usingRealChart && (
+                <div className="mt-4 rounded-lg border border-amber-400/20 bg-black/20">
+                  <button
+                    type="button"
+                    data-testid="daily-actions-toggle"
+                    aria-expanded={actionsOpen}
+                    onClick={toggleActions}
+                    className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-xs text-amber-100/85 hover:bg-amber-500/[0.06]"
+                  >
+                    <span>{lang === "zh" ? "今天可以做 / 今天留意" : "Do today / Observe today"}</span>
+                    <span className="text-amber-300/70">{actionsOpen ? "−" : "+"}</span>
+                  </button>
 
-
-              {ai && (ai.do_today.length > 0 || ai.observe_today.length > 0) && (
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  {ai.do_today.length > 0 && (
-                    <div className="rounded-lg border border-emerald-400/20 bg-emerald-500/[0.06] p-3">
-                      <div className="text-[10px] uppercase tracking-[0.2em] text-emerald-200/80">
-                        {lang === "zh" ? "今天可以做" : "Do today"}
-                      </div>
-                      <ul className="mt-1.5 space-y-1 text-xs leading-relaxed text-emerald-50/90">
-                        {ai.do_today.map((s, i) => (
-                          <li key={i}>· {s}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  {ai.observe_today.length > 0 && (
-                    <div className="rounded-lg border border-amber-400/20 bg-amber-500/[0.06] p-3">
-                      <div className="text-[10px] uppercase tracking-[0.2em] text-amber-200/80">
-                        {lang === "zh" ? "今天留意" : "Observe today"}
-                      </div>
-                      <ul className="mt-1.5 space-y-1 text-xs leading-relaxed text-amber-50/90">
-                        {ai.observe_today.map((s, i) => (
-                          <li key={i}>· {s}</li>
-                        ))}
-                      </ul>
+                  {actionsOpen && (
+                    <div className="border-t border-amber-400/15 px-3 py-3">
+                      {actions.status === "loading" && (
+                        <div className="space-y-2" aria-live="polite">
+                          <div className="h-3 w-10/12 animate-pulse rounded bg-amber-200/10" />
+                          <div className="h-3 w-8/12 animate-pulse rounded bg-amber-200/10" />
+                        </div>
+                      )}
+                      {actions.status === "error" && (
+                        <div className="flex flex-wrap items-center gap-3 text-xs text-rose-200/80">
+                          <span>
+                            {lang === "zh"
+                              ? "这一段暂时没有取回，稍后再试。"
+                              : "This section could not be fetched; try again."}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => aiSegments.retry("actions")}
+                            className="min-h-8 rounded-full border border-amber-300/50 px-3 py-1 text-amber-100 hover:bg-amber-500/10"
+                          >
+                            {lang === "zh" ? "重试" : "Retry"}
+                          </button>
+                        </div>
+                      )}
+                      {actions.status === "idle" && (
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <div className="rounded-lg border border-emerald-400/20 bg-emerald-500/[0.06] p-3">
+                            <div className="text-[10px] uppercase tracking-[0.2em] text-emerald-200/80">
+                              {lang === "zh" ? "今天可以做" : "Do today"}
+                            </div>
+                            <ul className="mt-1.5 space-y-1 text-xs leading-relaxed text-emerald-50/90">
+                              {(actions.data?.do_today.length
+                                ? actions.data.do_today
+                                : supportive.slice(0, 3)
+                              ).map((s: string, i: number) => (
+                                <li key={i}>· {s}</li>
+                              ))}
+                            </ul>
+                          </div>
+                          <div className="rounded-lg border border-amber-400/20 bg-amber-500/[0.06] p-3">
+                            <div className="text-[10px] uppercase tracking-[0.2em] text-amber-200/80">
+                              {lang === "zh" ? "今天留意" : "Observe today"}
+                            </div>
+                            <ul className="mt-1.5 space-y-1 text-xs leading-relaxed text-amber-50/90">
+                              {(actions.data?.observe_today.length
+                                ? actions.data.observe_today
+                                : caution.slice(0, 3)
+                              ).map((s: string, i: number) => (
+                                <li key={i}>· {s}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
               )}
+
 
               {aiState === "error" && (
                 <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-rose-200/80">
@@ -817,8 +838,9 @@ function DailyRoomPage() {
                 type="button"
                 data-testid={`domain-card-${dd.domain}`}
                 aria-haspopup="dialog"
-                onClick={() =>
-                  pd &&
+                onClick={() => {
+                  if (!pd) return;
+                  aiSegments.ensure(domainSegmentId(dd.domain));
                   setDomainDetail({
                     key: dd.domain,
                     label: domainLabel(dd.domain),
@@ -832,8 +854,8 @@ function DailyRoomPage() {
                     avoidToday: pd.avoid_today,
                     weekTrend: pd.week_trend,
                     breakdown: dd.breakdown,
-                  })
-                }
+                  });
+                }}
                 className="group rounded-xl border border-amber-400/20 bg-black/30 p-4 text-left transition hover:border-amber-300/60 hover:bg-black/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/60"
               >
                 <div className="text-xs text-amber-200/70">{domainLabel(dd.domain)}</div>
@@ -847,7 +869,10 @@ function DailyRoomPage() {
                   {xlate(d.band, dd.band)} · {xlate(d.confidence, dd.confidence)}
                 </div>
                 {(() => {
-                  const aiLine = ai?.domain_lines.find((x) => x.domain === dd.domain)?.line;
+                  const seg = aiSegments.get(domainSegmentId(dd.domain));
+                  const aiLine = seg.data?.domain_lines.find(
+                    (x: { domain: string }) => x.domain === dd.domain,
+                  )?.line;
                   return aiLine ? (
                     <p className="mt-2 line-clamp-3 text-[11px] leading-relaxed text-amber-100/75">
                       {aiLine}
@@ -866,10 +891,27 @@ function DailyRoomPage() {
         <DomainDetailDialog
           lang={lang}
           payload={domainDetail}
+          aiNote={activeDomainSeg?.data?.narrative || undefined}
+          aiLine={
+            domainDetail
+              ? activeDomainSeg?.data?.domain_lines.find(
+                  (x: { domain: string }) => x.domain === domainDetail.key,
+                )?.line
+              : undefined
+          }
+          aiDoToday={activeDomainSeg?.data?.do_today ?? []}
+          aiObserveToday={activeDomainSeg?.data?.observe_today ?? []}
+          aiStatus={activeDomainSeg?.status ?? "idle"}
+          onRetryAi={
+            domainDetail
+              ? () => aiSegments.retry(domainSegmentId(domainDetail.key))
+              : undefined
+          }
           onOpenChange={(open) => {
             if (!open) setDomainDetail(null);
           }}
         />
+
 
 
         {/* Plain-language: what to do / what to watch (0-AI templates) */}
@@ -947,13 +989,13 @@ function DailyRoomPage() {
             {d.countercondition_title}
           </div>
           <p className="mt-2 text-amber-100/80">
-            {ai?.countercondition || d.countercondition_body}
+            {actions.data?.countercondition || d.countercondition_body}
           </p>
           <div className="mt-4 text-xs uppercase tracking-widest text-amber-200/70">
             {d.reflection_title}
           </div>
           <p className="mt-2 text-amber-100/80">
-            {ai?.reflection_question || d.reflection_body}
+            {actions.data?.reflection_question || d.reflection_body}
           </p>
 
         </section>

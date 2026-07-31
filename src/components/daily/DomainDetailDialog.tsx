@@ -30,12 +30,26 @@ export function DomainDetailDialog({
   lang,
   payload,
   onOpenChange,
+  aiLine,
+  aiNote,
+  aiDoToday = [],
+  aiObserveToday = [],
+  aiStatus = "idle",
+  onRetryAi,
 }: {
   lang: "en" | "zh";
   payload: DomainDetailPayload | null;
   onOpenChange: (open: boolean) => void;
+  /** On-demand AI section for THIS domain (generated when the dialog opens). */
+  aiLine?: string;
+  aiNote?: string;
+  aiDoToday?: string[];
+  aiObserveToday?: string[];
+  aiStatus?: "idle" | "loading" | "error";
+  onRetryAi?: () => void;
 }) {
   const zh = lang === "zh";
+  const hasAi = Boolean(aiLine || aiNote || aiDoToday.length || aiObserveToday.length);
   return (
     <Dialog open={payload !== null} onOpenChange={onOpenChange}>
       <DialogContent
@@ -61,6 +75,56 @@ export function DomainDetailDialog({
 
             <div className="space-y-4 text-sm">
               <p className="text-amber-100/70">{payload.mayShowAs}</p>
+
+              {/* Librarian's note — one small AI call, made only for the
+                  domain the visitor actually opened. */}
+              {aiStatus === "loading" && (
+                <div className="space-y-2" aria-live="polite">
+                  <div className="h-3 w-11/12 animate-pulse rounded bg-amber-200/10" />
+                  <div className="h-3 w-8/12 animate-pulse rounded bg-amber-200/10" />
+                </div>
+              )}
+              {aiStatus === "error" && (
+                <div className="flex flex-wrap items-center gap-3 text-xs text-rose-200/80">
+                  <span>
+                    {zh
+                      ? "这一页馆员手记暂时没有取回。"
+                      : "The librarian's note could not be fetched."}
+                  </span>
+                  {onRetryAi && (
+                    <button
+                      type="button"
+                      onClick={onRetryAi}
+                      className="min-h-8 rounded-full border border-amber-300/50 px-3 py-1 text-amber-100 hover:bg-amber-500/10"
+                    >
+                      {zh ? "重试" : "Retry"}
+                    </button>
+                  )}
+                </div>
+              )}
+              {aiStatus === "idle" && hasAi && (
+                <div className="rounded-lg border border-amber-400/20 bg-amber-500/[0.06] p-3">
+                  <div className="text-[10px] uppercase tracking-[0.2em] text-amber-200/80">
+                    {zh ? "馆员手记" : "Librarian's note"}
+                  </div>
+                  {aiLine && <p className="mt-1.5 text-amber-100/90">{aiLine}</p>}
+                  {aiNote && <p className="mt-1.5 text-amber-100/80">{aiNote}</p>}
+                  {aiDoToday.length > 0 && (
+                    <ul className="mt-2 list-disc space-y-1 pl-5 text-emerald-50/85">
+                      {aiDoToday.map((s, i) => (
+                        <li key={i}>{s}</li>
+                      ))}
+                    </ul>
+                  )}
+                  {aiObserveToday.length > 0 && (
+                    <ul className="mt-2 list-disc space-y-1 pl-5 text-amber-50/85">
+                      {aiObserveToday.map((s, i) => (
+                        <li key={i}>{s}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
 
               {payload.doToday.length > 0 && (
                 <div>
