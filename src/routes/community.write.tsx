@@ -139,8 +139,15 @@ function WriteFlow() {
     setStep(2);
   }
 
+  const zh = c.lang !== "en";
+  const entitledForSage = Boolean(entitlement.data?.entitled);
+  const busy = send.isPending || askSage.isPending || sendLibrarian.isPending;
+
   function goStepThree() {
     if (!band) return setError(c.required);
+    if (dest === "sage" && !entitledForSage) {
+      return setError(zh ? "先贤回信需要开通「贤者」会员。" : "Sage replies require the Sage membership.");
+    }
     setError(null);
     setStep(3);
   }
@@ -148,63 +155,104 @@ function WriteFlow() {
   async function submit() {
     if (!band || !agree) return setError(c.required);
     try {
+      setErrorCode(null);
+      if (dest === "sage") {
+        const result = await askSage.mutateAsync({
+          personaId,
+          subject: subject.trim() || null,
+          body: body.trim(),
+          topic,
+          targetAgeBand: band,
+          lang: zh ? "zh" : "en",
+        });
+        finishSend({ pendingReview: result.pendingReview, delivered: 0, dest, reply: result.reply });
+        return;
+      }
+      if (dest === "librarian") {
+        const result = await sendLibrarian.mutateAsync({
+          subject: subject.trim() || null,
+          body: body.trim(),
+          topic,
+          targetAgeBand: band,
+        });
+        finishSend({ pendingReview: result.pendingReview, delivered: 0, dest });
+        return;
+      }
       const result = await send.mutateAsync({
         subject: subject.trim() || null,
         body: body.trim(),
         topic,
         targetAgeBand: band,
-        visibility,
+        visibility: dest === "wall" ? "wall" : "delivered_only",
       });
-      setError(null);
-      setErrorCode(null);
-      sentRef.current = true;
-      clearLetterDraft();
-      setSavedAt(null);
-      setDraftRestored(false);
-      setSent({
-        pendingReview: result.pendingReview,
-        delivered: result.delivered,
-        visibility,
-      });
+      finishSend({ pendingReview: result.pendingReview, delivered: result.delivered, dest });
     } catch (err) {
       setErrorCode(hallErrorCode(err));
       setError(hallErrorMessage(err, c.lang));
     }
   }
 
+  function finishSend(next: Sent) {
+    setError(null);
+    sentRef.current = true;
+    clearLetterDraft();
+    setSavedAt(null);
+    setDraftRestored(false);
+    setSent(next);
+  }
 
   if (sent) {
+    const outcome: Record<Destination, { body: string; note: string; to: string; cta: string }> = {
+      courier: {
+        body: c.sentBody,
+        note: `${c.deliveredCount} ${sent.delivered} ${c.people}`,
+        to: "/community/echoes",
+        cta: c.sentGoEchoes,
+      },
+      wall: {
+        body: zh
+          ? "你的信已经张贴在公共信墙上，厅中任何人都能读到，并选择是否回信。"
+          : "Your letter is now pinned on the public wall. Anyone in the hall may read it and choose to answer.",
+        note: zh ? "全厅可见" : "Visible to everyone in the hall",
+        to: "/community/wall",
+        cta: zh ? "去信墙看看" : "See it on the wall",
+      },
+      sage: {
+        body: zh
+          ? "先贤已就着自己的生平与主张，为你写下一封回信。"
+          : "The sage has written back, drawing on their own documented life and arguments.",
+        note: zh ? "回信已在先贤案前" : "The reply is waiting at the sages' desk",
+        to: "/community/sages",
+        cta: zh ? "读这封回信" : "Read the reply",
+      },
+      librarian: {
+        body: zh
+          ? "信已经放在图书管理员的案头。他会亲自回信，或把它托付给一位愿意接信的旅者。"
+          : "Your letter is on the librarian's desk. They will answer it themselves, or entrust it to a traveler who has offered to help.",
+        note: zh ? "等待图书管理员处理" : "Waiting on the librarian",
+        to: "/community/sages",
+        cta: zh ? "去我的案前查看" : "See my desk",
+      },
+    };
+    const o = outcome[sent.dest];
     return (
       <section className="hall-paper hall-open-in mt-8 p-8 text-center">
         <p className="hall-eyebrow">{c.hallEyebrow}</p>
         <h2 className="hall-section-title mt-4">{c.sentTitle}</h2>
         <p className="mx-auto mt-4 max-w-md text-pretty text-sm leading-relaxed text-muted-foreground">
-          {sent.pendingReview
-            ? c.pendingReview
-            : sent.visibility === "wall"
-              ? c.lang === "en"
-                ? "Your letter is now pinned on the public wall. Anyone in the hall may read it and choose to answer."
-                : "你的信已经张贴在公共信墙上，厅中任何人都能读到，并选择是否回信。"
-              : c.sentBody}
+          {sent.pendingReview ? c.pendingReview : o.body}
         </p>
         {!sent.pendingReview ? (
-          <p className="mt-3 text-xs text-primary/80">
-            {sent.visibility === "wall"
-              ? c.lang === "en"
-                ? "Visible to everyone in the hall"
-                : "全厅可见"
-              : `${c.deliveredCount} ${sent.delivered} ${c.people}`}
-          </p>
+          <p className="mt-3 text-xs text-primary/80">{o.note}</p>
+        ) : null}
+        {sent.reply ? (
+          <div className="hall-paper hall-envelope mt-6 p-5 text-left">
+            <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">{sent.reply}</p>
+          </div>
         ) : null}
         <div className="mt-7 flex flex-wrap justify-center gap-3">
           <Button asChild className="hall-tap">
-            <Link to={sent.visibility === "wall" ? "/community/wall" : "/community/echoes"}>
-              {sent.visibility === "wall"
-                ? c.lang === "en"
-                  ? "See it on the wall"
-                  : "去信墙看看"
-                : c.sentGoEchoes}
-            </Link>
+            <Link to={o.to}>{o.cta}</Link>
           </Button>
           <Button
             variant="outline"
