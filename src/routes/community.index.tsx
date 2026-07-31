@@ -1,6 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 
+import doorEchoes from "@/assets/community/door-echoes.jpg";
+import doorInbox from "@/assets/community/door-inbox.jpg";
+import doorOutbox from "@/assets/community/door-outbox.jpg";
+import doorWrite from "@/assets/community/door-write.jpg";
 import { Button } from "@/components/ui/button";
+import { HallDoorCard, type HallDoor } from "@/experiences/community-hall/HallDoorCard";
 import {
   HallGate,
   HallHeader,
