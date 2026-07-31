@@ -170,29 +170,8 @@ export function YearInsightModal({
   returnFocus?: HTMLElement | null;
 }) {
   const titleId = useId();
-  const dialogRef = useRef<HTMLDivElement | null>(null);
+  const dialogRef = useModalA11y<HTMLDivElement>({ open, onClose, returnFocus });
 
-  useEffect(() => {
-    if (!open) return;
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", onKey);
-    const raf = requestAnimationFrame(() => dialogRef.current?.focus());
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prevOverflow;
-      cancelAnimationFrame(raf);
-    };
-  }, [open, onClose]);
-
-  useEffect(() => {
-    if (!open && returnFocus) {
-      requestAnimationFrame(() => returnFocus.focus?.());
-    }
-  }, [open, returnFocus]);
 
   const bands = useMemo(
     () => (point && point.score != null ? deriveBands(point.score, lang) : null),
