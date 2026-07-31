@@ -114,8 +114,8 @@ function CommunityHallPage() {
       title: c.lang === "en" ? "The sages' desk" : "先贤案前",
       body:
         c.lang === "en"
-          ? "Twelve long-dead thinkers, and the librarian in person. A Sage membership opens both; the librarian's reply spends one of three monthly grants."
-          : "十二位已故思想者，以及图书管理员本人。「贤者」会员开启两者；管理员亲自回信每月三次。",
+          ? "Twelve long-dead thinkers, and the librarian in person. A Sage membership opens both; the librarian's reply spends one of three gifted human replies."
+          : "十二位已故思想者，以及图书管理员本人。「贤者」会员开启两者；管理员亲自回信为开通即赠的三次机会。",
       badge: null,
       image: doorEchoes,
       caption: c.lang === "en" ? "Where answers are written" : "回信之处",

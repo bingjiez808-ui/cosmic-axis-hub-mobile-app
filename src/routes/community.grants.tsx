@@ -1,7 +1,7 @@
 /**
  * /community/grants — 真人回复权益 / human-reply grants.
  *
- * One place for the three monthly grants that come with 「贤者」membership:
+ * One place for the three one-time gifts that come with 「贤者」membership:
  *   claim them, see how many remain, read the claim/spend ledger, and pick
  *   in one click which of your sage letters a real person should answer.
  */
@@ -36,10 +36,10 @@ export const Route = createFileRoute("/community/grants")({
       {
         name: "description",
         content:
-          "贤者会员每月三次真人回复：在这里领取、查看剩余次数与使用记录，并一键决定这次真人回复用在哪封信上。",
+          "开通「贤者」即赠三次真人回复（一次性，非每月）：在这里领取、查看剩余次数与使用记录，并一键决定用在哪封信上。",
       },
       { property: "og:title", content: "真人回复权益 · 众生之厅" },
-      { property: "og:description", content: "领取、查看与分配你每月的三次真人回复。" },
+      { property: "og:description", content: "领取、查看与分配开通即赠的三次真人回复。" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex,nofollow" },
@@ -57,8 +57,8 @@ function GrantsPage() {
         title={zh ? "真人回复权益" : "Human reply grants"}
         subtitle={
           zh
-            ? "「贤者」会员每月赠送 3 次真人回复：由图书管理员本人（或他托付的旅者）匿名执笔。领取后，你可以随时决定用在哪封信上。"
-            : "Sage membership includes three human replies each month, written anonymously by the librarian or a traveler they entrust. Claim them, then choose which letter each one goes to."
+            ? "开通「贤者」即赠 3 次真人回复（一次性赠送，用完为止）：由图书管理员本人、或他托付的旅者匿名执笔。领取后，你可以随时决定用在哪封信上。"
+            : "Sage membership includes three human replies as a one-time gift, written anonymously by the librarian or a traveler they entrust. Claim them, then choose which letter each one goes to."
         }
       />
       <HallNav />
@@ -97,7 +97,7 @@ function GrantsBody() {
     setNotice(null);
     try {
       await claim.mutateAsync();
-      setNotice(zh ? "已领取本月的 3 次真人回复。" : "Claimed this month's three human replies.");
+      setNotice(zh ? "已领取赠送的 3 次真人回复。" : "Claimed your three gifted human replies.");
     } catch (err) {
       setError(hallErrorMessage(err, c.lang));
     }
@@ -121,7 +121,7 @@ function GrantsBody() {
   return (
     <div className="mt-8 space-y-8">
       {/* ---- Balance + claim ------------------------------------ */}
-      <HallSection title={zh ? "本月权益" : "This month"}>
+      <HallSection title={zh ? "赠送权益" : "Your gift"}>
         <div className="hall-paper p-6">
           {entitlement.isLoading ? (
             <p className="text-sm text-muted-foreground">{zh ? "读取中…" : "Loading…"}</p>
@@ -129,8 +129,8 @@ function GrantsBody() {
             <div className="space-y-3">
               <p className="text-sm leading-relaxed text-foreground/85">
                 {zh
-                  ? "真人回复是「贤者」会员的权益。开通后每月赠送 3 次，由真人匿名执笔回信。"
-                  : "Human replies come with Sage membership: three each month, written by a real person, anonymously."}
+                  ? "真人回复是「贤者」会员的权益。开通即一次性赠送 3 次，由真人匿名执笔回信。"
+                  : "Human replies come with Sage membership: three as a one-time gift, written by a real person, anonymously."}
               </p>
               <Button asChild size="sm" className="hall-tap">
                 <Link to="/me/membership">{zh ? "了解贤者会员" : "See Sage membership"}</Link>
@@ -141,10 +141,10 @@ function GrantsBody() {
               <div className="flex flex-wrap items-end gap-6">
                 <Stat label={zh ? "剩余" : "Remaining"} value={remaining} strong />
                 <Stat label={zh ? "已用" : "Used"} value={credits?.used ?? 0} />
-                <Stat label={zh ? "本月发放" : "Granted"} value={credits?.granted ?? 0} />
+                <Stat label={zh ? "累计发放" : "Granted"} value={credits?.granted ?? 0} />
               </div>
               <p className="text-xs text-muted-foreground">
-                {zh ? "计费周期起始：" : "Period starts: "}
+                {zh ? "开通起始：" : "Since: "}
                 {credits?.periodStart
                   ? new Date(credits.periodStart).toLocaleDateString()
                   : "—"}
@@ -164,14 +164,14 @@ function GrantsBody() {
                       ? "领取中…"
                       : "Claiming…"
                     : zh
-                      ? "领取本月 3 次真人回复"
-                      : "Claim this month's 3 replies"}
+                      ? "领取赠送的 3 次真人回复"
+                      : "Claim your 3 gifted replies"}
                 </Button>
               ) : (
                 <p className="text-sm text-foreground/80">
                   {zh
-                    ? "本月权益已到账，未使用的次数会在下月初重置。"
-                    : "This month's grants are in your account; unused ones reset next month."}
+                    ? "赠送权益已到账。这 3 次为开通时一次性赠送，用完即止，不会每月重置。"
+                    : "Your gift is in your account. These three are a one-time grant: they do not reset each month."}
                 </p>
               )}
             </div>
@@ -242,7 +242,7 @@ function GrantsBody() {
                   </Button>
                   {remaining <= 0 ? (
                     <span className="text-xs text-muted-foreground">
-                      {zh ? "本月次数已用完" : "No grants left this month"}
+                      {zh ? "赠送次数已用完" : "No gifted replies left"}
                     </span>
                   ) : null}
                 </div>
@@ -268,7 +268,7 @@ function GrantsBody() {
                     {event.kind === "grant"
                       ? zh
                         ? "领取本月赠送"
-                        : "Claimed monthly grants"
+                        : "Claimed gifted replies"
                       : zh
                         ? `用于：${event.letterSubject || "无题"}`
                         : `Spent on: ${event.letterSubject || "Untitled"}`}

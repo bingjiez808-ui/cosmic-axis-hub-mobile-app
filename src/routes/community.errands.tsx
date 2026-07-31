@@ -13,6 +13,7 @@ import {
   HallNav,
   HallSection,
 } from "@/experiences/community-hall/HallShell";
+import { HelperStandingPanel } from "@/experiences/community-hall/HelperStandingPanel";
 import { useCommunityHall } from "@/lib/i18n-community-hall";
 import { useMyAssignments, useRespondToAssignment } from "@/lib/sage-council-client";
 import "@/experiences/community-hall/hall.css";
@@ -137,6 +138,8 @@ function Errands() {
           </div>
         )}
       </HallSection>
+
+      <HelperStandingPanel />
     </div>
   );
 }
