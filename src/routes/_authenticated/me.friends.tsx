@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
-import { PersonalWorkspaceNav, RelationshipsSubtabs } from "@/components/PersonalWorkspaceNav";
+import { RelationshipsSubtabs } from "@/components/PersonalWorkspaceNav";
+import { PersonalLibraryShell, ShelfPanel } from "@/components/PersonalLibraryShell";
 
 import {
   createInMemoryFriendsRepo,
@@ -117,24 +118,24 @@ function FriendsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a12]/25 text-amber-50">
-      <div className="mx-auto w-full max-w-[900px] px-4 py-8 md:px-8 md:py-12">
-        <div className="mb-4 rounded-lg border border-amber-400/30 bg-amber-500/5 px-4 py-2 text-xs text-amber-200/90">
+    <PersonalLibraryShell
+      active="/me/friends"
+      width="narrow"
+      kicker={lang === "zh" ? "关系与适配" : "Relationships"}
+      title={d.friends_title}
+      intro={d.friends_subtitle}
+    >
+      <div className="pl-stagger space-y-6">
+        <RelationshipsSubtabs current="friends" />
+
+        <div className="rounded-xl border border-amber-400/25 bg-amber-500/5 px-4 py-2 text-xs text-amber-200/90">
           {d.demo_banner_friends}
         </div>
-
-        <PersonalWorkspaceNav active="/me/friends" />
-        <RelationshipsSubtabs current="friends" />
-        <p className="mb-4 text-xs text-amber-200/60" data-testid="friends-purpose-hint">
+        <p className="sr-only" data-testid="friends-purpose-hint">
           {d.friends_subtitle}
         </p>
 
-        <header className="mb-6">
-          <h1 className="text-3xl font-serif tracking-wide">{d.friends_title}</h1>
-          <p className="mt-2 text-sm text-amber-100/70">{d.friends_subtitle}</p>
-        </header>
-
-        <div className="mb-6">
+        <div>
           <SocialConsentGate />
         </div>
 
@@ -146,7 +147,7 @@ function FriendsPage() {
             type="button"
             onClick={sendOutgoing}
             disabled={!consent.gated}
-            className="rounded-full border border-amber-300/40 bg-amber-300/5 px-3 py-1.5 text-xs text-amber-100 hover:bg-amber-300/10 disabled:cursor-not-allowed"
+            className="pl-pill rounded-full border border-amber-300/50 bg-amber-300/10 px-4 py-2 text-xs text-amber-100 hover:bg-amber-300/20 disabled:cursor-not-allowed"
           >
             {d.friends_send_outgoing}
           </button>
@@ -154,7 +155,7 @@ function FriendsPage() {
             type="button"
             onClick={seedIncoming}
             disabled={!consent.gated}
-            className="rounded-full border border-amber-400/20 px-3 py-1.5 text-xs text-amber-100/80 hover:border-amber-300/60 disabled:cursor-not-allowed"
+            className="pl-pill rounded-full border border-amber-400/25 px-4 py-2 text-xs text-amber-100/80 hover:border-amber-300/60 disabled:cursor-not-allowed"
           >
             {d.friends_seed_incoming}
           </button>
@@ -167,10 +168,9 @@ function FriendsPage() {
               type="button"
               onClick={() => setTab(tk)}
               aria-current={tab === tk ? "page" : undefined}
-              className={`border-b-2 px-3 py-2 text-sm ${
-                tab === tk
-                  ? "border-amber-300 text-amber-100"
-                  : "border-transparent text-amber-200/60 hover:text-amber-100"
+              data-active={tab === tk ? "true" : "false"}
+              className={`pl-underline-tab px-3 py-2 text-sm transition-colors ${
+                tab === tk ? "text-amber-100" : "text-amber-200/60 hover:text-amber-100"
               }`}
             >
               {tk === "friends"
@@ -185,7 +185,7 @@ function FriendsPage() {
         </nav>
 
         {tab === "friends" && (
-          <ul className="divide-y divide-amber-400/10 rounded-xl border border-amber-400/15 bg-black/30">
+          <ul className="pl-panel divide-y divide-amber-400/10">
             {friends.length === 0 && (
               <li className="px-4 py-6 text-sm text-amber-200/60">{d.friends_empty}</li>
             )}
@@ -194,7 +194,7 @@ function FriendsPage() {
               return (
                 <li
                   key={f.id}
-                  className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                  className="pl-row flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="text-sm">
                     <div className="text-amber-100">{other}</div>
@@ -308,14 +308,14 @@ function FriendsPage() {
         )}
 
         {tab === "blocks" && (
-          <ul className="divide-y divide-amber-400/10 rounded-xl border border-amber-400/15 bg-black/30">
+          <ul className="pl-panel divide-y divide-amber-400/10">
             {blocks.length === 0 && (
               <li className="px-4 py-6 text-sm text-amber-200/60">{d.blocks_empty}</li>
             )}
             {blocks.map((b, i) => (
               <li
                 key={i}
-                className="flex flex-col gap-2 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between"
+                className="pl-row flex flex-col gap-2 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between"
               >
                 <span className="text-amber-100">{b.blockedId}</span>
                 <button
@@ -334,12 +334,12 @@ function FriendsPage() {
         )}
 
         {tab === "inbox" && (
-          <ul className="divide-y divide-amber-400/10 rounded-xl border border-amber-400/15 bg-black/30">
+          <ul className="pl-panel divide-y divide-amber-400/10">
             {notifications.length === 0 && (
               <li className="px-4 py-6 text-sm text-amber-200/60">{d.inbox_empty}</li>
             )}
             {notifications.map((n) => (
-              <li key={n.id} className="flex items-center justify-between px-4 py-3 text-sm">
+              <li key={n.id} className="pl-row flex items-center justify-between px-4 py-3 text-sm">
                 <div>
                   <span
                     className={`mr-2 rounded-full border px-2 py-0.5 text-[10px] uppercase ${
@@ -366,8 +366,8 @@ function FriendsPage() {
         )}
 
         {reportTarget && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
-            <div className="w-full max-w-md rounded-xl border border-amber-400/30 bg-[#12121b] p-6">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
+            <div className="pl-header w-full max-w-md rounded-2xl border border-amber-400/30 bg-[#12121b]/95 p-6 shadow-[0_40px_80px_-40px_rgba(0,0,0,1)] backdrop-blur">
               <div className="text-sm text-amber-200/80">{d.report_modal_title(reportTarget)}</div>
               <div className="mt-3 space-y-2">
                 {d.report_categories.map((c) => (
@@ -415,8 +415,8 @@ function FriendsPage() {
         )}
 
         {noteTarget && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
-            <div className="w-full max-w-md rounded-xl border border-amber-400/30 bg-[#12121b] p-6">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
+            <div className="pl-header w-full max-w-md rounded-2xl border border-amber-400/30 bg-[#12121b]/95 p-6 shadow-[0_40px_80px_-40px_rgba(0,0,0,1)] backdrop-blur">
               <div className="text-sm text-amber-200/80">{d.note_modal_title(noteTarget)}</div>
               <div className="mt-2 text-xs text-amber-200/60">{d.note_modal_hint}</div>
               <div className="mt-3 space-y-2">
@@ -458,12 +458,12 @@ function FriendsPage() {
         )}
 
         {toast && (
-          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 rounded-full border border-amber-400/40 bg-black/80 px-4 py-2 text-xs text-amber-100 shadow-lg">
+          <div className="pl-header fixed bottom-6 left-1/2 -translate-x-1/2 rounded-full border border-amber-400/40 bg-black/85 px-4 py-2 text-xs text-amber-100 shadow-[0_0_30px_-8px_rgba(252,211,77,0.5)] backdrop-blur">
             {toast}
           </div>
         )}
       </div>
-    </div>
+    </PersonalLibraryShell>
   );
 }
 
@@ -490,14 +490,14 @@ function PendingList({
   return (
     <div>
       <div className="mb-2 text-xs uppercase tracking-widest text-amber-200/70">{title}</div>
-      <ul className="divide-y divide-amber-400/10 rounded-xl border border-amber-400/15 bg-black/30">
+      <ul className="pl-panel divide-y divide-amber-400/10">
         {items.length === 0 && (
           <li className="px-4 py-4 text-sm text-amber-200/60">{emptyText}</li>
         )}
         {items.map((inv) => (
           <li
             key={inv.id}
-            className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+            className="pl-row flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
           >
             <div className="text-sm">
               <div className="text-amber-100">
