@@ -48,8 +48,18 @@ export function HallOnboarding() {
       <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{card.body}</p>
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
+        {step > 0 ? (
+          <Button
+            size="sm"
+            variant="ghost"
+            className="hall-tap"
+            onClick={() => setStep(step - 1)}
+          >
+            ←
+          </Button>
+        ) : null}
         {last ? (
-          <Button size="sm" className="hall-tap" onClick={finish}>
+          <Button size="sm" className="hall-tap" disabled={mark.isPending} onClick={finish}>
             {c.onboardDone}
           </Button>
         ) : (
@@ -64,15 +74,24 @@ export function HallOnboarding() {
         >
           {c.onboardSkip}
         </button>
-        <span className="ml-auto flex gap-1.5" aria-hidden>
+        <span className="ml-auto flex gap-1.5">
           {cards.map((_, i) => (
-            <span
+            <button
               key={i}
-              className={`h-1.5 w-1.5 rounded-full ${i === step ? "bg-primary" : "bg-primary/25"}`}
-            />
+              type="button"
+              aria-label={`${i + 1} / ${cards.length}`}
+              aria-current={i === step ? "step" : undefined}
+              onClick={() => setStep(i)}
+              className="hall-tap flex h-6 w-4 items-center justify-center"
+            >
+              <span
+                className={`h-1.5 w-1.5 rounded-full transition ${i === step ? "bg-primary" : "bg-primary/25"}`}
+              />
+            </button>
           ))}
         </span>
       </div>
+
     </section>
   );
 }
