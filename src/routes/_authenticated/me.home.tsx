@@ -644,7 +644,7 @@ function DailyRoomPage() {
                 <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-amber-200/70">
                   <button
                     type="button"
-                    onClick={() => setAiRequested(true)}
+                    onClick={() => aiSegments.ensure("overview")}
                     className="min-h-8 rounded-full border border-amber-300/50 px-3 py-1 text-amber-100 hover:bg-amber-500/10"
                   >
                     {lang === "zh" ? "生成今日 AI 解读" : "Generate AI reading"}
@@ -657,36 +657,80 @@ function DailyRoomPage() {
                 </div>
               )}
 
+              {/* Today's actions — collapsed by default; expanding it is what
+                  triggers this section's own (small) AI call. */}
+              {usingRealChart && (
+                <div className="mt-4 rounded-lg border border-amber-400/20 bg-black/20">
+                  <button
+                    type="button"
+                    data-testid="daily-actions-toggle"
+                    aria-expanded={actionsOpen}
+                    onClick={toggleActions}
+                    className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-xs text-amber-100/85 hover:bg-amber-500/[0.06]"
+                  >
+                    <span>{lang === "zh" ? "今天可以做 / 今天留意" : "Do today / Observe today"}</span>
+                    <span className="text-amber-300/70">{actionsOpen ? "−" : "+"}</span>
+                  </button>
 
-
-              {ai && (ai.do_today.length > 0 || ai.observe_today.length > 0) && (
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  {ai.do_today.length > 0 && (
-                    <div className="rounded-lg border border-emerald-400/20 bg-emerald-500/[0.06] p-3">
-                      <div className="text-[10px] uppercase tracking-[0.2em] text-emerald-200/80">
-                        {lang === "zh" ? "今天可以做" : "Do today"}
-                      </div>
-                      <ul className="mt-1.5 space-y-1 text-xs leading-relaxed text-emerald-50/90">
-                        {ai.do_today.map((s, i) => (
-                          <li key={i}>· {s}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  {ai.observe_today.length > 0 && (
-                    <div className="rounded-lg border border-amber-400/20 bg-amber-500/[0.06] p-3">
-                      <div className="text-[10px] uppercase tracking-[0.2em] text-amber-200/80">
-                        {lang === "zh" ? "今天留意" : "Observe today"}
-                      </div>
-                      <ul className="mt-1.5 space-y-1 text-xs leading-relaxed text-amber-50/90">
-                        {ai.observe_today.map((s, i) => (
-                          <li key={i}>· {s}</li>
-                        ))}
-                      </ul>
+                  {actionsOpen && (
+                    <div className="border-t border-amber-400/15 px-3 py-3">
+                      {actions.status === "loading" && (
+                        <div className="space-y-2" aria-live="polite">
+                          <div className="h-3 w-10/12 animate-pulse rounded bg-amber-200/10" />
+                          <div className="h-3 w-8/12 animate-pulse rounded bg-amber-200/10" />
+                        </div>
+                      )}
+                      {actions.status === "error" && (
+                        <div className="flex flex-wrap items-center gap-3 text-xs text-rose-200/80">
+                          <span>
+                            {lang === "zh"
+                              ? "这一段暂时没有取回，稍后再试。"
+                              : "This section could not be fetched; try again."}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => aiSegments.retry("actions")}
+                            className="min-h-8 rounded-full border border-amber-300/50 px-3 py-1 text-amber-100 hover:bg-amber-500/10"
+                          >
+                            {lang === "zh" ? "重试" : "Retry"}
+                          </button>
+                        </div>
+                      )}
+                      {actions.status === "idle" && (
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <div className="rounded-lg border border-emerald-400/20 bg-emerald-500/[0.06] p-3">
+                            <div className="text-[10px] uppercase tracking-[0.2em] text-emerald-200/80">
+                              {lang === "zh" ? "今天可以做" : "Do today"}
+                            </div>
+                            <ul className="mt-1.5 space-y-1 text-xs leading-relaxed text-emerald-50/90">
+                              {(actions.data?.do_today.length
+                                ? actions.data.do_today
+                                : supportive.slice(0, 3)
+                              ).map((s: string, i: number) => (
+                                <li key={i}>· {s}</li>
+                              ))}
+                            </ul>
+                          </div>
+                          <div className="rounded-lg border border-amber-400/20 bg-amber-500/[0.06] p-3">
+                            <div className="text-[10px] uppercase tracking-[0.2em] text-amber-200/80">
+                              {lang === "zh" ? "今天留意" : "Observe today"}
+                            </div>
+                            <ul className="mt-1.5 space-y-1 text-xs leading-relaxed text-amber-50/90">
+                              {(actions.data?.observe_today.length
+                                ? actions.data.observe_today
+                                : caution.slice(0, 3)
+                              ).map((s: string, i: number) => (
+                                <li key={i}>· {s}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
               )}
+
 
               {aiState === "error" && (
                 <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-rose-200/80">
