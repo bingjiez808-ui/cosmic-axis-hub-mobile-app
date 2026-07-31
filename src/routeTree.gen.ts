@@ -32,6 +32,7 @@ import { Route as DevPanoramaTourRouteImport } from './routes/dev.panorama-tour'
 import { Route as DevGuidedLibraryV2RouteImport } from './routes/dev.guided-library-v2'
 import { Route as DevDemoPremiumRouteImport } from './routes/dev.demo-premium'
 import { Route as CommunityWriteRouteImport } from './routes/community.write'
+import { Route as CommunityWallRouteImport } from './routes/community.wall'
 import { Route as CommunityOutboxRouteImport } from './routes/community.outbox'
 import { Route as CommunityInboxRouteImport } from './routes/community.inbox'
 import { Route as CommunityEchoesRouteImport } from './routes/community.echoes'
@@ -168,6 +169,11 @@ const DevDemoPremiumRoute = DevDemoPremiumRouteImport.update({
 const CommunityWriteRoute = CommunityWriteRouteImport.update({
   id: '/community/write',
   path: '/community/write',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CommunityWallRoute = CommunityWallRouteImport.update({
+  id: '/community/wall',
+  path: '/community/wall',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CommunityOutboxRoute = CommunityOutboxRouteImport.update({
@@ -317,6 +323,7 @@ export interface FileRoutesByFullPath {
   '/community/echoes': typeof CommunityEchoesRoute
   '/community/inbox': typeof CommunityInboxRoute
   '/community/outbox': typeof CommunityOutboxRoute
+  '/community/wall': typeof CommunityWallRoute
   '/community/write': typeof CommunityWriteRoute
   '/dev/demo-premium': typeof DevDemoPremiumRoute
   '/dev/guided-library-v2': typeof DevGuidedLibraryV2Route
@@ -362,6 +369,7 @@ export interface FileRoutesByTo {
   '/community/echoes': typeof CommunityEchoesRoute
   '/community/inbox': typeof CommunityInboxRoute
   '/community/outbox': typeof CommunityOutboxRoute
+  '/community/wall': typeof CommunityWallRoute
   '/community/write': typeof CommunityWriteRoute
   '/dev/demo-premium': typeof DevDemoPremiumRoute
   '/dev/guided-library-v2': typeof DevGuidedLibraryV2Route
@@ -411,6 +419,7 @@ export interface FileRoutesById {
   '/community/echoes': typeof CommunityEchoesRoute
   '/community/inbox': typeof CommunityInboxRoute
   '/community/outbox': typeof CommunityOutboxRoute
+  '/community/wall': typeof CommunityWallRoute
   '/community/write': typeof CommunityWriteRoute
   '/dev/demo-premium': typeof DevDemoPremiumRoute
   '/dev/guided-library-v2': typeof DevGuidedLibraryV2Route
@@ -460,6 +469,7 @@ export interface FileRouteTypes {
     | '/community/echoes'
     | '/community/inbox'
     | '/community/outbox'
+    | '/community/wall'
     | '/community/write'
     | '/dev/demo-premium'
     | '/dev/guided-library-v2'
@@ -505,6 +515,7 @@ export interface FileRouteTypes {
     | '/community/echoes'
     | '/community/inbox'
     | '/community/outbox'
+    | '/community/wall'
     | '/community/write'
     | '/dev/demo-premium'
     | '/dev/guided-library-v2'
@@ -553,6 +564,7 @@ export interface FileRouteTypes {
     | '/community/echoes'
     | '/community/inbox'
     | '/community/outbox'
+    | '/community/wall'
     | '/community/write'
     | '/dev/demo-premium'
     | '/dev/guided-library-v2'
@@ -599,6 +611,7 @@ export interface RootRouteChildren {
   CommunityEchoesRoute: typeof CommunityEchoesRoute
   CommunityInboxRoute: typeof CommunityInboxRoute
   CommunityOutboxRoute: typeof CommunityOutboxRoute
+  CommunityWallRoute: typeof CommunityWallRoute
   CommunityWriteRoute: typeof CommunityWriteRoute
   DevDemoPremiumRoute: typeof DevDemoPremiumRoute
   DevGuidedLibraryV2Route: typeof DevGuidedLibraryV2Route
@@ -771,6 +784,13 @@ declare module '@tanstack/react-router' {
       path: '/community/write'
       fullPath: '/community/write'
       preLoaderRoute: typeof CommunityWriteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/community/wall': {
+      id: '/community/wall'
+      path: '/community/wall'
+      fullPath: '/community/wall'
+      preLoaderRoute: typeof CommunityWallRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/community/outbox': {
@@ -1020,6 +1040,7 @@ const rootRouteChildren: RootRouteChildren = {
   CommunityEchoesRoute: CommunityEchoesRoute,
   CommunityInboxRoute: CommunityInboxRoute,
   CommunityOutboxRoute: CommunityOutboxRoute,
+  CommunityWallRoute: CommunityWallRoute,
   CommunityWriteRoute: CommunityWriteRoute,
   DevDemoPremiumRoute: DevDemoPremiumRoute,
   DevGuidedLibraryV2Route: DevGuidedLibraryV2Route,
