@@ -31,6 +31,7 @@ function CommunitySettingsPage() {
   const [language, setLanguage] = useState<"zh" | "en">("zh");
   const [optIn, setOptIn] = useState(false);
   const [paused, setPaused] = useState(false);
+  const [acceptsAssignments, setAcceptsAssignments] = useState(false);
 
   const profile = query.data?.profile;
   useEffect(() => {
@@ -40,6 +41,7 @@ function CommunitySettingsPage() {
     setLanguage((profile.language as "zh" | "en") ?? "zh");
     setOptIn(Boolean(profile.optIn));
     setPaused(profile.status === "paused");
+    setAcceptsAssignments(Boolean(profile.acceptsAssignments));
   }, [profile]);
 
   return (
