@@ -153,6 +153,40 @@ export function HallMechanismSection() {
             : "Every exchange stays anonymous: traveler, librarian or sage, both sides only ever see a traveler identity."}
         </p>
       </div>
+
+      <div className="hall-paper mt-4 p-5">
+        <h3 className="text-sm font-semibold text-foreground">
+          {zh ? "审查与管理机制" : "Screening and moderation"}
+        </h3>
+        <ol className="mt-3 space-y-2 text-sm leading-relaxed text-muted-foreground">
+          <li>
+            {zh
+              ? "1. 写信前：写信台列出内容规范与法规提示，输入时即时预检，命中禁止内容会当场提醒。"
+              : "1. Before writing: the desk states the rules and pre-checks your draft as you type."}
+          </li>
+          <li>
+            {zh
+              ? "2. 寄出时：服务端自动审查每封信与每条回音。违反政治法规、违法事项、涉黄、辱骂威胁、留联系方式的内容一律拦下，不会进入任何信箱或信墙。"
+              : "2. On send: the server screens every letter and echo. Political violations, illegal acts, sexual content, abuse and contact details are refused outright."}
+          </li>
+          <li>
+            {zh
+              ? "3. 高风险信（如自伤、危机）不会自动投递，先由图书管理员人工复核，并附上支持资源。"
+              : "3. High-risk letters (self-harm, crisis) wait for a librarian review and carry support resources."}
+          </li>
+          <li>
+            {zh
+              ? "4. 事后：任何旅者都能对信件、回音发起举报；举报进入馆员工作台，可隐藏内容、警告或限制账号，所有处置都会记录在审核日志中。"
+              : "4. Afterwards: any traveler can report a letter or echo. Reports reach the librarian's console, where content can be hidden or accounts limited — every action is logged."}
+          </li>
+        </ol>
+        <p className="mt-3 text-xs text-muted-foreground">
+          {zh
+            ? "请遵守所在地法律法规，言论应当正当真诚。屡次违规的旅者身份会被限制寄信与回信。"
+            : "Please follow the law where you live and speak in good faith. Repeat offenders lose the right to send and answer letters."}
+        </p>
+      </div>
     </HallSection>
+
   );
 }
