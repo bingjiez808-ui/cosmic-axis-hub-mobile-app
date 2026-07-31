@@ -70,21 +70,8 @@ export function AccountModal({ open, onClose }: { open: boolean; onClose: () => 
       }
     : null);
 
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const raf = requestAnimationFrame(() => dialogRef.current?.focus());
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
-      cancelAnimationFrame(raf);
-    };
-  }, [open, onClose]);
+
+
 
   const title = displayAccount
     ? `${t.acc_signed_as} · ${displayAccount.name}`
