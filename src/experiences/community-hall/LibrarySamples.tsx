@@ -46,7 +46,7 @@ export function LibrarySamplesSection() {
               <span className="inline-block rounded-full border border-primary/25 bg-primary/5 px-2.5 py-0.5 text-[0.66rem] text-primary/80">
                 {c.samplesBadge}
               </span>
-              <h3 className="mt-3 text-base font-semibold text-foreground">
+              <h3 className="hall-card-title mt-3">
                 {sample.subject ?? c.samplesTitle}
               </h3>
               <p className="mt-1 text-[0.7rem] uppercase tracking-[0.2em] text-muted-foreground">

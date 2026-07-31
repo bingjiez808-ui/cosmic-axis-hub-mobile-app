@@ -136,7 +136,7 @@ function CommunityHallPage() {
           {c.steps.map((step, i) => (
             <li key={step.title} className="hall-paper hall-rise relative p-5">
               <span className="hall-step-dot">0{i + 1}</span>
-              <h3 className="mt-3 text-base font-semibold text-foreground">{step.title}</h3>
+              <h3 className="hall-card-title mt-3">{step.title}</h3>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{step.body}</p>
             </li>
           ))}

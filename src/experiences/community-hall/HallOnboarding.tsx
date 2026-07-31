@@ -44,7 +44,7 @@ export function HallOnboarding() {
         </span>
       </div>
 
-      <h3 className="mt-3 text-base font-semibold text-foreground">{card.title}</h3>
+      <h3 className="hall-card-title mt-3">{card.title}</h3>
       <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{card.body}</p>
 
       <div className="mt-4 flex flex-wrap items-center gap-3">

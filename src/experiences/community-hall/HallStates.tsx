@@ -49,7 +49,7 @@ export function HallError({ error, onRetry }: { error: unknown; onRetry?: () => 
 /** Empty shelf: always paired with one thing the traveler can do next. */
 export function HallEmptyState({ text, cta }: { text: string; cta?: ReactNode }) {
   return (
-    <div className="rounded-2xl border border-dashed border-primary/20 bg-background/40 p-8 text-center">
+    <div className="hall-empty p-8 text-center">
       <p className="text-pretty text-sm leading-relaxed text-muted-foreground">{text}</p>
       {cta ? <div className="mt-5 flex justify-center">{cta}</div> : null}
     </div>
