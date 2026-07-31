@@ -376,18 +376,14 @@ function DailyRoomPage() {
 
 
 
-        {/* Welcome */}
-        <header className="pl-header mb-8">
-          <div className="text-xs uppercase tracking-[0.2em] text-amber-300/60">
-            {d.today_kicker}
-          </div>
-          <h1 className="mt-2 text-3xl font-serif tracking-wide md:text-4xl">{d.today_title}</h1>
-          <div className="mt-2 text-sm text-amber-100/70">
+        {/* Date + sample-chart switcher. The page H1 lives in the header above;
+            repeating it here was pure duplication. */}
+        <div className="mb-8 flex flex-wrap items-center gap-x-4 gap-y-2">
+          <div className="text-sm text-amber-100/70">
             {fmtDate(today, tz)} · {tz} ·{" "}
             {d.today_chart_label(FIXTURE_CHART_LABELS[fixtureKey][lang])}
           </div>
-
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2">
             {FIXTURE_KEYS.map((k) => (
               <button
                 key={k}
@@ -404,7 +400,8 @@ function DailyRoomPage() {
               </button>
             ))}
           </div>
-        </header>
+        </div>
+
 
         {/* Curator's welcome bookmark — always present, always the same anchor.
             Signed-in visitors see today's welcomeBack line; without an intent
