@@ -307,7 +307,8 @@ const zh: DailyDict = {
   overall_signal: "今日综合信号",
   overall_out_of: "/ 100",
   overall_note:
-    "这是「今日领域信号」，不是成功率或好运概率。以下建议仅供参考，现实情境优先。",
+    "今日阅览室只提供一面镜子，照见星历与心境的交汇；路仍在你脚下。",
+
   today_theme: "今日主题",
   theme_pending: "今日星象计算待接入 / 缺关键事实。",
   theme_line: (phase, kw) => `月相 ${phase} · 主题词 ${kw}`,
