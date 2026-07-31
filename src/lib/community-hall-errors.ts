@@ -32,6 +32,8 @@ export type HallErrorCode =
   | "content_rejected"
   | "content_in_review"
   | "not_allowed"
+  | "sage_required"
+  | "no_reply_credits"
   | "offline"
   | "unknown";
 
