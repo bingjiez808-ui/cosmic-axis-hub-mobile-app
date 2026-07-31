@@ -146,25 +146,48 @@ Output STRICT JSON only — no prose, no code fences.
 
 ${guardrailsFor("en")}`;
 
-    const schema = isZh
-      ? `{
+    // Per-section schema: only the fields the expanded module needs, so each
+    // call stays small (fewer tokens = lower cost, faster first paint).
+    const target = data.targetDomain ?? "";
+    const schemas: Record<DailyReadingSection, string> = isZh
+      ? {
+          overview: `{
   "one_line_theme": "≤ 22 字的今日主题，必须引用月相/逆行/最强相位之一",
-  "narrative": "2-3 句，约 80-140 字，串起总体信号与最突出的两个领域，引用具体证据",
-  "domain_lines": [ { "domain": "love|study|career|body_mind|finance", "line": "≤ 34 字，引用该领域的证据" } ],
+  "narrative": "2-3 句，约 80-140 字，串起总体信号与最突出的两个领域，引用具体证据"
+}`,
+          actions: `{
   "do_today": ["≤ 24 字的具体动作", "…", "…"],
   "observe_today": ["≤ 24 字的观察点", "…", "…"],
   "countercondition": "一句反条件，例如「如果今天的实际安排与此不同，以现实为准」",
   "reflection_question": "一句自省提问"
-}`
-      : `{
+}`,
+          domain: `{
+  "domain_lines": [ { "domain": "${target}", "line": "≤ 34 字，引用该领域的证据" } ],
+  "narrative": "1-2 句，只讲 ${target} 这一个领域今天的信号与由来",
+  "do_today": ["≤ 24 字，针对该领域的动作", "…"],
+  "observe_today": ["≤ 24 字，针对该领域的观察点", "…"]
+}`,
+        }
+      : {
+          overview: `{
   "one_line_theme": "<= 12 words, citing moon phase / retrograde / strongest aspect",
-  "narrative": "2-3 sentences tying the overall signal to the two most notable domains, citing evidence",
-  "domain_lines": [ { "domain": "love|study|career|body_mind|finance", "line": "<= 18 words citing that domain's evidence" } ],
+  "narrative": "2-3 sentences tying the overall signal to the two most notable domains, citing evidence"
+}`,
+          actions: `{
   "do_today": ["concrete action", "…", "…"],
   "observe_today": ["thing to watch", "…", "…"],
   "countercondition": "one line: if reality differs, reality wins",
   "reflection_question": "one self-inquiry prompt"
-}`;
+}`,
+          domain: `{
+  "domain_lines": [ { "domain": "${target}", "line": "<= 18 words citing that domain's evidence" } ],
+  "narrative": "1-2 sentences about the ${target} domain only",
+  "do_today": ["action for this domain", "…"],
+  "observe_today": ["thing to watch in this domain", "…"]
+}`,
+        };
+    const schema = schemas[data.section];
+
 
     const { text } = await generateText({
       model: gateway("google/gemini-3.6-flash"),
