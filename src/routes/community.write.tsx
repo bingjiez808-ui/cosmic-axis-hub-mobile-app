@@ -158,8 +158,12 @@ function WriteFlow() {
   const humanCredits = entitlement.data?.credits?.remaining ?? 0;
   const busy = send.isPending || askSage.isPending || sendLibrarian.isPending;
 
+  // Only these doors route the letter to living readers, so only they need a
+  // chapter of life. A sage answers whoever wrote, regardless of age.
+  const needsBand = dest !== "sage";
+
   function goStepThree() {
-    if (!band) return setError(c.required);
+    if (needsBand && !band) return setError(c.required);
     if ((dest === "sage" || dest === "librarian") && !entitledForSage) {
       return setError(
         zh
@@ -179,7 +183,8 @@ function WriteFlow() {
   }
 
   async function submit() {
-    if (!band || !agree) return setError(c.required);
+    if (!agree || (needsBand && !band)) return setError(c.required);
+    const sendBand: AgeBand = band ?? "30_39";
     try {
       setErrorCode(null);
       if (dest === "sage") {
@@ -188,7 +193,7 @@ function WriteFlow() {
           subject: subject.trim() || null,
           body: body.trim(),
           topic,
-          targetAgeBand: band,
+          targetAgeBand: sendBand,
           lang: zh ? "zh" : "en",
         });
         finishSend({ pendingReview: result.pendingReview, delivered: 0, dest, reply: result.reply });
@@ -199,7 +204,7 @@ function WriteFlow() {
           subject: subject.trim() || null,
           body: body.trim(),
           topic,
-          targetAgeBand: band,
+          targetAgeBand: sendBand,
         });
         finishSend({ pendingReview: result.pendingReview, delivered: 0, dest });
         return;
@@ -208,7 +213,7 @@ function WriteFlow() {
         subject: subject.trim() || null,
         body: body.trim(),
         topic,
-        targetAgeBand: band,
+        targetAgeBand: sendBand,
         visibility: dest === "wall" ? "wall" : "delivered_only",
       });
       finishSend({ pendingReview: result.pendingReview, delivered: result.delivered, dest });
@@ -620,7 +625,7 @@ function WriteFlow() {
         <div className="hall-rise mt-6 space-y-5">
           <div className="hall-paper hall-envelope p-5" data-unread="true">
             <p className="text-xs text-muted-foreground">
-              {c.previewTo} {c.ageBand(band)} · {c.topic(topic)} ·{" "}
+              {c.previewTo} {band ? `${c.ageBand(band)} · ` : ""}{c.topic(topic)} ·{" "}
               <span className="text-primary/80">
                 {dest === "wall"
                   ? zh
