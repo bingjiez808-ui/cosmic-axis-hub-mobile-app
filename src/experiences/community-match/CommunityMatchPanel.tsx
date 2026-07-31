@@ -725,9 +725,8 @@ function InvitesTab() {
     }
   }, [list, c]);
 
-  useEffect(() => {
-    void refresh();
-  }, [refresh]);
+  usePolledRefresh(refresh);
+
 
   const act = async (id: string, action: "accept" | "decline" | "block") => {
     try {
