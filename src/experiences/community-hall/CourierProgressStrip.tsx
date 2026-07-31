@@ -15,6 +15,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 
+import { DraftPeekDialog } from "./DraftPeekDialog";
 import { useCommunityMailbox } from "@/lib/community-hall-client";
 import { useCommunityHall } from "@/lib/i18n-community-hall";
 import { loadLetterDraft, subscribeLetterDraft, type LetterDraft } from "@/lib/letter-draft";
@@ -47,6 +48,7 @@ export function CourierProgressStrip() {
   const zh = c.lang !== "en";
   const { user } = useSupabaseSession();
   const draft = useLiveDraft();
+  const [peeking, setPeeking] = useState(false);
   const mailbox = useCommunityMailbox(Boolean(user));
 
   const sent = mailbox.data?.sent ?? [];
@@ -72,12 +74,21 @@ export function CourierProgressStrip() {
             {zh ? "保存于 " : "saved "}
             {relativeTime(draft!.savedAt, zh ? "zh" : "en")}
           </span>
-          <Link
-            to="/community/write"
-            className="hall-tap text-primary underline-offset-4 hover:underline"
-          >
-            {zh ? "继续写完 →" : "Continue →"}
-          </Link>
+          <span className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setPeeking(true)}
+              className="hall-tap text-primary underline-offset-4 hover:underline"
+            >
+              {zh ? "打开草稿" : "Open draft"}
+            </button>
+            <Link
+              to="/community/write"
+              className="hall-tap text-primary underline-offset-4 hover:underline"
+            >
+              {zh ? "继续写完 →" : "Continue →"}
+            </Link>
+          </span>
         </p>
       ) : (
         <p className="text-muted-foreground/80">
@@ -107,6 +118,12 @@ export function CourierProgressStrip() {
           </Link>
         </dl>
       ) : null}
+
+      <DraftPeekDialog
+        draft={draft}
+        open={peeking && hasDraft}
+        onOpenChange={setPeeking}
+      />
     </section>
   );
 }
