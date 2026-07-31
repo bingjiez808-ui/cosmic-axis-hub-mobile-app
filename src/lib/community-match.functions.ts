@@ -515,15 +515,47 @@ export const listMyCommunityMatches = createServerFn({ method: "POST" })
         aliasMap.set(p.user_id, { alias: p.anonymous_alias, age_band: p.age_band, show: p.show_age_band });
       }
     }
+    // Backfill: a pair whose grants are both live but has no snapshot (e.g.
+    // an accept that failed to persist) is computed on read, once.
+    const computed = new Map<string, CompatResult>();
+    for (const g of grants) {
+      const key = `${g.pair_key}:${g.mode}`;
+      const bothLive = g.a_granted_at && g.b_granted_at && !g.a_revoked_at && !g.b_revoked_at;
+      if (results.has(key) || !bothLive) continue;
+      const otherId = g.a_user_id === context.userId ? g.b_user_id : g.a_user_id;
+      const compat = await computeAndPersistPairSnapshot(context.supabase, context.userId, {
+        sender_id: context.userId,
+        recipient_id: otherId,
+        mode: g.mode,
+      }).catch(() => null);
+      if (compat) computed.set(key, compat);
+    }
     const views: MatchView[] = [];
     for (const g of grants) {
       const otherId = g.a_user_id === context.userId ? g.b_user_id : g.a_user_id;
       const meGrantLive = (g.a_user_id === context.userId ? g.a_granted_at && !g.a_revoked_at : g.b_granted_at && !g.b_revoked_at);
       const themGrantLive = (g.a_user_id === context.userId ? g.b_granted_at && !g.b_revoked_at : g.a_granted_at && !g.a_revoked_at);
       const p = aliasMap.get(otherId);
-      const r = results.get(`${g.pair_key}:${g.mode}`) as
+      const fresh = computed.get(`${g.pair_key}:${g.mode}`);
+      const r = (results.get(`${g.pair_key}:${g.mode}`) ??
+        (fresh
+          ? {
+              facets_snapshot: fresh.dimensions,
+              score_snapshot: { overall: fresh.overall, overallBand: overallBandFor(fresh.overall) },
+              evidence_summary: {
+                resonances: fresh.resonances,
+                complements: fresh.complements,
+                frictions: fresh.frictions,
+                suggestions: fresh.suggestions,
+                evidence: fresh.evidence_refs,
+              },
+              calculator_version: COMPATIBILITY_SCORE_VERSION,
+              created_at: new Date().toISOString(),
+            }
+          : undefined)) as
         | { facets_snapshot: Array<{ key: string; score: number; band: string }>; score_snapshot: { overall: number; overallBand: string }; evidence_summary: { resonances: string[]; complements: string[]; frictions: string[]; suggestions: string[]; evidence: string[] }; calculator_version: string; created_at: string }
         | undefined;
+
       views.push({
         pairKey: g.pair_key,
         mode: g.mode,
