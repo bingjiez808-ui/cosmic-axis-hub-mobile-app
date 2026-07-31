@@ -328,7 +328,8 @@ const zh: DailyDict = {
   ],
   countercondition_title: "如果现实不同",
   countercondition_body:
-    "如果现实情境与今日信号相反（例如实际推进得比预想更顺利），以现实为准；今日读数只是「值得留意的可能性」。",
+    "若今日信号与现实相反，请以现实为准——它只是一页值得留意的脚注。",
+
   reflection_title: "自我探问",
   reflection_body: "「今天有没有一件事，我是因为惯性去做，而不是真的想做？」",
   free_tier_notice:
