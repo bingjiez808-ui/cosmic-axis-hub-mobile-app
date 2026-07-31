@@ -2065,6 +2065,23 @@ function ReportPage() {
             )}
           </div>
         )}
+        {search.date && aiState === "ready" && aiProgress.degraded > 0 && (
+          <div className="glass-card flex flex-col gap-3 rounded-2xl px-5 py-3 text-[11px] uppercase tracking-[0.28em] text-gold-dust/70 sm:flex-row sm:items-center sm:justify-between">
+            <span>
+              {lang === "zh"
+                ? `有 ${aiProgress.degraded} 个维度暂用通用文本（其余为个性化解读）。`
+                : `${aiProgress.degraded} module(s) fell back to the template; the rest are personalised.`}
+            </span>
+            <button
+              type="button"
+              onClick={() => runReport()}
+              className="flex-none rounded-full border border-gold-dust/40 px-4 py-1.5 text-[10px] tracking-[0.28em] text-gold-dust transition-colors hover:bg-gold-dust/10"
+            >
+              {lang === "zh" ? "重新生成" : "Regenerate"}
+            </button>
+          </div>
+        )}
+
         {/* Quick module nav — ten reading modules + membership */}
         <nav
           aria-label={lang === "zh" ? "模块导航" : "Module navigation"}
