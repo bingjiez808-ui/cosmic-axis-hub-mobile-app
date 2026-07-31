@@ -632,91 +632,9 @@ function DailyRoomPage() {
           </details>
         </section>
 
-        {/* Per-domain plain-language ledger */}
-        <section className="mb-8 grid gap-3 md:grid-cols-2">
-          {plain.domains.map((pd) => {
-            const row = score.domains.find((x) => x.domain === pd.domain);
-            if (!row) return null;
-            return (
-              <details
-                key={pd.domain}
-                className="rounded-xl border border-amber-400/15 bg-black/25 p-4 text-sm"
-              >
-                <summary className="cursor-pointer">
-                  <span className="text-amber-100">{domainLabel(pd.domain)}</span>
-                  <span className="ml-2 text-xs text-amber-300/80">{row.score}</span>
-                  <span
-                    className={`ml-2 inline-block rounded-full border px-2 py-0.5 text-[10px] ${BAND_COLOR[row.band]}`}
-                  >
-                    {xlate(d.band, row.band)}
-                  </span>
-                </summary>
-                <div className="mt-3 space-y-2 text-amber-100/85 leading-relaxed">
-                  <p>{pd.headline}</p>
-                  <p className="text-amber-100/70">{pd.may_show_as}</p>
-                  {pd.do_today.length > 0 && (
-                    <div>
-                      <div className="text-[11px] uppercase tracking-widest text-emerald-200/80">
-                        {lang === "zh" ? "建议做" : "Do today"}
-                      </div>
-                      <ul className="mt-1 list-disc pl-5 text-emerald-50/90">
-                        {pd.do_today.map((s, i) => <li key={i}>{s}</li>)}
-                      </ul>
-                    </div>
-                  )}
-                  {pd.avoid_today.length > 0 && (
-                    <div>
-                      <div className="text-[11px] uppercase tracking-widest text-rose-200/80">
-                        {lang === "zh" ? "注意避免" : "Avoid today"}
-                      </div>
-                      <ul className="mt-1 list-disc pl-5 text-rose-50/90">
-                        {pd.avoid_today.map((s, i) => <li key={i}>{s}</li>)}
-                      </ul>
-                    </div>
-                  )}
-                  <div className="text-[11px] text-amber-200/60">{pd.week_trend}</div>
-                  {/* Score ledger */}
-                  <div className="mt-2 border-t border-amber-400/10 pt-2">
-                    <div className="text-[11px] uppercase tracking-widest text-amber-200/70">
-                      {lang === "zh" ? "本日加减分账单" : "Today's score ledger"}
-                    </div>
-                    <div className="mt-1 text-[11px] text-amber-100/70">
-                      {lang === "zh" ? "基础分 50" : "Base 50"}
-                    </div>
-                    {row.breakdown.length === 0 ? (
-                      <div className="mt-1 text-[11px] text-amber-100/60">
-                        {lang === "zh"
-                          ? "今天没有足够强的单项信号，保持中性观察。"
-                          : "No strong single signal today — stay observant."}
-                      </div>
-                    ) : (
-                      <ul className="mt-1 space-y-0.5">
-                        {row.breakdown.slice(0, 6).map((b, i) => (
-                          <li key={i} className="flex justify-between text-[11px] text-amber-100/75">
-                            <span>
-                              {b.direction > 0
-                                ? (lang === "zh" ? "和谐信号" : "Harmonious")
-                                : (lang === "zh" ? "紧张信号" : "Straining")}
-                              {" · "}
-                              {lang === "zh" ? "权重" : "w"} {b.weight} · orb {b.orb.toFixed(1)}°
-                            </span>
-                            <span className={b.delta_applied >= 0 ? "text-emerald-300" : "text-rose-300"}>
-                              {b.delta_applied >= 0 ? "+" : ""}{b.delta_applied}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    <div className="mt-1 text-[11px] text-amber-200/70">
-                      {lang === "zh" ? "最终分" : "Final"} · {row.score} ·{" "}
-                      {lang === "zh" ? "置信度" : "confidence"} {xlate(d.confidence, row.confidence)}
-                    </div>
-                  </div>
-                </div>
-              </details>
-            );
-          })}
-        </section>
+        {/* Per-domain readings now open from the domain cards above (modal),
+            so this page no longer repeats the same six blocks inline. */}
+
 
 
         {/* Counter + reflection */}
