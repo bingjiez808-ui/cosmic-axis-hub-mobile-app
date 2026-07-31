@@ -34,6 +34,35 @@ const SOLICITATION_PATTERNS: Array<[string, RegExp]> = [
   ["recruit", /(加入我们的群|进群领|私信领取|一对一辅导收费|付费咨询请联系)/i],
 ];
 
+/**
+ * 政治法规 / 违法 / 涉黄 — content the hall never carries, in any direction.
+ * Kept deliberately narrow so ordinary talk about work, news or the body is
+ * not caught: each pattern needs an explicit act, trade or slur.
+ */
+const POLITICAL_PATTERNS: Array<[string, RegExp]> = [
+  ["subversion", /(颠覆(国家)?政权|推翻政府|煽动(颠覆|分裂|叛乱|暴乱)|武装暴动|政变)/],
+  ["separatism", /(分裂国家|港独|台独|藏独|疆独|国家分裂活动)/],
+  ["terror", /(恐怖组织|恐怖袭击|极端主义宣传|圣战|招募.{0,4}恐怖|制造恐慌袭击|terrorist attack|jihad recruit)/i],
+  ["political_org", /(非法集会|游行示威组织|串联上街|散布政治谣言|颠覆宣传单)/],
+  ["banned_speech", /(反动标语|反动传单|煽动仇恨(民族|宗教)|种族清洗|纳粹万岁|heil hitler|white power)/i],
+];
+
+const SEXUAL_PATTERNS: Array<[string, RegExp]> = [
+  ["porn", /(色情(片|网站|资源|链接)|黄片|av资源|成人视频|情色小说|porn\s?(site|link|video)|nsfw\s?link|onlyfans)/i],
+  ["prostitution", /(卖淫|嫖娼|援交|包夜|一夜情交易|上门服务.{0,6}(价|钱)|外围女|楼凤|escort\s?service|sex\s?for\s?money)/i],
+  ["sexual_solicit", /(约炮|开房吗|裸聊|裸照|发张裸|视频裸|想睡你|口交|做爱吧|send\s?nudes|dick\s?pic|sext(ing)?)/i],
+  ["csam", /(幼女|萝莉资源|未成年.{0,4}(裸|性交|性服务)|child\s?porn|underage\s?(nude|sex))/i],
+];
+
+const ILLEGAL_PATTERNS: Array<[string, RegExp]> = [
+  ["drug_trade", /(卖(冰毒|大麻|摇头丸)|买(冰毒|大麻|摇头丸)|贩毒|毒品(交易|渠道|货源)|上头电子烟|buy\s?(meth|cocaine|heroin))/i],
+  ["weapon_trade", /(卖枪|买枪|枪支(买卖|货源)|仿真枪出售|制作(炸药|爆炸物)|土制炸弹|how to make a bomb)/i],
+  ["forgery", /(办假证|假身份证|假学历|假章|代开发票|伪造(公章|证件|流水))/i],
+  ["black_market", /(洗钱渠道|跑分|四件套(出售|收购)|黑卡|盗刷|开票洗单|人体器官(买卖|出售)|代孕(中介|服务))/i],
+  ["gambling", /(网络赌博|赌球|开赌盘|六合彩(网站|下注)|博彩平台|online casino invite)/i],
+  ["hacking", /(黑客(接单|服务)|盗号(接单|服务)|开房记录查询|人肉搜索(服务|接单)|查开房|信息贩卖)/i],
+];
+
 const ABUSE_PATTERNS: Array<[string, RegExp]> = [
   ["abuse", /(去死|滚出去|傻逼|贱人|白痴|智障|杂种|fuck\s?you|bitch|idiot|kys)/i],
   ["hate", /(死全家|下地狱|该死的女人|该死的男人)/i],
@@ -57,6 +86,9 @@ export function screenCommunityText(raw: string): SafetyVerdict {
   const blocked = [
     ...match(CONTACT_PATTERNS, text),
     ...match(SOLICITATION_PATTERNS, text),
+    ...match(POLITICAL_PATTERNS, text),
+    ...match(SEXUAL_PATTERNS, text),
+    ...match(ILLEGAL_PATTERNS, text),
     ...match(ABUSE_PATTERNS, text),
   ];
   if (blocked.length > 0) return { action: "block", categories: unique(blocked) };
@@ -69,25 +101,58 @@ function unique(items: string[]): string[] {
   return Array.from(new Set(items));
 }
 
+const CONTACT_CODES = ["email", "phone", "wechat", "wechat_hint", "social", "qrcode", "url"];
+const SOLICIT_CODES = ["payment", "financial", "scam", "recruit"];
+export const POLITICAL_CODES = [
+  "subversion",
+  "separatism",
+  "terror",
+  "political_org",
+  "banned_speech",
+];
+export const SEXUAL_CODES = ["porn", "prostitution", "sexual_solicit", "csam"];
+export const ILLEGAL_CODES = [
+  "drug_trade",
+  "weapon_trade",
+  "forgery",
+  "black_market",
+  "gambling",
+  "hacking",
+];
+
 /** Stable refusal code; the client turns it into bilingual copy. */
 export function safetyCode(
   categories: string[],
-): "content_contact" | "content_solicitation" | "content_rejected" {
-  if (categories.some((c) => ["email", "phone", "wechat", "wechat_hint", "social", "qrcode", "url"].includes(c))) {
-    return "content_contact";
-  }
-  if (categories.some((c) => ["payment", "financial", "scam", "recruit"].includes(c))) {
-    return "content_solicitation";
-  }
+):
+  | "content_contact"
+  | "content_solicitation"
+  | "content_political"
+  | "content_sexual"
+  | "content_illegal"
+  | "content_rejected" {
+  if (categories.some((c) => POLITICAL_CODES.includes(c))) return "content_political";
+  if (categories.some((c) => SEXUAL_CODES.includes(c))) return "content_sexual";
+  if (categories.some((c) => ILLEGAL_CODES.includes(c))) return "content_illegal";
+  if (categories.some((c) => CONTACT_CODES.includes(c))) return "content_contact";
+  if (categories.some((c) => SOLICIT_CODES.includes(c))) return "content_solicitation";
   return "content_rejected";
 }
 
 /** Human-facing refusal copy; deliberately generic, no echo of user text. */
 export function safetyMessage(categories: string[]): string {
-  if (categories.some((c) => ["email", "phone", "wechat", "wechat_hint", "social", "qrcode", "url"].includes(c))) {
+  if (categories.some((c) => POLITICAL_CODES.includes(c))) {
+    return "信中不能包含违反法律法规的政治内容、煽动性言论或极端主义宣传。";
+  }
+  if (categories.some((c) => SEXUAL_CODES.includes(c))) {
+    return "信中不能包含色情、性交易或性骚扰内容。众生之厅只谈人生困惑。";
+  }
+  if (categories.some((c) => ILLEGAL_CODES.includes(c))) {
+    return "信中不能包含违法交易、伪造证件、赌博、毒品或其他违法行为的内容。";
+  }
+  if (categories.some((c) => CONTACT_CODES.includes(c))) {
     return "为了保护双方隐私，信中不能包含手机号、微信号、邮箱、二维码或外部链接。";
   }
-  if (categories.some((c) => ["payment", "financial", "scam", "recruit"].includes(c))) {
+  if (categories.some((c) => SOLICIT_CODES.includes(c))) {
     return "信中不能包含金钱往来、投资招揽或商业推广内容。";
   }
   return "这封信包含不适合公开寄出的内容，请修改后再试。";
@@ -97,7 +162,7 @@ export function safetyMessage(categories: string[]): string {
  * Categories that must never be auto-published and must reach a human fast:
  * self-harm, threats of violence, and anything hinting the writer is a minor.
  */
-const CRISIS_CATEGORIES = ["self_harm", "violence", "minor_risk"] as const;
+const CRISIS_CATEGORIES = ["self_harm", "violence", "minor_risk", "csam", "terror"] as const;
 
 export type RiskLevel = "none" | "review" | "crisis";
 
