@@ -38,9 +38,10 @@ import { FeatureLibraryShelf } from "@/components/FeatureLibraryShelf";
 import { PlayfulLibrarySection } from "@/components/PlayfulLibrarySection";
 import { PostRitualRoomsSection } from "@/components/PostRitualRoomsSection";
 import { HomePersonalDeskTeaser } from "@/components/HomePersonalDeskTeaser";
+import { HallHomeIntro } from "@/components/HallHomeIntro";
 import { ReaderPassCard } from "@/components/reader-pass/ReaderPassCard";
 
-const DRAWER_IDS = new Set<HomeCardId>(["concern", "commons", "rooms", "desk"]);
+const DRAWER_IDS = new Set<HomeCardId>(["concern", "commons", "rooms", "hall", "desk"]);
 
 function readHashFeature(): HomeCardId | null {
   if (typeof window === "undefined") return null;
@@ -269,7 +270,7 @@ function HomeCard({
 
   const plan = resolveCta({
     target: routeTarget,
-    requiresAuth: !(card.id === "concern" || card.id === "commons"),
+    requiresAuth: !(card.id === "concern" || card.id === "commons" || card.id === "hall"),
     requiresPrimaryChart: !!card.requiresPrimaryChart,
     requiresTier: card.requiresTier,
     isSignedIn: facts.isSignedIn,
@@ -444,6 +445,8 @@ function DrawerBody({
       return <PlayfulLibrarySection />;
     case "rooms":
       return <PostRitualRoomsSection />;
+    case "hall":
+      return <HallHomeIntro />;
     case "desk":
       return <HomePersonalDeskTeaser />;
     default:

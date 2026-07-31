@@ -86,6 +86,8 @@ function ariaLabel(kind: HomeCardVisualKind) {
       return "Six halls grid";
     case "rooms":
       return "Reading rooms";
+    case "hall":
+      return "Sealed letter of the hall";
   }
 }
 
@@ -105,6 +107,8 @@ function renderVisual(kind: HomeCardVisualKind): ReactNode {
       return <CommonsVisual />;
     case "rooms":
       return <RoomsVisual />;
+    case "hall":
+      return <HallVisual />;
   }
 }
 
@@ -360,6 +364,49 @@ function RoomsVisual() {
           </text>
         </g>
       ))}
+    </svg>
+  );
+}
+
+function HallVisual() {
+  return (
+    <svg viewBox="0 0 200 140">
+      <defs>
+        <radialGradient id="hcv-hall" cx="50%" cy="55%">
+          <stop offset="0%" stopColor={GOLD} stopOpacity="0.55" />
+          <stop offset="100%" stopColor={GOLD} stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <circle cx="100" cy="76" r="62" fill="url(#hcv-hall)" className="hcv-float" />
+      {/* envelope */}
+      <g className="hcv-float">
+        <rect
+          x="46"
+          y="38"
+          width="108"
+          height="72"
+          rx="6"
+          fill="rgba(20,15,25,0.85)"
+          stroke={GOLD_SOFT}
+        />
+        <path d="M46 44 L100 84 L154 44" fill="none" stroke={GOLD_SOFT} />
+        {/* wax seal */}
+        <circle cx="100" cy="86" r="14" fill="rgba(150,40,40,0.55)" stroke={GOLD} />
+        <circle cx="100" cy="86" r="7" fill="none" stroke={GOLD} strokeOpacity="0.7" />
+      </g>
+      {/* travelling echoes */}
+      <g className="hcv-spin">
+        {[0, 120, 240].map((a) => (
+          <circle
+            key={a}
+            className="hcv-mote"
+            cx={100 + 72 * Math.cos((a * Math.PI) / 180)}
+            cy={76 + 46 * Math.sin((a * Math.PI) / 180)}
+            r="3.5"
+            fill={GOLD}
+          />
+        ))}
+      </g>
     </svg>
   );
 }
