@@ -396,47 +396,113 @@ function WriteFlow() {
           </div>
           <div className="pt-2">
             <p className="text-sm font-medium text-foreground">
-              {c.lang === "en" ? "How should this letter travel?" : "这封信怎么走？"}
+              {zh ? "这封信寄给谁？" : "Who should receive this letter?"}
             </p>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               {(
                 [
                   {
-                    key: "delivered_only" as const,
-                    title: c.lang === "en" ? "Hand it to the courier" : "交给信使定向投递",
-                    body:
-                      c.lang === "en"
-                        ? "Private. The courier delivers it to a few strangers in the chapter of life you chose; only they can answer."
-                        : "私密。信使会把它分批送给你选定人生阶段中的少数陌生旅者，只有收到的人能回信。",
+                    key: "courier" as const,
+                    title: zh ? "交给信使定向投递" : "Hand it to the courier",
+                    body: zh
+                      ? "私密。信使会把它分批送给你选定人生阶段中的少数陌生旅者，只有收到的人能回信。"
+                      : "Private. The courier delivers it to a few strangers in the chapter of life you chose; only they can answer.",
+                    locked: false,
                   },
                   {
                     key: "wall" as const,
-                    title: c.lang === "en" ? "Pin it on the public wall" : "张贴到公共信墙",
-                    body:
-                      c.lang === "en"
-                        ? "Open. Everyone in the hall can read it and decide whether to answer. Still anonymous — only your traveler alias shows."
-                        : "公开。厅中所有人都能读到，谁想回就回。依然匿名，只显示你的旅者代号。",
+                    title: zh ? "张贴到公共信墙" : "Pin it on the public wall",
+                    body: zh
+                      ? "公开。厅中所有人都能读到，谁想回就回。依然匿名，只显示你的旅者代号。"
+                      : "Open. Everyone in the hall can read it and decide whether to answer. Still anonymous — only your traveler alias shows.",
+                    locked: false,
+                  },
+                  {
+                    key: "sage" as const,
+                    title: zh ? "请一位历代先贤回信" : "Ask a sage of the past",
+                    body: zh
+                      ? "十二位已故思想者依其生平与语气回信。需「贤者」会员；每月另赠三次真人回复。"
+                      : "One of twelve long-dead thinkers answers in their own documented voice. Requires the Sage membership; three human-reply grants included each month.",
+                    locked: !entitledForSage,
+                  },
+                  {
+                    key: "librarian" as const,
+                    title: zh ? "寄给图书管理员" : "Send it to the librarian",
+                    body: zh
+                      ? "由图书管理员亲自读信：他会回信，或把它托付给一位愿意接信的旅者。"
+                      : "The librarian reads it personally: they answer, or entrust it to a traveler who offered to help.",
+                    locked: false,
                   },
                 ]
               ).map((option) => (
                 <button
                   key={option.key}
                   type="button"
-                  onClick={() => setVisibility(option.key)}
-                  aria-pressed={visibility === option.key}
+                  onClick={() => setDest(option.key)}
+                  aria-pressed={dest === option.key}
                   className={`hall-tap rounded-2xl border p-4 text-left transition ${
-                    visibility === option.key
+                    dest === option.key
                       ? "border-primary/50 bg-primary/10"
                       : "border-primary/15 bg-background/60 hover:border-primary/30"
                   }`}
                 >
-                  <span className="block text-sm font-semibold text-foreground">{option.title}</span>
+                  <span className="block text-sm font-semibold text-foreground">
+                    {option.title}
+                    {option.locked ? (
+                      <span className="ml-2 rounded-full border border-primary/30 px-2 py-0.5 text-[0.62rem] text-primary/80">
+                        {zh ? "贤者会员" : "Sage only"}
+                      </span>
+                    ) : null}
+                  </span>
                   <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
                     {option.body}
                   </span>
                 </button>
               ))}
             </div>
+            {dest === "sage" ? (
+              entitledForSage ? (
+                <div className="mt-4">
+                  <p className="text-sm font-medium text-foreground">
+                    {zh ? "选择一位先贤" : "Choose a sage"}
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {SAGE_PERSONAS.map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => setPersonaId(p.id)}
+                        aria-pressed={personaId === p.id}
+                        className={`hall-tap rounded-full border px-3.5 py-2 text-xs transition ${
+                          personaId === p.id
+                            ? "border-primary/50 bg-primary/15 text-primary"
+                            : "border-primary/15 text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {zh ? p.name.zh : p.name.en}
+                        <span className="ml-1 opacity-60">
+                          {SAGE_DOMAIN_LABEL[p.domain][zh ? "zh" : "en"]}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="hall-inset mt-4 flex flex-wrap items-center gap-3 px-4 py-3 text-xs text-muted-foreground">
+                  <span>
+                    {zh
+                      ? "先贤回信为「贤者」会员权益。"
+                      : "Sage replies are part of the Sage membership."}
+                  </span>
+                  <Link
+                    to="/me/membership"
+                    className="hall-tap underline underline-offset-4 hover:text-foreground"
+                  >
+                    {zh ? "了解贤者会员" : "See the Sage membership"}
+                  </Link>
+                </div>
+              )
+            ) : null}
           </div>
           <p className="text-xs text-muted-foreground">{c.autoExpire}</p>
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
