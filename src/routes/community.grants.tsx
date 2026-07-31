@@ -24,6 +24,7 @@ import {
   useClaimHumanReplyGrants,
   useDeskLetters,
   useHumanReplyGrantHistory,
+  usePurchaseReplyCredits,
   useRequestHumanReply,
   useSageEntitlement,
 } from "@/lib/sage-council-client";
@@ -357,8 +358,12 @@ function GrantsBody() {
                   <p className="text-sm text-foreground/85">
                     {event.kind === "grant"
                       ? zh
-                        ? "领取本月赠送"
-                        : "Claimed gifted replies"
+                        ? `领取赠送 · ${event.bucket === "sage" ? "先贤回信" : "管理员授权"}`
+                        : `Claimed gift · ${event.bucket === "sage" ? "sage reply" : "librarian reply"}`
+                      : event.kind === "purchase"
+                        ? zh
+                          ? `加购 ${event.delta} 次${event.bucket === "sage" ? "先贤回信" : "管理员授权"} · ¥${(event.amountCents / 100).toFixed(0)}`
+                          : `Bought ${event.delta} ${event.bucket === "sage" ? "sage" : "librarian"} reply · ¥${(event.amountCents / 100).toFixed(0)}`
                       : zh
                         ? `用于：${event.letterSubject || "无题"}`
                         : `Spent on: ${event.letterSubject || "Untitled"}`}
