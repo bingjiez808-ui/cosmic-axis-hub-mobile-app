@@ -8,7 +8,7 @@ import { Link } from "@tanstack/react-router";
 import { HallSection } from "@/experiences/community-hall/HallShell";
 import { useCommunityHall } from "@/lib/i18n-community-hall";
 
-type Rule = { title: string; body: string; tag?: string };
+type Rule = { title: string; body: string; tag?: string; buy?: string };
 
 export function HallMechanismSection() {
   const c = useCommunityHall();
