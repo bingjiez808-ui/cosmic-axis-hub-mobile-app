@@ -334,6 +334,14 @@ function MyChartsSection({ open, onClose, lang, rows, setRows }: {
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<{ id: string; scope: "chart" | "reports_only" } | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const confirmTitleId = useId();
+  const confirmDescId = useId();
+  const confirmRef = useModalA11y<HTMLDivElement>({
+    open: !!confirm,
+    onClose: () => setConfirm(null),
+    closeOnEscape: !deleting,
+  });
+
   const [feedback, setFeedback] = useState<string | null>(null);
 
   useEffect(() => { if (!open) return; }, [open]);
