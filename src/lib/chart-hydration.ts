@@ -98,14 +98,19 @@ export async function resolveChartInputPatch(
 }
 
 /**
- * React hook — returns `search` merged with whatever the persisted chart
- * can supply. Stable identity while nothing changes, so it is safe in
- * `useMemo`/`useEffect` dependency arrays.
+ * React hook (stateful variant) — returns the merged search plus a
+ * `hydrating` flag. Callers that create/lookup DB rows keyed by the chart
+ * input (report generation) MUST wait for `hydrating === false`, otherwise
+ * the first pass runs with `gender: ""` and hashes to a DIFFERENT chart row
+ * than the hydrated pass — producing a duplicate report + a fresh AI run
+ * (and therefore a different summary on each visit).
  */
-export function useHydratedChartSearch(
-  search: ReportSearchLike | undefined,
-): ReportSearchLike | undefined {
+export function useHydratedChartSearchState(search: ReportSearchLike | undefined): {
+  search: ReportSearchLike | undefined;
+  hydrating: boolean;
+} {
   const [patch, setPatch] = useState<ChartInputPatch | null>(null);
+  const [hydrating, setHydrating] = useState(false);
   const reqRef = useRef(0);
   const complete = isChartInputComplete(search);
   const key = [
@@ -119,14 +124,17 @@ export function useHydratedChartSearch(
   useEffect(() => {
     if (!search || complete) {
       setPatch(null);
+      setHydrating(false);
       return;
     }
     const req = ++reqRef.current;
     let cancelled = false;
+    setHydrating(true);
     void (async () => {
       const next = await resolveChartInputPatch(search);
       if (cancelled || req !== reqRef.current) return;
       setPatch(next);
+      setHydrating(false);
     })();
     return () => {
       cancelled = true;
@@ -134,10 +142,24 @@ export function useHydratedChartSearch(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, complete]);
 
-  return useMemo(() => {
+  const merged = useMemo(() => {
     if (!search) return search;
     if (!patch) return search;
     return { ...search, ...patch };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, patch, search]);
+
+  return { search: merged, hydrating };
 }
+
+/**
+ * React hook — returns `search` merged with whatever the persisted chart
+ * can supply. Stable identity while nothing changes, so it is safe in
+ * `useMemo`/`useEffect` dependency arrays.
+ */
+export function useHydratedChartSearch(
+  search: ReportSearchLike | undefined,
+): ReportSearchLike | undefined {
+  return useHydratedChartSearchState(search).search;
+}
+

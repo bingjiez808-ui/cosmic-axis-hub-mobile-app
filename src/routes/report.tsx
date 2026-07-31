@@ -181,7 +181,7 @@ import {
   buildReportRequest,
   buildReportSeed,
 } from "@/lib/report-input";
-import { useHydratedChartSearch } from "@/lib/chart-hydration";
+import { useHydratedChartSearchState } from "@/lib/chart-hydration";
 import { REPORT_AI_VERSION } from "@/lib/ai-cache-version";
 import { useAccount } from "@/lib/account";
 import "@/components/report-modules.css";
@@ -1061,7 +1061,9 @@ function ReportPage() {
   const rawSearch = Route.useSearch();
   // Every downstream consumer (AI prompt builders, Zi Wei panel, extras)
   // must see a COMPLETE chart input, otherwise Zi Wei silently drops out.
-  const hydrated = useHydratedChartSearch(rawSearch) ?? rawSearch;
+  const { search: hydratedSearch, hydrating: chartHydrating } =
+    useHydratedChartSearchState(rawSearch);
+  const hydrated = hydratedSearch ?? rawSearch;
   const search = hydrated as typeof rawSearch;
   const { lang, setLang, t } = useLang();
   const reportLang = search.lang ?? lang;
@@ -1162,6 +1164,14 @@ function ReportPage() {
 
   const runReport = useCallback(() => {
     if (!search.date) return;
+    // Wait for the persisted chart row to fill in gender/time/place. The
+    // chart hash includes gender, so running early would mint a SECOND
+    // chart row + a brand-new AI generation for the same person — the
+    // reason the 综合解读 epigraph could differ between visits.
+    if (chartHydrating) {
+      setAiState("loading");
+      return;
+    }
     const fingerprint = buildReportFingerprint(search, reportLang);
     const reqId = ++latestReqRef.current;
     const stale = () => reqId !== latestReqRef.current;
@@ -1192,7 +1202,10 @@ function ReportPage() {
       // 2. Ensure chart row (also validates hash server-side).
       let chartId: string;
       try {
-        const canonical = buildCanonicalChartInput(search, reportLang);
+        const canonical = buildCanonicalChartInput(
+          { ...search, gender: search.gender ?? genderOverride ?? undefined },
+          reportLang,
+        );
         const res = await ensureChart({
           data: {
             ...canonical,
@@ -1505,7 +1518,7 @@ function ReportPage() {
 
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [seed, reportLang, search.readingId, search.gender, genderOverride]);
+  }, [seed, reportLang, search.readingId, search.gender, genderOverride, chartHydrating]);
 
   useEffect(() => {
     runReport();
