@@ -26,6 +26,7 @@ import {
 } from "./community-hall-safety";
 import { enforceRateLimit } from "./rate-limit.server";
 import { findSagePersona, type SagePersona } from "./sage-personas";
+import { sageSkill } from "./sage-skills";
 
 type Ctx = { supabase: SupabaseClient<Database>; userId: string };
 
@@ -151,6 +152,17 @@ function buildSystemPrompt(persona: SagePersona, lang: "zh" | "en") {
     lang === "zh" ? "【思想主张】" : "[What you actually argued]",
     ...persona.principles.map((l) => `- ${l}`),
     "",
+    ...(() => {
+      const skill = sageSkill(persona.id);
+      if (!skill) return [] as string[];
+      return [
+        lang === "zh"
+          ? `【看家本领：${skill.name.zh}】${skill.summary.zh}`
+          : `[Your one skill — ${skill.name.en}] ${skill.summary.en}`,
+        ...(lang === "zh" ? skill.steps.zh : skill.steps.en).map((l, i) => `${i + 1}. ${l}`),
+        "",
+      ];
+    })(),
     lang === "zh" ? "【语气】" : "[Voice]",
     persona.voice,
     "",
