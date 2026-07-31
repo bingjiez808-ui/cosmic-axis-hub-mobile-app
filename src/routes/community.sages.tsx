@@ -1,7 +1,7 @@
 /**
  * /community/sages — 历代先贤 · the Council of Sages.
  *
- * Pick a distilled historical persona, write to them, and read the answer in
+ * Pick a historical persona, write to them, and read the answer in
  * their voice. Gated on the 贤者 (Sage) membership; every member also holds
  * three one-time gifts to escalate a letter to a real human reply.
  */
@@ -40,7 +40,7 @@ export const Route = createFileRoute("/community/sages")({
       {
         name: "description",
         content:
-          "把你的问题寄给庄子、王阳明、荣格或弗兰克尔，读一封以其口吻写来的回信。Write to a distilled historical sage and read their answer.",
+          "把你的问题寄给庄子、王阳明、荣格或弗兰克尔，读一封以其口吻写来的回信。Write to a historical sage and read their answer.",
       },
       { property: "og:title", content: "历代先贤 · 众生之厅" },
       { property: "og:description", content: "以古人的生平与语气，回你此刻的疑问。" },

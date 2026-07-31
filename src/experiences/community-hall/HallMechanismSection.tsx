@@ -53,7 +53,7 @@ export function HallMechanismSection() {
         {
           title: "A sage's reply",
           tag: "Sage · 2 gifted",
-          body: "One of twelve long-dead thinkers answers in their own voice, through their distilled skill. Two gifted on joining; extras ¥3 / reply, ¥10 / 4 replies.",
+          body: "One of twelve long-dead thinkers answers in their own voice, through their own signature craft. Two gifted on joining; extras ¥3 / reply, ¥10 / 4 replies.",
           buy: "Buy more sage replies →",
         },
         {

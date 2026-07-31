@@ -28,6 +28,11 @@ import {
   useRequestHumanReply,
   useSageEntitlement,
 } from "@/lib/sage-council-client";
+import {
+  ReplyCreditCheckoutModal,
+  type CreditBucket,
+  type CreditPack,
+} from "@/components/ReplyCreditCheckoutModal";
 import "@/experiences/community-hall/hall.css";
 
 export const Route = createFileRoute("/community/grants")({
@@ -83,6 +88,9 @@ function GrantsBody() {
   const purchase = usePurchaseReplyCredits();
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [checkout, setCheckout] = useState<{ bucket: CreditBucket; pack: CreditPack } | null>(
+    null,
+  );
 
   const credits = entitlement.data?.credits;
   const entitled = entitlement.data?.entitled ?? false;
@@ -110,23 +118,24 @@ function GrantsBody() {
     }
   }
 
-  async function onBuy(bucket: "sage" | "human", pack: "single" | "quad") {
+  async function onBuy(input: {
+    bucket: CreditBucket;
+    pack: CreditPack;
+    paymentMethod: string;
+    idempotencyKey: string;
+  }) {
     setError(null);
     setNotice(null);
-    try {
-      await purchase.mutateAsync({
-        bucket,
-        pack,
-        idempotencyKey: `${bucket}-${pack}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      });
-      setNotice(
-        zh
-          ? `加购成功：${pack === "single" ? "1" : "4"} 次${bucket === "sage" ? "先贤回信" : "管理员授权"}已到账（模拟支付，不会真实扣款）。`
-          : `Added ${pack === "single" ? "1" : "4"} ${bucket === "sage" ? "sage" : "librarian"} reply chance(s). Simulated payment — no real charge.`,
-      );
-    } catch (err) {
-      setError(hallErrorMessage(err, c.lang));
-    }
+    await purchase.mutateAsync({
+      bucket: input.bucket,
+      pack: input.pack,
+      idempotencyKey: input.idempotencyKey,
+    });
+    setNotice(
+      zh
+        ? `加购成功：${input.pack === "single" ? "1" : "4"} 次${input.bucket === "sage" ? "先贤回信" : "管理员授权"}已到账（模拟支付，不会真实扣款）。`
+        : `Added ${input.pack === "single" ? "1" : "4"} ${input.bucket === "sage" ? "sage" : "librarian"} reply chance(s). Simulated payment — no real charge.`,
+    );
   }
 
   async function onSpend(letterId: string) {
@@ -220,11 +229,19 @@ function GrantsBody() {
 
       {/* ---- Top-up packs --------------------------------------- */}
       <div id="buy" className="scroll-mt-28">
+      <ReplyCreditCheckoutModal
+        open={checkout !== null}
+        bucket={checkout?.bucket ?? "sage"}
+        pack={checkout?.pack ?? "single"}
+        lang={lang}
+        onClose={() => setCheckout(null)}
+        onConfirm={onBuy}
+      />
       <HallSection title={zh ? "加购次数" : "Buy more chances"}>
         <p className="mb-4 text-sm text-muted-foreground">
           {zh
-            ? "赠送次数用完后，可以按需加购：3 元 / 次，10 元 / 4 次（约合 2.5 元 / 次）。当前为模拟支付，不会真实扣款。"
-            : "Once the gift is used up, top up as needed: ¥3 / reply, ¥10 / 4 replies (about ¥2.5 each). Payment is simulated for now."}
+            ? "赠送次数用完后，可以按需加购：3 元 / 次，10 元 / 4 次（约合 2.5 元 / 次）。支付方式与贤者／神谕者会员相同（微信、支付宝、Visa、银联），当前为模拟支付，不会真实扣款。"
+            : "Once the gift is used up, top up as needed: ¥3 / reply, ¥10 / 4 replies (about ¥2.5 each). Same payment methods as Sage / Oracle membership; simulated for now."}
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
           {(["sage", "human"] as const).map((bucket) => (
@@ -241,8 +258,8 @@ function GrantsBody() {
               <p className="mt-2 text-sm text-foreground/75">
                 {bucket === "sage"
                   ? zh
-                    ? "由一位蒸馏出的历代先贤，以其本领与语气回信。"
-                    : "A distilled historical sage answers in their own voice."
+                    ? "由一位历代先贤，以其本领与口吻亲笔回信。"
+                    : "A historical sage answers in their own voice and craft."
                   : zh
                     ? "图书管理员亲自回信，或由他委托的旅者定向匿名回信。"
                     : "The librarian replies in person, or entrusts a traveler to answer you anonymously."}
@@ -252,7 +269,8 @@ function GrantsBody() {
                   size="sm"
                   className="hall-tap"
                   disabled={purchase.isPending}
-                  onClick={() => void onBuy(bucket, "single")}
+                  data-testid={`buy-${bucket}-single`}
+                  onClick={() => setCheckout({ bucket, pack: "single" })}
                 >
                   {zh ? "3 元 · 1 次" : "¥3 · 1"}
                 </Button>
@@ -261,7 +279,8 @@ function GrantsBody() {
                   variant="secondary"
                   className="hall-tap"
                   disabled={purchase.isPending}
-                  onClick={() => void onBuy(bucket, "quad")}
+                  data-testid={`buy-${bucket}-quad`}
+                  onClick={() => setCheckout({ bucket, pack: "quad" })}
                 >
                   {zh ? "10 元 · 4 次" : "¥10 · 4"}
                 </Button>

@@ -152,7 +152,7 @@ export const HOME_GUIDE_CARDS: readonly HomeGuideCard[] = [
     descriptionZh:
       "读完自己的命盘之后,来这里把还没说出口的那句话写成一封匿名信。可以寄给同龄的陌生旅者、贴上公共信墙、请一位先贤(十二位历史人物人格)作答,或交给图书管理员安排真人回信。全程匿名、有敏感词审查与举报,回音会在通知中心提醒你。",
     descriptionEn:
-      "After reading your own chart, write the sentence you never said aloud as an anonymous letter. Send it to a stranger of your age band, pin it on the public wall, ask one of twelve distilled historical sages, or let the librarian arrange a human reply. Anonymous throughout, screened and reportable, with echoes announced in your notice centre.",
+      "After reading your own chart, write the sentence you never said aloud as an anonymous letter. Send it to a stranger of your age band, pin it on the public wall, ask one of twelve historical sages, or let the librarian arrange a human reply. Anonymous throughout, screened and reportable, with echoes announced in your notice centre.",
     ctaZh: "走进众生之厅",
     ctaEn: "Enter the hall",
     access: "open",

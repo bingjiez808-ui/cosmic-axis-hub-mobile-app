@@ -53,9 +53,9 @@ export function HallHomeIntro() {
       zhTitle: "请一位先贤作答",
       enTitle: "Ask one of the sages",
       zhBody:
-        "十二位历史人物蒸馏出的作答人格，按学业、事业、爱情、人际、财富、自我分类，挑一位来读你的信。",
+        "十二位历代先贤的作答人格，按学业、事业、爱情、人际、财富、自我分类，挑一位来读你的信。",
       enBody:
-        "Twelve personas distilled from historical figures, sorted by study, career, love, boundaries, wealth and self — pick who reads your letter.",
+        "Twelve personas drawn from historical figures, sorted by study, career, love, boundaries, wealth and self — pick who reads your letter.",
     },
     {
       icon: Feather,
