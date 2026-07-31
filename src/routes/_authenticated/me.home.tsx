@@ -300,11 +300,12 @@ function DailyRoomPage() {
         {/* Shared personal-workspace sub-nav (Today's Fate active) */}
         <PersonalWorkspaceNav active="/me/home" />
         <div id="today" className="sr-only" aria-hidden />
-        <p className="mb-4 text-xs text-amber-200/60" data-testid="home-purpose-hint">
+        <p className="sr-only" data-testid="home-purpose-hint">
           {lang === "zh"
-            ? "本页专注今日命运，不再嵌入历史回声或命盘管理；请用上方书架导航切换模块。"
-            : "This page focuses on today's fate only — it no longer embeds Historical Echoes or chart management. Use the library sub-nav above to switch modules."}
+            ? "本页专注今日命运；请用上方书架导航切换模块。"
+            : "This page focuses on today's fate only — use the library sub-nav above to switch modules."}
         </p>
+
 
 
 
