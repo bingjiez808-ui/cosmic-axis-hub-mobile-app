@@ -15,6 +15,7 @@ import {
   generateDailyReading,
   type DailyReadingAI,
   type DailyReadingSection,
+  type DailyReadingInput,
 } from "./daily-reading.functions";
 
 export type SegmentId = "overview" | "actions" | `domain:${string}`;
@@ -25,10 +26,6 @@ export type SegmentState = {
 };
 
 const IDLE: SegmentState = { data: null, status: "idle" };
-
-type Input = Parameters<typeof generateDailyReading>[0] extends { data: infer T }
-  ? T
-  : never;
 
 export function parseSegment(id: SegmentId): {
   section: DailyReadingSection;
@@ -44,7 +41,7 @@ export function useDailyReadingSegments(opts: {
   /** Stable per-day cache key, or null when AI is unavailable (no real chart). */
   baseKey: string | null;
   /** Builds the server payload for a given segment; return null to skip. */
-  buildInput: (segment: SegmentId) => Input | null;
+  buildInput: (segment: SegmentId) => DailyReadingInput | null;
 }) {
   const { baseKey, buildInput } = opts;
   const readingFn = useServerFn(generateDailyReading);

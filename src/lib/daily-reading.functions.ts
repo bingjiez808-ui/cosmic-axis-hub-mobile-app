@@ -59,6 +59,8 @@ const Input = z.object({
   concern: z.string().max(40).optional(),
 });
 
+export type DailyReadingInput = z.input<typeof Input>;
+
 
 export type DailyReadingAI = {
   version: string;
