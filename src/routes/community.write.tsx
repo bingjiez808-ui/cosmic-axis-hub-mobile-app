@@ -13,6 +13,7 @@ import { LetterPromptDeck } from "@/experiences/community-hall/LetterPromptDeck"
 import { useSendLetter } from "@/lib/community-hall-client";
 import { hallErrorCode, hallErrorMessage, type HallErrorCode } from "@/lib/community-hall-errors";
 import { useCommunityHall, type AgeBand } from "@/lib/i18n-community-hall";
+import { clearLetterDraft, loadLetterDraft, saveLetterDraft } from "@/lib/letter-draft";
 import "@/experiences/community-hall/hall.css";
 
 const BODY_MIN = 30;
