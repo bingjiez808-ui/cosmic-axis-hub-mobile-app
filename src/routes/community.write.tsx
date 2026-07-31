@@ -467,7 +467,13 @@ function WriteFlow() {
                     {option.title}
                     {option.locked ? (
                       <span className="ml-2 rounded-full border border-primary/30 px-2 py-0.5 text-[0.62rem] text-primary/80">
-                        {zh ? "贤者会员" : "Sage only"}
+                        {!entitledForSage
+                          ? zh
+                            ? "贤者会员"
+                            : "Sage only"
+                          : zh
+                            ? "本月已用完"
+                            : "No grants left"}
                       </span>
                     ) : null}
                   </span>
