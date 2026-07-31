@@ -2044,12 +2044,13 @@ function ReportPage() {
             <span>
               {aiState === "loading"
                 ? lang === "zh"
-                  ? `智者正在逐维度写下你的命盘 · ${aiProgress.done}/${aiProgress.total}`
-                  : `The elder is writing your chart, one dimension at a time · ${aiProgress.done}/${aiProgress.total}`
+                  ? `智者正在逐维度写下你的命盘 · ${aiProgress.done}/${aiProgress.total}${aiProgress.degraded ? ` · ${aiProgress.degraded} 个维度改用通用文本` : ""}`
+                  : `The elder is writing your chart, one dimension at a time · ${aiProgress.done}/${aiProgress.total}${aiProgress.degraded ? ` · ${aiProgress.degraded} on template` : ""}`
                 : lang === "zh"
                   ? `个性化解读暂时无法生成（${aiError ?? "unknown"}）—— 先显示通用模板。`
                   : `Personalised reading unavailable (${aiError ?? "unknown"}) — showing template.`}
             </span>
+
             {aiState === "loading" && (
               <span className="size-2 animate-pulse rounded-full bg-gold-dust" />
             )}
