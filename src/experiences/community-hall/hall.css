@@ -694,3 +694,27 @@ main:has(.hall-paper) {
 @media (prefers-reduced-motion: reduce) {
   .hall-fade-in { animation: none; }
 }
+
+/* The courier's knock — a parchment note that slides in from the margin. */
+.hall-courier-knock {
+  animation: hall-courier-knock-in 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes hall-courier-knock-in {
+  from { opacity: 0; transform: translate3d(18px, 10px, 0) rotate(1.5deg); }
+  to { opacity: 1; transform: none; }
+}
+.hall-courier-seal {
+  color: hsl(var(--gold-light, 42 70% 62%));
+  animation: hall-courier-seal 2.4s ease-in-out 620ms 2;
+}
+@keyframes hall-courier-seal {
+  0%, 100% { transform: none; }
+  40% { transform: translateY(-2px) rotate(-8deg); }
+  70% { transform: translateY(0) rotate(6deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hall-courier-knock { animation: none; }
+  .hall-courier-seal { animation: none; }
+}
+[data-perf="lite"] .hall-courier-knock { animation-duration: 1ms; }
+[data-perf="lite"] .hall-courier-seal { animation: none; }
