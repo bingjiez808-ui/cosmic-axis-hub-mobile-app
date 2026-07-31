@@ -176,6 +176,8 @@ export async function saveCommunityProfile(
     language: "zh" | "en";
     optIn: boolean;
     paused: boolean;
+    /** Willing to receive letters the librarian hands over personally. */
+    acceptsAssignments?: boolean;
   },
 ) {
   limit(`community-hall:profile:${ctx.userId}`, 20, 60_000, "rate_limited");
@@ -195,6 +197,7 @@ export async function saveCommunityProfile(
       language: input.language,
       opt_in: input.optIn,
       status: input.paused ? "paused" : "active",
+      accepts_assignments: input.acceptsAssignments ?? false,
     },
     { onConflict: "user_id" },
   );
