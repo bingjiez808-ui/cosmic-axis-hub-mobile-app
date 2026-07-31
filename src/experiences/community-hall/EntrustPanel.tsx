@@ -16,7 +16,22 @@ import {
   saveNoteTemplates,
   type NoteTemplate,
 } from "@/lib/assign-note-templates";
-import type { LibrarianHelper } from "@/lib/sage-council.server";
+
+export type LibrarianHelper = {
+  userId: string;
+  alias: string | null;
+  ageBand: string | null;
+  academy: string | null;
+  element: string | null;
+  quote: string | null;
+  language?: string | null;
+  assignedCount: number;
+  acceptedCount: number;
+  repliedCount: number;
+  declinedCount: number;
+  pendingCount: number;
+  lastAssignedAt: string | null;
+};
 
 type HistoryFilter = "all" | "new" | "replied" | "idle" | "busy";
 
