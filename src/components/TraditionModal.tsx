@@ -309,19 +309,8 @@ export function TraditionModal({
     return `${reading.name || ""}|${reading.date || ""}|${reading.time || ""}|${reading.place || ""}`;
   }, [reading]);
 
-  useEffect(() => {
-    if (!id) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
-    };
-  }, [id, onClose]);
+  const dialogRef = useModalA11y<HTMLDivElement>({ open: !!id, onClose });
+
 
   if (!id) return null;
   const p = PRIMERS[id];
