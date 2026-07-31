@@ -66,17 +66,55 @@ function WriteFlow() {
   const navigate = useNavigate();
   const send = useSendLetter();
 
-  const [step, setStep] = useState<1 | 2 | 3>(1);
-  const [subject, setSubject] = useState("");
-  const [body, setBody] = useState("");
-  const [topic, setTopic] = useState<string>("self");
-  const [band, setBand] = useState<AgeBand | null>(null);
+  // Restore any unsent draft synchronously on first client render so a refresh
+  // never loses what the traveler already wrote.
+  const [restored] = useState(() => loadLetterDraft());
+
+  const [step, setStep] = useState<1 | 2 | 3>(restored?.step ?? 1);
+  const [subject, setSubject] = useState(restored?.subject ?? "");
+  const [body, setBody] = useState(restored?.body ?? "");
+  const [topic, setTopic] = useState<string>(restored?.topic ?? "self");
+  const [band, setBand] = useState<AgeBand | null>((restored?.band as AgeBand | null) ?? null);
   const [agree, setAgree] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errorCode, setErrorCode] = useState<HallErrorCode | null>(null);
   const [sent, setSent] = useState<Sent | null>(null);
+  const [savedAt, setSavedAt] = useState<number | null>(restored?.savedAt ?? null);
+  const [draftRestored, setDraftRestored] = useState(Boolean(restored?.body));
+  const sentRef = useRef(false);
+  sentRef.current = Boolean(sent);
 
   const length = body.trim().length;
+
+  // Debounced autosave of the in-progress letter.
+  useEffect(() => {
+    if (sentRef.current) return;
+    if (!subject && !body && !band && step === 1) return;
+    const t = window.setTimeout(() => {
+      const at = saveLetterDraft({ step, subject, body, topic, band });
+      if (at) setSavedAt(at);
+    }, 500);
+    return () => window.clearTimeout(t);
+  }, [step, subject, body, topic, band]);
+
+  function discardDraft() {
+    clearLetterDraft();
+    setSubject("");
+    setBody("");
+    setBand(null);
+    setStep(1);
+    setSavedAt(null);
+    setDraftRestored(false);
+    setError(null);
+  }
+
+  const savedLabel =
+    savedAt === null
+      ? null
+      : c.lang === "en"
+        ? `Draft saved ${new Date(savedAt).toLocaleTimeString()}`
+        : `草稿已保存 ${new Date(savedAt).toLocaleTimeString()}`;
+
 
   function goStepTwo() {
     if (length < BODY_MIN) return setError(c.bodyTooShort(BODY_MIN));
