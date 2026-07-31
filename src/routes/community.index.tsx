@@ -6,6 +6,7 @@ import doorOutbox from "@/assets/community/door-outbox.jpg";
 import doorWrite from "@/assets/community/door-write.jpg";
 import { Button } from "@/components/ui/button";
 import { HallDoorCard, type HallDoor } from "@/experiences/community-hall/HallDoorCard";
+import { CourierProgressStrip } from "@/experiences/community-hall/CourierProgressStrip";
 import {
   HallGate,
   HallHeader,
@@ -118,6 +119,8 @@ function CommunityHallPage() {
       </div>
 
       <HallNav />
+
+      <CourierProgressStrip />
 
       <HallOnboarding />
 

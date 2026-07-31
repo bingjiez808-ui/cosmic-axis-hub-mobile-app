@@ -10,6 +10,7 @@ import {
   HallNav,
   HallSection,
 } from "@/experiences/community-hall/HallShell";
+import { CourierProgressStrip } from "@/experiences/community-hall/CourierProgressStrip";
 import { HallEmptyState, HallError, HallSkeleton } from "@/experiences/community-hall/HallStates";
 import { SentLetterCard } from "@/experiences/community-hall/LetterCards";
 import { LetterWaveStatus } from "@/experiences/community-hall/LetterWaveStatus";
@@ -59,6 +60,8 @@ function OutboxPage() {
     <main className="mx-auto w-full max-w-3xl px-4 pb-16 pt-28 sm:px-6 sm:pb-24 sm:pt-32">
       <HallHeader title={c.cardOutboxTitle} subtitle={c.cardOutboxBody} />
       <HallNav />
+
+      <CourierProgressStrip />
       <HallGate>
         <HallSection title={c.sectionOutbox}>
           {mailbox.isLoading ? (

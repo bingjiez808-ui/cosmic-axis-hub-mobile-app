@@ -49,6 +49,7 @@ export function saveLetterDraft(draft: Omit<LetterDraft, "savedAt">): number | n
   const savedAt = Date.now();
   try {
     window.localStorage.setItem(KEY, JSON.stringify({ ...draft, savedAt }));
+    notifyDraftChange();
     return savedAt;
   } catch {
     return null;
@@ -59,7 +60,34 @@ export function clearLetterDraft() {
   if (!hasStorage()) return;
   try {
     window.localStorage.removeItem(KEY);
+    notifyDraftChange();
   } catch {
     /* storage disabled — nothing to clear */
   }
+}
+
+/* ── Live subscription ──────────────────────────────────────────
+ * Lets quiet UI (the courier progress strip) mirror the writing desk
+ * without polling: same-tab writes fire a custom event, other tabs
+ * arrive through the native `storage` event.
+ */
+
+const EVENT = "hall:letter-draft";
+
+function notifyDraftChange() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(EVENT));
+}
+
+export function subscribeLetterDraft(onChange: () => void): () => void {
+  if (typeof window === "undefined") return () => {};
+  const onStorage = (e: StorageEvent) => {
+    if (!e.key || e.key === KEY) onChange();
+  };
+  window.addEventListener(EVENT, onChange);
+  window.addEventListener("storage", onStorage);
+  return () => {
+    window.removeEventListener(EVENT, onChange);
+    window.removeEventListener("storage", onStorage);
+  };
 }
