@@ -98,6 +98,10 @@ export function HallMobileBar() {
   const { pathname } = useLocation();
   const items = useHallNavItems();
   return (
+    <>
+    {/* Mounted here because every hall route renders the bar: the knock is a
+        fixed-position note, so it appears on desktop too without extra wiring. */}
+    <CourierEchoToast />
     <nav
       aria-label={c.hallEyebrow}
       className="hall-mobile-bar -mx-4 mt-8 grid grid-cols-5 sm:hidden"
