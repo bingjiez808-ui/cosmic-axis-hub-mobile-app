@@ -316,6 +316,34 @@ const SPECIFIC_FALLBACK: Record<string, { label: [string, string]; value: [strin
   ],
 };
 
+/**
+ * Degraded (deterministic) content for a dimension whose AI call failed every
+ * retry. The report still renders that module from the template brief instead
+ * of collapsing the whole reading.
+ */
+function degradedDimension(key: string, lang: "en" | "zh"): ReportDimensionAI {
+  const i = lang === "zh" ? 1 : 0;
+  const base = dimensions.find((d) => d.key === key);
+  const specifics = (base?.specifics ?? SPECIFIC_FALLBACK[key] ?? []).map((s) => ({
+    label: s.label[i],
+    value: s.value[i],
+  }));
+  return {
+    key,
+    headline: base?.headline[i] ?? "",
+    evidence: (base?.evidence ?? []).map((e) => ({
+      tradition: e.tradition[i],
+      note: e.note[i],
+    })),
+    specifics,
+    synthesis: base?.synthesis[i] ?? "",
+    plain: base?.plain[i] ?? "",
+    details: [],
+  } as unknown as ReportDimensionAI;
+}
+
+
+
 const dimensions: Dimension[] = [
   {
     key: "character",
