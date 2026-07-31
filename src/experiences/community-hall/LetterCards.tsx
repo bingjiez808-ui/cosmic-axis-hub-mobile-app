@@ -30,8 +30,14 @@ function Shell({
   children: ReactNode;
   accent?: boolean;
 }) {
+  const { ref, inView } = useInView<HTMLElement>();
   return (
-    <article className="hall-paper hall-envelope p-5" data-unread={accent ? "true" : "false"}>
+    <article
+      ref={ref}
+      data-visible={inView ? "true" : "false"}
+      className="hall-paper hall-envelope hall-reveal p-5"
+      data-unread={accent ? "true" : "false"}
+    >
       {children}
     </article>
   );
