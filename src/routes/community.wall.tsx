@@ -18,12 +18,14 @@ import {
   HallSection,
 } from "@/experiences/community-hall/HallShell";
 import { HallError, HallSkeleton } from "@/experiences/community-hall/HallStates";
+import { ReportButton } from "@/experiences/community-hall/ReportButton";
 import {
   useCommunityPublicLetter,
   useCommunityPublicWall,
   useReplyToLetter,
 } from "@/lib/community-hall-client";
 import { hallErrorMessage } from "@/lib/community-hall-errors";
+import { PrecheckWarning } from "@/experiences/community-hall/LetterRulesNotice";
 import { useCommunityHall } from "@/lib/i18n-community-hall";
 import "@/experiences/community-hall/hall.css";
 
@@ -134,6 +136,15 @@ function WallList() {
                 ) : letter.iReplied ? (
                   <span className="text-xs text-gold-light">{zh ? "你已回过这封信" : "You have answered"}</span>
                 ) : null}
+                {letter.mine ? null : (
+                  <span className="ml-auto">
+                    <ReportButton
+                      targetType="letter"
+                      targetId={letter.letterId}
+                      label={zh ? "举报这封信" : "Report this letter"}
+                    />
+                  </span>
+                )}
               </div>
               {open ? <WallLetterDetail letterId={letter.letterId} canReply={!letter.mine} /> : null}
             </li>
@@ -196,6 +207,15 @@ function WallLetterDetail({ letterId, canReply }: { letterId: string; canReply: 
                 {echo.mine ? (zh ? " · 你" : " · you") : ""}
               </p>
               <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">{echo.body}</p>
+              {echo.mine ? null : (
+                <div className="mt-2">
+                  <ReportButton
+                    targetType="reply"
+                    targetId={echo.replyId}
+                    label={zh ? "举报这条回音" : "Report this echo"}
+                  />
+                </div>
+              )}
             </li>
           ))}
         </ul>
@@ -220,6 +240,12 @@ function WallLetterDetail({ letterId, canReply }: { letterId: string; canReply: 
           <span className="mt-1 block text-right text-xs text-muted-foreground">
             {c.bodyCounter(length, ECHO_MAX)}
           </span>
+          <PrecheckWarning text={body} />
+          <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+            {zh
+              ? "回音同样受内容规范约束：不得涉政违规、违法、涉黄或辱骂，不得留联系方式。所有回音都会经过自动审查，也可被举报。"
+              : "Echoes follow the same rules: nothing that breaks the law, nothing political, sexual or abusive, no contact details. Every echo is screened and can be reported."}
+          </p>
           {error ? <p className="mt-2 text-sm text-destructive">{error}</p> : null}
           <Button
             className="hall-tap mt-3"
