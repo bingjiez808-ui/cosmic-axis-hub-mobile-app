@@ -49,14 +49,18 @@ export function installChunkRecovery(): () => void {
   window.addEventListener("error", onError);
   window.addEventListener("unhandledrejection", onRejection);
 
-  // A successful load clears the guard so a future stale chunk can recover too.
-  try {
-    sessionStorage.removeItem(FLAG);
-  } catch {
-    /* noop */
-  }
+  // Clear the guard only after the app has stayed healthy for a while, so a
+  // genuinely broken build cannot reload in a loop.
+  const clear = window.setTimeout(() => {
+    try {
+      sessionStorage.removeItem(FLAG);
+    } catch {
+      /* noop */
+    }
+  }, 15_000);
 
   return () => {
+    window.clearTimeout(clear);
     window.removeEventListener("error", onError);
     window.removeEventListener("unhandledrejection", onRejection);
   };
