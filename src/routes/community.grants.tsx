@@ -191,14 +191,12 @@ function GrantsBody() {
       ) : null}
 
       {/* ---- Choose who receives a human reply ------------------ */}
-      <HallSection
-        title={zh ? "用在哪封信上" : "Where to spend it"}
-        subtitle={
-          zh
+      <HallSection title={zh ? "用在哪封信上" : "Where to spend it"}>
+        <p className="mb-4 text-sm text-muted-foreground">
+          {zh
             ? "选择一封已寄给先贤的信，一键升级为真人回信。信件依旧匿名，只带着你的旅者身份。"
-            : "Pick a letter you sent to a sage and escalate it to a human reply. It stays anonymous under your traveler identity."
-        }
-      >
+            : "Pick a letter you sent to a sage and escalate it to a human reply. It stays anonymous under your traveler identity."}
+        </p>
         {desk.isLoading ? (
           <HallEmpty text={zh ? "读取中…" : "Loading…"} />
         ) : candidates.length === 0 ? (
