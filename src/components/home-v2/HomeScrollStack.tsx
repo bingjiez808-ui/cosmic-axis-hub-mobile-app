@@ -501,37 +501,27 @@ function HomeSideRail({
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  // Rail visibility: hide by default, reveal while user is actively scrolling
-  // (or hovering the right edge), then fade back out ~900ms after scroll stops.
+  // Rail visibility: hidden at the very top of the page, then stays visible
+  // for the whole downward journey (both desktop and mobile).
   const [railVisible, setRailVisible] = useState(false);
   useEffect(() => {
     if (typeof window === "undefined") return;
-    let idleTimer: number | null = null;
-    const show = () => {
-      setRailVisible(true);
-      if (idleTimer) window.clearTimeout(idleTimer);
-      idleTimer = window.setTimeout(() => setRailVisible(false), 900);
-    };
-    const onScroll = () => show();
-    const onMove = (e: MouseEvent) => {
-      if (e.clientX > window.innerWidth - 120) show();
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("mousemove", onMove, { passive: true });
+    const update = () => setRailVisible(window.scrollY > 160);
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update, { passive: true });
     return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("mousemove", onMove);
-      if (idleTimer) window.clearTimeout(idleTimer);
+      window.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
     };
   }, []);
 
   return (
     <>
-      {/* Desktop rail: narrow edge ticks while scrolling; labels only expand
-          on direct hover/focus so the card text remains unobstructed. */}
+      {/* Desktop rail: edge ticks with labels expanding on hover/focus. */}
       <div
-        className={`pointer-events-auto fixed right-1 top-1/2 z-40 hidden -translate-y-1/2 transition-opacity duration-300 2xl:right-3 xl:block ${
-          railVisible ? "opacity-100" : "pointer-events-none opacity-0"
+        className={`fixed right-1 top-1/2 z-40 hidden -translate-y-1/2 transition-opacity duration-300 md:block 2xl:right-3 ${
+          railVisible ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
         }`}
         aria-label={isZh ? "馆藏索引" : "Card index"}
       >
@@ -548,17 +538,45 @@ function HomeSideRail({
         />
       </div>
 
+      {/* Mobile rail: compact gold dot column on the right edge. */}
+      <nav
+        aria-label={isZh ? "馆藏索引" : "Card index"}
+        className={`fixed right-2 top-1/2 z-40 flex -translate-y-1/2 flex-col items-center gap-3 rounded-full border border-gold-dust/25 bg-obsidian/70 px-1.5 py-3 backdrop-blur-md transition-opacity duration-300 md:hidden ${
+          railVisible ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
+        }`}
+      >
+        {cards.map((c, i) => (
+          <button
+            key={c.id}
+            type="button"
+            onClick={() => scrollToIndex(i)}
+            aria-label={isZh ? c.titleZh : c.titleEn}
+            aria-current={i === activeIndex ? "true" : undefined}
+            className="flex h-5 w-5 items-center justify-center"
+          >
+            <span
+              aria-hidden
+              className={`rounded-full transition-all duration-300 ${
+                i === activeIndex
+                  ? "h-2.5 w-2.5 bg-gold-dust shadow-[0_0_10px_2px_rgba(220,180,90,0.6)]"
+                  : "h-1.5 w-1.5 bg-gold-dust/40"
+              }`}
+            />
+          </button>
+        ))}
+      </nav>
+
       {/* Mobile pill: cycles to next card. */}
-      <div className="pointer-events-none fixed inset-x-0 bottom-4 z-40 flex justify-center xl:hidden">
+      <div className="pointer-events-none fixed inset-x-0 bottom-4 z-40 flex justify-center md:hidden">
         <button
           type="button"
           onClick={() => scrollToIndex((activeIndex + 1) % total)}
-          className="pointer-events-auto flex max-w-[92vw] items-center gap-3 rounded-full border border-gold-dust/30 bg-obsidian/85 px-4 py-2 text-[11px] uppercase tracking-[0.22em] text-stone-warm/85 backdrop-blur-md"
+          className="pointer-events-auto flex max-w-[80vw] items-center gap-3 rounded-full border border-gold-dust/30 bg-obsidian/85 px-4 py-2 text-[11px] uppercase tracking-[0.22em] text-stone-warm/85 backdrop-blur-md"
         >
           <span className="text-gold-dust">
             {String(activeIndex + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
           </span>
-          <span className="max-w-[55vw] truncate">
+          <span className="max-w-[45vw] truncate">
             {isZh ? active.titleZh : active.titleEn}
           </span>
           <span aria-hidden className="text-gold-dust/60">→</span>
@@ -567,3 +585,4 @@ function HomeSideRail({
     </>
   );
 }
+
