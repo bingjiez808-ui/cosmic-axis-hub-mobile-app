@@ -97,11 +97,14 @@ function WriteFlow() {
         targetAgeBand: band,
       });
       setError(null);
+      setErrorCode(null);
       setSent({ pendingReview: result.pendingReview, delivered: result.delivered });
     } catch (err) {
+      setErrorCode(hallErrorCode(err));
       setError(hallErrorMessage(err, c.lang));
     }
   }
+
 
   if (sent) {
     return (
