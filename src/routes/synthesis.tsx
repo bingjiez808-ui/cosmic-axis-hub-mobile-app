@@ -142,7 +142,7 @@ function SynthesisPage() {
 
   useEffect(() => {
     const total = phases.length;
-    const perPhase = 1100;
+    const perPhase = 900;
     const interval = setInterval(() => {
       setPhase((p) => {
         if (p >= total - 1) {
