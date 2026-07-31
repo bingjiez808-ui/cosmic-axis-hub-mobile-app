@@ -377,7 +377,27 @@
 
 /* ── Fixed-format reading modules ──────────────────────────────
    Every module keeps the same skeleton; overflowing copy scrolls
-   inside its pane instead of stretching the card. */
+   inside its pane instead of stretching the card.
+
+   Type scale strategy
+   -------------------
+   All module copy is sized from a single fluid step (--rm-fs) and a
+   single leading ratio (--rm-lh). Pane heights are expressed in
+   *lines* (em × leading) rather than pixels, so when a reader bumps
+   the browser/OS font size the panes grow with the text and keep the
+   same line count — the copy never overflows its frame, and the
+   evidence / signal-strength columns still end level with synthesis. */
+.rm-card {
+  /* Fluid base step: 14px → 16px, but rem-anchored so browser
+     font-size preferences (Ctrl+/OS large text) still scale it. */
+  --rm-fs: clamp(0.875rem, 0.8rem + 0.35vw, 1rem);
+  --rm-fs-sm: calc(var(--rm-fs) * 0.92);
+  --rm-lh: 1.72;
+  --rm-lh-tight: 1.55;
+  /* One rendered line of body copy. */
+  --rm-line: calc(var(--rm-fs) * var(--rm-lh));
+}
+
 .rm-pane {
   display: flex;
   flex-direction: column;
@@ -404,27 +424,60 @@
   background: color-mix(in oklab, var(--gold-dust) 40%, transparent);
 }
 
-.rm-h-evidence {
-  max-height: clamp(196px, 26vh, 268px);
-}
-.rm-h-synthesis {
-  max-height: clamp(168px, 22vh, 232px);
-}
-.rm-h-plain {
-  max-height: clamp(150px, 20vh, 208px);
-}
+/* Body copy inside the panes follows the shared scale. */
+.rm-h-evidence,
+.rm-h-synthesis,
+.rm-h-plain,
 .rm-h-specifics {
-  max-height: clamp(150px, 21vh, 224px);
+  font-size: var(--rm-fs);
+  line-height: var(--rm-lh);
+  /* Never let a long unbroken token push the pane sideways. */
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.rm-h-evidence,
+.rm-h-specifics {
+  line-height: var(--rm-lh-tight);
+}
+.rm-h-evidence .rm-evidence-item > p:first-child {
+  font-size: var(--rm-fs);
+}
+.rm-h-evidence .rm-evidence-item > p + p {
+  font-size: var(--rm-fs-sm);
 }
 
-/* Signal-strength block sits at the foot of the left pane. */
+/* Heights in lines, so they follow the reader's font size. */
+.rm-h-evidence {
+  max-height: min(calc(var(--rm-line) * 11), 30vh);
+}
+.rm-h-synthesis {
+  max-height: min(calc(var(--rm-line) * 9), 26vh);
+}
+.rm-h-plain {
+  max-height: min(calc(var(--rm-line) * 8), 24vh);
+}
+.rm-h-specifics {
+  max-height: min(calc(var(--rm-line) * 8), 25vh);
+}
+
+/* Signal-strength block sits at the foot of the left pane and shrinks
+   with the available room instead of overflowing when type grows. */
 .rm-viz-block {
   margin-top: auto;
   padding-top: 0.5rem;
+  min-height: 0;
 }
 .rm-viz-block > .rm-viz {
   display: flex;
   justify-content: center;
+  min-height: 0;
+}
+.rm-viz svg {
+  width: 100%;
+  height: auto;
+  max-width: min(240px, 100%);
+  /* Cap the map so enlarged type keeps the pane inside the card. */
+  max-height: clamp(150px, 22vh, 240px);
 }
 
 @media (min-width: 1024px) {
@@ -434,7 +487,7 @@
      and every module keeps the same skeleton. */
   .rm-h-evidence {
     flex: 1 1 auto;
-    min-height: 220px;
+    min-height: calc(var(--rm-line) * 8);
     max-height: none;
   }
   .rm-viz-block {
@@ -442,25 +495,35 @@
        (auto margins would eat it first), which both lengthens the
        evidence pane and pushes the signal map to the pane's foot. */
     margin-top: 0;
-    flex: 0 0 auto;
+    flex: 0 1 auto;
   }
 }
 
 @media (max-width: 640px) {
+  /* Mobile: slightly tighter step, still rem-anchored so user font
+     scaling works; caps stay in lines so nothing clips. */
+  .rm-card {
+    --rm-fs: clamp(0.875rem, 0.82rem + 0.6vw, 0.98rem);
+    --rm-lh: 1.68;
+  }
   .rm-h-evidence {
-    max-height: 236px;
+    max-height: calc(var(--rm-line) * 10);
   }
   .rm-h-synthesis {
-    max-height: 208px;
+    max-height: calc(var(--rm-line) * 9);
   }
   .rm-h-plain {
-    max-height: 190px;
+    max-height: calc(var(--rm-line) * 8);
   }
   .rm-h-specifics {
-    max-height: 200px;
+    max-height: calc(var(--rm-line) * 8);
   }
   .rm-viz-block {
     margin-top: 0.25rem;
   }
+  .rm-viz svg {
+    max-height: clamp(140px, 42vw, 210px);
+  }
 }
+
 
