@@ -290,9 +290,12 @@ main:has(.hall-paper) {
 }
 
 [data-perf="lite"] .hall-paper::after,
+[data-perf="lite"] .hall-inset::after,
+[data-perf="lite"] .hall-empty::after,
 [data-perf="lite"] .hall-envelope[data-unread="true"]::before {
   display: none;
 }
+
 
 [data-perf="lite"] .hall-seal,
 [data-perf="lite"] .hall-skeleton,
