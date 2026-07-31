@@ -139,7 +139,12 @@ export function useCommunityPublicWall(enabled = true) {
     queryKey: communityKeys.wall,
     queryFn: () => load({ data: { limit: 30 } }),
     enabled,
-    staleTime: 30_000,
+    staleTime: 15_000,
+    // The wall is a shared board: keep it fresh while the tab is open so a
+    // letter posted from another device shows up without a manual reload.
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -150,7 +155,10 @@ export function useCommunityPublicLetter(letterId: string | null) {
     queryKey: communityKeys.wallLetter(letterId ?? "none"),
     queryFn: () => load({ data: { letterId: letterId as string } }),
     enabled: Boolean(letterId),
-    staleTime: 15_000,
+    staleTime: 10_000,
+    refetchInterval: 20_000,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
   });
 }
 
