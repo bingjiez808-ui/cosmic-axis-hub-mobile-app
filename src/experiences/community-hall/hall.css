@@ -216,3 +216,43 @@
 [data-perf="lite"] .hall-rise {
   animation: none !important;
 }
+
+/* ── Interaction feedback ──────────────────────────────────── */
+/* Every tappable surface in the hall answers the finger: a small press
+   state, and a visible keyboard focus ring on dark parchment. */
+.hall-tap {
+  transition: transform 140ms ease, opacity 140ms ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.hall-tap:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.hall-tap:focus-visible,
+.hall-envelope:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--primary) 70%, transparent);
+  outline-offset: 3px;
+}
+
+/* The door arrow slides forward on hover/focus. */
+.hall-door-arrow {
+  transition: transform 220ms ease, opacity 220ms ease;
+  opacity: 0.55;
+}
+
+.hall-envelope:hover .hall-door-arrow,
+.hall-envelope:focus-visible .hall-door-arrow {
+  transform: translateX(4px);
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hall-tap,
+  .hall-tap:active:not(:disabled),
+  .hall-door-arrow {
+    transition: none;
+    transform: none;
+  }
+}

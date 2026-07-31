@@ -214,8 +214,16 @@ function RootComponent() {
     const handler = () => setAccOpen(true);
     window.addEventListener("lod:open-account", handler);
     void import("../lib/pwa-register").then(({ registerServiceWorker }) => registerServiceWorker());
-    return () => window.removeEventListener("lod:open-account", handler);
+    let uninstall: (() => void) | undefined;
+    void import("../lib/chunk-recovery").then(({ installChunkRecovery }) => {
+      uninstall = installChunkRecovery();
+    });
+    return () => {
+      window.removeEventListener("lod:open-account", handler);
+      uninstall?.();
+    };
   }, []);
+
 
   if (isIsolatedPreview) {
     return (
