@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, Lock, Send } from "lucide-react";
 
 import { MembershipCheckoutModal } from "@/components/MembershipCheckoutModal";
+import "@/components/personal-library.css";
 import { PersonalWorkspaceNav } from "@/components/PersonalWorkspaceNav";
 import {
   LockedActionButton,
@@ -184,10 +185,10 @@ function OraclePage() {
   const access = roomAccess(tier, "oracle");
 
   return (
-    <div className="min-h-screen bg-[#0a0a12]/25 text-amber-50">
+    <div className="pl-shell min-h-screen bg-[#0a0a12]/25 text-amber-50">
       <div className="mx-auto w-full max-w-[900px] px-4 py-8 md:px-8 md:py-12">
         <PersonalWorkspaceNav active="/me/oracle" />
-        <header className="mb-6">
+        <header className="pl-header mb-6">
           <div className="text-[11px] uppercase tracking-[0.24em] text-amber-300/70">
             {isZh ? "神谕者阅读室" : "Oracle Reading Room"}
           </div>

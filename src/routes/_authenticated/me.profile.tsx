@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
+import "@/components/personal-library.css";
 import { PersonalWorkspaceNav } from "@/components/PersonalWorkspaceNav";
 
 import { PersonalBookshelf } from "@/experiences/profile/PersonalBookshelf";
@@ -72,10 +73,10 @@ function MyProfilePage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#0a0a12]/25 text-amber-50">
+    <div className="pl-shell min-h-screen bg-[#0a0a12]/25 text-amber-50">
       <div className="mx-auto w-full max-w-[1100px] px-4 py-8 md:px-8 md:py-12">
         <PersonalWorkspaceNav active="/me/profile" />
-        <header className="mb-8">
+        <header className="pl-header mb-8">
           <div className="text-xs uppercase tracking-[0.24em] text-amber-300/60">
             {d.profile_kicker}
           </div>

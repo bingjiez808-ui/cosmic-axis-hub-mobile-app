@@ -2,6 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 
 
 import { useLang } from "@/lib/i18n";
+import "@/components/personal-library.css";
 
 /**
  * PersonalWorkspaceNav — the unified secondary nav for every `/me/*`
@@ -67,7 +68,7 @@ export function PersonalWorkspaceNav({ active }: { active?: string }) {
     <div
       data-testid="personal-workspace-nav"
       style={{ top: "calc(var(--site-nav-height, 96px) + 8px)" }}
-      className="sticky z-40 mb-6 -mx-4 border-b border-amber-400/10 bg-[#0a0a12]/85 px-4 py-3 backdrop-blur md:-mx-8 md:px-8"
+      className="sticky z-40 mb-6 -mx-4 border-b border-amber-400/15 bg-[#0a0a12]/85 px-4 py-3 shadow-[0_18px_30px_-32px_rgba(0,0,0,0.95)] backdrop-blur md:-mx-8 md:px-8"
     >
       <div className="mx-auto flex w-full max-w-[1100px] items-center gap-3">
 
@@ -86,12 +87,21 @@ export function PersonalWorkspaceNav({ active }: { active?: string }) {
                   to={it.to}
                   data-testid={it.testId}
                   aria-current={activeItem ? "page" : undefined}
-                  className={`inline-flex min-h-11 shrink-0 snap-start items-center rounded-full px-4 py-2 text-xs transition ${
+                  data-active={activeItem ? "true" : "false"}
+                  className={`pl-pill inline-flex min-h-11 shrink-0 snap-start items-center gap-2 rounded-full px-4 py-2 text-xs ${
                     activeItem
-                      ? "border border-amber-300 bg-amber-300/10 text-amber-100"
-                      : "border border-amber-400/25 text-amber-200/80 hover:border-amber-300/60 hover:text-amber-100"
+                      ? "border border-amber-300/80 bg-amber-300/12 text-amber-100 shadow-[0_0_18px_-6px_rgba(252,211,77,0.55)]"
+                      : "border border-amber-400/25 text-amber-200/80 hover:border-amber-300/60 hover:bg-amber-300/5 hover:text-amber-100"
                   }`}
                 >
+                  <span
+                    aria-hidden
+                    className={`h-1.5 w-1.5 rounded-full transition-all duration-300 ${
+                      activeItem
+                        ? "scale-100 bg-amber-300 shadow-[0_0_8px_2px_rgba(252,211,77,0.55)]"
+                        : "scale-0 bg-amber-300/40"
+                    }`}
+                  />
                   {isZh ? it.labelZh : it.labelEn}
                 </Link>
               );
@@ -122,7 +132,7 @@ export function RelationshipsSubtabs({ current }: { current: "friends" | "match"
   return (
     <div
       data-testid="relationships-subtabs"
-      className="mb-4 flex items-center gap-2"
+      className="mb-5 inline-flex items-center gap-1 rounded-full border border-amber-400/20 bg-black/30 p-1 backdrop-blur"
       role="tablist"
       aria-label={isZh ? "关系与适配子标签" : "Relationships subtabs"}
     >
@@ -135,10 +145,11 @@ export function RelationshipsSubtabs({ current }: { current: "friends" | "match"
             role="tab"
             aria-selected={active}
             data-testid={`relationships-subtab-${it.key}`}
-            className={`inline-flex min-h-9 items-center rounded-full px-3 py-1.5 text-[11px] uppercase tracking-[0.22em] transition ${
+            data-active={active ? "true" : "false"}
+            className={`pl-underline-tab inline-flex min-h-9 items-center rounded-full px-3 py-1.5 text-[11px] uppercase tracking-[0.22em] transition ${
               active
                 ? "bg-amber-300/15 text-amber-100 ring-1 ring-amber-300/50"
-                : "text-amber-200/70 hover:text-amber-100"
+                : "text-amber-200/70 hover:bg-amber-300/5 hover:text-amber-100"
             }`}
           >
             {isZh ? it.zh : it.en}

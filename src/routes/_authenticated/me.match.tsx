@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 
-import { PersonalWorkspaceNav, RelationshipsSubtabs } from "@/components/PersonalWorkspaceNav";
+import { RelationshipsSubtabs } from "@/components/PersonalWorkspaceNav";
+import { PersonalLibraryShell } from "@/components/PersonalLibraryShell";
 
 import { computeCompatibility, type CompatResult } from "@/lib/compatibility-score";
 import { MATCH_DEMO, type MatchDemoKey } from "@/experiences/daily-room/match-fixtures";
@@ -89,26 +90,22 @@ function MatchPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a12]/25 text-amber-50">
-      <div className="mx-auto w-full max-w-[1100px] px-4 py-8 md:px-8 md:py-12">
-        <div className="mb-4 rounded-lg border border-amber-400/30 bg-amber-500/5 px-4 py-2 text-xs text-amber-200/90">
+    <PersonalLibraryShell
+      active="/me/match"
+      kicker={d.match_kicker}
+      title={d.match_title}
+      intro={d.match_intro_plain}
+    >
+      <div className="pl-stagger">
+        <RelationshipsSubtabs current="match" />
+
+        <div className="mb-4 rounded-xl border border-amber-400/25 bg-amber-500/5 px-4 py-2 text-xs text-amber-200/90">
           {d.demo_banner_match}
         </div>
-
-        <PersonalWorkspaceNav active="/me/match" />
-        <RelationshipsSubtabs current="match" />
 
         <div className="mb-6">
           <SocialConsentGate />
         </div>
-
-        <header className="mb-8">
-          <div className="text-xs uppercase tracking-[0.2em] text-amber-300/60">
-            {d.match_kicker}
-          </div>
-          <h1 className="mt-2 text-3xl font-serif tracking-wide md:text-4xl">{d.match_title}</h1>
-          <p className="mt-3 max-w-2xl text-sm text-amber-100/70">{d.match_intro_plain}</p>
-        </header>
 
         <div role="tablist" aria-label="match-tabs" className="mb-6 flex flex-wrap gap-2 border-b border-amber-400/15 pb-3 text-xs">
           <button
@@ -116,10 +113,11 @@ function MatchPage() {
             role="tab"
             aria-selected={tab === "personal"}
             onClick={() => setTab("personal")}
-            className={`rounded-full px-3 py-1.5 transition ${
+            data-active={tab === "personal" ? "true" : "false"}
+            className={`pl-pill rounded-full px-4 py-2 ${
               tab === "personal"
-                ? "border border-amber-300 bg-amber-300/10 text-amber-100"
-                : "border border-transparent text-amber-200/70 hover:border-amber-300/40"
+                ? "border border-amber-300/80 bg-amber-300/12 text-amber-100 shadow-[0_0_18px_-6px_rgba(252,211,77,0.55)]"
+                : "border border-amber-400/20 text-amber-200/70 hover:border-amber-300/50 hover:bg-amber-300/5"
             }`}
           >
             {cmc.t("tab_personal")}
@@ -129,10 +127,11 @@ function MatchPage() {
             role="tab"
             aria-selected={tab === "community"}
             onClick={() => setTab("community")}
-            className={`rounded-full px-3 py-1.5 transition ${
+            data-active={tab === "community" ? "true" : "false"}
+            className={`pl-pill rounded-full px-4 py-2 ${
               tab === "community"
-                ? "border border-amber-300 bg-amber-300/10 text-amber-100"
-                : "border border-transparent text-amber-200/70 hover:border-amber-300/40"
+                ? "border border-amber-300/80 bg-amber-300/12 text-amber-100 shadow-[0_0_18px_-6px_rgba(252,211,77,0.55)]"
+                : "border border-amber-400/20 text-amber-200/70 hover:border-amber-300/50 hover:bg-amber-300/5"
             }`}
           >
             {cmc.t("tab_community")}
@@ -140,9 +139,11 @@ function MatchPage() {
         </div>
 
         {tab === "community" ? (
-          <CommunityMatchPanel />
+          <div key="community" className="pl-header">
+            <CommunityMatchPanel />
+          </div>
         ) : (
-          <>
+          <div key="personal" className="pl-header">
         <RealImportPanel mode={mode} setMode={setMode} facetLabel={facetLabel} />
 
 
@@ -193,9 +194,10 @@ function MatchPage() {
                     setRevoked(false);
                   }}
                   aria-pressed={key === k}
-                  className={`rounded-full border px-3 py-1.5 text-xs transition ${
+                  data-active={key === k ? "true" : "false"}
+                  className={`pl-pill rounded-full border px-3 py-1.5 text-xs ${
                     key === k
-                      ? "border-amber-300 bg-amber-300/10 text-amber-100"
+                      ? "border-amber-300/80 bg-amber-300/12 text-amber-100"
                       : "border-amber-400/20 text-amber-200/70 hover:border-amber-300/60"
                   }`}
                 >
@@ -213,7 +215,7 @@ function MatchPage() {
             )}
           </div>
         </details>
-          </>
+          </div>
         )}
 
 
@@ -228,7 +230,7 @@ function MatchPage() {
           </details>
         ) : null}
       </div>
-    </div>
+    </PersonalLibraryShell>
   );
 }
 
@@ -273,12 +275,20 @@ function ResultPanel({
 }) {
   return (
     <div className="space-y-6">
-      <section className="rounded-xl border border-amber-400/30 bg-black/40 p-6">
+      <section className="pl-panel flex flex-wrap items-center gap-6 p-6">
+        <div
+          className="pl-dial shrink-0"
+          style={{ ["--pl-dial-value" as string]: String(result.overall) }}
+          aria-hidden
+        >
+          <span className="font-serif text-2xl text-amber-100">{result.overall}</span>
+        </div>
+        <div className="min-w-0">
         <div className="text-xs uppercase tracking-widest text-amber-200/70">
           {d.match_overall_label}
         </div>
         <div className="mt-2 flex flex-wrap items-baseline gap-3">
-          <div className="text-6xl font-serif text-amber-100">{result.overall}</div>
+          <div className="text-5xl font-serif text-amber-100">{result.overall}</div>
           <div className="text-xs text-amber-200/60">
             / 100 · {d.match_modes[result.mode]}
           </div>
@@ -288,15 +298,19 @@ function ResultPanel({
             </span>
           )}
         </div>
+        </div>
       </section>
 
-      <section className="grid gap-3 md:grid-cols-2 lg:grid-cols-5">
+      <section className="pl-stagger grid gap-3 md:grid-cols-2 lg:grid-cols-5">
         {result.dimensions.map((dim) => (
-          <div key={dim.key} className="rounded-xl border border-amber-400/20 bg-black/30 p-4">
+          <div key={dim.key} className="pl-panel p-4">
             <div className="text-xs text-amber-200/70">{facetLabel(dim.key)}</div>
             <div className="mt-1 flex items-baseline gap-2">
               <div className="text-3xl font-serif text-amber-100">{dim.score}</div>
               <div className="text-[10px] text-amber-200/50">/ 100</div>
+            </div>
+            <div className="pl-meter mt-3">
+              <span style={{ width: `${dim.score}%` }} />
             </div>
             <div
               className={`mt-2 inline-block rounded-full border px-2 py-0.5 text-[10px] ${BAND_CLASS[dim.band]}`}

@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import "@/components/personal-library.css";
 import { PersonalWorkspaceNav } from "@/components/PersonalWorkspaceNav";
 
 import { loadDailyRoomFixture, type DailyRoomFixtureKey } from "@/experiences/daily-room/fixtures";
@@ -266,7 +267,7 @@ function DailyRoomPage() {
   const caution = plain.overall.avoid_today;
 
   return (
-    <div className="min-h-screen bg-[#0a0a12]/25 text-amber-50">
+    <div className="pl-shell min-h-screen bg-[#0a0a12]/25 text-amber-50">
       <div className="mx-auto w-full max-w-[1100px] px-4 py-8 md:px-8 md:py-12">
         {/* Demo banner */}
         <div className="mb-6 rounded-lg border border-amber-400/30 bg-amber-500/5 px-4 py-2 text-xs text-amber-200/90">
@@ -280,7 +281,7 @@ function DailyRoomPage() {
 
 
         {/* Page title — "My Library" is the personal reading desk. Today's Fate is its default first module. */}
-        <header className="mb-6">
+        <header className="pl-header mb-6">
           <div className="text-[10px] uppercase tracking-[0.36em] text-amber-300/60">
             {lang === "zh" ? "命运图书馆 · 我的书架" : "Destiny Library · My Library"}
           </div>
@@ -374,7 +375,7 @@ function DailyRoomPage() {
 
 
         {/* Welcome */}
-        <header className="mb-8">
+        <header className="pl-header mb-8">
           <div className="text-xs uppercase tracking-[0.2em] text-amber-300/60">
             {d.today_kicker}
           </div>

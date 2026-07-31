@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
 import { MembershipCheckoutModal } from "@/components/MembershipCheckoutModal";
+import "@/components/personal-library.css";
 import { PersonalWorkspaceNav } from "@/components/PersonalWorkspaceNav";
 import { MembershipCard } from "@/components/MembershipCard";
 import { MyTicketsCard } from "@/components/MyTicketsCard";
@@ -73,10 +74,10 @@ function MembershipPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#0a0a12]/25 text-amber-50">
+    <div className="pl-shell min-h-screen bg-[#0a0a12]/25 text-amber-50">
       <div className="mx-auto w-full max-w-[1100px] px-4 py-8 md:px-8 md:py-12">
         <PersonalWorkspaceNav active="/me/membership" />
-        <header className="mb-6">
+        <header className="pl-header mb-6">
           <div className="text-xs uppercase tracking-[0.24em] text-amber-300/60">
             {isZh ? "会员与订单" : "Membership & Orders"}
           </div>
