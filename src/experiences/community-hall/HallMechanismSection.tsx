@@ -124,6 +124,15 @@ export function HallMechanismSection() {
               ) : null}
             </div>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{r.body}</p>
+            {r.buy ? (
+              <Link
+                to="/community/grants"
+                hash="buy"
+                className="mt-3 inline-block text-sm text-primary hover:underline"
+              >
+                {r.buy}
+              </Link>
+            ) : null}
           </article>
         ))}
       </div>
