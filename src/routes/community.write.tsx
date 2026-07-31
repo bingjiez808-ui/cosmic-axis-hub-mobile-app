@@ -526,6 +526,27 @@ function WriteFlow() {
                 </div>
               )
             ) : null}
+            {dest === "librarian" ? (
+              <div className="hall-inset mt-4 flex flex-wrap items-center gap-3 px-4 py-3 text-xs text-muted-foreground">
+                <span>
+                  {!entitledForSage
+                    ? zh
+                      ? "图书管理员亲自回信为「贤者」会员权益，每月赠三次真人回复。"
+                      : "A personal reply from the librarian is a Sage membership benefit, with three human replies a month."
+                    : zh
+                      ? `本月还剩 ${humanCredits} 次真人回复。寄出后会立即扣除一次。`
+                      : `${humanCredits} human replies left this month. Sending spends one right away.`}
+                </span>
+                {!entitledForSage ? (
+                  <Link
+                    to="/me/membership"
+                    className="hall-tap underline underline-offset-4 hover:text-foreground"
+                  >
+                    {zh ? "了解贤者会员" : "See the Sage membership"}
+                  </Link>
+                ) : null}
+              </div>
+            ) : null}
           </div>
           <p className="text-xs text-muted-foreground">{c.autoExpire}</p>
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
