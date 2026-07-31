@@ -54,11 +54,11 @@ function GrantsPage() {
   return (
     <main className="mx-auto w-full max-w-3xl px-4 pb-16 pt-28 sm:px-6 sm:pb-24 sm:pt-32">
       <HallHeader
-        title={zh ? "真人回复权益" : "Human reply grants"}
+        title={zh ? "回信权益" : "Reply grants"}
         subtitle={
           zh
-            ? "开通「贤者」即赠 3 次真人回复（一次性赠送，用完为止）：由图书管理员本人、或他托付的旅者匿名执笔。领取后，你可以随时决定用在哪封信上。"
-            : "Sage membership includes three human replies as a one-time gift, written anonymously by the librarian or a traveler they entrust. Claim them, then choose which letter each one goes to."
+            ? "开通「贤者」即赠 2 次「先贤回信」与 1 次「管理员授权」（可由图书管理员亲自回信，或由他委托的旅者定向回信）。用完之后可单独加购：3 元 1 次，10 元 4 次。"
+            : "Sage membership gifts two sage replies and one librarian-authorised human reply (answered by the librarian, or by a traveler they entrust). Need more? ¥3 for one, ¥10 for four."
         }
       />
       <HallNav />
@@ -79,12 +79,14 @@ function GrantsBody() {
   const desk = useDeskLetters("sage");
   const claim = useClaimHumanReplyGrants();
   const spend = useRequestHumanReply();
+  const purchase = usePurchaseReplyCredits();
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
   const credits = entitlement.data?.credits;
   const entitled = entitlement.data?.entitled ?? false;
   const remaining = credits?.remaining ?? 0;
+  const sageRemaining = credits?.sageRemaining ?? 0;
 
   /** Sage letters that have not yet been escalated to a human. */
   const candidates = useMemo(
@@ -97,7 +99,30 @@ function GrantsBody() {
     setNotice(null);
     try {
       await claim.mutateAsync();
-      setNotice(zh ? "已领取赠送的 3 次真人回复。" : "Claimed your three gifted human replies.");
+      setNotice(
+        zh
+          ? "已领取：2 次先贤回信 + 1 次管理员授权。"
+          : "Claimed: 2 sage replies + 1 librarian-authorised reply.",
+      );
+    } catch (err) {
+      setError(hallErrorMessage(err, c.lang));
+    }
+  }
+
+  async function onBuy(bucket: "sage" | "human", pack: "single" | "quad") {
+    setError(null);
+    setNotice(null);
+    try {
+      await purchase.mutateAsync({
+        bucket,
+        pack,
+        idempotencyKey: `${bucket}-${pack}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      });
+      setNotice(
+        zh
+          ? `加购成功：${pack === "single" ? "1" : "4"} 次${bucket === "sage" ? "先贤回信" : "管理员授权"}已到账（模拟支付，不会真实扣款）。`
+          : `Added ${pack === "single" ? "1" : "4"} ${bucket === "sage" ? "sage" : "librarian"} reply chance(s). Simulated payment — no real charge.`,
+      );
     } catch (err) {
       setError(hallErrorMessage(err, c.lang));
     }
@@ -129,19 +154,32 @@ function GrantsBody() {
             <div className="space-y-3">
               <p className="text-sm leading-relaxed text-foreground/85">
                 {zh
-                  ? "真人回复是「贤者」会员的权益。开通即一次性赠送 3 次，由真人匿名执笔回信。"
-                  : "Human replies come with Sage membership: three as a one-time gift, written by a real person, anonymously."}
+                  ? "开通「贤者」即赠 2 次先贤回信 + 1 次管理员授权（管理员亲自回信，或由他委托旅者定向回信）。用完可加购：3 元 1 次，10 元 4 次。"
+                  : "Sage membership gifts 2 sage replies + 1 librarian-authorised human reply. Extras: ¥3 for one, ¥10 for four."}
               </p>
               <Button asChild size="sm" className="hall-tap">
                 <Link to="/me/membership">{zh ? "了解贤者会员" : "See Sage membership"}</Link>
               </Button>
             </div>
           ) : (
-            <div className="space-y-4">
-              <div className="flex flex-wrap items-end gap-6">
-                <Stat label={zh ? "剩余" : "Remaining"} value={remaining} strong />
-                <Stat label={zh ? "已用" : "Used"} value={credits?.used ?? 0} />
-                <Stat label={zh ? "累计发放" : "Granted"} value={credits?.granted ?? 0} />
+            <div className="space-y-5">
+              <div className="grid gap-5 sm:grid-cols-2">
+                <div className="rounded-xl border border-primary/15 bg-background/40 p-4">
+                  <p className="text-xs text-primary/80">{zh ? "先贤回信" : "Sage replies"}</p>
+                  <div className="mt-2 flex flex-wrap items-end gap-5">
+                    <Stat label={zh ? "剩余" : "Remaining"} value={sageRemaining} strong />
+                    <Stat label={zh ? "已用" : "Used"} value={credits?.sageUsed ?? 0} />
+                  </div>
+                </div>
+                <div className="rounded-xl border border-primary/15 bg-background/40 p-4">
+                  <p className="text-xs text-primary/80">
+                    {zh ? "管理员授权（真人回信）" : "Librarian-authorised reply"}
+                  </p>
+                  <div className="mt-2 flex flex-wrap items-end gap-5">
+                    <Stat label={zh ? "剩余" : "Remaining"} value={remaining} strong />
+                    <Stat label={zh ? "已用" : "Used"} value={credits?.used ?? 0} />
+                  </div>
+                </div>
               </div>
               <p className="text-xs text-muted-foreground">
                 {zh ? "开通起始：" : "Since: "}
@@ -164,18 +202,70 @@ function GrantsBody() {
                       ? "领取中…"
                       : "Claiming…"
                     : zh
-                      ? "领取赠送的 3 次真人回复"
-                      : "Claim your 3 gifted replies"}
+                      ? "领取赠送：2 次先贤回信 + 1 次管理员授权"
+                      : "Claim 2 sage replies + 1 librarian reply"}
                 </Button>
               ) : (
                 <p className="text-sm text-foreground/80">
                   {zh
-                    ? "赠送权益已到账。这 3 次为开通时一次性赠送，用完即止，不会每月重置。"
-                    : "Your gift is in your account. These three are a one-time grant: they do not reset each month."}
+                    ? "赠送权益已到账。这是开通「贤者」时的一次性赠送，用完可单独加购，不会每月重置。"
+                    : "Your gift is in your account. It is a one-time grant with Sage membership — top up if you need more."}
                 </p>
               )}
             </div>
           )}
+        </div>
+      </HallSection>
+
+      {/* ---- Top-up packs --------------------------------------- */}
+      <HallSection title={zh ? "加购次数" : "Buy more chances"}>
+        <p className="mb-4 text-sm text-muted-foreground">
+          {zh
+            ? "赠送次数用完后，可以按需加购：3 元 1 次，10 元 4 次（约合 2.5 元 / 次）。当前为模拟支付，不会真实扣款。"
+            : "Once the gift is used up, top up as needed: ¥3 for one, ¥10 for four (about ¥2.5 each). Payment is simulated for now."}
+        </p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {(["sage", "human"] as const).map((bucket) => (
+            <div key={bucket} className="hall-paper p-5">
+              <h3 className="hall-card-title">
+                {bucket === "sage"
+                  ? zh
+                    ? "先贤回信"
+                    : "Sage reply"
+                  : zh
+                    ? "管理员授权（真人回信）"
+                    : "Librarian-authorised reply"}
+              </h3>
+              <p className="mt-2 text-sm text-foreground/75">
+                {bucket === "sage"
+                  ? zh
+                    ? "由一位蒸馏出的历代先贤，以其本领与语气回信。"
+                    : "A distilled historical sage answers in their own voice."
+                  : zh
+                    ? "图书管理员亲自回信，或由他委托的旅者定向匿名回信。"
+                    : "The librarian replies in person, or entrusts a traveler to answer you anonymously."}
+              </p>
+              <div className="mt-4 flex flex-wrap gap-3">
+                <Button
+                  size="sm"
+                  className="hall-tap"
+                  disabled={purchase.isPending}
+                  onClick={() => void onBuy(bucket, "single")}
+                >
+                  {zh ? "3 元 · 1 次" : "¥3 · 1"}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="hall-tap"
+                  disabled={purchase.isPending}
+                  onClick={() => void onBuy(bucket, "quad")}
+                >
+                  {zh ? "10 元 · 4 次" : "¥10 · 4"}
+                </Button>
+              </div>
+            </div>
+          ))}
         </div>
       </HallSection>
 
