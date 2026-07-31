@@ -137,7 +137,9 @@ export async function readCommunityProfile(ctx: Ctx) {
   const { data: band } = await ctx.supabase.rpc("community_age_band", { _uid: ctx.userId });
   const { data } = await ctx.supabase
     .from("community_profiles")
-    .select("alias, academy, element, avatar_url, quote, age_band, language, opt_in, status, onboarded_at")
+    .select(
+      "alias, academy, element, avatar_url, quote, age_band, language, opt_in, status, onboarded_at, accepts_assignments",
+    )
     .eq("user_id", ctx.userId)
     .maybeSingle();
   return {
@@ -155,6 +157,9 @@ export async function readCommunityProfile(ctx: Ctx) {
           optIn: data.opt_in,
           status: data.status,
           onboardedAt: (data as { onboarded_at?: string | null }).onboarded_at ?? null,
+          acceptsAssignments: Boolean(
+            (data as { accepts_assignments?: boolean }).accepts_assignments,
+          ),
         }
       : null,
   };
