@@ -95,7 +95,7 @@ function Desk() {
 
   if (desk.isLoading) return <HallSkeleton rows={3} />;
   if (desk.error) {
-    return <HallError message={hallErrorMessage(desk.error, c.lang)} onRetry={() => void desk.refetch()} />;
+    return <HallError error={desk.error} onRetry={() => void desk.refetch()} />;
   }
 
   const letters = desk.data?.letters ?? [];
