@@ -1124,7 +1124,7 @@ function ReportPage() {
     "idle" | "loading" | "ready" | "error" | "needs-auth" | "needs-verify"
   >("idle");
   const [aiError, setAiError] = useState<string | null>(null);
-  const [aiProgress, setAiProgress] = useState({ done: 0, total: 0 });
+  const [aiProgress, setAiProgress] = useState({ done: 0, total: 0, degraded: 0 });
   const [reportChartId, setReportChartId] = useState<string | null>(null);
   const latestReqRef = useRef(0);
   const { updateReadingAI } = useAccount();
@@ -1169,7 +1169,7 @@ function ReportPage() {
     const totalSteps = DIM_KEYS.length + 1;
     setAiState("loading");
     setAiError(null);
-    setAiProgress({ done: 0, total: totalSteps });
+    setAiProgress({ done: 0, total: totalSteps, degraded: 0 });
 
     const draftKey = "lod.report-draft";
     const currentUrl =
