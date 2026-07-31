@@ -198,14 +198,14 @@ export function TravelerIdentityCard() {
   };
 
   return (
-    <section className="mx-auto mt-10 w-full max-w-5xl">
+    <section className="mx-auto mt-12 w-full max-w-3xl">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7 }}
-        className="glass-card overflow-hidden rounded-3xl p-6 sm:p-8 md:p-12"
+        className="hall-paper overflow-hidden p-6 sm:p-8 md:p-10"
         style={{
-          background: `linear-gradient(140deg, ${house.tone[0]}22, transparent 55%), var(--tw-gradient-from, rgba(255,255,255,0.02))`,
+          backgroundImage: `linear-gradient(140deg, ${house.tone[0]}1f, transparent 58%)`,
         }}
       >
         <div className="flex flex-col items-center gap-6 md:flex-row md:items-start md:gap-8">
