@@ -12,7 +12,10 @@ import {
   assignLetterToTraveler,
   claimHumanReplyGrants,
   getHumanReplyGrantHistory,
+  getHelperStanding,
   getLibrarianDesk,
+  getMyEchoRatings,
+  rateHumanEcho,
   getMyDeskLetters,
   getMyLetterAssignments,
   getSageEntitlement,
@@ -27,7 +30,42 @@ export const sageKeys = {
   assignments: ["sage-council", "assignments"] as const,
   librarian: ["sage-council", "librarian"] as const,
   grantHistory: ["sage-council", "grant-history"] as const,
+  echoRatings: ["sage-council", "echo-ratings"] as const,
+  helperStanding: ["sage-council", "helper-standing"] as const,
 };
+
+export function useMyEchoRatings(enabled = true) {
+  const load = useServerFn(getMyEchoRatings);
+  return useQuery({
+    queryKey: sageKeys.echoRatings,
+    queryFn: () => load(),
+    enabled,
+    staleTime: 30_000,
+  });
+}
+
+export function useHelperStanding(enabled = true) {
+  const load = useServerFn(getHelperStanding);
+  return useQuery({
+    queryKey: sageKeys.helperStanding,
+    queryFn: () => load(),
+    enabled,
+    staleTime: 30_000,
+  });
+}
+
+export function useRateEcho() {
+  const qc = useQueryClient();
+  const call = useServerFn(rateHumanEcho);
+  return useMutation({
+    mutationFn: (input: { replyId: string; stars: number; note?: string | null }) =>
+      call({ data: input }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: sageKeys.echoRatings });
+      void qc.invalidateQueries({ queryKey: sageKeys.helperStanding });
+    },
+  });
+}
 
 export function useHumanReplyGrantHistory(enabled = true) {
   const load = useServerFn(getHumanReplyGrantHistory);

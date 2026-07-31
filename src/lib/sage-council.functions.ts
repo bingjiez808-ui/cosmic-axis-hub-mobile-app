@@ -17,6 +17,9 @@ import {
   readDeskLetters,
   readLibrarianDesk,
   readMyAssignments,
+  readHelperStanding,
+  readMyReplyRatings,
+  rateReply,
   readSageEntitlement,
   requestHumanReply,
   respondToAssignment,
@@ -52,6 +55,28 @@ export const getSageEntitlement = createServerFn({ method: "GET" })
 export const claimHumanReplyGrants = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => claimSageCredits(context));
+
+const rateSchema = z.object({
+  replyId: z.string().uuid(),
+  stars: z.number().int().min(1).max(5),
+  note: z.string().trim().max(300).optional().nullable(),
+});
+
+/** The letter author rates a human echo. */
+export const rateHumanEcho = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => rateSchema.parse(input))
+  .handler(async ({ context, data }) => rateReply(context, data));
+
+/** Ratings I have already given, keyed by reply id. */
+export const getMyEchoRatings = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => readMyReplyRatings(context));
+
+/** My standing as an entrusted helper + rewards earned. */
+export const getHelperStanding = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => readHelperStanding(context));
 
 /** Claim + spend ledger for the human-reply grants. */
 export const getHumanReplyGrantHistory = createServerFn({ method: "GET" })
