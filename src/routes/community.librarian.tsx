@@ -17,6 +17,7 @@ import {
   HallNav,
   HallSection,
 } from "@/experiences/community-hall/HallShell";
+import { EntrustPanel } from "@/experiences/community-hall/EntrustPanel";
 import { HallError, HallSkeleton } from "@/experiences/community-hall/HallStates";
 import { hallErrorMessage } from "@/lib/community-hall-errors";
 import { useCommunityHall } from "@/lib/i18n-community-hall";
@@ -72,8 +73,6 @@ function Desk() {
   const desk = useLibrarianDesk(isAdmin);
   const assign = useAssignLetter();
   const [openId, setOpenId] = useState<string | null>(null);
-  const [assignee, setAssignee] = useState<string>("");
-  const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   if (!isAdmin) {
@@ -155,8 +154,6 @@ function Desk() {
                       className="hall-tap"
                       onClick={() => {
                         setOpenId(open ? null : letter.letterId);
-                        setAssignee("");
-                        setNote("");
                         setError(null);
                       }}
                     >
