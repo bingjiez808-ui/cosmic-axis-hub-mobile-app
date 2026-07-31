@@ -572,10 +572,10 @@ function WriteFlow() {
             </Button>
             <Button
               className="hall-tap flex-1 sm:flex-none"
-              disabled={!agree || send.isPending}
+              disabled={!agree || busy}
               onClick={() => void submit()}
             >
-              {send.isPending ? c.sending : c.seal}
+              {busy ? c.sending : c.seal}
             </Button>
           </div>
         </div>
