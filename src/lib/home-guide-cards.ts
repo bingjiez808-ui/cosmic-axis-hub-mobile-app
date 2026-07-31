@@ -15,6 +15,7 @@ export type HomeCardId =
   | "books"
   | "commons"
   | "rooms"
+  | "hall"
   | "desk";
 
 export type HomeCardVisual =
@@ -24,7 +25,8 @@ export type HomeCardVisual =
   | "timeline"
   | "tarot"
   | "commons"
-  | "rooms";
+  | "rooms"
+  | "hall";
 
 export type HomeAccess = "open" | "basic" | "sage" | "oracle" | "coming";
 
@@ -141,8 +143,25 @@ export const HOME_GUIDE_CARDS: readonly HomeGuideCard[] = [
     visual: "rooms",
   },
   {
-    id: "desk",
+    id: "hall",
     number: "06",
+    titleZh: "同门 · 众生之厅",
+    titleEn: "The Hall of Beings",
+    taglineZh: "匿名写一封信 → 陌生同门/先贤回你一封",
+    taglineEn: "Write one anonymous letter → someone answers it",
+    descriptionZh:
+      "读完自己的命盘之后,来这里把还没说出口的那句话写成一封匿名信。可以寄给同龄的陌生旅者、贴上公共信墙、请一位先贤(十二位历史人物人格)作答,或交给图书管理员安排真人回信。全程匿名、有敏感词审查与举报,回音会在通知中心提醒你。",
+    descriptionEn:
+      "After reading your own chart, write the sentence you never said aloud as an anonymous letter. Send it to a stranger of your age band, pin it on the public wall, ask one of twelve distilled historical sages, or let the librarian arrange a human reply. Anonymous throughout, screened and reportable, with echoes announced in your notice centre.",
+    ctaZh: "走进众生之厅",
+    ctaEn: "Enter the hall",
+    access: "open",
+    mode: "drawer",
+    visual: "hall",
+  },
+  {
+    id: "desk",
+    number: "07",
     titleZh: "我的书架 · 每天回来的地方",
     titleEn: "Personal Library · come back each day",
     taglineZh: "今日命运、命盘管理、好友与订单",
