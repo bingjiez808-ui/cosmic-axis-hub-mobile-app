@@ -11,6 +11,7 @@ import {
   HallSection,
 } from "@/experiences/community-hall/HallShell";
 import { HallEmptyState, HallError, HallSkeleton } from "@/experiences/community-hall/HallStates";
+import { EchoRating } from "@/experiences/community-hall/EchoRating";
 import { EchoCard } from "@/experiences/community-hall/LetterCards";
 import { useCommunityMailbox, useSaveEcho } from "@/lib/community-hall-client";
 import { hallErrorMessage } from "@/lib/community-hall-errors";
@@ -127,6 +128,7 @@ function EchoesPage() {
                       items.map((echo) => (
                         <div key={echo.replyId} className="space-y-2">
                           <EchoCard echo={echo} />
+                          <EchoRating replyId={echo.replyId} />
                           <button
                             type="button"
                             disabled={saveEcho.isPending}

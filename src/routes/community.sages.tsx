@@ -3,7 +3,7 @@
  *
  * Pick a distilled historical persona, write to them, and read the answer in
  * their voice. Gated on the 贤者 (Sage) membership; every member also holds
- * three monthly grants to escalate a letter to a real human reply.
+ * three one-time gifts to escalate a letter to a real human reply.
  */
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
@@ -212,8 +212,8 @@ function SageDesk() {
           <div className="hall-paper p-5">
             <p className="text-sm leading-relaxed text-muted-foreground">
               {zh
-                ? "让先贤回信需要「贤者」会员。开通后可随时向十二位先贤写信，并每月获赠 3 次「图书管理员亲自回信」的真人回复机会。往来始终匿名，只以旅者身份署名。"
-                : "Letters answered by a sage require the Sage membership. It also grants three personal replies from the librarian each month. Every exchange stays anonymous, signed only with your traveler alias."}
+                ? "让先贤回信需要「贤者」会员。开通后可随时向十二位先贤写信，并一次性获赠 3 次「图书管理员亲自回信」的真人回复机会。往来始终匿名，只以旅者身份署名。"
+                : "Letters answered by a sage require the Sage membership. It also gifts three personal replies from the librarian, once. Every exchange stays anonymous, signed only with your traveler alias."}
             </p>
             <Button asChild className="hall-tap mt-4">
               <Link to="/me/membership">{zh ? "查看会员权益" : "See membership"}</Link>
@@ -243,7 +243,7 @@ function SageDesk() {
             <p className="text-xs text-muted-foreground">
               {length}/{BODY_MAX}
               {credits
-                ? ` · ${zh ? "本月真人回复剩余" : "human replies left this month"} ${credits.remaining}/${credits.granted}`
+                ? ` · ${zh ? "真人回复剩余" : "human replies left"} ${credits.remaining}/${credits.granted}`
                 : ""}
             </p>
             {error ? <p className="text-sm text-destructive">{error}</p> : null}

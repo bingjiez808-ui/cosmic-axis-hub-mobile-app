@@ -158,7 +158,7 @@ function WriteFlow() {
       return setError(
         zh
           ? "本月的三次真人回复已经用完了。可以先寄给信使或张贴到信墙。"
-          : "This month's three human-reply grants are used up. Try the courier or the public wall.",
+          : "Your three gifted human replies are used up. Try the courier or the public wall.",
       );
     }
     setError(null);
@@ -241,7 +241,7 @@ function WriteFlow() {
       librarian: {
         body: zh
           ? "信已经放在图书管理员的案头，本月一次真人回复已记在你的名下。他会亲自回信，或把它托付给一位愿意接信的旅者——对方看到的只有你的旅者代号。"
-          : "Your letter is on the librarian's desk and one of this month's human replies is now reserved for you. They will answer it themselves, or entrust it to a traveler who offered to help — either way, all they see is your traveler alias.",
+          : "Your letter is on the librarian's desk and one of your three gifted human replies is now reserved for you. They will answer it themselves, or entrust it to a traveler who offered to help — either way, all they see is your traveler alias.",
         note: zh ? "等待图书管理员亲自回信" : "Waiting on the librarian's personal reply",
         to: "/community/sages",
         cta: zh ? "去我的案前查看" : "See my desk",
@@ -447,8 +447,8 @@ function WriteFlow() {
                     key: "librarian" as const,
                     title: zh ? "请图书管理员亲自回信" : "Ask the librarian to write back",
                     body: zh
-                      ? `真人回信。图书管理员亲自读信并回复，或托付给一位愿意接信的旅者。需「贤者」会员，每月赠三次（本月剩 ${humanCredits} 次）。`
-                      : `A real person answers. The librarian reads it and replies, or entrusts it to a traveler who offered to help. Requires the Sage membership; three grants a month (${humanCredits} left).`,
+                      ? `真人回信。图书管理员亲自读信并回复，或托付给一位愿意接信的旅者。需「贤者」会员，开通即赠三次（剩 ${humanCredits} 次）。`
+                      : `A real person answers. The librarian reads it and replies, or entrusts it to a traveler who offered to help. Requires the Sage membership; three gifted replies in total (${humanCredits} left).`,
                     locked: !entitledForSage || humanCredits <= 0,
                   },
                 ]
@@ -556,11 +556,11 @@ function WriteFlow() {
                 <span>
                   {!entitledForSage
                     ? zh
-                      ? "图书管理员亲自回信为「贤者」会员权益，每月赠三次真人回复。"
-                      : "A personal reply from the librarian is a Sage membership benefit, with three human replies a month."
+                      ? "图书管理员亲自回信为「贤者」会员权益，开通即一次性赠送三次真人回复。"
+                      : "A personal reply from the librarian is a Sage membership benefit, with three gifted human replies in total."
                     : zh
                       ? `本月还剩 ${humanCredits} 次真人回复。寄出后会立即扣除一次。`
-                      : `${humanCredits} human replies left this month. Sending spends one right away.`}
+                      : `${humanCredits} gifted human replies left. Sending spends one right away.`}
                 </span>
                 {!entitledForSage ? (
                   <Link
@@ -580,7 +580,7 @@ function WriteFlow() {
                         : "See usage history"
                       : zh
                         ? "去领取本月赠送"
-                        : "Claim this month's grants"}
+                        : "Claim your gifted replies"}
                   </Link>
                 )}
 

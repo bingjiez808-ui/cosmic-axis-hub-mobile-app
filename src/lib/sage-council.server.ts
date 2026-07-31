@@ -104,7 +104,7 @@ async function readCredits(ctx: Ctx): Promise<SageCredits> {
   return shapeCredits(data);
 }
 
-/** Claim this month's three human-reply grants (贤者/神谕者 only). */
+/** Claim the one-time gift of three human-reply chances (贤者/神谕者 only). */
 export async function claimSageCredits(ctx: Ctx): Promise<SageCredits> {
   limit(`sage-council:claim:${ctx.userId}`, 10, 60 * 60_000);
   const { data, error } = await ctx.supabase.rpc("claim_sage_reply_credits");
@@ -113,6 +113,71 @@ export async function claimSageCredits(ctx: Ctx): Promise<SageCredits> {
     friendly(error);
   }
   return shapeCredits(data);
+}
+
+export type ReplyRating = { stars: number; note: string | null };
+
+export type HelperReward = {
+  rewardId: string;
+  reward: string;
+  ratedCount: number;
+  avgStars: number | null;
+  expiresAt: string | null;
+  createdAt: string;
+};
+
+export type HelperStanding = {
+  ratedCount: number;
+  avgStars: number;
+  highCount: number;
+  needRated: number;
+  needAvg: number;
+  needHigh: number;
+  cooldownUntil: string | null;
+  rewards: HelperReward[];
+};
+
+/** The letter author rates a human echo 1–5 and may leave a private note. */
+export async function rateReply(
+  ctx: Ctx,
+  input: { replyId: string; stars: number; note?: string | null },
+): Promise<{ ok: boolean; helperRewarded: boolean }> {
+  limit(`sage-council:rate:${ctx.userId}`, 40, 60 * 60_000);
+  const { data, error } = await ctx.supabase.rpc("rate_letter_reply", {
+    _reply_id: input.replyId,
+    _stars: input.stars,
+    _note: input.note ?? undefined,
+  });
+  if (error) friendly(error);
+  const raw = (data ?? {}) as Record<string, unknown>;
+  return { ok: Boolean(raw.ok), helperRewarded: Boolean(raw.helperRewarded) };
+}
+
+/** Ratings this traveler has already given, keyed by reply id. */
+export async function readMyReplyRatings(ctx: Ctx): Promise<Record<string, ReplyRating>> {
+  const { data, error } = await ctx.supabase.rpc("get_my_reply_ratings");
+  if (error) friendly(error);
+  return (data ?? {}) as unknown as Record<string, ReplyRating>;
+}
+
+/** How this traveler is doing as an entrusted helper, and rewards earned. */
+export async function readHelperStanding(ctx: Ctx): Promise<HelperStanding> {
+  const { data, error } = await ctx.supabase.rpc("get_helper_standing");
+  if (error) friendly(error);
+  const raw = (data ?? {}) as Record<string, unknown>;
+  return {
+    ratedCount: Number(raw.ratedCount ?? 0),
+    avgStars: Number(raw.avgStars ?? 0),
+    highCount: Number(raw.highCount ?? 0),
+    needRated: Number(raw.needRated ?? 3),
+    needAvg: Number(raw.needAvg ?? 4.5),
+    needHigh: Number(raw.needHigh ?? 3),
+    cooldownUntil: (raw.cooldownUntil as string | null) ?? null,
+    rewards: ((raw.rewards ?? []) as HelperReward[]).map((r) => ({
+      ...r,
+      avgStars: r.avgStars === null ? null : Number(r.avgStars),
+    })),
+  };
 }
 
 export type SageCreditEvent = {
