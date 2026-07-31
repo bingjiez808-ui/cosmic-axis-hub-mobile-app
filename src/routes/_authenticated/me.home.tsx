@@ -508,22 +508,65 @@ function DailyRoomPage() {
 
 
 
-        <section className="mb-8 grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
-          {score.domains.map((dd) => (
-            <div key={dd.domain} className="rounded-xl border border-amber-400/20 bg-black/30 p-4">
-              <div className="text-xs text-amber-200/70">{domainLabel(dd.domain)}</div>
-              <div className="mt-1 flex items-baseline gap-2">
-                <div className="text-3xl font-serif text-amber-100">{dd.score}</div>
-                <div className="text-[10px] text-amber-200/50">{d.overall_out_of}</div>
-              </div>
-              <div
-                className={`mt-2 inline-block rounded-full border px-2 py-0.5 text-[10px] ${BAND_COLOR[dd.band]}`}
+        {/* Domain cards — each opens its full plain-language reading in a modal,
+            so the page layout never shifts (replaces the old inline <details>). */}
+        <section
+          className="mb-8 grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-5"
+          data-testid="domain-card-grid"
+        >
+          {score.domains.map((dd) => {
+            const pd = plain.domains.find((x) => x.domain === dd.domain);
+            return (
+              <button
+                key={dd.domain}
+                type="button"
+                data-testid={`domain-card-${dd.domain}`}
+                aria-haspopup="dialog"
+                onClick={() =>
+                  pd &&
+                  setDomainDetail({
+                    key: dd.domain,
+                    label: domainLabel(dd.domain),
+                    score: dd.score,
+                    bandLabel: xlate(d.band, dd.band),
+                    bandClass: BAND_COLOR[dd.band],
+                    confidenceLabel: xlate(d.confidence, dd.confidence),
+                    headline: pd.headline,
+                    mayShowAs: pd.may_show_as,
+                    doToday: pd.do_today,
+                    avoidToday: pd.avoid_today,
+                    weekTrend: pd.week_trend,
+                    breakdown: dd.breakdown,
+                  })
+                }
+                className="group rounded-xl border border-amber-400/20 bg-black/30 p-4 text-left transition hover:border-amber-300/60 hover:bg-black/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/60"
               >
-                {xlate(d.band, dd.band)} · {xlate(d.confidence, dd.confidence)}
-              </div>
-            </div>
-          ))}
+                <div className="text-xs text-amber-200/70">{domainLabel(dd.domain)}</div>
+                <div className="mt-1 flex items-baseline gap-2">
+                  <div className="text-3xl font-serif text-amber-100">{dd.score}</div>
+                  <div className="text-[10px] text-amber-200/50">{d.overall_out_of}</div>
+                </div>
+                <div
+                  className={`mt-2 inline-block rounded-full border px-2 py-0.5 text-[10px] ${BAND_COLOR[dd.band]}`}
+                >
+                  {xlate(d.band, dd.band)} · {xlate(d.confidence, dd.confidence)}
+                </div>
+                <div className="mt-2 text-[10px] text-amber-300/70 group-hover:text-amber-200">
+                  {lang === "zh" ? "查看详细解读 →" : "Open full reading →"}
+                </div>
+              </button>
+            );
+          })}
         </section>
+
+        <DomainDetailDialog
+          lang={lang}
+          payload={domainDetail}
+          onOpenChange={(open) => {
+            if (!open) setDomainDetail(null);
+          }}
+        />
+
 
         {/* Plain-language: what to do / what to watch (0-AI templates) */}
         <section className="mb-8 grid gap-4 md:grid-cols-2">
