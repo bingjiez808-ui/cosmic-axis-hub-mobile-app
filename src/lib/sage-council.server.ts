@@ -245,6 +245,13 @@ export async function sendLibrarianLetter(
     responseStyle?: string | null;
   },
 ) {
+  // A personal reply from the librarian is a human writing back, so it is
+  // gated exactly like the sage route: 「贤者」membership, and it spends one of
+  // the three monthly human-reply grants (checked again inside the RPC).
+  const { entitled, credits } = await readTier(ctx);
+  if (!entitled) throw hallError("sage_required");
+  if (credits.remaining <= 0) throw hallError("no_reply_credits");
+
   limit(`sage-council:librarian:${ctx.userId}`, 3, 24 * 60 * 60_000);
   const verdict = screenCommunityText(`${input.subject ?? ""}\n${input.body}`);
   if (verdict.action === "block") throw hallError(safetyCode(verdict.categories));
@@ -264,10 +271,18 @@ export async function sendLibrarianLetter(
     _persona_id: "",
   });
   if (error || !letterId) friendly(error);
+
+  // Spend the grant. The RPC re-verifies authorship and remaining credits.
+  const { error: creditError } = await ctx.supabase.rpc("request_human_reply", {
+    _letter_id: letterId as string,
+  });
+  if (creditError) friendly(creditError);
+
   return {
     letterId: letterId as string,
     pendingReview: held,
     showSupport: needsSupportResources(verdict),
+    credits: await readCredits(ctx),
   };
 }
 
