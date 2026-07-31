@@ -1,4 +1,5 @@
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
+import { useModalA11y } from "@/lib/use-modal-a11y";
 
 import { PLANETS, ZODIAC_SIGNS, computePlanetSigns } from "@/components/charts/DestinyCharts";
 import { useAccount, type SavedReading } from "@/lib/account";
