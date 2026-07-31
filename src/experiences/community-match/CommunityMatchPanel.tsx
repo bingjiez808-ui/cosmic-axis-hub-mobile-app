@@ -891,9 +891,8 @@ function MatchesTab() {
       setItems([]);
     }
   }, [list]);
-  useEffect(() => {
-    void refresh();
-  }, [refresh]);
+  usePolledRefresh(refresh);
+
 
   if (!items) return <p className="text-sm text-amber-200/70">…</p>;
   if (items.length === 0) return <p className="text-sm text-amber-200/70">{c.t("matches_empty")}</p>;
