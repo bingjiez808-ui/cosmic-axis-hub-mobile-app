@@ -207,6 +207,22 @@ function WriteFlow() {
         ))}
       </ol>
 
+      {savedLabel ? (
+        <div className="mt-3 flex flex-wrap items-center gap-3 rounded-xl border border-primary/15 bg-background/50 px-3 py-2 text-xs text-muted-foreground">
+          <span className="text-primary/80">
+            {draftRestored
+              ? c.lang === "en"
+                ? "Unsent draft restored."
+                : "已恢复上次未寄出的草稿。"
+              : savedLabel}
+          </span>
+          <button type="button" onClick={discardDraft} className="hall-tap underline underline-offset-4 hover:text-foreground">
+            {c.lang === "en" ? "Discard draft" : "清除草稿"}
+          </button>
+        </div>
+      ) : null}
+
+
       {step === 1 ? (
         <div className="hall-rise mt-6 space-y-5">
           <div>
