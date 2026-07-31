@@ -155,8 +155,8 @@ function WriteFlow() {
   if (sent) {
     return (
       <section className="hall-paper hall-open-in mt-8 p-8 text-center">
-        <p className="text-[0.72rem] uppercase tracking-[0.4em] text-primary/70">{c.hallEyebrow}</p>
-        <h2 className="mt-4 text-2xl font-semibold text-foreground">{c.sentTitle}</h2>
+        <p className="hall-eyebrow">{c.hallEyebrow}</p>
+        <h2 className="hall-section-title mt-4">{c.sentTitle}</h2>
         <p className="mx-auto mt-4 max-w-md text-pretty text-sm leading-relaxed text-muted-foreground">
           {sent.pendingReview ? c.pendingReview : c.sentBody}
         </p>
@@ -208,7 +208,7 @@ function WriteFlow() {
       </ol>
 
       {savedLabel ? (
-        <div className="mt-3 flex flex-wrap items-center gap-3 rounded-xl border border-primary/15 bg-background/50 px-3 py-2 text-xs text-muted-foreground">
+        <div className="hall-inset mt-3 flex flex-wrap items-center gap-3 px-3 py-2 text-xs text-muted-foreground">
           <span className="text-primary/80">
             {draftRestored
               ? c.lang === "en"
@@ -258,7 +258,7 @@ function WriteFlow() {
               value={subject}
               onChange={(e) => setSubject(e.target.value.slice(0, 80))}
               placeholder={c.fieldSubjectHint}
-              className="hall-tap mt-2 w-full rounded-xl border border-primary/20 bg-background/70 px-4 py-3 text-base outline-none focus:border-primary/50 sm:text-sm"
+              className="hall-field hall-tap mt-2 text-base sm:text-sm"
             />
           </label>
           <label className="block">
@@ -268,7 +268,7 @@ function WriteFlow() {
               onChange={(e) => setBody(e.target.value.slice(0, BODY_MAX))}
               rows={9}
               placeholder={c.echoPlaceholder}
-              className="mt-2 w-full resize-y rounded-xl border border-primary/20 bg-background/70 px-4 py-3 text-base leading-relaxed outline-none focus:border-primary/50 sm:text-sm"
+              className="hall-field mt-2 resize-y text-base sm:text-sm"
             />
             <span
               className={`mt-1 block text-right text-xs ${
@@ -328,7 +328,7 @@ function WriteFlow() {
             <p className="text-xs text-muted-foreground">
               {c.previewTo} {c.ageBand(band)} · {c.topic(topic)}
             </p>
-            <h3 className="mt-2 text-base font-semibold text-foreground">
+            <h3 className="hall-card-title mt-2">
               {subject.trim() || c.topic(topic)}
             </h3>
             <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">

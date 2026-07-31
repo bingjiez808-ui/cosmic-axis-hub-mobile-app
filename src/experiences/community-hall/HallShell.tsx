@@ -30,7 +30,7 @@ export function HallHeader({
   const c = useCommunityHall();
   return (
     <header className="mx-auto max-w-3xl text-center">
-      <p className="text-[0.72rem] uppercase tracking-[0.42em] text-primary/70">{c.hallEyebrow}</p>
+      <p className="hall-eyebrow">{c.hallEyebrow}</p>
       <h1 className="mt-4 text-balance text-[clamp(1.6rem,5.4vw,2.6rem)] font-semibold leading-[1.28] text-foreground">
         {lines ? (
           <>
@@ -135,10 +135,10 @@ export function HallSection({
     <section
       ref={ref}
       data-visible={inView ? "true" : "false"}
-      className="hall-reveal mx-auto mt-10 w-full max-w-3xl"
+      className="hall-reveal mx-auto mt-12 w-full max-w-3xl"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold text-foreground sm:text-xl">{title}</h2>
+        <h2 className="hall-section-title">{title}</h2>
         {action}
       </div>
       <span className="hall-heading-rule mt-3" aria-hidden="true" />
@@ -149,7 +149,7 @@ export function HallSection({
 
 export function HallEmpty({ text, cta }: { text: string; cta?: ReactNode }) {
   return (
-    <div className="rounded-2xl border border-dashed border-primary/20 bg-background/40 p-8 text-center">
+    <div className="hall-empty p-8 text-center">
       <p className="text-pretty text-sm leading-relaxed text-muted-foreground">{text}</p>
       {cta ? <div className="mt-5 flex justify-center">{cta}</div> : null}
     </div>

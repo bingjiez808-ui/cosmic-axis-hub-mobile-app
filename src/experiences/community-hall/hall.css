@@ -227,8 +227,8 @@ main:has(.hall-paper) {
   height: 2.1rem;
   width: 2.1rem;
   border-radius: 9999px;
-  border: 1px solid color-mix(in oklab, var(--primary) 40%, transparent);
-  background: color-mix(in oklab, var(--background) 80%, transparent);
+  border: 1px solid var(--hall-border-strong);
+  background: var(--hall-surface);
   color: color-mix(in oklab, var(--primary) 88%, var(--foreground));
   font-size: 0.78rem;
   letter-spacing: 0.08em;
