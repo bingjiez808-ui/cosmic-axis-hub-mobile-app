@@ -14,6 +14,8 @@ import { useSendLetter } from "@/lib/community-hall-client";
 import { hallErrorCode, hallErrorMessage, type HallErrorCode } from "@/lib/community-hall-errors";
 import { useCommunityHall, type AgeBand } from "@/lib/i18n-community-hall";
 import { clearLetterDraft, loadLetterDraft, saveLetterDraft } from "@/lib/letter-draft";
+import { useAskSage, useSageEntitlement, useSendToLibrarian } from "@/lib/sage-council-client";
+import { SAGE_DOMAIN_LABEL, SAGE_PERSONAS } from "@/lib/sage-personas";
 import "@/experiences/community-hall/hall.css";
 
 const BODY_MIN = 30;
