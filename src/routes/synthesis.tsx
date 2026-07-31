@@ -3,8 +3,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 
 import treeImg from "@/assets/tree-of-destiny.jpg";
-import { generateReport } from "@/lib/report.functions";
-import { buildReportCacheKey, buildReportFingerprint, buildReportRequest } from "@/lib/report-input";
+
+import { buildReportFingerprint } from "@/lib/report-input";
 import { useHydratedChartSearch } from "@/lib/chart-hydration";
 import { missingFields, type RitualState } from "@/lib/ritual-validation";
 
