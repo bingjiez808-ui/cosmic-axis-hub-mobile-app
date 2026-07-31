@@ -205,7 +205,7 @@ export function TravelerIdentityCard() {
         transition={{ duration: 0.7 }}
         className="hall-paper overflow-hidden p-6 sm:p-8 md:p-10"
         style={{
-          backgroundImage: `linear-gradient(140deg, ${house.tone[0]}1f, transparent 58%)`,
+          backgroundImage: `linear-gradient(140deg, ${house.tone[0]}1f, transparent 58%), radial-gradient(120% 90% at 12% 0%, var(--hall-glow), transparent 62%)`,
         }}
       >
         <div className="flex flex-col items-center gap-6 md:flex-row md:items-start md:gap-8">
