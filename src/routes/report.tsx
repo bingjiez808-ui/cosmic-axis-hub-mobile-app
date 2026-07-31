@@ -1371,45 +1371,86 @@ function ReportPage() {
           reportLang,
         ),
       };
-      const acc: { summary: string; dimensions: ReportDimensionAI[] } = {
-        summary: "",
-        dimensions: [],
+      // Resume any partial run for this exact fingerprint: dimensions that
+      // already landed are never re-requested (cheaper, faster, and a refresh
+      // mid-generation no longer restarts from zero).
+      const resumed = loadReportProgress<ReportDimensionAI>(fingerprint, REPORT_AI_VERSION);
+      const acc: { summary: string; dimensions: ReportDimensionAI[]; degraded: string[] } = {
+        summary: resumed?.summary ?? "",
+        dimensions: resumed?.dimensions?.filter((d) => !resumed.degraded.includes(d.key)) ?? [],
+        degraded: [],
       };
-      setAi({ summary: "", dimensions: [] });
+      const orderDims = () =>
+        DIM_KEYS.map((key) => acc.dimensions.find((d) => d.key === key)).filter(
+          (d): d is ReportDimensionAI => !!d,
+        );
+      const persistProgress = () =>
+        saveReportProgress<ReportDimensionAI>({
+          fingerprint,
+          version: REPORT_AI_VERSION,
+          summary: acc.summary,
+          dimensions: orderDims(),
+          degraded: acc.degraded,
+        });
+
+      setAi({ summary: acc.summary, dimensions: orderDims() });
 
       let firstError: unknown = null;
+      const resumedCount = acc.dimensions.length + (acc.summary ? 1 : 0);
+      setAiProgress({ done: resumedCount, total: totalSteps, degraded: 0 });
       const bump = () => {
         if (stale()) return;
-        setAiProgress((p) => ({ done: Math.min(p.total, p.done + 1), total: p.total }));
+        setAiProgress((p) => ({ ...p, done: Math.min(p.total, p.done + 1) }));
+      };
+      const markDegraded = (key: string) => {
+        acc.degraded.push(key);
+        acc.dimensions.push(degradedDimension(key, reportLang));
+        if (!stale()) {
+          setAiProgress((p) => ({ ...p, degraded: p.degraded + 1 }));
+          setAi({ summary: acc.summary, dimensions: orderDims() });
+        }
+        persistProgress();
       };
 
-      // One retry: the epigraph is persisted with the report, so a single
-      // transient failure here would otherwise be frozen into the saved row.
-      const summaryPromise = generateReportSummary({ data: req })
-        .catch(() => generateReportSummary({ data: req }))
-        .then((res) => {
-          if (stale()) return;
-          acc.summary = res.summary;
-          setAi((prev) => ({ summary: res.summary, dimensions: prev?.dimensions ?? [] }));
-        })
-        .catch((err) => {
-          firstError = firstError ?? err;
-        })
-        .finally(bump);
+      // Exponential backoff with jitter on every call. The epigraph is
+      // persisted with the report, so a transient failure must not be frozen
+      // into the saved row.
+      const summaryPromise = acc.summary
+        ? Promise.resolve()
+        : retryWithBackoff(() => generateReportSummary({ data: req }), {
+            attempts: 3,
+            baseDelayMs: 700,
+            isCancelled: stale,
+          })
+            .then((res) => {
+              if (stale()) return;
+              acc.summary = res.summary;
+              setAi((prev) => ({ summary: res.summary, dimensions: prev?.dimensions ?? [] }));
+              persistProgress();
+            })
+            .catch((err) => {
+              firstError = firstError ?? err;
+            })
+            .finally(bump);
 
-
-      const dimPromises = DIM_KEYS.map((k) =>
-        generateReportDimension({ data: { ...req, key: k } })
+      const missingKeys = DIM_KEYS.filter((k) => !acc.dimensions.some((d) => d.key === k));
+      const dimPromises = missingKeys.map((k) =>
+        retryWithBackoff(() => generateReportDimension({ data: { ...req, key: k } }), {
+          attempts: 3,
+          baseDelayMs: 700,
+          maxDelayMs: 8000,
+          isCancelled: stale,
+        })
           .then((dim) => {
             if (stale()) return;
             acc.dimensions.push(dim);
-            const ordered = DIM_KEYS.map((key) => acc.dimensions.find((d) => d.key === key)).filter(
-              (d): d is ReportDimensionAI => !!d,
-            );
-            setAi((prev) => ({ summary: prev?.summary ?? acc.summary, dimensions: ordered }));
+            setAi((prev) => ({ summary: prev?.summary ?? acc.summary, dimensions: orderDims() }));
+            persistProgress();
           })
           .catch((err) => {
+            // Degrade this one module only — never the whole report.
             firstError = firstError ?? err;
+            if (!stale()) markDegraded(k);
           })
           .finally(bump),
       );
@@ -1417,7 +1458,9 @@ function ReportPage() {
       await Promise.all([summaryPromise, ...dimPromises]);
       if (stale()) return;
 
-      if (acc.dimensions.length === 0 && !acc.summary) {
+      // Only a total wipe-out is a real failure.
+      const liveDims = acc.dimensions.filter((d) => !acc.degraded.includes(d.key));
+      if (liveDims.length === 0 && !acc.summary) {
         await failReport({
           data: {
             reportId: claim.reportId,
@@ -1430,17 +1473,9 @@ function ReportPage() {
       }
 
       const finalDims: ReportDimensionAI[] = DIM_KEYS.map(
-        (k) =>
-          acc.dimensions.find((d) => d.key === k) ?? {
-            key: k,
-            headline: "",
-            evidence: [],
-            specifics: [],
-            synthesis: "",
-            plain: "",
-            details: [],
-          },
+        (k) => acc.dimensions.find((d) => d.key === k) ?? degradedDimension(k, reportLang),
       );
+
       const finalReport: ReportAI = { summary: acc.summary, dimensions: finalDims };
       setAi(finalReport);
       setAiState("ready");
