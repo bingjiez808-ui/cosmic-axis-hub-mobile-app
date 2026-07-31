@@ -331,16 +331,20 @@ export function TraditionModal({
 
   return (
     <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="tradition-modal-title"
+      role="presentation"
       className="fixed inset-0 z-[80] flex items-center justify-center bg-obsidian/85 px-4 py-8 backdrop-blur-md"
       onClick={onClose}
     >
       <div
-        className="relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl border border-gold-dust/25 bg-void-blue/95 p-6 md:p-10"
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="tradition-modal-title"
+        tabIndex={-1}
+        className="relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl border border-gold-dust/25 bg-void-blue/95 p-6 focus:outline-none md:p-10"
         onClick={(e) => e.stopPropagation()}
       >
+
         <button
           type="button"
           onClick={onClose}
