@@ -35,6 +35,7 @@ import { Route as CommunityWriteRouteImport } from './routes/community.write'
 import { Route as CommunityWallRouteImport } from './routes/community.wall'
 import { Route as CommunitySagesRouteImport } from './routes/community.sages'
 import { Route as CommunityOutboxRouteImport } from './routes/community.outbox'
+import { Route as CommunityLibrarianRouteImport } from './routes/community.librarian'
 import { Route as CommunityInboxRouteImport } from './routes/community.inbox'
 import { Route as CommunityErrandsRouteImport } from './routes/community.errands'
 import { Route as CommunityEchoesRouteImport } from './routes/community.echoes'
@@ -188,6 +189,11 @@ const CommunityOutboxRoute = CommunityOutboxRouteImport.update({
   path: '/community/outbox',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CommunityLibrarianRoute = CommunityLibrarianRouteImport.update({
+  id: '/community/librarian',
+  path: '/community/librarian',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CommunityInboxRoute = CommunityInboxRouteImport.update({
   id: '/community/inbox',
   path: '/community/inbox',
@@ -335,6 +341,7 @@ export interface FileRoutesByFullPath {
   '/community/echoes': typeof CommunityEchoesRoute
   '/community/errands': typeof CommunityErrandsRoute
   '/community/inbox': typeof CommunityInboxRoute
+  '/community/librarian': typeof CommunityLibrarianRoute
   '/community/outbox': typeof CommunityOutboxRoute
   '/community/sages': typeof CommunitySagesRoute
   '/community/wall': typeof CommunityWallRoute
@@ -383,6 +390,7 @@ export interface FileRoutesByTo {
   '/community/echoes': typeof CommunityEchoesRoute
   '/community/errands': typeof CommunityErrandsRoute
   '/community/inbox': typeof CommunityInboxRoute
+  '/community/librarian': typeof CommunityLibrarianRoute
   '/community/outbox': typeof CommunityOutboxRoute
   '/community/sages': typeof CommunitySagesRoute
   '/community/wall': typeof CommunityWallRoute
@@ -435,6 +443,7 @@ export interface FileRoutesById {
   '/community/echoes': typeof CommunityEchoesRoute
   '/community/errands': typeof CommunityErrandsRoute
   '/community/inbox': typeof CommunityInboxRoute
+  '/community/librarian': typeof CommunityLibrarianRoute
   '/community/outbox': typeof CommunityOutboxRoute
   '/community/sages': typeof CommunitySagesRoute
   '/community/wall': typeof CommunityWallRoute
@@ -487,6 +496,7 @@ export interface FileRouteTypes {
     | '/community/echoes'
     | '/community/errands'
     | '/community/inbox'
+    | '/community/librarian'
     | '/community/outbox'
     | '/community/sages'
     | '/community/wall'
@@ -535,6 +545,7 @@ export interface FileRouteTypes {
     | '/community/echoes'
     | '/community/errands'
     | '/community/inbox'
+    | '/community/librarian'
     | '/community/outbox'
     | '/community/sages'
     | '/community/wall'
@@ -586,6 +597,7 @@ export interface FileRouteTypes {
     | '/community/echoes'
     | '/community/errands'
     | '/community/inbox'
+    | '/community/librarian'
     | '/community/outbox'
     | '/community/sages'
     | '/community/wall'
@@ -635,6 +647,7 @@ export interface RootRouteChildren {
   CommunityEchoesRoute: typeof CommunityEchoesRoute
   CommunityErrandsRoute: typeof CommunityErrandsRoute
   CommunityInboxRoute: typeof CommunityInboxRoute
+  CommunityLibrarianRoute: typeof CommunityLibrarianRoute
   CommunityOutboxRoute: typeof CommunityOutboxRoute
   CommunitySagesRoute: typeof CommunitySagesRoute
   CommunityWallRoute: typeof CommunityWallRoute
@@ -831,6 +844,13 @@ declare module '@tanstack/react-router' {
       path: '/community/outbox'
       fullPath: '/community/outbox'
       preLoaderRoute: typeof CommunityOutboxRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/community/librarian': {
+      id: '/community/librarian'
+      path: '/community/librarian'
+      fullPath: '/community/librarian'
+      preLoaderRoute: typeof CommunityLibrarianRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/community/inbox': {
@@ -1080,6 +1100,7 @@ const rootRouteChildren: RootRouteChildren = {
   CommunityEchoesRoute: CommunityEchoesRoute,
   CommunityErrandsRoute: CommunityErrandsRoute,
   CommunityInboxRoute: CommunityInboxRoute,
+  CommunityLibrarianRoute: CommunityLibrarianRoute,
   CommunityOutboxRoute: CommunityOutboxRoute,
   CommunitySagesRoute: CommunitySagesRoute,
   CommunityWallRoute: CommunityWallRoute,
