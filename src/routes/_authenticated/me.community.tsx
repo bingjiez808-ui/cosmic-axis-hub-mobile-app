@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import "@/components/personal-library.css";
 import { PersonalWorkspaceNav } from "@/components/PersonalWorkspaceNav";
 import { Button } from "@/components/ui/button";
 import {
@@ -45,7 +46,7 @@ function CommunitySettingsPage() {
   }, [profile]);
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 pb-24 pt-10 sm:px-6">
+    <main className="pl-shell mx-auto w-full max-w-3xl px-4 pb-24 pt-10 sm:px-6">
       <PersonalWorkspaceNav />
       <h1 className="mt-8 text-2xl font-semibold text-foreground">{c.settingsTitle}</h1>
       <p className="mt-2 text-sm text-muted-foreground">{c.identityHint}</p>
