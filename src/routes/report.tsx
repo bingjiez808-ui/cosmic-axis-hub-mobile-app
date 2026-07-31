@@ -2087,16 +2087,19 @@ function ReportPage() {
                     })}
                   </ul>
 
-                  <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
-                    {t.strength_map}
-                  </p>
-                  <div className="rm-viz text-stone-warm/50">
-                    {d.viz === "elements" && d.elementStrengths ? (
-                      <FiveElements strengths={d.elementStrengths} lang={lang} size={240} />
-                    ) : (
-                      <StrengthRadar values={d.strengths} labels={t.four_traditions} size={220} />
-                    )}
+                  <div className="rm-viz-block">
+                    <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+                      {t.strength_map}
+                    </p>
+                    <div className="rm-viz text-stone-warm/50">
+                      {d.viz === "elements" && d.elementStrengths ? (
+                        <FiveElements strengths={d.elementStrengths} lang={lang} size={240} />
+                      ) : (
+                        <StrengthRadar values={d.strengths} labels={t.four_traditions} size={220} />
+                      )}
+                    </div>
                   </div>
+
                 </div>
 
 

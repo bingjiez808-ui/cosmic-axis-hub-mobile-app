@@ -382,6 +382,7 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
+  height: 100%;
 }
 
 .rm-scroll {
@@ -416,6 +417,35 @@
   max-height: clamp(150px, 21vh, 224px);
 }
 
+/* Signal-strength block sits at the foot of the left pane. */
+.rm-viz-block {
+  margin-top: auto;
+  padding-top: 0.5rem;
+}
+.rm-viz-block > .rm-viz {
+  display: flex;
+  justify-content: center;
+}
+
+@media (min-width: 1024px) {
+  /* Desktop: the left pane is stretched by the grid to the height of
+     the synthesis column. The evidence list takes every pixel the
+     signal map does not need, so the two columns always end level
+     and every module keeps the same skeleton. */
+  .rm-h-evidence {
+    flex: 1 1 auto;
+    min-height: 220px;
+    max-height: none;
+  }
+  .rm-viz-block {
+    /* No auto margin here: the evidence list absorbs the free space
+       (auto margins would eat it first), which both lengthens the
+       evidence pane and pushes the signal map to the pane's foot. */
+    margin-top: 0;
+    flex: 0 0 auto;
+  }
+}
+
 @media (max-width: 640px) {
   .rm-h-evidence {
     max-height: 236px;
@@ -429,4 +459,8 @@
   .rm-h-specifics {
     max-height: 200px;
   }
+  .rm-viz-block {
+    margin-top: 0.25rem;
+  }
 }
+
