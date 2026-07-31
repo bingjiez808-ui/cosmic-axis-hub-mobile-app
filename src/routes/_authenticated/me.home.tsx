@@ -301,29 +301,42 @@ function DailyRoomPage() {
   const caution = plain.overall.avoid_today;
 
   // ---- AI explanation layer (daily-reading-v1) ------------------------
+  // Cost policy: the score itself is 100% deterministic (daily-facts-v1 +
+  // daily-domain-score-v2) and never calls AI. The AI layer is OPT-IN and
+  // cached per chart+date+lang, so a normal day costs zero AI credits.
   const readingFn = useServerFn(generateDailyReading);
   const [ai, setAi] = useState<DailyReadingAI | null>(null);
   const [aiState, setAiState] = useState<"idle" | "loading" | "error">("idle");
+  const [aiRequested, setAiRequested] = useState(false);
   const aiKey =
     usingRealChart && primaryChart && facts
       ? `fate.daily-reading.v1|${primaryChart.id}|${today}|${tz}|${lang}|${score.overall.score}`
       : null;
   const requestedKey = useRef<string | null>(null);
 
+  // Cache-only pass: reuse today's reading if it was already generated.
   useEffect(() => {
-    if (!aiKey || !facts) return;
-    if (requestedKey.current === aiKey) return;
-    requestedKey.current = aiKey;
+    if (!aiKey) return;
     try {
       const cached = window.localStorage.getItem(aiKey);
       if (cached) {
         setAi(JSON.parse(cached) as DailyReadingAI);
+        requestedKey.current = aiKey;
         setAiState("idle");
         return;
       }
     } catch {
       /* ignore cache errors */
     }
+    setAi(null);
+    setAiState("idle");
+    requestedKey.current = null;
+  }, [aiKey]);
+
+  useEffect(() => {
+    if (!aiRequested || !aiKey || !facts) return;
+    if (requestedKey.current === aiKey) return;
+    requestedKey.current = aiKey;
     setAiState("loading");
     let cancelled = false;
     readingFn({
@@ -373,7 +386,7 @@ function DailyRoomPage() {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [aiKey]);
+  }, [aiKey, aiRequested]);
 
   const retryAi = () => {
     requestedKey.current = null;
@@ -386,7 +399,9 @@ function DailyRoomPage() {
     }
     setAi(null);
     setAiState("idle");
+    setAiRequested(true);
   };
+
 
   return (
     <div className="pl-shell min-h-screen bg-[#0a0a12]/25 text-amber-50">
