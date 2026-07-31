@@ -23,6 +23,8 @@ import {
   deleteMyCommunityHallData,
   getCommunityLetterDispatchState,
   getCommunityLibrarySamples,
+  getCommunityPublicLetter,
+  getCommunityPublicWall,
   markCommunityOnboarded,
   markCommunityNotificationsRead,
   requestCommunityLetterWave,
@@ -35,6 +37,8 @@ export const communityKeys = {
   mailbox: ["community-hall", "mailbox"] as const,
   samples: (lang: string) => ["community-hall", "samples", lang] as const,
   dispatch: (letterId: string) => ["community-hall", "dispatch", letterId] as const,
+  wall: ["community-hall", "wall"] as const,
+  wallLetter: (letterId: string) => ["community-hall", "wall", letterId] as const,
 };
 
 export type CommunityProfileInput = {
@@ -54,6 +58,8 @@ export type SendLetterInput = {
   topic?: string | null;
   targetAgeBand: string;
   responseStyle?: string | null;
+  /** 'delivered_only' = courier picks the readers; 'wall' = public board. */
+  visibility?: "delivered_only" | "wall";
 };
 
 export type ReportInput = {
@@ -112,11 +118,38 @@ export function useSendLetter() {
 }
 
 export function useReplyToLetter() {
+  const qc = useQueryClient();
   const reply = useServerFn(replyToCommunityLetter);
   const invalidate = useInvalidate();
   return useMutation({
     mutationFn: (data: { letterId: string; body: string }) => reply({ data }),
-    onSuccess: invalidate,
+    onSuccess: (_r, variables) => {
+      invalidate();
+      void qc.invalidateQueries({ queryKey: communityKeys.wall });
+      void qc.invalidateQueries({ queryKey: communityKeys.wallLetter(variables.letterId) });
+    },
+  });
+}
+
+/** The open board: letters whose authors chose 公共信墙 instead of a courier run. */
+export function useCommunityPublicWall(enabled = true) {
+  const load = useServerFn(getCommunityPublicWall);
+  return useQuery({
+    queryKey: communityKeys.wall,
+    queryFn: () => load({ data: { limit: 30 } }),
+    enabled,
+    staleTime: 30_000,
+  });
+}
+
+/** One public letter with its echoes; only fetched once a card is opened. */
+export function useCommunityPublicLetter(letterId: string | null) {
+  const load = useServerFn(getCommunityPublicLetter);
+  return useQuery({
+    queryKey: communityKeys.wallLetter(letterId ?? "none"),
+    queryFn: () => load({ data: { letterId: letterId as string } }),
+    enabled: Boolean(letterId),
+    staleTime: 15_000,
   });
 }
 
