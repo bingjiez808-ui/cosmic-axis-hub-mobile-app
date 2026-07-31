@@ -76,6 +76,9 @@ function WriteFlow() {
   const c = useCommunityHall();
   const navigate = useNavigate();
   const send = useSendLetter();
+  const askSage = useAskSage();
+  const sendLibrarian = useSendToLibrarian();
+  const entitlement = useSageEntitlement();
 
   // Restore any unsent draft synchronously on first client render so a refresh
   // never loses what the traveler already wrote.
@@ -86,7 +89,8 @@ function WriteFlow() {
   const [body, setBody] = useState(restored?.body ?? "");
   const [topic, setTopic] = useState<string>(restored?.topic ?? "self");
   const [band, setBand] = useState<AgeBand | null>((restored?.band as AgeBand | null) ?? null);
-  const [visibility, setVisibility] = useState<Visibility>("delivered_only");
+  const [dest, setDest] = useState<Destination>("courier");
+  const [personaId, setPersonaId] = useState<string>(SAGE_PERSONAS[0].id);
   const [agree, setAgree] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errorCode, setErrorCode] = useState<HallErrorCode | null>(null);
