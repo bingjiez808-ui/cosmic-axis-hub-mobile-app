@@ -503,19 +503,25 @@ function MyChartsSection({ open, onClose, lang, rows, setRows }: {
       {confirm && (
         <div
           className="fixed inset-0 z-[60] flex items-end justify-center bg-black/70 p-4 sm:items-center"
-          role="dialog"
-          aria-modal="true"
+          role="presentation"
           onClick={() => !deleting && setConfirm(null)}
         >
           <div
+            ref={confirmRef}
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby={confirmTitleId}
+            aria-describedby={confirmDescId}
+            tabIndex={-1}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-md rounded-2xl border border-white/10 bg-obsidian/95 p-5 shadow-2xl"
+            className="w-full max-w-md rounded-2xl border border-white/10 bg-obsidian/95 p-5 shadow-2xl focus:outline-none"
           >
-            <h3 className="font-serif text-lg text-stone-warm">
+            <h3 id={confirmTitleId} className="font-serif text-lg text-stone-warm">
               {confirm.scope === "chart"
                 ? lang === "zh" ? "确认删除此命盘？" : "Delete this chart?"
                 : lang === "zh" ? "确认清除报告？" : "Clear reports?"}
             </h3>
+
             <p className="mt-2 text-[13px] leading-relaxed text-stone-warm/75">
               {confirm.scope === "chart"
                 ? lang === "zh"
