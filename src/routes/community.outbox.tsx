@@ -10,6 +10,7 @@ import {
   HallNav,
   HallSection,
 } from "@/experiences/community-hall/HallShell";
+import { CourierProgressStrip } from "@/experiences/community-hall/CourierProgressStrip";
 import { HallEmptyState, HallError, HallSkeleton } from "@/experiences/community-hall/HallStates";
 import { SentLetterCard } from "@/experiences/community-hall/LetterCards";
 import { LetterWaveStatus } from "@/experiences/community-hall/LetterWaveStatus";
