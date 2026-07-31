@@ -430,3 +430,167 @@
   animation: none !important;
 }
 
+
+/* ── Sample letter modal ───────────────────────────────────── */
+/* A sheet of paper being unfolded: the seal breaks, the page drops
+   open from the fold line, and the echoes drift in below it. */
+.hall-letter-modal {
+  --letter-paper: color-mix(in oklab, var(--background) 82%, var(--primary) 6%);
+}
+
+.hall-letter-sheet {
+  position: relative;
+  border-radius: 0.9rem;
+  border: 1px solid color-mix(in oklab, var(--primary) 22%, transparent);
+  background:
+    radial-gradient(120% 80% at 50% 0%, color-mix(in oklab, var(--primary) 8%, transparent), transparent 62%),
+    linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--background) 92%, var(--primary) 8%),
+      color-mix(in oklab, var(--background) 97%, transparent)
+    );
+  box-shadow:
+    0 32px 70px -30px rgb(0 0 0 / 0.8),
+    inset 0 1px 0 color-mix(in oklab, var(--primary) 14%, transparent);
+  transform-origin: top center;
+  animation: hall-letter-unfold 520ms cubic-bezier(0.22, 0.86, 0.24, 1) both;
+}
+
+/* The horizontal fold crease across the upper third of the page. */
+.hall-letter-sheet::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 34%;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(
+    to right,
+    transparent,
+    color-mix(in oklab, var(--primary) 16%, transparent) 20%,
+    color-mix(in oklab, var(--primary) 16%, transparent) 80%,
+    transparent
+  );
+  opacity: 0.7;
+}
+
+@keyframes hall-letter-unfold {
+  from {
+    opacity: 0;
+    transform: perspective(1400px) rotateX(-18deg) translateY(-10px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: perspective(1400px) rotateX(0deg) translateY(0) scale(1);
+  }
+}
+
+/* Wax seal sitting on the top edge; it cracks open a beat after landing. */
+.hall-letter-wax {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  z-index: 2;
+  display: grid;
+  height: 2.4rem;
+  width: 2.4rem;
+  place-items: center;
+  border-radius: 999px;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(
+    circle at 34% 30%,
+    color-mix(in oklab, var(--primary) 78%, white 12%),
+    color-mix(in oklab, var(--primary) 52%, black 34%)
+  );
+  box-shadow:
+    0 4px 14px -4px color-mix(in oklab, var(--primary) 60%, transparent),
+    inset 0 -2px 5px rgb(0 0 0 / 0.35);
+  transition: transform 620ms cubic-bezier(0.3, 1.4, 0.4, 1), opacity 620ms ease;
+}
+
+.hall-letter-wax-mark {
+  font-size: 0.85rem;
+  line-height: 1;
+  color: color-mix(in oklab, var(--background) 78%, var(--primary));
+}
+
+.hall-letter-sheet[data-unsealed="true"] .hall-letter-wax {
+  transform: translate(-50%, -50%) rotate(-26deg) translateY(-0.55rem) scale(0.86);
+  opacity: 0.55;
+}
+
+.hall-letter-badge {
+  display: inline-block;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklab, var(--primary) 26%, transparent);
+  background: color-mix(in oklab, var(--primary) 8%, transparent);
+  padding: 0.15rem 0.7rem;
+  font-size: 0.66rem;
+  color: color-mix(in oklab, var(--primary) 82%, var(--foreground));
+}
+
+.hall-letter-title {
+  font-size: 1.35rem;
+  line-height: 1.35;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.hall-letter-rule {
+  display: block;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    color-mix(in oklab, var(--primary) 38%, transparent),
+    transparent 78%
+  );
+}
+
+.hall-letter-body {
+  font-size: 0.95rem;
+  line-height: 1.95;
+  color: color-mix(in oklab, var(--foreground) 82%, transparent);
+  /* Faint ruled-paper texture behind the handwriting. */
+  text-wrap: pretty;
+}
+
+.hall-letter-echo {
+  border-left: 2px solid color-mix(in oklab, var(--primary) 32%, transparent);
+  border-radius: 0 0.5rem 0.5rem 0;
+  background: color-mix(in oklab, var(--background) 55%, transparent);
+  padding: 0.6rem 0.85rem;
+  font-size: 0.88rem;
+  line-height: 1.8;
+  color: color-mix(in oklab, var(--foreground) 72%, transparent);
+  opacity: 0;
+  transform: translateY(10px);
+  animation: hall-letter-echo-in 540ms cubic-bezier(0.22, 0.8, 0.24, 1) var(--echo-delay, 0ms) both;
+}
+
+@keyframes hall-letter-echo-in {
+  to { opacity: 1; transform: none; }
+}
+
+.hall-letter-scroll {
+  scrollbar-width: thin;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hall-letter-sheet,
+  .hall-letter-echo {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .hall-letter-wax {
+    transition: none;
+  }
+}
+
+[data-perf="lite"] .hall-letter-sheet,
+[data-perf="lite"] .hall-letter-echo {
+  animation-duration: 1ms;
+  opacity: 1;
+  transform: none;
+}
