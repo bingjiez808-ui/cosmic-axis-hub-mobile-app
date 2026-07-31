@@ -18,12 +18,7 @@ export function LifeYearModal({
   onOpenLab: () => void;
   lang: "zh" | "en";
 }) {
-  useEffect(() => {
-    if (!snapshot) return;
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [snapshot, onClose]);
+  const dialogRef = useModalA11y<HTMLDivElement>({ open: !!snapshot, onClose });
 
   if (!snapshot) return null;
   const isZh = lang === "zh";
@@ -35,16 +30,20 @@ export function LifeYearModal({
 
   return (
     <div
-      role="dialog"
-      aria-modal="true"
-      aria-label={isZh ? `${snapshot.age} 岁 可能怎样` : `Age ${snapshot.age} outlook`}
+      role="presentation"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-2xl overflow-hidden rounded-2xl border border-amber-400/20 bg-[#0b0b14] shadow-2xl"
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={isZh ? `${snapshot.age} 岁 可能怎样` : `Age ${snapshot.age} outlook`}
+        tabIndex={-1}
+        className="w-full max-w-2xl overflow-hidden rounded-2xl border border-amber-400/20 bg-[#0b0b14] shadow-2xl focus:outline-none"
         onClick={(e) => e.stopPropagation()}
       >
+
         <header className="flex items-start justify-between gap-3 border-b border-amber-400/15 px-5 py-3">
           <div>
             <div className="text-[11px] uppercase tracking-[0.28em] text-amber-200/60">
