@@ -164,6 +164,33 @@ function WriteFlow() {
 
       {step === 1 ? (
         <div className="hall-rise mt-6 space-y-5">
+          <div>
+            <span className="text-sm font-medium text-foreground">{c.fieldTopic}</span>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {c.topics.map((t) => (
+                <button
+                  key={t.key}
+                  type="button"
+                  onClick={() => setTopic(t.key)}
+                  className={`hall-tap rounded-full border px-3.5 py-2 text-xs transition ${
+                    topic === t.key
+                      ? "border-primary/50 bg-primary/15 text-primary"
+                      : "border-primary/15 text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <LetterPromptDeck
+            topic={topic}
+            onPick={(p) => {
+              setSubject(p.subject.slice(0, 80));
+              setBody(p.body.slice(0, BODY_MAX));
+              setError(null);
+            }}
+          />
           <label className="block">
             <span className="text-sm font-medium text-foreground">{c.fieldSubject}</span>
             <input
@@ -190,25 +217,7 @@ function WriteFlow() {
               {c.bodyCounter(length, BODY_MAX)}
             </span>
           </label>
-          <div>
-            <span className="text-sm font-medium text-foreground">{c.fieldTopic}</span>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {c.topics.map((t) => (
-                <button
-                  key={t.key}
-                  type="button"
-                  onClick={() => setTopic(t.key)}
-                  className={`hall-tap rounded-full border px-3.5 py-2 text-xs transition ${
-                    topic === t.key
-                      ? "border-primary/50 bg-primary/15 text-primary"
-                      : "border-primary/15 text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-          </div>
+
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
           <Button className="hall-tap w-full sm:w-auto" onClick={goStepTwo}>
             {c.next}
