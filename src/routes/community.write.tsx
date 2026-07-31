@@ -9,7 +9,7 @@ import {
   HallNav,
 } from "@/experiences/community-hall/HallShell";
 import { useSendLetter } from "@/lib/community-hall-client";
-import { hallErrorMessage } from "@/lib/community-hall-errors";
+import { hallErrorCode, hallErrorMessage, type HallErrorCode } from "@/lib/community-hall-errors";
 import { useCommunityHall, type AgeBand } from "@/lib/i18n-community-hall";
 import "@/experiences/community-hall/hall.css";
 
@@ -70,6 +70,7 @@ function WriteFlow() {
   const [band, setBand] = useState<AgeBand | null>(null);
   const [agree, setAgree] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<HallErrorCode | null>(null);
   const [sent, setSent] = useState<Sent | null>(null);
 
   const length = body.trim().length;
@@ -274,7 +275,16 @@ function WriteFlow() {
             />
             <span>{c.agreeRules}</span>
           </label>
-          {error ? <p className="text-sm text-destructive">{error}</p> : null}
+          {error ? (
+            <div className="space-y-2">
+              <p className="text-sm text-destructive">{error}</p>
+              {errorCode === "duplicate_submission" || errorCode === "daily_letter_limit" ? (
+                <Button asChild variant="outline" size="sm" className="hall-tap">
+                  <Link to="/community/outbox">{c.sectionOutbox}</Link>
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
           <div className="flex gap-3">
             <Button variant="ghost" className="hall-tap" onClick={() => setStep(2)}>
               {c.back}
