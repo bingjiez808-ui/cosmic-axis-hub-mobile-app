@@ -164,8 +164,8 @@ export function useCommunityHall() {
         "Send a question to someone who has lived through that chapter",
       ),
       hallSubtitle: p(
-        "写下此刻的小小困惑，选择你想询问的人生阶段。图书馆会匿名把信送到合适的旅者手中，再把他们的回音带回来。",
-        "Write down what you are turning over right now and choose the chapter of life you want to ask. The library carries your letter to a traveler there, anonymously, and brings their answer back to you.",
+        "写下此刻的小小困惑，再决定这封信寄往哪一扇门：交给信使定向投递、张贴到公共信墙、请一位历代先贤回信，或请图书管理员亲自回信。全程匿名，只以你的旅者身份往返。",
+        "Write down what you are turning over right now, then choose which door the letter goes through: courier delivery, the public wall, a sage of the past, or the librarian in person. Everything stays anonymous — letters travel under your traveler identity alone.",
       ),
       hallTagline: p("游客之间，彼此照亮", "Travelers lighting the way for one another"),
       ctaWrite: p("写一封信", "Write a letter"),
@@ -182,17 +182,17 @@ export function useCommunityHall() {
           ),
         },
         {
-          title: p("选择收信人的人生阶段", "Choose their chapter"),
+          title: p("选择人生阶段与收信的门", "Choose a chapter, and a door"),
           body: p(
-            "你想听 30 岁的人说，还是 60 岁的人说？",
-            "Do you want to hear from someone at 30, or at 60?",
+            "信使定向投递、公共信墙免费；先贤回信与图书管理员亲自回信属「贤者」会员，后者每月赠三次。",
+            "Courier delivery and the public wall are free; sage letters and the librarian's personal reply are Sage benefits, the latter with three grants a month.",
           ),
         },
         {
           title: p("等待匿名回音", "Wait for an echo"),
           body: p(
-            "有人读到并写下回信后，它会出现在你的回音页。",
-            "When someone reads it and writes back, the echo appears in your shelf.",
+            "无论谁回信，双方都只见彼此的旅者代号；回音会出现在你的回音页。",
+            "Whoever answers, both sides only ever see each other's traveler alias; the echo appears in your shelf.",
           ),
         },
       ],

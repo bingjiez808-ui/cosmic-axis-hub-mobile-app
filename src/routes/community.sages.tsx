@@ -154,8 +154,8 @@ function SageDesk() {
           <div className="hall-paper p-5">
             <p className="text-sm leading-relaxed text-muted-foreground">
               {zh
-                ? "让先贤回信需要「贤者」会员。开通后可随时向十二位先贤写信，并每月获赠 3 次转交真人回复的机会。"
-                : "Letters answered by a sage require the Sage membership. It also grants three human replies each month."}
+                ? "让先贤回信需要「贤者」会员。开通后可随时向十二位先贤写信，并每月获赠 3 次「图书管理员亲自回信」的真人回复机会。往来始终匿名，只以旅者身份署名。"
+                : "Letters answered by a sage require the Sage membership. It also grants three personal replies from the librarian each month. Every exchange stays anonymous, signed only with your traveler alias."}
             </p>
             <Button asChild className="hall-tap mt-4">
               <Link to="/me/membership">{zh ? "查看会员权益" : "See membership"}</Link>

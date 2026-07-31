@@ -12,7 +12,13 @@ import type { MouseEvent } from "react";
 import { useInView } from "@/lib/use-in-view";
 
 export type HallDoor = {
-  to: "/community/write" | "/community/inbox" | "/community/outbox" | "/community/echoes";
+  to:
+    | "/community/write"
+    | "/community/inbox"
+    | "/community/outbox"
+    | "/community/echoes"
+    | "/community/wall"
+    | "/community/sages";
   title: string;
   body: string;
   badge: string | null;

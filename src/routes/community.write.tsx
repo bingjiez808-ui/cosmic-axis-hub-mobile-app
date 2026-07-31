@@ -141,12 +141,24 @@ function WriteFlow() {
 
   const zh = c.lang !== "en";
   const entitledForSage = Boolean(entitlement.data?.entitled);
+  const humanCredits = entitlement.data?.credits?.remaining ?? 0;
   const busy = send.isPending || askSage.isPending || sendLibrarian.isPending;
 
   function goStepThree() {
     if (!band) return setError(c.required);
-    if (dest === "sage" && !entitledForSage) {
-      return setError(zh ? "先贤回信需要开通「贤者」会员。" : "Sage replies require the Sage membership.");
+    if ((dest === "sage" || dest === "librarian") && !entitledForSage) {
+      return setError(
+        zh
+          ? "先贤回信与图书管理员亲自回信，都需要开通「贤者」会员。"
+          : "Sage letters and the librarian's personal reply both require the Sage membership.",
+      );
+    }
+    if (dest === "librarian" && humanCredits <= 0) {
+      return setError(
+        zh
+          ? "本月的三次真人回复已经用完了。可以先寄给信使或张贴到信墙。"
+          : "This month's three human-reply grants are used up. Try the courier or the public wall.",
+      );
     }
     setError(null);
     setStep(3);
@@ -227,9 +239,9 @@ function WriteFlow() {
       },
       librarian: {
         body: zh
-          ? "信已经放在图书管理员的案头。他会亲自回信，或把它托付给一位愿意接信的旅者。"
-          : "Your letter is on the librarian's desk. They will answer it themselves, or entrust it to a traveler who has offered to help.",
-        note: zh ? "等待图书管理员处理" : "Waiting on the librarian",
+          ? "信已经放在图书管理员的案头，本月一次真人回复已记在你的名下。他会亲自回信，或把它托付给一位愿意接信的旅者——对方看到的只有你的旅者代号。"
+          : "Your letter is on the librarian's desk and one of this month's human replies is now reserved for you. They will answer it themselves, or entrust it to a traveler who offered to help — either way, all they see is your traveler alias.",
+        note: zh ? "等待图书管理员亲自回信" : "Waiting on the librarian's personal reply",
         to: "/community/sages",
         cta: zh ? "去我的案前查看" : "See my desk",
       },
@@ -398,6 +410,11 @@ function WriteFlow() {
             <p className="text-sm font-medium text-foreground">
               {zh ? "这封信寄给谁？" : "Who should receive this letter?"}
             </p>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+              {zh
+                ? "无论寄往哪一扇门，来往都只以旅者身份署名——对方看到的永远是你的代号，不是你的账号。"
+                : "Whichever door you choose, every letter travels under your traveler identity — the other side only ever sees your alias, never your account."}
+            </p>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               {(
                 [
@@ -405,33 +422,33 @@ function WriteFlow() {
                     key: "courier" as const,
                     title: zh ? "交给信使定向投递" : "Hand it to the courier",
                     body: zh
-                      ? "私密。信使会把它分批送给你选定人生阶段中的少数陌生旅者，只有收到的人能回信。"
-                      : "Private. The courier delivers it to a few strangers in the chapter of life you chose; only they can answer.",
+                      ? "私密。信使会把它分批送给你选定人生阶段中的少数陌生旅者，只有收到的人能回信。免费。"
+                      : "Private. The courier delivers it to a few strangers in the chapter of life you chose; only they can answer. Free.",
                     locked: false,
                   },
                   {
                     key: "wall" as const,
                     title: zh ? "张贴到公共信墙" : "Pin it on the public wall",
                     body: zh
-                      ? "公开。厅中所有人都能读到，谁想回就回。依然匿名，只显示你的旅者代号。"
-                      : "Open. Everyone in the hall can read it and decide whether to answer. Still anonymous — only your traveler alias shows.",
+                      ? "公开。厅中所有人都能读到，谁想回就回。依然匿名，只显示你的旅者代号。免费。"
+                      : "Open. Everyone in the hall can read it and decide whether to answer. Still anonymous — only your traveler alias shows. Free.",
                     locked: false,
                   },
                   {
                     key: "sage" as const,
                     title: zh ? "请一位历代先贤回信" : "Ask a sage of the past",
                     body: zh
-                      ? "十二位已故思想者依其生平与语气回信。需「贤者」会员；每月另赠三次真人回复。"
-                      : "One of twelve long-dead thinkers answers in their own documented voice. Requires the Sage membership; three human-reply grants included each month.",
+                      ? "十二位已故思想者依其生平与语气回信。需「贤者」会员，回信不限次。"
+                      : "One of twelve long-dead thinkers answers in their own documented voice. Requires the Sage membership; unlimited.",
                     locked: !entitledForSage,
                   },
                   {
                     key: "librarian" as const,
-                    title: zh ? "寄给图书管理员" : "Send it to the librarian",
+                    title: zh ? "请图书管理员亲自回信" : "Ask the librarian to write back",
                     body: zh
-                      ? "由图书管理员亲自读信：他会回信，或把它托付给一位愿意接信的旅者。"
-                      : "The librarian reads it personally: they answer, or entrust it to a traveler who offered to help.",
-                    locked: false,
+                      ? `真人回信。图书管理员亲自读信并回复，或托付给一位愿意接信的旅者。需「贤者」会员，每月赠三次（本月剩 ${humanCredits} 次）。`
+                      : `A real person answers. The librarian reads it and replies, or entrusts it to a traveler who offered to help. Requires the Sage membership; three grants a month (${humanCredits} left).`,
+                    locked: !entitledForSage || humanCredits <= 0,
                   },
                 ]
               ).map((option) => (
@@ -450,7 +467,13 @@ function WriteFlow() {
                     {option.title}
                     {option.locked ? (
                       <span className="ml-2 rounded-full border border-primary/30 px-2 py-0.5 text-[0.62rem] text-primary/80">
-                        {zh ? "贤者会员" : "Sage only"}
+                        {!entitledForSage
+                          ? zh
+                            ? "贤者会员"
+                            : "Sage only"
+                          : zh
+                            ? "本月已用完"
+                            : "No grants left"}
                       </span>
                     ) : null}
                   </span>
@@ -502,6 +525,27 @@ function WriteFlow() {
                   </Link>
                 </div>
               )
+            ) : null}
+            {dest === "librarian" ? (
+              <div className="hall-inset mt-4 flex flex-wrap items-center gap-3 px-4 py-3 text-xs text-muted-foreground">
+                <span>
+                  {!entitledForSage
+                    ? zh
+                      ? "图书管理员亲自回信为「贤者」会员权益，每月赠三次真人回复。"
+                      : "A personal reply from the librarian is a Sage membership benefit, with three human replies a month."
+                    : zh
+                      ? `本月还剩 ${humanCredits} 次真人回复。寄出后会立即扣除一次。`
+                      : `${humanCredits} human replies left this month. Sending spends one right away.`}
+                </span>
+                {!entitledForSage ? (
+                  <Link
+                    to="/me/membership"
+                    className="hall-tap underline underline-offset-4 hover:text-foreground"
+                  >
+                    {zh ? "了解贤者会员" : "See the Sage membership"}
+                  </Link>
+                ) : null}
+              </div>
             ) : null}
           </div>
           <p className="text-xs text-muted-foreground">{c.autoExpire}</p>
