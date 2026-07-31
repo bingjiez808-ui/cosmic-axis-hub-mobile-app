@@ -205,6 +205,8 @@ export async function sendLetter(
     topic?: string | null;
     targetAgeBand: AgeBand;
     responseStyle?: string | null;
+    /** 'delivered_only' = courier picks the readers; 'wall' = public board. */
+    visibility?: "delivered_only" | "wall";
   },
 ) {
   limit(`community-hall:send:${ctx.userId}`, 3, 24 * 60 * 60_000, "daily_letter_limit");
@@ -222,17 +224,20 @@ export async function sendLetter(
     _response_style: input.responseStyle ?? "",
     _needs_review: held,
     _risk_level: risk,
+    _visibility: input.visibility ?? "delivered_only",
   });
   if (error || !letterId) friendly(error);
 
+  const onWall = (input.visibility ?? "delivered_only") === "wall";
   let delivered = 0;
-  if (!held) {
+  if (!held && !onWall) {
     const { data } = await ctx.supabase.rpc("dispatch_community_letter", { _letter_id: letterId });
     delivered = Number(data ?? 0);
   }
   return {
     letterId: letterId as string,
     pendingReview: held,
+    visibility: onWall ? ("wall" as const) : ("delivered_only" as const),
     delivered,
     riskLevel: risk,
     showSupport: needsSupportResources(verdict),
@@ -498,4 +503,49 @@ export async function deleteMyCommunityData(ctx: Ctx) {
     notifications: number;
     profile: number;
   };
+}
+
+
+export type PublicWallAuthor = MailboxIdentity;
+
+export type PublicWallLetter = {
+  letterId: string;
+  subject: string | null;
+  body: string;
+  topic: string | null;
+  responseStyle: string | null;
+  targetAgeBand: string;
+  createdAt: string;
+  expiresAt: string;
+  status: string;
+  mine: boolean;
+  echoCount: number;
+  iReplied: boolean;
+  author: PublicWallAuthor;
+};
+
+export type PublicWallLetterDetail = Omit<PublicWallLetter, "echoCount"> & {
+  echoes: Array<{
+    replyId: string;
+    body: string;
+    createdAt: string;
+    mine: boolean;
+    author: PublicWallAuthor;
+  }>;
+};
+
+/** The open board: letters their authors chose to post publicly. */
+export async function readPublicWall(ctx: Ctx, limit = 30): Promise<PublicWallLetter[]> {
+  const { data, error } = await ctx.supabase.rpc("get_community_public_wall", { _limit: limit });
+  if (error) friendly(error);
+  return (data ?? []) as unknown as PublicWallLetter[];
+}
+
+/** One public letter with every approved echo beneath it. */
+export async function readPublicLetter(ctx: Ctx, letterId: string): Promise<PublicWallLetterDetail> {
+  const { data, error } = await ctx.supabase.rpc("get_community_public_letter", {
+    _letter_id: letterId,
+  });
+  if (error || !data) friendly(error);
+  return data as unknown as PublicWallLetterDetail;
 }
