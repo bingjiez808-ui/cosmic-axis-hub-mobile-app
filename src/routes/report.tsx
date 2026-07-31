@@ -169,6 +169,12 @@ import {
   saveReport,
 } from "@/lib/reports-store.functions";
 import { supabase } from "@/integrations/supabase/client";
+import { retryWithBackoff } from "@/lib/ai-retry";
+import {
+  clearReportProgress,
+  loadReportProgress,
+  saveReportProgress,
+} from "@/lib/report-progress";
 import {
   buildReportCacheKey,
   buildReportFingerprint,
