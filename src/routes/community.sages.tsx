@@ -205,8 +205,7 @@ function SageDesk() {
       <HallSection title={zh ? "先贤回信" : "Replies from the sages"}>
         {(desk.data ?? []).length === 0 ? (
           <HallEmpty
-            title={zh ? "还没有回信" : "No letters yet"}
-            body={zh ? "选一位先贤，写下你的第一封信。" : "Choose a sage and write your first letter."}
+            text={zh ? "还没有回信。选一位先贤，写下你的第一封信。" : "No letters yet — choose a sage and write your first."}
           />
         ) : (
           <div className="space-y-4">
