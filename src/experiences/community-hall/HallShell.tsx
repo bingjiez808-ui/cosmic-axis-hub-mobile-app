@@ -53,12 +53,16 @@ export function HallHeader({
 
 function useHallNavItems() {
   const c = useCommunityHall();
+  const { isAdmin } = useSupabaseSession();
   return [
     { to: "/community", label: c.navHall },
     { to: "/community/write", label: c.navWrite },
     { to: "/community/wall", label: c.lang === "en" ? "Wall" : "信墙" },
     { to: "/community/sages", label: c.lang === "en" ? "Sages" : "先贤" },
     { to: "/community/errands", label: c.lang === "en" ? "Entrusted" : "受托" },
+    ...(isAdmin
+      ? [{ to: "/community/librarian", label: c.lang === "en" ? "Desk" : "管理员案头" }]
+      : []),
     { to: "/community/inbox", label: c.navInbox },
     { to: "/community/outbox", label: c.sectionOutbox },
     { to: "/community/echoes", label: c.sectionEchoes },
