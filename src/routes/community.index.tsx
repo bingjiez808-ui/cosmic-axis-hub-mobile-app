@@ -26,7 +26,7 @@ import "@/experiences/community-hall/hall.css";
  * movement on your shelf, and the house rules. The legacy quest lives on as
  * an optional side room, 入馆问笺.
  */
-export const Route = createFileRoute("/community")({
+export const Route = createFileRoute("/community/")({
   head: () => ({
     meta: [
       { title: "同门 · 众生之厅 — Hall of Beings | Library of Destiny" },
