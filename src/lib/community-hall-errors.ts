@@ -34,6 +34,7 @@ export type HallErrorCode =
   | "not_allowed"
   | "sage_required"
   | "no_reply_credits"
+  | "invalid_rating"
   | "offline"
   | "unknown";
 
@@ -129,8 +130,12 @@ const MESSAGES: Record<HallErrorCode, Pair> = {
     en: "Sage letters and the librarian's personal reply are both part of the Sage membership.",
   },
   no_reply_credits: {
-    zh: "本月的真人回复次数已经用完了。下个月信使会再送来三次。",
-    en: "You have used this month's human-reply grants. Three more arrive next month.",
+    zh: "赠送的三次真人回复已经用完了。这三次为开通「贤者」时一次性赠送，不会每月重置。",
+    en: "Your three gifted human replies are used up. They are a one-time gift with the Sage membership, not a monthly grant.",
+  },
+  invalid_rating: {
+    zh: "评分需要在 1 到 5 星之间。",
+    en: "A rating must be between 1 and 5 stars.",
   },
 
   offline: {
