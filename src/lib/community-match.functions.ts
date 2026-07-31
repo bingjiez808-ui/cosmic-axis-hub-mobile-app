@@ -380,11 +380,17 @@ export const respondCommunityMatchInvite = createServerFn({ method: "POST" })
     if (error || !row) throw new Error(error?.message ?? "respond_failed");
     const r = (Array.isArray(row) ? row[0] : row) as { status: InviteStatus };
     if (data.action === "accept") {
-      // fire-and-forget snapshot computation
-      void computeAndPersistPairSnapshot(context.userId, r as unknown as { sender_id: string; recipient_id: string; mode: MatchMode }).catch(() => {});
+      // Await: serverless workers may terminate before a detached promise
+      // settles, which used to leave accepted pairs without a result row.
+      await computeAndPersistPairSnapshot(
+        context.supabase,
+        context.userId,
+        r as unknown as { sender_id: string; recipient_id: string; mode: MatchMode },
+      ).catch(() => {});
     }
     return { status: r.status };
   });
+
 
 export const revokeCommunityMatchInvite = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
