@@ -530,7 +530,7 @@ function MyChartsSection({ open, onClose, lang, rows, setRows }: {
                 : lang === "zh" ? "确认清除报告？" : "Clear reports?"}
             </h3>
 
-            <p className="mt-2 text-[13px] leading-relaxed text-stone-warm/75">
+            <p id={confirmDescId} className="mt-2 text-[13px] leading-relaxed text-stone-warm/75">
               {confirm.scope === "chart"
                 ? lang === "zh"
                   ? "命盘将连同其报告、逐年解读、对话记录一并永久删除，无法恢复。为保留财务审计所需的最少订单信息将被去标识化保留。"
