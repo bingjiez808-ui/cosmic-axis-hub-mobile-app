@@ -59,6 +59,8 @@ function useHallNavItems() {
     { to: "/community/write", label: c.navWrite },
     { to: "/community/wall", label: c.lang === "en" ? "Wall" : "信墙" },
     { to: "/community/sages", label: c.lang === "en" ? "Sages" : "先贤" },
+    { to: "/community/grants", label: c.lang === "en" ? "Grants" : "真人回复" },
+
     { to: "/community/errands", label: c.lang === "en" ? "Entrusted" : "受托" },
     ...(isAdmin
       ? [{ to: "/community/librarian", label: c.lang === "en" ? "Desk" : "管理员案头" }]

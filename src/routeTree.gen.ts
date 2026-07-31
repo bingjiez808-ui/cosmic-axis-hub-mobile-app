@@ -37,6 +37,7 @@ import { Route as CommunitySagesRouteImport } from './routes/community.sages'
 import { Route as CommunityOutboxRouteImport } from './routes/community.outbox'
 import { Route as CommunityLibrarianRouteImport } from './routes/community.librarian'
 import { Route as CommunityInboxRouteImport } from './routes/community.inbox'
+import { Route as CommunityGrantsRouteImport } from './routes/community.grants'
 import { Route as CommunityErrandsRouteImport } from './routes/community.errands'
 import { Route as CommunityEchoesRouteImport } from './routes/community.echoes'
 import { Route as AuthResetRouteImport } from './routes/auth.reset'
@@ -199,6 +200,11 @@ const CommunityInboxRoute = CommunityInboxRouteImport.update({
   path: '/community/inbox',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CommunityGrantsRoute = CommunityGrantsRouteImport.update({
+  id: '/community/grants',
+  path: '/community/grants',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CommunityErrandsRoute = CommunityErrandsRouteImport.update({
   id: '/community/errands',
   path: '/community/errands',
@@ -340,6 +346,7 @@ export interface FileRoutesByFullPath {
   '/auth/reset': typeof AuthResetRoute
   '/community/echoes': typeof CommunityEchoesRoute
   '/community/errands': typeof CommunityErrandsRoute
+  '/community/grants': typeof CommunityGrantsRoute
   '/community/inbox': typeof CommunityInboxRoute
   '/community/librarian': typeof CommunityLibrarianRoute
   '/community/outbox': typeof CommunityOutboxRoute
@@ -389,6 +396,7 @@ export interface FileRoutesByTo {
   '/auth/reset': typeof AuthResetRoute
   '/community/echoes': typeof CommunityEchoesRoute
   '/community/errands': typeof CommunityErrandsRoute
+  '/community/grants': typeof CommunityGrantsRoute
   '/community/inbox': typeof CommunityInboxRoute
   '/community/librarian': typeof CommunityLibrarianRoute
   '/community/outbox': typeof CommunityOutboxRoute
@@ -442,6 +450,7 @@ export interface FileRoutesById {
   '/auth/reset': typeof AuthResetRoute
   '/community/echoes': typeof CommunityEchoesRoute
   '/community/errands': typeof CommunityErrandsRoute
+  '/community/grants': typeof CommunityGrantsRoute
   '/community/inbox': typeof CommunityInboxRoute
   '/community/librarian': typeof CommunityLibrarianRoute
   '/community/outbox': typeof CommunityOutboxRoute
@@ -495,6 +504,7 @@ export interface FileRouteTypes {
     | '/auth/reset'
     | '/community/echoes'
     | '/community/errands'
+    | '/community/grants'
     | '/community/inbox'
     | '/community/librarian'
     | '/community/outbox'
@@ -544,6 +554,7 @@ export interface FileRouteTypes {
     | '/auth/reset'
     | '/community/echoes'
     | '/community/errands'
+    | '/community/grants'
     | '/community/inbox'
     | '/community/librarian'
     | '/community/outbox'
@@ -596,6 +607,7 @@ export interface FileRouteTypes {
     | '/auth/reset'
     | '/community/echoes'
     | '/community/errands'
+    | '/community/grants'
     | '/community/inbox'
     | '/community/librarian'
     | '/community/outbox'
@@ -646,6 +658,7 @@ export interface RootRouteChildren {
   ApiGenerateAvatarRoute: typeof ApiGenerateAvatarRoute
   CommunityEchoesRoute: typeof CommunityEchoesRoute
   CommunityErrandsRoute: typeof CommunityErrandsRoute
+  CommunityGrantsRoute: typeof CommunityGrantsRoute
   CommunityInboxRoute: typeof CommunityInboxRoute
   CommunityLibrarianRoute: typeof CommunityLibrarianRoute
   CommunityOutboxRoute: typeof CommunityOutboxRoute
@@ -858,6 +871,13 @@ declare module '@tanstack/react-router' {
       path: '/community/inbox'
       fullPath: '/community/inbox'
       preLoaderRoute: typeof CommunityInboxRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/community/grants': {
+      id: '/community/grants'
+      path: '/community/grants'
+      fullPath: '/community/grants'
+      preLoaderRoute: typeof CommunityGrantsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/community/errands': {
@@ -1099,6 +1119,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiGenerateAvatarRoute: ApiGenerateAvatarRoute,
   CommunityEchoesRoute: CommunityEchoesRoute,
   CommunityErrandsRoute: CommunityErrandsRoute,
+  CommunityGrantsRoute: CommunityGrantsRoute,
   CommunityInboxRoute: CommunityInboxRoute,
   CommunityLibrarianRoute: CommunityLibrarianRoute,
   CommunityOutboxRoute: CommunityOutboxRoute,

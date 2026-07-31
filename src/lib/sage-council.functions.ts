@@ -12,6 +12,8 @@ import { AGE_BANDS } from "./community-hall-safety";
 import {
   askSage,
   assignLetter,
+  claimSageCredits,
+  readSageCreditHistory,
   readDeskLetters,
   readLibrarianDesk,
   readMyAssignments,
@@ -45,6 +47,16 @@ const librarianSchema = z.object({
 export const getSageEntitlement = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => readSageEntitlement(context));
+
+/** Claim this month's three human-reply grants. */
+export const claimHumanReplyGrants = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => claimSageCredits(context));
+
+/** Claim + spend ledger for the human-reply grants. */
+export const getHumanReplyGrantHistory = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => readSageCreditHistory(context));
 
 /** Sage member: write to a distilled historical persona and receive the answer. */
 export const askSagePersona = createServerFn({ method: "POST" })

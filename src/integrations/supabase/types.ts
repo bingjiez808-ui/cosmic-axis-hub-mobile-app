@@ -2111,8 +2111,39 @@ export type Database = {
           },
         ]
       }
+      sage_reply_credit_events: {
+        Row: {
+          created_at: string
+          delta: number
+          id: string
+          kind: string
+          letter_id: string | null
+          period_start: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          delta: number
+          id?: string
+          kind: string
+          letter_id?: string | null
+          period_start?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          delta?: number
+          id?: string
+          kind?: string
+          letter_id?: string | null
+          period_start?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       sage_reply_credits: {
         Row: {
+          claimed_at: string | null
           created_at: string
           granted: number
           period_start: string
@@ -2121,6 +2152,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          claimed_at?: string | null
           created_at?: string
           granted?: number
           period_start?: string
@@ -2129,6 +2161,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          claimed_at?: string | null
           created_at?: string
           granted?: number
           period_start?: string
@@ -2705,6 +2738,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      claim_sage_reply_credits: { Args: never; Returns: Json }
       close_community_letter: { Args: { _letter_id: string }; Returns: string }
       community_age_band: { Args: { _uid: string }; Returns: string }
       community_email_verified: { Args: never; Returns: boolean }
@@ -2838,6 +2872,7 @@ export type Database = {
       get_my_community_mailbox: { Args: never; Returns: Json }
       get_my_desk_letters: { Args: { _route?: string }; Returns: Json }
       get_my_letter_assignments: { Args: never; Returns: Json }
+      get_sage_reply_credit_history: { Args: never; Returns: Json }
       get_sage_reply_credits: { Args: never; Returns: Json }
       librarian_assign_letter: {
         Args: { _assignee: string; _letter_id: string; _note?: string }
