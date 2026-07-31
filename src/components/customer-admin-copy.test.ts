@@ -42,7 +42,10 @@ const CUSTOMER_FILES = [
 const FORBIDDEN_PATTERNS: RegExp[] = [
   /联系管理员/,
   /联系\s*管理/,
-  /管理员\s*(开通|授权|完成|发放|解锁)/,
+  // NOTE: 「管理员授权（真人回信）」 is a legitimate product benefit name in the
+  // community hall, so 授权 is only forbidden when it reads as an unlock funnel.
+  /管理员\s*(开通|完成|发放|解锁)/,
+  /管理员\s*授权\s*(解锁|开通|完成)/,
   /请管理员/,
   /contact\s+(?:an?\s+|the\s+)?admin/i,
   /admin\s+(?:to\s+)?(?:grant|unlock|complete|approve)/i,
