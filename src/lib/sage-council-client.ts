@@ -19,6 +19,7 @@ import {
   getMyDeskLetters,
   getMyLetterAssignments,
   getSageEntitlement,
+  purchaseExtraReplyCredits,
   requestHumanReplyForLetter,
   respondToLetterAssignment,
   sendLetterToLibrarian,
@@ -82,6 +83,19 @@ export function useClaimHumanReplyGrants() {
   const call = useServerFn(claimHumanReplyGrants);
   return useMutation({
     mutationFn: () => call(),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: sageKeys.entitlement });
+      void qc.invalidateQueries({ queryKey: sageKeys.grantHistory });
+    },
+  });
+}
+
+export function usePurchaseReplyCredits() {
+  const qc = useQueryClient();
+  const call = useServerFn(purchaseExtraReplyCredits);
+  return useMutation({
+    mutationFn: (input: { bucket: "sage" | "human"; pack: "single" | "quad"; idempotencyKey: string }) =>
+      call({ data: input }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: sageKeys.entitlement });
       void qc.invalidateQueries({ queryKey: sageKeys.grantHistory });
