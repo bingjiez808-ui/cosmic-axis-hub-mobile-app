@@ -523,13 +523,20 @@ function WriteFlow() {
             <p className="text-xs text-muted-foreground">
               {c.previewTo} {c.ageBand(band)} · {c.topic(topic)} ·{" "}
               <span className="text-primary/80">
-                {visibility === "wall"
-                  ? c.lang === "en"
-                    ? "public wall"
-                    : "公共信墙"
-                  : c.lang === "en"
-                    ? "courier delivery"
-                    : "信使定向投递"}
+                {dest === "wall"
+                  ? zh
+                    ? "公共信墙"
+                    : "public wall"
+                  : dest === "sage"
+                    ? (zh ? "先贤 · " : "Sage · ") +
+                      (SAGE_PERSONAS.find((p) => p.id === personaId)?.name[zh ? "zh" : "en"] ?? "")
+                    : dest === "librarian"
+                      ? zh
+                        ? "图书管理员"
+                        : "the librarian"
+                      : zh
+                        ? "信使定向投递"
+                        : "courier delivery"}
               </span>
             </p>
             <h3 className="hall-card-title mt-2">
