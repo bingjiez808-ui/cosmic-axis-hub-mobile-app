@@ -120,6 +120,8 @@ function CommunityHallPage() {
 
       <HallNav />
 
+      <CourierProgressStrip />
+
       <HallOnboarding />
 
       {alias ? (
