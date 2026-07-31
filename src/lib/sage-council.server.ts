@@ -53,10 +53,19 @@ function limit(key: string, max: number, windowMs: number) {
 // Membership
 // ------------------------------------------------------------------
 
+export type SageCredits = {
+  granted: number;
+  used: number;
+  remaining: number;
+  claimable: boolean;
+  claimedAt: string | null;
+  periodStart: string | null;
+};
+
 export type SageEntitlement = {
   tier: string;
   entitled: boolean;
-  credits: { granted: number; used: number; remaining: number };
+  credits: SageCredits;
 };
 
 async function readTier(ctx: Ctx) {
@@ -76,16 +85,55 @@ export async function readSageEntitlement(ctx: Ctx): Promise<SageEntitlement> {
   return { tier, entitled, credits };
 }
 
-async function readCredits(ctx: Ctx) {
-  const { data, error } = await ctx.supabase.rpc("get_sage_reply_credits");
-  if (error) friendly(error);
-  const raw = (data ?? {}) as { granted?: number; used?: number; remaining?: number };
+function shapeCredits(data: unknown): SageCredits {
+  const raw = (data ?? {}) as Record<string, unknown>;
   return {
     granted: Number(raw.granted ?? 0),
     used: Number(raw.used ?? 0),
     remaining: Number(raw.remaining ?? 0),
+    claimable: Boolean(raw.claimable),
+    claimedAt: (raw.claimedAt as string | null) ?? null,
+    periodStart: (raw.periodStart as string | null) ?? null,
   };
 }
+
+async function readCredits(ctx: Ctx): Promise<SageCredits> {
+  const { data, error } = await ctx.supabase.rpc("get_sage_reply_credits");
+  if (error) friendly(error);
+  return shapeCredits(data);
+}
+
+/** Claim this month's three human-reply grants (贤者/神谕者 only). */
+export async function claimSageCredits(ctx: Ctx): Promise<SageCredits> {
+  limit(`sage-council:claim:${ctx.userId}`, 10, 60 * 60_000);
+  const { data, error } = await ctx.supabase.rpc("claim_sage_reply_credits");
+  if (error) {
+    if ((error.message ?? "").includes("sage_required")) throw hallError("sage_required");
+    friendly(error);
+  }
+  return shapeCredits(data);
+}
+
+export type SageCreditEvent = {
+  eventId: string;
+  kind: "grant" | "spend";
+  delta: number;
+  createdAt: string;
+  periodStart: string;
+  letterId: string | null;
+  letterSubject: string | null;
+  letterPersonaId: string | null;
+  letterStatus: string | null;
+  replyCount: number;
+};
+
+/** Claim + spend ledger for the signed-in member. */
+export async function readSageCreditHistory(ctx: Ctx): Promise<SageCreditEvent[]> {
+  const { data, error } = await ctx.supabase.rpc("get_sage_reply_credit_history");
+  if (error) friendly(error);
+  return (data ?? []) as unknown as SageCreditEvent[];
+}
+
 
 // ------------------------------------------------------------------
 // Prompt construction
