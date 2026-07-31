@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -13,6 +13,7 @@ import { LetterPromptDeck } from "@/experiences/community-hall/LetterPromptDeck"
 import { useSendLetter } from "@/lib/community-hall-client";
 import { hallErrorCode, hallErrorMessage, type HallErrorCode } from "@/lib/community-hall-errors";
 import { useCommunityHall, type AgeBand } from "@/lib/i18n-community-hall";
+import { clearLetterDraft, loadLetterDraft, saveLetterDraft } from "@/lib/letter-draft";
 import "@/experiences/community-hall/hall.css";
 
 const BODY_MIN = 30;
@@ -65,17 +66,55 @@ function WriteFlow() {
   const navigate = useNavigate();
   const send = useSendLetter();
 
-  const [step, setStep] = useState<1 | 2 | 3>(1);
-  const [subject, setSubject] = useState("");
-  const [body, setBody] = useState("");
-  const [topic, setTopic] = useState<string>("self");
-  const [band, setBand] = useState<AgeBand | null>(null);
+  // Restore any unsent draft synchronously on first client render so a refresh
+  // never loses what the traveler already wrote.
+  const [restored] = useState(() => loadLetterDraft());
+
+  const [step, setStep] = useState<1 | 2 | 3>(restored?.step ?? 1);
+  const [subject, setSubject] = useState(restored?.subject ?? "");
+  const [body, setBody] = useState(restored?.body ?? "");
+  const [topic, setTopic] = useState<string>(restored?.topic ?? "self");
+  const [band, setBand] = useState<AgeBand | null>((restored?.band as AgeBand | null) ?? null);
   const [agree, setAgree] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errorCode, setErrorCode] = useState<HallErrorCode | null>(null);
   const [sent, setSent] = useState<Sent | null>(null);
+  const [savedAt, setSavedAt] = useState<number | null>(restored?.savedAt ?? null);
+  const [draftRestored, setDraftRestored] = useState(Boolean(restored?.body));
+  const sentRef = useRef(false);
+  sentRef.current = Boolean(sent);
 
   const length = body.trim().length;
+
+  // Debounced autosave of the in-progress letter.
+  useEffect(() => {
+    if (sentRef.current) return;
+    if (!subject && !body && !band && step === 1) return;
+    const t = window.setTimeout(() => {
+      const at = saveLetterDraft({ step, subject, body, topic, band });
+      if (at) setSavedAt(at);
+    }, 500);
+    return () => window.clearTimeout(t);
+  }, [step, subject, body, topic, band]);
+
+  function discardDraft() {
+    clearLetterDraft();
+    setSubject("");
+    setBody("");
+    setBand(null);
+    setStep(1);
+    setSavedAt(null);
+    setDraftRestored(false);
+    setError(null);
+  }
+
+  const savedLabel =
+    savedAt === null
+      ? null
+      : c.lang === "en"
+        ? `Draft saved ${new Date(savedAt).toLocaleTimeString()}`
+        : `草稿已保存 ${new Date(savedAt).toLocaleTimeString()}`;
+
 
   function goStepTwo() {
     if (length < BODY_MIN) return setError(c.bodyTooShort(BODY_MIN));
@@ -101,6 +140,10 @@ function WriteFlow() {
       });
       setError(null);
       setErrorCode(null);
+      sentRef.current = true;
+      clearLetterDraft();
+      setSavedAt(null);
+      setDraftRestored(false);
       setSent({ pendingReview: result.pendingReview, delivered: result.delivered });
     } catch (err) {
       setErrorCode(hallErrorCode(err));
@@ -163,6 +206,22 @@ function WriteFlow() {
           </li>
         ))}
       </ol>
+
+      {savedLabel ? (
+        <div className="mt-3 flex flex-wrap items-center gap-3 rounded-xl border border-primary/15 bg-background/50 px-3 py-2 text-xs text-muted-foreground">
+          <span className="text-primary/80">
+            {draftRestored
+              ? c.lang === "en"
+                ? "Unsent draft restored."
+                : "已恢复上次未寄出的草稿。"
+              : savedLabel}
+          </span>
+          <button type="button" onClick={discardDraft} className="hall-tap underline underline-offset-4 hover:text-foreground">
+            {c.lang === "en" ? "Discard draft" : "清除草稿"}
+          </button>
+        </div>
+      ) : null}
+
 
       {step === 1 ? (
         <div className="hall-rise mt-6 space-y-5">
