@@ -29,12 +29,14 @@ export function HallMechanismSection() {
         {
           title: "先贤回信",
           tag: "贤者会员 · 赠 2 次",
-          body: "十二位已故思想者之一，以其一生经历与看家本领作答。开通即赠 2 次，用完可加购：3 元 1 次，10 元 4 次。",
+          body: "十二位已故思想者之一，以其一生经历与看家本领作答。开通即赠 2 次，用完可加购：3 元 / 次，10 元 / 4 次。",
+          buy: "去加购先贤回信 →",
         },
         {
           title: "管理员授权（真人回信）",
           tag: "贤者会员 · 赠 1 次",
-          body: "由管理员本人执笔，或由他托付给一位愿意接信的旅者——两种都消耗这一次。开通即赠 1 次，用完可加购：3 元 1 次，10 元 4 次。",
+          body: "由管理员本人执笔，或由他托付给一位愿意接信的旅者——两种都消耗这一次。开通即赠 1 次，用完可加购：3 元 / 次，10 元 / 4 次。",
+          buy: "去加购管理员授权 →",
         },
       ]
     : [
@@ -51,12 +53,14 @@ export function HallMechanismSection() {
         {
           title: "A sage's reply",
           tag: "Sage · 2 gifted",
-          body: "One of twelve long-dead thinkers answers in their own voice, through their distilled skill. Two gifted on joining; extras cost ¥3 each or ¥10 for four.",
+          body: "One of twelve long-dead thinkers answers in their own voice, through their distilled skill. Two gifted on joining; extras ¥3 / reply, ¥10 / 4 replies.",
+          buy: "Buy more sage replies →",
         },
         {
           title: "Librarian-authorised human reply",
           tag: "Sage · 1 gifted",
-          body: "Written by the librarian, or by a traveler they entrust — either way it spends this one chance. One gifted on joining; extras ¥3 each or ¥10 for four.",
+          body: "Written by the librarian, or by a traveler they entrust — either way it spends this one chance. One gifted on joining; extras ¥3 / reply, ¥10 / 4 replies.",
+          buy: "Buy more librarian replies →",
         },
       ];
 
