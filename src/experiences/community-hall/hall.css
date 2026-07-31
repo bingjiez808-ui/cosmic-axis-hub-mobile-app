@@ -682,3 +682,15 @@ main:has(.hall-paper) {
   opacity: 1;
   transform: none;
 }
+
+/* Quiet arrival for the courier progress strip — never a layout jump. */
+.hall-fade-in {
+  animation: hall-fade-in 520ms ease-out both;
+}
+@keyframes hall-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hall-fade-in { animation: none; }
+}
