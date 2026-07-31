@@ -57,6 +57,8 @@ function useHallNavItems() {
     { to: "/community", label: c.navHall },
     { to: "/community/write", label: c.navWrite },
     { to: "/community/wall", label: c.lang === "en" ? "Wall" : "信墙" },
+    { to: "/community/sages", label: c.lang === "en" ? "Sages" : "先贤" },
+    { to: "/community/errands", label: c.lang === "en" ? "Entrusted" : "受托" },
     { to: "/community/inbox", label: c.navInbox },
     { to: "/community/outbox", label: c.sectionOutbox },
     { to: "/community/echoes", label: c.sectionEchoes },
@@ -106,7 +108,7 @@ export function HallMobileBar() {
     <CourierEchoToast />
     <nav
       aria-label={c.hallEyebrow}
-      className="hall-mobile-bar -mx-4 mt-8 grid grid-cols-6 sm:hidden"
+      className="hall-mobile-bar -mx-4 mt-8 grid grid-cols-4 sm:hidden"
     >
       {items.map((item) => {
         const active = pathname === item.to;

@@ -137,7 +137,9 @@ export async function readCommunityProfile(ctx: Ctx) {
   const { data: band } = await ctx.supabase.rpc("community_age_band", { _uid: ctx.userId });
   const { data } = await ctx.supabase
     .from("community_profiles")
-    .select("alias, academy, element, avatar_url, quote, age_band, language, opt_in, status, onboarded_at")
+    .select(
+      "alias, academy, element, avatar_url, quote, age_band, language, opt_in, status, onboarded_at, accepts_assignments",
+    )
     .eq("user_id", ctx.userId)
     .maybeSingle();
   return {
@@ -155,6 +157,9 @@ export async function readCommunityProfile(ctx: Ctx) {
           optIn: data.opt_in,
           status: data.status,
           onboardedAt: (data as { onboarded_at?: string | null }).onboarded_at ?? null,
+          acceptsAssignments: Boolean(
+            (data as { accepts_assignments?: boolean }).accepts_assignments,
+          ),
         }
       : null,
   };
@@ -171,6 +176,8 @@ export async function saveCommunityProfile(
     language: "zh" | "en";
     optIn: boolean;
     paused: boolean;
+    /** Willing to receive letters the librarian hands over personally. */
+    acceptsAssignments?: boolean;
   },
 ) {
   limit(`community-hall:profile:${ctx.userId}`, 20, 60_000, "rate_limited");
@@ -190,6 +197,7 @@ export async function saveCommunityProfile(
       language: input.language,
       opt_in: input.optIn,
       status: input.paused ? "paused" : "active",
+      accepts_assignments: input.acceptsAssignments ?? false,
     },
     { onConflict: "user_id" },
   );

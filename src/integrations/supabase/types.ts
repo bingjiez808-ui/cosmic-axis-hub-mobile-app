@@ -275,6 +275,50 @@ export type Database = {
         }
         Relationships: []
       }
+      community_letter_assignments: {
+        Row: {
+          assigned_by: string | null
+          assignee_id: string
+          created_at: string
+          id: string
+          letter_id: string
+          note: string | null
+          responded_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_by?: string | null
+          assignee_id: string
+          created_at?: string
+          id?: string
+          letter_id: string
+          note?: string | null
+          responded_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_by?: string | null
+          assignee_id?: string
+          created_at?: string
+          id?: string
+          letter_id?: string
+          note?: string | null
+          responded_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_letter_assignments_letter_id_fkey"
+            columns: ["letter_id"]
+            isOneToOne: false
+            referencedRelation: "community_letters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       community_letter_deliveries: {
         Row: {
           delivered_at: string
@@ -315,31 +359,37 @@ export type Database = {
       }
       community_letter_replies: {
         Row: {
-          author_id: string
+          author_id: string | null
+          author_kind: string
           body: string
           created_at: string
           id: string
           letter_id: string
+          persona_id: string | null
           saved_by_author_at: string | null
           status: string
           updated_at: string
         }
         Insert: {
-          author_id: string
+          author_id?: string | null
+          author_kind?: string
           body: string
           created_at?: string
           id?: string
           letter_id: string
+          persona_id?: string | null
           saved_by_author_at?: string | null
           status?: string
           updated_at?: string
         }
         Update: {
-          author_id?: string
+          author_id?: string | null
+          author_kind?: string
           body?: string
           created_at?: string
           id?: string
           letter_id?: string
+          persona_id?: string | null
           saved_by_author_at?: string | null
           status?: string
           updated_at?: string
@@ -365,9 +415,11 @@ export type Database = {
           id: string
           language: string
           last_dispatch_at: string | null
+          persona_id: string | null
           published_at: string | null
           response_style: string | null
           risk_level: string
+          route: string
           status: string
           subject: string | null
           target_age_band: string
@@ -385,9 +437,11 @@ export type Database = {
           id?: string
           language?: string
           last_dispatch_at?: string | null
+          persona_id?: string | null
           published_at?: string | null
           response_style?: string | null
           risk_level?: string
+          route?: string
           status?: string
           subject?: string | null
           target_age_band: string
@@ -405,9 +459,11 @@ export type Database = {
           id?: string
           language?: string
           last_dispatch_at?: string | null
+          persona_id?: string | null
           published_at?: string | null
           response_style?: string | null
           risk_level?: string
+          route?: string
           status?: string
           subject?: string | null
           target_age_band?: string
@@ -743,6 +799,7 @@ export type Database = {
       community_profiles: {
         Row: {
           academy: string | null
+          accepts_assignments: boolean
           age_band: string | null
           alias: string | null
           avatar_url: string | null
@@ -758,6 +815,7 @@ export type Database = {
         }
         Insert: {
           academy?: string | null
+          accepts_assignments?: boolean
           age_band?: string | null
           alias?: string | null
           avatar_url?: string | null
@@ -773,6 +831,7 @@ export type Database = {
         }
         Update: {
           academy?: string | null
+          accepts_assignments?: boolean
           age_band?: string | null
           alias?: string | null
           avatar_url?: string | null
@@ -2052,6 +2111,33 @@ export type Database = {
           },
         ]
       }
+      sage_reply_credits: {
+        Row: {
+          created_at: string
+          granted: number
+          period_start: string
+          updated_at: string
+          used: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          granted?: number
+          period_start?: string
+          updated_at?: string
+          used?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          granted?: number
+          period_start?: string
+          updated_at?: string
+          used?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       tarot_usage: {
         Row: {
           count: number
@@ -2750,6 +2836,15 @@ export type Database = {
       }
       get_community_public_wall: { Args: { _limit?: number }; Returns: Json }
       get_my_community_mailbox: { Args: never; Returns: Json }
+      get_my_desk_letters: { Args: { _route?: string }; Returns: Json }
+      get_my_letter_assignments: { Args: never; Returns: Json }
+      get_sage_reply_credits: { Args: never; Returns: Json }
+      librarian_assign_letter: {
+        Args: { _assignee: string; _letter_id: string; _note?: string }
+        Returns: string
+      }
+      librarian_list_helpers: { Args: never; Returns: Json }
+      librarian_list_letters: { Args: never; Returns: Json }
       list_my_redemption_uses: {
         Args: never
         Returns: {
@@ -2767,6 +2862,10 @@ export type Database = {
         }[]
       }
       mark_community_onboarded: { Args: never; Returns: string }
+      record_sage_reply: {
+        Args: { _body: string; _letter_id: string; _persona_id: string }
+        Returns: string
+      }
       redeem_code: {
         Args: {
           _chart_id: string
@@ -2791,12 +2890,19 @@ export type Database = {
         }
         Returns: string
       }
+      request_human_reply: { Args: { _letter_id: string }; Returns: Json }
+      respond_letter_assignment: {
+        Args: { _accept: boolean; _assignment_id: string }
+        Returns: string
+      }
       send_community_letter: {
         Args: {
           _body: string
           _needs_review?: boolean
+          _persona_id?: string
           _response_style: string
           _risk_level?: string
+          _route?: string
           _subject: string
           _target_age_band: string
           _topic: string

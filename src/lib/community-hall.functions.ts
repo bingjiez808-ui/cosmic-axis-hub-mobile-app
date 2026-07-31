@@ -46,6 +46,7 @@ const profileSchema = z.object({
   language: z.enum(["zh", "en"]).default("zh"),
   optIn: z.boolean().default(false),
   paused: z.boolean().default(false),
+  acceptsAssignments: z.boolean().default(false),
 });
 
 const sendSchema = z.object({

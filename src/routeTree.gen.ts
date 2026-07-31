@@ -33,8 +33,10 @@ import { Route as DevGuidedLibraryV2RouteImport } from './routes/dev.guided-libr
 import { Route as DevDemoPremiumRouteImport } from './routes/dev.demo-premium'
 import { Route as CommunityWriteRouteImport } from './routes/community.write'
 import { Route as CommunityWallRouteImport } from './routes/community.wall'
+import { Route as CommunitySagesRouteImport } from './routes/community.sages'
 import { Route as CommunityOutboxRouteImport } from './routes/community.outbox'
 import { Route as CommunityInboxRouteImport } from './routes/community.inbox'
+import { Route as CommunityErrandsRouteImport } from './routes/community.errands'
 import { Route as CommunityEchoesRouteImport } from './routes/community.echoes'
 import { Route as AuthResetRouteImport } from './routes/auth.reset'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
@@ -176,6 +178,11 @@ const CommunityWallRoute = CommunityWallRouteImport.update({
   path: '/community/wall',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CommunitySagesRoute = CommunitySagesRouteImport.update({
+  id: '/community/sages',
+  path: '/community/sages',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CommunityOutboxRoute = CommunityOutboxRouteImport.update({
   id: '/community/outbox',
   path: '/community/outbox',
@@ -184,6 +191,11 @@ const CommunityOutboxRoute = CommunityOutboxRouteImport.update({
 const CommunityInboxRoute = CommunityInboxRouteImport.update({
   id: '/community/inbox',
   path: '/community/inbox',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CommunityErrandsRoute = CommunityErrandsRouteImport.update({
+  id: '/community/errands',
+  path: '/community/errands',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CommunityEchoesRoute = CommunityEchoesRouteImport.update({
@@ -321,8 +333,10 @@ export interface FileRoutesByFullPath {
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/reset': typeof AuthResetRoute
   '/community/echoes': typeof CommunityEchoesRoute
+  '/community/errands': typeof CommunityErrandsRoute
   '/community/inbox': typeof CommunityInboxRoute
   '/community/outbox': typeof CommunityOutboxRoute
+  '/community/sages': typeof CommunitySagesRoute
   '/community/wall': typeof CommunityWallRoute
   '/community/write': typeof CommunityWriteRoute
   '/dev/demo-premium': typeof DevDemoPremiumRoute
@@ -367,8 +381,10 @@ export interface FileRoutesByTo {
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/reset': typeof AuthResetRoute
   '/community/echoes': typeof CommunityEchoesRoute
+  '/community/errands': typeof CommunityErrandsRoute
   '/community/inbox': typeof CommunityInboxRoute
   '/community/outbox': typeof CommunityOutboxRoute
+  '/community/sages': typeof CommunitySagesRoute
   '/community/wall': typeof CommunityWallRoute
   '/community/write': typeof CommunityWriteRoute
   '/dev/demo-premium': typeof DevDemoPremiumRoute
@@ -417,8 +433,10 @@ export interface FileRoutesById {
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/reset': typeof AuthResetRoute
   '/community/echoes': typeof CommunityEchoesRoute
+  '/community/errands': typeof CommunityErrandsRoute
   '/community/inbox': typeof CommunityInboxRoute
   '/community/outbox': typeof CommunityOutboxRoute
+  '/community/sages': typeof CommunitySagesRoute
   '/community/wall': typeof CommunityWallRoute
   '/community/write': typeof CommunityWriteRoute
   '/dev/demo-premium': typeof DevDemoPremiumRoute
@@ -467,8 +485,10 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/auth/reset'
     | '/community/echoes'
+    | '/community/errands'
     | '/community/inbox'
     | '/community/outbox'
+    | '/community/sages'
     | '/community/wall'
     | '/community/write'
     | '/dev/demo-premium'
@@ -513,8 +533,10 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/auth/reset'
     | '/community/echoes'
+    | '/community/errands'
     | '/community/inbox'
     | '/community/outbox'
+    | '/community/sages'
     | '/community/wall'
     | '/community/write'
     | '/dev/demo-premium'
@@ -562,8 +584,10 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/auth/reset'
     | '/community/echoes'
+    | '/community/errands'
     | '/community/inbox'
     | '/community/outbox'
+    | '/community/sages'
     | '/community/wall'
     | '/community/write'
     | '/dev/demo-premium'
@@ -609,8 +633,10 @@ export interface RootRouteChildren {
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   ApiGenerateAvatarRoute: typeof ApiGenerateAvatarRoute
   CommunityEchoesRoute: typeof CommunityEchoesRoute
+  CommunityErrandsRoute: typeof CommunityErrandsRoute
   CommunityInboxRoute: typeof CommunityInboxRoute
   CommunityOutboxRoute: typeof CommunityOutboxRoute
+  CommunitySagesRoute: typeof CommunitySagesRoute
   CommunityWallRoute: typeof CommunityWallRoute
   CommunityWriteRoute: typeof CommunityWriteRoute
   DevDemoPremiumRoute: typeof DevDemoPremiumRoute
@@ -793,6 +819,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CommunityWallRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/community/sages': {
+      id: '/community/sages'
+      path: '/community/sages'
+      fullPath: '/community/sages'
+      preLoaderRoute: typeof CommunitySagesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/community/outbox': {
       id: '/community/outbox'
       path: '/community/outbox'
@@ -805,6 +838,13 @@ declare module '@tanstack/react-router' {
       path: '/community/inbox'
       fullPath: '/community/inbox'
       preLoaderRoute: typeof CommunityInboxRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/community/errands': {
+      id: '/community/errands'
+      path: '/community/errands'
+      fullPath: '/community/errands'
+      preLoaderRoute: typeof CommunityErrandsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/community/echoes': {
@@ -1038,8 +1078,10 @@ const rootRouteChildren: RootRouteChildren = {
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   ApiGenerateAvatarRoute: ApiGenerateAvatarRoute,
   CommunityEchoesRoute: CommunityEchoesRoute,
+  CommunityErrandsRoute: CommunityErrandsRoute,
   CommunityInboxRoute: CommunityInboxRoute,
   CommunityOutboxRoute: CommunityOutboxRoute,
+  CommunitySagesRoute: CommunitySagesRoute,
   CommunityWallRoute: CommunityWallRoute,
   CommunityWriteRoute: CommunityWriteRoute,
   DevDemoPremiumRoute: DevDemoPremiumRoute,
