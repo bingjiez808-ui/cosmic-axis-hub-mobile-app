@@ -374,6 +374,15 @@ export type LibrarianHelper = {
   alias: string | null;
   ageBand: string | null;
   academy: string | null;
+  element: string | null;
+  quote: string | null;
+  language: string | null;
+  assignedCount: number;
+  acceptedCount: number;
+  repliedCount: number;
+  declinedCount: number;
+  pendingCount: number;
+  lastAssignedAt: string | null;
 };
 
 export async function readLibrarianDesk(ctx: Ctx) {
