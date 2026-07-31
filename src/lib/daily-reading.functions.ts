@@ -28,8 +28,19 @@ const DomainInput = z.object({
   evidence: z.array(z.string().max(120)).max(6).default([]),
 });
 
+/**
+ * Sections are generated ON DEMAND, one small call per expanded module:
+ * - "overview" → one_line_theme + narrative (the header card)
+ * - "actions"  → do_today / observe_today / countercondition / reflection
+ * - "domain"   → a single domain line + that domain's do/observe
+ */
+export const DAILY_READING_SECTIONS = ["overview", "actions", "domain"] as const;
+export type DailyReadingSection = (typeof DAILY_READING_SECTIONS)[number];
+
 const Input = z.object({
   lang: z.enum(["zh", "en"]).default("zh"),
+  section: z.enum(DAILY_READING_SECTIONS).default("overview"),
+  targetDomain: z.string().max(24).optional(),
   localDate: z.string().max(20),
   timezone: z.string().max(60),
   chartLabel: z.string().max(80).optional(),
@@ -47,6 +58,7 @@ const Input = z.object({
   missingFacts: z.array(z.string().max(60)).max(6).default([]),
   concern: z.string().max(40).optional(),
 });
+
 
 export type DailyReadingAI = {
   version: string;
