@@ -17,6 +17,11 @@ import { clearLetterDraft, loadLetterDraft, saveLetterDraft } from "@/lib/letter
 import { useAskSage, useSageEntitlement, useSendToLibrarian } from "@/lib/sage-council-client";
 import { SAGE_DOMAIN_LABEL, SAGE_PERSONAS } from "@/lib/sage-personas";
 import { sageSkill, sagesForTopic } from "@/lib/sage-skills";
+import {
+  LetterRulesNotice,
+  PrecheckWarning,
+} from "@/experiences/community-hall/LetterRulesNotice";
+import { safetyMessage, screenCommunityText } from "@/lib/community-hall-safety";
 import "@/experiences/community-hall/hall.css";
 
 const BODY_MIN = 30;
