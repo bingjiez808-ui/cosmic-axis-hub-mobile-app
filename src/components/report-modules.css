@@ -424,19 +424,20 @@
   background: color-mix(in oklab, var(--gold-dust) 40%, transparent);
 }
 
-/* Body copy inside the panes follows the shared scale. */
-.rm-h-evidence,
-.rm-h-synthesis,
-.rm-h-plain,
-.rm-h-specifics {
+/* Body copy inside the panes follows the shared scale.
+   Compound selectors so the scale wins over utility classes. */
+.rm-scroll.rm-h-evidence,
+.rm-scroll.rm-h-synthesis,
+.rm-scroll.rm-h-plain,
+.rm-scroll.rm-h-specifics {
   font-size: var(--rm-fs);
   line-height: var(--rm-lh);
   /* Never let a long unbroken token push the pane sideways. */
   overflow-wrap: anywhere;
   word-break: break-word;
 }
-.rm-h-evidence,
-.rm-h-specifics {
+.rm-scroll.rm-h-evidence,
+.rm-scroll.rm-h-specifics {
   line-height: var(--rm-lh-tight);
 }
 .rm-h-evidence .rm-evidence-item > p:first-child {
