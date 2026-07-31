@@ -59,7 +59,10 @@ function WriteLetterPage() {
   );
 }
 
-type Sent = { pendingReview: boolean; delivered: number };
+type Sent = { pendingReview: boolean; delivered: number; visibility: Visibility };
+
+/** How the letter travels: a courier run to a few strangers, or the open board. */
+type Visibility = "delivered_only" | "wall";
 
 function WriteFlow() {
   const c = useCommunityHall();
@@ -75,6 +78,7 @@ function WriteFlow() {
   const [body, setBody] = useState(restored?.body ?? "");
   const [topic, setTopic] = useState<string>(restored?.topic ?? "self");
   const [band, setBand] = useState<AgeBand | null>((restored?.band as AgeBand | null) ?? null);
+  const [visibility, setVisibility] = useState<Visibility>("delivered_only");
   const [agree, setAgree] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errorCode, setErrorCode] = useState<HallErrorCode | null>(null);
@@ -137,6 +141,7 @@ function WriteFlow() {
         body: body.trim(),
         topic,
         targetAgeBand: band,
+        visibility,
       });
       setError(null);
       setErrorCode(null);
@@ -144,7 +149,11 @@ function WriteFlow() {
       clearLetterDraft();
       setSavedAt(null);
       setDraftRestored(false);
-      setSent({ pendingReview: result.pendingReview, delivered: result.delivered });
+      setSent({
+        pendingReview: result.pendingReview,
+        delivered: result.delivered,
+        visibility,
+      });
     } catch (err) {
       setErrorCode(hallErrorCode(err));
       setError(hallErrorMessage(err, c.lang));
@@ -158,16 +167,32 @@ function WriteFlow() {
         <p className="hall-eyebrow">{c.hallEyebrow}</p>
         <h2 className="hall-section-title mt-4">{c.sentTitle}</h2>
         <p className="mx-auto mt-4 max-w-md text-pretty text-sm leading-relaxed text-muted-foreground">
-          {sent.pendingReview ? c.pendingReview : c.sentBody}
+          {sent.pendingReview
+            ? c.pendingReview
+            : sent.visibility === "wall"
+              ? c.lang === "en"
+                ? "Your letter is now pinned on the public wall. Anyone in the hall may read it and choose to answer."
+                : "你的信已经张贴在公共信墙上，厅中任何人都能读到，并选择是否回信。"
+              : c.sentBody}
         </p>
         {!sent.pendingReview ? (
           <p className="mt-3 text-xs text-primary/80">
-            {c.deliveredCount} {sent.delivered} {c.people}
+            {sent.visibility === "wall"
+              ? c.lang === "en"
+                ? "Visible to everyone in the hall"
+                : "全厅可见"
+              : `${c.deliveredCount} ${sent.delivered} ${c.people}`}
           </p>
         ) : null}
         <div className="mt-7 flex flex-wrap justify-center gap-3">
           <Button asChild className="hall-tap">
-            <Link to="/community/echoes">{c.sentGoEchoes}</Link>
+            <Link to={sent.visibility === "wall" ? "/community/wall" : "/community/echoes"}>
+              {sent.visibility === "wall"
+                ? c.lang === "en"
+                  ? "See it on the wall"
+                  : "去信墙看看"
+                : c.sentGoEchoes}
+            </Link>
           </Button>
           <Button
             variant="outline"
@@ -309,6 +334,50 @@ function WriteFlow() {
               </button>
             ))}
           </div>
+          <div className="pt-2">
+            <p className="text-sm font-medium text-foreground">
+              {c.lang === "en" ? "How should this letter travel?" : "这封信怎么走？"}
+            </p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              {(
+                [
+                  {
+                    key: "delivered_only" as const,
+                    title: c.lang === "en" ? "Hand it to the courier" : "交给信使定向投递",
+                    body:
+                      c.lang === "en"
+                        ? "Private. The courier delivers it to a few strangers in the chapter of life you chose; only they can answer."
+                        : "私密。信使会把它分批送给你选定人生阶段中的少数陌生旅者，只有收到的人能回信。",
+                  },
+                  {
+                    key: "wall" as const,
+                    title: c.lang === "en" ? "Pin it on the public wall" : "张贴到公共信墙",
+                    body:
+                      c.lang === "en"
+                        ? "Open. Everyone in the hall can read it and decide whether to answer. Still anonymous — only your traveler alias shows."
+                        : "公开。厅中所有人都能读到，谁想回就回。依然匿名，只显示你的旅者代号。",
+                  },
+                ]
+              ).map((option) => (
+                <button
+                  key={option.key}
+                  type="button"
+                  onClick={() => setVisibility(option.key)}
+                  aria-pressed={visibility === option.key}
+                  className={`hall-tap rounded-2xl border p-4 text-left transition ${
+                    visibility === option.key
+                      ? "border-primary/50 bg-primary/10"
+                      : "border-primary/15 bg-background/60 hover:border-primary/30"
+                  }`}
+                >
+                  <span className="block text-sm font-semibold text-foreground">{option.title}</span>
+                  <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
+                    {option.body}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
           <p className="text-xs text-muted-foreground">{c.autoExpire}</p>
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
           <div className="flex gap-3">
@@ -326,7 +395,16 @@ function WriteFlow() {
         <div className="hall-rise mt-6 space-y-5">
           <div className="hall-paper hall-envelope p-5" data-unread="true">
             <p className="text-xs text-muted-foreground">
-              {c.previewTo} {c.ageBand(band)} · {c.topic(topic)}
+              {c.previewTo} {c.ageBand(band)} · {c.topic(topic)} ·{" "}
+              <span className="text-primary/80">
+                {visibility === "wall"
+                  ? c.lang === "en"
+                    ? "public wall"
+                    : "公共信墙"
+                  : c.lang === "en"
+                    ? "courier delivery"
+                    : "信使定向投递"}
+              </span>
             </p>
             <h3 className="hall-card-title mt-2">
               {subject.trim() || c.topic(topic)}
