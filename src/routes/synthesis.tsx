@@ -142,7 +142,7 @@ function SynthesisPage() {
 
   useEffect(() => {
     const total = phases.length;
-    const perPhase = 1800;
+    const perPhase = 1100;
     const interval = setInterval(() => {
       setPhase((p) => {
         if (p >= total - 1) {
@@ -162,7 +162,7 @@ function SynthesisPage() {
         to: "/report",
         search: () => search as never,
       });
-    }, 900);
+    }, 600);
     return () => clearTimeout(timer);
   }, [navigate, phase, phases.length, reportReady, search]);
 
