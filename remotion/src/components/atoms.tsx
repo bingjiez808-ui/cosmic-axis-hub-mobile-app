@@ -1,6 +1,6 @@
 import React from "react";
 import { AbsoluteFill, Img, interpolate, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
-import { CREAM, GOLD, GOLD_SOFT } from "./theme";
+import { CREAM, GOLD, GOLD_SOFT } from "../theme";
 
 export const Grain: React.FC = () => (
   <AbsoluteFill

@@ -72,7 +72,7 @@ export const SceneClose: React.FC<{ portrait: boolean }> = ({ portrait }) => {
               textShadow: "0 18px 80px rgba(0,0,0,0.85)",
             }}
           >
-            推开门,让四位长老
+            推开门，让四位长老
             <br />
             同时看你一眼
           </div>
