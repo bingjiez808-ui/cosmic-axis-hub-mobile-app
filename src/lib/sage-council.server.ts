@@ -248,9 +248,10 @@ export async function sendLibrarianLetter(
   // A personal reply from the librarian is a human writing back, so it is
   // gated exactly like the sage route: 「贤者」membership, and it spends one of
   // the three monthly human-reply grants (checked again inside the RPC).
-  const { entitled, credits } = await readTier(ctx);
+  const { entitled } = await readTier(ctx);
   if (!entitled) throw hallError("sage_required");
-  if (credits.remaining <= 0) throw hallError("no_reply_credits");
+  const before = await readCredits(ctx);
+  if (before.remaining <= 0) throw hallError("no_reply_credits");
 
   limit(`sage-council:librarian:${ctx.userId}`, 3, 24 * 60 * 60_000);
   const verdict = screenCommunityText(`${input.subject ?? ""}\n${input.body}`);
