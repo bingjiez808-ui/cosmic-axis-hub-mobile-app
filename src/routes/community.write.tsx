@@ -544,7 +544,21 @@ function WriteFlow() {
                   >
                     {zh ? "了解贤者会员" : "See the Sage membership"}
                   </Link>
-                ) : null}
+                ) : (
+                  <Link
+                    to="/community/grants"
+                    className="hall-tap underline underline-offset-4 hover:text-foreground"
+                  >
+                    {humanCredits > 0
+                      ? zh
+                        ? "查看使用记录"
+                        : "See usage history"
+                      : zh
+                        ? "去领取本月赠送"
+                        : "Claim this month's grants"}
+                  </Link>
+                )}
+
               </div>
             ) : null}
           </div>
