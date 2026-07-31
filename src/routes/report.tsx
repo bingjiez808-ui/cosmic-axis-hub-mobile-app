@@ -1498,6 +1498,11 @@ function ReportPage() {
         aiReportVersion: REPORT_AI_VERSION,
         fingerprint,
       });
+      // Fully personalised run — drop the resume snapshot. If some modules are
+      // degraded, keep it so a retry only re-requests those.
+      if (acc.degraded.length === 0) clearReportProgress(fingerprint);
+      else persistProgress();
+
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seed, reportLang, search.readingId, search.gender, genderOverride]);
