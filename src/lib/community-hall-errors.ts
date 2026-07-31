@@ -146,7 +146,6 @@ const MESSAGES: Record<HallErrorCode, Pair> = {
     en: "Sage letters and the librarian's personal reply are both part of the Sage membership.",
   },
   no_reply_credits: {
-  no_reply_credits: {
     zh: "「管理员授权」次数已用完。开通「贤者」赠送 1 次，之后可单独加购：3 元 1 次，10 元 4 次。",
     en: "You have used your librarian-authorised reply. Sage membership gifts one; extra ones cost ¥3 each or ¥10 for four.",
   },
