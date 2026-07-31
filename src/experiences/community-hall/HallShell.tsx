@@ -250,6 +250,7 @@ export function HallGate({ children }: { children: ReactNode }) {
                 language: (state?.profile?.language as "zh" | "en") ?? c.lang,
                 optIn: true,
                 paused: false,
+                acceptsAssignments: Boolean(state?.profile?.acceptsAssignments),
               })
             }
           >
