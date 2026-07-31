@@ -650,7 +650,8 @@ const en: DailyDict = {
   ],
   countercondition_title: "If reality differs",
   countercondition_body:
-    "If what actually happens contradicts today's signal (say, things go smoother than expected), trust reality. Today's reading only names a possibility worth watching.",
+    "If today's signal runs counter to reality, let reality lead — this is only a footnote worth noticing.",
+
   reflection_title: "A question for yourself",
   reflection_body: "\"Is there anything I'm doing today out of habit rather than because I want to?\"",
   free_tier_notice:
