@@ -114,6 +114,21 @@ function CommunitySettingsPage() {
             <span>{c.settingReceive}</span>
           </label>
 
+          {/* 愿意接信：the librarian may entrust letters to travelers who opt in. */}
+          <label className="flex items-start gap-3 text-sm text-muted-foreground">
+            <input
+              type="checkbox"
+              className="mt-1"
+              checked={acceptsAssignments}
+              onChange={(e) => setAcceptsAssignments(e.target.checked)}
+            />
+            <span>
+              {c.lang === "en"
+                ? "Willing to receive letters entrusted by the librarian. You can still accept or decline each one."
+                : "愿意接收图书管理员托付的信件。每一封你仍可自行决定接下或婉拒。"}
+            </span>
+          </label>
+
           <Button
             disabled={save.isPending}
             onClick={async () => {
@@ -126,6 +141,7 @@ function CommunitySettingsPage() {
                 language,
                 optIn,
                 paused,
+                acceptsAssignments,
               });
               toast.success(c.saved);
             }}
