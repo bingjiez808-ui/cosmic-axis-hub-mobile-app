@@ -239,9 +239,9 @@ function WriteFlow() {
       },
       librarian: {
         body: zh
-          ? "信已经放在图书管理员的案头。他会亲自回信，或把它托付给一位愿意接信的旅者。"
-          : "Your letter is on the librarian's desk. They will answer it themselves, or entrust it to a traveler who has offered to help.",
-        note: zh ? "等待图书管理员处理" : "Waiting on the librarian",
+          ? "信已经放在图书管理员的案头，本月一次真人回复已记在你的名下。他会亲自回信，或把它托付给一位愿意接信的旅者——对方看到的只有你的旅者代号。"
+          : "Your letter is on the librarian's desk and one of this month's human replies is now reserved for you. They will answer it themselves, or entrust it to a traveler who offered to help — either way, all they see is your traveler alias.",
+        note: zh ? "等待图书管理员亲自回信" : "Waiting on the librarian's personal reply",
         to: "/community/sages",
         cta: zh ? "去我的案前查看" : "See my desk",
       },
