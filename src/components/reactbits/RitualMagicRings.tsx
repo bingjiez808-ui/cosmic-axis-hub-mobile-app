@@ -108,7 +108,8 @@ interface Props {
 export default function RitualMagicRings({ currentStep }: Props) {
   const reduced = useReducedMotion();
   const mobile = useIsMobile();
-  const webgl2 = useWebGL2();
+  const webgl2 = useCanRender3d();
+  const idle = useIdle();
 
   if (webgl2 === null) {
     // First paint — render nothing (avoids SSR/hydration mismatch on webgl probe).
@@ -118,6 +119,13 @@ export default function RitualMagicRings({ currentStep }: Props) {
   if (reduced || webgl2 === false) {
     return <StaticFallback mobile={mobile} />;
   }
+
+  // Heavy scene waits for idle; show the cheap ring outline meanwhile so the
+  // ritual never paints an empty stage.
+  if (!idle) {
+    return <StaticFallback mobile={mobile} />;
+  }
+
 
   // Desktop: strong horizontal mask keeping brightness on left/right; center clear.
   // Mobile: soft radial mask forming an ambient halo around the card.
