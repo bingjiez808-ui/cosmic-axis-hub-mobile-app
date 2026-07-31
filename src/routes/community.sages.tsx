@@ -18,7 +18,7 @@ import {
   HallSection,
 } from "@/experiences/community-hall/HallShell";
 import { hallErrorMessage } from "@/lib/community-hall-errors";
-import { useCommunityHall, type AgeBand } from "@/lib/i18n-community-hall";
+import { LETTER_TOPICS, useCommunityHall, type AgeBand, type LetterTopic } from "@/lib/i18n-community-hall";
 import { useCommunityProfile } from "@/lib/community-hall-client";
 import {
   useAskSage,
@@ -27,6 +27,7 @@ import {
   useSageEntitlement,
 } from "@/lib/sage-council-client";
 import { SAGE_DOMAIN_LABEL, SAGE_PERSONAS, sageName } from "@/lib/sage-personas";
+import { sageSkill, sagesForTopic } from "@/lib/sage-skills";
 import "@/experiences/community-hall/hall.css";
 
 const BODY_MIN = 30;
@@ -83,6 +84,7 @@ function SageDesk() {
   const human = useRequestHumanReply();
 
   const [personaId, setPersonaId] = useState<string>(SAGE_PERSONAS[0].id);
+  const [topic, setTopic] = useState<LetterTopic | null>(null);
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -91,6 +93,11 @@ function SageDesk() {
   const entitled = Boolean(entitlement.data?.entitled);
   const credits = entitlement.data?.credits;
   const length = body.trim().length;
+
+  const matchedIds = topic ? sagesForTopic(topic) : null;
+  const visiblePersonas = matchedIds
+    ? SAGE_PERSONAS.filter((p) => matchedIds.includes(p.id))
+    : SAGE_PERSONAS;
 
   async function submit() {
     if (!band) return setError(zh ? "需要先完善旅者身份。" : "Complete your traveler identity first.");
@@ -116,9 +123,50 @@ function SageDesk() {
   return (
     <div className="mt-8 space-y-8">
       <HallSection title={zh ? "选择一位先贤" : "Choose a sage"}>
+        <div className="mb-4">
+          <p className="mb-2 text-xs text-muted-foreground">
+            {zh
+              ? "先选你此刻的主题，再看哪几位先贤的本领对得上。"
+              : "Pick the topic you carry, then see which sages' skills match it."}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setTopic(null)}
+              aria-pressed={topic === null}
+              className={`hall-tap rounded-full border px-4 py-1.5 text-xs transition ${
+                topic === null
+                  ? "border-primary/60 bg-primary/15 text-foreground"
+                  : "border-primary/20 text-muted-foreground hover:border-primary/40"
+              }`}
+            >
+              {zh ? "全部" : "All"}
+            </button>
+            {LETTER_TOPICS.map((key) => {
+              const active = topic === key;
+              const label = c.topics.find((t) => t.key === key)?.label ?? key;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setTopic(active ? null : key)}
+                  aria-pressed={active}
+                  className={`hall-tap rounded-full border px-4 py-1.5 text-xs transition ${
+                    active
+                      ? "border-primary/60 bg-primary/15 text-foreground"
+                      : "border-primary/20 text-muted-foreground hover:border-primary/40"
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
         <div className="grid gap-3 sm:grid-cols-2">
-          {SAGE_PERSONAS.map((p) => {
+          {visiblePersonas.map((p) => {
             const active = p.id === personaId;
+            const skill = sageSkill(p.id);
             return (
               <button
                 key={p.id}
@@ -140,6 +188,16 @@ function SageDesk() {
                 <span className="mt-2 block text-xs leading-relaxed text-muted-foreground">
                   {zh ? p.blurb.zh : p.blurb.en}
                 </span>
+                {skill ? (
+                  <span className="mt-2 block rounded-lg border border-primary/20 bg-primary/5 px-2 py-1.5 text-[0.7rem] leading-relaxed text-primary/90">
+                    <strong className="font-semibold">
+                      {zh ? `本领 · ${skill.name.zh}` : `Skill · ${skill.name.en}`}
+                    </strong>
+                    <span className="mt-0.5 block text-muted-foreground">
+                      {zh ? skill.summary.zh : skill.summary.en}
+                    </span>
+                  </span>
+                ) : null}
                 <span className="mt-2 block text-[0.7rem] leading-relaxed text-muted-foreground/80">
                   {(zh ? p.goodFor.zh : p.goodFor.en).join(" · ")}
                 </span>
