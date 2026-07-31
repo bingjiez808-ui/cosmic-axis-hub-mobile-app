@@ -347,6 +347,7 @@ function usePolledRefresh(refresh: () => void | Promise<void>, intervalMs = 30_0
 
 function AtlasTab({ paused, selfAlias }: { paused: boolean; selfAlias: string }) {
   const c = useCommunityMatchCopy();
+  const { lang } = useLang();
   const list = useServerFn(listCommunityMatchCandidates);
   const invite = useServerFn(sendCommunityMatchInvite);
   const report = useServerFn(reportCommunityMatchAlias);
@@ -374,7 +375,7 @@ function AtlasTab({ paused, selfAlias }: { paused: boolean; selfAlias: string })
     setLoading(true);
     setErr(null);
     try {
-      const rows = await list({ data: { limit: 10, mode: "friendship", lang: "en" } });
+      const rows = await list({ data: { limit: 10, mode: "friendship", lang } });
       candidatesCache = { items: rows, at: Date.now() };
       setItems(rows);
       // Functional update: keeps `focusedAlias` out of this callback's deps,
@@ -394,7 +395,7 @@ function AtlasTab({ paused, selfAlias }: { paused: boolean; selfAlias: string })
       inFlight.current = false;
       setLoading(false);
     }
-  }, [list, paused, c]);
+  }, [list, paused, c, lang]);
 
 
   useEffect(() => {
