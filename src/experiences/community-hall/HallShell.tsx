@@ -69,7 +69,7 @@ export function HallNav() {
   return (
     <nav
       aria-label={c.hallEyebrow}
-      className="mx-auto mt-8 hidden max-w-3xl snap-x gap-2 overflow-x-auto rounded-full border border-primary/15 bg-background/50 p-1.5 backdrop-blur sm:flex"
+      className="mx-auto mt-8 hidden w-full max-w-3xl snap-x gap-2 overflow-x-auto rounded-full border border-primary/15 bg-background/50 p-1.5 backdrop-blur sm:flex"
     >
       {items.map((item) => {
         const active = pathname === item.to;
