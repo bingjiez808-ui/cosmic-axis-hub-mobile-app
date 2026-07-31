@@ -380,11 +380,17 @@ export const respondCommunityMatchInvite = createServerFn({ method: "POST" })
     if (error || !row) throw new Error(error?.message ?? "respond_failed");
     const r = (Array.isArray(row) ? row[0] : row) as { status: InviteStatus };
     if (data.action === "accept") {
-      // fire-and-forget snapshot computation
-      void computeAndPersistPairSnapshot(context.userId, r as unknown as { sender_id: string; recipient_id: string; mode: MatchMode }).catch(() => {});
+      // Await: serverless workers may terminate before a detached promise
+      // settles, which used to leave accepted pairs without a result row.
+      await computeAndPersistPairSnapshot(
+        context.supabase,
+        context.userId,
+        r as unknown as { sender_id: string; recipient_id: string; mode: MatchMode },
+      ).catch(() => {});
     }
     return { status: r.status };
   });
+
 
 export const revokeCommunityMatchInvite = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -444,36 +450,40 @@ export const listMyCommunityMatchInvites = createServerFn({ method: "POST" })
 
 /* results */
 
+type UserScopedSupabase = { rpc: (fn: never, args: never) => Promise<{ error: { message: string } | null }> };
+
+/**
+ * Compute the deterministic pair snapshot and persist it through the
+ * grant-checked RPC (idempotent on pair_key+mode+calculator_version).
+ * Returns the computed result so read paths can backfill inline.
+ */
 async function computeAndPersistPairSnapshot(
+  supabase: unknown,
   meId: string,
   invite: { sender_id: string; recipient_id: string; mode: MatchMode },
-) {
+): Promise<CompatResult | null> {
   const otherId = invite.sender_id === meId ? invite.recipient_id : invite.sender_id;
   const [me, them] = await Promise.all([loadUserFacets(meId), loadUserFacets(otherId)]);
-  if (!me || !them) return;
+  if (!me || !them) return null;
   const compat = compatFromAdapted(meId, otherId, me.facets, them.facets, invite.mode, "en");
   const pairKey = canonicalPairKey(meId, otherId).replace("::", ":");
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  await supabaseAdmin
-    .from("community_match_results")
-    .insert({
-      pair_key: pairKey,
-      mode: invite.mode,
-      a_user_id: meId < otherId ? meId : otherId,
-      b_user_id: meId < otherId ? otherId : meId,
-      calculator_version: COMPATIBILITY_SCORE_VERSION,
-      facets_snapshot: compat.dimensions as unknown as Record<string, unknown>,
-      score_snapshot: { overall: compat.overall, overallBand: overallBandFor(compat.overall) } as Record<string, unknown>,
-      evidence_summary: {
-        resonances: compat.resonances,
-        complements: compat.complements,
-        frictions: compat.frictions,
-        suggestions: compat.suggestions,
-        evidence: compat.evidence_refs,
-      } as Record<string, unknown>,
-    } as never)
-    .then(() => {}, () => {});
+  await (supabase as UserScopedSupabase).rpc("community_match_upsert_result" as never, {
+    _pair_key: pairKey,
+    _mode: invite.mode,
+    _calc_version: COMPATIBILITY_SCORE_VERSION,
+    _facets: compat.dimensions,
+    _score: { overall: compat.overall, overallBand: overallBandFor(compat.overall) },
+    _evidence: {
+      resonances: compat.resonances,
+      complements: compat.complements,
+      frictions: compat.frictions,
+      suggestions: compat.suggestions,
+      evidence: compat.evidence_refs,
+    },
+  } as never);
+  return compat;
 }
+
 
 export const listMyCommunityMatches = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -505,15 +515,47 @@ export const listMyCommunityMatches = createServerFn({ method: "POST" })
         aliasMap.set(p.user_id, { alias: p.anonymous_alias, age_band: p.age_band, show: p.show_age_band });
       }
     }
+    // Backfill: a pair whose grants are both live but has no snapshot (e.g.
+    // an accept that failed to persist) is computed on read, once.
+    const computed = new Map<string, CompatResult>();
+    for (const g of grants) {
+      const key = `${g.pair_key}:${g.mode}`;
+      const bothLive = g.a_granted_at && g.b_granted_at && !g.a_revoked_at && !g.b_revoked_at;
+      if (results.has(key) || !bothLive) continue;
+      const otherId = g.a_user_id === context.userId ? g.b_user_id : g.a_user_id;
+      const compat = await computeAndPersistPairSnapshot(context.supabase, context.userId, {
+        sender_id: context.userId,
+        recipient_id: otherId,
+        mode: g.mode,
+      }).catch(() => null);
+      if (compat) computed.set(key, compat);
+    }
     const views: MatchView[] = [];
     for (const g of grants) {
       const otherId = g.a_user_id === context.userId ? g.b_user_id : g.a_user_id;
       const meGrantLive = (g.a_user_id === context.userId ? g.a_granted_at && !g.a_revoked_at : g.b_granted_at && !g.b_revoked_at);
       const themGrantLive = (g.a_user_id === context.userId ? g.b_granted_at && !g.b_revoked_at : g.a_granted_at && !g.a_revoked_at);
       const p = aliasMap.get(otherId);
-      const r = results.get(`${g.pair_key}:${g.mode}`) as
+      const fresh = computed.get(`${g.pair_key}:${g.mode}`);
+      const r = (results.get(`${g.pair_key}:${g.mode}`) ??
+        (fresh
+          ? {
+              facets_snapshot: fresh.dimensions,
+              score_snapshot: { overall: fresh.overall, overallBand: overallBandFor(fresh.overall) },
+              evidence_summary: {
+                resonances: fresh.resonances,
+                complements: fresh.complements,
+                frictions: fresh.frictions,
+                suggestions: fresh.suggestions,
+                evidence: fresh.evidence_refs,
+              },
+              calculator_version: COMPATIBILITY_SCORE_VERSION,
+              created_at: new Date().toISOString(),
+            }
+          : undefined)) as
         | { facets_snapshot: Array<{ key: string; score: number; band: string }>; score_snapshot: { overall: number; overallBand: string }; evidence_summary: { resonances: string[]; complements: string[]; frictions: string[]; suggestions: string[]; evidence: string[] }; calculator_version: string; created_at: string }
         | undefined;
+
       views.push({
         pairKey: g.pair_key,
         mode: g.mode,

@@ -33,6 +33,7 @@ import {
   type AgeBand,
   AGE_BANDS,
 } from "@/lib/community-match.functions";
+import { useLang } from "@/lib/i18n";
 import { useCommunityMatchCopy } from "@/lib/i18n-community-match";
 import { ResonanceAtlas } from "./atlas/ResonanceAtlas";
 import { ResonanceRadar, type RadarFacet } from "./atlas/ResonanceRadar";
@@ -322,9 +323,32 @@ function ProfileHeader({
 
 let candidatesCache: { items: CandidateCard[] | null; at: number } = { items: null, at: 0 };
 
+/**
+ * Keeps invite / match state in sync with the cloud without a page reload:
+ * initial fetch, a 30s poll, and a refetch when the tab regains focus.
+ */
+function usePolledRefresh(refresh: () => void | Promise<void>, intervalMs = 30_000) {
+  useEffect(() => {
+    void refresh();
+    const id = setInterval(() => void refresh(), intervalMs);
+    const onFocus = () => {
+      if (document.visibilityState === "visible") void refresh();
+    };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
+    return () => {
+      clearInterval(id);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
+    };
+  }, [refresh, intervalMs]);
+}
+
+
 
 function AtlasTab({ paused, selfAlias }: { paused: boolean; selfAlias: string }) {
   const c = useCommunityMatchCopy();
+  const { lang } = useLang();
   const list = useServerFn(listCommunityMatchCandidates);
   const invite = useServerFn(sendCommunityMatchInvite);
   const report = useServerFn(reportCommunityMatchAlias);
@@ -352,7 +376,7 @@ function AtlasTab({ paused, selfAlias }: { paused: boolean; selfAlias: string })
     setLoading(true);
     setErr(null);
     try {
-      const rows = await list({ data: { limit: 10, mode: "friendship", lang: "en" } });
+      const rows = await list({ data: { limit: 10, mode: "friendship", lang } });
       candidatesCache = { items: rows, at: Date.now() };
       setItems(rows);
       // Functional update: keeps `focusedAlias` out of this callback's deps,
@@ -372,7 +396,7 @@ function AtlasTab({ paused, selfAlias }: { paused: boolean; selfAlias: string })
       inFlight.current = false;
       setLoading(false);
     }
-  }, [list, paused, c]);
+  }, [list, paused, c, lang]);
 
 
   useEffect(() => {
@@ -725,9 +749,8 @@ function InvitesTab() {
     }
   }, [list, c]);
 
-  useEffect(() => {
-    void refresh();
-  }, [refresh]);
+  usePolledRefresh(refresh);
+
 
   const act = async (id: string, action: "accept" | "decline" | "block") => {
     try {
@@ -870,9 +893,8 @@ function MatchesTab() {
       setItems([]);
     }
   }, [list]);
-  useEffect(() => {
-    void refresh();
-  }, [refresh]);
+  usePolledRefresh(refresh);
+
 
   if (!items) return <p className="text-sm text-amber-200/70">…</p>;
   if (items.length === 0) return <p className="text-sm text-amber-200/70">{c.t("matches_empty")}</p>;
