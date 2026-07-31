@@ -13,7 +13,8 @@
  * banner is pinned near the confirm button in both languages.
  */
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useState } from "react";
+import { useModalA11y } from "@/lib/use-modal-a11y";
 
 import type { Lang } from "@/lib/i18n";
 import {
