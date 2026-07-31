@@ -676,8 +676,8 @@ function DailyRoomPage() {
                   </button>
                   <span>
                     {lang === "zh"
-                      ? "分数与证据由本地星历确定性计算，不消耗 AI；解读为可选，每日每盘只生成一次。"
-                      : "Scores are computed locally and cost no AI; the reading is optional and generated once per chart per day."}
+                      ? "每日一次，为今日信号添一段馆员手记。"
+                      : "Once a day, add a librarian's note to today's signal."}
                   </span>
                 </div>
               )}
