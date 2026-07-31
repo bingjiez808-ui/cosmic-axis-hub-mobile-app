@@ -33,7 +33,7 @@ const SAGE_MODEL = "google/gemini-2.5-flash";
 
 function friendly(error: { message?: string } | null): never {
   const raw = error?.message ?? "";
-  if (raw.includes("no_human_reply_credits")) throw hallError("not_allowed");
+  if (raw.includes("no_human_reply_credits")) throw hallError("no_reply_credits");
   if (raw.includes("assignee_not_accepting")) throw hallError("not_allowed");
   if (raw.includes("not_allowed")) throw hallError("not_allowed");
   if (raw.includes("letter_not_found")) throw hallError("letter_not_found");
