@@ -194,9 +194,10 @@ function MatchPage() {
                     setRevoked(false);
                   }}
                   aria-pressed={key === k}
-                  className={`rounded-full border px-3 py-1.5 text-xs transition ${
+                  data-active={key === k ? "true" : "false"}
+                  className={`pl-pill rounded-full border px-3 py-1.5 text-xs ${
                     key === k
-                      ? "border-amber-300 bg-amber-300/10 text-amber-100"
+                      ? "border-amber-300/80 bg-amber-300/12 text-amber-100"
                       : "border-amber-400/20 text-amber-200/70 hover:border-amber-300/60"
                   }`}
                 >
@@ -214,7 +215,7 @@ function MatchPage() {
             )}
           </div>
         </details>
-          </>
+          </div>
         )}
 
 
@@ -229,7 +230,7 @@ function MatchPage() {
           </details>
         ) : null}
       </div>
-    </div>
+    </PersonalLibraryShell>
   );
 }
 
