@@ -79,7 +79,7 @@ function WallList() {
 
   if (wall.isLoading) return <HallSkeleton />;
   if (wall.error) {
-    return <HallError message={hallErrorMessage(wall.error, c.lang)} onRetry={() => void wall.refetch()} />;
+    return <HallError error={wall.error} onRetry={() => void wall.refetch()} />;
   }
 
   const letters = wall.data ?? [];
