@@ -65,6 +65,7 @@ function useHallNavItems() {
     ...(isAdmin
       ? [{ to: "/community/librarian", label: c.lang === "en" ? "Desk" : "管理员案头" }]
       : []),
+    { to: "/community/notices", label: c.lang === "en" ? "Notices" : "通知中心" },
     { to: "/community/inbox", label: c.navInbox },
     { to: "/community/outbox", label: c.sectionOutbox },
     { to: "/community/echoes", label: c.sectionEchoes },
