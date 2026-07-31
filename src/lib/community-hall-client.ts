@@ -50,6 +50,7 @@ export type CommunityProfileInput = {
   language: "zh" | "en";
   optIn: boolean;
   paused: boolean;
+  acceptsAssignments?: boolean;
 };
 
 export type SendLetterInput = {
