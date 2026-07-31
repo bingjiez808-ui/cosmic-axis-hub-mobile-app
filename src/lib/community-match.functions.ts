@@ -450,36 +450,40 @@ export const listMyCommunityMatchInvites = createServerFn({ method: "POST" })
 
 /* results */
 
+type UserScopedSupabase = { rpc: (fn: never, args: never) => Promise<{ error: { message: string } | null }> };
+
+/**
+ * Compute the deterministic pair snapshot and persist it through the
+ * grant-checked RPC (idempotent on pair_key+mode+calculator_version).
+ * Returns the computed result so read paths can backfill inline.
+ */
 async function computeAndPersistPairSnapshot(
+  supabase: unknown,
   meId: string,
   invite: { sender_id: string; recipient_id: string; mode: MatchMode },
-) {
+): Promise<CompatResult | null> {
   const otherId = invite.sender_id === meId ? invite.recipient_id : invite.sender_id;
   const [me, them] = await Promise.all([loadUserFacets(meId), loadUserFacets(otherId)]);
-  if (!me || !them) return;
+  if (!me || !them) return null;
   const compat = compatFromAdapted(meId, otherId, me.facets, them.facets, invite.mode, "en");
   const pairKey = canonicalPairKey(meId, otherId).replace("::", ":");
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  await supabaseAdmin
-    .from("community_match_results")
-    .insert({
-      pair_key: pairKey,
-      mode: invite.mode,
-      a_user_id: meId < otherId ? meId : otherId,
-      b_user_id: meId < otherId ? otherId : meId,
-      calculator_version: COMPATIBILITY_SCORE_VERSION,
-      facets_snapshot: compat.dimensions as unknown as Record<string, unknown>,
-      score_snapshot: { overall: compat.overall, overallBand: overallBandFor(compat.overall) } as Record<string, unknown>,
-      evidence_summary: {
-        resonances: compat.resonances,
-        complements: compat.complements,
-        frictions: compat.frictions,
-        suggestions: compat.suggestions,
-        evidence: compat.evidence_refs,
-      } as Record<string, unknown>,
-    } as never)
-    .then(() => {}, () => {});
+  await (supabase as UserScopedSupabase).rpc("community_match_upsert_result" as never, {
+    _pair_key: pairKey,
+    _mode: invite.mode,
+    _calc_version: COMPATIBILITY_SCORE_VERSION,
+    _facets: compat.dimensions,
+    _score: { overall: compat.overall, overallBand: overallBandFor(compat.overall) },
+    _evidence: {
+      resonances: compat.resonances,
+      complements: compat.complements,
+      frictions: compat.frictions,
+      suggestions: compat.suggestions,
+      evidence: compat.evidence_refs,
+    },
+  } as never);
+  return compat;
 }
+
 
 export const listMyCommunityMatches = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
