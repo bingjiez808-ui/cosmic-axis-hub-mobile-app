@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useModalA11y } from "@/lib/use-modal-a11y";
 
 import { useAccount, type Plan } from "@/lib/account";
 import { useLang, type Lang } from "@/lib/i18n";
