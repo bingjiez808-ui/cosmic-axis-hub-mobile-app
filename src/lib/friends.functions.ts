@@ -47,7 +47,7 @@ export type NotificationSummary = {
   type: string;
   createdAt: number;
   readAt: number | null;
-  payload: Record<string, unknown>;
+  payload: { alias?: string; preview?: string };
 };
 
 export type FriendsSnapshot = {
@@ -86,7 +86,7 @@ async function notify(
   userId: string,
   type: string,
   entityId: string | null,
-  payload: Record<string, unknown>,
+  payload: { alias?: string; preview?: string },
 ) {
   const sb = await admin();
   await sb.from("community_notifications").insert({
@@ -190,7 +190,7 @@ export const getFriendsSnapshot = createServerFn({ method: "GET" })
     const notifications = (notifRes.data ?? []) as Array<{
       id: string;
       type: string;
-      payload: Record<string, unknown> | null;
+      payload: { alias?: string; preview?: string } | null;
       read_at: string | null;
       created_at: string;
     }>;
