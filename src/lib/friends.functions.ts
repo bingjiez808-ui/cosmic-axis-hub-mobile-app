@@ -352,7 +352,7 @@ export const redeemFriendInvite = createServerFn({ method: "POST" })
     await notify(invite.inviter_id, "friend_invite_accepted", invite.id, {
       alias: aliases.get(me) ?? fallbackAlias(me),
     });
-    return { ok: true };
+    return { ok: true as const, error: null };
   });
 
 export const respondFriendInvite = createServerFn({ method: "POST" })
