@@ -757,6 +757,7 @@ export type Database = {
           created_at: string
           entity_id: string | null
           id: string
+          payload: Json
           read_at: string | null
           type: string
           user_id: string
@@ -765,6 +766,7 @@ export type Database = {
           created_at?: string
           entity_id?: string | null
           id?: string
+          payload?: Json
           read_at?: string | null
           type: string
           user_id: string
@@ -773,6 +775,7 @@ export type Database = {
           created_at?: string
           entity_id?: string | null
           id?: string
+          payload?: Json
           read_at?: string | null
           type?: string
           user_id?: string
@@ -1065,6 +1068,36 @@ export type Database = {
           status?: string
           target_id?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      friend_notes: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          read_at: string | null
+          recipient_id: string
+          sender_id: string
+          template_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          recipient_id: string
+          sender_id: string
+          template_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          recipient_id?: string
+          sender_id?: string
+          template_id?: string
         }
         Relationships: []
       }
