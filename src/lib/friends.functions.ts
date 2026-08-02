@@ -306,7 +306,9 @@ export const redeemFriendInvite = createServerFn({ method: "POST" })
       .select("id, inviter_id, target_id, status, expires_at")
       .eq("code", code)
       .maybeSingle();
-    if (!inv) throw new Error("invite_not_found");
+    // Expected, user-correctable outcomes are returned, not thrown: throwing
+    // across the server-fn boundary surfaces as an unhandled runtime error.
+    if (!inv) return { ok: false as const, error: "invite_not_found" };
     const invite = inv as {
       id: string;
       inviter_id: string;
@@ -314,14 +316,16 @@ export const redeemFriendInvite = createServerFn({ method: "POST" })
       status: string;
       expires_at: string;
     };
-    if (invite.inviter_id === me) throw new Error("self_invite");
-    if (invite.status !== "pending") throw new Error("invite_not_pending");
+    if (invite.inviter_id === me) return { ok: false as const, error: "self_invite" };
+    if (invite.status !== "pending") return { ok: false as const, error: "invite_not_pending" };
     if (ms(invite.expires_at) < Date.now()) {
       await sb.from("friend_invites").update({ status: "expired" }).eq("id", invite.id);
-      throw new Error("invite_expired");
+      return { ok: false as const, error: "invite_expired" };
     }
-    if (invite.target_id && invite.target_id !== me) throw new Error("not_target");
-    if (await areBlocked(me, invite.inviter_id)) throw new Error("blocked_relationship");
+    if (invite.target_id && invite.target_id !== me) return { ok: false as const, error: "not_target" };
+    if (await areBlocked(me, invite.inviter_id)) {
+      return { ok: false as const, error: "blocked_relationship" };
+    }
 
     // Attach the redeemer as the target: it becomes a pending incoming invite
     // the inviter can already see, and it is immediately accepted below.
