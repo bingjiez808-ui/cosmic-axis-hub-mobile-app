@@ -237,7 +237,8 @@ function FriendsPage() {
               disabled={!gated || busy || redeemCode.trim().length < 4}
               onClick={() =>
                 run(async () => {
-                  await redeem({ data: { code: redeemCode.trim() } });
+                  const res = await redeem({ data: { code: redeemCode.trim() } });
+                  if (!res.ok) throw new Error(res.error ?? "unknown");
                   setRedeemCode("");
                 }, zh ? "已建立好友关系" : "You are now friends")
               }
