@@ -41,7 +41,7 @@ export type CommunityComment = {
   id: string;
   postId: string;
   parentId: string | null;
-  userId: string;
+  isMine: boolean;
   createdAt: number;
   authorTitle: string;
   authorHouseKey: string;
@@ -52,7 +52,7 @@ export type CommunityComment = {
 
 export type CommunityPost = {
   id: string;
-  userId: string;
+  isMine: boolean;
   createdAt: number;
   authorTitle: string;
   authorHouseKey: string;
@@ -98,10 +98,13 @@ async function signImagePaths(paths: string[]) {
   return paths.map((_, i) => data?.[i]?.signedUrl ?? "").filter(Boolean);
 }
 
-async function hydratePosts(rawPosts: unknown[], viewerId: string | null): Promise<CommunityPost[]> {
+async function hydratePosts(
+  rawPosts: unknown[],
+  viewerId: string | null,
+  mine = false,
+): Promise<CommunityPost[]> {
   const posts = rawPosts as Array<{
     id: string;
-    user_id: string;
     facet: string;
     body_text: string;
     author_title: string;
@@ -115,7 +118,7 @@ async function hydratePosts(rawPosts: unknown[], viewerId: string | null): Promi
   const [{ data: comments }, { data: postLikesRaw }] = await Promise.all([
     sb
       .from("community_comments")
-      .select("id, post_id, parent_id, user_id, body_text, author_title, author_house_key, created_at")
+      .select("id, post_id, parent_id, body_text, author_title, author_house_key, created_at")
       .in("post_id", ids)
       .order("created_at", { ascending: true }),
     sb.from("community_likes").select("user_id, post_id, comment_id").in("post_id", ids),
@@ -124,7 +127,6 @@ async function hydratePosts(rawPosts: unknown[], viewerId: string | null): Promi
     id: string;
     post_id: string;
     parent_id: string | null;
-    user_id: string;
     body_text: string;
     author_title: string;
     author_house_key: string;
@@ -155,7 +157,7 @@ async function hydratePosts(rawPosts: unknown[], viewerId: string | null): Promi
       id: c.id,
       postId: c.post_id,
       parentId: c.parent_id,
-      userId: c.user_id,
+      isMine: false,
       createdAt: new Date(c.created_at).getTime(),
       authorTitle: c.author_title,
       authorHouseKey: c.author_house_key,
@@ -170,7 +172,7 @@ async function hydratePosts(rawPosts: unknown[], viewerId: string | null): Promi
       const imagePaths = p.image_paths ?? [];
       return {
         id: p.id,
-        userId: p.user_id,
+        isMine: mine,
         createdAt: new Date(p.created_at).getTime(),
         authorTitle: p.author_title,
         authorHouseKey: p.author_house_key,
@@ -192,7 +194,7 @@ export const listCommunityPosts = createServerFn({ method: "GET" })
     const sb = createPublicClient() as unknown as { from: (t: string) => any };
     let q = sb
       .from("community_posts")
-      .select("id, user_id, facet, body_text, author_title, author_house_key, image_paths, created_at")
+      .select("id, facet, body_text, author_title, author_house_key, image_paths, created_at")
       .is("deleted_at", null)
       .order("created_at", { ascending: false })
       .limit(data.limit + 1);
@@ -222,10 +224,10 @@ export const createCommunityPost = createServerFn({ method: "POST" })
         author_house_key: data.authorHouseKey,
         image_paths: imagePaths,
       } as never)
-      .select("id, user_id, facet, body_text, author_title, author_house_key, image_paths, created_at")
+      .select("id, facet, body_text, author_title, author_house_key, image_paths, created_at")
       .single();
     if (error || !row) throw new Error("community_post_failed");
-    return (await hydratePosts([row], context.userId))[0];
+    return (await hydratePosts([row], context.userId, true))[0];
   });
 
 export const createCommunityComment = createServerFn({ method: "POST" })
@@ -245,14 +247,13 @@ export const createCommunityComment = createServerFn({ method: "POST" })
         author_title: data.authorTitle,
         author_house_key: data.authorHouseKey,
       } as never)
-      .select("id, post_id, parent_id, user_id, body_text, author_title, author_house_key, created_at")
+      .select("id, post_id, parent_id, body_text, author_title, author_house_key, created_at")
       .single();
     if (error || !row) throw new Error("community_comment_failed");
     const r = row as unknown as {
       id: string;
       post_id: string;
       parent_id: string | null;
-      user_id: string;
       body_text: string;
       author_title: string;
       author_house_key: string;
@@ -262,7 +263,7 @@ export const createCommunityComment = createServerFn({ method: "POST" })
       id: r.id,
       postId: r.post_id,
       parentId: r.parent_id,
-      userId: r.user_id,
+      isMine: true,
       createdAt: new Date(r.created_at).getTime(),
       authorTitle: r.author_title,
       authorHouseKey: r.author_house_key,
