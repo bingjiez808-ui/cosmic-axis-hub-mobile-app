@@ -1,0 +1,338 @@
+/* Four Traditions page — readability without heavy black plates.
+   Purely presentational: no layout/business logic changes. */
+
+/* Frameless readable text: rely on soft text shadow instead of a black box */
+.trad-head,
+.trad-head p,
+.trad-head h1 {
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.75),
+    0 8px 28px rgba(0, 0, 0, 0.6);
+}
+
+.trad-copy {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+}
+
+/* Frosted-glass reading plate for each tradition chapter */
+.trad-glass {
+  position: relative;
+  border-radius: 26px;
+  background: linear-gradient(
+    160deg,
+    rgba(18, 19, 23, 0.62) 0%,
+    rgba(12, 13, 16, 0.5) 100%
+  );
+  border: 1px solid rgba(198, 161, 87, 0.14);
+  backdrop-filter: blur(18px) saturate(130%);
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+@supports not (backdrop-filter: blur(4px)) {
+  .trad-glass {
+    background: rgba(12, 13, 16, 0.86);
+  }
+}
+
+/* Responsive hero title, forced two lines, no accent colouring */
+.trad-h1 {
+  font-size: clamp(2.1rem, 9vw, 4.25rem);
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  font-weight: 400;
+}
+
+@media (min-width: 768px) {
+  .trad-h1 {
+    font-size: clamp(3rem, 5.2vw, 4.5rem);
+    line-height: 1.16;
+    letter-spacing: 0.03em;
+  }
+}
+
+.trad-h1-line {
+  display: block;
+  text-wrap: balance;
+}
+
+.trad-h1-line + .trad-h1-line {
+  margin-top: 0.16em;
+}
+
+
+/* Remaining structural panels stay, but glassy rather than black */
+.trad-panel {
+  position: relative;
+  border-radius: 20px;
+  background: rgba(14, 15, 18, 0.34);
+  border: 1px solid rgba(198, 161, 87, 0.16);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.24);
+}
+
+@supports not (backdrop-filter: blur(4px)) {
+  .trad-panel {
+    background: rgba(14, 15, 18, 0.6);
+  }
+}
+
+/* subtle gold sweep on hover for interactive panels */
+.trad-hover {
+  transition:
+    transform 0.45s cubic-bezier(0.32, 0.72, 0, 1),
+    border-color 0.35s ease,
+    box-shadow 0.45s ease;
+}
+
+.trad-hover:hover {
+  transform: translateY(-4px);
+  border-color: rgba(198, 161, 87, 0.45);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+}
+
+/* ── Chapter plates: frameless, alive ─────────────────────────── */
+.trad-plate {
+  position: relative;
+  display: block;
+  border-radius: 24px;
+  isolation: isolate;
+}
+
+.trad-plate-img {
+  position: relative;
+  z-index: 2;
+  display: block;
+  border-radius: 20px;
+  mix-blend-mode: screen;
+  filter: saturate(0.95) contrast(1.05) drop-shadow(0 18px 40px rgba(0, 0, 0, 0.55));
+  animation: trad-plate-float 11s ease-in-out infinite;
+  transition:
+    transform 1s cubic-bezier(0.32, 0.72, 0, 1),
+    filter 0.6s ease;
+  will-change: transform;
+}
+
+.trad-plate:hover .trad-plate-img {
+  transform: scale(1.045) rotate(0.4deg);
+  filter: saturate(1.08) contrast(1.1)
+    drop-shadow(0 22px 52px rgba(198, 161, 87, 0.22));
+}
+
+/* breathing golden halo behind the diagram */
+.trad-plate-halo {
+  position: absolute;
+  inset: -6%;
+  z-index: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(198, 161, 87, 0.22) 0%,
+    rgba(198, 161, 87, 0.08) 42%,
+    transparent 70%
+  );
+  filter: blur(14px);
+  animation: trad-halo-breathe 7.5s ease-in-out infinite;
+}
+
+/* slowly rotating dashed ring, like a turning dial */
+.trad-plate-ring {
+  position: absolute;
+  inset: 4%;
+  z-index: 1;
+  border-radius: 50%;
+  pointer-events: none;
+  border: 1px dashed rgba(198, 161, 87, 0.28);
+  opacity: 0.55;
+  animation: trad-ring-spin 48s linear infinite;
+  transition: opacity 0.5s ease;
+}
+
+.trad-plate:hover .trad-plate-ring {
+  opacity: 0.95;
+}
+
+@keyframes trad-plate-float {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-8px) scale(1.012); }
+}
+
+@keyframes trad-halo-breathe {
+  0%, 100% { opacity: 0.5; transform: scale(0.96); }
+  50% { opacity: 1; transform: scale(1.04); }
+}
+
+@keyframes trad-ring-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 767px) {
+  .trad-plate-img {
+    animation-duration: 13s;
+  }
+  .trad-plate-ring {
+    inset: 2%;
+  }
+}
+
+/* concept rows reveal a gold rail on hover */
+.trad-row {
+  position: relative;
+  transition: color 0.3s ease, padding-left 0.3s ease;
+}
+
+.trad-row::before {
+  content: "";
+  position: absolute;
+  left: -10px;
+  top: 10%;
+  bottom: 30%;
+  width: 2px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--gold-light, #e6c88a), transparent);
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform 0.35s ease;
+}
+
+.trad-row:hover::before {
+  transform: scaleY(1);
+}
+
+.trad-row:hover {
+  padding-left: 4px;
+}
+
+/* dimension tiles */
+.trad-tile {
+  transition:
+    transform 0.35s cubic-bezier(0.32, 0.72, 0, 1),
+    border-color 0.3s ease,
+    background-color 0.3s ease,
+    color 0.3s ease;
+}
+
+.trad-tile:hover {
+  transform: translateY(-3px) scale(1.02);
+  border-color: rgba(198, 161, 87, 0.5);
+  color: var(--gold-light, #e6c88a);
+}
+
+/* breathing dot used by the tradition tabs */
+.trad-pulse {
+  animation: trad-pulse 3.6s ease-in-out infinite;
+}
+
+@keyframes trad-pulse {
+  0%, 100% { opacity: 0.45; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.35); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trad-pulse,
+  .trad-plate-img,
+  .trad-plate-halo,
+  .trad-plate-ring {
+    animation: none;
+  }
+  .trad-hover:hover,
+  .trad-tile:hover { transform: none; }
+  .trad-plate:hover .trad-plate-img { transform: none; }
+}
+
+/* Section title that mirrors the hero's two-line typographic rhythm */
+.trad-h2-hero {
+  font-size: clamp(1.9rem, 7.6vw, 3.1rem);
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  font-weight: 400;
+}
+
+@media (min-width: 768px) {
+  .trad-h2-hero {
+    font-size: clamp(2.4rem, 4.2vw, 3.6rem);
+    line-height: 1.16;
+    letter-spacing: 0.03em;
+  }
+}
+
+/* ---- Four-tradition equal cards ---- */
+.trad-card {
+  display: flex;
+  flex-direction: column;
+  height: clamp(520px, 62vh, 640px);
+  padding: clamp(18px, 2.4vw, 30px);
+  border-radius: 1.5rem;
+  overflow: hidden;
+}
+
+.trad-card-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: flex-start;
+  gap: clamp(10px, 2vw, 20px);
+  padding-bottom: clamp(12px, 1.6vw, 18px);
+  border-bottom: 1px solid rgb(255 255 255 / 0.08);
+}
+
+.trad-card-title {
+  font-size: clamp(1.35rem, 1rem + 1.5vw, 2.1rem);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.trad-card-sub {
+  font-size: clamp(0.62rem, 0.55rem + 0.25vw, 0.78rem);
+  line-height: 1.6;
+}
+
+.trad-card-emblem {
+  width: clamp(64px, 9vw, 108px);
+  height: auto;
+  opacity: 0.78;
+  filter: drop-shadow(0 0 14px rgb(198 161 87 / 0.25));
+  animation: trad-emblem-breathe 9s ease-in-out infinite;
+}
+
+.trad-card:hover .trad-card-emblem {
+  opacity: 1;
+}
+
+@keyframes trad-emblem-breathe {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-4px) rotate(2.5deg); }
+}
+
+.trad-card-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: clamp(14px, 1.8vw, 20px) 4px 4px 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgb(198 161 87 / 0.45) transparent;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+}
+
+.trad-card-body::-webkit-scrollbar { width: 5px; }
+.trad-card-body::-webkit-scrollbar-track { background: transparent; }
+.trad-card-body::-webkit-scrollbar-thumb {
+  background: rgb(198 161 87 / 0.4);
+  border-radius: 999px;
+}
+
+.trad-card-text {
+  font-size: clamp(0.8rem, 0.72rem + 0.3vw, 0.95rem);
+}
+
+@media (max-width: 640px) {
+  .trad-card { height: clamp(440px, 78vh, 560px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trad-card-emblem { animation: none; }
+}
