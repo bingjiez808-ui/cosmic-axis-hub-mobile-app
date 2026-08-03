@@ -148,7 +148,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "theme-color", content: "#0a0a0f" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
-      { name: "apple-mobile-web-app-title", content: "Fate Nexus" },
+      { name: "apple-mobile-web-app-title", content: "命运图书馆" },
       { name: "format-detection", content: "telephone=no" },
       { title: "Library of Destiny — AI synthesis of four ancient traditions" },
       {
@@ -306,7 +306,7 @@ function RootComponent() {
           <AccountModal open={accOpen} onClose={() => setAccOpen(false)} />
           <LibrarySplash />
           <GlobalSageCompanion />
-          <InstallAppPrompt enabled={pathname.startsWith("/me/")} />
+          <InstallAppPrompt enabled={isAppSurface} />
         </AccountProvider>
 
       </LanguageProvider>
@@ -335,7 +335,7 @@ function InstallAppPrompt({ enabled }: { enabled: boolean }) {
     const standalone =
       window.matchMedia("(display-mode: standalone)").matches ||
       (navigator as Navigator & { standalone?: boolean }).standalone === true;
-    const dismissed = window.localStorage.getItem("fate-nexus-install-dismissed") === "1";
+    const dismissed = window.localStorage.getItem("destiny-library-install-dismissed") === "1";
     const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
     setIsIos(ios);
     setVisible(enabled && !standalone && !dismissed);
@@ -353,7 +353,7 @@ function InstallAppPrompt({ enabled }: { enabled: boolean }) {
   if (!enabled || !visible || (!installEvent && !isIos)) return null;
 
   const close = () => {
-    window.localStorage.setItem("fate-nexus-install-dismissed", "1");
+    window.localStorage.setItem("destiny-library-install-dismissed", "1");
     setVisible(false);
   };
 
@@ -365,16 +365,16 @@ function InstallAppPrompt({ enabled }: { enabled: boolean }) {
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium text-amber-100">
-            {isZh ? "把命运书房安装成 App" : "Install Fate Nexus as an app"}
+            {isZh ? "把命运图书馆安装到手机" : "Install Destiny Library"}
           </p>
           <p className="mt-1 text-xs leading-5 text-amber-100/65">
             {isIos
               ? isZh
-                ? "在 Safari 中点分享，然后选择“添加到主屏幕”。"
+                ? "在 Safari 中点击分享按钮，然后选择“添加到主屏幕”。"
                 : "In Safari, tap Share, then Add to Home Screen."
               : isZh
-                ? "安装后可从桌面直接进入好友、适配与每日书房。"
-                : "Open friends, matching and daily readings straight from your home screen."}
+                ? "安装后可从手机桌面直接进入命盘、今日、通识馆和读者证。"
+                : "Open charts, today, studies and reader card straight from your home screen."}
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             {installEvent && (

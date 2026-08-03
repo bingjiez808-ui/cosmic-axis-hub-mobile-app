@@ -3,7 +3,7 @@
  * Never caches API, auth, Supabase, AI, or any user-scoped response.
  */
 
-const VERSION = "fn-v1-2026-07-16";
+const VERSION = "destiny-library-mobile-v2-2026-08-03";
 const STATIC_CACHE = `static-${VERSION}`;
 
 // Only the offline shell + brand icons/manifest. App HTML is always
