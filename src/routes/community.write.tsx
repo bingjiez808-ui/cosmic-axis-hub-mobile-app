@@ -1,0 +1,738 @@
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useRef, useState } from "react";
+
+import { Button } from "@/components/ui/button";
+import {
+  HallGate,
+  HallHeader,} from "@/experiences/community-hall/HallShell";
+import { LetterPromptDeck } from "@/experiences/community-hall/LetterPromptDeck";
+
+import { useSendLetter } from "@/lib/community-hall-client";
+import { hallErrorCode, hallErrorMessage, type HallErrorCode } from "@/lib/community-hall-errors";
+import { useCommunityHall, type AgeBand } from "@/lib/i18n-community-hall";
+import { clearLetterDraft, loadLetterDraft, saveLetterDraft } from "@/lib/letter-draft";
+import { useAskSage, useSageEntitlement, useSendToLibrarian } from "@/lib/sage-council-client";
+import { SAGE_DOMAIN_LABEL, SAGE_PERSONAS } from "@/lib/sage-personas";
+import { sageSkill, sagesForTopic } from "@/lib/sage-skills";
+import {
+  LetterRulesNotice,
+  PrecheckWarning,
+} from "@/experiences/community-hall/LetterRulesNotice";
+import { safetyMessage, screenCommunityText } from "@/lib/community-hall-safety";
+import "@/experiences/community-hall/hall.css";
+
+const BODY_MIN = 30;
+const BODY_MAX = 1200;
+
+/**
+ * /community/write — the three-step writing desk.
+ * Step 1 writes the question, step 2 chooses which chapter of life should
+ * read it, step 3 previews the sealed envelope and sends. Validation is
+ * inline; the send result gets its own screen rather than a toast, so the
+ * traveler always knows where the letter went.
+ */
+export const Route = createFileRoute("/community/write")({
+  head: () => ({
+    meta: [
+      { title: "寄信台 · 众生之厅 — Write a letter | Library of Destiny" },
+      {
+        name: "description",
+        content:
+          "写下此刻的问题，选择你想询问的人生阶段，匿名寄出。Write a question and send it anonymously to a chapter of life.",
+      },
+      { property: "og:title", content: "寄信台 · 众生之厅" },
+      { property: "og:description", content: "把一个问题，寄给走过这段路的人。" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex,nofollow" },
+    ],
+  }),
+  component: WriteLetterPage,
+});
+
+function WriteLetterPage() {
+  const c = useCommunityHall();
+  return (
+    <main className="mx-auto w-full max-w-[430px] px-4 pb-28 pt-[calc(env(safe-area-inset-top)+0.75rem)]">
+      <HallHeader title={c.writeTitle} subtitle={c.writeIntro} />
+      <HallGate>
+        <WriteFlow />
+      </HallGate>
+    </main>
+  );
+}
+
+type Sent = { pendingReview: boolean; delivered: number; dest: Destination; reply?: string | null };
+
+/**
+ * Where the letter goes. Four doors, chosen in step 2:
+ *   courier   — private delivery to a few strangers in the chosen chapter
+ *   wall      — pinned on the public board, anyone may answer
+ *   sage      — a historical persona answers (贤者 membership)
+ *   librarian — lands on the librarian's desk, who answers or entrusts it
+ */
+type Destination = "courier" | "wall" | "sage" | "librarian";
+
+function WriteFlow() {
+  const c = useCommunityHall();
+  const navigate = useNavigate();
+  const send = useSendLetter();
+  const askSage = useAskSage();
+  const sendLibrarian = useSendToLibrarian();
+  const entitlement = useSageEntitlement();
+
+  // Restore any unsent draft synchronously on first client render so a refresh
+  // never loses what the traveler already wrote.
+  const [restored] = useState(() => loadLetterDraft());
+
+  const [step, setStep] = useState<1 | 2 | 3>(restored?.step ?? 1);
+  const [subject, setSubject] = useState(restored?.subject ?? "");
+  const [body, setBody] = useState(restored?.body ?? "");
+  const [topic, setTopic] = useState<string>(restored?.topic ?? "self");
+  const [band, setBand] = useState<AgeBand | null>((restored?.band as AgeBand | null) ?? null);
+  const [dest, setDest] = useState<Destination>("courier");
+  const [personaId, setPersonaId] = useState<string>(SAGE_PERSONAS[0].id);
+  const [agree, setAgree] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<HallErrorCode | null>(null);
+  const [sent, setSent] = useState<Sent | null>(null);
+  const [savedAt, setSavedAt] = useState<number | null>(restored?.savedAt ?? null);
+  const [draftRestored, setDraftRestored] = useState(Boolean(restored?.body));
+  const sentRef = useRef(false);
+  sentRef.current = Boolean(sent);
+
+  const length = body.trim().length;
+
+  // Debounced autosave of the in-progress letter.
+  useEffect(() => {
+    if (sentRef.current) return;
+    if (!subject && !body && !band && step === 1) return;
+    const t = window.setTimeout(() => {
+      const at = saveLetterDraft({ step, subject, body, topic, band });
+      if (at) setSavedAt(at);
+    }, 500);
+    return () => window.clearTimeout(t);
+  }, [step, subject, body, topic, band]);
+
+  function discardDraft() {
+    clearLetterDraft();
+    setSubject("");
+    setBody("");
+    setBand(null);
+    setStep(1);
+    setSavedAt(null);
+    setDraftRestored(false);
+    setError(null);
+  }
+
+  const savedLabel =
+    savedAt === null
+      ? null
+      : c.lang === "en"
+        ? `Draft saved ${new Date(savedAt).toLocaleTimeString()}`
+        : `草稿已保存 ${new Date(savedAt).toLocaleTimeString()}`;
+
+
+  function goStepTwo() {
+    if (length < BODY_MIN) return setError(c.bodyTooShort(BODY_MIN));
+    if (length > BODY_MAX) return setError(c.tooLong);
+    const verdict = screenCommunityText(`${subject}\n${body}`);
+    if (verdict.action === "block") {
+      return setError(
+        c.lang === "en"
+          ? "This letter contains content the hall cannot carry — political violations, illegal acts, sexual content, abuse or contact details. Please revise it."
+          : safetyMessage(verdict.categories),
+      );
+    }
+    setError(null);
+    setStep(2);
+  }
+
+  const zh = c.lang !== "en";
+  const entitledForSage = Boolean(entitlement.data?.entitled);
+  const humanCredits = entitlement.data?.credits?.remaining ?? 0;
+  const sageCredits = entitlement.data?.credits?.sageRemaining ?? 0;
+  const busy = send.isPending || askSage.isPending || sendLibrarian.isPending;
+
+  // Only these doors route the letter to living readers, so only they need a
+  // chapter of life. A sage answers whoever wrote, regardless of age.
+  const needsBand = dest !== "sage";
+
+  function goStepThree() {
+    if (needsBand && !band) return setError(c.required);
+    if ((dest === "sage" || dest === "librarian") && !entitledForSage) {
+      return setError(
+        zh
+          ? "先贤回信与图书管理员亲自回信，都需要开通「贤者」会员。"
+          : "Sage letters and the librarian's personal reply both require the Sage membership.",
+      );
+    }
+    if (dest === "librarian" && humanCredits <= 0) {
+      return setError(
+        zh
+          ? "「管理员授权」次数已用完。可在「回信权益」加购（3 元 1 次 / 10 元 4 次），或先寄给信使、张贴到信墙。"
+          : "No librarian-authorised replies left. Top up on the grants page (¥3 for one, ¥10 for four), or use the courier or the wall.",
+      );
+    }
+    if (dest === "sage" && sageCredits <= 0) {
+      return setError(
+        zh
+          ? "「先贤回信」次数已用完。可在「回信权益」加购：3 元 1 次，10 元 4 次。"
+          : "No sage replies left. Top up on the grants page: ¥3 for one, ¥10 for four.",
+      );
+    }
+    setError(null);
+    setStep(3);
+  }
+
+  async function submit() {
+    if (!agree || (needsBand && !band)) return setError(c.required);
+    const sendBand: AgeBand = band ?? "30-39";
+    try {
+      setErrorCode(null);
+      if (dest === "sage") {
+        const result = await askSage.mutateAsync({
+          personaId,
+          subject: subject.trim() || null,
+          body: body.trim(),
+          topic,
+          targetAgeBand: sendBand,
+          lang: zh ? "zh" : "en",
+        });
+        finishSend({ pendingReview: result.pendingReview, delivered: 0, dest, reply: result.reply });
+        return;
+      }
+      if (dest === "librarian") {
+        const result = await sendLibrarian.mutateAsync({
+          subject: subject.trim() || null,
+          body: body.trim(),
+          topic,
+          targetAgeBand: sendBand,
+        });
+        finishSend({ pendingReview: result.pendingReview, delivered: 0, dest });
+        return;
+      }
+      const result = await send.mutateAsync({
+        subject: subject.trim() || null,
+        body: body.trim(),
+        topic,
+        targetAgeBand: sendBand,
+        visibility: dest === "wall" ? "wall" : "delivered_only",
+      });
+      finishSend({ pendingReview: result.pendingReview, delivered: result.delivered, dest });
+    } catch (err) {
+      setErrorCode(hallErrorCode(err));
+      setError(hallErrorMessage(err, c.lang));
+    }
+  }
+
+  function finishSend(next: Sent) {
+    setError(null);
+    sentRef.current = true;
+    clearLetterDraft();
+    setSavedAt(null);
+    setDraftRestored(false);
+    setSent(next);
+  }
+
+  if (sent) {
+    const outcome: Record<Destination, { body: string; note: string; to: string; cta: string }> = {
+      courier: {
+        body: c.sentBody,
+        note: `${c.deliveredCount} ${sent.delivered} ${c.people}`,
+        to: "/community/echoes",
+        cta: c.sentGoEchoes,
+      },
+      wall: {
+        body: zh
+          ? "你的信已经张贴在公共信墙上，厅中任何人都能读到，并选择是否回信。"
+          : "Your letter is now pinned on the public wall. Anyone in the hall may read it and choose to answer.",
+        note: zh ? "全厅可见" : "Visible to everyone in the hall",
+        to: "/community/wall",
+        cta: zh ? "去信墙看看" : "See it on the wall",
+      },
+      sage: {
+        body: zh
+          ? "先贤已就着自己的生平与主张，为你写下一封回信。"
+          : "The sage has written back, drawing on their own documented life and arguments.",
+        note: zh ? "回信已在先贤案前" : "The reply is waiting at the sages' desk",
+        to: "/community/sages",
+        cta: zh ? "读这封回信" : "Read the reply",
+      },
+      librarian: {
+        body: zh
+          ? "信已经放在图书管理员的案头，本月一次真人回复已记在你的名下。他会亲自回信，或把它托付给一位愿意接信的旅者——对方看到的只有你的旅者代号。"
+          : "Your letter is on the librarian's desk and one of your three gifted human replies is now reserved for you. They will answer it themselves, or entrust it to a traveler who offered to help — either way, all they see is your traveler alias.",
+        note: zh ? "等待图书管理员亲自回信" : "Waiting on the librarian's personal reply",
+        to: "/community/sages",
+        cta: zh ? "去我的案前查看" : "See my desk",
+      },
+    };
+    const o = outcome[sent.dest];
+    return (
+      <section className="hall-paper hall-open-in mt-8 p-8 text-center">
+        <p className="hall-eyebrow">{c.hallEyebrow}</p>
+        <h2 className="hall-section-title mt-4">{c.sentTitle}</h2>
+        <p className="mx-auto mt-4 max-w-md text-pretty text-sm leading-relaxed text-muted-foreground">
+          {sent.pendingReview ? c.pendingReview : o.body}
+        </p>
+        {!sent.pendingReview ? (
+          <p className="mt-3 text-xs text-primary/80">{o.note}</p>
+        ) : null}
+        {sent.reply ? (
+          <div className="hall-paper hall-envelope mt-6 p-5 text-left">
+            <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">{sent.reply}</p>
+          </div>
+        ) : null}
+        <div className="mt-7 flex flex-wrap justify-center gap-3">
+          <Button asChild className="hall-tap">
+            <Link to={o.to}>{o.cta}</Link>
+          </Button>
+          <Button
+            variant="outline"
+            className="hall-tap"
+            onClick={() => {
+              setSent(null);
+              setSubject("");
+              setBody("");
+              setBand(null);
+              setAgree(false);
+              setStep(1);
+            }}
+          >
+            {c.sentWriteAnother}
+          </Button>
+          <Button variant="ghost" className="hall-tap" onClick={() => void navigate({ to: "/community/outbox" })}>
+            {c.sectionOutbox}
+          </Button>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="hall-paper mt-8 p-5 sm:p-6">
+      <p className="text-[0.7rem] uppercase tracking-[0.3em] text-primary/70">{c.stepOfThree(step)}</p>
+      <ol className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
+        {[c.stepOne, c.stepTwo, c.stepThree].map((label, i) => (
+          <li
+            key={label}
+            className={`rounded-full px-3 py-1 transition ${
+              step === i + 1 ? "bg-primary/15 text-primary" : "bg-background/60"
+            }`}
+          >
+            {i + 1}. {label}
+          </li>
+        ))}
+      </ol>
+
+      {savedLabel ? (
+        <div className="hall-inset mt-3 flex flex-wrap items-center gap-3 px-3 py-2 text-xs text-muted-foreground">
+          <span className="text-primary/80">
+            {draftRestored
+              ? c.lang === "en"
+                ? "Unsent draft restored."
+                : "已恢复上次未寄出的草稿。"
+              : savedLabel}
+          </span>
+          <button type="button" onClick={discardDraft} className="hall-tap underline underline-offset-4 hover:text-foreground">
+            {c.lang === "en" ? "Discard draft" : "清除草稿"}
+          </button>
+        </div>
+      ) : null}
+
+
+      {step === 1 ? (
+        <div className="hall-rise mt-6 space-y-5">
+          <div>
+            <span className="text-sm font-medium text-foreground">{c.fieldTopic}</span>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {c.topics.map((t) => (
+                <button
+                  key={t.key}
+                  type="button"
+                  onClick={() => setTopic(t.key)}
+                  className={`hall-tap rounded-full border px-3.5 py-2 text-xs transition ${
+                    topic === t.key
+                      ? "border-primary/50 bg-primary/15 text-primary"
+                      : "border-primary/15 text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <LetterPromptDeck
+            topic={topic}
+            onPick={(p) => {
+              setSubject(p.subject.slice(0, 80));
+              setBody(p.body.slice(0, BODY_MAX));
+              setError(null);
+            }}
+          />
+          <label className="block">
+            <span className="text-sm font-medium text-foreground">{c.fieldSubject}</span>
+            <input
+              value={subject}
+              onChange={(e) => setSubject(e.target.value.slice(0, 80))}
+              placeholder={c.fieldSubjectHint}
+              className="hall-field hall-tap mt-2 text-base sm:text-sm"
+            />
+          </label>
+          <label className="block">
+            <span className="text-sm font-medium text-foreground">{c.fieldBody}</span>
+            <textarea
+              value={body}
+              onChange={(e) => setBody(e.target.value.slice(0, BODY_MAX))}
+              rows={9}
+              placeholder={c.echoPlaceholder}
+              className="hall-field mt-2 resize-y text-base sm:text-sm"
+            />
+            <span
+              className={`mt-1 block text-right text-xs ${
+                length > 0 && length < BODY_MIN ? "text-primary/80" : "text-muted-foreground"
+              }`}
+            >
+              {c.bodyCounter(length, BODY_MAX)}
+            </span>
+          </label>
+
+          <PrecheckWarning text={`${subject}\n${body}`} />
+          <LetterRulesNotice />
+
+          {error ? <p className="text-sm text-destructive">{error}</p> : null}
+          <Button className="hall-tap w-full sm:w-auto" onClick={goStepTwo}>
+            {c.next}
+          </Button>
+        </div>
+      ) : null}
+
+      {step === 2 ? (
+        <div className="hall-rise mt-6 space-y-5">
+          <div>
+            <p className="text-sm font-medium text-foreground">
+              {zh ? "这封信寄给谁？" : "Who should receive this letter?"}
+            </p>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+              {zh
+                ? "无论寄往哪一扇门，来往都只以旅者身份署名——对方看到的永远是你的代号，不是你的账号。"
+                : "Whichever door you choose, every letter travels under your traveler identity — the other side only ever sees your alias, never your account."}
+            </p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              {(
+                [
+                  {
+                    key: "courier" as const,
+                    title: zh ? "交给信使定向投递" : "Hand it to the courier",
+                    body: zh
+                      ? "私密。信使会把它分批送给你选定人生阶段中的少数陌生旅者，只有收到的人能回信。免费，但可能较慢，也不保证有回音。"
+                      : "Private. The courier delivers it to a few strangers in the chapter of life you chose; only they can answer. Free — but slower, and a reply is never guaranteed.",
+                    locked: false,
+                  },
+                  {
+                    key: "wall" as const,
+                    title: zh ? "张贴到公共信墙" : "Pin it on the public wall",
+                    body: zh
+                      ? "公开。厅中所有人都能读到，谁想回就回。依然匿名，只显示你的旅者代号。免费。"
+                      : "Open. Everyone in the hall can read it and decide whether to answer. Still anonymous — only your traveler alias shows. Free.",
+                    locked: false,
+                  },
+                  {
+                    key: "sage" as const,
+                    title: zh ? "请一位历代先贤回信" : "Ask a sage of the past",
+                    body: zh
+                      ? `十二位已故思想者依其生平与语气回信。需「贤者」会员，开通即赠 2 次（剩 ${sageCredits} 次），可加购 3 元 1 次 / 10 元 4 次。`
+                      : `One of twelve long-dead thinkers answers in their own documented voice. Requires the Sage membership; two gifted replies (${sageCredits} left), extras ¥3 each or ¥10 for four.`,
+                    locked: !entitledForSage || sageCredits <= 0,
+                  },
+                  {
+                    key: "librarian" as const,
+                    title: zh ? "请图书管理员亲自回信" : "Ask the librarian to write back",
+                    body: zh
+                      ? `管理员授权的真人回信：图书管理员亲自回复，或托付给一位愿意接信的旅者。需「贤者」会员，开通即赠 1 次（剩 ${humanCredits} 次），可加购 3 元 1 次 / 10 元 4 次。`
+                      : `A librarian-authorised human reply: the librarian answers, or entrusts a traveler who offered to help. Requires the Sage membership; one gifted reply (${humanCredits} left), extras ¥3 each or ¥10 for four.`,
+                    locked: !entitledForSage || humanCredits <= 0,
+                  },
+                ]
+              ).map((option) => (
+                <button
+                  key={option.key}
+                  type="button"
+                  onClick={() => setDest(option.key)}
+                  aria-pressed={dest === option.key}
+                  className={`hall-tap rounded-2xl border p-4 text-left transition ${
+                    dest === option.key
+                      ? "border-primary/50 bg-primary/10"
+                      : "border-primary/15 bg-background/60 hover:border-primary/30"
+                  }`}
+                >
+                  <span className="block text-sm font-semibold text-foreground">
+                    {option.title}
+                    {option.locked ? (
+                      <span className="ml-2 rounded-full border border-primary/30 px-2 py-0.5 text-[0.62rem] text-primary/80">
+                        {!entitledForSage
+                          ? zh
+                            ? "贤者会员"
+                            : "Sage only"
+                          : zh
+                            ? "本月已用完"
+                            : "No grants left"}
+                      </span>
+                    ) : null}
+                  </span>
+                  <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
+                    {option.body}
+                  </span>
+                </button>
+              ))}
+            </div>
+            {dest === "sage" ? (
+              entitledForSage ? (
+                <div className="mt-4">
+                  <p className="text-sm font-medium text-foreground">
+                    {zh ? "选择一位先贤" : "Choose a sage"}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {zh
+                      ? `按你选的主题「${c.topic(topic)}」，下列带 ✦ 的先贤本领最对得上。`
+                      : `For "${c.topic(topic)}", the sages marked ✦ carry the closest skill.`}
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {[...SAGE_PERSONAS]
+                      .sort((a, b) => {
+                        const rec = sagesForTopic(topic as never);
+                        return Number(rec.includes(b.id)) - Number(rec.includes(a.id));
+                      })
+                      .map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => setPersonaId(p.id)}
+                        aria-pressed={personaId === p.id}
+                        className={`hall-tap rounded-full border px-3.5 py-2 text-xs transition ${
+                          personaId === p.id
+                            ? "border-primary/50 bg-primary/15 text-primary"
+                            : "border-primary/15 text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {sagesForTopic(topic as never).includes(p.id) ? (
+                          <span className="mr-1 text-primary">✦</span>
+                        ) : null}
+                        {zh ? p.name.zh : p.name.en}
+                        <span className="ml-1 opacity-60">
+                          {SAGE_DOMAIN_LABEL[p.domain][zh ? "zh" : "en"]}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                  {sageSkill(personaId) ? (
+                    <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                      <span className="text-primary/90">
+                        {zh
+                          ? `本领 · ${sageSkill(personaId)!.name.zh}`
+                          : `Skill · ${sageSkill(personaId)!.name.en}`}
+                      </span>
+                      {" — "}
+                      {zh ? sageSkill(personaId)!.summary.zh : sageSkill(personaId)!.summary.en}
+                    </p>
+                  ) : null}
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {zh
+                      ? `先贤回信剩 ${sageCredits} 次（开通即赠 2 次）。用完可加购：3 元 1 次，10 元 4 次。`
+                      : `${sageCredits} sage replies left (2 gifted on joining). Extras: ¥3 for one, ¥10 for four.`}
+                    <Link
+                      to="/community/grants"
+                      className="hall-tap ml-2 underline underline-offset-4 hover:text-foreground"
+                    >
+                      {zh ? "去加购" : "Top up"}
+                    </Link>
+                  </p>
+                </div>
+              ) : (
+                <div className="hall-inset mt-4 flex flex-wrap items-center gap-3 px-4 py-3 text-xs text-muted-foreground">
+                  <span>
+                    {zh
+                      ? "先贤回信为「贤者」会员权益。"
+                      : "Sage replies are part of the Sage membership."}
+                  </span>
+                  <Link
+                    to="/me/membership"
+                    className="hall-tap underline underline-offset-4 hover:text-foreground"
+                  >
+                    {zh ? "了解贤者会员" : "See the Sage membership"}
+                  </Link>
+                </div>
+              )
+            ) : null}
+            {dest === "librarian" ? (
+              <div className="hall-inset mt-4 flex flex-wrap items-center gap-3 px-4 py-3 text-xs text-muted-foreground">
+                <span>
+                  {!entitledForSage
+                    ? zh
+                      ? "「管理员授权」为「贤者」会员权益：开通即赠 1 次，之后 3 元 1 次、10 元 4 次。"
+                      : "The librarian-authorised reply is a Sage benefit: one gifted on joining, then ¥3 each or ¥10 for four."
+                    : zh
+                      ? `还剩 ${humanCredits} 次管理员授权。寄出后会立即扣除一次，用完可加购。`
+                      : `${humanCredits} librarian-authorised replies left. Sending spends one; top up any time.`}
+                </span>
+                {!entitledForSage ? (
+                  <Link
+                    to="/me/membership"
+                    className="hall-tap underline underline-offset-4 hover:text-foreground"
+                  >
+                    {zh ? "了解贤者会员" : "See the Sage membership"}
+                  </Link>
+                ) : (
+                  <Link
+                    to="/community/grants"
+                    className="hall-tap underline underline-offset-4 hover:text-foreground"
+                  >
+                    {humanCredits > 0
+                      ? zh
+                        ? "查看使用记录"
+                        : "See usage history"
+                      : zh
+                        ? "去领取本月赠送"
+                        : "Claim your gifted replies"}
+                  </Link>
+                )}
+
+              </div>
+            ) : null}
+          </div>
+
+          {needsBand ? (
+            <div className="hall-rise pt-2">
+              <p className="text-sm font-medium text-foreground">
+                {zh ? "希望哪一段人生的人来回答？" : "Which chapter of life should answer?"}
+              </p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                {dest === "courier"
+                  ? zh
+                    ? "信使只会把这封信送给这一阶段的旅者。"
+                    : "The courier only delivers to travelers in this chapter."
+                  : dest === "wall"
+                    ? zh
+                      ? "信墙上所有人都能读到，这个阶段只作为推荐回答的标签。"
+                      : "Everyone can read it on the wall; this only marks who is best placed to answer."
+                    : zh
+                      ? "图书管理员若把这封信托付给旅者，会优先找这一阶段的人。"
+                      : "If the librarian entrusts it, they will look for a traveler in this chapter first."}
+              </p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                {c.bands.map((b) => (
+                  <button
+                    key={b.key}
+                    type="button"
+                    onClick={() => setBand(b.key)}
+                    aria-pressed={band === b.key}
+                    className={`hall-tap rounded-2xl border p-4 text-left transition ${
+                      band === b.key
+                        ? "border-primary/50 bg-primary/10"
+                        : "border-primary/15 bg-background/60 hover:border-primary/30"
+                    }`}
+                  >
+                    <span className="block text-sm font-semibold text-foreground">{b.label}</span>
+                    <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
+                      {b.invite}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p className="hall-inset mt-2 px-4 py-3 text-xs leading-relaxed text-muted-foreground">
+              {zh
+                ? "先贤回信不需要选择人生阶段——他会就着你信里的处境作答。"
+                : "A sage does not need a chapter of life; they answer the situation in your letter."}
+            </p>
+          )}
+
+          {dest === "courier" ? (
+            <p className="hall-inset px-4 py-3 text-xs leading-relaxed text-primary/85">
+              {zh
+                ? "关于信使定向投递：信要等对方打开信箱、愿意提笔才会有回音，可能会比较慢，也不保证每封信都能等到回复。想更快被更多人看到，可以改为张贴到公共信墙。"
+                : "About courier delivery: an echo only comes when a stranger opens their box and chooses to write back. It can take a while, and not every letter gets an answer. For faster, wider reach, pin it on the public wall instead."}
+            </p>
+          ) : null}
+
+          <p className="text-xs text-muted-foreground">{c.autoExpire}</p>
+          {error ? <p className="text-sm text-destructive">{error}</p> : null}
+          <div className="flex gap-3">
+            <Button variant="ghost" className="hall-tap" onClick={() => setStep(1)}>
+              {c.back}
+            </Button>
+            <Button className="hall-tap flex-1 sm:flex-none" onClick={goStepThree}>
+              {c.next}
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
+      {step === 3 ? (
+        <div className="hall-rise mt-6 space-y-5">
+          <div className="hall-paper hall-envelope p-5" data-unread="true">
+            <p className="text-xs text-muted-foreground">
+              {c.previewTo} {band ? `${c.ageBand(band)} · ` : ""}{c.topic(topic)} ·{" "}
+              <span className="text-primary/80">
+                {dest === "wall"
+                  ? zh
+                    ? "公共信墙"
+                    : "public wall"
+                  : dest === "sage"
+                    ? (zh ? "先贤 · " : "Sage · ") +
+                      (SAGE_PERSONAS.find((p) => p.id === personaId)?.name[zh ? "zh" : "en"] ?? "")
+                    : dest === "librarian"
+                      ? zh
+                        ? "图书管理员"
+                        : "the librarian"
+                      : zh
+                        ? "信使定向投递"
+                        : "courier delivery"}
+              </span>
+            </p>
+            <h3 className="hall-card-title mt-2">
+              {subject.trim() || c.topic(topic)}
+            </h3>
+            <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">
+              {body.trim()}
+            </p>
+          </div>
+          <p className="text-xs leading-relaxed text-muted-foreground">{c.previewSealHint}</p>
+          <label className="flex items-start gap-3 text-sm text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={agree}
+              onChange={(e) => setAgree(e.target.checked)}
+              className="mt-1 h-4 w-4"
+            />
+            <span>{c.agreeRules}</span>
+          </label>
+          {error ? (
+            <div className="space-y-2">
+              <p className="text-sm text-destructive">{error}</p>
+              {errorCode === "duplicate_submission" || errorCode === "daily_letter_limit" ? (
+                <Button asChild variant="outline" size="sm" className="hall-tap">
+                  <Link to="/community/outbox">{c.sectionOutbox}</Link>
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
+          <div className="flex gap-3">
+            <Button variant="ghost" className="hall-tap" onClick={() => setStep(2)}>
+              {c.back}
+            </Button>
+            <Button
+              className="hall-tap flex-1 sm:flex-none"
+              disabled={!agree || busy}
+              onClick={() => void submit()}
+            >
+              {busy ? c.sending : c.seal}
+            </Button>
+          </div>
+        </div>
+      ) : null}
+    </section>
+  );
+}

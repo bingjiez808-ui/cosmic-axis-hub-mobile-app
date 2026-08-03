@@ -1,0 +1,16 @@
+/* Reader's Pass — 3D lanyard container. Sized by parent, not full viewport. */
+.reader-pass-lanyard {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  pointer-events: none;
+  touch-action: pan-y;
+}
+
+.reader-pass-lanyard canvas {
+  pointer-events: auto;
+  touch-action: none;
+}
