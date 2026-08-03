@@ -1,0 +1,1 @@
+var e=`/assets/tree-of-destiny-AVuf_liv.jpg`;export{e as t};

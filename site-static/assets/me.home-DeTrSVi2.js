@@ -1,0 +1,1 @@
+/* empty css                         */import{s as e}from"./index-DKjC1Ole.js";var t=e;export{t as errorComponent};

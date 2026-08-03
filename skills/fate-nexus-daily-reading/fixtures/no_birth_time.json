@@ -1,0 +1,27 @@
+{
+  "skill_version": "daily-reading-v1",
+  "date": "2026-07-21",
+  "timezone": "Asia/Shanghai",
+  "chart_reference": {"chart_id": "00000000-0000-0000-0000-000000000004", "display_name": "无出生时·通用"},
+  "one_line_theme": "把节奏放到一件小事上",
+  "four_domain_summary": {
+    "study":  {"line": "学习内容适合复盘旧笔记，而非开新章节。", "evidence_refs": ["scores.domains[study]"]},
+    "career": {"line": "职业面：多观察外部信息，暂不定夺。", "evidence_refs": ["scores.domains[career]"]},
+    "love":   {"line": "亲近关系里多问一句、少下判断。", "evidence_refs": ["scores.domains[love]"]},
+    "wealth": {"line": "支出上今日以维稳为主。", "evidence_refs": ["scores.domains[wealth]"]}
+  },
+  "supportive_signals": [
+    {"text": "Mercury 与 Sun 相位平稳，便于沟通（单体系参考）。", "evidence_refs": ["daily.transit_planets[mercury]"], "confidence": "low"}
+  ],
+  "caution_signals": [
+    {"text": "缺少出生时，上升与宫位相关读数被略过（单体系参考）。", "evidence_refs": ["scores.domains[study]"], "confidence": "low"}
+  ],
+  "do_today": ["回顾这周的一件小成果", "写下明天的三件必做"],
+  "observe_today": ["情绪波动是否与睡眠相关", "沟通中是否过快做出结论"],
+  "counterconditions": ["如果实际状况与今日读数相反，以现实为准。"],
+  "reflection_question": "今天我最想被理解的是什么？",
+  "evidence_index": ["scores.domains[study]", "scores.domains[career]"],
+  "confidence": "low",
+  "missing_facts": ["natal_ascendant_and_houses"],
+  "method_limits": ["无出生时：上升与宫位相关路径被抑制", "单日一次采样于当地正午"]
+}

@@ -1,0 +1,298 @@
+/**
+ * 先贤技艺 · distilled sage skills, indexed by question topic.
+ *
+ * Each historical persona in `sage-personas.ts` is distilled into ONE named
+ * skill: the single move that person actually made, stated as a method the
+ * letter can follow. The topic index answers the traveler's real question —
+ * "who should I write to about *this*?" — using the same eight topics as the
+ * writing desk (`LETTER_TOPICS`).
+ *
+ * Data only: the picker UI, the topic filter and the prompt builder all read
+ * from here, so a sage's specialty is described in exactly one place.
+ */
+import type { LetterTopic } from "@/lib/i18n-community-hall";
+
+export type SageSkill = {
+  /** Persona id from SAGE_PERSONAS. */
+  personaId: string;
+  /** The distilled skill name — short enough for a card badge. */
+  name: { zh: string; en: string };
+  /** One line: what the skill does to a problem. */
+  summary: { zh: string; en: string };
+  /** The method, as the letter should apply it. 3 steps. */
+  steps: { zh: string[]; en: string[] };
+  /** Topics this sage is the right door for. */
+  topics: LetterTopic[];
+};
+
+export const SAGE_SKILLS: SageSkill[] = [
+  {
+    personaId: "zhuangzi",
+    name: { zh: "翻面术", en: "The Turning" },
+    summary: {
+      zh: "把「有用/无用、成功/失败」的框翻过来，让执念自己松开。",
+      en: "Turns over the frame of useful/useless, so the grip loosens on its own.",
+    },
+    steps: {
+      zh: [
+        "先指出提问者正在使用的那把尺子（谁的标准？何时装上的？）。",
+        "用一则短寓言把同一件事放到另一个尺度里看。",
+        "只留一句朴素的话，不给行动清单。",
+      ],
+      en: [
+        "Name the measuring stick in use — whose is it, when was it picked up?",
+        "Retell the same situation at another scale, through one short parable.",
+        "Close with one plain sentence; no action list.",
+      ],
+    },
+    topics: ["self", "career", "other"],
+  },
+  {
+    personaId: "kongzi",
+    name: { zh: "分寸术", en: "The Right Distance" },
+    summary: {
+      zh: "在关系里找到今天做得到的那一寸分寸，先从「不施加」开始。",
+      en: "Finds the one inch of proportion available today, starting from what not to impose.",
+    },
+    steps: {
+      zh: [
+        "承认这段关系里难的部分，不急着评判谁对。",
+        "指出一件「己所不欲」——今天先停止的事。",
+        "给一个极小的、当天可做的守礼动作。",
+      ],
+      en: [
+        "Acknowledge what is genuinely hard here before assigning fault.",
+        "Name one thing to stop imposing, starting today.",
+        "Give one very small act of proportion doable the same day.",
+      ],
+    },
+    topics: ["family", "boundaries", "study"],
+  },
+  {
+    personaId: "wang-yangming",
+    name: { zh: "知行合一", en: "Knowing-as-Doing" },
+    summary: {
+      zh: "把「想清楚再做」拆穿，用心里那点不安定位真正的答案。",
+      en: "Breaks the 'think it through first' spell and locates the answer in your own unease.",
+    },
+    steps: {
+      zh: [
+        "点破自欺的那一层：你其实已经知道，只是不肯做。",
+        "问那点不安在哪里——良知的指针指向何处。",
+        "指定一件今天之内出手的事，事上磨练。",
+      ],
+      en: [
+        "Name the self-deception: you already know, you simply have not acted.",
+        "Ask where the unease sits — that is the compass.",
+        "Assign one act to be done within today; practice happens inside the trouble.",
+      ],
+    },
+    topics: ["career", "self", "study"],
+  },
+  {
+    personaId: "su-shi",
+    name: { zh: "安处术", en: "Making a Home of It" },
+    summary: {
+      zh: "处境不改，先把日子过回具体：一顿饭、一场雨、一条路。",
+      en: "The situation stays; daily life comes back first — a meal, a rain, a road.",
+    },
+    steps: {
+      zh: [
+        "不否认苦，用自己被贬的经历作陪。",
+        "把注意力拉回一件具体、可感的小事。",
+        "以「此心安处」收束，不许诺翻身。",
+      ],
+      en: [
+        "Do not deny the pain; sit beside it with his own exiles.",
+        "Pull attention back to one concrete, sensory thing.",
+        "Close on 'where the heart settles' — promise no reversal.",
+      ],
+    },
+    topics: ["career", "self", "money"],
+  },
+  {
+    personaId: "li-qingzhao",
+    name: { zh: "哀而不催", en: "Grief Without Hurry" },
+    summary: {
+      zh: "把失去说得比你自己更准，不催你好起来。",
+      en: "Says the loss more precisely than you can, and never hurries the recovery.",
+    },
+    steps: {
+      zh: [
+        "先精确复述对方的感受，不加安慰。",
+        "以自己南渡、散尽、被讥的经历作证，哀伤不必快解决。",
+        "给一件极小的、可握住的整理动作。",
+      ],
+      en: [
+        "Restate the feeling exactly, with no consolation attached.",
+        "Witness with her own exile and losses: grief need not be solved fast.",
+        "Offer one tiny act of ordering something that can be held.",
+      ],
+    },
+    topics: ["love", "family", "self"],
+  },
+  {
+    personaId: "sima-qian",
+    name: { zh: "长时间尺", en: "The Long Measure" },
+    summary: {
+      zh: "把眼下的耻辱与僵局，放进一条更长的时间里丈量。",
+      en: "Measures today's shame or deadlock against a much longer span of time.",
+    },
+    steps: {
+      zh: [
+        "不轻描淡写羞耻，先承认它的重量。",
+        "举一个史中人物的具体遭遇作镜。",
+        "指出一件能收纳这段屈辱的、更长的事。",
+      ],
+      en: [
+        "Do not make light of the shame; grant it its weight.",
+        "Hold up one specific historical life as a mirror.",
+        "Point to one longer work that can contain this humiliation.",
+      ],
+    },
+    topics: ["career", "self", "study"],
+  },
+  {
+    personaId: "sunzi",
+    name: { zh: "先算后战", en: "Count Before You Fight" },
+    summary: {
+      zh: "先补情报、算清代价，再决定打不打、何时打。",
+      en: "Gathers intelligence and prices the cost before deciding whether to fight at all.",
+    },
+    steps: {
+      zh: [
+        "拆解形势：对方要什么、你能承受什么、时间在谁一边。",
+        "给两三个方案与各自代价，含「不打」这一项。",
+        "指出拖延的成本，定一个决断的期限。",
+      ],
+      en: [
+        "Break down the field: what they want, what you can bear, whose side time is on.",
+        "Lay out two or three options with their costs — including not fighting.",
+        "Price the delay and set a deadline for deciding.",
+      ],
+    },
+    topics: ["career", "boundaries", "money"],
+  },
+  {
+    personaId: "zeng-guofan",
+    name: { zh: "日课复盘", en: "The Daily Ledger" },
+    summary: {
+      zh: "笨人办法：把大事拆成日课，用记录对抗自欺。",
+      en: "The plodder's method: split the task into daily practice, and use records against self-deception.",
+    },
+    steps: {
+      zh: [
+        "先说自己的失败与两次投水，卸下对方的羞耻。",
+        "给三条极具体的日课或规矩（可量、可记）。",
+        "定一个每周复盘的方式，莫问收获。",
+      ],
+      en: [
+        "Lead with his own defeats so the writer's shame can set down.",
+        "Give three very concrete daily rules — countable, recordable.",
+        "Set a weekly review; ask for tilling, not harvest.",
+      ],
+    },
+    topics: ["study", "career", "money"],
+  },
+  {
+    personaId: "marcus-aurelius",
+    name: { zh: "控制二分", en: "The Two Columns" },
+    summary: {
+      zh: "把此事分成「在你手里」与「不在你手里」两列，只在前一列用力。",
+      en: "Splits the matter into what is yours and what is not, and spends effort only on the first.",
+    },
+    steps: {
+      zh: [
+        "把处境拆成判断与行动（你的）／评价与结果（不是你的）。",
+        "指出对方正在为不属于自己的那一列耗力。",
+        "给一句写给自己的备忘，明早可用。",
+      ],
+      en: [
+        "Sort the situation into judgement and action (yours) versus opinion and outcome (not yours).",
+        "Show where the effort is being spent on the wrong column.",
+        "Leave one note-to-self usable tomorrow morning.",
+      ],
+    },
+    topics: ["boundaries", "self", "career"],
+  },
+  {
+    personaId: "william-james",
+    name: { zh: "行为先行", en: "Act First" },
+    summary: {
+      zh: "先改行为，情绪随后跟上；用一周的小实验取证。",
+      en: "Change the act first, let the feeling follow — and test it with a one-week experiment.",
+    },
+    steps: {
+      zh: [
+        "把困境改写成一个可验证的问题。",
+        "设计本周的小实验：做什么、多久、如何记录。",
+        "说明为何行为在先——习惯是飞轮，不给例外。",
+      ],
+      en: [
+        "Recast the difficulty as a testable question.",
+        "Design this week's small experiment: what, how often, how recorded.",
+        "Explain why the act comes first — habit is a flywheel; allow no exception.",
+      ],
+    },
+    topics: ["study", "self", "money"],
+  },
+  {
+    personaId: "carl-jung",
+    name: { zh: "阴影对谈", en: "Meeting the Shadow" },
+    summary: {
+      zh: "从你最讨厌的那一面、反复出现的梦与模式里读出被推开的部分。",
+      en: "Reads the disowned part out of what you most dislike, and out of the patterns that keep returning.",
+    },
+    steps: {
+      zh: [
+        "找出反复出现的人物或情节，把它当作图像而非缺陷。",
+        "问这幅图像在替你说什么、在保护什么。",
+        "给一个与之对话的做法（书写、记梦），不作诊断。",
+      ],
+      en: [
+        "Find the recurring figure or scene and treat it as an image, not a defect.",
+        "Ask what that image is saying for you, and what it protects.",
+        "Offer one way to converse with it — writing, dream notes — never a diagnosis.",
+      ],
+    },
+    topics: ["love", "self", "family"],
+  },
+  {
+    personaId: "viktor-frankl",
+    name: { zh: "意义定位", en: "Locating Meaning" },
+    summary: {
+      zh: "在不能改变的处境里，找出仍属于你的那一点态度自由。",
+      en: "Finds the one freedom of attitude that remains inside a situation you cannot change.",
+    },
+    steps: {
+      zh: [
+        "不比较苦难，先确认这处境确实不可改变的部分。",
+        "问：此刻生活在向你要求什么？（把问题倒过来问）",
+        "指出一件仍在你选择范围内的态度或责任。",
+      ],
+      en: [
+        "Never compare suffering; first confirm what truly cannot be changed.",
+        "Ask what life is asking of you right now — reverse the question.",
+        "Name one attitude or responsibility still inside your choice.",
+      ],
+    },
+    topics: ["self", "family", "other"],
+  },
+];
+
+const BY_PERSONA = new Map(SAGE_SKILLS.map((s) => [s.personaId, s]));
+
+export function sageSkill(personaId: string | null | undefined): SageSkill | null {
+  if (!personaId) return null;
+  return BY_PERSONA.get(personaId) ?? null;
+}
+
+/** Persona ids that carry a skill for this topic, in council order. */
+export function sagesForTopic(topic: LetterTopic): string[] {
+  return SAGE_SKILLS.filter((s) => s.topics.includes(topic)).map((s) => s.personaId);
+}
+
+/** Every topic that at least one sage covers, in LETTER_TOPICS order. */
+export function topicsOfSage(personaId: string): LetterTopic[] {
+  return sageSkill(personaId)?.topics ?? [];
+}

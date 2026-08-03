@@ -1,0 +1,1 @@
+import{i as e}from"./jsx-runtime-CZcjcDnw.js";import{i as t,r as n,t as r}from"./auth-middleware-B32E_6ME.js";var i=e({askOracle:()=>a}),a=n({method:`POST`}).middleware([r]).handler(t(`5c9a6735bce1dbe814b3eaa3150424a62da7d65dd6a7f90faac37e8f1e43fca6`));export{i as n,a as t};

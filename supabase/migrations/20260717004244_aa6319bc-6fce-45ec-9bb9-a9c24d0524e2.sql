@@ -1,0 +1,2 @@
+ALTER TABLE public.premium_pdf_reports ADD COLUMN IF NOT EXISTS ai_generation_count integer NOT NULL DEFAULT 0;
+UPDATE public.premium_pdf_reports SET ai_generation_count = 1 WHERE status = 'completed' AND ai_generation_count = 0;
