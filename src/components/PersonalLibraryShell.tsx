@@ -31,14 +31,14 @@ export function PersonalLibraryShell({
   children: ReactNode;
 }) {
   const { stable } = useStableMotion();
-  const max = width === "narrow" ? "max-w-[900px]" : "max-w-[1100px]";
+  const max = width === "narrow" ? "max-w-[430px]" : "max-w-[430px]";
 
   return (
     <div
       className="pl-shell min-h-screen bg-[#0a0a12]/25 text-amber-50"
       data-pl-motion={stable ? "stable" : "smooth"}
     >
-      <div className={`mx-auto w-full ${max} px-4 py-8 md:px-8 md:py-12`}>
+      <div className={`mx-auto w-full ${max} px-4 pb-28 pt-6 md:px-8 md:py-12`}>
         <PersonalWorkspaceNav active={active} />
 
         {(title || kicker || intro || aside) && (

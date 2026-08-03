@@ -41,7 +41,6 @@ import { useLang, type Lang } from "@/lib/i18n";
 import { useAccount } from "@/lib/account";
 import { MembershipCheckoutModal } from "@/components/MembershipCheckoutModal";
 import { ChartZoomModal } from "@/components/charts/DestinyCharts";
-import { PremiumPdfCard } from "@/components/PremiumPdfCard";
 import { SageAvatar } from "@/components/SageAvatar";
 import { TAROT_78, type TarotCard } from "@/lib/tarot-deck";
 import { askOracle } from "@/lib/oracle.functions";
@@ -2110,6 +2109,7 @@ export function MembershipSection({
   const [chatOpen, setChatOpen] = useState(false);
   const [upgradeTarget, setUpgradeTarget] = useState<Plan | null>(null);
   const [signInPrompt, setSignInPrompt] = useState(false);
+  const [mobileExpanded, setMobileExpanded] = useState(false);
   // Treat the current session as "new" until the user upgrades once — grants the first-time discount.
   const [firstTime, setFirstTime] = useState(true);
 
@@ -2167,22 +2167,84 @@ export function MembershipSection({
   const handleUpgradeClick = handleDoorClick;
   void handleUpgradeClick;
 
+  const recommendedPlan = plans.find((p) => p.id === "sage") ?? plans[1];
+  const currentPlan = plans.find((p) => p.id === plan) ?? plans[0];
+  const canUpgradeSage = plan === "free";
+
 
   return (
-    <section className="mx-auto max-w-5xl px-6 pb-24 md:px-12 print:hidden">
-      <div className="glass-card rounded-3xl p-6 md:p-10">
+    <section className="mx-auto max-w-5xl px-4 pb-24 md:px-12 print:hidden">
+      <div className="glass-card rounded-[28px] p-4 md:rounded-3xl md:p-10">
         {/* Three-tier plan selector — Seeker / Sage / Oracle */}
-        <p className="mb-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+        <p className="mb-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70 md:mb-2">
           {t.mem_kicker}
         </p>
-        <h2 className="mb-2 font-serif text-2xl italic text-stone-warm md:text-3xl">
+        <div className="flex items-start justify-between gap-3 md:block">
+          <h2 className="font-serif text-[22px] italic leading-tight text-stone-warm md:mb-2 md:text-3xl">
           {t.mem_title}
-        </h2>
-        <p className="mb-6 text-sm text-stone-warm/60">
+          </h2>
+          <span className="shrink-0 rounded-full border border-gold-dust/24 px-2.5 py-1 text-[10px] text-gold-light/80 md:hidden">
+            {currentPlan.name}
+          </span>
+        </div>
+        <p className="mt-2 text-xs leading-relaxed text-stone-warm/58 md:mb-6 md:mt-0 md:text-sm md:text-stone-warm/60">
           {lang === "zh"
-            ? "选择适合你的会员等级；求索者永久免费，贤者与神谕者按月订阅，到期自动降级不会未经确认扣款。"
+            ? "会员计划用于解锁持续阅读能力，和一次性高级深度报告分开计算。"
             : "Pick the plan that fits. Seeker is free forever; Sage and Oracle bill monthly and lapse automatically at expiry — no silent renewal."}
         </p>
+
+        <div className="mt-4 rounded-[24px] border border-gold-dust/24 bg-gold-dust/[0.07] p-4 md:hidden">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.28em] text-gold-dust/70">
+                {lang === "zh" ? "推荐升级" : "Recommended"}
+              </p>
+              <h3 className="mt-1 text-lg font-semibold text-gold-light">
+                {recommendedPlan.name}
+              </h3>
+            </div>
+            <p className="font-serif text-xl text-gold-light">{recommendedPlan.price}</p>
+          </div>
+          <p className="mt-3 text-xs leading-relaxed text-stone-warm/68">
+            {lang === "zh"
+              ? "适合想在命盘外继续看今日、关系、时间线和三牌旁证的用户。"
+              : "For readers who want Today, synastry, timeline and tarot support beyond the chart."}
+          </p>
+          <div className="mt-4 grid grid-cols-3 gap-2">
+            {(lang === "zh"
+              ? ["今日延展", "关系分析", "时间校准"]
+              : ["Today+", "Synastry", "Timing"]
+            ).map((item) => (
+              <span
+                key={item}
+                className="rounded-2xl border border-white/10 bg-black/22 px-2 py-2 text-center text-[11px] text-stone-warm/78"
+              >
+                {item}
+              </span>
+            ))}
+          </div>
+          <div className="mt-4 grid grid-cols-[1fr_auto] gap-2">
+            <button
+              type="button"
+              onClick={() => (canUpgradeSage ? handleDoorClick("sage") : handleDoorClick("oracle"))}
+              className="min-h-12 rounded-2xl bg-gold-dust px-4 text-sm font-semibold text-obsidian transition active:scale-[0.98]"
+            >
+              {plan === "oracle"
+                ? lang === "zh" ? "进入神谕者" : "Open Oracle"
+                : plan === "sage"
+                  ? lang === "zh" ? "升级神谕者" : "Upgrade Oracle"
+                  : t.mem_upgrade}
+            </button>
+            <button
+              type="button"
+              onClick={() => setMobileExpanded((v) => !v)}
+              className="min-h-12 rounded-2xl border border-gold-dust/28 px-4 text-xs font-medium text-gold-light transition active:scale-[0.98]"
+            >
+              {mobileExpanded ? (lang === "zh" ? "收起" : "Less") : (lang === "zh" ? "全部" : "All")}
+            </button>
+          </div>
+        </div>
+
         {account && firstTime && (
           <div className="mb-6 flex flex-wrap items-center gap-3 rounded-2xl border border-nebula-purple/40 bg-nebula-purple/[0.10] px-5 py-3">
             <span className="rounded-full bg-nebula-purple/40 px-3 py-0.5 text-[9px] uppercase tracking-[0.32em] text-stone-warm">
@@ -2198,7 +2260,7 @@ export function MembershipSection({
         <div
           id="membership-plans"
           data-testid="membership-plans"
-          className="mb-10 grid scroll-mt-[calc(var(--site-nav-height,96px)+24px)] grid-cols-1 items-stretch gap-4 md:grid-cols-3"
+          className={`${mobileExpanded ? "grid" : "hidden"} mt-4 scroll-mt-[calc(var(--site-nav-height,96px)+24px)] grid-cols-1 items-stretch gap-3 md:mb-10 md:mt-0 md:grid md:grid-cols-3 md:gap-4`}
         >
           {plans.map((p) => {
             const isCurrent = plan === p.id;
@@ -2208,7 +2270,7 @@ export function MembershipSection({
               <div
                 key={p.id}
                 data-testid={`membership-plan-${p.id}`}
-                className={`relative flex flex-col rounded-2xl border p-6 transition-colors ${
+                className={`relative flex flex-col rounded-2xl border p-4 transition-colors md:p-6 ${
                   p.highlight
                     ? "border-gold-dust/60 bg-gold-dust/[0.06]"
                     : "border-white/10 bg-white/[0.02]"
@@ -2223,7 +2285,7 @@ export function MembershipSection({
                   {p.name}
                 </p>
                 <p className="mt-1 font-serif text-2xl text-gold-light">{p.price}</p>
-                <p className="mt-3 mb-5 flex-1 text-sm leading-relaxed text-stone-warm/75">
+                <p className="mt-3 mb-4 flex-1 text-xs leading-relaxed text-stone-warm/75 md:mb-5 md:text-sm">
                   {p.desc}
                 </p>
                 {isCurrent ? (
@@ -2258,8 +2320,9 @@ export function MembershipSection({
           })}
         </div>
 
+        <div className={`${mobileExpanded ? "block" : "hidden"} md:block`}>
         {/* Ask-the-Sage — private-oracle conversation entry (restored) */}
-        <div className="mb-10">
+        <div className="mt-4 md:mb-10 md:mt-0">
           <AskSageCard
             lang={lang}
             locked={lang === "zh" ? "神谕者会员专属" : "Oracle members only"}
@@ -2267,7 +2330,7 @@ export function MembershipSection({
           />
         </div>
 
-        <div className="mb-6 h-px w-full bg-gold-dust/15" />
+        <div className="my-5 h-px w-full bg-gold-dust/15 md:mb-6 md:mt-0" />
 
 
         <p className="mb-2 text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
@@ -2289,24 +2352,7 @@ export function MembershipSection({
           <DoorCard id="sage" lang={lang} />
           <DoorCard id="oracle" lang={lang} />
         </div>
-      </div>
-
-      {/* One-time acquisitions — the ¥79 premium deep report lives in its
-          own section, entirely independent of monthly membership. */}
-      <div className="mt-10">
-        <div className="mx-auto mb-4 flex max-w-5xl items-center gap-3">
-          <span className="h-px flex-1 bg-gold-dust/30" />
-          <p className="text-[10px] uppercase tracking-[0.42em] text-gold-dust">
-            {lang === "zh" ? "单次馆藏 · 一次性解锁" : "One-time acquisition"}
-          </p>
-          <span className="h-px flex-1 bg-gold-dust/30" />
         </div>
-        <p className="mx-auto mb-4 max-w-3xl text-center text-xs text-stone-warm/55">
-          {lang === "zh"
-            ? "¥79 综合深度报告是一次性购买 · 24 章 · 四体系综合 · 证据可追溯 · 永久保存，与月度会员完全独立。"
-            : "The ¥79 premium deep report is a one-time purchase — 24 chapters, four traditions, evidence-traceable, kept forever. Entirely independent of monthly membership."}
-        </p>
-        <PremiumPdfCard search={search} variant="bar" />
       </div>
 
       <SignInPromptModal
@@ -3860,4 +3906,3 @@ export function RecentWindows({
     </section>
   );
 }
-

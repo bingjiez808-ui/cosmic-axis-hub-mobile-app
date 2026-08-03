@@ -13,8 +13,10 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { LanguageProvider, useLang } from "@/lib/i18n";
+import { isAppRoute } from "@/lib/app-routes";
 import { AccountProvider, useAccount } from "../lib/account";
 import { AccountModal } from "../components/AccountModal";
+import { AppMobileNav } from "@/components/AppMobileNav";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { LibrarySplash } from "../components/LibrarySplash";
 import { ElderCompanion } from "../components/ElderCompanion";
@@ -210,6 +212,12 @@ function RootComponent() {
   // V1 global nav / footer / library backdrop / sage companion / splash on
   // any `/dev/*` route so there is only one navigation surface on screen.
   const isIsolatedPreview = pathname.startsWith("/dev/");
+  const isAppSurface = isAppRoute(pathname);
+  const showAppBottomNav =
+    isAppSurface &&
+    !pathname.startsWith("/auth") &&
+    !pathname.startsWith("/me/") &&
+    !pathname.startsWith("/admin");
   useEffect(() => {
     const handler = () => setAccOpen(true);
     window.addEventListener("lod:open-account", handler);
@@ -268,13 +276,20 @@ function RootComponent() {
         </div>
       ) : null}
 
-      <SiteNav />
+      {!isAppSurface && <SiteNav />}
 
-      <main className="relative z-10">
+      <main
+        className={`relative z-10 ${
+          isAppSurface
+            ? "mx-auto min-h-screen w-full max-w-[430px] overflow-x-hidden bg-[#090912] shadow-[0_0_80px_rgba(0,0,0,0.48)]"
+            : ""
+        }`}
+      >
         <Outlet />
+        {showAppBottomNav ? <AppMobileNav /> : null}
       </main>
 
-      <SiteFooter />
+      {!isAppSurface && <SiteFooter />}
     </div>
   );
 
@@ -291,6 +306,7 @@ function RootComponent() {
           <AccountModal open={accOpen} onClose={() => setAccOpen(false)} />
           <LibrarySplash />
           <GlobalSageCompanion />
+          <InstallAppPrompt enabled={pathname.startsWith("/me/")} />
         </AccountProvider>
 
       </LanguageProvider>
@@ -301,6 +317,89 @@ function RootComponent() {
 function GlobalSageCompanion() {
   const { lang } = useLang();
   return <ElderCompanion lang={lang} />;
+}
+
+type BeforeInstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
+};
+
+function InstallAppPrompt({ enabled }: { enabled: boolean }) {
+  const { lang } = useLang();
+  const isZh = lang === "zh";
+  const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
+  const [visible, setVisible] = useState(false);
+  const [isIos, setIsIos] = useState(false);
+
+  useEffect(() => {
+    const standalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (navigator as Navigator & { standalone?: boolean }).standalone === true;
+    const dismissed = window.localStorage.getItem("fate-nexus-install-dismissed") === "1";
+    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    setIsIos(ios);
+    setVisible(enabled && !standalone && !dismissed);
+
+    const onBeforeInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      setInstallEvent(event as BeforeInstallPromptEvent);
+      if (enabled && !dismissed && !standalone) setVisible(true);
+    };
+
+    window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+    return () => window.removeEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+  }, [enabled]);
+
+  if (!enabled || !visible || (!installEvent && !isIos)) return null;
+
+  const close = () => {
+    window.localStorage.setItem("fate-nexus-install-dismissed", "1");
+    setVisible(false);
+  };
+
+  return (
+    <aside className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+5.25rem)] z-50 mx-auto max-w-[440px] rounded-lg border border-amber-300/20 bg-[#0b0b13]/95 p-3 text-amber-50 shadow-[0_20px_60px_-26px_rgba(0,0,0,0.95)] backdrop-blur-xl md:bottom-5">
+      <div className="flex items-start gap-3">
+        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-md border border-amber-300/25 bg-amber-300/10 text-amber-200">
+          <Sparkles aria-hidden className="h-5 w-5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-amber-100">
+            {isZh ? "把命运书房安装成 App" : "Install Fate Nexus as an app"}
+          </p>
+          <p className="mt-1 text-xs leading-5 text-amber-100/65">
+            {isIos
+              ? isZh
+                ? "在 Safari 中点分享，然后选择“添加到主屏幕”。"
+                : "In Safari, tap Share, then Add to Home Screen."
+              : isZh
+                ? "安装后可从桌面直接进入好友、适配与每日书房。"
+                : "Open friends, matching and daily readings straight from your home screen."}
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {installEvent && (
+              <button
+                type="button"
+                onClick={() => {
+                  void installEvent.prompt().then(() => installEvent.userChoice).finally(close);
+                }}
+                className="min-h-10 rounded-full bg-amber-300 px-4 text-xs font-medium text-[#111016] hover:bg-amber-200"
+              >
+                {isZh ? "安装" : "Install"}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={close}
+              className="min-h-10 rounded-full border border-amber-300/25 px-4 text-xs text-amber-100/75 hover:border-amber-300/60 hover:text-amber-100"
+            >
+              {isZh ? "稍后" : "Later"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </aside>
+  );
 }
 
 

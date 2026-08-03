@@ -8,6 +8,7 @@ import { sageChat, type SageChatResponse, type SageNextAction } from "@/lib/sage
 import { createFeedbackTicket } from "@/lib/tickets.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { SageAvatar } from "@/components/SageAvatar";
+import { isAppRoute } from "@/lib/app-routes";
 
 /**
  * SageCompanion — the single, unified floating "Sage" avatar in the
@@ -43,6 +44,7 @@ const OPENERS_EN = [
 export function ElderCompanion({ lang }: { lang: "en" | "zh" }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const hidden = pathname.startsWith("/admin");
+  const isAppSurface = isAppRoute(pathname);
   const tips = lang === "zh" ? TIPS_ZH : TIPS_EN;
   const [open, setOpen] = useState(false);
   const [tipIdx, setTipIdx] = useState(() => Math.floor(Math.random() * tips.length));
@@ -128,10 +130,15 @@ export function ElderCompanion({ lang }: { lang: "en" | "zh" }) {
 
   return (
     <div
-      className="pointer-events-none fixed bottom-2 left-2 z-40 flex items-end gap-2 print:hidden sm:bottom-6 sm:left-4"
+      className={`pointer-events-none fixed z-40 flex gap-2 print:hidden ${
+        isAppSurface
+          ? "bottom-[calc(env(safe-area-inset-bottom)+6.25rem)] right-3 flex-col-reverse items-end"
+          : "bottom-2 left-2 items-end sm:bottom-6 sm:left-4"
+      }`}
       style={{
         paddingBottom: "max(env(safe-area-inset-bottom), 0.25rem)",
-        paddingLeft: "env(safe-area-inset-left)",
+        paddingLeft: isAppSurface ? undefined : "env(safe-area-inset-left)",
+        paddingRight: isAppSurface ? "env(safe-area-inset-right)" : undefined,
       }}
     >
       <motion.button
@@ -142,7 +149,9 @@ export function ElderCompanion({ lang }: { lang: "en" | "zh" }) {
         }}
         aria-label={sageLabel}
         title={sageLabel}
-        className="pointer-events-auto group relative grid h-12 w-12 place-items-center rounded-full border border-gold-dust/40 bg-obsidian/80 p-0 shadow-[0_8px_20px_-8px_rgba(0,0,0,0.6)] backdrop-blur-md transition-transform hover:scale-[1.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-light sm:h-14 sm:w-14 motion-reduce:transition-none"
+        className={`pointer-events-auto group relative grid place-items-center rounded-full border border-gold-dust/40 bg-obsidian/80 p-0 shadow-[0_8px_20px_-8px_rgba(0,0,0,0.6)] backdrop-blur-md transition-transform hover:scale-[1.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-light motion-reduce:transition-none ${
+          isAppSurface ? "h-11 w-11" : "h-12 w-12 sm:h-14 sm:w-14"
+        }`}
         initial={false}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
@@ -159,7 +168,9 @@ export function ElderCompanion({ lang }: { lang: "en" | "zh" }) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 6, scale: 0.97 }}
             transition={{ duration: 0.28, ease: [0.32, 0.72, 0, 1] }}
-            className="pointer-events-auto relative mb-1 flex w-[calc(100vw-5rem)] max-w-sm flex-col overflow-hidden rounded-2xl border border-gold-dust/30 bg-obsidian/95 shadow-2xl backdrop-blur-md sm:w-[22rem]"
+            className={`pointer-events-auto relative flex max-w-sm flex-col overflow-hidden rounded-2xl border border-gold-dust/30 bg-obsidian/95 shadow-2xl backdrop-blur-md ${
+              isAppSurface ? "mb-2 w-[calc(100vw-2rem)] max-w-[398px]" : "mb-1 w-[calc(100vw-5rem)] sm:w-[22rem]"
+            }`}
           >
             <div className="flex items-start justify-between gap-2 border-b border-gold-dust/20 px-4 py-3">
               <div>

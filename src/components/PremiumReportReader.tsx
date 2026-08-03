@@ -363,7 +363,7 @@ export function PremiumReportReader({
                   id={titleId}
                   className="truncate font-serif text-base italic text-stone-warm md:text-lg"
                 >
-                  {heading || (lang === "zh" ? "高级 AI 深度报告" : "Premium AI Deep Reading")}
+                  {heading || (lang === "zh" ? "高级深度报告" : "Premium Deep Reading")}
                 </h2>
               </div>
               {content?.meta.generated_at && (

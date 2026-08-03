@@ -7,6 +7,7 @@
  * still see the hall's story and how it works, they only lose the actions.
  */
 import { Link, useLocation } from "@tanstack/react-router";
+import { ArrowLeft } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -30,23 +31,37 @@ export function HallHeader({
 }) {
   const c = useCommunityHall();
   return (
-    <header className="mx-auto max-w-3xl text-center">
-      <p className="hall-eyebrow">{c.hallEyebrow}</p>
-      <h1 className="mt-4 text-balance text-[clamp(1.6rem,5.4vw,2.6rem)] font-semibold leading-[1.28] text-foreground">
-        {lines ? (
-          <>
-            <span className="block">{lines[0]}</span>
-            <span className="block text-primary/90">{lines[1]}</span>
-          </>
-        ) : (
-          title
-        )}
-      </h1>
+    <header className="mx-auto mb-4 max-w-[430px]">
+      <div className="mb-4 flex items-center justify-between">
+        <Link
+          to="/community"
+          aria-label={c.lang === "en" ? "Back to Hall of Beings" : "返回众生之厅"}
+          className="grid h-11 w-11 place-items-center rounded-full border border-primary/15 bg-background/40 text-foreground transition active:scale-95"
+        >
+          <ArrowLeft aria-hidden className="h-5 w-5" />
+        </Link>
+        <span className="rounded-full border border-primary/15 px-3 py-1 text-[11px] text-muted-foreground">
+          {c.lang === "en" ? "Hall of Beings" : "众生"}
+        </span>
+      </div>
+      <div className="rounded-[26px] border border-primary/15 bg-card/50 p-4 shadow-[0_20px_60px_-44px_hsl(var(--primary)/0.58)]">
+        <p className="hall-eyebrow">{c.hallEyebrow}</p>
+        <h1 className="mt-2 text-2xl font-semibold leading-tight text-foreground">
+          {lines ? (
+            <>
+              <span className="block">{lines[0]}</span>
+              <span className="block text-primary/90">{lines[1]}</span>
+            </>
+          ) : (
+            title
+          )}
+        </h1>
       {subtitle ? (
-        <p className="mx-auto mt-4 max-w-2xl text-pretty text-sm leading-relaxed text-muted-foreground sm:text-base">
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
           {subtitle}
         </p>
       ) : null}
+      </div>
     </header>
   );
 }
@@ -151,7 +166,7 @@ export function HallSection({
     <section
       ref={ref}
       data-visible={inView ? "true" : "false"}
-      className="hall-reveal mx-auto mt-12 w-full max-w-3xl"
+      className="hall-reveal mx-auto mt-5 w-full max-w-3xl"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="hall-section-title">{title}</h2>

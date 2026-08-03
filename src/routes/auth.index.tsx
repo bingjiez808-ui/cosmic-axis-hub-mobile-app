@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { ArrowLeft, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -96,14 +97,14 @@ function AuthPage() {
     if (search.redirect) return search.redirect;
     const { data: userData } = await supabase.auth.getUser();
     const userId = userData.user?.id;
-    if (!userId) return "/me/home";
+    if (!userId) return "/me";
     const { data } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", userId)
       .eq("role", "admin")
       .maybeSingle();
-    return data ? "/admin" : "/me/home";
+    return data ? "/admin" : "/me";
   };
 
   useEffect(() => {
@@ -297,12 +298,35 @@ function AuthPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center px-6 pt-32 pb-16">
-      <div className="glass-card w-full max-w-md rounded-3xl border border-gold-dust/20 p-8 md:p-10">
-        <p className="text-[10px] uppercase tracking-[0.42em] text-gold-dust">{t.kicker}</p>
-        <h1 className="mt-3 font-serif text-3xl italic text-stone-warm">{t.title}</h1>
+    <div className="min-h-screen bg-[#090912] px-4 pb-8 pt-[calc(env(safe-area-inset-top)+0.75rem)] text-amber-50">
+      <div className="mb-5 flex items-center justify-between">
+        <Link
+          to="/"
+          aria-label={zh ? "返回" : "Back"}
+          className="grid h-11 w-11 place-items-center rounded-full border border-amber-300/15 bg-white/[0.035] text-amber-100"
+        >
+          <ArrowLeft aria-hidden className="h-5 w-5" />
+        </Link>
+        <div className="rounded-full border border-amber-300/15 px-3 py-1 text-[11px] text-amber-100/65">
+          {zh ? "账户" : "Account"}
+        </div>
+      </div>
 
-        <div className="mt-6 grid grid-cols-2 gap-1 rounded-full border border-white/10 p-1 text-[10px] uppercase tracking-[0.28em]">
+      <div className="rounded-[32px] border border-amber-300/16 bg-gradient-to-br from-amber-300/10 via-[#15111a] to-[#090912] p-5 shadow-[0_22px_70px_-38px_rgba(0,0,0,0.95)]">
+        <div className="grid h-12 w-12 place-items-center rounded-2xl border border-amber-300/20 bg-amber-300/10 text-amber-200">
+          <Sparkles aria-hidden className="h-6 w-6" />
+        </div>
+        <p className="mt-5 text-[10px] uppercase tracking-[0.3em] text-amber-300/70">
+          {zh ? "命运书房 App" : "Fate Nexus App"}
+        </p>
+        <h1 className="mt-2 text-3xl font-semibold tracking-normal text-amber-50">{t.title}</h1>
+        <p className="mt-2 text-sm leading-relaxed text-amber-100/62">
+          {zh
+            ? "登录后进入你的今日解读、好友关系、适配分析与已保存报告。"
+            : "Sign in to open daily readings, friends, matching and saved reports."}
+        </p>
+
+        <div className="mt-6 grid grid-cols-2 gap-1 rounded-2xl border border-amber-300/12 bg-black/20 p-1 text-sm">
           {([
             ["login", t.tabLogin],
             ["signup", t.tabSignup],
@@ -312,8 +336,8 @@ function AuthPage() {
               type="button"
               onClick={() => switchMode(m)}
               aria-pressed={mode === m}
-              className={`min-h-10 rounded-full px-3 py-2 transition-colors ${
-                mode === m ? "bg-gold-dust text-obsidian" : "text-stone-warm/60 hover:text-gold-dust"
+              className={`min-h-11 rounded-xl px-3 py-2 font-medium transition-colors ${
+                mode === m ? "bg-amber-300 text-[#111016]" : "text-amber-100/58 hover:text-amber-100"
               }`}
             >
               {label}
@@ -322,7 +346,7 @@ function AuthPage() {
         </div>
 
         {search.verified === "1" && mode === "login" && (
-          <p className="mt-6 rounded-lg border border-gold-dust/30 bg-gold-dust/5 px-4 py-3 text-xs text-gold-light">
+          <p className="mt-4 rounded-2xl border border-amber-300/24 bg-amber-300/8 px-4 py-3 text-xs text-amber-100">
             {t.verifiedBanner}
           </p>
         )}
@@ -332,7 +356,7 @@ function AuthPage() {
           type="button"
           onClick={onGoogle}
           disabled={busy}
-          className="mt-8 flex w-full items-center justify-center gap-3 rounded-full border border-gold-dust/40 px-5 py-3 text-xs uppercase tracking-[0.28em] text-gold-light transition-colors hover:bg-gold-dust/10 disabled:opacity-50"
+          className="mt-5 flex min-h-12 w-full items-center justify-center gap-3 rounded-2xl border border-amber-300/20 bg-white/[0.035] px-5 text-sm font-medium text-amber-50 transition-colors hover:bg-amber-300/8 disabled:opacity-50"
         >
           <svg width="16" height="16" viewBox="0 0 48 48" aria-hidden>
             <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
@@ -342,27 +366,27 @@ function AuthPage() {
           </svg>
           {isSignup ? t.googleSignup : t.googleLogin}
         </button>
-        <p className="mt-2 text-center text-[10px] leading-relaxed text-stone-warm/45">{t.googleNote}</p>
+        <p className="mt-2 text-center text-[11px] leading-relaxed text-amber-100/45">{t.googleNote}</p>
 
-        <div className="my-6 flex items-center gap-3 text-[10px] uppercase tracking-[0.32em] text-stone-warm/40">
-          <div className="h-px flex-1 bg-white/10" />
+        <div className="my-5 flex items-center gap-3 text-[10px] uppercase tracking-[0.26em] text-amber-100/38">
+          <div className="h-px flex-1 bg-amber-300/10" />
           {t.or}
-          <div className="h-px flex-1 bg-white/10" />
+          <div className="h-px flex-1 bg-amber-300/10" />
         </div>
 
         {isSignup && signupStage === "sent" ? (
           <>
-            <p className="mt-2 mb-4 text-sm leading-relaxed text-stone-warm/70">{t.verificationSent(sentAddress)}</p>
-            <div className="mt-6 flex flex-col items-center gap-3 text-[11px] text-stone-warm/60">
+            <p className="mt-2 mb-4 text-sm leading-relaxed text-amber-100/70">{t.verificationSent(sentAddress)}</p>
+            <div className="mt-6 flex flex-col items-center gap-3 text-[11px] text-amber-100/60">
               <button
                 type="button"
                 onClick={onResendVerification}
                 disabled={busy || cooldown > 0}
-                className="rounded-full border border-gold-dust/40 px-5 py-2 text-[10px] uppercase tracking-[0.28em] text-gold-dust hover:bg-gold-dust/10 disabled:opacity-40"
+                className="rounded-full border border-amber-300/40 px-5 py-2 text-[10px] uppercase tracking-[0.28em] text-amber-300 hover:bg-amber-300/10 disabled:opacity-40"
               >
                 {cooldown > 0 ? `${cooldown}s` : t.resend}
               </button>
-              <button type="button" onClick={() => setSignupStage("form")} className="hover:text-gold-dust">
+              <button type="button" onClick={() => setSignupStage("form")} className="hover:text-amber-300">
                 {t.changeEmail}
               </button>
             </div>
@@ -378,7 +402,7 @@ function AuthPage() {
               placeholder={t.email}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg border border-white/10 bg-obsidian/40 px-4 py-3 text-base text-stone-warm placeholder:text-stone-warm/30 focus:border-gold-dust focus:outline-none"
+              className="w-full rounded-2xl border border-amber-300/14 bg-black/24 px-4 py-3 text-base text-amber-50 placeholder:text-amber-100/32 focus:border-amber-300 focus:outline-none"
             />
             <input
               type="text"
@@ -390,7 +414,7 @@ function AuthPage() {
               aria-label={t.displayName}
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              className="w-full rounded-lg border border-white/10 bg-obsidian/40 px-4 py-3 text-base text-stone-warm placeholder:text-stone-warm/30 focus:border-gold-dust focus:outline-none"
+              className="w-full rounded-2xl border border-amber-300/14 bg-black/24 px-4 py-3 text-base text-amber-50 placeholder:text-amber-100/32 focus:border-amber-300 focus:outline-none"
             />
             <div className="relative">
               <input
@@ -401,12 +425,12 @@ function AuthPage() {
                 placeholder={t.password}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-lg border border-white/10 bg-obsidian/40 px-4 py-3 pr-16 text-base text-stone-warm placeholder:text-stone-warm/30 focus:border-gold-dust focus:outline-none"
+                className="w-full rounded-2xl border border-amber-300/14 bg-black/24 px-4 py-3 pr-16 text-base text-amber-50 placeholder:text-amber-100/32 focus:border-amber-300 focus:outline-none"
               />
               <button
                 type="button"
                 onClick={() => setShowPw((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] uppercase tracking-[0.28em] text-stone-warm/50 hover:text-gold-dust"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] uppercase tracking-[0.28em] text-amber-100/50 hover:text-amber-300"
               >
                 {showPw ? t.hide : t.show}
               </button>
@@ -419,39 +443,39 @@ function AuthPage() {
               placeholder={t.confirm}
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
-              className="w-full rounded-lg border border-white/10 bg-obsidian/40 px-4 py-3 text-base text-stone-warm placeholder:text-stone-warm/30 focus:border-gold-dust focus:outline-none"
+              className="w-full rounded-2xl border border-amber-300/14 bg-black/24 px-4 py-3 text-base text-amber-50 placeholder:text-amber-100/32 focus:border-amber-300 focus:outline-none"
             />
 
-            <div className="rounded-lg border border-white/10 bg-obsidian/30 px-4 py-3">
-              <p className="text-[10px] uppercase tracking-[0.28em] text-stone-warm/50">{t.pwHeader}</p>
+            <div className="rounded-lg border border-white/10 bg-black/24 px-4 py-3">
+              <p className="text-[10px] uppercase tracking-[0.28em] text-amber-100/50">{t.pwHeader}</p>
               <ul className="mt-2 space-y-1 text-[11px]">
                 {pwRules.map((r) => (
-                  <li key={r.id} className={r.ok ? "text-gold-light" : "text-stone-warm/50"}>
+                  <li key={r.id} className={r.ok ? "text-amber-100" : "text-amber-100/50"}>
                     <span aria-hidden>{r.ok ? "✓ " : "○ "}</span>
                     {zh ? r.labelZh : r.labelEn}
                   </li>
                 ))}
-                <li className={confirmValid ? "text-gold-light" : "text-stone-warm/50"}>
+                <li className={confirmValid ? "text-amber-100" : "text-amber-100/50"}>
                   <span aria-hidden>{confirmValid ? "✓ " : "○ "}</span>
                   {zh ? "两次输入的密码一致" : "Passwords match"}
                 </li>
               </ul>
             </div>
 
-            <label className="flex items-start gap-2 text-[11px] leading-relaxed text-stone-warm/70">
+            <label className="flex items-start gap-2 text-[11px] leading-relaxed text-amber-100/70">
               <input
                 type="checkbox"
                 checked={agreed}
                 onChange={(e) => setAgreed(e.target.checked)}
-                className="mt-0.5 h-4 w-4 flex-none accent-gold-dust"
+                className="mt-0.5 h-4 w-4 flex-none accent-amber-300"
               />
               <span>
                 {t.tosPrefix}
-                <Link to="/terms" className="underline decoration-gold-dust/60 hover:text-gold-dust" target="_blank">
+                <Link to="/terms" className="underline decoration-amber-300/60 hover:text-amber-300" target="_blank">
                   《{t.tos}》
                 </Link>
                 {t.tosMid}
-                <Link to="/privacy" className="underline decoration-gold-dust/60 hover:text-gold-dust" target="_blank">
+                <Link to="/privacy" className="underline decoration-amber-300/60 hover:text-amber-300" target="_blank">
                   《{t.privacy}》
                 </Link>
                 。
@@ -460,7 +484,7 @@ function AuthPage() {
             <button
               type="submit"
               disabled={busy || cooldown > 0 || !pwValid || !confirmValid || !agreed || displayName.trim().length < 2}
-              className="w-full rounded-full bg-gold-dust px-6 py-3 text-xs uppercase tracking-[0.28em] text-obsidian transition-colors hover:bg-gold-light disabled:opacity-50"
+              className="w-full rounded-2xl bg-amber-300 px-6 py-3 text-sm font-semibold text-[#111016] transition-colors hover:bg-amber-200 disabled:opacity-50"
             >
               {cooldown > 0 ? `${cooldown}s` : t.submitSignup}
             </button>
@@ -476,7 +500,7 @@ function AuthPage() {
               placeholder={t.email}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg border border-white/10 bg-obsidian/40 px-4 py-3 text-base text-stone-warm placeholder:text-stone-warm/30 focus:border-gold-dust focus:outline-none"
+              className="w-full rounded-2xl border border-amber-300/14 bg-black/24 px-4 py-3 text-base text-amber-50 placeholder:text-amber-100/32 focus:border-amber-300 focus:outline-none"
             />
             <div className="relative">
               <input
@@ -487,36 +511,36 @@ function AuthPage() {
                 placeholder={t.password}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-lg border border-white/10 bg-obsidian/40 px-4 py-3 pr-16 text-base text-stone-warm placeholder:text-stone-warm/30 focus:border-gold-dust focus:outline-none"
+                className="w-full rounded-2xl border border-amber-300/14 bg-black/24 px-4 py-3 pr-16 text-base text-amber-50 placeholder:text-amber-100/32 focus:border-amber-300 focus:outline-none"
               />
               <button
                 type="button"
                 onClick={() => setShowPw((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] uppercase tracking-[0.28em] text-stone-warm/50 hover:text-gold-dust"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] uppercase tracking-[0.28em] text-amber-100/50 hover:text-amber-300"
               >
                 {showPw ? t.hide : t.show}
               </button>
             </div>
             <div className="flex justify-end">
-              <Link to="/auth/reset" className="text-[11px] text-gold-dust hover:text-gold-light">
+              <Link to="/auth/reset" className="text-[11px] text-amber-300 hover:text-amber-100">
                 {t.forgot}
               </Link>
             </div>
             <button
               type="submit"
               disabled={busy}
-              className="w-full rounded-full bg-gold-dust px-6 py-3 text-xs uppercase tracking-[0.28em] text-obsidian transition-colors hover:bg-gold-light disabled:opacity-50"
+              className="w-full rounded-2xl bg-amber-300 px-6 py-3 text-sm font-semibold text-[#111016] transition-colors hover:bg-amber-200 disabled:opacity-50"
             >
               {t.submitLogin}
             </button>
 
             {needsVerification && (
-              <div className="mt-1 rounded-lg border border-white/10 bg-obsidian/30 px-4 py-3 text-[11px] text-stone-warm/70">
+              <div className="mt-1 rounded-lg border border-white/10 bg-black/24 px-4 py-3 text-[11px] text-amber-100/70">
                 <button
                   type="button"
                   onClick={onResendVerification}
                   disabled={busy || cooldown > 0}
-                  className="text-gold-dust underline decoration-gold-dust/60 hover:text-gold-light disabled:opacity-40"
+                  className="text-amber-300 underline decoration-amber-300/60 hover:text-amber-100 disabled:opacity-40"
                 >
                   {cooldown > 0 ? `${cooldown}s` : t.resendVerification}
                 </button>
@@ -525,19 +549,19 @@ function AuthPage() {
           </form>
         )}
 
-        <p className="mt-6 text-center text-[11px] text-stone-warm/50">
+        <p className="mt-6 text-center text-[11px] text-amber-100/50">
           {isSignup ? t.switchToLoginHint : t.switchToSignupHint}{" "}
           <button
             type="button"
             onClick={() => switchMode(isSignup ? "login" : "signup")}
-            className="text-gold-dust hover:text-gold-light"
+            className="text-amber-300 hover:text-amber-100"
           >
             {isSignup ? t.tabLogin : t.tabSignup}
           </button>
         </p>
 
         <div className="mt-6 text-center">
-          <Link to="/" className="text-[10px] uppercase tracking-[0.32em] text-stone-warm/40 hover:text-gold-dust">
+          <Link to="/" className="text-[10px] uppercase tracking-[0.32em] text-amber-100/40 hover:text-amber-300">
             ← {zh ? "回到大厅" : "back to the hall"}
           </Link>
         </div>

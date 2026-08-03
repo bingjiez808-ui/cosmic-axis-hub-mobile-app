@@ -1,5 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  ArrowRight,
+  BookMarked,
+  CalendarCheck,
+  ChartNoAxesCombined,
+  CheckCircle2,
+  Handshake,
+  MessageCircle,
+  ShieldCheck,
+  Sparkles,
+  UserPlus,
+} from "lucide-react";
 
 import "@/components/personal-library.css";
 import { PersonalWorkspaceNav } from "@/components/PersonalWorkspaceNav";
@@ -377,12 +389,196 @@ function DailyRoomPage() {
   const activeDomainSeg = domainDetail
     ? aiSegments.get(domainSegmentId(domainDetail.key))
     : null;
+  const hasPrimaryChart = Boolean(primaryChart);
+  const appProgress = [
+    {
+      done: hasPrimaryChart,
+      zh: "建立主命盘",
+      en: "Build primary chart",
+      to: "/ritual" as const,
+    },
+    {
+      done: usingRealChart,
+      zh: "读取今日重点",
+      en: "Read today's priority",
+      to: "/me/home" as const,
+    },
+    {
+      done: Boolean(onboardingIntent || concern),
+      zh: "选择当前问题",
+      en: "Choose your question",
+      to: "/me/home" as const,
+    },
+  ];
+
+  const [shelfView, setShelfView] = useState<"overview" | "today">("overview");
+
+  if (shelfView === "overview") {
+    const shelfSections = [
+      {
+        icon: CalendarCheck,
+        title: lang === "zh" ? "今日阅读" : "Today Reading",
+        body: lang === "zh" ? "今日重点、六领域建议、七日趋势。" : "Priority, domain notes and 7-day rhythm.",
+        action: lang === "zh" ? "打开今日" : "Open today",
+        onClick: () => setShelfView("today"),
+      },
+      {
+        icon: ChartNoAxesCombined,
+        title: lang === "zh" ? "命盘与报告" : "Charts & Reports",
+        body: lang === "zh" ? "管理主命盘、他人命盘和已生成报告。" : "Manage primary chart, other charts and reports.",
+        to: "/me/profile" as const,
+      },
+      {
+        icon: Handshake,
+        title: lang === "zh" ? "关系与适配" : "Relationships",
+        body: lang === "zh" ? "好友邀请、关系便签、适配分析。" : "Invites, relationship notes and matching.",
+        to: "/me/friends" as const,
+      },
+      {
+        icon: BookMarked,
+        title: lang === "zh" ? "历史回声" : "Historical Echoes",
+        body: lang === "zh" ? "收藏相似人生阶段的故事和书签。" : "Save stories and bookmarks from similar life stages.",
+        to: "/me/echoes" as const,
+      },
+      {
+        icon: ShieldCheck,
+        title: lang === "zh" ? "会员与订单" : "Membership",
+        body: lang === "zh" ? "查看权益、订单、工单和深度报告。" : "Benefits, orders, tickets and premium reports.",
+        to: "/me/membership" as const,
+      },
+    ];
+
+    return (
+      <div className="pl-shell min-h-screen bg-[#0a0a12]/25 text-amber-50">
+        <div className="mx-auto w-full max-w-[430px] px-4 pb-28 pt-[calc(env(safe-area-inset-top)+1rem)]">
+          <div className="mb-4 flex items-center justify-between">
+            <Link
+              to="/"
+              className="inline-flex min-h-10 items-center gap-2 rounded-full border border-amber-300/18 bg-white/[0.035] px-3 text-xs text-amber-100/80 active:scale-[0.98]"
+            >
+              <ArrowRight aria-hidden className="h-4 w-4 rotate-180" />
+              {lang === "zh" ? "回首页" : "Home"}
+            </Link>
+            <Link
+              to="/me"
+              className="inline-flex min-h-10 items-center gap-2 rounded-full border border-teal-300/18 bg-teal-300/[0.06] px-3 text-xs text-teal-100/85 active:scale-[0.98]"
+            >
+              {lang === "zh" ? "读者证" : "Reader Pass"}
+            </Link>
+          </div>
+
+          <header className="mb-5 rounded-[30px] border border-amber-300/18 bg-[#11110f]/88 p-5 shadow-[0_24px_68px_-48px_rgba(251,191,36,0.7)]">
+            <p className="text-[10px] uppercase tracking-[0.32em] text-amber-300/62">
+              {lang === "zh" ? "命运图书馆 · 我的书架" : "Destiny Library · My Shelf"}
+            </p>
+            <h1 className="mt-3 text-[2rem] font-semibold leading-tight text-amber-50">
+              {lang === "zh" ? "这里保存你的所有阅读。" : "Your readings live here."}
+            </h1>
+            <p className="mt-3 text-sm leading-relaxed text-amber-100/62">
+              {lang === "zh"
+                ? "命盘、报告、今日阅读、关系记录与会员权益，都归入这张读者书架。"
+                : "Charts, reports, today readings, relationships and pass benefits are kept on this shelf."}
+            </p>
+          </header>
+
+          {!usingRealChart && (
+            <div className="mb-4 rounded-2xl border border-amber-400/24 bg-amber-500/[0.055] px-4 py-3 text-xs leading-relaxed text-amber-100/72">
+              {hasPrimaryChart
+                ? d.demo_banner_home
+                : lang === "zh"
+                  ? "还没有主命盘。先建立主命盘后，书架里的今日阅读和报告会变成你的个人版本。"
+                  : "No primary chart yet. Build one to personalize today readings and reports."}
+            </div>
+          )}
+
+          <PersonalWorkspaceNav active="/me/home" />
+
+          <section className="mb-4 rounded-[26px] border border-white/10 bg-white/[0.035] p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-amber-50">
+                {lang === "zh" ? "书架状态" : "Shelf status"}
+              </h2>
+              <Link to={hasPrimaryChart ? "/me/profile" : "/ritual"} search={hasPrimaryChart ? undefined : ({ returnTo: "/me/home" } as never)} className="text-xs text-amber-300">
+                {hasPrimaryChart ? (lang === "zh" ? "管理" : "Manage") : (lang === "zh" ? "建档" : "Setup")}
+              </Link>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {appProgress.map((step, index) => (
+                <div key={step.en} className="rounded-2xl border border-white/10 bg-[#11130f] p-3">
+                  <span className={`grid size-7 place-items-center rounded-full text-xs ${step.done ? "bg-emerald-300/16 text-emerald-100" : "bg-amber-300/12 text-amber-100"}`}>
+                    {step.done ? <CheckCircle2 aria-hidden className="h-4 w-4" /> : index + 1}
+                  </span>
+                  <p className="mt-2 text-[12px] leading-snug text-amber-100/82">
+                    {lang === "zh" ? step.zh : step.en}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="grid gap-3">
+            {shelfSections.map((item) => {
+              const Icon = item.icon;
+              const content = (
+                <>
+                  <span className="grid size-12 shrink-0 place-items-center rounded-2xl border border-amber-300/18 bg-amber-300/[0.07] text-amber-200">
+                    <Icon aria-hidden className="h-5 w-5" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-base font-semibold text-amber-50">{item.title}</span>
+                    <span className="mt-1 block text-xs leading-relaxed text-amber-100/55">{item.body}</span>
+                  </span>
+                  <span className="text-amber-100/35">
+                    <ArrowRight aria-hidden className="h-5 w-5" />
+                  </span>
+                </>
+              );
+              if ("onClick" in item) {
+                return (
+                  <button
+                    key={item.title}
+                    type="button"
+                    onClick={item.onClick}
+                    className="flex min-h-[96px] items-center gap-3 rounded-[24px] border border-amber-300/18 bg-[#11110f]/82 p-3 text-left active:scale-[0.985]"
+                  >
+                    {content}
+                  </button>
+                );
+              }
+              return (
+                <Link
+                  key={item.title}
+                  to={item.to}
+                  className="flex min-h-[96px] items-center gap-3 rounded-[24px] border border-white/10 bg-white/[0.04] p-3 active:scale-[0.985]"
+                >
+                  {content}
+                </Link>
+              );
+            })}
+          </section>
+        </div>
+      </div>
+    );
+  }
 
 
 
   return (
     <div className="pl-shell min-h-screen bg-[#0a0a12]/25 text-amber-50">
-      <div className="mx-auto w-full max-w-[1100px] px-4 py-8 md:px-8 md:py-12">
+      <div className="mx-auto w-full max-w-[430px] px-4 pb-28 pt-6">
+        <div className="mb-4 flex items-center justify-between">
+          <button
+            type="button"
+            onClick={() => setShelfView("overview")}
+            className="inline-flex min-h-10 items-center gap-2 rounded-full border border-amber-300/18 bg-white/[0.035] px-3 text-xs text-amber-100/80 active:scale-[0.98]"
+          >
+            <ArrowRight aria-hidden className="h-4 w-4 rotate-180" />
+            {lang === "zh" ? "返回书架" : "Back to shelf"}
+          </button>
+          <Link to="/" className="text-xs text-amber-300/80">
+            {lang === "zh" ? "回首页" : "Home"}
+          </Link>
+        </div>
         {/* Demo banner — only while no real primary chart drives the page. */}
         {!usingRealChart && (
           <div className="mb-6 rounded-lg border border-amber-400/30 bg-amber-500/5 px-4 py-2 text-xs text-amber-200/90">
@@ -407,8 +603,8 @@ function DailyRoomPage() {
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-amber-100/70">
             {lang === "zh"
-              ? "这里只做一件事：今天的重点、六领域白话建议、未来 7 天走向。历史回声、命盘、关系与会员从上方书架导航进入。"
-              : "This page does one thing: today's headline, plain-language notes across six domains, and the 7-day arc. Historical Echoes, charts, relationships and membership live on their own tabs above."}
+              ? "今日重点、六领域白话建议、未来 7 天走向。"
+              : "Today's headline, plain-language notes across six domains, and the 7-day arc."}
           </p>
         </header>
 
@@ -417,9 +613,199 @@ function DailyRoomPage() {
         <div id="today" className="sr-only" aria-hidden />
         <p className="sr-only" data-testid="home-purpose-hint">
           {lang === "zh"
-            ? "本页专注今日命运；请用上方书架导航切换模块。"
-            : "This page focuses on today's fate only — use the library sub-nav above to switch modules."}
+            ? "今日命运"
+            : "Today's fate"}
         </p>
+
+        <section
+          className="mb-6 overflow-hidden rounded-lg border border-amber-300/20 bg-[#080810]/80 shadow-[0_24px_70px_-40px_rgba(0,0,0,0.95)]"
+          data-testid="app-command-center"
+        >
+          <div className="border-b border-amber-300/12 px-4 py-4 md:px-5">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.26em] text-amber-200/60">
+                  <CalendarCheck aria-hidden className="h-4 w-4" />
+                  {lang === "zh" ? "今日操作台" : "Today Command Center"}
+                </div>
+                <h2 className="mt-2 font-serif text-2xl leading-tight text-amber-50">
+                  {hasPrimaryChart
+                    ? lang === "zh"
+                      ? "先看今日重点，再进入需要的房间。"
+                      : "Start with today's priority, then enter the right room."
+                    : lang === "zh"
+                      ? "先建立主命盘，App 才会变成你的个人书房。"
+                      : "Build your primary chart first, then the app becomes your library."}
+                </h2>
+                <p className="mt-2 max-w-2xl text-sm leading-relaxed text-amber-100/68">
+                  {lang === "zh"
+                    ? "从今日阅读开始，接着管理命盘、关系、回声与会员。"
+                    : "Start with today, then charts, relationships, echoes and membership."}
+                </p>
+              </div>
+              <Link
+                to={hasPrimaryChart ? "/me/profile" : "/ritual"}
+                search={hasPrimaryChart ? undefined : ({ returnTo: "/me/home" } as never)}
+                className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-md bg-amber-300 px-4 text-sm font-medium text-[#111016] hover:bg-amber-200"
+              >
+                {hasPrimaryChart
+                  ? lang === "zh"
+                    ? "管理命盘"
+                    : "Manage charts"
+                  : lang === "zh"
+                    ? "开始建档"
+                    : "Start setup"}
+                <ArrowRight aria-hidden className="h-4 w-4" />
+              </Link>
+            </div>
+          </div>
+
+          <div className="grid border-b border-amber-300/12 md:grid-cols-3">
+            {appProgress.map((step, index) => (
+              <Link
+                key={step.en}
+                to={step.to}
+                search={step.to === "/ritual" ? ({ returnTo: "/me/home" } as never) : undefined}
+                className="flex min-h-16 items-center gap-3 border-amber-300/12 px-4 py-3 text-left hover:bg-amber-300/[0.05] md:border-r md:last:border-r-0"
+              >
+                <span
+                  className={`grid h-8 w-8 shrink-0 place-items-center rounded-md border text-xs ${
+                    step.done
+                      ? "border-emerald-300/35 bg-emerald-400/10 text-emerald-200"
+                      : "border-amber-300/25 bg-amber-300/8 text-amber-200"
+                  }`}
+                >
+                  {step.done ? <CheckCircle2 aria-hidden className="h-4 w-4" /> : index + 1}
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-sm text-amber-100">
+                    {lang === "zh" ? step.zh : step.en}
+                  </span>
+                  <span className="mt-0.5 block text-xs text-amber-100/50">
+                    {step.done
+                      ? lang === "zh"
+                        ? "已完成"
+                        : "Complete"
+                      : lang === "zh"
+                        ? "下一步"
+                        : "Next step"}
+                  </span>
+                </span>
+              </Link>
+            ))}
+          </div>
+
+          <div className="grid gap-px bg-amber-300/10 md:grid-cols-5">
+            {[
+              {
+                icon: CalendarCheck,
+                zh: "今日",
+                en: "Today",
+                bodyZh: "今日主线、六领域、七日趋势",
+                bodyEn: "Priority, domains, 7-day arc",
+                to: "/me/home" as const,
+              },
+              {
+                icon: ChartNoAxesCombined,
+                zh: "建档",
+                en: "Profile",
+                bodyZh: "主命盘、他人命盘、报告",
+                bodyEn: "Charts, people, reports",
+                to: "/me/profile" as const,
+              },
+              {
+                icon: Handshake,
+                zh: "关系",
+                en: "Bonds",
+                bodyZh: "好友邀请、便签、适配分析",
+                bodyEn: "Invites, notes, matching",
+                to: "/me/friends" as const,
+              },
+              {
+                icon: Sparkles,
+                zh: "探索",
+                en: "Explore",
+                bodyZh: "历史回声与同门设置",
+                bodyEn: "Echoes and fellowship",
+                to: "/me/echoes" as const,
+              },
+              {
+                icon: ShieldCheck,
+                zh: "账户",
+                en: "Account",
+                bodyZh: "会员、订单、工单",
+                bodyEn: "Pass, orders, tickets",
+                to: "/me/membership" as const,
+              },
+            ].map((item) => (
+              <Link
+                key={item.en}
+                to={item.to}
+                className="group min-h-28 bg-[#0b0b13]/95 p-4 hover:bg-[#11101a]"
+              >
+                <item.icon
+                  aria-hidden
+                  className="h-5 w-5 text-amber-300/75 transition group-hover:text-amber-200"
+                  strokeWidth={1.8}
+                />
+                <div className="mt-3 text-sm font-medium text-amber-100">
+                  {lang === "zh" ? item.zh : item.en}
+                </div>
+                <div className="mt-1 text-xs leading-relaxed text-amber-100/55">
+                  {lang === "zh" ? item.bodyZh : item.bodyEn}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        <section
+          className="mb-6 grid gap-3 md:grid-cols-3"
+          data-testid="app-guided-actions"
+        >
+          <Link
+            to="/me/friends"
+            className="rounded-lg border border-amber-300/18 bg-black/30 p-4 hover:border-amber-300/45 hover:bg-black/45"
+          >
+            <UserPlus aria-hidden className="h-5 w-5 text-amber-300/80" />
+            <div className="mt-3 text-sm font-medium text-amber-100">
+              {lang === "zh" ? "邀请一个可信好友" : "Invite a trusted friend"}
+            </div>
+            <p className="mt-1 text-xs leading-relaxed text-amber-100/58">
+              {lang === "zh"
+                ? "生成一次性邀请码，对方确认后才建立关系。"
+                : "Create a one-time invite; the bond forms only after confirmation."}
+            </p>
+          </Link>
+          <Link
+            to="/me/match"
+            className="rounded-lg border border-amber-300/18 bg-black/30 p-4 hover:border-amber-300/45 hover:bg-black/45"
+          >
+            <MessageCircle aria-hidden className="h-5 w-5 text-amber-300/80" />
+            <div className="mt-3 text-sm font-medium text-amber-100">
+              {lang === "zh" ? "查看适配分析" : "Open match analysis"}
+            </div>
+            <p className="mt-1 text-xs leading-relaxed text-amber-100/58">
+              {lang === "zh"
+                ? "从已保存命盘或匿名匹配池进入关系解读。"
+                : "Use saved charts or the anonymous pool for relationship reading."}
+            </p>
+          </Link>
+          <Link
+            to="/me/echoes"
+            className="rounded-lg border border-amber-300/18 bg-black/30 p-4 hover:border-amber-300/45 hover:bg-black/45"
+          >
+            <BookMarked aria-hidden className="h-5 w-5 text-amber-300/80" />
+            <div className="mt-3 text-sm font-medium text-amber-100">
+              {lang === "zh" ? "收藏历史回声" : "Save historical echoes"}
+            </div>
+            <p className="mt-1 text-xs leading-relaxed text-amber-100/58">
+              {lang === "zh"
+                ? "把相似人生阶段的故事留下，作为之后回看的书签。"
+                : "Keep similar life-stage stories as bookmarks for later."}
+            </p>
+          </Link>
+        </section>
 
 
 
@@ -1421,9 +1807,4 @@ function DailyCuratorCounsel({
 
 // HomeHubCards removed — duplicated PersonalWorkspaceNav entries.
 // Library sub-nav is now the single canonical entry point for /me/*.
-
-
-
-
-
 

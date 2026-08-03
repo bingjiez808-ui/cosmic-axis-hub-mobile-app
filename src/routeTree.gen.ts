@@ -10,15 +10,19 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TraditionsRouteImport } from './routes/traditions'
+import { Route as TodayRouteImport } from './routes/today'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SynthesisRouteImport } from './routes/synthesis'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as RitualRouteImport } from './routes/ritual'
 import { Route as ReportRouteImport } from './routes/report'
 import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as MeRouteImport } from './routes/me'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as LifeStudiesRouteImport } from './routes/life-studies'
 import { Route as DeleteAccountRouteImport } from './routes/delete-account'
+import { Route as ChartRouteImport } from './routes/chart'
+import { Route as BondsRouteImport } from './routes/bonds'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
@@ -41,12 +45,20 @@ import { Route as CommunityInboxRouteImport } from './routes/community.inbox'
 import { Route as CommunityGrantsRouteImport } from './routes/community.grants'
 import { Route as CommunityErrandsRouteImport } from './routes/community.errands'
 import { Route as CommunityEchoesRouteImport } from './routes/community.echoes'
+import { Route as ChartSystemsRouteImport } from './routes/chart.systems'
+import { Route as ChartSampleRouteImport } from './routes/chart.sample'
+import { Route as ChartQuestionsRouteImport } from './routes/chart.questions'
 import { Route as AuthResetRouteImport } from './routes/auth.reset'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as ApiGenerateAvatarRouteImport } from './routes/api/generate-avatar'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
+import { Route as LifeStudiesMathIndexRouteImport } from './routes/life-studies.math.index'
+import { Route as LifeStudiesMathYearRouteImport } from './routes/life-studies.math.year'
+import { Route as LifeStudiesMathNotesRouteImport } from './routes/life-studies.math.notes'
+import { Route as LifeStudiesMathLabRouteImport } from './routes/life-studies.math.lab'
+import { Route as LifeStudiesMathCurveRouteImport } from './routes/life-studies.math.curve'
 import { Route as CommunityLettersLetterIdRouteImport } from './routes/community.letters.$letterId'
 import { Route as AuthenticatedMeSageRouteImport } from './routes/_authenticated/me.sage'
 import { Route as AuthenticatedMeRelationshipsRouteImport } from './routes/_authenticated/me.relationships'
@@ -65,6 +77,11 @@ import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.
 const TraditionsRoute = TraditionsRouteImport.update({
   id: '/traditions',
   path: '/traditions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TodayRoute = TodayRouteImport.update({
+  id: '/today',
+  path: '/today',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TermsRoute = TermsRouteImport.update({
@@ -97,6 +114,11 @@ const PrivacyRoute = PrivacyRouteImport.update({
   path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MeRoute = MeRouteImport.update({
+  id: '/me',
+  path: '/me',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const McpRoute = McpRouteImport.update({
   id: '/mcp',
   path: '/mcp',
@@ -110,6 +132,16 @@ const LifeStudiesRoute = LifeStudiesRouteImport.update({
 const DeleteAccountRoute = DeleteAccountRouteImport.update({
   id: '/delete-account',
   path: '/delete-account',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChartRoute = ChartRouteImport.update({
+  id: '/chart',
+  path: '/chart',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BondsRoute = BondsRouteImport.update({
+  id: '/bonds',
+  path: '/bonds',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -221,6 +253,21 @@ const CommunityEchoesRoute = CommunityEchoesRouteImport.update({
   path: '/community/echoes',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ChartSystemsRoute = ChartSystemsRouteImport.update({
+  id: '/systems',
+  path: '/systems',
+  getParentRoute: () => ChartRoute,
+} as any)
+const ChartSampleRoute = ChartSampleRouteImport.update({
+  id: '/sample',
+  path: '/sample',
+  getParentRoute: () => ChartRoute,
+} as any)
+const ChartQuestionsRoute = ChartQuestionsRouteImport.update({
+  id: '/questions',
+  path: '/questions',
+  getParentRoute: () => ChartRoute,
+} as any)
 const AuthResetRoute = AuthResetRouteImport.update({
   id: '/reset',
   path: '/reset',
@@ -253,6 +300,31 @@ const Char91DotmcpChar93ListToolsRoute =
     path: '/.mcp/list-tools',
     getParentRoute: () => rootRouteImport,
   } as any)
+const LifeStudiesMathIndexRoute = LifeStudiesMathIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => LifeStudiesMathRoute,
+} as any)
+const LifeStudiesMathYearRoute = LifeStudiesMathYearRouteImport.update({
+  id: '/year',
+  path: '/year',
+  getParentRoute: () => LifeStudiesMathRoute,
+} as any)
+const LifeStudiesMathNotesRoute = LifeStudiesMathNotesRouteImport.update({
+  id: '/notes',
+  path: '/notes',
+  getParentRoute: () => LifeStudiesMathRoute,
+} as any)
+const LifeStudiesMathLabRoute = LifeStudiesMathLabRouteImport.update({
+  id: '/lab',
+  path: '/lab',
+  getParentRoute: () => LifeStudiesMathRoute,
+} as any)
+const LifeStudiesMathCurveRoute = LifeStudiesMathCurveRouteImport.update({
+  id: '/curve',
+  path: '/curve',
+  getParentRoute: () => LifeStudiesMathRoute,
+} as any)
 const CommunityLettersLetterIdRoute =
   CommunityLettersLetterIdRouteImport.update({
     id: '/community/letters/$letterId',
@@ -334,15 +406,19 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/auth': typeof AuthRouteWithChildren
+  '/bonds': typeof BondsRoute
+  '/chart': typeof ChartRouteWithChildren
   '/delete-account': typeof DeleteAccountRoute
   '/life-studies': typeof LifeStudiesRouteWithChildren
   '/mcp': typeof McpRoute
+  '/me': typeof MeRoute
   '/privacy': typeof PrivacyRoute
   '/report': typeof ReportRoute
   '/ritual': typeof RitualRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/synthesis': typeof SynthesisRoute
   '/terms': typeof TermsRoute
+  '/today': typeof TodayRoute
   '/traditions': typeof TraditionsRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -350,6 +426,9 @@ export interface FileRoutesByFullPath {
   '/api/generate-avatar': typeof ApiGenerateAvatarRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/reset': typeof AuthResetRoute
+  '/chart/questions': typeof ChartQuestionsRoute
+  '/chart/sample': typeof ChartSampleRoute
+  '/chart/systems': typeof ChartSystemsRoute
   '/community/echoes': typeof CommunityEchoesRoute
   '/community/errands': typeof CommunityErrandsRoute
   '/community/grants': typeof CommunityGrantsRoute
@@ -364,7 +443,7 @@ export interface FileRoutesByFullPath {
   '/dev/guided-library-v2': typeof DevGuidedLibraryV2Route
   '/dev/panorama-tour': typeof DevPanoramaTourRoute
   '/dev/reader-harness': typeof DevReaderHarnessRoute
-  '/life-studies/math': typeof LifeStudiesMathRoute
+  '/life-studies/math': typeof LifeStudiesMathRouteWithChildren
   '/auth/': typeof AuthIndexRoute
   '/community/': typeof CommunityIndexRoute
   '/life-studies/': typeof LifeStudiesIndexRoute
@@ -382,18 +461,27 @@ export interface FileRoutesByFullPath {
   '/me/relationships': typeof AuthenticatedMeRelationshipsRoute
   '/me/sage': typeof AuthenticatedMeSageRoute
   '/community/letters/$letterId': typeof CommunityLettersLetterIdRoute
+  '/life-studies/math/curve': typeof LifeStudiesMathCurveRoute
+  '/life-studies/math/lab': typeof LifeStudiesMathLabRoute
+  '/life-studies/math/notes': typeof LifeStudiesMathNotesRoute
+  '/life-studies/math/year': typeof LifeStudiesMathYearRoute
+  '/life-studies/math/': typeof LifeStudiesMathIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/bonds': typeof BondsRoute
+  '/chart': typeof ChartRouteWithChildren
   '/delete-account': typeof DeleteAccountRoute
   '/mcp': typeof McpRoute
+  '/me': typeof MeRoute
   '/privacy': typeof PrivacyRoute
   '/report': typeof ReportRoute
   '/ritual': typeof RitualRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/synthesis': typeof SynthesisRoute
   '/terms': typeof TermsRoute
+  '/today': typeof TodayRoute
   '/traditions': typeof TraditionsRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -401,6 +489,9 @@ export interface FileRoutesByTo {
   '/api/generate-avatar': typeof ApiGenerateAvatarRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/reset': typeof AuthResetRoute
+  '/chart/questions': typeof ChartQuestionsRoute
+  '/chart/sample': typeof ChartSampleRoute
+  '/chart/systems': typeof ChartSystemsRoute
   '/community/echoes': typeof CommunityEchoesRoute
   '/community/errands': typeof CommunityErrandsRoute
   '/community/grants': typeof CommunityGrantsRoute
@@ -415,7 +506,6 @@ export interface FileRoutesByTo {
   '/dev/guided-library-v2': typeof DevGuidedLibraryV2Route
   '/dev/panorama-tour': typeof DevPanoramaTourRoute
   '/dev/reader-harness': typeof DevReaderHarnessRoute
-  '/life-studies/math': typeof LifeStudiesMathRoute
   '/auth': typeof AuthIndexRoute
   '/community': typeof CommunityIndexRoute
   '/life-studies': typeof LifeStudiesIndexRoute
@@ -433,6 +523,11 @@ export interface FileRoutesByTo {
   '/me/relationships': typeof AuthenticatedMeRelationshipsRoute
   '/me/sage': typeof AuthenticatedMeSageRoute
   '/community/letters/$letterId': typeof CommunityLettersLetterIdRoute
+  '/life-studies/math/curve': typeof LifeStudiesMathCurveRoute
+  '/life-studies/math/lab': typeof LifeStudiesMathLabRoute
+  '/life-studies/math/notes': typeof LifeStudiesMathNotesRoute
+  '/life-studies/math/year': typeof LifeStudiesMathYearRoute
+  '/life-studies/math': typeof LifeStudiesMathIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -440,15 +535,19 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/about': typeof AboutRoute
   '/auth': typeof AuthRouteWithChildren
+  '/bonds': typeof BondsRoute
+  '/chart': typeof ChartRouteWithChildren
   '/delete-account': typeof DeleteAccountRoute
   '/life-studies': typeof LifeStudiesRouteWithChildren
   '/mcp': typeof McpRoute
+  '/me': typeof MeRoute
   '/privacy': typeof PrivacyRoute
   '/report': typeof ReportRoute
   '/ritual': typeof RitualRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/synthesis': typeof SynthesisRoute
   '/terms': typeof TermsRoute
+  '/today': typeof TodayRoute
   '/traditions': typeof TraditionsRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -456,6 +555,9 @@ export interface FileRoutesById {
   '/api/generate-avatar': typeof ApiGenerateAvatarRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/reset': typeof AuthResetRoute
+  '/chart/questions': typeof ChartQuestionsRoute
+  '/chart/sample': typeof ChartSampleRoute
+  '/chart/systems': typeof ChartSystemsRoute
   '/community/echoes': typeof CommunityEchoesRoute
   '/community/errands': typeof CommunityErrandsRoute
   '/community/grants': typeof CommunityGrantsRoute
@@ -470,7 +572,7 @@ export interface FileRoutesById {
   '/dev/guided-library-v2': typeof DevGuidedLibraryV2Route
   '/dev/panorama-tour': typeof DevPanoramaTourRoute
   '/dev/reader-harness': typeof DevReaderHarnessRoute
-  '/life-studies/math': typeof LifeStudiesMathRoute
+  '/life-studies/math': typeof LifeStudiesMathRouteWithChildren
   '/auth/': typeof AuthIndexRoute
   '/community/': typeof CommunityIndexRoute
   '/life-studies/': typeof LifeStudiesIndexRoute
@@ -488,6 +590,11 @@ export interface FileRoutesById {
   '/_authenticated/me/relationships': typeof AuthenticatedMeRelationshipsRoute
   '/_authenticated/me/sage': typeof AuthenticatedMeSageRoute
   '/community/letters/$letterId': typeof CommunityLettersLetterIdRoute
+  '/life-studies/math/curve': typeof LifeStudiesMathCurveRoute
+  '/life-studies/math/lab': typeof LifeStudiesMathLabRoute
+  '/life-studies/math/notes': typeof LifeStudiesMathNotesRoute
+  '/life-studies/math/year': typeof LifeStudiesMathYearRoute
+  '/life-studies/math/': typeof LifeStudiesMathIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -495,15 +602,19 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/auth'
+    | '/bonds'
+    | '/chart'
     | '/delete-account'
     | '/life-studies'
     | '/mcp'
+    | '/me'
     | '/privacy'
     | '/report'
     | '/ritual'
     | '/sitemap.xml'
     | '/synthesis'
     | '/terms'
+    | '/today'
     | '/traditions'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
@@ -511,6 +622,9 @@ export interface FileRouteTypes {
     | '/api/generate-avatar'
     | '/auth/callback'
     | '/auth/reset'
+    | '/chart/questions'
+    | '/chart/sample'
+    | '/chart/systems'
     | '/community/echoes'
     | '/community/errands'
     | '/community/grants'
@@ -543,18 +657,27 @@ export interface FileRouteTypes {
     | '/me/relationships'
     | '/me/sage'
     | '/community/letters/$letterId'
+    | '/life-studies/math/curve'
+    | '/life-studies/math/lab'
+    | '/life-studies/math/notes'
+    | '/life-studies/math/year'
+    | '/life-studies/math/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/about'
+    | '/bonds'
+    | '/chart'
     | '/delete-account'
     | '/mcp'
+    | '/me'
     | '/privacy'
     | '/report'
     | '/ritual'
     | '/sitemap.xml'
     | '/synthesis'
     | '/terms'
+    | '/today'
     | '/traditions'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
@@ -562,6 +685,9 @@ export interface FileRouteTypes {
     | '/api/generate-avatar'
     | '/auth/callback'
     | '/auth/reset'
+    | '/chart/questions'
+    | '/chart/sample'
+    | '/chart/systems'
     | '/community/echoes'
     | '/community/errands'
     | '/community/grants'
@@ -576,7 +702,6 @@ export interface FileRouteTypes {
     | '/dev/guided-library-v2'
     | '/dev/panorama-tour'
     | '/dev/reader-harness'
-    | '/life-studies/math'
     | '/auth'
     | '/community'
     | '/life-studies'
@@ -594,21 +719,30 @@ export interface FileRouteTypes {
     | '/me/relationships'
     | '/me/sage'
     | '/community/letters/$letterId'
+    | '/life-studies/math/curve'
+    | '/life-studies/math/lab'
+    | '/life-studies/math/notes'
+    | '/life-studies/math/year'
+    | '/life-studies/math'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/about'
     | '/auth'
+    | '/bonds'
+    | '/chart'
     | '/delete-account'
     | '/life-studies'
     | '/mcp'
+    | '/me'
     | '/privacy'
     | '/report'
     | '/ritual'
     | '/sitemap.xml'
     | '/synthesis'
     | '/terms'
+    | '/today'
     | '/traditions'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
@@ -616,6 +750,9 @@ export interface FileRouteTypes {
     | '/api/generate-avatar'
     | '/auth/callback'
     | '/auth/reset'
+    | '/chart/questions'
+    | '/chart/sample'
+    | '/chart/systems'
     | '/community/echoes'
     | '/community/errands'
     | '/community/grants'
@@ -648,6 +785,11 @@ export interface FileRouteTypes {
     | '/_authenticated/me/relationships'
     | '/_authenticated/me/sage'
     | '/community/letters/$letterId'
+    | '/life-studies/math/curve'
+    | '/life-studies/math/lab'
+    | '/life-studies/math/notes'
+    | '/life-studies/math/year'
+    | '/life-studies/math/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -655,15 +797,19 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AboutRoute: typeof AboutRoute
   AuthRoute: typeof AuthRouteWithChildren
+  BondsRoute: typeof BondsRoute
+  ChartRoute: typeof ChartRouteWithChildren
   DeleteAccountRoute: typeof DeleteAccountRoute
   LifeStudiesRoute: typeof LifeStudiesRouteWithChildren
   McpRoute: typeof McpRoute
+  MeRoute: typeof MeRoute
   PrivacyRoute: typeof PrivacyRoute
   ReportRoute: typeof ReportRoute
   RitualRoute: typeof RitualRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   SynthesisRoute: typeof SynthesisRoute
   TermsRoute: typeof TermsRoute
+  TodayRoute: typeof TodayRoute
   TraditionsRoute: typeof TraditionsRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -695,6 +841,13 @@ declare module '@tanstack/react-router' {
       path: '/traditions'
       fullPath: '/traditions'
       preLoaderRoute: typeof TraditionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/today': {
+      id: '/today'
+      path: '/today'
+      fullPath: '/today'
+      preLoaderRoute: typeof TodayRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/terms': {
@@ -739,6 +892,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/me': {
+      id: '/me'
+      path: '/me'
+      fullPath: '/me'
+      preLoaderRoute: typeof MeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/mcp': {
       id: '/mcp'
       path: '/mcp'
@@ -758,6 +918,20 @@ declare module '@tanstack/react-router' {
       path: '/delete-account'
       fullPath: '/delete-account'
       preLoaderRoute: typeof DeleteAccountRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/chart': {
+      id: '/chart'
+      path: '/chart'
+      fullPath: '/chart'
+      preLoaderRoute: typeof ChartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bonds': {
+      id: '/bonds'
+      path: '/bonds'
+      fullPath: '/bonds'
+      preLoaderRoute: typeof BondsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -914,6 +1088,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CommunityEchoesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/chart/systems': {
+      id: '/chart/systems'
+      path: '/systems'
+      fullPath: '/chart/systems'
+      preLoaderRoute: typeof ChartSystemsRouteImport
+      parentRoute: typeof ChartRoute
+    }
+    '/chart/sample': {
+      id: '/chart/sample'
+      path: '/sample'
+      fullPath: '/chart/sample'
+      preLoaderRoute: typeof ChartSampleRouteImport
+      parentRoute: typeof ChartRoute
+    }
+    '/chart/questions': {
+      id: '/chart/questions'
+      path: '/questions'
+      fullPath: '/chart/questions'
+      preLoaderRoute: typeof ChartQuestionsRouteImport
+      parentRoute: typeof ChartRoute
+    }
     '/auth/reset': {
       id: '/auth/reset'
       path: '/reset'
@@ -955,6 +1150,41 @@ declare module '@tanstack/react-router' {
       fullPath: '/.mcp/list-tools'
       preLoaderRoute: typeof Char91DotmcpChar93ListToolsRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/life-studies/math/': {
+      id: '/life-studies/math/'
+      path: '/'
+      fullPath: '/life-studies/math/'
+      preLoaderRoute: typeof LifeStudiesMathIndexRouteImport
+      parentRoute: typeof LifeStudiesMathRoute
+    }
+    '/life-studies/math/year': {
+      id: '/life-studies/math/year'
+      path: '/year'
+      fullPath: '/life-studies/math/year'
+      preLoaderRoute: typeof LifeStudiesMathYearRouteImport
+      parentRoute: typeof LifeStudiesMathRoute
+    }
+    '/life-studies/math/notes': {
+      id: '/life-studies/math/notes'
+      path: '/notes'
+      fullPath: '/life-studies/math/notes'
+      preLoaderRoute: typeof LifeStudiesMathNotesRouteImport
+      parentRoute: typeof LifeStudiesMathRoute
+    }
+    '/life-studies/math/lab': {
+      id: '/life-studies/math/lab'
+      path: '/lab'
+      fullPath: '/life-studies/math/lab'
+      preLoaderRoute: typeof LifeStudiesMathLabRouteImport
+      parentRoute: typeof LifeStudiesMathRoute
+    }
+    '/life-studies/math/curve': {
+      id: '/life-studies/math/curve'
+      path: '/curve'
+      fullPath: '/life-studies/math/curve'
+      preLoaderRoute: typeof LifeStudiesMathCurveRouteImport
+      parentRoute: typeof LifeStudiesMathRoute
     }
     '/community/letters/$letterId': {
       id: '/community/letters/$letterId'
@@ -1104,13 +1334,47 @@ const AuthRouteChildren: AuthRouteChildren = {
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
+interface ChartRouteChildren {
+  ChartQuestionsRoute: typeof ChartQuestionsRoute
+  ChartSampleRoute: typeof ChartSampleRoute
+  ChartSystemsRoute: typeof ChartSystemsRoute
+}
+
+const ChartRouteChildren: ChartRouteChildren = {
+  ChartQuestionsRoute: ChartQuestionsRoute,
+  ChartSampleRoute: ChartSampleRoute,
+  ChartSystemsRoute: ChartSystemsRoute,
+}
+
+const ChartRouteWithChildren = ChartRoute._addFileChildren(ChartRouteChildren)
+
+interface LifeStudiesMathRouteChildren {
+  LifeStudiesMathCurveRoute: typeof LifeStudiesMathCurveRoute
+  LifeStudiesMathLabRoute: typeof LifeStudiesMathLabRoute
+  LifeStudiesMathNotesRoute: typeof LifeStudiesMathNotesRoute
+  LifeStudiesMathYearRoute: typeof LifeStudiesMathYearRoute
+  LifeStudiesMathIndexRoute: typeof LifeStudiesMathIndexRoute
+}
+
+const LifeStudiesMathRouteChildren: LifeStudiesMathRouteChildren = {
+  LifeStudiesMathCurveRoute: LifeStudiesMathCurveRoute,
+  LifeStudiesMathLabRoute: LifeStudiesMathLabRoute,
+  LifeStudiesMathNotesRoute: LifeStudiesMathNotesRoute,
+  LifeStudiesMathYearRoute: LifeStudiesMathYearRoute,
+  LifeStudiesMathIndexRoute: LifeStudiesMathIndexRoute,
+}
+
+const LifeStudiesMathRouteWithChildren = LifeStudiesMathRoute._addFileChildren(
+  LifeStudiesMathRouteChildren,
+)
+
 interface LifeStudiesRouteChildren {
-  LifeStudiesMathRoute: typeof LifeStudiesMathRoute
+  LifeStudiesMathRoute: typeof LifeStudiesMathRouteWithChildren
   LifeStudiesIndexRoute: typeof LifeStudiesIndexRoute
 }
 
 const LifeStudiesRouteChildren: LifeStudiesRouteChildren = {
-  LifeStudiesMathRoute: LifeStudiesMathRoute,
+  LifeStudiesMathRoute: LifeStudiesMathRouteWithChildren,
   LifeStudiesIndexRoute: LifeStudiesIndexRoute,
 }
 
@@ -1123,15 +1387,19 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AboutRoute: AboutRoute,
   AuthRoute: AuthRouteWithChildren,
+  BondsRoute: BondsRoute,
+  ChartRoute: ChartRouteWithChildren,
   DeleteAccountRoute: DeleteAccountRoute,
   LifeStudiesRoute: LifeStudiesRouteWithChildren,
   McpRoute: McpRoute,
+  MeRoute: MeRoute,
   PrivacyRoute: PrivacyRoute,
   ReportRoute: ReportRoute,
   RitualRoute: RitualRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   SynthesisRoute: SynthesisRoute,
   TermsRoute: TermsRoute,
+  TodayRoute: TodayRoute,
   TraditionsRoute: TraditionsRoute,
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:

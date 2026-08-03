@@ -74,7 +74,7 @@ function EchoesPage() {
 
   return (
     <div className="pl-shell min-h-screen bg-[#0a0a12]/25 text-amber-50">
-      <div className="mx-auto w-full max-w-[1100px] px-4 py-8 md:px-8 md:py-12">
+      <div className="mx-auto w-full max-w-[430px] px-4 pb-28 pt-6">
         <PersonalWorkspaceNav active="/me/echoes" />
         <header className="pl-header mb-6">
           <div className="text-xs uppercase tracking-[0.24em] text-amber-300/60">

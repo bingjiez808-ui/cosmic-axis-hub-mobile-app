@@ -259,6 +259,109 @@
   }
 }
 
+/* --- Mobile app report shell -------------------------------- */
+.report-app-card {
+  position: relative;
+  isolation: isolate;
+  backdrop-filter: blur(18px);
+}
+
+.report-report-hero::after,
+.report-chapter-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(120deg, transparent 0%, hsl(45 70% 72% / 0.1) 38%, transparent 68%);
+  opacity: 0;
+  transform: translateX(-28%);
+}
+
+.report-chapter-card {
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform 0.28s ease,
+    border-color 0.35s ease,
+    background 0.35s ease;
+}
+
+.report-chapter-card:active {
+  border-color: hsl(45 70% 62% / 0.5);
+}
+
+.report-loading-card::before {
+  content: "";
+  position: absolute;
+  inset: -40%;
+  background: conic-gradient(from 0deg, transparent, hsl(45 70% 62% / 0.12), transparent 34%);
+  animation: report-slow-spin 9s linear infinite;
+}
+
+.report-loading-orbit {
+  animation: report-slow-spin 12s linear infinite;
+}
+
+.report-loading-sweep {
+  animation: report-sweep-x 2.8s ease-in-out infinite;
+}
+
+.report-hero-orbit {
+  animation: report-slow-spin 18s linear infinite;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .report-report-hero:hover::after,
+  .report-chapter-card:hover::after {
+    animation: report-card-sheen 0.9s ease-out;
+  }
+}
+
+@keyframes report-card-sheen {
+  0% {
+    opacity: 0;
+    transform: translateX(-35%);
+  }
+  22% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(55%);
+  }
+}
+
+@keyframes report-slow-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes report-sweep-x {
+  0%,
+  100% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  45% {
+    opacity: 1;
+  }
+  70% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .report-loading-card::before,
+  .report-loading-orbit,
+  .report-loading-sweep,
+  .report-hero-orbit {
+    animation: none !important;
+  }
+}
+
 /* --- Detail button ------------------------------------------- */
 .rm-detail-btn {
   position: relative;
@@ -526,5 +629,4 @@
     max-height: clamp(140px, 42vw, 210px);
   }
 }
-
 

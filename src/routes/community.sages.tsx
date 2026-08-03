@@ -12,10 +12,7 @@ import { Button } from "@/components/ui/button";
 import {
   HallEmpty,
   HallGate,
-  HallHeader,
-  HallMobileBar,
-  HallNav,
-  HallSection,
+  HallHeader,  HallSection,
 } from "@/experiences/community-hall/HallShell";
 import { hallErrorMessage } from "@/lib/community-hall-errors";
 import { LETTER_TOPICS, useCommunityHall, type AgeBand, type LetterTopic } from "@/lib/i18n-community-hall";
@@ -56,7 +53,7 @@ function SagesPage() {
   const c = useCommunityHall();
   const zh = c.lang !== "en";
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 pb-16 pt-28 sm:px-6 sm:pb-24 sm:pt-32">
+    <main className="mx-auto w-full max-w-[430px] px-4 pb-28 pt-[calc(env(safe-area-inset-top)+0.75rem)]">
       <HallHeader
         title={zh ? "历代先贤" : "The Council of Sages"}
         subtitle={
@@ -65,11 +62,9 @@ function SagesPage() {
             : "Twelve thinkers, all long dead. Each answers from their own documented life, arguments and voice — a reading of their work, never a prophecy."
         }
       />
-      <HallNav />
       <HallGate>
         <SageDesk />
       </HallGate>
-      <HallMobileBar />
     </main>
   );
 }

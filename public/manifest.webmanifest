@@ -1,15 +1,39 @@
 {
   "name": "Fate Nexus",
   "short_name": "Fate Nexus",
-  "description": "A synthesis of four ancient traditions — Western Astrology, Vedic Jyotish, Chinese BaZi and Zi Wei Dou Shu.",
-  "start_url": "/",
+  "description": "A private destiny library app for daily readings, reports, relationship matching, friends and historical echoes.",
+  "start_url": "/me/home",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "orientation": "portrait",
   "background_color": "#0a0a0f",
   "theme_color": "#0a0a0f",
   "lang": "en",
   "categories": ["lifestyle", "education"],
+  "shortcuts": [
+    {
+      "name": "Friends",
+      "short_name": "Friends",
+      "description": "Open relationship invites, notes and friend status.",
+      "url": "/me/friends",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Match",
+      "short_name": "Match",
+      "description": "Open compatibility and relationship analysis.",
+      "url": "/me/match",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Reports",
+      "short_name": "Reports",
+      "description": "Open charts and personal reports.",
+      "url": "/me/profile",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ],
   "icons": [
     { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },

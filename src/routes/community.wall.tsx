@@ -12,10 +12,7 @@ import { Button } from "@/components/ui/button";
 import {
   HallEmpty,
   HallGate,
-  HallHeader,
-  HallMobileBar,
-  HallNav,
-  HallSection,
+  HallHeader,  HallSection,
 } from "@/experiences/community-hall/HallShell";
 import { HallError, HallSkeleton } from "@/experiences/community-hall/HallStates";
 import { ReportButton } from "@/experiences/community-hall/ReportButton";
@@ -55,7 +52,7 @@ function WallPage() {
   const c = useCommunityHall();
   const zh = c.lang !== "en";
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 pb-16 pt-28 sm:px-6 sm:pb-24 sm:pt-32">
+    <main className="mx-auto w-full max-w-[430px] px-4 pb-28 pt-[calc(env(safe-area-inset-top)+0.75rem)]">
       <HallHeader
         title={zh ? "公共信墙" : "The open wall"}
         subtitle={
@@ -64,11 +61,9 @@ function WallPage() {
             : "These letters were not delivered by the courier — their authors pinned them here. Answer whichever one moves you."
         }
       />
-      <HallNav />
       <HallGate>
         <WallList />
       </HallGate>
-      <HallMobileBar />
     </main>
   );
 }

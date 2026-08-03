@@ -12,10 +12,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   HallGate,
-  HallHeader,
-  HallMobileBar,
-  HallNav,
-  HallSection,
+  HallHeader,  HallSection,
 } from "@/experiences/community-hall/HallShell";
 import { EntrustPanel } from "@/experiences/community-hall/EntrustPanel";
 import { HallError, HallSkeleton } from "@/experiences/community-hall/HallStates";
@@ -48,7 +45,7 @@ function LibrarianDeskPage() {
   const c = useCommunityHall();
   const zh = c.lang !== "en";
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 pb-16 pt-28 sm:px-6 sm:pb-24 sm:pt-32">
+    <main className="mx-auto w-full max-w-[430px] px-4 pb-28 pt-[calc(env(safe-area-inset-top)+0.75rem)]">
       <HallHeader
         title={zh ? "图书管理员案头" : "The librarian's desk"}
         subtitle={
@@ -57,11 +54,9 @@ function LibrarianDeskPage() {
             : "Every letter addressed to the librarian lands here. Answer it yourself, or entrust it to a traveler who offered to help — they may still decline."
         }
       />
-      <HallNav />
       <HallGate>
         <Desk />
       </HallGate>
-      <HallMobileBar />
     </main>
   );
 }

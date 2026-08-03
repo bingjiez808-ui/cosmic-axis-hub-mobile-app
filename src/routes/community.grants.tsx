@@ -12,10 +12,7 @@ import { Button } from "@/components/ui/button";
 import {
   HallEmpty,
   HallGate,
-  HallHeader,
-  HallMobileBar,
-  HallNav,
-  HallSection,
+  HallHeader,  HallSection,
 } from "@/experiences/community-hall/HallShell";
 import { hallErrorMessage } from "@/lib/community-hall-errors";
 import { useCommunityHall } from "@/lib/i18n-community-hall";
@@ -58,7 +55,7 @@ function GrantsPage() {
   const c = useCommunityHall();
   const zh = c.lang !== "en";
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 pb-16 pt-28 sm:px-6 sm:pb-24 sm:pt-32">
+    <main className="mx-auto w-full max-w-[430px] px-4 pb-28 pt-[calc(env(safe-area-inset-top)+0.75rem)]">
       <HallHeader
         title={zh ? "回信权益" : "Reply grants"}
         subtitle={
@@ -67,11 +64,9 @@ function GrantsPage() {
             : "Sage membership gifts two sage replies and one librarian-authorised human reply (answered by the librarian, or by a traveler they entrust). Need more? ¥3 for one, ¥10 for four."
         }
       />
-      <HallNav />
       <HallGate>
         <GrantsBody />
       </HallGate>
-      <HallMobileBar />
     </main>
   );
 }

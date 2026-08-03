@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
+import { ArrowLeft } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { CommonsHallNav } from "@/components/CommonsHallNav";
 import { DailyRoomError } from "@/experiences/daily-room/fallback";
 import { PersonalShellPending } from "@/experiences/daily-room/personal-shell-pending";
 import {
@@ -265,18 +265,32 @@ function LiteratureHallPage() {
 
   /* ── render ───────────────────────────────────────────────────── */
   return (
-    <div className="min-h-screen bg-[#0a0a12]/25 text-amber-50">
-      <div style={{ paddingTop: "var(--site-nav-height, 96px)" }}>
-        <CommonsHallNav active="/me/literature" />
-      </div>
-      <div className="mx-auto w-full max-w-[1240px] px-4 pb-12 pt-6 md:px-8 md:pb-16">
+    <div className="min-h-screen bg-[#090810] text-amber-50">
+      <div className="mx-auto w-full max-w-[430px] px-4 pb-28 pt-[calc(env(safe-area-inset-top)+0.75rem)]">
+        <div className="mb-5 flex items-center gap-3">
+          <Link
+            to="/life-studies"
+            className="inline-flex size-10 shrink-0 items-center justify-center rounded-full border border-amber-400/20 bg-black/30 text-amber-100 transition active:scale-95"
+            aria-label={isZh ? "返回命运通识馆" : "Back to Life Studies"}
+          >
+            <ArrowLeft className="size-4" />
+          </Link>
+          <div>
+            <div className="text-[10px] uppercase tracking-[0.22em] text-amber-300/55">
+              {isZh ? "命运通识馆" : "Life Studies"}
+            </div>
+            <div className="mt-1 text-sm font-medium text-amber-100">
+              {isZh ? "语文馆" : "Literature Hall"}
+            </div>
+          </div>
+        </div>
         <HeaderBlock isZh={isZh} />
 
         {status === "loading" && <LoadingBox isZh={isZh} />}
         {status === "no-chart" && <NoChartBlock isZh={isZh} />}
 
         {ready && (
-          <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
+          <div className="mt-6 space-y-6">
             {/* ── Reading desk ─────────────────────────────────── */}
             <div>
               <SelectionBar
@@ -381,18 +395,18 @@ function LiteratureHallPage() {
 
 function HeaderBlock({ isZh }: { isZh: boolean }) {
   return (
-    <header className="mb-8">
+    <header className="mb-8 rounded-[28px] border border-amber-400/15 bg-gradient-to-br from-[#17121f] via-[#0f0d16] to-[#090810] p-5 shadow-[0_24px_70px_-42px_rgba(251,191,36,0.45)]">
       <div className="text-xs uppercase tracking-[0.24em] text-amber-300/60">
         {isZh ? "命运通识馆 · 语文馆" : "Destiny Commons · Literature Hall"}
       </div>
-      <h1 className="mt-3 font-serif text-3xl leading-tight tracking-wide md:text-4xl">
+      <h1 className="mt-3 font-serif text-2xl leading-tight tracking-wide">
         {isZh ? (
-          <>有些句子不是曾经没读懂，<br />而是那时的人生，还没有走到它面前。</>
+          <>有些句子不是曾经没读懂，而是那时的人生，还没有走到它面前。</>
         ) : (
-          <>Some words were not beyond your understanding.<br />Your life simply had not reached them yet.</>
+          <>Some words were not beyond your understanding. Your life simply had not reached them yet.</>
         )}
       </h1>
-      <p className="mt-4 max-w-2xl text-sm leading-relaxed text-amber-100/70 md:text-base">
+      <p className="mt-4 text-sm leading-relaxed text-amber-100/70">
         {isZh
           ? "图书馆会根据你正在经历的章节，为你翻开一页；但最后的注解，仍由你自己写下。"
           : "The library may open a page for the chapter you are living, but the final annotation remains yours to write."}
@@ -450,7 +464,7 @@ function SelectionBar({
   return (
     <section
       aria-label={isZh ? "阅读设定" : "Reading setup"}
-      className="rounded-2xl border border-amber-400/20 bg-black/30 p-4 md:p-5"
+      className="rounded-[24px] border border-amber-400/20 bg-black/30 p-4"
     >
       <div className="flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-[0.22em] text-amber-300/70">
         <span className="rounded-full border border-amber-400/25 px-3 py-1">
@@ -577,7 +591,7 @@ function BookPage({
 
   return (
     <article
-      className="relative mt-6 overflow-hidden rounded-2xl border border-amber-400/25 bg-gradient-to-br from-[#141018] via-[#0f0d16] to-[#0b0913] shadow-[0_20px_60px_-30px_rgba(251,191,36,0.35)]"
+      className="relative mt-6 overflow-hidden rounded-[28px] border border-amber-400/25 bg-gradient-to-br from-[#141018] via-[#0f0d16] to-[#0b0913] shadow-[0_20px_60px_-30px_rgba(251,191,36,0.35)]"
       style={{
         animation: "lit-page-turn 720ms cubic-bezier(.2,.7,.2,1) both",
         transformOrigin: "left center",
@@ -586,7 +600,7 @@ function BookPage({
       {/* Book spine gutter */}
       <span
         aria-hidden
-        className="pointer-events-none absolute left-0 top-0 hidden h-full w-8 bg-gradient-to-r from-black/70 via-black/30 to-transparent md:block"
+        className="pointer-events-none absolute left-0 top-0 h-full w-5 bg-gradient-to-r from-black/60 via-black/20 to-transparent"
       />
       {/* Dog-eared corner */}
       <span
@@ -606,7 +620,7 @@ function BookPage({
         />
       )}
 
-      <div className="relative p-6 md:pl-12 md:pr-10 md:py-10">
+      <div className="relative p-5">
         {/* Header — page metadata */}
         <div className="flex flex-wrap items-center gap-3 text-[11px] uppercase tracking-[0.24em] text-amber-300/60">
           <span>{isZh ? "此刻为你翻到的一页" : "The page turned for you"}</span>
@@ -621,14 +635,14 @@ function BookPage({
         </div>
 
         {/* Passage */}
-        <blockquote className="mt-5 font-serif text-2xl leading-relaxed text-amber-50 md:text-3xl">
+        <blockquote className="mt-5 font-serif text-2xl leading-relaxed text-amber-50">
           &ldquo;{isZh
             ? rec.passage.display_text_zh ?? rec.passage.original_text
             : rec.passage.display_text_en ?? rec.passage.original_text}&rdquo;
         </blockquote>
         <div className="mt-5 text-sm text-amber-200/80">{authorLine}</div>
 
-        <div className="mt-8 grid gap-6 md:grid-cols-[minmax(0,1fr)_220px]">
+        <div className="mt-8 space-y-6">
           <div>
             <Section title={isZh ? "原文发生的处境" : "Where these words were written"}>
               {(isZh ? rec.passage.context_zh : rec.passage.context_en) ?? "—"}
@@ -647,7 +661,7 @@ function BookPage({
           </div>
 
           {/* Right rail — quick actions */}
-          <aside className="flex flex-col gap-2">
+          <aside className="grid grid-cols-2 gap-2">
             <ActionBtn onClick={onBookmark} primary={rec.saved}>
               <span aria-hidden className="mr-2">{rec.saved ? "🔖" : "📑"}</span>
               {rec.saved
@@ -798,7 +812,7 @@ function BookshelfRail({
       <button
         type="button"
         onClick={() => setOpenMobile(!openMobile)}
-        className="flex items-center justify-between rounded-xl border border-amber-400/20 bg-black/40 px-4 py-3 text-sm text-amber-100 lg:hidden"
+        className="flex w-full items-center justify-between rounded-[22px] border border-amber-400/20 bg-black/40 px-4 py-3 text-sm text-amber-100"
         aria-expanded={openMobile}
       >
         <span className="flex items-center gap-2">
@@ -809,9 +823,9 @@ function BookshelfRail({
       </button>
 
       <aside
-        className={`${openMobile ? "block" : "hidden"} lg:block lg:sticky lg:top-24 lg:self-start`}
+        className={openMobile ? "block" : "hidden"}
       >
-        <div className="rounded-2xl border border-amber-400/20 bg-black/30 p-4">
+        <div className="rounded-[24px] border border-amber-400/20 bg-black/30 p-4">
           <div className="mb-3 flex items-center justify-between">
             <div className="text-[11px] uppercase tracking-[0.24em] text-amber-300/60">
               {isZh ? "我的书签架" : "My bookshelf"}
@@ -826,7 +840,7 @@ function BookshelfRail({
                 : "No saved pages yet. When a page moves you, tap Save this page and it will appear here."}
             </p>
           ) : (
-            <ul className="max-h-[520px] space-y-2 overflow-y-auto pr-1">
+            <ul className="max-h-[420px] space-y-2 overflow-y-auto pr-1">
               {shelf.map((row) => {
                 const isActive = row.id === currentId;
                 const text = isZh
@@ -913,7 +927,7 @@ function ShareModal({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-3xl rounded-2xl border border-amber-400/25 bg-[#0a0a12] p-6 text-amber-50"
+        className="max-h-[92vh] w-full max-w-[430px] overflow-y-auto rounded-[28px] border border-amber-400/25 bg-[#0a0a12] p-4 text-amber-50"
       >
         <div className="mb-4 flex items-center justify-between">
           <h3 className="font-serif text-lg">{isZh ? "生成分享卡" : "Create share card"}</h3>

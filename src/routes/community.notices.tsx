@@ -14,10 +14,7 @@ import { Button } from "@/components/ui/button";
 import { CourierProgressStrip } from "@/experiences/community-hall/CourierProgressStrip";
 import {
   HallGate,
-  HallHeader,
-  HallMobileBar,
-  HallNav,
-  HallSection,
+  HallHeader,  HallSection,
 } from "@/experiences/community-hall/HallShell";
 import { HallEmptyState, HallError, HallSkeleton } from "@/experiences/community-hall/HallStates";
 import { SentLetterCard } from "@/experiences/community-hall/LetterCards";
@@ -73,7 +70,7 @@ function NoticeCentrePage() {
     filter === "waiting" ? waiting : filter === "answered" ? answered : filter === "closed" ? closed : sent;
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 pb-16 pt-28 sm:px-6 sm:pb-24 sm:pt-32">
+    <main className="mx-auto w-full max-w-[430px] px-4 pb-28 pt-[calc(env(safe-area-inset-top)+0.75rem)]">
       <HallHeader
         title={zh ? "来信通知中心" : "Notice centre"}
         subtitle={
@@ -82,7 +79,6 @@ function NoticeCentrePage() {
             : "Where each of your letters travelled, who answered, and whatever the courier just brought in — all on one page."
         }
       />
-      <HallNav />
 
       <CourierProgressStrip />
 
@@ -191,8 +187,6 @@ function NoticeCentrePage() {
 
         <NotificationCenter />
       </HallGate>
-
-      <HallMobileBar />
     </main>
   );
 }

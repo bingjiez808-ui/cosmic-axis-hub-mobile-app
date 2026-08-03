@@ -225,6 +225,24 @@
   animation: pl-pulse-ring 1.2s ease-out 1;
 }
 
+.pl-app-tab {
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.pl-app-tab[data-active="true"] {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 236, 190, 0.1),
+    0 0 18px -10px rgba(252, 211, 77, 0.7);
+}
+
+.pl-app-tab:active {
+  transform: scale(0.96);
+}
+
 /* Underline that slides in from the left when a tab becomes current. */
 .pl-underline-tab {
   position: relative;

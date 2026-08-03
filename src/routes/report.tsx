@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 
 import { motion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type React from "react";
 import {
   Sparkles,
   Compass,
@@ -149,6 +150,7 @@ import {
   SaveReadingBar,
   TarotDraw,
 } from "@/components/ReportExtras";
+import { PremiumPdfCard } from "@/components/PremiumPdfCard";
 import { AccountModal } from "@/components/AccountModal";
 import { useLang } from "@/lib/i18n";
 import {
@@ -1055,6 +1057,107 @@ function DimensionCardShell({
   );
 }
 
+function ReportAppLoading({
+  lang,
+  aiState,
+  aiProgress,
+  aiError,
+  onRetry,
+}: {
+  lang: "en" | "zh";
+  aiState: "loading" | "error";
+  aiProgress: { done: number; total: number; degraded: number };
+  aiError: string | null;
+  onRetry: () => void;
+}) {
+  const total = aiProgress.total || DIM_KEYS.length + 1;
+  const pct = Math.max(8, Math.min(100, Math.round((aiProgress.done / total) * 100)));
+  const steps =
+    lang === "zh"
+      ? ["核对出生资料", "读取四大体系", "按问题排序", "写入章节"]
+      : ["Checking birth data", "Reading four systems", "Sorting by question", "Writing chapters"];
+
+  if (aiState === "error") {
+    return (
+      <div className="report-app-card rounded-[28px] border border-red-300/25 bg-red-950/10 p-5">
+        <div className="flex items-start gap-3">
+          <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-red-300/10 text-red-200">
+            <AlertTriangle size={18} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-base font-semibold text-red-100">
+              {lang === "zh" ? "个性化解读暂时没有写完" : "Personal reading paused"}
+            </p>
+            <p className="mt-1 text-sm leading-relaxed text-stone-warm/62">
+              {lang === "zh"
+                ? `先显示可阅读的基础内容，错误：${aiError ?? "unknown"}`
+                : `Showing readable base content first. Error: ${aiError ?? "unknown"}`}
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onRetry}
+          className="mt-4 min-h-12 w-full rounded-2xl border border-red-200/35 bg-red-200/10 px-4 text-sm font-semibold text-red-100 active:scale-[0.98]"
+        >
+          {lang === "zh" ? "重新生成" : "Retry"}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="report-app-card report-loading-card relative overflow-hidden rounded-[28px] border border-gold-dust/25 bg-[#11110f]/88 p-5">
+      <div className="pointer-events-none absolute inset-0 opacity-70">
+        <span className="report-loading-orbit absolute left-1/2 top-[-76px] size-44 -translate-x-1/2 rounded-full border border-gold-dust/20" />
+        <span className="report-loading-sweep absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gold-light/70 to-transparent" />
+      </div>
+      <div className="relative">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.32em] text-gold-dust/70">
+              {lang === "zh" ? "命盘生成中" : "Generating"}
+            </p>
+            <h2 className="mt-2 text-xl font-semibold leading-tight text-stone-warm">
+              {lang === "zh" ? "馆员正在整理你的章节" : "The librarian is arranging chapters"}
+            </h2>
+          </div>
+          <div className="grid size-14 shrink-0 place-items-center rounded-2xl border border-gold-dust/25 bg-gold-dust/10">
+            <Sparkles className="animate-pulse text-gold-light" size={22} />
+          </div>
+        </div>
+        <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/[0.06]">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-gold-dust via-gold-light to-emerald-200 transition-[width] duration-700"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+        <div className="mt-3 flex items-center justify-between text-[11px] uppercase tracking-[0.22em] text-gold-dust/70">
+          <span>{aiProgress.done}/{total}</span>
+          <span>{pct}%</span>
+        </div>
+        <div className="mt-5 grid grid-cols-2 gap-2">
+          {steps.map((step, i) => {
+            const active = pct >= (i + 1) * 22;
+            return (
+              <div
+                key={step}
+                className={`rounded-2xl border px-3 py-2 text-[12px] ${
+                  active
+                    ? "border-gold-dust/35 bg-gold-dust/[0.08] text-gold-light"
+                    : "border-white/8 bg-white/[0.025] text-stone-warm/45"
+                }`}
+              >
+                {step}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 
 function ReportPage() {
@@ -1077,9 +1180,11 @@ function ReportPage() {
   const [chartSystem, setChartSystem] = useState<SystemKey>("western");
   // Gender supplied in-place when Zi Wei is missing that parameter.
   const [genderOverride, setGenderOverride] = useState<"male" | "female" | null>(null);
+  const [mobileParamsOpen, setMobileParamsOpen] = useState(false);
 
   // Which dimension's detail modal is open (by key), or null.
   const [detailKey, setDetailKey] = useState<string | null>(null);
+  const [mobileTool, setMobileTool] = useState<"timeline" | "events" | "tarot" | "premium" | null>(null);
 
   // Perf-lite flag for the whole report page: low-end device, save-data,
   // reduced-motion, sustained low FPS, or an explicit "stable" preference.
@@ -1708,30 +1813,58 @@ function ReportPage() {
   );
 
   return (
-    <div className="pt-32 pb-32">
+    <div className="report-app-page pb-32 pt-[calc(env(safe-area-inset-top)+20px)] md:pt-32">
       {/* Hero */}
-      <header className="mx-auto max-w-4xl px-6 pb-16 text-center">
-        <p className="mb-4 text-[10px] uppercase tracking-[0.42em] text-gold-dust">
-          {t.report_kicker}
-        </p>
-        <h1 className="mb-6 font-serif text-4xl leading-[1.1] text-stone-warm md:text-6xl">
-          {search.name ? (
-            <>
-              <span className="italic gold-gradient-text">{search.name}</span>
-              <br />
-              {t.report_read_across}
-            </>
-          ) : lang === "zh" ? (
-            <>你的一生，被四大体系同时阅读</>
-          ) : (
-            <>Your life, read across four traditions</>
-          )}
-        </h1>
-        <p className="mx-auto mt-6 max-w-3xl font-serif text-xl italic leading-relaxed text-stone-warm/80 md:text-2xl">
-          “{summary}”
-        </p>
+      <header className="mx-auto max-w-4xl px-4 pb-8 md:px-6 md:pb-16 md:text-center">
+        <div className="mb-5 flex items-center justify-between gap-3 md:hidden">
+          <Link
+            to="/chart"
+            className="grid size-11 place-items-center rounded-full border border-white/10 bg-white/[0.045] text-gold-light"
+            aria-label={lang === "zh" ? "返回命盘" : "Back to chart"}
+          >
+            <ChevronRight className="rotate-180" size={18} />
+          </Link>
+          <p className="text-[11px] uppercase tracking-[0.28em] text-gold-dust/72">
+            {lang === "zh" ? "命盘报告" : "Chart report"}
+          </p>
+          <button
+            type="button"
+            onClick={() => scrollToId("report-chapters")}
+            className="grid size-11 place-items-center rounded-full border border-gold-dust/25 bg-gold-dust/[0.08] text-gold-light"
+            aria-label={lang === "zh" ? "查看章节" : "Chapters"}
+          >
+            <BookOpen size={17} />
+          </button>
+        </div>
+        <div className="report-app-card report-report-hero relative overflow-hidden rounded-[32px] border border-gold-dust/24 bg-[#10100e]/90 px-5 py-6 text-left shadow-[0_30px_80px_-50px_rgba(251,191,36,0.7)] md:bg-transparent md:p-0 md:text-center md:shadow-none">
+          <div className="pointer-events-none absolute inset-0 md:hidden">
+            <span className="report-hero-orbit absolute -right-10 -top-14 size-40 rounded-full border border-gold-dust/16" />
+            <span className="absolute bottom-0 left-0 h-28 w-full bg-gradient-to-t from-gold-dust/[0.07] to-transparent" />
+          </div>
+          <div className="relative">
+            <p className="mb-3 text-[10px] uppercase tracking-[0.36em] text-gold-dust md:mb-4 md:tracking-[0.42em]">
+              {t.report_kicker}
+            </p>
+            <h1 className="mb-4 break-words text-[28px] font-semibold leading-[1.12] text-stone-warm md:mb-6 md:font-serif md:text-6xl">
+              {search.name ? (
+                <>
+                  <span className="italic gold-gradient-text">{search.name}</span>
+                  <br />
+                  {t.report_read_across}
+                </>
+              ) : lang === "zh" ? (
+                <>你的一生，被四大体系同时阅读</>
+              ) : (
+                <>Your life, read across four traditions</>
+              )}
+            </h1>
+            <p className="font-serif text-[15px] italic leading-[1.8] text-stone-warm/82 md:mx-auto md:mt-6 md:max-w-3xl md:text-2xl">
+              “{summary}”
+            </p>
+          </div>
+        </div>
         {(search.date || search.place) && (
-          <p className="mt-8 text-[10px] uppercase tracking-[0.4em] text-stone-warm/40">
+          <p className="mt-4 px-1 text-[10px] uppercase tracking-[0.28em] text-stone-warm/42 md:mt-8 md:tracking-[0.4em]">
             {[search.date, search.time, search.place].filter(Boolean).join(" · ")}
           </p>
         )}
@@ -1837,11 +1970,35 @@ function ReportPage() {
             hint: d.headline[li],
           })),
         ];
-        return <ReportToc items={toc} lang={lang} />;
+        return <div className="hidden md:block"><ReportToc items={toc} lang={lang} /></div>;
       })()}
 
-      <section id="natal-chart" className="mx-auto mb-24 max-w-6xl scroll-mt-[calc(var(--site-nav-height,96px)+72px)] px-4 sm:px-6">
-        <div className="glass-card rounded-3xl p-4 sm:p-8 md:p-12">
+      <section className="mx-auto mb-5 max-w-5xl px-4 md:hidden">
+        <div className="report-app-card rounded-[28px] border border-gold-dust/22 bg-white/[0.035] p-4">
+          <p className="mb-3 text-[10px] uppercase tracking-[0.3em] text-gold-dust/72">
+            {lang === "zh" ? "报告导览" : "Report guide"}
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { id: "natal-chart", label: lang === "zh" ? "命盘总览" : "Chart" },
+              { id: "report-chapters", label: lang === "zh" ? "章节解读" : "Chapters" },
+              { id: "life-timeline", label: lang === "zh" ? "时间线" : "Timeline" },
+            ].map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => scrollToId(item.id)}
+                className="min-h-16 rounded-2xl border border-white/10 bg-[#141511] px-2 text-center text-[12px] font-semibold text-stone-warm/86 active:scale-[0.98]"
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="natal-chart" className="mx-auto mb-8 max-w-6xl scroll-mt-24 px-4 sm:px-6 md:mb-24">
+        <div className="glass-card rounded-[28px] p-4 sm:p-8 md:rounded-3xl md:p-12">
           {/* Intro block — always full width so mobile sees context first */}
           <div className="mb-5 min-w-0 lg:mb-6">
             <p className="mb-3 text-[10px] uppercase tracking-[0.4em] text-gold-dust">
@@ -1915,9 +2072,64 @@ function ReportPage() {
             })}
           </div>
 
+          <div className="md:hidden">
+            <div className="overflow-hidden rounded-[26px] border border-white/10 bg-[#11130f] p-3">
+              <div className="relative w-full text-stone-warm/40">
+                <FourSystemsChart
+                  snapshot={snapshot}
+                  lang={lang}
+                  seed={`${search.name ?? ""}|${search.date ?? ""}|${search.time ?? ""}|${search.place ?? ""}`}
+                  size={Math.min(wheelSize, chartSystem === "bazi" ? 292 : 330)}
+                  stageHeight={
+                    Math.min(wheelSize, chartSystem === "bazi" ? 292 : 330) +
+                    (chartSystem === "bazi" ? 126 : 24)
+                  }
+                  hideTabs
+                  active={chartSystem}
+                  onActiveChange={setChartSystem}
+                  selectedPlanet={selectedPlanet}
+                  onSelectPlanet={setSelectedPlanet}
+                />
+                <button
+                  onClick={() => setZoomNatal(true)}
+                  className="absolute right-2 top-2 z-10 rounded-full border border-gold-dust/30 bg-obsidian/60 px-2.5 py-1 text-[10px] uppercase tracking-[0.22em] text-gold-dust/80 backdrop-blur"
+                  aria-label={lang === "zh" ? "放大查看星盘" : "Enlarge chart"}
+                >
+                  {lang === "zh" ? "放大" : "Enlarge"}
+                </button>
+              </div>
+              <div className="mt-3 rounded-2xl border border-gold-dust/18 bg-gold-dust/[0.045] p-3">
+                <p className="text-[10px] uppercase tracking-[0.28em] text-gold-dust/72">
+                  {lang === "zh" ? "当前读取" : "Current view"}
+                </p>
+                <div className="mt-2 flex items-end justify-between gap-3">
+                  <div className="min-w-0">
+                    <h3 className="text-lg font-semibold text-stone-warm">
+                      {lang === "zh"
+                        ? SYSTEM_TABS.find((tb) => tb.key === chartSystem)?.zh
+                        : SYSTEM_TABS.find((tb) => tb.key === chartSystem)?.en}
+                    </h3>
+                    <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-stone-warm/58">
+                      {lang === "zh"
+                        ? "参数详情、行星落位与体系解释已收进抽屉，打开后可完整阅读。"
+                        : "Parameters, placements and system notes are inside the drawer."}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setMobileParamsOpen(true)}
+                    className="shrink-0 rounded-full bg-gold-dust px-4 py-2 text-xs font-semibold text-obsidian active:scale-[0.98]"
+                  >
+                    {lang === "zh" ? "查看参数" : "Details"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Fixed-size stage: left = parameters, right = interactive chart.
               Both columns scroll internally so the module never changes size. */}
-          <div className="grid h-[560px] grid-cols-1 gap-4 sm:h-[600px] lg:h-[640px] lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:gap-8">
+          <div className="hidden h-[520px] grid-cols-1 gap-4 sm:h-[600px] md:grid lg:h-[640px] lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:gap-8">
             {/* Left: parameter reading for the active system */}
             <div className="order-2 min-h-0 min-w-0 overflow-hidden lg:order-1">
               <SystemDetailPanel
@@ -2053,35 +2265,13 @@ function ReportPage() {
           </div>
         )}
         {search.date && (aiState === "loading" || aiState === "error") && (
-
-          <div
-            className={`glass-card flex flex-col gap-3 rounded-2xl px-5 py-3 text-[11px] uppercase tracking-[0.28em] sm:flex-row sm:items-center sm:justify-between ${
-              aiState === "error" ? "text-red-300/80" : "text-gold-dust/80"
-            }`}
-          >
-            <span>
-              {aiState === "loading"
-                ? lang === "zh"
-                  ? `智者正在逐维度写下你的命盘 · ${aiProgress.done}/${aiProgress.total}${aiProgress.degraded ? ` · ${aiProgress.degraded} 个维度改用通用文本` : ""}`
-                  : `The elder is writing your chart, one dimension at a time · ${aiProgress.done}/${aiProgress.total}${aiProgress.degraded ? ` · ${aiProgress.degraded} on template` : ""}`
-                : lang === "zh"
-                  ? `个性化解读暂时无法生成（${aiError ?? "unknown"}）—— 先显示通用模板。`
-                  : `Personalised reading unavailable (${aiError ?? "unknown"}) — showing template.`}
-            </span>
-
-            {aiState === "loading" && (
-              <span className="size-2 animate-pulse rounded-full bg-gold-dust" />
-            )}
-            {aiState === "error" && (
-              <button
-                type="button"
-                onClick={() => runReport()}
-                className="flex-none rounded-full border border-red-300/40 px-4 py-1.5 text-[10px] tracking-[0.28em] text-red-200 transition-colors hover:bg-red-300/10"
-              >
-                {lang === "zh" ? "重试" : "Retry"}
-              </button>
-            )}
-          </div>
+          <ReportAppLoading
+            lang={lang}
+            aiState={aiState}
+            aiProgress={aiProgress}
+            aiError={aiError}
+            onRetry={runReport}
+          />
         )}
         {search.date && aiState === "ready" && aiProgress.degraded > 0 && (
           <div className="glass-card flex flex-col gap-3 rounded-2xl px-5 py-3 text-[11px] uppercase tracking-[0.28em] text-gold-dust/70 sm:flex-row sm:items-center sm:justify-between">
@@ -2100,11 +2290,11 @@ function ReportPage() {
           </div>
         )}
 
-        {/* Quick module nav — ten reading modules + membership */}
+        {/* Quick module nav — desktop rail only. Mobile uses chapter cards below. */}
         <nav
           aria-label={lang === "zh" ? "模块导航" : "Module navigation"}
           data-testid="report-module-nav"
-          className="glass-card flex items-center gap-2 overflow-x-auto rounded-2xl border border-gold-dust/25 bg-obsidian/70 px-3 py-2 backdrop-blur [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="glass-card hidden items-center gap-2 overflow-x-auto rounded-2xl border border-gold-dust/25 bg-obsidian/70 px-3 py-2 backdrop-blur [-ms-overflow-style:none] [scrollbar-width:none] md:flex [&::-webkit-scrollbar]:hidden"
         >
           <span className="shrink-0 pl-1 pr-1 text-[10px] uppercase tracking-[0.3em] text-gold-dust/70">
             {lang === "zh" ? "模块" : "Modules"}
@@ -2128,6 +2318,58 @@ function ReportPage() {
             {lang === "zh" ? "会员" : "Membership"}
           </button>
         </nav>
+
+        <div id="report-chapters" className="scroll-mt-24 md:hidden">
+          <div className="mb-4 flex items-end justify-between gap-4">
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.3em] text-gold-dust/72">
+                {lang === "zh" ? "章节导览" : "Chapter guide"}
+              </p>
+              <h2 className="mt-2 text-2xl font-semibold text-stone-warm">
+                {lang === "zh" ? "选择一个问题继续读" : "Choose one question"}
+              </h2>
+            </div>
+            <span className="rounded-full border border-gold-dust/25 bg-gold-dust/[0.08] px-3 py-1 text-[11px] text-gold-light">
+              {displayed.length} {lang === "zh" ? "章" : "chapters"}
+            </span>
+          </div>
+          <div className="grid gap-3">
+            {displayed.map((d, idx) => {
+              const arrived = aiByKey.has(d.key);
+              const pending = !!search.date && aiState === "loading" && !arrived;
+              const Icon = DIM_ICONS[d.key] ?? Sparkles;
+              return (
+                <button
+                  key={d.key}
+                  type="button"
+                  onClick={() => setDetailKey(d.key)}
+                  className="report-chapter-card group flex min-h-[112px] items-center gap-4 rounded-[24px] border border-white/10 bg-[#11130f] p-4 text-left shadow-[0_18px_48px_-38px_rgba(251,191,36,0.8)] active:scale-[0.985]"
+                >
+                  <span className="grid size-12 shrink-0 place-items-center rounded-2xl border border-gold-dust/25 bg-gold-dust/[0.08] text-gold-light">
+                    <Icon size={20} strokeWidth={1.6} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-center gap-2 text-[10px] uppercase tracking-[0.26em] text-gold-dust/72">
+                      {String(idx + 1).padStart(2, "0")} · {d.title[li]}
+                      {pending && <span className="size-1.5 animate-pulse rounded-full bg-gold-dust" />}
+                    </span>
+                    <span className="mt-1 line-clamp-2 block text-[16px] font-semibold leading-snug text-stone-warm">
+                      {d.headline[li]}
+                    </span>
+                    {d.specifics?.[0] && (
+                      <span className="mt-2 line-clamp-1 block text-[12px] text-stone-warm/52">
+                        {d.specifics[0].label[li]} · {d.specifics[0].value[li]}
+                      </span>
+                    )}
+                  </span>
+                  <ChevronRight className="shrink-0 text-gold-dust/60 transition group-active:translate-x-1" size={18} />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="hidden md:block">
         {displayed.map((d, idx) => {
           const arrived = aiByKey.has(d.key);
           const pending = !!search.date && aiState === "loading" && !arrived;
@@ -2303,26 +2545,63 @@ function ReportPage() {
 
           );
         })}
+        </div>
+      </section>
+
+      <section className="mx-auto mt-8 max-w-5xl px-4 md:hidden">
+        <div className="report-app-card rounded-[28px] border border-gold-dust/22 bg-white/[0.035] p-4">
+          <p className="text-[10px] uppercase tracking-[0.3em] text-gold-dust/72">
+            {lang === "zh" ? "更多阅读工具" : "More tools"}
+          </p>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            {[
+              ["timeline", lang === "zh" ? "生命时间线" : "Timeline", Flame],
+              ["events", lang === "zh" ? "事件校准" : "Events", Check],
+              ["tarot", lang === "zh" ? "三牌旁证" : "Tarot", Sparkles],
+              ["premium", lang === "zh" ? "高级深度报告" : "Deep report", Star],
+            ].map(([key, label, Icon]) => (
+              <button
+                key={key as string}
+                type="button"
+                onClick={() => setMobileTool((prev) => (prev === key ? null : key as typeof mobileTool))}
+                className={`min-h-16 rounded-2xl border px-3 text-left text-sm font-semibold active:scale-[0.98] ${
+                  mobileTool === key
+                    ? "border-gold-dust/45 bg-gold-dust/[0.1] text-gold-light"
+                    : "border-white/10 bg-[#141511] text-stone-warm/82"
+                }`}
+              >
+                <Icon className="mb-1" size={16} />
+                {label as string}
+              </button>
+            ))}
+          </div>
+        </div>
       </section>
 
       {/* Life Timeline — 大运 */}
-      <div id="life-timeline" className="mt-24 scroll-mt-[calc(var(--site-nav-height,96px)+72px)]">
+      <div id="life-timeline" className={`${mobileTool === "timeline" ? "block" : "hidden"} mt-10 scroll-mt-24 md:mt-24 md:block md:scroll-mt-[calc(var(--site-nav-height,96px)+72px)]`}>
         <LifeTimeline birthISO={search.date} search={search} chartId={reportChartId} />
       </div>
 
       {/* Key life events verification */}
-      <div id="key-events" className="scroll-mt-[calc(var(--site-nav-height,96px)+72px)]">
+      <div id="key-events" className={`${mobileTool === "events" ? "block" : "hidden"} scroll-mt-24 md:block md:scroll-mt-[calc(var(--site-nav-height,96px)+72px)]`}>
         <KeyEventsVerification birthISO={search.date} search={search} />
       </div>
 
       {/* Tarot — three cards as a second witness */}
-      <div id="tarot" className="scroll-mt-[calc(var(--site-nav-height,96px)+72px)]">
+      <div id="tarot" className={`${mobileTool === "tarot" ? "block" : "hidden"} scroll-mt-24 md:block md:scroll-mt-[calc(var(--site-nav-height,96px)+72px)]`}>
         <TarotDraw />
       </div>
 
+      {/* One-time premium report — independent from monthly membership. */}
+      <div id="premium-report-tool" className={`${mobileTool === "premium" ? "block" : "hidden"} scroll-mt-24 md:block md:scroll-mt-[calc(var(--site-nav-height,96px)+72px)]`}>
+        <PremiumPdfCard search={search} variant="bar" />
+      </div>
 
-      {/* Membership tiers — Oracle unlocks Synastry + 90-day windows + Future watchlist */}
-      <MembershipSection birthISO={search.date} search={search} />
+      {/* Membership plans stay as the fixed closing section of the chart report. */}
+      <div className="mt-10 md:mt-24">
+        <MembershipSection birthISO={search.date} search={search} />
+      </div>
 
       {/* Outro */}
       <div className="mx-auto mt-16 max-w-3xl px-6 text-center print:hidden">
@@ -2361,6 +2640,32 @@ function ReportPage() {
         t={t}
       />
 
+      <MobileChartParamsDrawer
+        open={mobileParamsOpen}
+        onClose={() => setMobileParamsOpen(false)}
+        snapshot={snapshot}
+        lang={lang}
+        system={chartSystem}
+        onSupplyGender={(g) => setGenderOverride(g)}
+        westernSlot={
+          <PlanetReadingPanel
+            lang={lang}
+            seed={`${search.name ?? ""}|${search.date ?? ""}|${search.time ?? ""}|${search.place ?? ""}`}
+            planetIdx={selectedPlanet}
+            onClear={() => setSelectedPlanet(null)}
+          />
+        }
+        factsSlot={
+          chartSystem === "western" ? (
+            <ChartFactsCard
+              lang={lang}
+              seed={`${search.name ?? ""}|${search.date ?? ""}|${search.time ?? ""}|${search.place ?? ""}`}
+              onPickPlanet={setSelectedPlanet}
+            />
+          ) : null
+        }
+      />
+
       {/* Post-ritual priority preview — one-shot per report generation */}
       {isConcernKey(search.concern) ? (
         <PriorityPreviewModal
@@ -2378,6 +2683,62 @@ function ReportPage() {
 
       {/* Floating sage companion is provided globally in __root.tsx */}
     </div>
+  );
+}
+
+function MobileChartParamsDrawer({
+  open,
+  onClose,
+  snapshot,
+  lang,
+  system,
+  onSupplyGender,
+  westernSlot,
+  factsSlot,
+}: {
+  open: boolean;
+  onClose: () => void;
+  snapshot: CalculationSnapshot;
+  lang: "en" | "zh";
+  system: SystemKey;
+  onSupplyGender: (g: "male" | "female") => void;
+  westernSlot: React.ReactNode;
+  factsSlot: React.ReactNode;
+}) {
+  const active = SYSTEM_TABS.find((tab) => tab.key === system);
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="fixed inset-x-0 bottom-0 top-auto left-0 right-0 grid max-h-[88dvh] w-full max-w-none translate-x-0 translate-y-0 grid-rows-[auto_1fr] gap-0 overflow-hidden rounded-b-none rounded-t-[32px] border border-gold-dust/25 bg-obsidian/98 p-0 shadow-[0_-24px_80px_rgba(0,0,0,0.55)] backdrop-blur-xl sm:left-[50%] sm:max-w-lg sm:translate-x-[-50%] [&>button]:right-4 [&>button]:top-4 [&>button]:z-30 [&>button]:grid [&>button]:size-10 [&>button]:place-items-center [&>button]:rounded-full [&>button]:border [&>button]:border-gold-dust/25 [&>button]:bg-obsidian/70 [&>button]:text-gold-light [&>button]:opacity-100">
+        <div className="border-b border-white/10 px-5 pb-4 pt-5">
+          <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-gold-dust/35" />
+          <DialogTitle asChild>
+            <h2 className="text-xl font-semibold text-stone-warm">
+              {lang === "zh" ? active?.zh : active?.en}
+            </h2>
+          </DialogTitle>
+          <DialogDescription className="mt-1 text-xs leading-relaxed text-stone-warm/56">
+            {lang === "zh"
+              ? "完整参数、落位和行星说明都在这里，向下滑动阅读。"
+              : "Full parameters, placements and planet notes live here. Swipe down to read."}
+          </DialogDescription>
+        </div>
+        <div
+          className="min-h-0 overflow-y-auto px-4 py-4"
+          style={{ WebkitOverflowScrolling: "touch", paddingBottom: "calc(env(safe-area-inset-bottom) + 1rem)" }}
+        >
+          <div className="space-y-4">
+            <SystemDetailPanel
+              snapshot={snapshot}
+              lang={lang}
+              system={system}
+              onSupplyGender={onSupplyGender}
+              westernSlot={westernSlot}
+            />
+            {factsSlot}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -2442,7 +2803,51 @@ function DimensionDetailModal({
               className="relative overflow-y-auto overflow-x-hidden"
               style={{ WebkitOverflowScrolling: "touch" }}
             >
-              <div className="relative grid gap-8 px-6 py-7 sm:px-10 md:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
+              <div className="relative px-6 py-7 sm:px-10">
+                <div className="mb-6 rounded-2xl border border-gold-dust/22 bg-gold-dust/[0.055] p-4">
+                  <p className="mb-2 text-[10px] uppercase tracking-[0.3em] text-gold-light">
+                    {t.in_plain_words}
+                  </p>
+                  <div className="reading-copy space-y-3 font-serif text-[15px] italic leading-[1.72] text-stone-warm/90">
+                    {splitParagraphs(d.plain[li], 1).slice(0, 3).map((para, i) => (
+                      <p key={i}>{para}</p>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mb-6">
+                  <p className="mb-3 flex items-center gap-2 text-[10px] uppercase tracking-[0.3em] text-gold-dust/75">
+                    <span className="size-1.5 rotate-45 bg-gold-dust" />
+                    {t.synthesis}
+                  </p>
+                  <div className="reading-copy space-y-3 text-[14px] leading-relaxed text-stone-warm/72">
+                    {splitParagraphs(d.synthesis[li], 1).slice(0, 3).map((para, i) => (
+                      <p key={i}>{para}</p>
+                    ))}
+                  </div>
+                </div>
+
+                {d.specifics && d.specifics.length > 0 && (
+                  <div className="mb-7">
+                    <p className="mb-3 text-[10px] uppercase tracking-[0.3em] text-gold-dust/75">
+                      {lang === "zh" ? "先看重点" : "Key pointers"}
+                    </p>
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      {d.specifics.map((sp, i) => (
+                        <div key={`${sp.label[0]}-${i}`} className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5">
+                          <p className="text-[10px] uppercase tracking-[0.24em] text-gold-light/80">
+                            {sp.label[li]}
+                          </p>
+                          <p className="mt-1 text-[13px] leading-relaxed text-stone-warm/75">
+                            {sp.value[li]}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+              <div className="relative grid gap-8 md:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
                 {/* Left column — data visualisation */}
                 <div className="flex flex-col gap-6">
                   {/* Four-system strength bars */}
@@ -2575,6 +2980,7 @@ function DimensionDetailModal({
                 </div>
               </div>
             </div>
+          </div>
           </div>
         )}
       </DialogContent>

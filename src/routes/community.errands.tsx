@@ -8,10 +8,7 @@ import { Button } from "@/components/ui/button";
 import {
   HallEmpty,
   HallGate,
-  HallHeader,
-  HallMobileBar,
-  HallNav,
-  HallSection,
+  HallHeader,  HallSection,
 } from "@/experiences/community-hall/HallShell";
 import { HelperStandingPanel } from "@/experiences/community-hall/HelperStandingPanel";
 import { useCommunityHall } from "@/lib/i18n-community-hall";
@@ -41,7 +38,7 @@ function ErrandsPage() {
   const c = useCommunityHall();
   const zh = c.lang !== "en";
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 pb-16 pt-28 sm:px-6 sm:pb-24 sm:pt-32">
+    <main className="mx-auto w-full max-w-[430px] px-4 pb-28 pt-[calc(env(safe-area-inset-top)+0.75rem)]">
       <HallHeader
         title={zh ? "受托的信" : "Entrusted letters"}
         subtitle={
@@ -50,11 +47,9 @@ function ErrandsPage() {
             : "The librarian hands some letters to travelers who opted in. Accepting is always your choice."
         }
       />
-      <HallNav />
       <HallGate>
         <Errands />
       </HallGate>
-      <HallMobileBar />
     </main>
   );
 }

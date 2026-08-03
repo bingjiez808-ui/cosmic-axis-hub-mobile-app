@@ -44,9 +44,9 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 const TXT = {
   kicker: { zh: "¥79 · 一次解锁", en: "¥79 · one-time unlock" },
-  title: { zh: "高级 AI 深度报告", en: "Premium AI Deep Reading" },
+  title: { zh: "高级深度报告", en: "Premium Deep Reading" },
   pitch: {
-    zh: "由资深 AI 综合西方占星、印度占星、八字与紫微斗数，为当前命盘生成 24 章深度解读。一次解锁，永久保存在你的账户，随时在站内重新阅读。",
+    zh: "综合西方占星、印度占星、八字与紫微斗数，为当前命盘生成 24 章深度解读。一次解锁，永久保存在你的账户，随时在站内重新阅读。",
     en: "A 24-chapter synthesis of Western astrology, Vedic Jyotish, BaZi and Zi Wei Dou Shu for this chart. Generated once, saved to your account, reopen inside the app anytime.",
   },
   chips: {

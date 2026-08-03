@@ -27,7 +27,7 @@ type Method = PremiumMockPaymentMethod;
 
 const T = {
   kicker: { zh: "模拟收银台 · 一次性解锁", en: "Simulated cashier · one-time unlock" },
-  title: { zh: "高级 AI 综合报告", en: "Premium AI Deep Reading" },
+  title: { zh: "高级深度报告", en: "Premium Deep Reading" },
   amount_label: { zh: "应付金额", en: "Amount due" },
   once_note: {
     zh: "同一命盘只需支付一次，永久保存在你的账户。",

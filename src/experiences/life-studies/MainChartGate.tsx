@@ -13,24 +13,62 @@ import { useLang } from "@/lib/i18n";
  *   - "ready"           → soft confirmation (name of primary chart)
  */
 export type GateState =
+  | { kind: "loading" }
   | { kind: "signed-out"; returnTo: string }
   | { kind: "no-primary" }
-  | { kind: "ready"; chartName: string | null };
+  | {
+      kind: "ready";
+      chartName: string | null;
+      birthDate?: string | null;
+      birthPlace?: string | null;
+    };
 
 export function MainChartGate({ state }: { state: GateState }) {
   const { lang } = useLang();
   const isZh = lang === "zh";
+
+  if (state.kind === "loading") {
+    return (
+      <div
+        data-testid="main-chart-gate"
+        data-state="loading"
+        className="mb-4 rounded-[20px] border border-teal-300/18 bg-teal-300/[0.045] px-4 py-3 text-xs text-teal-100/75"
+      >
+        <div className="h-3 w-32 animate-pulse rounded-full bg-teal-100/15" />
+        <div className="mt-2 h-3 w-56 animate-pulse rounded-full bg-teal-100/10" />
+      </div>
+    );
+  }
 
   if (state.kind === "ready") {
     return (
       <div
         data-testid="main-chart-gate"
         data-state="ready"
-        className="mb-6 rounded-xl border border-amber-300/30 bg-amber-300/5 px-4 py-3 text-xs text-amber-100/80"
+        className="mb-4 rounded-[20px] border border-amber-300/24 bg-amber-300/[0.055] px-4 py-3 text-xs text-amber-100/80"
       >
-        {isZh
-          ? `已读取你的主命盘${state.chartName ? `：${state.chartName}` : ""}。本页的个性化曲线基于该命盘的确定性事实。`
-          : `Using your primary chart${state.chartName ? ` (${state.chartName})` : ""}. Personalized curves below are derived from its deterministic facts.`}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="font-medium text-amber-50">
+            {isZh
+              ? `已读取主命盘${state.chartName ? `：${state.chartName}` : ""}`
+              : `Using primary chart${state.chartName ? `: ${state.chartName}` : ""}`}
+          </span>
+          {state.birthDate ? (
+            <span className="rounded-full border border-amber-300/18 bg-black/18 px-2 py-0.5 text-[10px] text-amber-100/65">
+              {state.birthDate}
+            </span>
+          ) : null}
+          {state.birthPlace ? (
+            <span className="rounded-full border border-teal-300/18 bg-teal-300/[0.06] px-2 py-0.5 text-[10px] text-teal-100/72">
+              {state.birthPlace}
+            </span>
+          ) : null}
+        </div>
+        <p className="mt-1 leading-relaxed text-amber-100/58">
+          {isZh
+            ? "本馆已切换到你的个人曲线；仍可在下方切回演示数据对照。"
+            : "This room is using your personal curve; you can still switch back to demo data below."}
+        </p>
       </div>
     );
   }

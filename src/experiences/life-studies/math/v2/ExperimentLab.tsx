@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { Link } from "@tanstack/react-router";
 
 import { LIFE_EXPERIMENTS } from "./experiments";
 import {
@@ -19,6 +20,7 @@ export function ExperimentLab({
   onSaveBranch,
   savedBranchIds,
   lang,
+  chartHref = "/life-studies/math/curve",
 }: {
   points: LifeMathPoint[];
   activeExperimentId: string | null;
@@ -29,6 +31,7 @@ export function ExperimentLab({
   onSaveBranch: () => void;
   savedBranchIds: string[];
   lang: "zh" | "en";
+  chartHref?: "/life-studies/math/curve";
 }) {
   const isZh = lang === "zh";
   const active: LifeExperiment | null = useMemo(
@@ -90,14 +93,23 @@ export function ExperimentLab({
             }`}>
             {isSaved ? (isZh ? "已加入主图 ✓" : "Added to chart ✓") : (isZh ? "加入我的人生分支" : "Add to my branches")}
           </button>
+          {active ? (
+            <Link
+              to={chartHref}
+              data-testid="experiment-open-chart"
+              className="inline-flex min-h-9 items-center rounded-full border border-cyan-300/55 bg-cyan-300/12 px-3 py-2 text-[11px] text-cyan-50 transition active:scale-95"
+            >
+              {isZh ? "查看七维曲线变化" : "View on curve"}
+            </Link>
+          ) : null}
         </div>
       </div>
 
       <div className="mt-3 rounded-lg border border-amber-400/15 bg-[#0f0f1a]/70 px-3 py-2 text-[11px] text-amber-100/85">
         {active ? (
           isZh
-            ? <>当前实验: <span className="text-amber-50">{active.title.zh}</span> · 影响起点: {active.startAge} 岁 · 主要变化: {summarize(active, "zh")}</>
-            : <>Current experiment: <span className="text-amber-50">{active.title.en}</span> · from age {active.startAge} · main changes: {summarize(active, "en")}</>
+            ? <>当前实验已回写到七维曲线: <span className="text-amber-50">{active.title.zh}</span> · 影响起点: {active.startAge} 岁 · 主要变化: {summarize(active, "zh")}</>
+            : <>Current experiment is applied to the curve: <span className="text-amber-50">{active.title.en}</span> · from age {active.startAge} · main changes: {summarize(active, "en")}</>
         ) : (
           isZh
             ? "选择下方一个实验, 青绿色实验分支会从对应年龄开始, 逐步与现实路径分开。"

@@ -5,10 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   HallGate,
-  HallHeader,
-  HallMobileBar,
-  HallNav,
-} from "@/experiences/community-hall/HallShell";
+  HallHeader,} from "@/experiences/community-hall/HallShell";
 import { HallError, HallSkeleton } from "@/experiences/community-hall/HallStates";
 import {
   useBlockLetterAuthor,
@@ -51,13 +48,11 @@ export const Route = createFileRoute("/community/letters/$letterId")({
 function LetterDetailPage() {
   const c = useCommunityHall();
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 pb-16 pt-28 sm:px-6 sm:pb-24 sm:pt-32">
+    <main className="mx-auto w-full max-w-[430px] px-4 pb-28 pt-[calc(env(safe-area-inset-top)+0.75rem)]">
       <HallHeader title={c.navInbox} />
-      <HallNav />
       <HallGate>
         <LetterDetail />
       </HallGate>
-      <HallMobileBar />
     </main>
   );
 }

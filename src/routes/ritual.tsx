@@ -45,6 +45,7 @@ type FieldKey = "name" | "date" | "time" | "place" | "gender";
 type Gender = "male" | "female" | "";
 type OwnerRole = "self" | "other" | "";
 type Relationship = "partner" | "family" | "friend" | "colleague" | "other" | "";
+type FocusKey = "study" | "career" | "love" | "wealth" | "self" | "unknown";
 
 const RELATIONSHIP_LABELS: Record<Exclude<Relationship, "">, [string, string]> = {
   partner: ["Partner", "伴侣"],
@@ -53,6 +54,50 @@ const RELATIONSHIP_LABELS: Record<Exclude<Relationship, "">, [string, string]> =
   colleague: ["Colleague", "同事"],
   other: ["Other", "其他"],
 };
+
+const FOCUS_OPTIONS: Array<{
+  key: FocusKey;
+  label: [string, string];
+  prompt: [string, string];
+  priority: [string, string];
+}> = [
+  {
+    key: "study",
+    label: ["Study and growth", "学业与成长"],
+    prompt: ["How should I learn, and where are my strengths?", "我适合怎样学习？我的优势到底在哪里？"],
+    priority: ["Study style, hidden strengths, path adjustment", "学习方式、隐藏优势、路径调整会优先解读"],
+  },
+  {
+    key: "career",
+    label: ["Career and choice", "事业与选择"],
+    prompt: ["Does this path fit me? When should I turn?", "我正在走的路适合我吗？什么时候该继续或转向？"],
+    priority: ["Career rhythm, pressure, turn signals", "事业节奏、压力来源、转向信号会优先解读"],
+  },
+  {
+    key: "love",
+    label: ["Love and intimacy", "爱情与亲密关系"],
+    prompt: ["Why am I drawn to one type of person?", "为什么我总被某一类人吸引？"],
+    priority: ["Attraction, boundaries, repair style", "吸引模式、边界课题、修复方式会优先解读"],
+  },
+  {
+    key: "wealth",
+    label: ["Wealth and safety", "财富与安全感"],
+    prompt: ["What ability supports wealth, and why is money hard to keep?", "我的财富主要靠什么能力？为什么钱总是难留下？"],
+    priority: ["Resources, risk habit, accumulation rhythm", "资源方式、风险习惯、积累节奏会优先解读"],
+  },
+  {
+    key: "self",
+    label: ["Self and life stage", "自我与人生阶段"],
+    prompt: ["Why do I repeat the same issue?", "为什么我总在相同的问题里反复？"],
+    priority: ["Life theme, family script, current task", "反复主题、家庭脚本、当前阶段会优先解读"],
+  },
+  {
+    key: "unknown",
+    label: ["I just want to know myself", "我也说不清，只想先认识自己"],
+    prompt: ["Start with the most important reading order.", "先帮我排出最值得看的顺序。"],
+    priority: ["The report will build a recommended reading path first", "报告会先生成推荐阅读路径"],
+  },
+];
 
 // -------- 5 psychology-inspired calibration questions --------
 // Not tests, no right answers — used to nudge the AI reading toward the user.
@@ -156,6 +201,7 @@ function RitualPage() {
   // must be explicitly chosen so the DB row is filed correctly.
   const [ownerRole, setOwnerRole] = useState<OwnerRole>("");
   const [relationship, setRelationship] = useState<Relationship>("");
+  const [focusKey, setFocusKey] = useState<FocusKey | "">("");
   const [quiz] = useState<string[]>(["", "", "", "", ""]);
   const [step, setStep] = useState(0);
   const skipQuiz = true;
@@ -179,11 +225,20 @@ function RitualPage() {
           if (s.values) setValues((v) => ({ ...v, ...s.values }));
           if (typeof s.step === "number") setStep(Math.max(0, Math.min(s.step, 5)));
           if (s.ownerRole === "self" || s.ownerRole === "other") setOwnerRole(s.ownerRole);
+          if (FOCUS_OPTIONS.some((option) => option.key === s.focusKey)) {
+            setFocusKey(s.focusKey);
+          }
           if (typeof s.relationship === "string" && s.relationship in RELATIONSHIP_LABELS) {
             setRelationship(s.relationship as Relationship);
           }
           if (s.genderChosen === true) setGenderChosen(true);
         }
+      }
+    } catch {}
+    try {
+      const concern = new URLSearchParams(window.location.search).get("concern");
+      if (concern && FOCUS_OPTIONS.some((option) => option.key === concern)) {
+        setFocusKey(concern as FocusKey);
       }
     } catch {}
     setRestored(true);
@@ -195,13 +250,14 @@ function RitualPage() {
     try {
       sessionStorage.setItem(
         RITUAL_STATE_KEY,
-        JSON.stringify({ values, quiz, step, skipQuiz, ownerRole, relationship, genderChosen }),
+        JSON.stringify({ values, quiz, step, skipQuiz, ownerRole, relationship, genderChosen, focusKey }),
       );
     } catch {}
-  }, [values, quiz, step, skipQuiz, restored, ownerRole, relationship, genderChosen]);
+  }, [values, quiz, step, skipQuiz, restored, ownerRole, relationship, genderChosen, focusKey]);
 
+  const FOCUS_STEP_COUNT = 1;
   const OWNERSHIP_STEP_COUNT = 1;
-  const totalSteps = OWNERSHIP_STEP_COUNT + 5;
+  const totalSteps = FOCUS_STEP_COUNT + OWNERSHIP_STEP_COUNT + 5;
 
   const ritualState: RitualState = {
     ownerRole,
@@ -238,9 +294,10 @@ function RitualPage() {
 
   const progress = useMemo(() => (step + 1) / totalSteps, [step, totalSteps]);
   const isLast = step === totalSteps - 1;
-  const isOwnershipStep = step === 0;
-  const isIntakeStep = step >= OWNERSHIP_STEP_COUNT;
-  const intakeIdx = isIntakeStep ? step - OWNERSHIP_STEP_COUNT : -1;
+  const isFocusStep = step === 0;
+  const isOwnershipStep = step === FOCUS_STEP_COUNT;
+  const isIntakeStep = step >= FOCUS_STEP_COUNT + OWNERSHIP_STEP_COUNT;
+  const intakeIdx = isIntakeStep ? step - FOCUS_STEP_COUNT - OWNERSHIP_STEP_COUNT : -1;
   const currentQ = isIntakeStep ? questionSteps[intakeIdx] : null;
   // Quiz retired — retained variables to preserve existing render/progress code.
   const isQuizStep = false;
@@ -252,6 +309,9 @@ function RitualPage() {
    * showing "please pick ownership".
    */
   const validateCurrentStep = (): string | null => {
+    if (isFocusStep) {
+      return focusKey ? null : (lang === "zh" ? "请先选择这次最想优先解读的问题。" : "Choose the question to prioritize first.");
+    }
     if (isOwnershipStep) {
       return (
         validateField("owner", ritualState, lang) ??
@@ -296,6 +356,7 @@ function RitualPage() {
       const relLabel = ownerRole === "other" && relationship
         ? RELATIONSHIP_LABELS[relationship as Exclude<Relationship, "">][li]
         : "";
+      const focus = FOCUS_OPTIONS.find((option) => option.key === focusKey);
       const params = new URLSearchParams({
         name: values.name,
         date: values.date,
@@ -304,6 +365,7 @@ function RitualPage() {
         ...(gender ? { gender } : {}),
         lang,
         quiz: quiz.join(""),
+        ...(focus ? { concern: focus.key, focus: focus.key, focusLabel: focus.label[li] } : {}),
         role: ownerRole,
         ...(relationship ? { relationship } : {}),
         ...(relLabel ? { relationshipLabel: relLabel } : {}),
@@ -418,16 +480,16 @@ function RitualPage() {
     if (!fieldError) return;
     setFieldError(validateCurrentStep());
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [values, genderChosen, ownerRole, relationship]);
+  }, [values, genderChosen, ownerRole, relationship, focusKey]);
   // Suppress unused warning for FIELD_STEP re-export used only in tests.
   void FIELD_STEP;
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-x-hidden px-6 pt-32 pb-24">
+    <div className="relative flex min-h-screen justify-center overflow-x-hidden bg-[#04050a] px-4 pb-28 pt-[calc(env(safe-area-inset-top)+0.85rem)] text-amber-50">
       {/* Magic Rings — single WebGL instance, masked to left/right on desktop, ambient halo on mobile. */}
       <RitualMagicRings currentStep={step} />
 
-      <div className="relative z-10 w-full max-w-2xl text-center">
+      <div className="relative z-10 flex min-h-[calc(100vh-7rem)] w-full max-w-[430px] flex-col">
         {/* Reading safe-zone scrim behind the question column so text never dissolves into the rings. */}
         <div
           aria-hidden
@@ -437,8 +499,30 @@ function RitualPage() {
               "radial-gradient(circle at center, rgba(8,8,11,0.94) 0%, rgba(8,8,11,0.82) 35%, rgba(8,8,11,0.28) 58%, transparent 76%)",
           }}
         />
+        <header className="mb-4 rounded-[26px] border border-amber-300/14 bg-black/30 p-4 text-left backdrop-blur-xl">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.24em] text-amber-300/70">
+                {lang === "zh" ? "命盘仪式" : "Chart ritual"}
+              </p>
+              <h1 className="mt-1 text-xl font-semibold text-amber-50">
+                {lang === "zh" ? "一步一步建立主命盘" : "Build your chart step by step"}
+              </h1>
+            </div>
+            <span className="rounded-full border border-teal-300/25 bg-teal-300/10 px-3 py-1 text-xs text-teal-100">
+              {Math.round(progress * 100)}%
+            </span>
+          </div>
+          <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/10">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-amber-300 to-teal-300 transition-all duration-500"
+              style={{ width: `${Math.round(progress * 100)}%` }}
+            />
+          </div>
+        </header>
+
         {/* Progress — quiz bar (5 segs, hidden if skipped) · intake dots */}
-        <div className="mb-14 flex items-center justify-center gap-3">
+        <div className="mb-4 flex items-center justify-center gap-2">
           {!skipQuiz && (
             <>
               <div className="flex overflow-hidden rounded-full border border-white/10">
@@ -461,8 +545,8 @@ function RitualPage() {
           {Array.from({ length: totalSteps }).map((_, i) => (
             <div
               key={i}
-              className={`h-px transition-all duration-700 ${
-                step >= i ? "w-10 bg-gold-dust" : "w-6 bg-white/15"
+              className={`h-1 rounded-full transition-all duration-700 ${
+                step >= i ? "w-8 bg-gold-dust" : "w-5 bg-white/15"
               }`}
             />
           ))}
@@ -474,9 +558,10 @@ function RitualPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.6, ease: [0.32, 0.72, 0, 1] }}
+            transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1] }}
+            className="flex flex-1 flex-col rounded-[30px] border border-white/10 bg-[#080910]/88 p-5 text-left shadow-[0_24px_80px_-50px_rgba(251,191,36,0.55)] backdrop-blur-xl"
           >
-            <p className="mb-6 text-[10px] uppercase tracking-[0.42em] text-gold-dust">
+            <p className="mb-4 text-[10px] uppercase tracking-[0.32em] text-gold-dust">
               {t.step_of(step + 1, totalSteps)}
             </p>
 
@@ -484,17 +569,72 @@ function RitualPage() {
 
             {/* Quiz retired — intake step only. */}
 
+            {isFocusStep && (
+              <div data-ritual-field>
+                <h1 className="mb-3 text-balance text-3xl font-semibold leading-tight text-stone-warm">
+                  {lang === "zh" ? "先把问题放到导览台上" : "Place your question on the desk first"}
+                </h1>
+                <p className="mb-5 text-sm leading-relaxed text-stone-warm/58">
+                  {lang === "zh"
+                    ? "命盘会从同一份出生资料生成，但报告的章节顺序会按照你选择的问题优先排列。"
+                    : "The chart uses the same birth data, but the report order follows the question you choose."}
+                </p>
+                <div className="grid gap-2">
+                  {FOCUS_OPTIONS.map((option) => {
+                    const active = focusKey === option.key;
+                    return (
+                      <button
+                        key={option.key}
+                        type="button"
+                        aria-pressed={active}
+                        onClick={() => setFocusKey(option.key)}
+                        className={`min-h-[92px] rounded-[22px] border p-3 text-left transition active:scale-[0.985] ${
+                          active
+                            ? "border-gold-dust bg-gold-dust/12 text-gold-light shadow-[0_18px_42px_-34px_rgba(251,191,36,0.95)]"
+                            : "border-white/12 bg-black/24 text-stone-warm/78"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <div className="text-sm font-semibold text-stone-warm">
+                              {option.label[li]}
+                            </div>
+                            <p className="mt-1 text-xs leading-relaxed text-stone-warm/58">
+                              {option.prompt[li]}
+                            </p>
+                          </div>
+                          <span className={`mt-1 h-3 w-3 shrink-0 rounded-full border ${
+                            active ? "border-gold-dust bg-gold-dust" : "border-white/25"
+                          }`} />
+                        </div>
+                        {active ? (
+                          <p className="mt-2 rounded-2xl border border-teal-300/18 bg-teal-300/[0.06] px-3 py-2 text-[11px] leading-relaxed text-teal-100/80">
+                            {option.priority[li]}
+                          </p>
+                        ) : null}
+                      </button>
+                    );
+                  })}
+                </div>
+                {fieldError && (
+                  <p role="alert" id="ritual-error" data-testid="ritual-field-error" className="mx-auto mt-4 max-w-md rounded-lg border border-rose-400/40 bg-rose-500/10 px-4 py-2 text-left text-[12px] leading-relaxed text-rose-100">
+                    {fieldError}
+                  </p>
+                )}
+              </div>
+            )}
+
             {isOwnershipStep && (
               <div data-ritual-field>
-                <h1 className="mx-auto mb-4 max-w-xl text-balance font-serif text-3xl italic leading-tight text-stone-warm md:text-5xl">
+                <h1 className="mb-3 text-balance font-serif text-3xl italic leading-tight text-stone-warm">
                   {lang === "zh" ? "这张命盘属于谁？" : "Whose chart is this?"}
                 </h1>
-                <p className="mx-auto mb-10 max-w-md text-sm text-stone-warm/50">
+                <p className="mb-6 text-sm leading-relaxed text-stone-warm/55">
                   {lang === "zh"
                     ? "此选择只保存在你的个人书架里；不会通知对方，也不会公开数据。真正的好友、聊天、共享与匹配仍需双方授权。"
                     : "Your choice is kept privately in your personal library. Nobody is notified and no data is shared. Real friends, chat, sharing and matching still require both parties to consent."}
                 </p>
-                <div role="radiogroup" aria-label={lang === "zh" ? "命盘归属" : "Chart ownership"} className="mx-auto flex max-w-md flex-col gap-3">
+                <div role="radiogroup" aria-label={lang === "zh" ? "命盘归属" : "Chart ownership"} className="flex flex-col gap-3">
                   {(["self", "other"] as const).map((r) => {
                     const active = ownerRole === r;
                     const label = r === "self"
@@ -520,10 +660,10 @@ function RitualPage() {
                 </div>
                 {ownerRole === "other" && (
                   <div className="mx-auto mt-6 max-w-md">
-                    <p className="mb-3 text-[11px] uppercase tracking-[0.28em] text-stone-warm/60">
+                    <p className="mb-3 text-[11px] uppercase tracking-[0.22em] text-stone-warm/60">
                       {lang === "zh" ? "关系（必选）" : "Relationship (required)"}
                     </p>
-                    <div role="radiogroup" aria-label={lang === "zh" ? "关系类型" : "Relationship type"} className="flex flex-wrap justify-center gap-2">
+                    <div role="radiogroup" aria-label={lang === "zh" ? "关系类型" : "Relationship type"} className="grid grid-cols-2 gap-2">
                       {(Object.keys(RELATIONSHIP_LABELS) as Array<Exclude<Relationship, "">>).map((rel) => {
                         const active = relationship === rel;
                         return (
@@ -533,7 +673,7 @@ function RitualPage() {
                             role="radio"
                             aria-checked={active}
                             onClick={() => setRelationship(rel)}
-                            className={`min-h-[40px] rounded-full border px-4 py-2 text-[11px] uppercase tracking-[0.24em] transition-colors ${
+                            className={`min-h-[44px] rounded-2xl border px-3 py-2 text-[11px] uppercase tracking-[0.16em] transition-colors ${
                               active
                                 ? "border-gold-dust bg-gold-dust/10 text-gold-light"
                                 : "border-white/15 text-stone-warm/70 hover:border-gold-dust/40 hover:text-gold-dust"
@@ -556,10 +696,10 @@ function RitualPage() {
 
             {isIntakeStep && currentQ && (
               <>
-                <h1 className="mx-auto mb-4 max-w-xl text-balance font-serif text-3xl italic leading-tight text-stone-warm md:text-5xl" style={{ wordBreak: "keep-all", overflowWrap: "break-word" }}>
+                <h1 className="mb-3 text-balance font-serif text-3xl italic leading-tight text-stone-warm" style={{ wordBreak: "keep-all", overflowWrap: "break-word" }}>
                   {noOrphan(currentQ.prompt)}
                 </h1>
-                <p className="mb-14 text-sm text-stone-warm/50">{currentQ.hint}</p>
+                <p className="mb-6 text-sm leading-relaxed text-stone-warm/55">{currentQ.hint}</p>
 
                 {currentQ.key === "place" ? (
                   <div data-ritual-field>
@@ -571,8 +711,8 @@ function RitualPage() {
                     />
                   </div>
                 ) : currentQ.key === "gender" ? (
-                  <div className="mx-auto max-w-md" data-ritual-field>
-                    <div role="radiogroup" aria-label={t.q_gender} className="flex flex-wrap justify-center gap-3">
+                  <div data-ritual-field>
+                    <div role="radiogroup" aria-label={t.q_gender} className="grid grid-cols-2 gap-3">
                       {(["male", "female"] as Gender[]).map((g) => {
                         const label = g === "male" ? t.q_gender_male : t.q_gender_female;
                         const active = genderChosen && values.gender === g;
@@ -586,7 +726,7 @@ function RitualPage() {
                               setValues((v) => ({ ...v, gender: g }));
                               setGenderChosen(true);
                             }}
-                            className={`min-h-[44px] rounded-full border px-6 py-2.5 text-[11px] uppercase tracking-[0.28em] transition-colors ${
+                            className={`min-h-[52px] rounded-2xl border px-4 py-2.5 text-[11px] uppercase tracking-[0.2em] transition-colors ${
                               active
                                 ? "border-gold-dust bg-gold-dust/10 text-gold-light"
                                 : "border-white/15 text-stone-warm/70 hover:border-gold-dust/40 hover:text-gold-dust"
@@ -604,7 +744,7 @@ function RitualPage() {
                     )}
                   </div>
                 ) : (
-                  <div className="mx-auto max-w-md" data-ritual-field>
+                  <div data-ritual-field>
                     <input
                       key={currentQ.key}
                       autoFocus
@@ -677,11 +817,11 @@ function RitualPage() {
               </>
             )}
 
-            <div className="mt-14 flex items-center justify-center gap-4">
+            <div className="mt-auto grid grid-cols-[auto_1fr] gap-3 pt-8">
               {step > 0 && (
                 <button
                   onClick={() => setStep((s) => s - 1)}
-                  className="rounded-full border border-white/10 px-6 py-3 text-[10px] uppercase tracking-[0.32em] text-stone-warm/60 transition-colors hover:border-gold-dust/40 hover:text-gold-dust"
+                  className="min-h-12 rounded-2xl border border-white/10 px-5 py-3 text-[10px] uppercase tracking-[0.22em] text-stone-warm/70 transition-colors active:scale-[0.98]"
                 >
                   {t.back}
                 </button>
@@ -689,7 +829,7 @@ function RitualPage() {
               <button
                 onClick={advance}
                 
-                className="group relative overflow-hidden rounded-full border border-gold-dust/40 px-10 py-3 text-[10px] uppercase tracking-[0.32em] text-gold-dust transition-all hover:border-gold-dust "
+                className={`${step > 0 ? "" : "col-span-2"} group relative min-h-12 overflow-hidden rounded-2xl border border-gold-dust/40 bg-gold-dust/10 px-6 py-3 text-[10px] uppercase tracking-[0.22em] text-gold-dust transition-all active:scale-[0.98]`}
               >
                 <span className="relative z-10">
                   {isLast ? t.invoke : t.continue}
@@ -700,7 +840,7 @@ function RitualPage() {
           </motion.div>
         </AnimatePresence>
 
-        <p className="mt-24 font-serif text-xs italic text-stone-warm/40">
+        <p className="mt-4 text-center font-serif text-xs italic text-stone-warm/40">
           {t.progress} · {Math.round(progress * 100)}%
         </p>
       </div>
@@ -805,4 +945,3 @@ function RitualPage() {
     </div>
   );
 }
-

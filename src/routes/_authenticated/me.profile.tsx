@@ -74,7 +74,7 @@ function MyProfilePage() {
 
   return (
     <div className="pl-shell min-h-screen bg-[#0a0a12]/25 text-amber-50">
-      <div className="mx-auto w-full max-w-[1100px] px-4 py-8 md:px-8 md:py-12">
+      <div className="mx-auto w-full max-w-[430px] px-4 pb-28 pt-6">
         <PersonalWorkspaceNav active="/me/profile" />
         <header className="pl-header mb-8">
           <div className="text-xs uppercase tracking-[0.24em] text-amber-300/60">
@@ -90,8 +90,8 @@ function MyProfilePage() {
           )}
           <p className="mt-3 max-w-2xl text-sm text-amber-100/70" data-testid="profile-purpose-hint">
             {lang === "zh"
-              ? "这里管理你的主命盘、其他命盘、关系书架、会员与工单。今日阅读和好友、匹配请从上方的次级导航进入。"
-              : "This page manages your primary chart, other charts, relationship shelf, membership and tickets. Use the sub-nav above to reach today's reading, friends or match."}
+              ? "主命盘、他人命盘、已生成报告与账户记录。"
+              : "Primary chart, other charts, saved reports and account records."}
           </p>
         </header>
 
