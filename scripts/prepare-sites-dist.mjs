@@ -7,6 +7,7 @@ const outputDir = path.join(root, ".output");
 const outputServer = path.join(outputDir, "server");
 const outputPublic = path.join(outputDir, "public");
 const distDir = path.join(root, "dist");
+const distPublic = path.join(distDir, "public");
 const distServer = path.join(distDir, "server");
 
 if (!existsSync(outputServer)) {
@@ -19,7 +20,7 @@ if (!existsSync(outputPublic)) {
 
 await rm(distDir, { recursive: true, force: true });
 await mkdir(distDir, { recursive: true });
-await cp(outputPublic, distDir, { recursive: true });
+await cp(outputPublic, distPublic, { recursive: true });
 await cp(outputServer, distServer, { recursive: true });
 await cp(
   path.join(outputServer, "index.mjs"),
