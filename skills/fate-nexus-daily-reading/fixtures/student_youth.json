@@ -1,0 +1,80 @@
+{
+  "skill_version": "daily-reading-v1",
+  "date": "2026-07-21",
+  "timezone": "Asia/Shanghai",
+  "chart_reference": {
+    "chart_id": "00000000-0000-0000-0000-000000000001",
+    "display_name": "青年·学生"
+  },
+  "one_line_theme": "适合把散乱的笔记整理清楚",
+  "four_domain_summary": {
+    "study": {
+      "line": "今天更容易把复习计划落到具体的一小步。",
+      "evidence_refs": [
+        "scores.domains[study]",
+        "daily.transit_planets[mercury]"
+      ]
+    },
+    "career": {
+      "line": "职业方向今日不必强推，多做基础练习。",
+      "evidence_refs": [
+        "scores.domains[career]"
+      ]
+    },
+    "love": {
+      "line": "友情、同侪交流会带来支持感。",
+      "evidence_refs": [
+        "scores.domains[love]",
+        "daily.moon.sign"
+      ]
+    },
+    "wealth": {
+      "line": "花销上多问一句是否需要，再决定。",
+      "evidence_refs": [
+        "scores.domains[wealth]"
+      ]
+    }
+  },
+  "supportive_signals": [
+    {
+      "text": "Mercury 与本命 Sun 六合，理解与表达更顺畅。",
+      "evidence_refs": [
+        "daily.transit_to_natal_aspects[mercury→sun,sextile]",
+        "daily.moon.sign"
+      ],
+      "confidence": "medium"
+    }
+  ],
+  "caution_signals": [
+    {
+      "text": "月亮偏动荡，情绪容易被外部信息带走（单体系参考）。",
+      "evidence_refs": [
+        "daily.moon.phase"
+      ],
+      "confidence": "low"
+    }
+  ],
+  "do_today": [
+    "整理最近一周的错题笔记",
+    "把明天要交的作业拆成两段完成",
+    "睡前 20 分钟离开屏幕"
+  ],
+  "observe_today": [
+    "注意小组讨论中被打断的时刻",
+    "留意糖分摄入是否偏多"
+  ],
+  "counterconditions": [
+    "如果现实情境相反（例如今天进入了非常专注的心流），以现实为准；今日读数只是可能性。"
+  ],
+  "reflection_question": "今天有哪一件事，是因为惯性去做，而不是真的想做？",
+  "evidence_index": [
+    "scores.domains[study]",
+    "daily.transit_to_natal_aspects[mercury→sun,sextile]",
+    "daily.moon.sign"
+  ],
+  "confidence": "medium",
+  "missing_facts": [],
+  "method_limits": [
+    "单日一次采样于当地正午"
+  ]
+}

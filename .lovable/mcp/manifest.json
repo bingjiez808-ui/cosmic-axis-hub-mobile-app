@@ -1,0 +1,90 @@
+{
+  "version": 1,
+  "sdk_version": "0.22.0",
+  "path": "/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://lhnoyrxnnnxvosryupaj.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "library-of-destiny-mcp",
+      "version": "0.1.0",
+      "title": "Library of Destiny MCP"
+    },
+    "tools": [
+      {
+        "name": "get_my_profile",
+        "title": "Get my Library of Destiny profile",
+        "description": "Return the signed-in user's Library of Destiny profile: display name, email, phone, and membership tier (none / sage / oracle) with expiry.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "ask_oracle",
+        "title": "Ask the Library's oracle",
+        "description": "Ask the Library of Destiny's four-tradition oracle (Western astrology, Vedic Jyotish, BaZi, Zi Wei Dou Shu) a life question and receive a poetic, actionable answer. Optionally provide the visitor's chart snapshot to ground the answer.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": false,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "question": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The life question to ask."
+            },
+            "lang": {
+              "description": "Answer language. Defaults to English.",
+              "type": "string",
+              "enum": [
+                "en",
+                "zh"
+              ]
+            },
+            "name": {
+              "description": "Visitor's name.",
+              "type": "string"
+            },
+            "astrology": {
+              "description": "Western astrology snapshot (sun/moon/rising, key placements).",
+              "type": "string"
+            },
+            "jyotish": {
+              "description": "Vedic Jyotish snapshot (Nakshatra / Dashā).",
+              "type": "string"
+            },
+            "bazi": {
+              "description": "BaZi four pillars (year/month/day/hour).",
+              "type": "string"
+            },
+            "ziwei": {
+              "description": "Zi Wei Dou Shu palace snapshot.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "question"
+          ]
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
