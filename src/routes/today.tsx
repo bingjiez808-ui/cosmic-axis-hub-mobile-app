@@ -51,6 +51,17 @@ function todayISO(timezone: string) {
   return `${get("year")}-${get("month")}-${get("day")}`;
 }
 
+function safeTimezone(candidate: unknown) {
+  const fallback = Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Shanghai";
+  const zone = typeof candidate === "string" && candidate.trim() ? candidate : fallback;
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: zone }).format(new Date());
+    return zone;
+  } catch {
+    return "Asia/Shanghai";
+  }
+}
+
 function bandTone(band: string) {
   if (band === "supportive") return "border-emerald-300/24 bg-emerald-300/[0.08] text-emerald-100";
   if (band === "caution") return "border-rose-300/24 bg-rose-300/[0.08] text-rose-100";
@@ -124,11 +135,11 @@ function TodayPage() {
     if (chartState.kind !== "ready" || !chartState.chart) return null;
     const chart = chartState.chart;
     const geo = lookupCityGeo(chart.birth_place);
-    const timezone = geo?.tz ?? Intl.DateTimeFormat().resolvedOptions().timeZone ?? "Asia/Shanghai";
+    const timezone = safeTimezone(geo?.tz);
     const localDate = todayISO(timezone);
     const utc =
       chart.birth_date && chart.birth_time && geo
-        ? localBirthToUTC(chart.birth_date, chart.birth_time.slice(0, 5), geo)
+        ? localBirthToUTC(chart.birth_date, chart.birth_time.slice(0, 5), timezone)
         : null;
     const natal = utc ? computeWesternChart({ utc, lat: geo?.lat, lng: geo?.lng }) : null;
     const facts = natal ? computeDailyFacts({ natal: natal.planets, localDate, timezone }) : null;
