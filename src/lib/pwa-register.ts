@@ -50,6 +50,10 @@ async function unregisterMatching() {
         })
         .map((r) => r.unregister()),
     );
+    if ("caches" in window) {
+      const keys = await window.caches.keys();
+      await Promise.all(keys.filter((key) => key.startsWith("static-")).map((key) => window.caches.delete(key)));
+    }
   } catch {
     /* noop */
   }
