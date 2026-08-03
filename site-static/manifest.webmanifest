@@ -1,0 +1,42 @@
+{
+  "name": "命运图书馆",
+  "short_name": "命运图书馆",
+  "description": "一座可安装到手机桌面的命运图书馆 App，包含命盘解读、今日阅览、命运通识馆、众生之厅、关系适配和读者证。",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "portrait",
+  "background_color": "#0a0a0f",
+  "theme_color": "#0a0a0f",
+  "lang": "zh-CN",
+  "categories": ["lifestyle", "education"],
+  "shortcuts": [
+    {
+      "name": "命盘",
+      "short_name": "命盘",
+      "description": "打开命盘分析与报告入口。",
+      "url": "/chart",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "今日",
+      "short_name": "今日",
+      "description": "打开今日阅览室。",
+      "url": "/today",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "读者证",
+      "short_name": "读者证",
+      "description": "打开个人书架、会员与设置。",
+      "url": "/me",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ],
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
