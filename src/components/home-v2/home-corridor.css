@@ -1,0 +1,174 @@
+/* Library guide corridor — six plain, non-stacking guide plates.
+   No sticky / pin / scale / translate stacking: cards simply flow. */
+
+.corridor {
+  width: min(calc(100% - 2 * clamp(48px, 9vw, 160px)), 1180px);
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(28px, 2.6vw, 36px);
+}
+
+@media (max-width: 767px) {
+  .corridor {
+    width: calc(100% - 40px);
+    gap: 22px;
+  }
+}
+
+.corridor-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: clamp(24px, 2.4vw, 38px);
+  padding: clamp(24px, 3vw, 52px);
+  min-height: 340px;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 550ms ease-out, transform 550ms ease-out,
+    border-color 320ms ease, box-shadow 320ms ease;
+}
+
+.corridor-card[data-revealed="true"] {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.corridor-card:hover {
+  border-color: color-mix(in oklab, var(--corridor-gold, rgba(220, 180, 90, 1)) 55%, transparent);
+  box-shadow: 0 34px 90px -34px rgba(0, 0, 0, 0.8);
+}
+
+/* Slow-moving gold wash on hover; purely a background, never a layout shift. */
+.corridor-card__wash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.55;
+  background:
+    radial-gradient(120% 60% at 50% -10%, rgba(220, 180, 90, 0.14), transparent 55%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(0, 0, 0, 0.05));
+  transition: opacity 400ms ease;
+}
+
+.corridor-card:hover .corridor-card__wash {
+  opacity: 0.85;
+  animation: corridor-wash 9s ease-in-out infinite alternate;
+}
+
+@keyframes corridor-wash {
+  from {
+    background-position: 0% 0%, 0 0;
+  }
+  to {
+    background-position: 100% 20%, 0 0;
+  }
+}
+
+.corridor-card__inner {
+  position: relative;
+  display: grid;
+  gap: clamp(20px, 2.4vw, 40px);
+  height: 100%;
+  align-content: space-between;
+}
+
+.corridor-title {
+  font-size: clamp(30px, 3vw, 52px);
+  line-height: 1.15;
+  text-wrap: balance;
+  word-break: keep-all;
+}
+
+.corridor-body {
+  font-size: clamp(16px, 1.25vw, 21px);
+  line-height: 1.75;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+.corridor-visual {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 140px;
+  max-height: 190px;
+}
+
+/* ---------- Tablet ---------- */
+@media (min-width: 768px) {
+  .corridor-card {
+    min-height: 320px;
+    max-height: 420px;
+  }
+  .corridor-card__inner {
+    grid-template-columns: 58% 42%;
+    grid-template-rows: 1fr auto;
+    grid-template-areas:
+      "head visual"
+      "actions visual";
+    align-items: start;
+  }
+  .corridor-card[data-flip="true"] .corridor-card__inner {
+    grid-template-columns: 42% 58%;
+    grid-template-areas:
+      "visual head"
+      "visual actions";
+  }
+  .corridor-head {
+    grid-area: head;
+  }
+  .corridor-actions {
+    grid-area: actions;
+  }
+  .corridor-visual {
+    grid-area: visual;
+    align-self: center;
+    min-height: 180px;
+    max-height: 100%;
+  }
+  .corridor-body {
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+  }
+}
+
+/* ---------- Desktop ---------- */
+@media (min-width: 1024px) {
+  .corridor-card {
+    min-height: 340px;
+    max-height: 460px;
+  }
+  .corridor-card__inner {
+    grid-template-columns: 62% 38%;
+  }
+  .corridor-card[data-flip="true"] .corridor-card__inner {
+    grid-template-columns: 38% 62%;
+  }
+}
+
+/* ---------- Mobile ---------- */
+@media (max-width: 767px) {
+  .corridor-card {
+    min-height: 360px;
+    max-height: none;
+  }
+  .corridor-cta {
+    width: 100%;
+    min-height: 48px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .corridor-card {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .corridor-card:hover .corridor-card__wash {
+    animation: none;
+  }
+}
