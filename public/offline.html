@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Offline — Fate Nexus</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0a0a0f" />
+    <link rel="icon" href="/favicon.ico" />
+    <style>
+      :root { color-scheme: dark; }
+      html, body { margin: 0; padding: 0; }
+      body {
+        min-height: 100dvh;
+        background: radial-gradient(ellipse at top, #171422 0%, #0a0a0f 60%);
+        color: #e8dfc9;
+        font-family: "Playfair Display", Georgia, serif;
+        display: grid;
+        place-items: center;
+        padding: 1.5rem;
+        padding-top: max(1.5rem, env(safe-area-inset-top));
+        padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+      }
+      .card { max-width: 32rem; text-align: center; }
+      .kicker {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        letter-spacing: 0.4em;
+        text-transform: uppercase;
+        font-size: 10px;
+        color: #d4a94a;
+        margin-bottom: 1.25rem;
+      }
+      h1 { font-weight: 400; font-size: clamp(1.75rem, 5vw, 2.5rem); margin: 0 0 0.75rem; }
+      p {
+        font-family: Inter, system-ui, -apple-system, sans-serif;
+        font-size: 15px;
+        line-height: 1.6;
+        color: rgba(232, 223, 201, 0.7);
+        margin: 0 0 2rem;
+      }
+      a, button {
+        display: inline-block;
+        border: 1px solid rgba(212, 169, 74, 0.4);
+        color: #d4a94a;
+        text-decoration: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 999px;
+        font-family: Inter, system-ui, sans-serif;
+        font-size: 11px;
+        letter-spacing: 0.28em;
+        text-transform: uppercase;
+        background: transparent;
+        cursor: pointer;
+        min-height: 44px;
+        min-width: 44px;
+      }
+      a:hover, button:hover { background: rgba(212, 169, 74, 0.1); }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <p class="kicker">Fate Nexus App</p>
+      <h1>Your library is offline.</h1>
+      <p>
+        Daily readings, friend invites and relationship matching need a connection.
+        Your installed app is ready; come back when the signal returns.<br /><br />
+        每日指引、好友邀请与关系适配需要联网。App 已准备好，请在恢复连接后再进入书房。
+      </p>
+      <button type="button" onclick="location.reload()">Try again</button>
+    </main>
+  </body>
+</html>
