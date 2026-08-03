@@ -27,4 +27,22 @@ await cp(
   path.join(distServer, "index.js"),
 );
 
+const serverWrangler = path.join(distServer, "wrangler.json");
+if (existsSync(serverWrangler)) {
+  const wranglerConfig = JSON.parse(
+    await import("node:fs/promises").then(({ readFile }) =>
+      readFile(serverWrangler, "utf8"),
+    ),
+  );
+  wranglerConfig.main = "server/index.js";
+  if (wranglerConfig.assets) {
+    wranglerConfig.assets.directory = "public";
+  }
+  const { writeFile } = await import("node:fs/promises");
+  await writeFile(
+    path.join(distDir, "wrangler.json"),
+    `${JSON.stringify(wranglerConfig, null, 2)}\n`,
+  );
+}
+
 console.log("Prepared Sites dist with server entry and public assets.");
