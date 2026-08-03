@@ -1,0 +1,27 @@
+{
+  "skill_version": "daily-reading-v1",
+  "date": "2026-07-21",
+  "timezone": "Asia/Shanghai",
+  "chart_reference": {"chart_id": "00000000-0000-0000-0000-000000000003", "display_name": "转型·中年"},
+  "one_line_theme": "重新学习是当下最踏实的动作",
+  "four_domain_summary": {
+    "study":  {"line": "把新领域的关键概念做一次总结，比追进度更值得。", "evidence_refs": ["scores.domains[study]", "slower.bazi"]},
+    "career": {"line": "外部机会可以听、可以谈，但今日不宜签字定死。", "evidence_refs": ["scores.domains[career]", "slower.ziwei"]},
+    "love":   {"line": "家人的诉求今日更需要被真正听到。", "evidence_refs": ["scores.domains[love]"]},
+    "wealth": {"line": "评估长期支出结构，比抓短线更重要。", "evidence_refs": ["scores.domains[wealth]"]}
+  },
+  "supportive_signals": [
+    {"text": "西占 Saturn 与本命 Sun 三合、八字大运偏印透出，均利于沉淀。", "evidence_refs": ["daily.transit_to_natal_aspects[saturn→sun,trine]", "slower.bazi"], "confidence": "high"}
+  ],
+  "caution_signals": [
+    {"text": "Moon 相位偏散，容易被家庭事务牵动情绪（单体系参考）。", "evidence_refs": ["daily.moon.phase"], "confidence": "low"}
+  ],
+  "do_today": ["用 30 分钟写下你想学的方向的三个小问题", "跟一位相关领域的朋友聊 15 分钟", "整理一份长期支出清单"],
+  "observe_today": ["谈判邀约中是否有隐性期限压力", "健康信号：睡眠质量"],
+  "counterconditions": ["如果今天的家庭或工作真实带来更强推进力，以现实为准。"],
+  "reflection_question": "我最近抗拒的是变化本身，还是失去掌控感？",
+  "evidence_index": ["scores.domains[career]", "daily.transit_to_natal_aspects[saturn→sun,trine]", "slower.bazi", "slower.ziwei"],
+  "confidence": "high",
+  "missing_facts": [],
+  "method_limits": ["单日一次采样于当地正午"]
+}

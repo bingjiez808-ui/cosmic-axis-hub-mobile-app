@@ -1,0 +1,27 @@
+{
+  "skill_version": "daily-reading-v1",
+  "date": "2026-07-21",
+  "timezone": "Asia/Shanghai",
+  "chart_reference": {"chart_id": "00000000-0000-0000-0000-000000000002", "display_name": "中期·职场"},
+  "one_line_theme": "把一个搁置的小任务收尾",
+  "four_domain_summary": {
+    "study":  {"line": "抽出半小时给专业阅读，比长时间更有效。", "evidence_refs": ["scores.domains[study]"]},
+    "career": {"line": "适合与合作方对齐节奏，而不是拍板重大决策。", "evidence_refs": ["scores.domains[career]", "daily.transit_planets[mars]"]},
+    "love":   {"line": "对亲近的人多问一句语境，少下结论。", "evidence_refs": ["scores.domains[love]", "daily.moon.sign"]},
+    "wealth": {"line": "涉及金钱的重要决定，多留一天再定。", "evidence_refs": ["scores.domains[wealth]"]}
+  },
+  "supportive_signals": [
+    {"text": "Sun 与本命 Saturn 三合，稳步推进的日子。", "evidence_refs": ["daily.transit_to_natal_aspects[sun→saturn,trine]", "scores.domains[career]"], "confidence": "medium"}
+  ],
+  "caution_signals": [
+    {"text": "Mars 对本命 Mercury 四分，言语容易过硬。", "evidence_refs": ["daily.transit_to_natal_aspects[mars→mercury,square]", "daily.transit_planets[mars]"], "confidence": "medium"}
+  ],
+  "do_today": ["把一个搁置的邮件今天回掉", "花 15 分钟整理近期学习或工作笔记", "散步 20 分钟不带手机"],
+  "observe_today": ["沟通里避免二选一句式", "涉及金钱时多留一天再定"],
+  "counterconditions": ["如果实际推进得比预想更顺利，以现实为准；今日读数只是值得留意的可能性。"],
+  "reflection_question": "如果今天只允许推进一件事，是哪一件？",
+  "evidence_index": ["scores.domains[career]", "daily.transit_to_natal_aspects[sun→saturn,trine]", "daily.transit_to_natal_aspects[mars→mercury,square]"],
+  "confidence": "medium",
+  "missing_facts": [],
+  "method_limits": ["单日一次采样于当地正午"]
+}
