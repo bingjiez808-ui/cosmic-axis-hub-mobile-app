@@ -1,0 +1,1 @@
+DELETE FROM public.community_letters WHERE id = '3f18e370-8b14-471f-8df7-5bc43d78a508';
