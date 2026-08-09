@@ -504,7 +504,7 @@ type Ctx = { lang: Lang; setLang: (l: Lang) => void; t: Dict };
 const LangCtx = createContext<Ctx | null>(null);
 const LANGUAGE_STORAGE_KEY = "lod.lang";
 const LANGUAGE_CHANGE_EVENT = "lod:lang-change";
-let languageSnapshot: Lang = "en";
+let languageSnapshot: Lang = "zh";
 const languageListeners = new Set<() => void>();
 
 function normalizeLang(value: unknown): Lang | null {
@@ -526,7 +526,7 @@ function getLanguageSnapshot(): Lang {
 }
 
 function getServerLanguageSnapshot(): Lang {
-  return "en";
+  return "zh";
 }
 
 function subscribeLanguageStore(onStoreChange: () => void): () => void {
@@ -588,9 +588,7 @@ export function htmlLangFor(lang: Lang): "zh-CN" | "en" {
 }
 
 /** Sync `document.documentElement.lang` so screen readers, spell-check and
- *  CSS `:lang()` selectors match the visible UI. Called from an effect so
- *  the SSR shell (`<html lang="en">`) stays stable and does not cause a
- *  hydration mismatch. */
+ *  CSS `:lang()` selectors match the visible UI. */
 export function syncDocumentLang(lang: Lang): void {
   if (typeof document === "undefined") return;
   const tag = htmlLangFor(lang);

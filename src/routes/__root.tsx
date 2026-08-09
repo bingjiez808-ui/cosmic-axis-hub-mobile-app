@@ -52,11 +52,11 @@ function NotFoundComponent() {
 }
 
 function useHydrationSafeRootLang(): "zh" | "en" {
-  const [lang, setLang] = useState<"zh" | "en">("en");
+  const [lang, setLang] = useState<"zh" | "en">("zh");
 
   useEffect(() => {
     const sync = () => {
-      const htmlLang = document.documentElement.getAttribute("lang") ?? "en";
+      const htmlLang = document.documentElement.getAttribute("lang") ?? "zh-CN";
       setLang(htmlLang.toLowerCase().startsWith("zh") ? "zh" : "en");
     };
     sync();
@@ -82,8 +82,8 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   const isAuthRefresh =
     error?.name === "AuthRefreshFailedError" ||
     /authentication refresh failed/i.test(error?.message ?? "");
-  // Lang provider isn't in scope for this boundary. Keep SSR + first hydrate
-  // render pinned to English, then switch from <html lang> after mount.
+  // Lang provider isn't in scope for this boundary. Read from <html lang>
+  // after mount so the copy follows the app's default language.
   const isZh = rootLang === "zh";
 
   const title = isAuthRefresh
@@ -192,7 +192,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="zh-CN">
       <head>
         <HeadContent />
       </head>
