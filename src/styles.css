@@ -1,0 +1,548 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+
+  --font-serif: "Playfair Display", ui-serif, Georgia, serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-obsidian: var(--obsidian);
+  --color-void-blue: var(--void-blue);
+  --color-nebula-purple: var(--nebula-purple);
+  --color-gold-dust: var(--gold-dust);
+  --color-gold-light: var(--gold-light);
+  --color-stone-warm: var(--stone-warm);
+}
+
+:root {
+  --radius: 0.75rem;
+
+  /* Celestial Glass palette */
+  --obsidian: oklch(0.14 0.005 260);
+  --void-blue: oklch(0.19 0.03 260);
+  --nebula-purple: oklch(0.45 0.19 285);
+  --gold-dust: oklch(0.76 0.11 85);
+  --gold-light: oklch(0.9 0.09 90);
+  --stone-warm: oklch(0.83 0.01 85);
+
+  /* Semantic — dark by default */
+  --background: var(--obsidian);
+  --foreground: oklch(0.88 0.01 85);
+  --card: oklch(0.19 0.02 265 / 0.6);
+  --card-foreground: oklch(0.9 0.01 85);
+  --popover: oklch(0.19 0.02 265);
+  --popover-foreground: oklch(0.9 0.01 85);
+  --primary: var(--gold-dust);
+  --primary-foreground: var(--obsidian);
+  --secondary: oklch(0.25 0.02 265);
+  --secondary-foreground: oklch(0.9 0.01 85);
+  --muted: oklch(0.22 0.02 265);
+  --muted-foreground: oklch(0.6 0.02 85);
+  --accent: var(--nebula-purple);
+  --accent-foreground: oklch(0.95 0.01 85);
+  --destructive: oklch(0.6 0.24 27);
+  --destructive-foreground: oklch(0.98 0 0);
+  --border: oklch(1 0 0 / 0.08);
+  --input: oklch(1 0 0 / 0.1);
+  --ring: var(--gold-dust);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+  html,
+  body {
+    background-color: var(--color-obsidian);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    /* Fluid base font: 15px on tight phones → 16px on ≥400px viewports. */
+    font-size: clamp(15px, 0.9rem + 0.25vw, 16.5px);
+    /* Prevent stray decorative absolute elements from producing horizontal scroll on mobile. */
+    overflow-x: hidden;
+    /* Respect notches / safe areas on iOS. */
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  :lang(zh),
+  html[lang="zh"],
+  html[lang^="zh-"] {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC",
+      "Hiragino Sans GB", "Microsoft YaHei", "Source Han Sans SC", sans-serif;
+  }
+  /* Prevent iOS Safari from auto-zooming form inputs (font-size ≥ 16px). */
+  input, select, textarea {
+    font-size: max(16px, 1rem);
+  }
+  h1, h2, h3, h4 {
+    font-family: var(--font-serif);
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+    /* CJK: don't break inside a word; keep 「，、。—— 」 with preceding glyph */
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+    line-break: strict;
+  }
+  /* Long italic serif quotes flow as balanced blocks and never break inside a CJK phrase */
+  .font-serif.italic,
+  blockquote,
+  .quote-flow {
+    text-wrap: pretty;
+    word-break: keep-all;
+    line-break: strict;
+    overflow-wrap: break-word;
+    hanging-punctuation: allow-end;
+  }
+  ::selection {
+    background: color-mix(in oklab, var(--gold-dust) 30%, transparent);
+    color: var(--gold-light);
+  }
+}
+
+@layer components {
+  .glass-card {
+    /* Layered fill: a warm obsidian wash for readable contrast, a subtle
+       gold-tinted top-light so the panel still feels lit rather than opaque. */
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in oklab, var(--gold-dust) 4%, transparent) 0%,
+        transparent 42%
+      ),
+      color-mix(in oklab, var(--obsidian) 62%, transparent);
+    backdrop-filter: blur(18px) saturate(120%);
+    border: 1px solid color-mix(in oklab, var(--gold-dust) 14%, transparent);
+    box-shadow:
+      0 1px 0 color-mix(in oklab, white 6%, transparent) inset,
+      0 24px 60px -30px color-mix(in oklab, var(--obsidian) 80%, transparent);
+  }
+  .star-bg {
+    background-image: radial-gradient(circle at 2px 2px, color-mix(in oklab, var(--gold-dust) 15%, transparent) 1px, transparent 0);
+    background-size: 44px 44px;
+  }
+  .library-lamplight {
+    background:
+      radial-gradient(ellipse 36% 26% at 50% 34%,
+        color-mix(in oklab, var(--gold-light) 26%, transparent) 0%,
+        color-mix(in oklab, var(--gold-dust) 10%, transparent) 42%,
+        transparent 76%),
+      radial-gradient(ellipse 28% 34% at 13% 62%,
+        color-mix(in oklab, var(--gold-dust) 18%, transparent) 0%,
+        transparent 68%),
+      radial-gradient(ellipse 26% 32% at 88% 62%,
+        color-mix(in oklab, var(--gold-dust) 16%, transparent) 0%,
+        transparent 68%);
+    mix-blend-mode: screen;
+  }
+  .library-shadow-aisle {
+    background:
+      linear-gradient(90deg,
+        color-mix(in oklab, var(--obsidian) 88%, transparent) 0%,
+        color-mix(in oklab, var(--obsidian) 32%, transparent) 24%,
+        transparent 50%,
+        color-mix(in oklab, var(--obsidian) 32%, transparent) 76%,
+        color-mix(in oklab, var(--obsidian) 88%, transparent) 100%),
+      linear-gradient(180deg,
+        color-mix(in oklab, var(--obsidian) 64%, transparent) 0%,
+        transparent 34%,
+        color-mix(in oklab, var(--obsidian) 70%, transparent) 100%);
+  }
+  .library-vignette {
+    background:
+      radial-gradient(ellipse 64% 58% at 50% 42%,
+        transparent 0%,
+        color-mix(in oklab, var(--obsidian) 24%, transparent) 48%,
+        color-mix(in oklab, var(--obsidian) 78%, transparent) 82%,
+        var(--obsidian) 100%),
+      linear-gradient(180deg,
+        color-mix(in oklab, var(--obsidian) 72%, transparent) 0%,
+        transparent 60%);
+  }
+  .library-parchment {
+    background-image:
+      radial-gradient(circle at 20% 30%, color-mix(in oklab, #d4a24a 6%, transparent) 0, transparent 55%),
+      radial-gradient(circle at 80% 70%, color-mix(in oklab, #b57a2e 5%, transparent) 0, transparent 50%),
+      repeating-radial-gradient(circle at 50% 50%,
+        color-mix(in oklab, #6b3418 3%, transparent) 0 2px,
+        transparent 2px 5px);
+    mix-blend-mode: overlay;
+  }
+  .dust-motes {
+    background-image:
+      radial-gradient(1px 1px at 12% 22%, color-mix(in oklab, var(--gold-light) 60%, transparent) 50%, transparent 60%),
+      radial-gradient(1.5px 1.5px at 34% 68%, color-mix(in oklab, var(--gold-dust) 55%, transparent) 50%, transparent 60%),
+      radial-gradient(1px 1px at 58% 14%, color-mix(in oklab, var(--gold-light) 70%, transparent) 50%, transparent 60%),
+      radial-gradient(1px 1px at 74% 52%, color-mix(in oklab, var(--gold-dust) 50%, transparent) 50%, transparent 60%),
+      radial-gradient(2px 2px at 88% 82%, color-mix(in oklab, var(--gold-light) 55%, transparent) 50%, transparent 60%),
+      radial-gradient(1px 1px at 22% 88%, color-mix(in oklab, var(--gold-dust) 60%, transparent) 50%, transparent 60%),
+      radial-gradient(1.5px 1.5px at 66% 34%, color-mix(in oklab, var(--gold-light) 55%, transparent) 50%, transparent 60%);
+    background-size: 620px 620px;
+    animation: dust-drift 32s ease-in-out infinite;
+  }
+  .gold-gradient-text {
+    background: linear-gradient(100deg, var(--gold-dust) 0%, var(--gold-light) 50%, var(--gold-dust) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+  .ritual-input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid color-mix(in oklab, white 10%, transparent);
+    padding: 1rem 0;
+    font-family: var(--font-serif);
+    font-size: 1.5rem;
+    color: var(--gold-light);
+    text-align: center;
+    transition: border-color 0.4s ease;
+  }
+  .ritual-input:focus {
+    outline: none;
+    border-color: color-mix(in oklab, var(--gold-dust) 60%, transparent);
+  }
+  .ritual-input::placeholder {
+    color: color-mix(in oklab, white 15%, transparent);
+    font-style: italic;
+  }
+}
+
+
+
+/* Fluid heading utilities — grow smoothly from mobile → desktop. */
+@utility text-fluid-hero {
+  font-size: clamp(2.25rem, 4vw + 1.6rem, 5.5rem);
+  line-height: 1.05;
+}
+/* CJK-tuned hero: keeps two-line rhythm on iPhone-class widths, prevents
+   orphan single-character wraps by pairing with block-span segmentation. */
+@utility text-fluid-hero-zh {
+  font-size: clamp(1.75rem, 8.4vw, 5.25rem);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  word-break: keep-all;
+  overflow-wrap: normal;
+}
+@utility hero-zh-line {
+  display: block;
+  white-space: nowrap;
+}
+@utility text-fluid-h1 {
+  font-size: clamp(1.875rem, 3vw + 1.1rem, 3.75rem);
+  line-height: 1.1;
+}
+@utility text-fluid-h2 {
+  font-size: clamp(1.625rem, 2.4vw + 1rem, 3rem);
+  line-height: 1.15;
+}
+@utility text-fluid-h3 {
+  font-size: clamp(1.375rem, 1.6vw + 0.9rem, 2.25rem);
+  line-height: 1.25;
+}
+
+
+
+@keyframes slow-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes slow-rotate-reverse {
+  from { transform: rotate(360deg); }
+  to { transform: rotate(0deg); }
+}
+@keyframes pulse-gold {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.75; }
+}
+@keyframes drift-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes dust-drift {
+  0%   { transform: translate3d(0, 0, 0);        opacity: 0.55; }
+  50%  { transform: translate3d(-24px, -18px, 0); opacity: 0.85; }
+  100% { transform: translate3d(0, 0, 0);        opacity: 0.55; }
+}
+@keyframes candle-flicker {
+  0%, 100% { opacity: 0.85; }
+  40%      { opacity: 0.68; }
+  60%      { opacity: 1;    }
+}
+@keyframes library-shimmer {
+  0%   { background-position: -180% 0; opacity: 0; }
+  40%  { opacity: 0.9; }
+  100% { background-position: 220% 0;  opacity: 0; }
+}
+@keyframes dust-burst {
+  0%   { opacity: 0; transform: scale(0.6); }
+  30%  { opacity: 0.85; }
+  100% { opacity: 0; transform: scale(1.4); }
+}
+
+@utility animate-slow-rotate {
+  animation: slow-rotate 120s linear infinite;
+}
+@utility animate-slow-rotate-reverse {
+  animation: slow-rotate-reverse 80s linear infinite;
+}
+@utility animate-pulse-gold {
+  animation: pulse-gold 4s ease-in-out infinite;
+}
+@utility animate-drift-up {
+  animation: drift-up 1s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+@utility animate-candle-flicker {
+  animation: candle-flicker 5.5s ease-in-out infinite;
+}
+@utility animate-library-shimmer {
+  background: linear-gradient(100deg,
+    transparent 0%,
+    color-mix(in oklab, var(--gold-light) 55%, transparent) 45%,
+    color-mix(in oklab, var(--gold-dust) 30%, transparent) 55%,
+    transparent 100%);
+  background-size: 220% 100%;
+  animation: library-shimmer 1.6s ease-out 1;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+@utility animate-dust-burst {
+  animation: dust-burst 1.4s ease-out 1;
+  pointer-events: none;
+}
+
+/* Print — clean PDF export of the reading */
+@media print {
+  html, body {
+    background: #fff !important;
+    color: #111 !important;
+  }
+  nav, footer, .print\:hidden { display: none !important; }
+  .glass-card {
+    background: #fff !important;
+    border: 1px solid #ddd !important;
+    box-shadow: none !important;
+  }
+  .star-bg, [class*="animate-"] { display: none !important; }
+  * {
+    color: #111 !important;
+    text-shadow: none !important;
+  }
+  a { text-decoration: none !important; }
+}
+
+
+/* Tarot horizontal deck — hide native scrollbar for a cleaner feel */
+.tarot-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  scroll-behavior: smooth;
+}
+.tarot-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* Planet-placement panel — internal scroll with a thin gold rail so long
+   reading text stays inside a fixed frame beside the chart. */
+.planet-panel > div {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(45 70% 60% / 0.35) transparent;
+}
+.planet-panel > div::-webkit-scrollbar {
+  width: 6px;
+}
+.planet-panel > div::-webkit-scrollbar-thumb {
+  background: hsl(45 70% 60% / 0.35);
+  border-radius: 999px;
+}
+.planet-panel > div::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ─────────────────────────────────────────────
+   Typography self-adaptation — no single-char
+   orphan lines. `text-wrap: pretty` is stronger
+   than `balance` at preventing a lone glyph on
+   the last line (critical for CJK titles where
+   the browser might otherwise strand `字？` or a
+   punctuation mark). Latin headings keep balance
+   as a fallback where `pretty` is unavailable.
+   ───────────────────────────────────────────── */
+h1, h2, h3, h4 {
+  text-wrap: balance;
+  text-wrap: pretty;
+  hanging-punctuation: none;
+}
+.balance {
+  text-wrap: balance;
+}
+.pretty {
+  text-wrap: pretty;
+}
+/* Long paragraphs — pretty last-line wrapping.
+   Applied via `.reading-copy` on all AI paragraphs. */
+.reading-copy {
+  text-wrap: pretty;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+/* Defer offscreen expensive sections — pays for itself on the
+   long report page and marketing pages with many stacked cards.
+   Estimated size keeps the scrollbar/anchors stable so we do not
+   introduce CLS. */
+@utility cv-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 640px;
+}
+
+/* Respect user motion preferences — kill decorative, infinite
+   ambient animations and long-running rotations. Layout, opacity
+   transitions and page enter animations are preserved. */
+@media (prefers-reduced-motion: reduce) {
+  .dust-motes,
+  .animate-candle-flicker,
+  .animate-slow-rotate,
+  .animate-slow-rotate-reverse,
+  .animate-pulse-gold {
+    animation: none !important;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+/* Compact detail cards — same-size boxes at any breakpoint. */
+.detail-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 768px) {
+  .detail-grid { grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .detail-grid.detail-grid-3 { grid-template-columns: repeat(3, 1fr); }
+}
+.detail-grid > * {
+  height: 100%;
+}
+.detail-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  border-radius: 0.9rem;
+  border: 1px solid color-mix(in oklab, var(--gold-dust) 12%, transparent);
+  background: color-mix(in oklab, var(--obsidian) 40%, transparent);
+}
+.detail-card > ul {
+  font-size: 13px;
+  line-height: 1.55;
+}
+.detail-card li {
+  text-wrap: pretty;
+}
+.detail-card-strength {
+  border-color: color-mix(in oklab, oklch(0.78 0.14 155) 22%, transparent);
+  background:
+    linear-gradient(180deg, color-mix(in oklab, oklch(0.78 0.14 155) 6%, transparent), transparent 60%),
+    color-mix(in oklab, var(--obsidian) 42%, transparent);
+}
+.detail-card-caution {
+  border-color: color-mix(in oklab, oklch(0.82 0.14 75) 22%, transparent);
+  background:
+    linear-gradient(180deg, color-mix(in oklab, oklch(0.82 0.14 75) 6%, transparent), transparent 60%),
+    color-mix(in oklab, var(--obsidian) 42%, transparent);
+}
+
+/* ─── ConcernSelector · stable-height dual pane ─────────────────────
+   Right shell locks to left column height on desktop; body is the
+   only scroll surface. Header + footer stay pinned. */
+.concern-response-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(210, 174, 92, 0.45) transparent;
+  scrollbar-gutter: stable;
+}
+.concern-response-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.concern-response-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.concern-response-scroll::-webkit-scrollbar-thumb {
+  background: rgba(210, 174, 92, 0.35);
+  border-radius: 999px;
+}
+.concern-response-content {
+  animation: concernContentIn 180ms ease-out;
+}
+@keyframes concernContentIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .concern-response-content { animation: none; }
+}
+/* Mobile: undo the desktop inline height + inner scroll. */
+@media (max-width: 1023px) {
+  .concern-response-shell {
+    height: auto !important;
+    overflow: visible;
+  }
+  .concern-response-scroll {
+    overflow: visible;
+    max-height: none;
+  }
+}
+
+/* React Bits SplitText — allow CJK to wrap per-char.
+ * GSAP wraps chars inside .split-word with white-space:nowrap by default,
+ * which turns a whole Chinese heading (no spaces) into one giant unbreakable line.
+ */
+.split-parent {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.split-parent .split-word {
+  white-space: normal !important;
+  display: inline;
+}
+.split-parent .split-char {
+  display: inline-block;
+  will-change: transform, opacity;
+}
