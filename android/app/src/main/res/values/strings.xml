@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">命运图书馆</string>
+    <string name="title_activity_main">命运图书馆</string>
+    <string name="package_name">studio.fatenexus.library</string>
+    <string name="custom_url_scheme">studio.fatenexus.library</string>
+</resources>

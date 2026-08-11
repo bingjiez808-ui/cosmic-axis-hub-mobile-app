@@ -17,6 +17,13 @@ dist-ssr
 .nitro
 *.local
 
+# Native app local state
+android/local.properties
+android/.gradle/
+ios/App/DerivedData/
+ios/App/xcuserdata/
+*.xcuserstate
+
 # Wrangler / Cloudflare
 .wrangler/
 .dev.vars
