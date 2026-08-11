@@ -1,5 +1,6 @@
 import { cp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
+import { execSync } from "node:child_process";
 import path from "node:path";
 
 const root = process.cwd();
@@ -10,7 +11,13 @@ const distDir = path.join(root, "dist");
 const distPublic = path.join(distDir, "public");
 const distServer = path.join(distDir, "server");
 const siteStaticDir = path.join(root, "site-static");
-const staticAssetBase = "https://cdn.jsdelivr.net/gh/bingjiez808-ui/cosmic-axis-hub-mobile-app@main/site-static";
+const siteStaticVersion =
+  process.env.SITE_STATIC_VERSION ||
+  execSync("git rev-parse mobile-app/main", {
+    cwd: root,
+    encoding: "utf8",
+  }).trim();
+const staticAssetBase = `https://cdn.jsdelivr.net/gh/bingjiez808-ui/cosmic-axis-hub-mobile-app@${siteStaticVersion}/site-static`;
 
 if (!existsSync(outputServer)) {
   throw new Error("Missing .output/server. Run vite build before preparing Sites dist.");
