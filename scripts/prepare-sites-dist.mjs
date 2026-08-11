@@ -1,4 +1,4 @@
-import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
 
@@ -9,6 +9,8 @@ const outputPublic = path.join(outputDir, "public");
 const distDir = path.join(root, "dist");
 const distPublic = path.join(distDir, "public");
 const distServer = path.join(distDir, "server");
+const siteStaticDir = path.join(root, "site-static");
+const staticAssetBase = "https://cdn.jsdelivr.net/gh/bingjiez808-ui/cosmic-axis-hub-mobile-app@main/site-static";
 
 if (!existsSync(outputServer)) {
   throw new Error("Missing .output/server. Run vite build before preparing Sites dist.");
@@ -22,6 +24,32 @@ await rm(distDir, { recursive: true, force: true });
 await mkdir(distDir, { recursive: true });
 await cp(outputPublic, distPublic, { recursive: true });
 await cp(outputServer, distServer, { recursive: true });
+await rm(siteStaticDir, { recursive: true, force: true });
+await cp(outputPublic, siteStaticDir, { recursive: true });
+
+async function rewriteRuntimeAssetTables(dir) {
+  const entries = await readdir(dir, { withFileTypes: true });
+  await Promise.all(
+    entries.map(async (entry) => {
+      const entryPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        await rewriteRuntimeAssetTables(entryPath);
+        return;
+      }
+      if (!entry.name.endsWith(".js")) return;
+      const source = await readFile(entryPath, "utf8");
+      const rewritten = source
+        .replaceAll('"assets/', `"${staticAssetBase}/assets/`)
+        .replaceAll("'assets/", `'${staticAssetBase}/assets/`);
+      if (rewritten !== source) {
+        await writeFile(entryPath, rewritten);
+      }
+    }),
+  );
+}
+
+await rewriteRuntimeAssetTables(siteStaticDir);
+await rewriteRuntimeAssetTables(distPublic);
 await cp(
   path.join(outputServer, "index.mjs"),
   path.join(distServer, "index.js"),
@@ -53,7 +81,7 @@ await writeFile(
     )
     .replace(
       "export { cloudflare_module_default as default };",
-      `const staticAssetBase = "https://cdn.jsdelivr.net/gh/bingjiez808-ui/cosmic-axis-hub-mobile-app@main/site-static";
+      `const staticAssetBase = "${staticAssetBase}";
 const htmlAssetRewriteHandler = {
 \t...cloudflare_module_default,
 \tasync fetch(request, env, context) {
