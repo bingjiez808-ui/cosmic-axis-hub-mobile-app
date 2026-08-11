@@ -1,0 +1,1 @@
+/* empty css                         */import{s as e}from"./index-B1fMLfyq.js";var t=e;export{t as errorComponent};
