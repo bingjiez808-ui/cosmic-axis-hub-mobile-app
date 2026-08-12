@@ -5,8 +5,12 @@
 - 已支持 PWA 安装：手机浏览器打开生产链接后，可添加到主屏幕。
 - 已加入 Capacitor 原生壳配置：可生成 iOS / Android 工程，用于真机安装、TestFlight、Google Play 内测。
 - 已生成 `ios/` 和 `android/` 原生工程，并完成 `npm run cap:sync` 同步。
+- 2026-08-12 已再次执行 `npx cap sync`，iOS / Android 原生工程已同步到当前线上 App 配置。
+- Android 已配置 `compileSdkVersion = 36`、`targetSdkVersion = 36`，满足 2026-08-31 起 Google Play 新应用 / 更新提交的目标 API 要求。
 - 默认语言已改为中文：生产页面会以 `zh-CN` 作为默认语言。
 - 已有隐私政策、服务条款、删除账号入口和免责声明页面。
+- 已上线生产版本 12，修复众生之厅资源预加载路径问题。
+- 已补充上架操作手册：`store/APP_RELEASE_RUNBOOK.zh-CN.md`。
 
 ## 还需要准备
 
@@ -19,6 +23,7 @@
 - 免责声明：商店描述和 App 内都要说明命盘内容仅用于文化体验、娱乐和自我反思，不构成医疗、法律、财务、投资或人生重大决策建议。
 - 会员与付费：如在 App 内售卖会员或深度报告，iOS 通常需要接入 Apple In-App Purchase，Android 需要 Google Play Billing。
 - 原生构建环境：Mac + Xcode 用于 iOS；Android Studio + JDK 用于 Android。
+- 审核测试账号：需要在提交前准备，但不要写入代码仓库。
 
 ## 本地真机测试路径
 
@@ -27,11 +32,13 @@
 3. iOS：`npm run cap:open:ios`
 4. Android：`npm run cap:open:android`
 5. 在 Xcode 或 Android Studio 里连接手机运行。
+6. 详细操作见：`store/APP_RELEASE_RUNBOOK.zh-CN.md`
 
 ## 当前本机环境缺口
 
 - iOS：当前机器只有 Xcode Command Line Tools，`xcodebuild` 提示需要完整 Xcode。安装 Xcode 后再打开 `ios/App/App.xcodeproj` 配置团队、Bundle ID 和签名。
 - Android：当前机器未找到 `/Users/paomobing/Library/Android/sdk`，Gradle 打包失败于 `SDK location not found`。安装 Android Studio 后打开 SDK Manager 安装 Android SDK，再在 `android/local.properties` 写入 `sdk.dir=/Users/paomobing/Library/Android/sdk`。
+- 已提供 Android SDK 配置模板：`android/local.properties.example`。
 
 ## 审核注意
 
