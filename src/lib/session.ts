@@ -74,11 +74,20 @@ function applySession(session: Session | null) {
 function ensureInitialized() {
   if (initialized || typeof window === "undefined") return;
   initialized = true;
+  const hydrationTimeout = window.setTimeout(() => {
+    if (clientState.loading) setState({ loading: false });
+  }, 3500);
   // Kick off the initial hydration from persisted storage.
   supabase.auth
     .getSession()
-    .then(({ data }) => applySession(data.session ?? null))
-    .catch(() => setState({ loading: false }));
+    .then(({ data }) => {
+      window.clearTimeout(hydrationTimeout);
+      applySession(data.session ?? null);
+    })
+    .catch(() => {
+      window.clearTimeout(hydrationTimeout);
+      setState({ loading: false });
+    });
   // Subscribe once for the lifetime of the tab.
   supabase.auth.onAuthStateChange((_event, session) => {
     applySession(session ?? null);

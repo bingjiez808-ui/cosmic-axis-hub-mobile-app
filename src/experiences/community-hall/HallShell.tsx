@@ -8,7 +8,7 @@
  */
 import { Link, useLocation } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { useCommunityHall } from "@/lib/i18n-community-hall";
@@ -196,6 +196,45 @@ function GateCard({ text, cta }: { text: string; cta: ReactNode }) {
   );
 }
 
+function HallLoadingGate({
+  timedOut,
+  onRetry,
+}: {
+  timedOut: boolean;
+  onRetry?: () => void;
+}) {
+  const c = useCommunityHall();
+
+  if (!timedOut) {
+    return <p className="mt-10 text-center text-sm text-muted-foreground">{c.stateLoadingHall}</p>;
+  }
+
+  return (
+    <GateCard
+      text={
+        c.lang === "en"
+          ? "The hall is still checking your reader pass. You can retry, return to the hall desk, or sign in again."
+          : "众生之厅还在读取你的读者证。可以重试、先回到众生导览台，或重新登录后继续。"
+      }
+      cta={
+        <div className="flex w-full flex-col gap-3 sm:flex-row sm:justify-center">
+          {onRetry ? (
+            <Button className="hall-tap" variant="outline" onClick={onRetry}>
+              {c.stateRetry}
+            </Button>
+          ) : null}
+          <Button asChild className="hall-tap">
+            <Link to="/community">{c.lang === "en" ? "Back to hall" : "返回众生之厅"}</Link>
+          </Button>
+          <Button asChild variant="outline" className="hall-tap">
+            <Link to="/auth">{c.gateSignInCta}</Link>
+          </Button>
+        </div>
+      }
+    />
+  );
+}
+
 /**
  * Renders `children` only when the traveler may actually take part:
  * signed in, 18+, and opted in. Each missing step gets its own explanation
@@ -206,9 +245,17 @@ export function HallGate({ children }: { children: ReactNode }) {
   const { user, loading } = useSupabaseSession();
   const profileQuery = useCommunityProfile(Boolean(user));
   const save = useSaveCommunityProfile();
+  const [timedOut, setTimedOut] = useState(false);
+
+  useEffect(() => {
+    setTimedOut(false);
+    if (!loading && !profileQuery.isLoading) return;
+    const id = window.setTimeout(() => setTimedOut(true), 3500);
+    return () => window.clearTimeout(id);
+  }, [loading, profileQuery.isLoading, user?.id]);
 
   if (loading) {
-    return <p className="mt-10 text-center text-sm text-muted-foreground">{c.stateLoadingHall}</p>;
+    return <HallLoadingGate timedOut={timedOut} />;
   }
 
   if (!user) {
@@ -225,7 +272,7 @@ export function HallGate({ children }: { children: ReactNode }) {
   }
 
   if (profileQuery.isLoading) {
-    return <p className="mt-10 text-center text-sm text-muted-foreground">{c.stateLoadingHall}</p>;
+    return <HallLoadingGate timedOut={timedOut} onRetry={() => void profileQuery.refetch()} />;
   }
 
   if (profileQuery.error) {
