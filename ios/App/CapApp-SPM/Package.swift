@@ -12,9 +12,9 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", exact: "8.5.0"),
-        .package(name: "CapacitorApp", path: "../../../node_modules/@capacitor/app"),
-        .package(name: "CapacitorSplashScreen", path: "../../../node_modules/@capacitor/splash-screen"),
-        .package(name: "CapacitorStatusBar", path: "../../../node_modules/@capacitor/status-bar")
+        .package(name: "CapacitorApp", path: "../../../../../../Users/paomobing/Documents/Codex/2026-08-03/m/work/cosmic-axis-hub-40b87d24/node_modules/@capacitor/app"),
+        .package(name: "CapacitorSplashScreen", path: "../../../../../../Users/paomobing/Documents/Codex/2026-08-03/m/work/cosmic-axis-hub-40b87d24/node_modules/@capacitor/splash-screen"),
+        .package(name: "CapacitorStatusBar", path: "../../../../../../Users/paomobing/Documents/Codex/2026-08-03/m/work/cosmic-axis-hub-40b87d24/node_modules/@capacitor/status-bar")
     ],
     targets: [
         .target(

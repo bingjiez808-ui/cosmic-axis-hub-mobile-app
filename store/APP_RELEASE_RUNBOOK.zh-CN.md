@@ -3,16 +3,24 @@
 ## 当前状态
 
 - 线上地址：`https://cosmic-axis-mobile-app.bingjiez808.chatgpt.site`
+- 当前线上验证版本：版本 18，静态资源标签 `mobile-release-20260813-supabase-env`
 - 原生壳：Capacitor iOS / Android 已创建。
 - App ID / Bundle ID：`studio.fatenexus.library`
 - App 名称：`命运图书馆`
 - Android：`compileSdkVersion = 36`，`targetSdkVersion = 36`
-- 已同步原生工程：`npx cap sync`
+- 已同步原生工程：`npm run cap:sync`
+- 已补齐前端生产构建所需公开 Supabase 变量：`.env.production`
+- 已补 iOS 隐私清单：`ios/App/App/PrivacyInfo.xcprivacy`
+- 已设置 Android 禁止系统备份：`android:allowBackup="false"`
+- 已设置 iOS 非豁免加密声明：`ITSAppUsesNonExemptEncryption=false`
 
 ## 本机还缺
 
 - iOS：需要安装完整 Xcode。目前 `xcodebuild` 指向 Command Line Tools，不能归档上传。
 - Android：需要安装 Android Studio 和 Android SDK。目前 Gradle 构建停在 `SDK location not found`。
+- 商店账号：Apple Developer Program / Google Play Console 仍需你用自己的主体注册并完成身份验证。
+- 付费：若正式开放高级报告或会员购买，上架前仍需接入 Apple In-App Purchase / Google Play Billing，或在移动 App 中暂时隐藏外部数字内容购买入口。
+- 审核账号：需要创建一个可供审核员登录的测试账号，不要写入仓库。
 
 ## iOS 上架步骤
 
@@ -29,6 +37,8 @@ npm run cap:open:ios
    - Bundle Identifier：保持 `studio.fatenexus.library`，或改成你最终确认的域名反写。
    - Version：`1.0`
    - Build：`1`
+   - Signing & Capabilities：使用自动签名。
+   - Privacy Manifest：确认 `PrivacyInfo.xcprivacy` 出现在 Copy Bundle Resources。
 5. 连接 iPhone 真机运行，重点测试：
    - 首页、命盘仪式、报告、今日、通识馆、众生、读者证。
    - 登录、退出登录、隐私政策、服务条款、删除账号。
@@ -87,6 +97,7 @@ cd android
   - 屏蔽/限制机制可用。
   - 管理员审核机制可用。
   - 隐私政策说明用户生成内容的使用方式。
+- 当前 Capacitor 配置会在原生 App 内加载线上站点。提交审核前必须确保线上站点持续可用，且 App 体验保持移动端原生导航、启动页、错误页和登录流程，不要像简单网页套壳。
 
 ## 审核测试账号
 
