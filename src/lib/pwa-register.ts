@@ -11,6 +11,10 @@ function shouldSkip(): boolean {
   if (typeof window === "undefined") return true;
   if (!("serviceWorker" in navigator)) return true;
   if (!import.meta.env.PROD) return true;
+  // Temporarily keep the hosted app network-only. The app is changing quickly
+  // during mobile release hardening, and a stale service worker can trap users
+  // on an old error bundle. Re-enable once the release surface settles.
+  return true;
 
   try {
     if (window.self !== window.top) return true;
