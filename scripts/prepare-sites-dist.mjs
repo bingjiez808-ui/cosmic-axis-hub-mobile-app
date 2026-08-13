@@ -82,7 +82,7 @@ if (existsSync(serverWrangler)) {
 const serverIndex = path.join(distServer, "index.js");
 const serverCode = await readFile(serverIndex, "utf8");
 const assetFallbackCode =
-  'if (env.ASSETS && isPublicAssetURL(url.pathname)) { const assetResponse = await env.ASSETS.fetch(cfRequest); if (assetResponse.status !== 404) return assetResponse; }\n\tif (isPublicAssetURL(url.pathname)) return Response.redirect(`https://raw.githubusercontent.com/bingjiez808-ui/cosmic-axis-hub-mobile-app/main/site-static${url.pathname}`, 302);';
+  'if (env.ASSETS && isPublicAssetURL(url.pathname)) return env.ASSETS.fetch(cfRequest).then((assetResponse) => assetResponse.status !== 404 ? assetResponse : Response.redirect(`https://raw.githubusercontent.com/bingjiez808-ui/cosmic-axis-hub-mobile-app/main/site-static${url.pathname}`, 302));\n\tif (isPublicAssetURL(url.pathname)) return Response.redirect(`https://raw.githubusercontent.com/bingjiez808-ui/cosmic-axis-hub-mobile-app/main/site-static${url.pathname}`, 302);';
 await writeFile(
   serverIndex,
   serverCode
