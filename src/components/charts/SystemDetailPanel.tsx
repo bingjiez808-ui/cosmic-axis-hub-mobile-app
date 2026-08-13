@@ -8,7 +8,7 @@
  * birth field and — for Zi Wei's gender parameter — lets the visitor supply
  * it inline so the chart completes without redoing the ritual.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type { CalculationSnapshot } from "@/lib/calc-snapshot";
 import { localBirthToUTC } from "@/lib/city-geo";
 import {
@@ -466,101 +466,6 @@ function systemExplanation(snapshot: CalculationSnapshot, system: SystemKey, lan
   };
 }
 
-function OverviewDrawer({
-  open,
-  onClose,
-  overview,
-  lang,
-}: {
-  open: boolean;
-  onClose: () => void;
-  overview: PersonalOverview;
-  lang: "en" | "zh";
-}) {
-  const zh = lang === "zh";
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
-
-  if (!open) return null;
-
-  return (
-    <div className="fixed inset-0 z-[95] flex items-end justify-center bg-obsidian/82 px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-[calc(env(safe-area-inset-top)+1rem)] backdrop-blur-md sm:items-center sm:p-5">
-      <button
-        type="button"
-        className="absolute inset-0 cursor-default"
-        aria-label={zh ? "关闭总体解读" : "Close overview"}
-        onClick={onClose}
-      />
-      <section
-        role="dialog"
-        aria-modal="true"
-        aria-label={overview.title}
-        className="relative flex max-h-[88vh] w-full max-w-2xl flex-col overflow-hidden rounded-[28px] border border-white/12 bg-[#10110f]/96 shadow-[0_28px_90px_-34px_rgba(0,0,0,0.9)] sm:max-h-[86vh]"
-      >
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-[radial-gradient(circle_at_22%_0%,rgba(207,177,91,0.18),transparent_48%),radial-gradient(circle_at_90%_10%,rgba(113,216,194,0.10),transparent_34%)]" />
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute right-4 top-4 z-10 grid h-11 w-11 place-items-center rounded-full border border-gold-dust/35 bg-obsidian/70 text-2xl leading-none text-stone-warm/70 transition hover:border-gold-light hover:text-gold-light"
-          aria-label={zh ? "关闭" : "Close"}
-        >
-          ×
-        </button>
-        <div className="relative border-b border-white/8 px-5 pb-4 pt-6 sm:px-7 sm:pt-7">
-          <Label>{zh ? "总体解读" : "Overview"}</Label>
-          <h3 className="mt-2 pr-14 font-serif text-2xl italic leading-tight text-stone-warm sm:text-3xl">
-            {overview.title}
-          </h3>
-          <p className="mt-4 rounded-2xl border border-gold-dust/25 bg-gold-dust/[0.055] px-4 py-3 font-serif text-lg italic leading-relaxed text-gold-light">
-            {overview.headline}
-          </p>
-        </div>
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-6 pt-5 sm:px-7">
-          <div className="space-y-3 text-[13px] leading-relaxed text-stone-warm/74">
-            {overview.paragraphs.map((paragraph, i) => (
-              <p key={`${paragraph}-${i}`}>{paragraph}</p>
-            ))}
-          </div>
-
-          {overview.cards.length > 0 && (
-            <section className="mt-6">
-              <Label>{zh ? "关键落位" : "Key placements"}</Label>
-              <div className="mt-3 grid gap-3">
-                {overview.cards.map((card) => (
-                  <OverviewMiniCard key={card.title} card={card} />
-                ))}
-              </div>
-            </section>
-          )}
-
-          <section className="mt-6">
-            <Label>{zh ? "具体相位逐条解释" : "Aspect notes"}</Label>
-            {overview.aspectCards.length > 0 ? (
-              <div className="mt-3 grid gap-3">
-                {overview.aspectCards.map((card) => (
-                  <OverviewMiniCard key={card.title} card={card} />
-                ))}
-              </div>
-            ) : (
-              <p className="mt-3 rounded-2xl border border-white/8 bg-white/[0.025] p-4 text-[12px] leading-relaxed text-stone-warm/58">
-                {zh
-                  ? "当前资料不足以生成逐条相位。补全准确出生时间和地点后，这里会显示每一组主要相位的个人化解释。"
-                  : "There is not enough data for aspect-by-aspect notes yet. Add exact time and place to unlock them."}
-              </p>
-            )}
-          </section>
-        </div>
-      </section>
-    </div>
-  );
-}
-
 function OverviewMiniCard({ card }: { card: OverviewCard }) {
   const tone =
     card.tone === "rose"
@@ -583,6 +488,67 @@ function OverviewMiniCard({ card }: { card: OverviewCard }) {
   );
 }
 
+function InlinePersonalOverview({
+  overview,
+  lang,
+}: {
+  overview: PersonalOverview;
+  lang: "en" | "zh";
+}) {
+  const zh = lang === "zh";
+  return (
+    <section className="rounded-2xl border border-gold-dust/18 bg-[linear-gradient(180deg,rgba(207,177,91,0.07),rgba(255,255,255,0.018))] p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <Label>{zh ? "总体解读" : "Overview"}</Label>
+          <h3 className="mt-2 font-serif text-xl italic leading-tight text-stone-warm">
+            {overview.title}
+          </h3>
+        </div>
+        <span className="shrink-0 rounded-full border border-gold-dust/25 px-3 py-1 text-[10px] tracking-[0.18em] text-gold-dust/80">
+          {zh ? "可滑动" : "Scroll"}
+        </span>
+      </div>
+      <div className="mt-4 max-h-[min(54vh,34rem)] overflow-y-auto overscroll-contain pr-1 [scrollbar-color:rgba(207,177,91,0.6)_rgba(255,255,255,0.06)] [scrollbar-width:thin]">
+        <p className="rounded-2xl border border-gold-dust/25 bg-gold-dust/[0.055] px-4 py-3 font-serif text-base italic leading-relaxed text-gold-light">
+          {overview.headline}
+        </p>
+        <div className="mt-4 space-y-3 text-[13px] leading-relaxed text-stone-warm/74">
+          {overview.paragraphs.map((paragraph, i) => (
+            <p key={`${paragraph}-${i}`}>{paragraph}</p>
+          ))}
+        </div>
+        {overview.cards.length > 0 && (
+          <section className="mt-5">
+            <Label>{zh ? "关键落位" : "Key placements"}</Label>
+            <div className="mt-3 grid gap-3">
+              {overview.cards.map((card) => (
+                <OverviewMiniCard key={card.title} card={card} />
+              ))}
+            </div>
+          </section>
+        )}
+        <section className="mt-5">
+          <Label>{zh ? "具体相位逐条解释" : "Aspect notes"}</Label>
+          {overview.aspectCards.length > 0 ? (
+            <div className="mt-3 grid gap-3">
+              {overview.aspectCards.map((card) => (
+                <OverviewMiniCard key={card.title} card={card} />
+              ))}
+            </div>
+          ) : (
+            <p className="mt-3 rounded-2xl border border-white/8 bg-white/[0.025] p-4 text-[12px] leading-relaxed text-stone-warm/58">
+              {zh
+                ? "当前资料不足以生成逐条相位。补全准确出生时间和地点后，这里会显示每一组主要相位的个人化解释。"
+                : "There is not enough data for aspect-by-aspect notes yet. Add exact time and place to unlock them."}
+            </p>
+          )}
+        </section>
+      </div>
+    </section>
+  );
+}
+
 export function SystemDetailPanel({
   snapshot,
   lang,
@@ -592,11 +558,9 @@ export function SystemDetailPanel({
 }: Props) {
   const zh = lang === "zh";
   const [mode, setMode] = useState<DetailMode>("parameters");
-  const [overviewOpen, setOverviewOpen] = useState(false);
   const tab = SYSTEM_TABS.find((t) => t.key === system)!;
   const ready = systemAvailability(snapshot)[system];
   const westernChart = useMemo(() => buildWesternFullChart(snapshot), [snapshot]);
-  const overview = useMemo(() => systemOverview(snapshot, system, lang), [snapshot, system, lang]);
   const personalOverview = useMemo(
     () => buildPersonalOverview(snapshot, system, lang, westernChart),
     [snapshot, system, lang, westernChart],
@@ -619,15 +583,9 @@ export function SystemDetailPanel({
           <button
             key={item.key}
             type="button"
-            onClick={() => {
-              if (item.key === "overview") {
-                setOverviewOpen(true);
-                return;
-              }
-              setMode(item.key as DetailMode);
-            }}
+            onClick={() => setMode(item.key as DetailMode)}
             className={`min-h-8 rounded-full px-2 text-[10px] font-medium tracking-[0.12em] transition-colors ${
-              (item.key === "overview" ? overviewOpen : mode === item.key)
+              mode === item.key
                 ? "bg-gold-dust text-obsidian"
                 : "text-stone-warm/55 hover:bg-white/[0.05] hover:text-stone-warm"
             }`}
@@ -697,12 +655,7 @@ export function SystemDetailPanel({
     }
 
     if (mode === "overview") {
-      return (
-        <div className="space-y-4">
-          <ToneCard title={overview.title} body={overview.body} />
-          <NoteList title={zh ? "优先阅读线索" : "Reading priorities"} items={overview.cues} />
-        </div>
-      );
+      return <InlinePersonalOverview overview={personalOverview} lang={lang} />;
     }
 
     if (mode === "explain") {
@@ -895,17 +848,9 @@ export function SystemDetailPanel({
   })();
 
   return (
-    <>
-      <div className="flex h-full min-h-0 flex-col rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-5">
-        {header}
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">{body}</div>
-      </div>
-      <OverviewDrawer
-        open={overviewOpen}
-        onClose={() => setOverviewOpen(false)}
-        overview={personalOverview}
-        lang={lang}
-      />
-    </>
+    <div className="flex h-full min-h-0 flex-col rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-5">
+      {header}
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">{body}</div>
+    </div>
   );
 }
