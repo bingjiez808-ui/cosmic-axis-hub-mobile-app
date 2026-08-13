@@ -250,6 +250,7 @@ export function HallGate({ children }: { children: ReactNode }) {
   useEffect(() => {
     setTimedOut(false);
     if (!loading && !profileQuery.isLoading) return;
+    if (typeof window === "undefined") return;
     const id = window.setTimeout(() => setTimedOut(true), 3500);
     return () => window.clearTimeout(id);
   }, [loading, profileQuery.isLoading, user?.id]);

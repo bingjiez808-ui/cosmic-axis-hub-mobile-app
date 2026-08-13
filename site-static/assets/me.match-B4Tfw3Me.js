@@ -1,1 +1,0 @@
-import{s as e}from"./index-B5vtWwa8.js";var t=e;export{t as errorComponent};
