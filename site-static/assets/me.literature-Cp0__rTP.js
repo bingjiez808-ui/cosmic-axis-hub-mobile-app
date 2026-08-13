@@ -1,1 +1,0 @@
-import{s as e}from"./index-DQPE4bsh.js";var t=e;export{t as errorComponent};
