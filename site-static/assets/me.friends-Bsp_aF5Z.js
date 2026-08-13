@@ -1,0 +1,1 @@
+import{s as e}from"./index-D-1J_QsL.js";var t=e;export{t as errorComponent};

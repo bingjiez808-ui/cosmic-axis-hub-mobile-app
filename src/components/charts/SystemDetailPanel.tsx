@@ -80,27 +80,51 @@ function NoteList({ title, items }: { title: string; items: string[] }) {
 function systemOverview(snapshot: CalculationSnapshot, system: SystemKey, lang: "en" | "zh") {
   const zh = lang === "zh";
   if (system === "western") {
+    const sun = snapshot.western.planets?.find((p) => p.key === "sun");
+    const moon = snapshot.western.planets?.find((p) => p.key === "moon");
+    const asc = snapshot.western.planets?.find((p) => p.key === "asc");
+    const sunSign = sun?.sign != null ? (zh ? SIGNS[sun.sign].zh : SIGNS[sun.sign].en) : null;
+    const moonSign = moon?.sign != null ? (zh ? SIGNS[moon.sign].zh : SIGNS[moon.sign].en) : null;
+    const ascSign = asc?.sign != null ? (zh ? SIGNS[asc.sign].zh : SIGNS[asc.sign].en) : null;
     return {
       title: zh ? "西方星盘总体解读" : "Western overview",
       body: zh
-        ? "西方星盘负责读你的心理结构：行星代表功能，星座代表表达方式，宫位代表发生场景，相位代表不同功能之间是顺流还是拉扯。它最适合回答：我为什么这样反应、我的动机从哪里来、哪些能力需要被看见。"
-        : "The western wheel reads psychological architecture: planets are functions, signs are styles, houses are life arenas, and aspects show whether those functions flow or wrestle.",
+        ? `这个人的西方星盘核心不是“泛泛性格”，而是由${sunSign ? `太阳${sunSign}` : "太阳位置"}、${moonSign ? `月亮${moonSign}` : "月亮位置"}${ascSign ? `和上升${ascSign}` : ""}共同组成：太阳说明他习惯用什么方式确认自我，月亮说明安全感和情绪需求，上升说明外界第一眼感受到的姿态。总体上，这一盘适合先读“我为什么这样反应”，再延伸到关系表达、行动节奏和长期压力点。`
+        : `This person's western chart is anchored by ${sunSign ? `Sun in ${sunSign}` : "the Sun"}, ${moonSign ? `Moon in ${moonSign}` : "the Moon"}${ascSign ? ` and Ascendant in ${ascSign}` : ""}. It describes identity style, emotional needs and the outer posture others meet first.`,
       cues: zh
-        ? ["先看太阳/月亮/上升，判断核心气质、情绪需求和外显姿态。", "再看金星/火星/水星，判断关系、行动与表达。", "最后看相位，找出天赋通道与成长压力。"]
-        : ["Start with Sun, Moon and Ascendant.", "Then read Venus, Mars and Mercury.", "Use aspects to separate gifts from growth pressure."],
+        ? [
+            sunSign ? `自我主轴：太阳${sunSign}，优先观察他如何定义价值、目标和存在感。` : "自我主轴：先看太阳，判断他如何确认目标与存在感。",
+            moonSign ? `情绪底色：月亮${moonSign}，说明他在压力下会本能寻找怎样的安全感。` : "情绪底色：月亮用于判断压力下的本能需求。",
+            ascSign ? `外在入口：上升${ascSign}，决定别人最先看到的行动姿态与防御方式。` : "外在入口：上升能补足他在关系中的第一反应。",
+          ]
+        : [
+            sunSign ? `Identity axis: Sun in ${sunSign}.` : "Identity axis: start from the Sun.",
+            moonSign ? `Emotional ground: Moon in ${moonSign}.` : "Emotional ground: read the Moon.",
+            ascSign ? `Outer gate: Ascendant in ${ascSign}.` : "Outer gate: read the Ascendant when birth time is known.",
+          ],
     };
   }
   if (system === "vedic") {
     const v = vedicView(snapshot.vedic.chart);
     const moon = v?.nakshatra ? (zh ? v.nakshatra.zh : v.nakshatra.en) : null;
+    const asc = v?.ascSign != null ? (zh ? SIGNS[v.ascSign].zh : SIGNS[v.ascSign].en) : null;
+    const retro = v?.planets.filter((p) => p.retro).map((p) => (zh ? p.name[1] : p.name[0])).slice(0, 3);
     return {
       title: zh ? "印度占星总体解读" : "Vedic overview",
       body: zh
-        ? `印度占星把同一片天空放回恒星背景，重点观察月亮、月宿与上升。它更像一张人生节奏图，适合看长期倾向、内在习性和阶段性课题${moon ? `；本盘月宿落在「${moon}」，优先提示情绪惯性与本能选择方式。` : "。"}`
-        : `Vedic astrology reads the same sky against fixed stars, emphasizing Moon, Nakshatra and Ascendant${moon ? `; the Moon's nakshatra is ${moon}.` : "."}`,
+        ? `这个人的印度占星重点落在“内在惯性与人生节奏”。${moon ? `月宿为「${moon}」，说明他做选择时更容易先被情绪记忆、熟悉感和本能偏好推动。` : ""}${asc ? `上升为「${asc}」，表示人生课题常从这个上升气质进入现实。` : ""}${retro && retro.length > 0 ? `盘中逆行重点包括「${retro.join("、")}」，这些主题往往不是一次解决，而是反复校准。` : ""}`
+        : `This person's Vedic view emphasizes instinct and life rhythm${moon ? `, with Moon in ${moon}` : ""}${asc ? ` and Ascendant in ${asc}` : ""}.`,
       cues: zh
-        ? ["月宿显示本能反应与安全感入口。", "上升与九曜落位显示人生课题落在哪些场域。", "逆行星或集中星座会成为长期反复阅读的重点。"]
-        : ["Moon nakshatra shows instinct and safety needs.", "Ascendant and planets place themes into life arenas.", "Retrogrades or clusters deserve repeated attention."],
+        ? [
+            moon ? `本能入口：月宿「${moon}」优先解释他的情绪惯性和安全感来源。` : "本能入口：月宿用于判断情绪惯性。",
+            asc ? `现实入口：上升「${asc}」提示人生经验如何展开。` : "现实入口：上升提示经验如何展开。",
+            retro && retro.length > 0 ? `反复课题：${retro.join("、")}逆行，相关能力需要长期内化。` : "反复课题：看逆行与星体集中处。",
+          ]
+        : [
+            moon ? `Instinct: Moon nakshatra ${moon}.` : "Instinct: read the Moon nakshatra.",
+            asc ? `Life entry: Ascendant ${asc}.` : "Life entry: read the Ascendant.",
+            retro && retro.length > 0 ? `Repeated lessons: ${retro.join(", ")} retrograde.` : "Repeated lessons: inspect retrogrades and clusters.",
+          ],
     };
   }
   if (system === "bazi") {
@@ -112,24 +136,42 @@ function systemOverview(snapshot: CalculationSnapshot, system: SystemKey, lang: 
     return {
       title: zh ? "八字总体解读" : "BaZi overview",
       body: zh
-        ? `八字把出生时刻压缩成四柱，重点读日主、五行强弱与四柱之间的资源流动${day ? `；本盘日主为「${day}」，它是整张八字的中心。` : "。"}${missing ? ` 五行中较少见到「${missing}」，可作为后续阅读的补充线索。` : ""}`
-        : `BaZi compresses birth time into four pillars, centering on the Day Master and the movement of five elements${day ? `; this chart's Day Master is ${day}.` : "."}`,
+        ? `这个人的八字核心从日主展开${day ? `：日主为「${day}」，代表他最底层的自我运作方式。` : "。"}四柱不是在判断好坏，而是在看资源、压力、表达和关系如何围绕日主流动。${missing ? `盘中较少显现「${missing}」，这些元素相关的能力通常需要通过环境、选择和训练来补足。` : ""}`
+        : `This person's BaZi centers on the Day Master${day ? ` ${day}` : ""}, showing how resources, pressure, output and relationships move around the self.`,
       cues: zh
-        ? ["年柱偏外部环境与早年背景。", "月柱看成长压力、资源与社会节奏。", "日柱是自我核心，时柱延伸到行动方式与未来展开。"]
-        : ["Year pillar frames background.", "Month pillar shows resources and social rhythm.", "Day is the self core; hour extends into action and future."],
+        ? [
+            day ? `人格核心：日主「${day}」决定其它五行如何作用到本人。` : "人格核心：先找日主，再看其它五行如何作用。",
+            missing ? `待补能力：较弱或缺少的「${missing}」不是缺陷，而是需要借助环境补位。` : "结构优势：五行比例显示这个人熟悉和不熟悉的应对方式。",
+            "现实落点：月柱看社会节奏，日柱看亲密与自我，时柱看行动余地和未来展开。",
+          ]
+        : [
+            day ? `Core self: Day Master ${day}.` : "Core self: start with the Day Master.",
+            missing ? `Support needed: less visible ${missing}.` : "Element balance shows familiar and unfamiliar responses.",
+            "Month shows social rhythm; day shows self/intimacy; hour shows agency and future.",
+          ],
     };
   }
   const z = snapshot.ziwei.chart;
   const soulPalace = z?.palaces[z.soul_palace_index];
+  const bodyPalace = z?.palaces[z.body_palace_index];
   const stars = soulPalace?.major_stars.map((s) => s.name).join(" · ");
+  const bodyStars = bodyPalace?.major_stars.map((s) => s.name).join(" · ");
   return {
     title: zh ? "紫微斗数总体解读" : "Zi Wei overview",
     body: zh
-      ? `紫微斗数把人生拆成十二个宫位，重点看命宫、身宫、主星组合与宫位之间的呼应${soulPalace ? `；本盘命宫在「${soulPalace.name}」${stars ? `，主星为「${stars}」` : ""}。` : "。"}它适合把抽象性格落到关系、事业、财帛、迁移等具体生活场景。`
-      : `Zi Wei maps life into twelve palaces, emphasizing the soul palace, body palace and major stars${soulPalace ? `; the soul palace is ${soulPalace.name}${stars ? ` with ${stars}` : ""}.` : "."}`,
+      ? `这个人的紫微盘适合看“人生场景里的自己”。${soulPalace ? `命宫在「${soulPalace.name}」${stars ? `，主星为「${stars}」` : ""}，这是他的核心气质和人生主调。` : ""}${bodyPalace ? `身宫在「${bodyPalace.name}」${bodyStars ? `，主星为「${bodyStars}」` : ""}，更接近他实际做事时呈现出来的样子。` : ""}因此紫微部分应优先回答：事业、关系、财富、迁移等具体场景中，他会怎么选择、哪里容易卡住。`
+      : `This person's Zi Wei chart grounds the self in life arenas${soulPalace ? `: soul palace ${soulPalace.name}${stars ? ` with ${stars}` : ""}` : ""}${bodyPalace ? `; body palace ${bodyPalace.name}${bodyStars ? ` with ${bodyStars}` : ""}` : ""}.`,
     cues: zh
-      ? ["命宫看核心气质与人生主调。", "身宫看实际行动方式与后天落点。", "财帛、官禄、夫妻、迁移等宫位把问题拆到具体场景。"]
-      : ["Soul palace shows the life tone.", "Body palace shows enacted behavior.", "Career, wealth, partner and travel palaces ground the reading."],
+      ? [
+          soulPalace ? `命宫重点：「${soulPalace.name}」${stars ? ` / ${stars}` : ""}，看核心气质。` : "命宫重点：看核心气质和人生主调。",
+          bodyPalace ? `身宫重点：「${bodyPalace.name}」${bodyStars ? ` / ${bodyStars}` : ""}，看后天行动方式。` : "身宫重点：看实际行动方式。",
+          "问题落点：事业看官禄，关系看夫妻/交友，财富看财帛，移动与变化看迁移。",
+        ]
+      : [
+          soulPalace ? `Soul palace: ${soulPalace.name}${stars ? ` / ${stars}` : ""}.` : "Soul palace: core life tone.",
+          bodyPalace ? `Body palace: ${bodyPalace.name}${bodyStars ? ` / ${bodyStars}` : ""}.` : "Body palace: enacted behavior.",
+          "Career, partner, friends, wealth and travel palaces answer concrete life questions.",
+        ],
   };
 }
 
