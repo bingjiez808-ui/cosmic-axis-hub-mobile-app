@@ -1,0 +1,1 @@
+import{s as e}from"./index-lOfr7Z6-.js";var t=class extends Error{cause;constructor(e){super(e instanceof Error?`Authentication refresh failed: ${e.message}`:`Authentication refresh failed`),this.name=`AuthRefreshFailedError`,this.cause=e}},n=e;export{t as AuthRefreshFailedError,n as errorComponent};

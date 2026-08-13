@@ -1,0 +1,1 @@
+import{t as e}from"./jsx-runtime-CZcjcDnw.js";import{gt as t}from"./index-lOfr7Z6-.js";var n=e(),r=class extends Error{cause;constructor(e){super(e instanceof Error?`Authentication refresh failed: ${e.message}`:`Authentication refresh failed`),this.name=`AuthRefreshFailedError`,this.cause=e}},i=()=>(0,n.jsx)(t,{});export{r as AuthRefreshFailedError,i as component};

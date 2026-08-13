@@ -1,1 +1,0 @@
-import{s as e}from"./index-HLinL4IM.js";var t=e;export{t as errorComponent};

@@ -17,18 +17,29 @@ import { tDomain } from "@/lib/daily-format";
 import { interpretAll } from "@/lib/daily-plain-language";
 import { useLang } from "@/lib/i18n";
 import { useDaily } from "@/lib/i18n-daily";
-import { getChartById, listUserCharts } from "@/lib/reports-store.functions";
 import { useSupabaseSession } from "@/lib/session";
 import { lookupCityGeo, localBirthToUTC } from "@/lib/city-geo";
 import { computeWesternChart } from "@/lib/western-natal";
 import { supabase } from "@/integrations/supabase/client";
+
+type TodayChart = {
+  id: string;
+  name: string | null;
+  birth_date: string | null;
+  birth_time: string | null;
+  birth_place: string | null;
+  lang: "en" | "zh";
+  chart_role: "self" | "other";
+  is_primary: boolean;
+  input_snapshot: unknown;
+};
 
 type ChartState =
   | { kind: "loading" }
   | { kind: "signed_out" }
   | { kind: "no_primary" }
   | { kind: "incomplete"; missing: string[] }
-  | { kind: "ready"; chart: Awaited<ReturnType<typeof getChartById>> };
+  | { kind: "ready"; chart: TodayChart };
 
 export const Route = createFileRoute("/today")({
   head: () => ({
@@ -69,6 +80,40 @@ function bandTone(band: string) {
   return "border-white/10 bg-white/[0.045] text-amber-50";
 }
 
+async function loadTodayCharts(userId: string): Promise<TodayChart[]> {
+  const { data, error } = await supabase
+    .from("charts")
+    .select("id, name, birth_date, birth_time, birth_place, lang, chart_role, is_primary, input_snapshot, created_at")
+    .eq("user_id", userId)
+    .order("is_primary", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(50);
+  if (error) throw error;
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    name: row.name ?? null,
+    birth_date: row.birth_date ?? null,
+    birth_time: row.birth_time ?? null,
+    birth_place: row.birth_place ?? null,
+    lang: row.lang === "zh" ? "zh" : "en",
+    chart_role: row.chart_role === "self" ? "self" : "other",
+    is_primary: Boolean(row.is_primary),
+    input_snapshot: row.input_snapshot ?? null,
+  }));
+}
+
+function snapshotString(snapshot: unknown, key: string): string | null {
+  if (!snapshot || typeof snapshot !== "object") return null;
+  const value = (snapshot as Record<string, unknown>)[key];
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function snapshotNumber(snapshot: unknown, key: string): number | null {
+  if (!snapshot || typeof snapshot !== "object") return null;
+  const value = (snapshot as Record<string, unknown>)[key];
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
 function TodayPage() {
   const { lang } = useLang();
   const dict = useDaily();
@@ -96,7 +141,7 @@ function TodayPage() {
       }
       setChartState({ kind: "loading" });
       try {
-        const charts = await listUserCharts();
+        const charts = await loadTodayCharts(activeSession.user.id);
         const primary =
           charts.find((chart) => chart.is_primary && chart.chart_role === "self") ??
           charts.find((chart) => chart.chart_role === "self") ??
@@ -106,21 +151,16 @@ function TodayPage() {
           if (!cancelled) setChartState({ kind: "no_primary" });
           return;
         }
-        const chart = await getChartById({ data: { chartId: primary.id } });
-        if (!chart) {
-          if (!cancelled) setChartState({ kind: "no_primary" });
-          return;
-        }
         const missing = [
-          !chart.birth_date ? (zh ? "出生日期" : "birth date") : "",
-          !chart.birth_time ? (zh ? "出生时间" : "birth time") : "",
-          !chart.birth_place ? (zh ? "出生地点" : "birth place") : "",
+          !primary.birth_date ? (zh ? "出生日期" : "birth date") : "",
+          !primary.birth_time ? (zh ? "出生时间" : "birth time") : "",
+          !primary.birth_place ? (zh ? "出生地点" : "birth place") : "",
         ].filter(Boolean);
         if (missing.length > 0) {
           if (!cancelled) setChartState({ kind: "incomplete", missing });
           return;
         }
-        if (!cancelled) setChartState({ kind: "ready", chart });
+        if (!cancelled) setChartState({ kind: "ready", chart: primary });
       } catch {
         if (!cancelled) setChartState({ kind: "no_primary" });
       }
@@ -134,21 +174,30 @@ function TodayPage() {
   const reading = useMemo(() => {
     if (chartState.kind !== "ready" || !chartState.chart) return null;
     const chart = chartState.chart;
-    const geo = lookupCityGeo(chart.birth_place);
-    const timezone = safeTimezone(geo?.tz);
-    const localDate = todayISO(timezone);
-    const utc =
-      chart.birth_date && chart.birth_time && geo
-        ? localBirthToUTC(chart.birth_date, chart.birth_time.slice(0, 5), timezone)
-        : null;
-    const natal = utc ? computeWesternChart({ utc, lat: geo?.lat, lng: geo?.lng }) : null;
-    const facts = natal ? computeDailyFacts({ natal: natal.planets, localDate, timezone }) : null;
-    const score = computeDailyDomainScore({
-      facts,
-      natalHasTime: Boolean(natal?.ascendant),
-    });
-    const plain = interpretAll({ score, facts, lang });
-    return { chart, geo, timezone, localDate, facts, score, plain };
+    try {
+      const snapshot = chart.input_snapshot;
+      const geo = lookupCityGeo(chart.birth_place) ?? {
+        lat: snapshotNumber(snapshot, "lat") ?? snapshotNumber(snapshot, "latitude") ?? 31.2304,
+        lng: snapshotNumber(snapshot, "lng") ?? snapshotNumber(snapshot, "longitude") ?? 121.4737,
+        tz: safeTimezone(snapshotString(snapshot, "timezone") ?? snapshotString(snapshot, "tz")),
+      };
+      const timezone = safeTimezone(geo.tz);
+      const localDate = todayISO(timezone);
+      const utc =
+        chart.birth_date && chart.birth_time
+          ? localBirthToUTC(chart.birth_date, chart.birth_time.slice(0, 5), timezone)
+          : null;
+      const natal = utc ? computeWesternChart({ utc, lat: geo.lat, lng: geo.lng }) : null;
+      const facts = natal ? computeDailyFacts({ natal: natal.planets, localDate, timezone }) : null;
+      const score = computeDailyDomainScore({
+        facts,
+        natalHasTime: Boolean(natal?.ascendant),
+      });
+      const plain = interpretAll({ score, facts, lang });
+      return { chart, geo, timezone, localDate, facts, score, plain };
+    } catch {
+      return null;
+    }
   }, [chartState, lang]);
 
   const loading = chartState.kind === "loading";
