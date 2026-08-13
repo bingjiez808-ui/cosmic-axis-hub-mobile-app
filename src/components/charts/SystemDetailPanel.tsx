@@ -8,8 +8,9 @@
  * birth field and — for Zi Wei's gender parameter — lets the visitor supply
  * it inline so the chart completes without redoing the ritual.
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { CalculationSnapshot } from "@/lib/calc-snapshot";
+import { localBirthToUTC } from "@/lib/city-geo";
 import {
   SIGNS,
   SYSTEM_TABS,
@@ -21,8 +22,51 @@ import {
   vedicView,
   type SystemKey,
 } from "@/lib/four-systems-view";
+import { computeWesternChart, type WesternAspect, type WesternBodyKey, type WesternChart, type WesternPlanet } from "@/lib/western-natal";
 
 type DetailMode = "parameters" | "overview" | "explain";
+
+type OverviewCard = {
+  title: string;
+  body: string;
+  tone?: "green" | "rose" | "gold";
+  meta?: string;
+};
+
+type PersonalOverview = {
+  title: string;
+  headline: string;
+  paragraphs: string[];
+  cards: OverviewCard[];
+  aspectCards: OverviewCard[];
+};
+
+const WESTERN_BODY_META: Record<WesternBodyKey, { glyph: string; zh: string; en: string; meaningZh: string; meaningEn: string }> = {
+  sun: { glyph: "☉", zh: "太阳", en: "Sun", meaningZh: "核心意志", meaningEn: "core will" },
+  moon: { glyph: "☽", zh: "月亮", en: "Moon", meaningZh: "情绪需求", meaningEn: "emotional need" },
+  mercury: { glyph: "☿", zh: "水星", en: "Mercury", meaningZh: "思考表达", meaningEn: "thinking and speech" },
+  venus: { glyph: "♀", zh: "金星", en: "Venus", meaningZh: "关系品味", meaningEn: "relating and taste" },
+  mars: { glyph: "♂", zh: "火星", en: "Mars", meaningZh: "行动欲望", meaningEn: "drive" },
+  jupiter: { glyph: "♃", zh: "木星", en: "Jupiter", meaningZh: "扩张信念", meaningEn: "growth and belief" },
+  saturn: { glyph: "♄", zh: "土星", en: "Saturn", meaningZh: "边界责任", meaningEn: "limits and discipline" },
+  uranus: { glyph: "♅", zh: "天王星", en: "Uranus", meaningZh: "突变自由", meaningEn: "change and freedom" },
+  neptune: { glyph: "♆", zh: "海王星", en: "Neptune", meaningZh: "理想感受", meaningEn: "ideal and feeling" },
+};
+
+const WESTERN_ASPECT_META: Record<WesternAspect["kind"], { zh: string; en: string; tone: OverviewCard["tone"]; qualityZh: string; qualityEn: string }> = {
+  conjunction: { zh: "合相", en: "Conjunction", tone: "green", qualityZh: "融合 · 强烈聚焦", qualityEn: "fusion · focused" },
+  opposition: { zh: "对分", en: "Opposition", tone: "rose", qualityZh: "拉扯 · 需要整合", qualityEn: "polarity · integration" },
+  trine: { zh: "三分", en: "Trine", tone: "green", qualityZh: "顺流 · 天赋通道", qualityEn: "flow · gift" },
+  square: { zh: "刑相", en: "Square", tone: "rose", qualityZh: "摩擦 · 成长压力", qualityEn: "friction · growth pressure" },
+  sextile: { zh: "六合", en: "Sextile", tone: "green", qualityZh: "可用 · 需要主动开启", qualityEn: "usable · needs activation" },
+};
+
+const ELEMENT_META = {
+  fire: { zh: "火象", en: "fire", noteZh: "行动、热情、即时反应", noteEn: "action, heat and immediacy" },
+  earth: { zh: "土象", en: "earth", noteZh: "落地、秩序、现实感", noteEn: "grounding, order and realism" },
+  air: { zh: "风象", en: "air", noteZh: "理解、沟通、抽离观察", noteEn: "thinking, dialogue and perspective" },
+  water: { zh: "水象", en: "water", noteZh: "感受、记忆、共情深度", noteEn: "feeling, memory and empathy" },
+} as const;
 
 type Props = {
   snapshot: CalculationSnapshot;
@@ -75,6 +119,167 @@ function NoteList({ title, items }: { title: string; items: string[] }) {
       </ul>
     </div>
   );
+}
+
+function bodyName(key: WesternBodyKey, lang: "en" | "zh") {
+  const meta = WESTERN_BODY_META[key];
+  return lang === "zh" ? meta.zh : meta.en;
+}
+
+function signName(sign: number, lang: "en" | "zh") {
+  const s = SIGNS[((sign % 12) + 12) % 12];
+  return lang === "zh" ? s.zh : s.en;
+}
+
+function planetPhrase(planet: WesternPlanet | undefined, lang: "en" | "zh") {
+  if (!planet) return null;
+  const meta = WESTERN_BODY_META[planet.key];
+  const name = lang === "zh" ? meta.zh : meta.en;
+  return lang === "zh"
+    ? `${meta.glyph} ${name}在${planet.sign_zh}`
+    : `${meta.glyph} ${name} in ${planet.sign_en}`;
+}
+
+function dominantElement(planets: WesternPlanet[] | undefined, lang: "en" | "zh") {
+  if (!planets?.length) return null;
+  const counts = { fire: 0, earth: 0, air: 0, water: 0 };
+  for (const p of planets) {
+    const key = p.sign % 4 === 0 ? "fire" : p.sign % 4 === 1 ? "earth" : p.sign % 4 === 2 ? "air" : "water";
+    counts[key] += ["sun", "moon", "mercury", "venus", "mars"].includes(p.key) ? 2 : 1;
+  }
+  const [topKey, topValue] = Object.entries(counts).sort((a, b) => b[1] - a[1])[0] as [keyof typeof counts, number];
+  if (!topValue) return null;
+  const meta = ELEMENT_META[topKey];
+  return {
+    label: lang === "zh" ? meta.zh : meta.en,
+    note: lang === "zh" ? meta.noteZh : meta.noteEn,
+    counts,
+  };
+}
+
+function aspectTitle(a: WesternAspect, lang: "en" | "zh") {
+  const meta = WESTERN_ASPECT_META[a.kind];
+  return `${WESTERN_BODY_META[a.a].glyph} ${bodyName(a.a, lang)} ${meta.zh === "合相" && lang === "zh" ? "合" : lang === "zh" ? meta.zh : meta.en} ${WESTERN_BODY_META[a.b].glyph} ${bodyName(a.b, lang)}`;
+}
+
+function aspectBody(a: WesternAspect, lang: "en" | "zh") {
+  const left = WESTERN_BODY_META[a.a];
+  const right = WESTERN_BODY_META[a.b];
+  const meta = WESTERN_ASPECT_META[a.kind];
+  if (lang !== "zh") {
+    if (a.kind === "square" || a.kind === "opposition") {
+      return `${left.en} brings ${left.meaningEn}, while ${right.en} brings ${right.meaningEn}. This aspect shows a real inner negotiation: neither side disappears, and growth comes from giving both a workable place.`;
+    }
+    if (a.kind === "conjunction") {
+      return `${left.en} and ${right.en} operate almost as one current. It can create strong focus and charisma, while also making this theme hard to see from the outside.`;
+    }
+    return `${left.en} and ${right.en} form a supportive channel. The ability is already present, but it becomes useful only when this person actively practices it.`;
+  }
+  if (a.kind === "square" || a.kind === "opposition") {
+    return `${left.zh}代表${left.meaningZh}，${right.zh}代表${right.meaningZh}。这不是坏相位，而是这张盘里必须被看见的拉扯：一边想这样做，另一边又有不同需求，成熟点在于让两边都有位置。`;
+  }
+  if (a.kind === "conjunction") {
+    return `${left.zh}与${right.zh}像被拧在同一束光里，${left.meaningZh}和${right.meaningZh}会同时启动。优势是聚焦强，卡点是容易把这件事看得过重。`;
+  }
+  return `${left.zh}与${right.zh}之间有一条比较顺的通道，${left.meaningZh}可以自然带动${right.meaningZh}。它不是自动发生的好运，更像一项越用越顺的能力。`;
+}
+
+function buildWesternFullChart(snapshot: CalculationSnapshot): WesternChart | null {
+  if (!snapshot.input.date || !snapshot.input.time || !snapshot.geo) return null;
+  const utc = localBirthToUTC(snapshot.input.date, snapshot.input.time, snapshot.geo.tz);
+  if (!utc) return null;
+  return computeWesternChart({ utc, lat: snapshot.geo.lat, lng: snapshot.geo.lng });
+}
+
+function buildPersonalOverview(
+  snapshot: CalculationSnapshot,
+  system: SystemKey,
+  lang: "en" | "zh",
+  westernChart: WesternChart | null,
+): PersonalOverview {
+  const zh = lang === "zh";
+  if (system === "western") {
+    const planets = westernChart?.planets;
+    const sun = planets?.find((p) => p.key === "sun");
+    const moon = planets?.find((p) => p.key === "moon");
+    const asc = westernChart?.ascendant;
+    const element = dominantElement(planets, lang);
+    const retro = planets?.filter((p) => p.retro).map((p) => bodyName(p.key, lang)) ?? [];
+    const aspects = (westernChart?.aspects ?? [])
+      .slice()
+      .sort((a, b) => a.orb - b.orb)
+      .slice(0, 5);
+    const fallbackSun = snapshot.western.sun;
+    const headline = zh
+      ? sun
+        ? `太阳在${sun.sign_zh}：深潜，只信经过验证的东西`
+        : fallbackSun
+          ? `太阳在${fallbackSun.sign_zh}：先从核心自我开始阅读`
+          : "先补全出生信息，才能打开完整星盘"
+      : sun
+        ? `Sun in ${sun.sign_en}: depth before certainty`
+        : fallbackSun
+          ? `Sun in ${fallbackSun.sign_en}: start from the core self`
+          : "Complete birth data to unlock the full chart";
+    const paragraphs = zh
+      ? [
+          sun
+            ? `太阳落在${sun.sign_zh}，这是这张盘的主轴：你最想成为的样子并不浅显，常常需要确认事实、信任和真实动机之后才会投入。`
+            : fallbackSun
+              ? `目前能确认太阳在${fallbackSun.sign_zh}，可先阅读核心自我；出生时间与地点补全后，会进一步打开月亮、上升与相位结构。`
+              : "当前缺少出生日期，西方星盘无法形成可读的主轴。",
+          moon
+            ? `月亮在${moon.sign_zh}，说明情绪补给方式偏向${moon.sign % 4 === 2 ? "理解、公平和关系中的平衡感" : moon.sign % 4 === 3 ? "深度共鸣和被认真接住" : moon.sign % 4 === 1 ? "稳定、可控和现实承诺" : "热度、回应和即时行动"}。压力大时，你会先回到这一层需求。`
+            : "没有出生时间时，月亮细节会变得不完整；它通常用来判断安全感、情绪节奏和关系里的本能反应。",
+          asc
+            ? `上升在${signName(asc.sign, lang)}，别人第一眼感受到的不是你的全部，而是你进入世界的姿态：它决定你如何开场、如何防御，也影响整张盘的阅读顺序。`
+            : "上升需要准确出生时间和地点；缺少它时，报告仍能看核心倾向，但人生场景的定位会少一层。",
+          element
+            ? `元素分布里${element.label}最醒目，代表这张盘更习惯通过${element.note}来处理问题。它是优势，也会成为反复使用的默认模式。`
+            : "元素比例会在完整盘面中显示这个人最熟悉的反应方式，以及需要刻意补位的能力。",
+          retro.length
+            ? `逆行行星包括${retro.join("、")}，这些主题更像需要反复内化的功课：不是不能做，而是会慢一点、深一点，常常先在内心完成校准。`
+            : "这张盘没有明显逆行重点，行星主题更倾向直接外显，阅读时可优先看相位张力。",
+        ]
+      : [
+          sun ? `Sun in ${sun.sign_en} anchors the chart: identity forms through depth, proof and tested trust.` : "The Sun is the first stable entry point.",
+          moon ? `Moon in ${moon.sign_en} describes the emotional fuel and safety pattern.` : "The Moon needs birth time for fuller precision.",
+          asc ? `Ascendant in ${signName(asc.sign, lang)} shows how this person enters the world.` : "Ascendant requires exact time and place.",
+          element ? `${element.label} is dominant, so this chart defaults to ${element.note}.` : "Element balance appears with a full chart.",
+          retro.length ? `Retrogrades: ${retro.join(", ")}.` : "No strong retrograde emphasis appears in the available data.",
+        ];
+    return {
+      title: zh ? "西方星盘 · 总体解读" : "Western chart · overview",
+      headline,
+      paragraphs,
+      cards: [
+        { title: planetPhrase(sun, lang) ?? (zh ? `太阳在${fallbackSun?.sign_zh ?? "未知"}` : `Sun in ${fallbackSun?.sign_en ?? "unknown"}`), body: paragraphs[0], tone: "gold" },
+        ...(moon ? [{ title: planetPhrase(moon, lang)!, body: paragraphs[1], tone: "green" as const }] : []),
+        ...(asc ? [{ title: zh ? `Asc 上升在${signName(asc.sign, lang)}` : `Ascendant in ${signName(asc.sign, lang)}`, body: paragraphs[2], tone: "green" as const }] : []),
+      ],
+      aspectCards: aspects.map((a) => ({
+        title: aspectTitle(a, lang),
+        body: aspectBody(a, lang),
+        tone: WESTERN_ASPECT_META[a.kind].tone,
+        meta: zh
+          ? `${WESTERN_ASPECT_META[a.kind].qualityZh} · 容许度 ${a.orb.toFixed(1)}°`
+          : `${WESTERN_ASPECT_META[a.kind].qualityEn} · orb ${a.orb.toFixed(1)}°`,
+      })),
+    };
+  }
+
+  const overview = systemOverview(snapshot, system, lang);
+  return {
+    title: overview.title,
+    headline: overview.body.split("。")[0] || overview.title,
+    paragraphs: [overview.body],
+    cards: overview.cues.map((cue, i) => ({
+      title: zh ? `线索 ${String(i + 1).padStart(2, "0")}` : `Cue ${String(i + 1).padStart(2, "0")}`,
+      body: cue,
+      tone: i === 0 ? "gold" : "green",
+    })),
+    aspectCards: [],
+  };
 }
 
 function systemOverview(snapshot: CalculationSnapshot, system: SystemKey, lang: "en" | "zh") {
@@ -261,6 +466,123 @@ function systemExplanation(snapshot: CalculationSnapshot, system: SystemKey, lan
   };
 }
 
+function OverviewDrawer({
+  open,
+  onClose,
+  overview,
+  lang,
+}: {
+  open: boolean;
+  onClose: () => void;
+  overview: PersonalOverview;
+  lang: "en" | "zh";
+}) {
+  const zh = lang === "zh";
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-[95] flex items-end justify-center bg-obsidian/82 px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-[calc(env(safe-area-inset-top)+1rem)] backdrop-blur-md sm:items-center sm:p-5">
+      <button
+        type="button"
+        className="absolute inset-0 cursor-default"
+        aria-label={zh ? "关闭总体解读" : "Close overview"}
+        onClick={onClose}
+      />
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-label={overview.title}
+        className="relative flex max-h-[88vh] w-full max-w-2xl flex-col overflow-hidden rounded-[28px] border border-white/12 bg-[#10110f]/96 shadow-[0_28px_90px_-34px_rgba(0,0,0,0.9)] sm:max-h-[86vh]"
+      >
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-[radial-gradient(circle_at_22%_0%,rgba(207,177,91,0.18),transparent_48%),radial-gradient(circle_at_90%_10%,rgba(113,216,194,0.10),transparent_34%)]" />
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute right-4 top-4 z-10 grid h-11 w-11 place-items-center rounded-full border border-gold-dust/35 bg-obsidian/70 text-2xl leading-none text-stone-warm/70 transition hover:border-gold-light hover:text-gold-light"
+          aria-label={zh ? "关闭" : "Close"}
+        >
+          ×
+        </button>
+        <div className="relative border-b border-white/8 px-5 pb-4 pt-6 sm:px-7 sm:pt-7">
+          <Label>{zh ? "总体解读" : "Overview"}</Label>
+          <h3 className="mt-2 pr-14 font-serif text-2xl italic leading-tight text-stone-warm sm:text-3xl">
+            {overview.title}
+          </h3>
+          <p className="mt-4 rounded-2xl border border-gold-dust/25 bg-gold-dust/[0.055] px-4 py-3 font-serif text-lg italic leading-relaxed text-gold-light">
+            {overview.headline}
+          </p>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-6 pt-5 sm:px-7">
+          <div className="space-y-3 text-[13px] leading-relaxed text-stone-warm/74">
+            {overview.paragraphs.map((paragraph, i) => (
+              <p key={`${paragraph}-${i}`}>{paragraph}</p>
+            ))}
+          </div>
+
+          {overview.cards.length > 0 && (
+            <section className="mt-6">
+              <Label>{zh ? "关键落位" : "Key placements"}</Label>
+              <div className="mt-3 grid gap-3">
+                {overview.cards.map((card) => (
+                  <OverviewMiniCard key={card.title} card={card} />
+                ))}
+              </div>
+            </section>
+          )}
+
+          <section className="mt-6">
+            <Label>{zh ? "具体相位逐条解释" : "Aspect notes"}</Label>
+            {overview.aspectCards.length > 0 ? (
+              <div className="mt-3 grid gap-3">
+                {overview.aspectCards.map((card) => (
+                  <OverviewMiniCard key={card.title} card={card} />
+                ))}
+              </div>
+            ) : (
+              <p className="mt-3 rounded-2xl border border-white/8 bg-white/[0.025] p-4 text-[12px] leading-relaxed text-stone-warm/58">
+                {zh
+                  ? "当前资料不足以生成逐条相位。补全准确出生时间和地点后，这里会显示每一组主要相位的个人化解释。"
+                  : "There is not enough data for aspect-by-aspect notes yet. Add exact time and place to unlock them."}
+              </p>
+            )}
+          </section>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function OverviewMiniCard({ card }: { card: OverviewCard }) {
+  const tone =
+    card.tone === "rose"
+      ? "border-rose-300/24 bg-rose-300/[0.045]"
+      : card.tone === "green"
+        ? "border-teal-200/22 bg-teal-200/[0.045]"
+        : "border-gold-dust/24 bg-gold-dust/[0.045]";
+  return (
+    <article className={`rounded-2xl border p-4 ${tone}`}>
+      <div className="flex items-start justify-between gap-3">
+        <h4 className="font-serif text-base italic leading-snug text-stone-warm">{card.title}</h4>
+        {card.meta && (
+          <span className="shrink-0 rounded-full border border-gold-dust/20 px-2 py-1 text-[10px] tracking-[0.14em] text-gold-dust/80">
+            {card.meta}
+          </span>
+        )}
+      </div>
+      <p className="mt-2 text-[12.5px] leading-relaxed text-stone-warm/70">{card.body}</p>
+    </article>
+  );
+}
+
 export function SystemDetailPanel({
   snapshot,
   lang,
@@ -270,9 +592,15 @@ export function SystemDetailPanel({
 }: Props) {
   const zh = lang === "zh";
   const [mode, setMode] = useState<DetailMode>("parameters");
+  const [overviewOpen, setOverviewOpen] = useState(false);
   const tab = SYSTEM_TABS.find((t) => t.key === system)!;
   const ready = systemAvailability(snapshot)[system];
+  const westernChart = useMemo(() => buildWesternFullChart(snapshot), [snapshot]);
   const overview = useMemo(() => systemOverview(snapshot, system, lang), [snapshot, system, lang]);
+  const personalOverview = useMemo(
+    () => buildPersonalOverview(snapshot, system, lang, westernChart),
+    [snapshot, system, lang, westernChart],
+  );
   const explanation = useMemo(() => systemExplanation(snapshot, system, lang), [snapshot, system, lang]);
 
   const header = (
@@ -291,9 +619,15 @@ export function SystemDetailPanel({
           <button
             key={item.key}
             type="button"
-            onClick={() => setMode(item.key as DetailMode)}
+            onClick={() => {
+              if (item.key === "overview") {
+                setOverviewOpen(true);
+                return;
+              }
+              setMode(item.key as DetailMode);
+            }}
             className={`min-h-8 rounded-full px-2 text-[10px] font-medium tracking-[0.12em] transition-colors ${
-              mode === item.key
+              (item.key === "overview" ? overviewOpen : mode === item.key)
                 ? "bg-gold-dust text-obsidian"
                 : "text-stone-warm/55 hover:bg-white/[0.05] hover:text-stone-warm"
             }`}
@@ -561,9 +895,17 @@ export function SystemDetailPanel({
   })();
 
   return (
-    <div className="flex h-full min-h-0 flex-col rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-5">
-      {header}
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">{body}</div>
-    </div>
+    <>
+      <div className="flex h-full min-h-0 flex-col rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-5">
+        {header}
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">{body}</div>
+      </div>
+      <OverviewDrawer
+        open={overviewOpen}
+        onClose={() => setOverviewOpen(false)}
+        overview={personalOverview}
+        lang={lang}
+      />
+    </>
   );
 }
