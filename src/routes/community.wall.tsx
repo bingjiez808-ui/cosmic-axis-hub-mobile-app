@@ -79,7 +79,7 @@ function WallList() {
     return <HallError error={wall.error} onRetry={() => void wall.refetch()} />;
   }
 
-  const letters = wall.data ?? [];
+  const letters = Array.isArray(wall.data) ? wall.data : [];
   if (letters.length === 0) {
     return (
       <HallSection title={zh ? "墙上的信" : "Letters on the wall"}>

@@ -16,7 +16,7 @@ import { computeDailyFacts } from "@/lib/daily-facts";
 import { tDomain } from "@/lib/daily-format";
 import { interpretAll } from "@/lib/daily-plain-language";
 import { useLang } from "@/lib/i18n";
-import { useDaily } from "@/lib/i18n-daily";
+import { useDaily, xlate } from "@/lib/i18n-daily";
 import { useSupabaseSession } from "@/lib/session";
 import { lookupCityGeo, localBirthToUTC } from "@/lib/city-geo";
 import { computeWesternChart } from "@/lib/western-natal";
@@ -40,6 +40,16 @@ type ChartState =
   | { kind: "no_primary" }
   | { kind: "incomplete"; missing: string[] }
   | { kind: "ready"; chart: TodayChart };
+
+type TodayReading = {
+  chart: TodayChart;
+  geo: { lat: number; lng: number; tz: string };
+  timezone: string;
+  localDate: string;
+  facts: ReturnType<typeof computeDailyFacts> | null;
+  score: ReturnType<typeof computeDailyDomainScore>;
+  plain: ReturnType<typeof interpretAll>;
+};
 
 export const Route = createFileRoute("/today")({
   head: () => ({
@@ -80,6 +90,13 @@ function bandTone(band: string) {
   return "border-white/10 bg-white/[0.045] text-amber-50";
 }
 
+const BAND_COLOR: Record<string, string> = {
+  supportive: "text-emerald-300 border-emerald-400/40 bg-emerald-500/10",
+  neutral: "text-amber-200 border-amber-400/40 bg-amber-500/10",
+  mixed: "text-amber-300 border-amber-500/40 bg-amber-500/10",
+  caution: "text-rose-300 border-rose-400/40 bg-rose-500/10",
+};
+
 async function loadTodayCharts(userId: string): Promise<TodayChart[]> {
   const { data, error } = await supabase
     .from("charts")
@@ -112,6 +129,32 @@ function snapshotNumber(snapshot: unknown, key: string): number | null {
   if (!snapshot || typeof snapshot !== "object") return null;
   const value = (snapshot as Record<string, unknown>)[key];
   return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function buildDomainPayload({
+  domain,
+  reading,
+  dict,
+}: {
+  domain: ReturnType<typeof interpretAll>["domains"][number];
+  reading: TodayReading;
+  dict: ReturnType<typeof useDaily>;
+}): DomainDetailPayload | null {
+  const score = reading.score.domains.find((d) => d.domain === domain.domain);
+  return {
+    key: domain.domain,
+    label: tDomain(dict, domain.domain),
+    score: score?.score ?? 50,
+    bandLabel: xlate(dict.band, domain.band),
+    bandClass: BAND_COLOR[domain.band] ?? BAND_COLOR.neutral,
+    confidenceLabel: xlate(dict.confidence, domain.confidence),
+    headline: domain.headline,
+    mayShowAs: domain.may_show_as,
+    doToday: domain.do_today ?? [],
+    avoidToday: domain.avoid_today ?? [],
+    weekTrend: domain.week_trend,
+    breakdown: score?.breakdown ?? [],
+  };
 }
 
 function TodayPage() {
@@ -171,7 +214,7 @@ function TodayPage() {
     };
   }, [session, sessionLoading, zh]);
 
-  const reading = useMemo(() => {
+  const reading = useMemo<TodayReading | null>(() => {
     if (chartState.kind !== "ready" || !chartState.chart) return null;
     const chart = chartState.chart;
     try {
@@ -286,20 +329,7 @@ function TodayPage() {
                 type="button"
                 onClick={() => {
                   const first = reading.plain.domains[0];
-                  const score = reading.score.domains.find((d) => d.domain === first.domain);
-                  setSelected({
-                    key: first.domain,
-                    label: tDomain(dict, first.domain),
-                    score: score?.score ?? 50,
-                    band: first.band,
-                    confidence: first.confidence,
-                    headline: first.headline,
-                    note: first.may_show_as,
-                    doToday: first.do_today,
-                    avoidToday: first.avoid_today,
-                    evidence: first.evidence_refs,
-                    contributions: score?.breakdown ?? [],
-                  });
+                  if (first) setSelected(buildDomainPayload({ domain: first, reading, dict }));
                 }}
                 className="mt-4 flex min-h-12 w-full items-center justify-between rounded-2xl bg-amber-300 px-4 text-left text-sm font-semibold text-[#111016] transition active:scale-[0.98]"
               >
@@ -329,20 +359,8 @@ function TodayPage() {
                     <button
                       key={domain.domain}
                       type="button"
-                      onClick={() =>
-                        setSelected({
-                          key: domain.domain,
-                          label,
-                          score: score?.score ?? 50,
-                          band: domain.band,
-                          confidence: domain.confidence,
-                          headline: domain.headline,
-                          note: domain.may_show_as,
-                          doToday: domain.do_today,
-                          avoidToday: domain.avoid_today,
-                          evidence: domain.evidence_refs,
-                          contributions: score?.breakdown ?? [],
-                        })
+                  onClick={() =>
+                        setSelected(buildDomainPayload({ domain, reading, dict }))
                       }
                       className={`${showAllDomains ? "w-full" : "min-w-[238px] snap-start"} flex min-h-[86px] items-center gap-3 rounded-[22px] border p-3 text-left transition active:scale-[0.98] ${bandTone(domain.band)}`}
                     >
@@ -378,7 +396,6 @@ function TodayPage() {
         ) : null}
 
         <DomainDetailDialog
-          open={Boolean(selected)}
           onOpenChange={(open) => {
             if (!open) setSelected(null);
           }}

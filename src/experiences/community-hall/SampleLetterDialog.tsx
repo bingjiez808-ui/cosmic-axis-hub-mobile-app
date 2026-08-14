@@ -30,6 +30,7 @@ export function SampleLetterDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const c = useCommunityHall();
+  const echoes = sample?.echoes ?? [];
   // The seal breaks a beat after the sheet lands, then the echoes drift in.
   const [unsealed, setUnsealed] = useState(false);
 
@@ -67,14 +68,14 @@ export function SampleLetterDialog({
 
               <p className="hall-letter-body mt-5 whitespace-pre-line">{sample.body}</p>
 
-              {sample.echoes.length > 0 ? (
+              {echoes.length > 0 ? (
                 <div className="hall-letter-echoes mt-8">
                   <p className="flex items-center gap-3 text-xs font-medium tracking-[0.2em] text-primary/80">
                     {c.samplesEchoes}
                     <span className="hall-letter-rule flex-1" aria-hidden="true" />
                   </p>
                   <div className="mt-4 space-y-3">
-                    {sample.echoes.map((echo, i) => (
+                    {echoes.map((echo, i) => (
                       <blockquote
                         key={echo.id}
                         className="hall-letter-echo"

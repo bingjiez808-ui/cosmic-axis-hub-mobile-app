@@ -19,7 +19,7 @@ export function LibrarySamplesSection() {
   const c = useCommunityHall();
   const samples = useCommunityLibrarySamples(c.lang === "en" ? "en" : "zh");
   const [openId, setOpenId] = useState<string | null>(null);
-  const list = samples.data ?? [];
+  const list = Array.isArray(samples.data) ? samples.data : [];
   const active = list.find((s) => s.letterId === openId) ?? null;
 
   return (
@@ -79,4 +79,3 @@ export function LibrarySamplesSection() {
     </HallSection>
   );
 }
-

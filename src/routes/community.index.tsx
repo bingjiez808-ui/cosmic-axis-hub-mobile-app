@@ -56,9 +56,11 @@ function CommunityHallPage() {
   const mailbox = useCommunityMailbox(Boolean(user));
   const profile = useCommunityProfile(Boolean(user));
 
-  const received = (mailbox.data?.received ?? []).filter((l) => l.status !== "archived");
-  const echoes = mailbox.data?.echoes ?? [];
-  const sent = mailbox.data?.sent ?? [];
+  const mailboxData = mailbox.data;
+  const receivedSource = Array.isArray(mailboxData?.received) ? mailboxData.received : [];
+  const received = receivedSource.filter((l) => l.status !== "archived");
+  const echoes = Array.isArray(mailboxData?.echoes) ? mailboxData.echoes : [];
+  const sent = Array.isArray(mailboxData?.sent) ? mailboxData.sent : [];
   const unread = received.filter((l) => !l.readAt).length;
   const alias = profile.data?.profile?.alias ?? null;
   const band = profile.data?.ageBand ?? null;

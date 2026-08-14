@@ -80,7 +80,8 @@ function LetterDetail() {
   const [confirmBlock, setConfirmBlock] = useState(false);
   const lastSent = useRef<string | null>(null);
 
-  const letter = mailbox.data?.received.find((l) => l.letterId === letterId);
+  const received = mailbox.data?.received ?? [];
+  const letter = received.find((l) => l.letterId === letterId);
   const echoes = useMemo(
     () => (mailbox.data?.echoes ?? []).filter((e) => e.letterId === letterId),
     [mailbox.data?.echoes, letterId],
