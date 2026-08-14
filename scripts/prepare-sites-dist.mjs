@@ -10,8 +10,7 @@ const distDir = path.join(root, "dist");
 const distPublic = path.join(distDir, "public");
 const distServer = path.join(distDir, "server");
 const siteStaticDir = path.join(root, "site-static");
-const siteStaticVersion = process.env.SITE_STATIC_VERSION || "main";
-const staticAssetBase = `https://cdn.jsdelivr.net/gh/bingjiez808-ui/cosmic-axis-hub-mobile-app@${siteStaticVersion}/site-static`;
+const staticAssetBase = process.env.SITE_STATIC_BASE || "";
 
 if (!existsSync(outputServer)) {
   throw new Error("Missing .output/server. Run vite build before preparing Sites dist.");
