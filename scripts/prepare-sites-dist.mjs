@@ -52,6 +52,24 @@ async function rewriteRuntimeAssetTables(dir) {
 
 await rewriteRuntimeAssetTables(siteStaticDir);
 await rewriteRuntimeAssetTables(distPublic);
+
+const headers = `/*
+  cache-control: no-store
+
+/sw.js
+  cache-control: no-store
+
+/manifest.webmanifest
+  cache-control: no-store
+
+/assets/*
+  cache-control: public, max-age=31536000, immutable
+`;
+
+await writeFile(path.join(outputPublic, "_headers"), headers);
+await writeFile(path.join(distPublic, "_headers"), headers);
+await writeFile(path.join(siteStaticDir, "_headers"), headers);
+
 await cp(
   path.join(outputServer, "index.mjs"),
   path.join(distServer, "index.js"),
@@ -101,7 +119,9 @@ const htmlAssetRewriteHandler = {
 \t\t\t.replaceAll('"/favicon.ico', '"' + staticAssetBase + "/favicon.ico")
 \t\t\t.replaceAll('"/manifest.webmanifest', '"' + staticAssetBase + "/manifest.webmanifest")
 \t\t\t.replaceAll('"/sw.js', '"' + staticAssetBase + "/sw.js");
-\t\treturn new Response(rewritten, response);
+\t\tconst headers = new Headers(response.headers);
+\t\theaders.set("cache-control", "no-store");
+\t\treturn new Response(rewritten, { status: response.status, statusText: response.statusText, headers });
 \t}
 };
 export { htmlAssetRewriteHandler as default };`,
