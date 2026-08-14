@@ -19,7 +19,7 @@ import "@/components/personal-library.css";
  */
 
 type Item = {
-  to: "/me/home" | "/me/profile" | "/me/friends" | "/me/echoes" | "/me/membership" | "/me/community";
+  to: "/" | "/me/home" | "/me/profile" | "/me/friends" | "/me/echoes" | "/me/membership" | "/me/community";
   /**
    * Extra pathnames whose "active" state should light up this tab —
    * used so /me/friends AND /me/match both highlight the
@@ -35,6 +35,15 @@ type Item = {
 };
 
 const ITEMS: Item[] = [
+  {
+    to: "/",
+    labelZh: "导览台首页",
+    labelEn: "Guide Home",
+    appLabelZh: "首页",
+    appLabelEn: "Home",
+    icon: Home,
+    testId: "pwn-guide-home",
+  },
   {
     to: "/me/home",
     labelZh: "书架主页",
@@ -100,7 +109,8 @@ export function PersonalWorkspaceNav({ active }: { active?: string }) {
   const isZh = lang === "zh";
 
   const isItemActive = (it: Item) =>
-    current === it.to || (it.alsoActiveFor?.some((p) => current === p) ?? false);
+    (it.to === "/" ? current === "/" : current === it.to) ||
+    (it.alsoActiveFor?.some((p) => current === p) ?? false);
 
   return (
     <>
@@ -152,7 +162,7 @@ export function PersonalWorkspaceNav({ active }: { active?: string }) {
         aria-label={isZh ? "命运书房 App 导航" : "Fate Nexus app navigation"}
         className="fixed inset-x-0 bottom-0 z-50 mx-auto max-w-[430px] border-t border-amber-300/15 bg-[#090910]/92 px-2 pb-[calc(env(safe-area-inset-bottom)+0.45rem)] pt-2 shadow-[0_-18px_42px_-28px_rgba(0,0,0,0.95)] backdrop-blur-xl"
       >
-        <div className="mx-auto grid max-w-[520px] grid-cols-6 gap-1">
+        <div className="mx-auto grid max-w-[520px] grid-cols-7 gap-1">
           {ITEMS.map((it) => {
             const Icon = it.icon;
             const activeItem = isItemActive(it);
@@ -160,6 +170,7 @@ export function PersonalWorkspaceNav({ active }: { active?: string }) {
               <Link
                 key={it.to}
                 to={it.to}
+                data-testid={`${it.testId}-app`}
                 aria-current={activeItem ? "page" : undefined}
                 data-active={activeItem ? "true" : "false"}
                 className={`pl-app-tab flex min-h-[54px] min-w-0 flex-col items-center justify-center gap-1 rounded-md px-1 text-[10px] leading-none ${
