@@ -165,7 +165,7 @@ function WallLetterDetail({ letterId, canReply }: { letterId: string; canReply: 
   }
 
   const data = detail.data;
-  const echoes = data?.echoes ?? [];
+  const echoes = Array.isArray(data?.echoes) ? data.echoes : [];
   const alreadyReplied = data?.iReplied ?? false;
   const length = body.trim().length;
 

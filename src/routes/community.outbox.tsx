@@ -41,7 +41,7 @@ function OutboxPage() {
   const mailbox = useCommunityMailbox();
   const close = useCloseLetter();
   const [confirming, setConfirming] = useState<string | null>(null);
-  const sent = mailbox.data?.sent ?? [];
+  const sent = Array.isArray(mailbox.data?.sent) ? mailbox.data.sent : [];
 
   async function closeLetter(letterId: string) {
     try {

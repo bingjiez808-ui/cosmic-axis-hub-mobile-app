@@ -51,8 +51,11 @@ function NoticeCentrePage() {
   const mailbox = useCommunityMailbox();
   const [filter, setFilter] = useState<Filter>("all");
 
-  const sent = useMemo(() => mailbox.data?.sent ?? [], [mailbox.data]);
-  const notifications = mailbox.data?.notifications ?? [];
+  const sent = useMemo(
+    () => (Array.isArray(mailbox.data?.sent) ? mailbox.data.sent : []),
+    [mailbox.data],
+  );
+  const notifications = Array.isArray(mailbox.data?.notifications) ? mailbox.data.notifications : [];
   const unread = notifications.filter((n) => !n.readAt).length;
 
   const waiting = sent.filter((l) => l.replyCount === 0 && l.status !== "closed");

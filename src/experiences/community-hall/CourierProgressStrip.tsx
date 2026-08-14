@@ -51,10 +51,10 @@ export function CourierProgressStrip() {
   const [peeking, setPeeking] = useState(false);
   const mailbox = useCommunityMailbox(Boolean(user));
 
-  const sent = mailbox.data?.sent ?? [];
+  const sent = Array.isArray(mailbox.data?.sent) ? mailbox.data.sent : [];
   const waiting = sent.filter((l) => l.replyCount === 0 && l.status !== "closed").length;
   const answered = sent.filter((l) => l.replyCount > 0).length;
-  const unreadEchoes = (mailbox.data?.echoes ?? []).length;
+  const unreadEchoes = Array.isArray(mailbox.data?.echoes) ? mailbox.data.echoes.length : 0;
 
   const draftPreview = draft?.body?.trim().slice(0, 28) ?? "";
   const hasDraft = Boolean(draftPreview);

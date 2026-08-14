@@ -26,7 +26,8 @@ export function NotificationCenter() {
   const markRead = useMarkNotificationsRead();
 
   if (!user) return null;
-  const items = (mailbox.data?.notifications ?? []).slice(0, 8);
+  const source = Array.isArray(mailbox.data?.notifications) ? mailbox.data.notifications : [];
+  const items = source.slice(0, 8);
   const unread = items.filter((n) => !n.readAt);
 
   return (

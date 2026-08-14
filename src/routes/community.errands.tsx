@@ -63,7 +63,7 @@ function Errands() {
   return (
     <div className="mt-8">
       <HallSection title={zh ? "托付给你的信" : "Handed to you"}>
-        {(list.data ?? []).length === 0 ? (
+        {(Array.isArray(list.data) ? list.data : []).length === 0 ? (
           <HallEmpty
             text={
               zh
@@ -73,7 +73,7 @@ function Errands() {
           />
         ) : (
           <div className="space-y-4">
-            {(list.data ?? []).map((item) => (
+            {(Array.isArray(list.data) ? list.data : []).map((item) => (
               <article key={item.assignmentId} className="hall-paper p-5">
                 <p className="text-[0.7rem] text-primary/75">
                   {item.author.alias ?? (zh ? "一位旅者" : "A traveler")} ·{" "}

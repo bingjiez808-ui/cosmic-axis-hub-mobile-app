@@ -43,9 +43,9 @@ function EchoesPage() {
   const saveEcho = useSaveEcho();
   const [tab, setTab] = useState<"received" | "mine">("received");
 
-  const echoes = mailbox.data?.echoes ?? [];
-  const mine = mailbox.data?.myReplies ?? [];
-  const sent = mailbox.data?.sent ?? [];
+  const echoes = Array.isArray(mailbox.data?.echoes) ? mailbox.data.echoes : [];
+  const mine = Array.isArray(mailbox.data?.myReplies) ? mailbox.data.myReplies : [];
+  const sent = Array.isArray(mailbox.data?.sent) ? mailbox.data.sent : [];
 
   /** Group echoes under the letter that caused them. */
   const groups = sent

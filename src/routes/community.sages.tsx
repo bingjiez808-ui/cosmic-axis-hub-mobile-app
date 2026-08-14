@@ -256,13 +256,13 @@ function SageDesk() {
       </HallSection>
 
       <HallSection title={zh ? "先贤回信" : "Replies from the sages"}>
-        {(desk.data ?? []).length === 0 ? (
+        {(Array.isArray(desk.data) ? desk.data : []).length === 0 ? (
           <HallEmpty
             text={zh ? "还没有回信。选一位先贤，写下你的第一封信。" : "No letters yet — choose a sage and write your first."}
           />
         ) : (
           <div className="space-y-4">
-            {(desk.data ?? []).map((letter) => (
+            {(Array.isArray(desk.data) ? desk.data : []).map((letter) => (
               <article key={letter.letterId} className="hall-paper p-5">
                 <p className="text-[0.7rem] text-primary/75">
                   {sageName(letter.personaId, zh ? "zh" : "en")} ·{" "}

@@ -94,7 +94,7 @@ function GrantsBody() {
 
   /** Sage letters that have not yet been escalated to a human. */
   const candidates = useMemo(
-    () => (desk.data ?? []).filter((letter) => letter.route === "sage"),
+    () => (Array.isArray(desk.data) ? desk.data : []).filter((letter) => letter.route === "sage"),
     [desk.data],
   );
 
@@ -361,11 +361,11 @@ function GrantsBody() {
 
       {/* ---- Ledger --------------------------------------------- */}
       <HallSection title={zh ? "使用记录" : "History"}>
-        {(history.data ?? []).length === 0 ? (
+        {(Array.isArray(history.data) ? history.data : []).length === 0 ? (
           <HallEmpty text={zh ? "暂无领取或使用记录。" : "No claims or spends yet."} />
         ) : (
           <ul className="space-y-2">
-            {(history.data ?? []).map((event) => (
+            {(Array.isArray(history.data) ? history.data : []).map((event) => (
               <li
                 key={event.eventId}
                 className="hall-paper flex flex-wrap items-center justify-between gap-3 p-4"

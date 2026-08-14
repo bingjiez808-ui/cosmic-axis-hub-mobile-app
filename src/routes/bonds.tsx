@@ -3,6 +3,7 @@ import { Handshake } from "lucide-react";
 
 import { AppSectionPreview } from "@/components/AppSectionPreview";
 import { useLang } from "@/lib/i18n";
+import { useSupabaseSession } from "@/lib/session";
 
 export const Route = createFileRoute("/bonds")({
   head: () => ({
@@ -16,7 +17,9 @@ export const Route = createFileRoute("/bonds")({
 
 function BondsPreviewPage() {
   const { lang } = useLang();
+  const { user } = useSupabaseSession();
   const zh = lang === "zh";
+  const signedIn = Boolean(user);
   const items = [
     {
       label: zh ? "好友邀请" : "Friend invites",
@@ -54,12 +57,12 @@ function BondsPreviewPage() {
         : "Friends, notes, compatibility and boundaries form a long-term relationship record."}
       image="/assets/app-home/report-preview-app.png"
       items={items}
-      primaryLabel={zh ? "登录进入关系" : "Login to Bonds"}
-      primaryTo="/auth"
-      primarySearch={{ redirect: "/me/friends" } as never}
+      primaryLabel={signedIn ? (zh ? "进入关系" : "Open Bonds") : (zh ? "登录进入关系" : "Login to Bonds")}
+      primaryTo={signedIn ? "/me/friends" : "/auth"}
+      primarySearch={signedIn ? undefined : ({ redirect: "/me/friends" } as never)}
       secondaryLabel={zh ? "查看适配" : "Match"}
-      secondaryTo="/auth"
-      secondarySearch={{ redirect: "/me/match" } as never}
+      secondaryTo={signedIn ? "/me/match" : "/auth"}
+      secondarySearch={signedIn ? undefined : ({ redirect: "/me/match" } as never)}
     />
   );
 }

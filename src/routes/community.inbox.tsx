@@ -36,7 +36,7 @@ function InboxPage() {
   const delivery = useDeliveryState();
   const [filter, setFilter] = useState<Filter>("all");
 
-  const all = mailbox.data?.received ?? [];
+  const all = Array.isArray(mailbox.data?.received) ? mailbox.data.received : [];
   const letters = all.filter((l) =>
     filter === "all" ? l.status !== "archived" : l.status === filter,
   );
