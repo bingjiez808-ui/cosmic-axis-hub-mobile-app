@@ -2706,27 +2706,121 @@ function MobileChartParamsDrawer({
   factsSlot: React.ReactNode;
 }) {
   const active = SYSTEM_TABS.find((tab) => tab.key === system);
+  const [expanded, setExpanded] = useState(false);
+  const dragStartY = useRef<number | null>(null);
+  const dragMoved = useRef(false);
+  const [dragY, setDragY] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const close = useCallback(() => {
+    setExpanded(false);
+    setDragY(0);
+    setDragging(false);
+    dragStartY.current = null;
+    dragMoved.current = false;
+    onClose();
+  }, [onClose]);
+  const beginDrag = useCallback((clientY: number) => {
+    dragStartY.current = clientY;
+    dragMoved.current = false;
+    setDragging(true);
+  }, []);
+  const moveDrag = useCallback(
+    (clientY: number) => {
+      if (dragStartY.current == null) return;
+      const delta = clientY - dragStartY.current;
+      if (Math.abs(delta) > 8) dragMoved.current = true;
+      setDragY(expanded ? Math.max(0, delta) : Math.min(0, delta));
+    },
+    [expanded],
+  );
+  const endDrag = useCallback(() => {
+    const delta = dragY;
+    if (!expanded && delta < -42) setExpanded(true);
+    if (expanded && delta > 52) setExpanded(false);
+    setDragY(0);
+    setDragging(false);
+    dragStartY.current = null;
+    if (dragMoved.current && typeof window !== "undefined") {
+      window.setTimeout(() => {
+        dragMoved.current = false;
+      }, 180);
+    }
+  }, [dragY, expanded]);
+
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="fixed inset-x-0 bottom-0 top-auto left-0 right-0 grid max-h-[88dvh] w-full max-w-none translate-x-0 translate-y-0 grid-rows-[auto_1fr] gap-0 overflow-hidden rounded-b-none rounded-t-[32px] border border-gold-dust/25 bg-obsidian/98 p-0 shadow-[0_-24px_80px_rgba(0,0,0,0.55)] backdrop-blur-xl sm:left-[50%] sm:max-w-lg sm:translate-x-[-50%] [&>button]:right-4 [&>button]:top-4 [&>button]:z-30 [&>button]:grid [&>button]:size-10 [&>button]:place-items-center [&>button]:rounded-full [&>button]:border [&>button]:border-gold-dust/25 [&>button]:bg-obsidian/70 [&>button]:text-gold-light [&>button]:opacity-100">
-        <div className="border-b border-white/10 px-5 pb-4 pt-5">
-          <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-gold-dust/35" />
+    <Dialog open={open} onOpenChange={(v) => !v && close()}>
+      <DialogContent
+        className={`fixed inset-x-0 bottom-0 left-0 right-0 grid w-full max-w-none translate-x-0 translate-y-0 grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden rounded-b-none rounded-t-[32px] border border-gold-dust/25 bg-obsidian/98 p-0 shadow-[0_-24px_80px_rgba(0,0,0,0.55)] backdrop-blur-xl transition-[height,max-height,top,transform] duration-300 [&>button]:right-4 [&>button]:top-4 [&>button]:z-30 [&>button]:grid [&>button]:size-10 [&>button]:place-items-center [&>button]:rounded-full [&>button]:border [&>button]:border-gold-dust/25 [&>button]:bg-obsidian/70 [&>button]:text-gold-light [&>button]:opacity-100 ${
+          expanded
+            ? "top-2 h-[calc(100dvh-0.5rem)] max-h-[100dvh] sm:h-[94dvh]"
+            : "top-auto h-[86dvh] max-h-[86dvh] sm:h-[88dvh]"
+        }`}
+        style={{
+          transform: `translateY(${dragY}px)`,
+          transition: dragging ? "none" : undefined,
+        }}
+      >
+        <div className="border-b border-white/10 px-5 pb-4 pt-3">
+          <button
+            type="button"
+            className="mx-auto mb-3 flex min-h-9 w-28 items-center justify-center rounded-full text-gold-dust/70 transition-colors hover:text-gold-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-light"
+            aria-label={
+              expanded
+                ? lang === "zh"
+                  ? "收回阅读抽屉"
+                  : "Collapse reading drawer"
+                : lang === "zh"
+                  ? "展开全屏阅读"
+                  : "Expand reading drawer"
+            }
+            aria-expanded={expanded}
+            onClick={() => {
+              if (dragMoved.current) {
+                dragMoved.current = false;
+                return;
+              }
+              setExpanded((v) => !v);
+            }}
+            onTouchStart={(event) => beginDrag(event.touches[0]?.clientY ?? 0)}
+            onTouchMove={(event) => moveDrag(event.touches[0]?.clientY ?? 0)}
+            onTouchEnd={endDrag}
+            onTouchCancel={endDrag}
+            onPointerDown={(event) => {
+              if (event.pointerType === "touch") return;
+              beginDrag(event.clientY);
+              event.currentTarget.setPointerCapture(event.pointerId);
+            }}
+            onPointerMove={(event) => {
+              if (event.pointerType === "touch") return;
+              moveDrag(event.clientY);
+            }}
+            onPointerUp={(event) => {
+              if (event.pointerType !== "touch") event.currentTarget.releasePointerCapture(event.pointerId);
+              endDrag();
+            }}
+            onPointerCancel={endDrag}
+          >
+            <span className="h-1.5 w-14 rounded-full bg-gold-dust/45 shadow-[0_0_18px_rgba(207,177,91,0.22)]" />
+          </button>
           <DialogTitle asChild>
-            <h2 className="text-xl font-semibold text-stone-warm">
-              {lang === "zh" ? active?.zh : active?.en}
+            <h2 className="flex items-center gap-2 pr-14 text-xl font-semibold text-stone-warm">
+              <span>{lang === "zh" ? active?.zh : active?.en}</span>
+              <span className="rounded-full border border-gold-dust/25 px-2 py-0.5 text-[10px] font-normal tracking-[0.18em] text-gold-dust/70">
+                {expanded ? (lang === "zh" ? "全屏" : "Full") : lang === "zh" ? "上拉展开" : "Pull up"}
+              </span>
             </h2>
           </DialogTitle>
           <DialogDescription className="mt-1 text-xs leading-relaxed text-stone-warm/56">
             {lang === "zh"
-              ? "完整参数、落位和行星说明都在这里，向下滑动阅读。"
-              : "Full parameters, placements and planet notes live here. Swipe down to read."}
+              ? "完整参数、总体解读和行星说明都在这里。上拉顶部横条可全屏阅读，内容区上下滑动浏览。"
+              : "Full parameters, overview and planet notes live here. Pull the handle up for full-screen reading."}
           </DialogDescription>
         </div>
         <div
-          className="min-h-0 overflow-y-auto px-4 py-4"
-          style={{ WebkitOverflowScrolling: "touch", paddingBottom: "calc(env(safe-area-inset-bottom) + 1rem)" }}
+          className="min-h-0 overflow-y-auto overscroll-contain px-4 py-4"
+          style={{ WebkitOverflowScrolling: "touch", paddingBottom: "calc(env(safe-area-inset-bottom) + 5rem)" }}
         >
-          <div className="space-y-4">
+          <div className="space-y-4 pb-8">
             <SystemDetailPanel
               snapshot={snapshot}
               lang={lang}
