@@ -1,0 +1,1 @@
+/* empty css                         */import{s as e}from"./index-CC3Mvrpj.js";var t=e;export{t as errorComponent};
