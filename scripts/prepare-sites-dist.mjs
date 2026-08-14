@@ -40,8 +40,6 @@ async function rewriteRuntimeAssetTables(dir) {
       if (!entry.name.endsWith(".js")) return;
       const source = await readFile(entryPath, "utf8");
       const rewritten = source
-        .replaceAll('"assets/', `"${staticAssetBase}/assets/`)
-        .replaceAll("'assets/", `'${staticAssetBase}/assets/`)
         .replaceAll(
           "return`/`+e",
           "return/^https?:\\/\\//.test(e)?e:`/`+e",
